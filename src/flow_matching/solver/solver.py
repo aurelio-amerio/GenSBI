@@ -6,12 +6,12 @@
 
 from abc import ABC, abstractmethod
 
-from torch import nn, Tensor
+from jax import Array
 
 
-class Solver(ABC, nn.Module):
+class Solver(ABC):
     """Abstract base class for solvers."""
 
     @abstractmethod
-    def sample(self, x_0: Tensor = None) -> Tensor:
+    def sample(self, x_0: Array = None) -> Array:
         ...
