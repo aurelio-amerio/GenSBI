@@ -1,10 +1,12 @@
+#FIXME: first pass
+
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
 # This source code is licensed under the CC-by-NC license found in the
 # LICENSE file in the root directory of this source tree.
 
-from torch import Tensor
+from jax import Array
 
 from flow_matching.path.path import ProbPath
 from flow_matching.path.path_sample import PathSample
@@ -54,16 +56,16 @@ class AffineProbPath(ProbPath):
     def __init__(self, scheduler: Scheduler):
         self.scheduler = scheduler
 
-    def sample(self, x_0: Tensor, x_1: Tensor, t: Tensor) -> PathSample:
+    def sample(self, x_0: Array, x_1: Array, t: Array) -> PathSample:
         r"""Sample from the affine probability path:
 
         | given :math:`(X_0,X_1) \sim \pi(X_0,X_1)` and a scheduler :math:`(\alpha_t,\sigma_t)`.
         | return :math:`X_0, X_1, X_t = \alpha_t X_1 + \sigma_t X_0`, and the conditional velocity at :math:`X_t, \dot{X}_t = \dot{\alpha}_t X_1 + \dot{\sigma}_t X_0`.
 
         Args:
-            x_0 (Tensor): source data point, shape (batch_size, ...).
-            x_1 (Tensor): target data point, shape (batch_size, ...).
-            t (Tensor): times in [0,1], shape (batch_size).
+            x_0 (Array): source data point, shape (batch_size, ...).
+            x_1 (Array): target data point, shape (batch_size, ...).
+            t (Array): times in [0,1], shape (batch_size).
 
         Returns:
             PathSample: a conditional sample at :math:`X_t \sim p_t`.
@@ -73,16 +75,16 @@ class AffineProbPath(ProbPath):
         scheduler_output = self.scheduler(t)
 
         alpha_t = expand_tensor_like(
-            input_tensor=scheduler_output.alpha_t, expand_to=x_1
+            input_array=scheduler_output.alpha_t, expand_to=x_1
         )
         sigma_t = expand_tensor_like(
-            input_tensor=scheduler_output.sigma_t, expand_to=x_1
+            input_array=scheduler_output.sigma_t, expand_to=x_1
         )
         d_alpha_t = expand_tensor_like(
-            input_tensor=scheduler_output.d_alpha_t, expand_to=x_1
+            input_array=scheduler_output.d_alpha_t, expand_to=x_1
         )
         d_sigma_t = expand_tensor_like(
-            input_tensor=scheduler_output.d_sigma_t, expand_to=x_1
+            input_array=scheduler_output.d_sigma_t, expand_to=x_1
         )
 
         # construct xt ~ p_t(x|x1).
@@ -91,19 +93,19 @@ class AffineProbPath(ProbPath):
 
         return PathSample(x_t=x_t, dx_t=dx_t, x_1=x_1, x_0=x_0, t=t)
 
-    def target_to_velocity(self, x_1: Tensor, x_t: Tensor, t: Tensor) -> Tensor:
+    def target_to_velocity(self, x_1: Array, x_t: Array, t: Array) -> Array:
         r"""Convert from x_1 representation to velocity.
 
         | given :math:`X_1`.
         | return :math:`\dot{X}_t`.
 
         Args:
-            x_1 (Tensor): target data point.
-            x_t (Tensor): path sample at time t.
-            t (Tensor): time in [0,1].
+            x_1 (Array): target data point.
+            x_t (Array): path sample at time t.
+            t (Array): time in [0,1].
 
         Returns:
-            Tensor: velocity.
+            Array: velocity.
         """
         scheduler_output = self.scheduler(t)
 
@@ -117,19 +119,19 @@ class AffineProbPath(ProbPath):
 
         return a_t * x_t + b_t * x_1
 
-    def epsilon_to_velocity(self, epsilon: Tensor, x_t: Tensor, t: Tensor) -> Tensor:
+    def epsilon_to_velocity(self, epsilon: Array, x_t: Array, t: Array) -> Array:
         r"""Convert from epsilon representation to velocity.
 
         | given :math:`\epsilon`.
         | return :math:`\dot{X}_t`.
 
         Args:
-            epsilon (Tensor): noise in the path sample.
-            x_t (Tensor): path sample at time t.
-            t (Tensor): time in [0,1].
+            epsilon (Array): noise in the path sample.
+            x_t (Array): path sample at time t.
+            t (Array): time in [0,1].
 
         Returns:
-            Tensor: velocity.
+            Array: velocity.
         """
         scheduler_output = self.scheduler(t)
 
@@ -143,19 +145,19 @@ class AffineProbPath(ProbPath):
 
         return a_t * x_t + b_t * epsilon
 
-    def velocity_to_target(self, velocity: Tensor, x_t: Tensor, t: Tensor) -> Tensor:
+    def velocity_to_target(self, velocity: Array, x_t: Array, t: Array) -> Array:
         r"""Convert from velocity to x_1 representation.
 
         | given :math:`\dot{X}_t`.
         | return :math:`X_1`.
 
         Args:
-            velocity (Tensor): velocity at the path sample.
-            x_t (Tensor): path sample at time t.
-            t (Tensor): time in [0,1].
+            velocity (Array): velocity at the path sample.
+            x_t (Array): path sample at time t.
+            t (Array): time in [0,1].
 
         Returns:
-            Tensor: target data point.
+            Array: target data point.
         """
         scheduler_output = self.scheduler(t)
 
@@ -169,19 +171,19 @@ class AffineProbPath(ProbPath):
 
         return a_t * x_t + b_t * velocity
 
-    def epsilon_to_target(self, epsilon: Tensor, x_t: Tensor, t: Tensor) -> Tensor:
+    def epsilon_to_target(self, epsilon: Array, x_t: Array, t: Array) -> Array:
         r"""Convert from epsilon representation to x_1 representation.
 
         | given :math:`\epsilon`.
         | return :math:`X_1`.
 
         Args:
-            epsilon (Tensor): noise in the path sample.
-            x_t (Tensor): path sample at time t.
-            t (Tensor): time in [0,1].
+            epsilon (Array): noise in the path sample.
+            x_t (Array): path sample at time t.
+            t (Array): time in [0,1].
 
         Returns:
-            Tensor: target data point.
+            Array: target data point.
         """
         scheduler_output = self.scheduler(t)
 
@@ -193,19 +195,19 @@ class AffineProbPath(ProbPath):
 
         return a_t * x_t + b_t * epsilon
 
-    def velocity_to_epsilon(self, velocity: Tensor, x_t: Tensor, t: Tensor) -> Tensor:
+    def velocity_to_epsilon(self, velocity: Array, x_t: Array, t: Array) -> Array:
         r"""Convert from velocity to noise representation.
 
         | given :math:`\dot{X}_t`.
         | return :math:`\epsilon`.
 
         Args:
-            velocity (Tensor): velocity at the path sample.
-            x_t (Tensor): path sample at time t.
-            t (Tensor): time in [0,1].
+            velocity (Array): velocity at the path sample.
+            x_t (Array): path sample at time t.
+            t (Array): time in [0,1].
 
         Returns:
-            Tensor: noise in the path sample.
+            Array: noise in the path sample.
         """
         scheduler_output = self.scheduler(t)
 
@@ -219,19 +221,19 @@ class AffineProbPath(ProbPath):
 
         return a_t * x_t + b_t * velocity
 
-    def target_to_epsilon(self, x_1: Tensor, x_t: Tensor, t: Tensor) -> Tensor:
+    def target_to_epsilon(self, x_1: Array, x_t: Array, t: Array) -> Array:
         r"""Convert from x_1 representation to velocity.
 
         | given :math:`X_1`.
         | return :math:`\epsilon`.
 
         Args:
-            x_1 (Tensor): target data point.
-            x_t (Tensor): path sample at time t.
-            t (Tensor): time in [0,1].
+            x_1 (Array): target data point.
+            x_t (Array): path sample at time t.
+            t (Array): time in [0,1].
 
         Returns:
-            Tensor: noise in the path sample.
+            Array: noise in the path sample.
         """
         scheduler_output = self.scheduler(t)
 

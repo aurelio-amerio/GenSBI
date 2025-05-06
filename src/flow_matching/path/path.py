@@ -1,3 +1,5 @@
+#FIXME: first pass
+
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
@@ -6,9 +8,12 @@
 
 from abc import ABC, abstractmethod
 
-from torch import Tensor
+import jax
+import jax.numpy as jnp
+from jax import Array
 
 from flow_matching.path.path_sample import PathSample
+
 
 
 class ProbPath(ABC):
@@ -26,33 +31,36 @@ class ProbPath(ABC):
 
         for x_0, x_1 in dataset:
             # Sets t to a random value in [0,1]
-            t = torch.rand()
+            key = jax.random.PRNGKey(0)
+            t = jax.random.uniform(key)
 
             # Samples the conditional path X_t ~ p_t(X_t|X_0,X_1)
             path_sample = my_path.sample(x_0=x_0, x_1=x_1, t=t)
 
             # Optimizes the model. The loss function varies, depending on model and path.
-            loss(path_sample, my_model(x_t, t)).backward()
-
+            loss = loss_fn(path_sample, my_model(x_t, t))
+            grads = jax.grad(loss_fn)(params)
     """
 
+
+    #FIXME: probably need to include a rng here
     @abstractmethod
-    def sample(self, x_0: Tensor, x_1: Tensor, t: Tensor) -> PathSample:
+    def sample(self, x_0: Array, x_1: Array, t: Array) -> PathSample:
         r"""Sample from an abstract probability path:
 
         | given :math:`(X_0,X_1) \sim \pi(X_0,X_1)`.
         | returns :math:`X_0, X_1, X_t \sim p_t(X_t)`, and a conditional target :math:`Y`, all objects are under ``PathSample``.
 
         Args:
-            x_0 (Tensor): source data point, shape (batch_size, ...).
-            x_1 (Tensor): target data point, shape (batch_size, ...).
-            t (Tensor): times in [0,1], shape (batch_size).
+            x_0 (Array): source data point, shape (batch_size, ...).
+            x_1 (Array): target data point, shape (batch_size, ...).
+            t (Array): times in [0,1], shape (batch_size).
 
         Returns:
             PathSample: a conditional sample.
         """
 
-    def assert_sample_shape(self, x_0: Tensor, x_1: Tensor, t: Tensor):
+    def assert_sample_shape(self, x_0: Array, x_1: Array, t: Array):
         assert (
             t.ndim == 1
         ), f"The time vector t must have shape [batch_size]. Got {t.shape}."

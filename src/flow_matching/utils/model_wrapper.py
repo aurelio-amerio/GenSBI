@@ -1,4 +1,4 @@
-#FIXME: done
+#FIXME: first pass
 
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
@@ -11,12 +11,13 @@ from flax import nnx
 from jax import Array
 
 
-class ModelWrapper(ABC, nnx.Module):
+class ModelWrapper(nnx.Module):
     """
     This class is used to wrap around another model, adding custom forward pass logic.
     """
 
     def __init__(self, model: nnx.Module):
+
         self.model = model
 
     def __call__(self, x: Array, t: Array, **extras) -> Array:

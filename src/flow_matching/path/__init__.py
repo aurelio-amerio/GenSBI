@@ -1,3 +1,5 @@
+#FIXME: some features not yet implemented
+
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
@@ -5,8 +7,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from .affine import AffineProbPath, CondOTProbPath
-from .geodesic import GeodesicProbPath
-from .mixture import MixtureDiscreteProbPath
+# from .geodesic import GeodesicProbPath
+# from .mixture import MixtureDiscreteProbPath
 from .path import ProbPath
 from .path_sample import DiscretePathSample, PathSample
 
@@ -15,8 +17,8 @@ __all__ = [
     "ProbPath",
     "AffineProbPath",
     "CondOTProbPath",
-    "MixtureDiscreteProbPath",
-    "GeodesicProbPath",
+    # "MixtureDiscreteProbPath", # not implemented yet
+    # "GeodesicProbPath", # not implemented yet
     "PathSample",
     "DiscretePathSample",
 ]
