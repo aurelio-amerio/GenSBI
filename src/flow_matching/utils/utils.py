@@ -115,6 +115,6 @@ def divergence(
     t = jnp.atleast_1d(t)
     if len(t.shape) < 2:
         t = t[..., None]
-    t = jnp.broadcast_to(t, (x.shape[0], t.shape[-1]))
+        t = jnp.broadcast_to(t, (x.shape[0], t.shape[-1]))
 
     return jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf, x, t)

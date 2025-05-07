@@ -79,7 +79,6 @@ class ODESolver(Solver):
             rtol (float): Relative tolerance, used for adaptive step solvers.
             time_grid (Tensor): The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to torch.tensor([0.0, 1.0]).
             return_intermediates (bool, optional): If True then return intermediate time steps according to time_grid. Defaults to False.
-            enable_grad (bool, optional): Whether to compute gradients during sampling. Defaults to False.
             **model_extras: Additional input for the model.
 
         Returns:
@@ -124,7 +123,7 @@ class ODESolver(Solver):
         method: Union[str, AbstractERK] = "dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid: Array = jnp.array([1.0, 0.0]),
+        time_grid = [1.0, 0.0],
         return_intermediates: bool = False,
         exact_divergence: bool = True,
         *,
@@ -153,35 +152,42 @@ class ODESolver(Solver):
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
-        x_source = self.sample(
-            x_init=x_1,
-            step_size=step_size,
-            method=method,
-            atol=atol,
-            rtol=rtol,
-            time_grid=time_grid,
-            return_intermediates=False,
-            enable_grad=False,
-            **model_extras,
+        vf_wrapped = lambda x, t: jnp.squeeze(self.velocity_model(x, t))
+
+        def dynamics_func(t, states, args):
+            xt, _ = states
+            ut = jnp.squeeze(vf_wrapped (xt, t))
+            div = jnp.squeeze(divergence(vf_wrapped, xt, t))
+            return ut, div
+
+        y_init = (x_1, jnp.ones(x_1.shape[0]))
+
+        term = diffrax.ODETerm(dynamics_func)
+
+        if isinstance(method, str):
+            solver = {
+                "euler": diffrax.Euler(),
+                "dopri5": diffrax.Dopri5(),
+            }[method]
+        else:
+            solver = method
+
+
+        stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
+
+        solution = diffrax.diffeqsolve(
+            term,
+            solver,
+            t0=time_grid[0],
+            t1=time_grid[-1],
+            dt0=-step_size,
+            y0=y_init,
+            saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
+            stepsize_controller=stepsize_controller,
         )
 
-        # compute the divergence
-        if exact_divergence:
-            # Use the exact divergence
-            log_det = divergence(
-                self.velocity_model,
-                x_source,
-                0.0,
-            )
-        else:
-            # Use the Hutchinson estimator
-            raise NotImplementedError("Hutchinson estimator not implemented")
-
+        x_source, log_det = solution.ys[0], solution.ys[1]
 
         source_log_p = log_p0(x_source)
 
-        if return_intermediates:
-            # return solution.ys[0], source_log_p + log_det
-            raise NotImplementedError("return_intermediates not implemented")
-        else:
-            return x_source, source_log_p + log_det
+        return x_source, source_log_p + log_det
