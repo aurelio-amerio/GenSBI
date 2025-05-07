@@ -19,7 +19,7 @@ import diffrax
 from diffrax import AbstractERK
 
 from flow_matching.solver.solver import Solver
-from flow_matching.utils import gradient, ModelWrapper
+from flow_matching.utils import divergence, ModelWrapper
 
 
 class ODESolver(Solver):
@@ -116,92 +116,72 @@ class ODESolver(Solver):
 
     #FIXME: this implementation is wrong. Need to check better the reference math and implement it correctly with vectorization
     
-    # def compute_likelihood(
-    #     self,
-    #     x_1: Array,
-    #     log_p0: Callable[[Array], Array],
-    #     step_size: Optional[float],
-    #     method: Union[str, AbstractERK] = "dopri5",
-    #     atol: float = 1e-5,
-    #     rtol: float = 1e-5,
-    #     time_grid: Array = jnp.array([1.0, 0.0]),
-    #     return_intermediates: bool = False,
-    #     exact_divergence: bool = False,
-    #     *,
-    #     key: jax.random.PRNGKey = None,
-    #     **model_extras,
-    # ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
-    #     r"""Solve for log likelihood given a target sample at :math:`t=0`.
+    def compute_likelihood(
+        self,
+        x_1: Array,
+        log_p0: Callable[[Array], Array],
+        step_size: Optional[float],
+        method: Union[str, AbstractERK] = "dopri5",
+        atol: float = 1e-5,
+        rtol: float = 1e-5,
+        time_grid: Array = jnp.array([1.0, 0.0]),
+        return_intermediates: bool = False,
+        exact_divergence: bool = True,
+        *,
+        key: jax.random.PRNGKey = None,
+        **model_extras,
+    ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
+        r"""Solve for log likelihood given a target sample at :math:`t=0`.
 
-    #     Args:
-    #         x_1 (Array): target sample (e.g., samples :math:`X_1 \sim p_1`).
-    #         log_p0 (Callable[[Array], Array]): Log probability function of source distribution.
-    #         step_size (Optional[float]): Step size for fixed-step solvers.
-    #         method (str): Integration method to use.
-    #         atol (float): Absolute tolerance for adaptive solvers.
-    #         rtol (float): Relative tolerance for adaptive solvers.
-    #         time_grid (Array): Must start at 1.0 and end at 0.0.
-    #         return_intermediates (bool): Whether to return intermediate steps.
-    #         exact_divergence (bool): Use exact divergence vs Hutchinson estimator.
-    #         **model_extras: Additional model inputs.
+        Args:
+            x_1 (Array): target sample (e.g., samples :math:`X_1 \sim p_1`).
+            log_p0 (Callable[[Array], Array]): Log probability function of source distribution.
+            step_size (Optional[float]): Step size for fixed-step solvers.
+            method (str): Integration method to use.
+            atol (float): Absolute tolerance for adaptive solvers.
+            rtol (float): Relative tolerance for adaptive solvers.
+            time_grid (Array): Must start at 1.0 and end at 0.0.
+            return_intermediates (bool): Whether to return intermediate steps.
+            exact_divergence (bool): Use exact divergence vs Hutchinson estimator.
+            **model_extras: Additional model inputs.
 
-    #     Returns:
-    #         Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: 
-    #         Samples and log likelihood values.
-    #     """
-    #     assert (
-    #         time_grid[0] == 1.0 and time_grid[-1] == 0.0
-    #     ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
+        Returns:
+            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: 
+            Samples and log likelihood values.
+        """
+        assert (
+            time_grid[0] == 1.0 and time_grid[-1] == 0.0
+        ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
-    #     if not exact_divergence:
-    #         z = jax.random.normal(key, shape=x_1.shape) < 0.0
+        x_source = self.sample(
+            x_init=x_1,
+            step_size=step_size,
+            method=method,
+            atol=atol,
+            rtol=rtol,
+            time_grid=time_grid,
+            return_intermediates=False,
+            enable_grad=False,
+            **model_extras,
+        )
 
-    #     def augmented_vector_field(t, state, args):
-    #         x, log_det = state
+        # compute the divergence
+        if exact_divergence:
+            # Use the exact divergence
+            log_det = divergence(
+                self.velocity_model,
+                x_source,
+                0.0,
+            )
+        else:
+            # Use the Hutchinson estimator
+            raise NotImplementedError("Hutchinson estimator not implemented")
 
-    #         def velocity_field(x):
-    #             return self.velocity_model(x=x, t=t, **model_extras)
 
-    #         u_t = velocity_field(x)
+        source_log_p = log_p0(x_source)
 
-    #         if exact_divergence:
-    #             # Compute exact divergence using JAX
-    #             div = jnp.trace(jax.jacrev(velocity_field)(x))
-    #         else:
-    #             # Hutchinson estimator
-    #             div = jnp.sum(z * jax.jacrev(velocity_field)(x) @ z)
-
-    #         return (u_t, -div)  # Negative since we're going backwards
-
-    #     term = diffrax.ODETerm(augmented_vector_field)
-        
-    #     if isinstance(method, str):
-    #         solver = {
-    #             "euler": diffrax.Euler(),
-    #             "dopri5": diffrax.Dopri5(),
-    #         }[method]
-    #     else:
-    #         solver = method
-
-    #     y0 = (x_1, jnp.zeros(x_1.shape[0]))
-        
-    #     solution = diffrax.diffeqsolve(
-    #         term,
-    #         solver,
-    #         t0=time_grid[0],
-    #         t1=time_grid[-1],
-    #         dt0=step_size,
-    #         y0=y0,
-    #         atol=atol,
-    #         rtol=rtol,
-    #         saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
-    #     )
-
-    #     x_source = solution.ys[0][-1] if return_intermediates else solution.ys[-1][0]
-    #     log_det = solution.ys[1][-1] if return_intermediates else solution.ys[-1][1]
-    #     source_log_p = log_p0(x_source)
-
-    #     if return_intermediates:
-    #         return solution.ys[0], source_log_p + log_det
-    #     else:
-    #         return x_source, source_log_p + log_det
+        if return_intermediates:
+            # return solution.ys[0], source_log_p + log_det
+            raise NotImplementedError("return_intermediates not implemented")
+        else:
+            return x_source, source_log_p + log_det
