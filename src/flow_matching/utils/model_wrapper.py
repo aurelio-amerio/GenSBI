@@ -1,4 +1,4 @@
-#FIXME: first pass
+# FIXME: first pass
 
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
@@ -9,15 +9,21 @@
 from abc import ABC
 from flax import nnx
 from jax import Array
+import jax.numpy as jnp
+
+from .utils import divergence
 
 
 class ModelWrapper(nnx.Module):
     """
-    This class is used to wrap around another model, adding custom forward pass logic.
+    This class is used to wrap around another model. We define a call method which returns the model output. 
+    Furthermore, we define a vector_field method which computes the vector field of the model,
+    and a divergence method which computes the divergence of the model, in a form useful for diffrax.
+    This is useful for ODE solvers that require the vector field and divergence of the model.
+
     """
 
     def __init__(self, model: nnx.Module):
-
         self.model = model
 
     def __call__(self, x: Array, t: Array, **extras) -> Array:
@@ -43,3 +49,31 @@ class ModelWrapper(nnx.Module):
             Array: model output.
         """
         return self.model(x=x, t=t, **extras)
+
+    def vector_field(self, t: Array, x: Array, args) -> Array:
+        r"""Compute the vector field of the model, properly squeezed for the ODE term.
+
+        Args:
+            x (Array): input data to the model (batch_size, ...).
+            t (Array): time (batch_size).
+            args: additional information forwarded to the model, e.g., text condition.
+
+        Returns:
+            Array: vector field of the model.
+        """
+        return jnp.squeeze(self(x, t, **args))
+
+    def divergence(self, t: Array, x: Array, args=None) -> Array:
+        r"""Compute the divergence of the model.
+
+        Args:
+            t (Array): time (batch_size).
+            x (Array): input data to the model (batch_size, ...).
+            args: additional information forwarded to the model, e.g., text condition.
+
+        Returns:
+            Array: divergence of the model.
+        """
+        vf_wrapped = lambda x, t: self.vector_field(t, x, args)
+
+        return jnp.squeeze(divergence(vf_wrapped, x, t))

@@ -33,7 +33,7 @@ class ODESolver(Solver):
 
     def __init__(self, velocity_model: Union[ModelWrapper, Callable]):
         super().__init__()
-        self.velocity_model = velocity_model
+        self.velocity_model = ModelWrapper(velocity_model)
 
     def sample(
         self,
@@ -85,10 +85,8 @@ class ODESolver(Solver):
             Union[Tensor, Sequence[Tensor]]: The last timestep when return_intermediates=False, otherwise all values specified in time_grid.
         """
 
-        def vector_field(t, x, args):
-            return self.velocity_model(x=x, t=t, **model_extras)
         
-        term = diffrax.ODETerm(vector_field)
+        term = diffrax.ODETerm(self.velocity_model.vector_field)
         if isinstance(method, str):
             solver = {
                 "euler": diffrax.Euler(),
@@ -107,13 +105,13 @@ class ODESolver(Solver):
             t1=time_grid[-1],
             dt0=step_size,
             y0=x_init,
+            args = model_extras,
             saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
             stepsize_controller=stepsize_controller,
         )
 
         return solution.ys if return_intermediates else solution.ys[-1]
 
-    #FIXME: this implementation is wrong. Need to check better the reference math and implement it correctly with vectorization
     
     def compute_likelihood(
         self,
@@ -152,12 +150,10 @@ class ODESolver(Solver):
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
-        vf_wrapped = lambda x, t: jnp.squeeze(self.velocity_model(x, t))
-
         def dynamics_func(t, states, args):
             xt, _ = states
-            ut = jnp.squeeze(vf_wrapped (xt, t))
-            div = jnp.squeeze(divergence(vf_wrapped, xt, t))
+            ut = self.velocity_model.vector_field(t, xt, args)
+            div = self.velocity_model.divergence(t, xt, args)
             return ut, div
 
         y_init = (x_1, jnp.ones(x_1.shape[0]))
@@ -182,6 +178,7 @@ class ODESolver(Solver):
             t1=time_grid[-1],
             dt0=-step_size,
             y0=y_init,
+            args=model_extras,
             saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
             stepsize_controller=stepsize_controller,
         )

@@ -95,8 +95,6 @@ def _divergence_single(vf, x, t):
     return res
 
     
-
-
 def divergence(
         vf: Callable, 
         x: Array,
