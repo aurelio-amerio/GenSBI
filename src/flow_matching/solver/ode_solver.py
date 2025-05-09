@@ -39,12 +39,13 @@ class ODESolver(Solver):
         self,
         x_init: Array,
         step_size: Optional[float],
+        condition_mask: Optional[Array] = None,
         method: Union[str, AbstractERK] = "dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        **model_extras,
+        model_extras : dict ={},
     ) -> Union[Array, Sequence[Array]]:
         r"""Solve the ODE with the velocity field.
 
@@ -84,9 +85,13 @@ class ODESolver(Solver):
         Returns:
             Union[Tensor, Sequence[Tensor]]: The last timestep when return_intermediates=False, otherwise all values specified in time_grid.
         """
+        if condition_mask is not None:
+            term = diffrax.ODETerm(
+                self.velocity_model.get_conditioned_vector_field(condition_mask, **model_extras)
+            )
+        else:
+            term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))
 
-        
-        term = diffrax.ODETerm(self.velocity_model.vector_field)
         if isinstance(method, str):
             solver = {
                 "euler": diffrax.Euler(),
@@ -105,7 +110,6 @@ class ODESolver(Solver):
             t1=time_grid[-1],
             dt0=step_size,
             y0=x_init,
-            args = model_extras,
             saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
             stepsize_controller=stepsize_controller,
         )
@@ -126,7 +130,7 @@ class ODESolver(Solver):
         exact_divergence: bool = True,
         *,
         key: jax.random.PRNGKey = None,
-        **model_extras,
+        model_extras : dict ={},
     ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
         r"""Solve for log likelihood given a target sample at :math:`t=0`.
 
@@ -150,10 +154,13 @@ class ODESolver(Solver):
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
+        vector_field = self.velocity_model.get_vector_field(**model_extras)
+        divergence = self.velocity_model.get_divergence(**model_extras)
+
         def dynamics_func(t, states, args):
             xt, _ = states
-            ut = self.velocity_model.vector_field(t, xt, args)
-            div = self.velocity_model.divergence(t, xt, args)
+            ut = vector_field(t, xt, args)
+            div = divergence(t, xt, args)
             return ut, div
 
         y_init = (x_1, jnp.ones(x_1.shape[0]))
@@ -178,7 +185,6 @@ class ODESolver(Solver):
             t1=time_grid[-1],
             dt0=-step_size,
             y0=y_init,
-            args=model_extras,
             saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
             stepsize_controller=stepsize_controller,
         )

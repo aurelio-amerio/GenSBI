@@ -23,10 +23,11 @@ class ModelWrapper(nnx.Module):
 
     """
 
-    def __init__(self, model: nnx.Module):
+    def __init__(self, model: nnx.Module, **kwargs):
         self.model = model
+        self.kwargs = kwargs
 
-    def __call__(self, x: Array, t: Array, **extras) -> Array:
+    def __call__(self, x: Array, t: Array, args, **kwargs) -> Array:
         r"""
         This method defines how inputs should be passed through the wrapped model.
         Here, we're assuming that the wrapped model takes both :math:`x` and :math:`t` as input,
@@ -48,9 +49,9 @@ class ModelWrapper(nnx.Module):
         Returns:
             Array: model output.
         """
-        return self.model(x=x, t=t, **extras)
+        return self.model(x=x, t=t, args=args, **kwargs)
 
-    def vector_field(self, t: Array, x: Array, args) -> Array:
+    def get_vector_field(self, **kwargs) -> Array:
         r"""Compute the vector field of the model, properly squeezed for the ODE term.
 
         Args:
@@ -61,9 +62,23 @@ class ModelWrapper(nnx.Module):
         Returns:
             Array: vector field of the model.
         """
-        return jnp.squeeze(self(x, t, **args))
+        def vf(t, x, args):
+            vf = self(x, t, args, **kwargs)
+            # squeeze the first dimension of the vector field if it is 1
+            if vf.shape[0] == 1:
+                vf = jnp.squeeze(vf, axis=0)
+            return vf
+        return vf
+    
+    def get_conditioned_vector_field(self, condition_mask, **kwargs) -> Array:
+        r"""Compute the vector field conditioned on the condition mask.
+        """
+        def c_vf(t, x, args):
+            vf = self.vector_field(t,x,args, **kwargs)*jnp.logical_not(condition_mask)
+            return vf
+        return c_vf
 
-    def divergence(self, t: Array, x: Array, args=None) -> Array:
+    def get_divergence(self, **kwargs) -> Array:
         r"""Compute the divergence of the model.
 
         Args:
@@ -74,6 +89,13 @@ class ModelWrapper(nnx.Module):
         Returns:
             Array: divergence of the model.
         """
-        vf_wrapped = lambda x, t: self.vector_field(t, x, args)
+        def divergence(x, t, args):
+            vf_wrapped = lambda x, t: self.vector_field(t, x, args, **kwargs)
+            div = divergence(vf_wrapped, x, t)
+            # squeeze the first dimension of the divergence if it is 1
+            if div.shape[0] == 1:
+                div = jnp.squeeze(div, axis=0)
+            return div
 
-        return jnp.squeeze(divergence(vf_wrapped, x, t))
+        
+        return divergence

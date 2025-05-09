@@ -13,5 +13,5 @@ class Solver(ABC):
     """Abstract base class for solvers."""
 
     @abstractmethod
-    def sample(self, x_0: Array = None) -> Array:
+    def sample(self, x_0: Array = None, condition_mask: Array = None) -> Array:
         ...
