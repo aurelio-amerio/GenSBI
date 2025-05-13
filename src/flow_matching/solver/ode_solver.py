@@ -35,9 +35,8 @@ class ODESolver(Solver):
         super().__init__()
         self.velocity_model = ModelWrapper(velocity_model)
 
-    def sample(
+    def get_sampler(
         self,
-        x_init: Array,
         step_size: Optional[float],
         condition_mask: Optional[Array] = None,
         method: Union[str, AbstractERK] = "dopri5",
@@ -103,33 +102,65 @@ class ODESolver(Solver):
 
         stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
 
-        solution = diffrax.diffeqsolve(
-            term,
-            solver,
-            t0=time_grid[0],
-            t1=time_grid[-1],
-            dt0=step_size,
-            y0=x_init,
-            saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
-            stepsize_controller=stepsize_controller,
+        @jax.jit
+        def sampler(x_init):
+
+            solution = diffrax.diffeqsolve(
+                term,
+                solver,
+                t0=time_grid[0],
+                t1=time_grid[-1],
+                dt0=step_size,
+                y0=x_init,
+                saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
+                stepsize_controller=stepsize_controller,
+            )
+            return solution.ys if return_intermediates else solution.ys[-1]
+        
+        return sampler
+    
+    def sample(
+        self,
+        x_init: Array,
+        step_size: Optional[float],
+        condition_mask: Optional[Array] = None,
+        method: Union[str, AbstractERK] = "dopri5",
+        atol: float = 1e-5,
+        rtol: float = 1e-5,
+        time_grid: Array = jnp.array([0.0, 1.0]),
+        return_intermediates: bool = False,
+        model_extras : dict ={},
+    ) -> Union[Array, Sequence[Array]]:
+
+        sampler = self.get_sampler(
+            step_size=step_size,
+            condition_mask=condition_mask,
+            method=method,
+            atol=atol,
+            rtol=rtol,
+            time_grid=time_grid,
+            return_intermediates=return_intermediates,
+            model_extras=model_extras
         )
 
-        return solution.ys if return_intermediates else solution.ys[-1]
+        solution = sampler(x_init)
+
+        return solution
 
     
-    def compute_likelihood(
+    def get_unnormalized_logprob(
         self,
-        x_1: Array,
         log_p0: Callable[[Array], Array],
         step_size: Optional[float],
+        condition_mask: Optional[Array] = None,
         method: Union[str, AbstractERK] = "dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid = [1.0, 0.0],
         return_intermediates: bool = False,
-        exact_divergence: bool = True,
+        # exact_divergence: bool = True,
         *,
-        key: jax.random.PRNGKey = None,
+        # key: jax.random.PRNGKey = None,
         model_extras : dict ={},
     ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
         r"""Solve for log likelihood given a target sample at :math:`t=0`.
@@ -154,8 +185,12 @@ class ODESolver(Solver):
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
-        vector_field = self.velocity_model.get_vector_field(**model_extras)
-        divergence = self.velocity_model.get_divergence(**model_extras)
+        if condition_mask is None:
+            vector_field = self.velocity_model.get_vector_field(**model_extras)
+            divergence = self.velocity_model.get_divergence(**model_extras)
+        else:
+            vector_field = self.velocity_model.get_conditioned_vector_field(condition_mask, **model_extras)
+            divergence = self.velocity_model.get_conditioned_divergence(condition_mask, **model_extras)
 
         def dynamics_func(t, states, args):
             xt, _ = states
@@ -163,7 +198,7 @@ class ODESolver(Solver):
             div = divergence(t, xt, args)
             return ut, div
 
-        y_init = (x_1, jnp.ones(x_1.shape[0]))
+        
 
         term = diffrax.ODETerm(dynamics_func)
 
@@ -178,19 +213,56 @@ class ODESolver(Solver):
 
         stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
 
-        solution = diffrax.diffeqsolve(
-            term,
-            solver,
-            t0=time_grid[0],
-            t1=time_grid[-1],
-            dt0=-step_size,
-            y0=y_init,
-            saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
-            stepsize_controller=stepsize_controller,
+        def sampler(x_1):
+            y_init = (x_1, jnp.ones(x_1.shape))
+            solution = diffrax.diffeqsolve(
+                term,
+                solver,
+                t0=time_grid[0],
+                t1=time_grid[-1],
+                dt0=-step_size,
+                y0=y_init,
+                saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
+                stepsize_controller=stepsize_controller,
+            )
+        
+            x_source, log_det = solution.ys[0], solution.ys[1]
+
+            source_log_p = log_p0(x_source)
+
+            return x_source, source_log_p + log_det
+
+        return sampler
+    
+
+    def unnormalized_logprob(
+        self,
+        x_1: Array,
+        log_p0: Callable[[Array], Array],
+        step_size: Optional[float],
+        condition_mask: Optional[Array] = None,
+        method: Union[str, AbstractERK] = "dopri5",
+        atol: float = 1e-5,
+        rtol: float = 1e-5,
+        time_grid = [1.0, 0.0],
+        return_intermediates: bool = False,
+        # exact_divergence: bool = True,
+        *,
+        # key: jax.random.PRNGKey = None,
+        model_extras : dict ={},
+    ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
+
+        sampler = self.get_unnormalized_logprob(
+            log_p0=log_p0,
+            step_size=step_size,
+            condition_mask=condition_mask,
+            method=method,
+            atol=atol,
+            rtol=rtol,
+            time_grid=time_grid,
+            return_intermediates=return_intermediates,
+            # exact_divergence=exact_divergence,
+            model_extras=model_extras
         )
-
-        x_source, log_det = solution.ys[0], solution.ys[1]
-
-        source_log_p = log_p0(x_source)
-
-        return x_source, source_log_p + log_det
+        solution = sampler(x_1)
+        return solution

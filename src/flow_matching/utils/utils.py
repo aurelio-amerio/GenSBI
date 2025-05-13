@@ -12,6 +12,8 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 
+from einops import einsum
+
 
 def unsqueeze_to_match(source: Array, target: Array, how: str = "suffix") -> Array:
     """
@@ -113,9 +115,37 @@ def divergence(
     x = jnp.atleast_2d(x)
     t = jnp.atleast_1d(t)
     if len(t.shape) < 2:
-        t = t[..., None]
-        t = jnp.broadcast_to(t, (x.shape[0], t.shape[-1]))
+        for i in range(len(x.shape) - 1):
+            t = jnp.expand_dims(t, axis=-1)
+        t = jnp.broadcast_to(t, (*x.shape[:-1], t.shape[-1]))
 
     vf_wapped = lambda t, x: vf(t, x, args=args)
 
-    return jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x)
+    res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x).reshape(x.shape)
+    return res
+    
+# def divergence(
+#         vf: Callable, 
+#         t: Array,
+#         x: Array,
+#         args: Optional[Array] = None,
+#         ):
+#     """
+#     Compute the divergence of the vector field vf at point x and time t.
+#     Args:
+#         vf (Callable): The vector field function.
+#         x (Array): The point at which to compute the divergence.
+#         t (Array): The time at which to compute the divergence.
+#     Returns:
+#         Array: The divergence of the vector field at point x and time t.
+#     """
+#     x = jnp.atleast_2d(x)
+#     t = jnp.atleast_1d(t)
+#     if len(t.shape) < 2:
+#         for i in range(len(x.shape) - 1):
+#             t = jnp.expand_dims(t, axis=-1)
+#         t = jnp.broadcast_to(t, (*x.shape[:-1], t.shape[-1]))
+
+#     trace = jax.jacfwd(vf, argnums=1)(t, x, args=args)
+#     res = einsum(trace, "b i i ... -> b ...")
+#     return res

@@ -39,6 +39,9 @@ class ContinuousFMLoss(nnx.Module):
         _, x_1, _ = batch
         path_sample = self.path.sample(*batch)
 
+        if condition_mask is not None:
+            kwargs["condition_mask"] = condition_mask
+
         x_t = path_sample.x_t
 
         if condition_mask is not None:

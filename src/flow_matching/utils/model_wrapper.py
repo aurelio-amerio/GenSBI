@@ -72,6 +72,7 @@ class ModelWrapper(nnx.Module):
     def get_conditioned_vector_field(self, condition_mask, **kwargs) -> Array:
         r"""Compute the vector field conditioned on the condition mask.
         """
+        kwargs["condition_mask"] = condition_mask
         vf = self.get_vector_field(**kwargs)
         def c_vf(t, x, args):
             vf_value = vf(t, x, args)*jnp.logical_not(condition_mask)
@@ -90,6 +91,20 @@ class ModelWrapper(nnx.Module):
             Array: divergence of the model.
         """
         vf = self.get_vector_field(**kwargs)
+        def div_(t, x, args):
+            div = divergence(vf, t, x, args)
+            # squeeze the first dimension of the divergence if it is 1
+            if div.shape[0] == 1:
+                div = jnp.squeeze(div, axis=0)
+            return div
+
+        
+        return div_
+    
+    def get_conditioned_divergence(self, condition_mask, **kwargs) -> Array:
+        r"""Compute the divergence of the model conditioned on the condition mask.
+        """
+        vf = self.get_conditioned_vector_field(condition_mask, **kwargs)
         def div_(t, x, args):
             div = divergence(vf, t, x, args)
             # squeeze the first dimension of the divergence if it is 1
