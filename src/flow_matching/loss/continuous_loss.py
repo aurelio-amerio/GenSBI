@@ -47,7 +47,9 @@ class ContinuousFMLoss(nnx.Module):
         if condition_mask is not None:
             condition_mask = condition_mask.reshape(x_t.shape)
             x_t = jnp.where(condition_mask, x_1, x_t)
-        model_output = vf(path_sample.x_t, path_sample.t, args=args, **kwargs)
+
+        model_output = vf(x_t, path_sample.t, args=args, **kwargs)
+        
         loss = model_output - path_sample.dx_t
         if condition_mask is not None:
             loss = jnp.where(condition_mask, 0.0, loss)
