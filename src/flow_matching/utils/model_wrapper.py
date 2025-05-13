@@ -23,9 +23,8 @@ class ModelWrapper(nnx.Module):
 
     """
 
-    def __init__(self, model: nnx.Module, **kwargs):
+    def __init__(self, model: nnx.Module):
         self.model = model
-        self.kwargs = kwargs
 
     def __call__(self, x: Array, t: Array, args, **kwargs) -> Array:
         r"""
@@ -73,9 +72,10 @@ class ModelWrapper(nnx.Module):
     def get_conditioned_vector_field(self, condition_mask, **kwargs) -> Array:
         r"""Compute the vector field conditioned on the condition mask.
         """
+        vf = self.get_vector_field(**kwargs)
         def c_vf(t, x, args):
-            vf = self.vector_field(t,x,args, **kwargs)*jnp.logical_not(condition_mask)
-            return vf
+            vf_value = vf(t, x, args)*jnp.logical_not(condition_mask)
+            return vf_value
         return c_vf
 
     def get_divergence(self, **kwargs) -> Array:
@@ -89,13 +89,13 @@ class ModelWrapper(nnx.Module):
         Returns:
             Array: divergence of the model.
         """
-        def divergence(x, t, args):
-            vf_wrapped = lambda x, t: self.vector_field(t, x, args, **kwargs)
-            div = divergence(vf_wrapped, x, t)
+        vf = self.get_vector_field(**kwargs)
+        def div_(t, x, args):
+            div = divergence(vf, t, x, args)
             # squeeze the first dimension of the divergence if it is 1
             if div.shape[0] == 1:
                 div = jnp.squeeze(div, axis=0)
             return div
 
         
-        return divergence
+        return div_

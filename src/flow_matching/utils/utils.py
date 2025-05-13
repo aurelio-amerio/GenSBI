@@ -90,15 +90,16 @@ def expand_tensor_like(input_array: Array, expand_to: Array) -> Array:
     
 #     return jax.grad(inner_product)(x)
 
-def _divergence_single(vf, x, t):
-    res = jnp.trace(jax.jacfwd(vf, argnums=0)(x, t))
+def _divergence_single(vf, t, x):
+    res = jnp.trace(jax.jacfwd(vf, argnums=0)(t, x))
     return res
 
     
 def divergence(
         vf: Callable, 
-        x: Array,
         t: Array,
+        x: Array,
+        args: Optional[Array] = None,
         ):
     """
     Compute the divergence of the vector field vf at point x and time t.
@@ -115,4 +116,6 @@ def divergence(
         t = t[..., None]
         t = jnp.broadcast_to(t, (x.shape[0], t.shape[-1]))
 
-    return jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf, x, t)
+    vf_wapped = lambda t, x: vf(t, x, args=args)
+
+    return jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x)
