@@ -91,7 +91,7 @@ def expand_tensor_like(input_array: Array, expand_to: Array) -> Array:
 #     return jax.grad(inner_product)(x)
 
 def _divergence_single(vf, t, x):
-    res = jnp.trace(jax.jacfwd(vf, argnums=0)(t, x))
+    res = jnp.trace(jax.jacfwd(vf, argnums=1)(t, x))
     return res
 
     
