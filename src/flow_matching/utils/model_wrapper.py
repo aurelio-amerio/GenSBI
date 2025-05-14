@@ -75,7 +75,7 @@ class ModelWrapper(nnx.Module):
         kwargs["condition_mask"] = condition_mask
         def c_vf(t, x, args):
             vf = self(x, t, args, **kwargs)
-            # vf *= jnp.logical_not(condition_mask)[None,...]
+            vf *= jnp.logical_not(condition_mask)[None,...]
             if vf.shape[0] == 1:
                 vf = jnp.squeeze(vf, axis=0)
             return vf
@@ -116,3 +116,4 @@ class ModelWrapper(nnx.Module):
 
         
         return div_
+

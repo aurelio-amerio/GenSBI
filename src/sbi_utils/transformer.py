@@ -23,13 +23,15 @@ class AttentionBlock(nnx.Module):
     ):
         self.skip_connection = skip_connection
         self.dropout_rate = dropout_rate
+        self.deterministic = not dropout_rate > 0
 
         self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
         self.attn = nnx.MultiHeadAttention(
             in_features=din,
             num_heads=num_heads,
             qkv_features=features,
-            dropout_rate=dropout_rate,
+            dropout_rate=self.dropout_rate,
+            deterministic=self.deterministic,
             decode=False,
             rngs=rngs,
         )
@@ -73,7 +75,7 @@ class DenseBlock(nnx.Module):
         self.hidden_blocks.append(nnx.Linear(n_features, din, rngs=rngs))
         self.act = act
         self.dropout_rate = dropout_rate
-        self.dropout = nnx.Dropout(rate=dropout_rate)
+        self.dropout = nnx.Dropout(rate=dropout_rate, rngs=rngs)
         self.context_block = nnx.Linear(dcontext, din, rngs=rngs)
         return
 
@@ -147,7 +149,7 @@ class Transformer(nnx.Module):
                     din=self.din,
                     num_heads=num_heads,
                     features=features,
-                    dropout_rate=dropout_rate,
+                    dropout_rate=self.dropout_rate,
                     skip_connection=skip_connection_attn,
                     rngs=rngs,
                 )
@@ -158,7 +160,7 @@ class Transformer(nnx.Module):
                     dcontext,
                     num_hidden_layers,
                     widening_factor,
-                    dropout_rate,
+                    self.dropout_rate,
                     act=self.act,
                     skip_connection=skip_connection_mlp,
                     rngs=rngs,
