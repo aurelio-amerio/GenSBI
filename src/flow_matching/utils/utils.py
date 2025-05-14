@@ -122,10 +122,10 @@ def divergence(
     vf_wapped = lambda t, x: vf(t, x, args=args)
 
     res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x)
-    if res.ndim < x.ndim:
-        nextra = x.ndim - res.ndim
-        for i in range(nextra):
-            res = jnp.expand_dims(res, axis=-1)
+    # if res.ndim < x.ndim:
+    #     nextra = x.ndim - res.ndim
+    #     for i in range(nextra):
+    #         res = jnp.expand_dims(res, axis=-1)
 
     return res
     

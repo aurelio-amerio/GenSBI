@@ -214,7 +214,7 @@ class ODESolver(Solver):
         stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
 
         def sampler(x_1):
-            y_init = (x_1, jnp.ones(x_1.shape))
+            y_init = (x_1, jnp.ones(x_1.shape[:-1])) # the divergence is a scalar, so it has one less dimension than the vector field
             solution = diffrax.diffeqsolve(
                 term,
                 solver,
@@ -230,7 +230,7 @@ class ODESolver(Solver):
 
             source_log_p = log_p0(x_source)
 
-            return x_source, source_log_p + log_det[...,0]
+            return x_source, source_log_p + log_det
             # return x_source, log_det
 
         return sampler
