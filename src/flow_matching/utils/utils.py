@@ -112,12 +112,13 @@ def divergence(
     Returns:
         Array: The divergence of the vector field at point x and time t.
     """
-    x = jnp.atleast_2d(x)
+    x = jnp.atleast_1d(x)
+    if x.ndim < 2: 
+        x = jnp.expand_dims(x, axis=0)
     t = jnp.atleast_1d(t)
-    if len(t.shape) < 2:
-        for i in range(len(x.shape) - 1):
-            t = jnp.expand_dims(t, axis=-1)
-        t = jnp.broadcast_to(t, (*x.shape[:-1], t.shape[-1]))
+    t = jnp.broadcast_to(
+        t, (*x.shape[:-1], t.shape[-1])
+    )
 
     vf_wapped = lambda t, x: vf(t, x, args=args)
 
