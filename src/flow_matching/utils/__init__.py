@@ -6,12 +6,13 @@
 
 from .categorical_sampler import categorical
 from .model_wrapper import ModelWrapper
-from .utils import expand_tensor_like, divergence, unsqueeze_to_match
+from .utils import expand_tensor_like, divergence, unsqueeze_to_match, plot_trajectories
 
 __all__ = [
     "unsqueeze_to_match",
     "expand_tensor_like",
     "divergence",
+    "plot_trajectories",
     "categorical",
     "ModelWrapper",
 ]

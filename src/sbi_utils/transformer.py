@@ -6,9 +6,9 @@ from typing import Callable, Optional
 from jaxtyping import Array, PyTree
 
 
-layer = nnx.MultiHeadAttention(
-    num_heads=8, in_features=5, qkv_features=16, decode=False, rngs=nnx.Rngs(0)
-)
+# layer = nnx.MultiHeadAttention(
+#     num_heads=8, in_features=5, qkv_features=16, decode=False, rngs=nnx.Rngs(0)
+# )
 
 
 class AttentionBlock(nnx.Module):

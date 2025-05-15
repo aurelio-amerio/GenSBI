@@ -12,6 +12,9 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from einops import einsum
 
 
@@ -155,3 +158,16 @@ def divergence(
 #     trace = jax.jacfwd(vf, argnums=1)(t, x, args=args)
 #     res = einsum(trace, "b i i ... -> b ...")
 #     return res
+
+
+# plotting utils
+def plot_trajectories(traj):
+    traj = np.array(traj)
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.scatter(traj[0,:,0], traj[0,:,1], color="red", s=1, alpha=1)
+    ax.plot(traj[:,:,0], traj[:,:,1], color="white", lw=0.5, alpha=0.7)
+    ax.scatter(traj[-1,:,0], traj[-1,:,1], color="blue", s=2, alpha=1, zorder=2)
+    ax.set_aspect('equal', adjustable='box')
+    # set black background
+    ax.set_facecolor('#A6AEBF')
+    return fig, ax
