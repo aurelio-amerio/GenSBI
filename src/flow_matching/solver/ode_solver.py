@@ -31,14 +31,15 @@ class ODESolver(Solver):
         velocity_model (Union[ModelWrapper, Callable]): a velocity field model receiving :math:`(x,t)` and returning :math:`u_t(x)`
     """
 
-    def __init__(self, velocity_model: Union[ModelWrapper, Callable]):
+    def __init__(self, velocity_model: ModelWrapper):
         super().__init__()
-        self.velocity_model = ModelWrapper(velocity_model)
+        self.velocity_model = velocity_model
 
     def get_sampler(
         self,
         step_size: Optional[float],
         condition_mask: Optional[Array] = None,
+        cfg_scale = None,
         method: Union[str, AbstractERK] = "dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
@@ -85,9 +86,13 @@ class ODESolver(Solver):
             Union[Tensor, Sequence[Tensor]]: The last timestep when return_intermediates=False, otherwise all values specified in time_grid.
         """
         if condition_mask is not None:
-            term = diffrax.ODETerm(
-                self.velocity_model.get_conditioned_vector_field(condition_mask, **model_extras)
-            )
+            if cfg_scale is not None:
+                term = diffrax.ODETerm(
+                    self.velocity_model.get_guided_vector_field(condition_mask, cfg_scale=cfg_scale, **model_extras))
+            else:   
+                term = diffrax.ODETerm(
+                    self.velocity_model.get_conditioned_vector_field(condition_mask, **model_extras)
+                )
         else:
             term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))
 
