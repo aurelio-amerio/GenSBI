@@ -1,1 +1,1 @@
-from .transformer import Transformer
+from ..models.simformer.transformer import Transformer

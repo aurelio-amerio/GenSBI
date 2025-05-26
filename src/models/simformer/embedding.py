@@ -2,6 +2,40 @@ import jax
 from jax import numpy as jnp
 from flax import nnx
 import numpy as np
+from jax.typing import DTypeLike 
+from jax import Array
+
+class MLPEmbedder(nnx.Module):
+    def __init__(
+        self,
+        in_dim: int,
+        hidden_dim: int,
+        rngs: nnx.Rngs,
+        param_dtype: DTypeLike = jnp.float32,
+    ):
+        self.p_skip = nnx.Param(0.01*jnp.ones((1, 1, hidden_dim)))
+        self.in_layer = nnx.Linear(
+            in_features=in_dim,
+            out_features=hidden_dim,
+            use_bias=True,
+            rngs=rngs,
+            param_dtype=param_dtype,
+        )
+        self.silu = nnx.silu
+        self.out_layer = nnx.Linear(
+            in_features=hidden_dim,
+            out_features=hidden_dim,
+            use_bias=True,
+            rngs=rngs,
+            param_dtype=param_dtype,
+        )
+
+    def __call__(self, x: Array) -> Array:
+        x = jnp.atleast_1d(x)
+        out =  self.out_layer(self.silu(self.in_layer(x)))
+        x_repeated, out = jnp.broadcast_arrays(x, out)
+        out = x_repeated * self.p_skip + (1-self.p_skip)*out
+        return out
 
 class SimpleTimeEmbedding(nnx.Module):
     def __init__(self):

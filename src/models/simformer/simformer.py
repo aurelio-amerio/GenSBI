@@ -1,0 +1,118 @@
+import jax
+import jax.numpy as jnp
+from jax import Array
+from jax.typing import DTypeLike
+
+from einops import rearrange
+from flax import nnx
+
+from dataclasses import dataclass
+
+from .transformer import Transformer
+from .embedding import GaussianFourierEmbedding, MLPEmbedder
+
+
+@dataclass
+class SimformerParams:
+    rngs: nnx.Rngs
+    dim_value: int
+    dim_id: int
+    dim_condition: int
+    dim_joint: int
+    fourier_features: int = 128
+    num_heads: int = 4
+    num_layers: int = 6
+    widening_factor: int = 3
+    transformer_features: int = 8
+    num_hidden_layers: int = 1
+    dropout_rate: float = 0.1
+    # param_dtype: DTypeLike = jnp.float32
+
+
+class Simformer(nnx.Module):
+    def __init__(
+        self,
+        params: SimformerParams,
+    ):
+        """
+        Simformer model for time series forecasting.
+        Args:
+            params (SimformerParams): Parameters for the Simformer model.
+        """
+
+        self.dim_value = params.dim_value
+        self.dim_id = params.dim_id
+        self.dim_condition = params.dim_condition
+
+        self.embedding_net_value = MLPEmbedder(
+            in_dim=1, hidden_dim=params.dim_value, rngs=params.rngs
+        )
+        # self.embedding_net_value = lambda x: jnp.repeat(x, dim_value, axis=-1)
+
+        fourier_features = params.fourier_features
+        self.embedding_time = GaussianFourierEmbedding(fourier_features, rngs=params.rngs)
+        self.embedding_net_id = nnx.Embed(
+            num_embeddings=params.dim_joint, features=params.dim_id, rngs=params.rngs
+        )
+        self.condition_embedding = nnx.Param(0.01 * jnp.ones((1, 1, params.dim_condition)))
+
+        self.total_tokens = params.dim_value + params.dim_id + params.dim_condition
+
+        self.transformer = Transformer(
+            din=self.total_tokens,
+            dcontext=fourier_features,
+            num_heads=params.num_heads,
+            num_layers=params.num_layers,
+            features=params.transformer_features,
+            widening_factor=params.widening_factor,
+            dropout_rate=params.dropout_rate,
+            num_hidden_layers=params.num_hidden_layers,
+            act=jax.nn.gelu,
+            skip_connection_attn=True,
+            skip_connection_mlp=True,
+            rngs=params.rngs,
+        )
+
+        self.output_fn = nnx.Linear(self.total_tokens, 1, rngs=params.rngs)
+        return
+
+    def __call__(self, x, t, args=None, *, node_ids, condition_mask, edge_mask=None):
+        x = jnp.atleast_1d(x)
+        t = jnp.atleast_1d(t)
+
+        if x.ndim < 3:
+            x = rearrange(x, "... -> 1 ... 1" if x.ndim == 1 else "... -> ... 1")
+        t = t.reshape(-1, 1, 1)
+
+        batch_size, seq_len, _ = x.shape
+        condition_mask = condition_mask.astype(jnp.bool_).reshape(-1, seq_len, 1)
+        condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
+
+        node_ids = node_ids.reshape(-1, seq_len)
+
+        time_embeddings = self.embedding_time(t)
+
+        condition_embedding = (
+            self.condition_embedding * condition_mask
+        )  # If condition_mask is 0, then the embedding is 0, otherwise it is the condition_embedding vector
+        condition_embedding = jnp.broadcast_to(
+            condition_embedding, (batch_size, seq_len, self.dim_condition)
+        )
+
+        # Embed inputs and broadcast
+        value_embeddings = self.embedding_net_value(x)
+        id_embeddings = self.embedding_net_id(node_ids)
+        id_embeddings = jnp.broadcast_to(
+            id_embeddings, (batch_size, seq_len, self.dim_id)
+        )
+
+        # Concatenate embeddings (alternatively you can also add instead of concatenating)
+        x_encoded = jnp.concatenate(
+            [value_embeddings, id_embeddings, condition_embedding], axis=-1
+        )
+
+        h = self.transformer(x_encoded, context=time_embeddings, mask=edge_mask)
+
+        out = self.output_fn(h)
+        out = jnp.squeeze(out, axis=-1)
+        return out
