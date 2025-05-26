@@ -6,6 +6,8 @@ from jax.typing import DTypeLike
 from einops import rearrange
 from flax import nnx
 
+from functools import partial
+
 from dataclasses import dataclass
 
 from .transformer import Transformer
@@ -39,7 +41,7 @@ class Simformer(nnx.Module):
         Args:
             params (SimformerParams): Parameters for the Simformer model.
         """
-
+        self.params = params
         self.dim_value = params.dim_value
         self.dim_id = params.dim_id
         self.dim_condition = params.dim_condition
@@ -116,3 +118,46 @@ class Simformer(nnx.Module):
         out = self.output_fn(h)
         out = jnp.squeeze(out, axis=-1)
         return out
+
+class SimformerConditioner(nnx.Module):
+    def __init__(self, model: Simformer):
+        self.model = model
+        self.dim_joint = model.params.dim_joint
+
+    def __call__(self, obs, obs_ids, cond, cond_ids, t, edge_mask=None):
+
+        obs = jnp.atleast_1d(obs)
+        cond = jnp.atleast_1d(cond)
+        t = jnp.atleast_1d(t)
+
+        if obs.ndim < 3:
+            obs = rearrange(obs, '... -> 1 ... 1' if obs.ndim == 1 else '... -> ... 1')
+
+        if cond.ndim < 3:
+            cond = rearrange(cond, '... -> 1 ... 1' if cond.ndim == 1 else '... -> ... 1')
+
+        obs, cond = jnp.broadcast_arrays(obs, cond)
+
+        condition_mask = jnp.zeros((self.dim_joint,), dtype=jnp.bool_)
+        condition_mask = condition_mask.at[cond_ids].set(True)
+
+        x = jnp.concatenate([obs, cond], axis=1)
+        node_ids = jnp.concatenate([obs_ids, cond_ids])
+
+        # Sort the nodes and the corresponding values
+        nodes_sort = jnp.argsort(node_ids)
+        x = x[:,nodes_sort]
+        node_ids = node_ids[nodes_sort]
+
+        res = self.model(
+            x=x,
+            t=t,
+            node_ids=node_ids,
+            condition_mask=condition_mask,
+            edge_mask=edge_mask,
+        )
+        # now return only the values on which we are not conditioning
+        res = res[:, obs_ids]
+        return res
+
+        

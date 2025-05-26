@@ -10,6 +10,10 @@ from jax import Array
 import diffrax
 from diffrax import AbstractERK
 
+from functools import partial
+
+from einops import repeat
+
 from numpyro.distributions import Independent, Normal
 
 from diffrax import (
@@ -50,6 +54,9 @@ class BaseSDESolver(Solver):
         self.prior_distribution = Independent(
             Normal(mu0, sigma0), reinterpreted_batch_ndims=1
         )
+        self.dim = mu0.shape[0]
+
+        self.eps0 = 0.0 # dafaults to 0
         return
     
     @abstractmethod
@@ -83,46 +90,117 @@ class BaseSDESolver(Solver):
 
         vf = self.velocity_model.get_vector_field(**kwargs)
 
+        # def score(t,x,args):
+        #     return -((1-t)*vf(1-t,x,args) + self.mu0 - x) / (t*self.sigma0**2)
+
         def score(t,x,args):
-            return -((1-t)*vf(t,x,args) + self.mu0 - x) / (t*self.sigma0**2)
+            return (-(1-t)*vf(1-t,x,args) + self.mu0 - x) / (t*self.sigma0**2)
         
         return score
 
     
-    def get_sampler(self, args=None, nsteps=300, eps=1e-5) -> Callable:
+    def get_sampler(self, args=None, nsteps=300, **kwargs) -> Callable:
         """Stochastic sampler for the SDE.
         Args:
             args: additional arguments to pass to the velocity model
             nsteps: number of steps for the SDE solver
             eps: final time for the SDE solver
         """
-        drift = self.get_f_tilde() # drift term, (t,x,args) -> f_tilde
+        drift = self.get_f_tilde(**kwargs) # drift term, (t,x,args) -> f_tilde
         diff = self.get_g_tilde() # diffusion term, (t,x,args) -> g_tilde
 
+        t0 = self.eps0
         t1 = 1
-        t0 = eps
 
         dt = -t1 / nsteps
 
         solver = Euler()
 
         @jit
-        def sample_one(key, y0):
+        def sample_batch(key, y0):
             brownian_motion = VirtualBrownianTree(
-                t1, t0, tol=1e-5, shape=(self.dim,), key=key
+                t0, t1, tol=1e-5, shape=(self.dim,), key=key
             )
             terms = MultiTerm(ODETerm(drift), ControlTerm(diff, brownian_motion))
-            sol = diffeqsolve(terms, solver, t0, t1, dt0=dt, y0=y0, args=args)
+            sol = diffeqsolve(terms, solver, t1, t0, dt0=dt, y0=y0, args=args)
             return sol.ys
 
-        @jit
+        @partial(jit, static_argnums=(1))
         def sample(key, nsamples):
-            key, subkey = jax.random.split(key)
-            y0s = self.prior_distribution.sample(subkey, (nsamples,))
-            keys = jax.random.split(key, nsamples)
-            res = vmap(sample_one, in_axes=(0, 0))(keys, y0s)
+            key1, key2 = jax.random.split(key)
+            y0s = self.prior_distribution.sample(key1, (nsamples,))
+            res = sample_batch(key2, y0s)
             return jnp.squeeze(res)
         
         return sample
+    
+    def sample(self, key: jax.Array, nsamples: int, nsteps: int = 300, eps: float = 0) -> jax.Array:
+        """Sample from the SDE using the provided key and number of samples.
+        
+        Args:
+            key (jax.Array): JAX random key for sampling.
+            nsamples (int): Number of samples to generate.
+            nsteps (int): Number of steps for the SDE solver.
+            eps (float): Final time for the SDE solver.
+        
+        Returns:
+            jax.Array: Sampled trajectories from the SDE.
+        """
+        sampler = self.get_sampler(nsteps=nsteps, eps=eps)
+        return sampler(key, nsamples)
 
         
+class ZeroEnds(BaseSDESolver):
+    """
+    ZeroEnds SDE, from tab 1 of http://arxiv.org/abs/2410.02217
+    """
+    def __init__(self, velocity_model: ModelWrapper, mu0: Array, sigma0: Array, alpha: float):
+        super().__init__(velocity_model, mu0, sigma0)
+        self.alpha = alpha
+
+    def get_f_tilde(self, **kwargs) -> Callable:
+        score = self.get_score(**kwargs)
+        vf = self.velocity_model.get_vector_field(**kwargs)
+
+        def f_tilde(t, x, args):
+            return vf(1-t,x,args) + 0.5*self.alpha**2 * t * (1-t) * score(t, x, args)
+
+        return f_tilde
+
+    def get_g_tilde(self) -> Callable:
+        def g_tilde(t, x, args):
+            b,d = x.shape
+            res =  self.alpha * jnp.sqrt(t*(1-t)) # scalar
+            res = jnp.repeat(res, d)
+            res = jnp.diag(res)
+            res = repeat(res, 'i j -> b i j', b=b)
+            return res
+        return g_tilde
+
+
+class NonSingular(BaseSDESolver):
+    """
+    NonSingular SDE, from tab 1 of http://arxiv.org/abs/2410.02217
+    """
+    def __init__(self, velocity_model: ModelWrapper, mu0: Array, sigma0: Array, alpha: float):
+        super().__init__(velocity_model, mu0, sigma0)
+        self.alpha = alpha
+
+    def get_f_tilde(self, **kwargs) -> Callable:
+        score = self.get_score(**kwargs)
+        vf = self.velocity_model.get_vector_field(**kwargs)
+        def f_tilde(t, x, args):
+            return vf(1-t,x,args) + 0.5*self.alpha**2 * t * score(t, x, args)
+
+        return f_tilde
+
+    def get_g_tilde(self) -> Callable:
+        def g_tilde(t, x, args):
+            b,d = x.shape
+            res =  self.alpha * jnp.sqrt(t) # scalar
+            res = jnp.repeat(res, d)
+            res = jnp.diag(res)
+            res = repeat(res, 'i j -> b i j', b=b)
+            return res
+        return g_tilde
+

@@ -6,6 +6,7 @@
 
 # from .discrete_solver import MixtureDiscreteEulerSolver
 from .ode_solver import ODESolver
+from .sde_solver import ZeroEnds, NonSingular
 # from .riemannian_ode_solver import RiemannianODESolver
 from .solver import Solver
 
@@ -13,6 +14,8 @@ __all__ = [
     "ODESolver",
     "Solver",
     "ModelWrapper",
+    "ZeroEnds",
+    "NonSingular",
     # "MixtureDiscreteEulerSolver",
     # "RiemannianODESolver",
 ]
