@@ -210,7 +210,7 @@ T = jnp.linspace(0,1,10)  # sample times
 # x_init = torch.randn((batch_size, 2), dtype=torch.float32, device=device)
 x_init = jax.random.normal(jax.random.PRNGKey(0), (batch_size, 2))  # initial conditions
 solver = ODESolver(velocity_model=vf)  # create an ODESolver class
-sol = solver.sample(time_grid=T, x_init=x_init, method='dopri5', step_size=step_size, return_intermediates=True)  # sample from the model
+sol = solver.sample(time_grid=T, x_init=x_init, method='Dopri5', step_size=step_size, return_intermediates=True)  # sample from the model
 #%%
 sol.shape
 #%%

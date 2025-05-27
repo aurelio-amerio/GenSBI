@@ -40,7 +40,7 @@ class ODESolver(Solver):
         step_size: Optional[float],
         condition_mask: Optional[Array] = None,
         cfg_scale = None,
-        method: Union[str, AbstractERK] = "dopri5",
+        method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
@@ -75,7 +75,7 @@ class ODESolver(Solver):
         Args:
             x_init (Tensor): initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
             step_size (Optional[float]): The step size. Must be None for adaptive step solvers.
-            method (str): A method supported by torchdiffeq. Defaults to "euler". Other commonly used solvers are "dopri5", "midpoint" and "heun3". For a complete list, see torchdiffeq.
+            method (str): A method supported by torchdiffeq. Defaults to "Euler". Other commonly used solvers are "Dopri5", "midpoint" and "heun3". For a complete list, see torchdiffeq.
             atol (float): Absolute tolerance, used for adaptive step solvers.
             rtol (float): Relative tolerance, used for adaptive step solvers.
             time_grid (Tensor): The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to torch.tensor([0.0, 1.0]).
@@ -98,9 +98,9 @@ class ODESolver(Solver):
 
         if isinstance(method, str):
             solver = {
-                "euler": diffrax.Euler(),
-                "dopri5": diffrax.Dopri5(),
-            }[method]
+                "Euler": diffrax.Euler,
+                "Dopri5": diffrax.Dopri5,
+            }[method]()
         else:
             solver = method
 
@@ -129,7 +129,7 @@ class ODESolver(Solver):
         x_init: Array,
         step_size: Optional[float],
         condition_mask: Optional[Array] = None,
-        method: Union[str, AbstractERK] = "dopri5",
+        method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
@@ -158,7 +158,7 @@ class ODESolver(Solver):
         log_p0: Callable[[Array], Array],
         step_size: Optional[float],
         condition_mask: Optional[Array] = None,
-        method: Union[str, AbstractERK] = "dopri5",
+        method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid = [1.0, 0.0],
@@ -209,8 +209,8 @@ class ODESolver(Solver):
 
         if isinstance(method, str):
             solver = {
-                "euler": diffrax.Euler(),
-                "dopri5": diffrax.Dopri5(),
+                "Euler": diffrax.Euler(),
+                "Dopri5": diffrax.Dopri5(),
             }[method]
         else:
             solver = method
@@ -249,7 +249,7 @@ class ODESolver(Solver):
         log_p0: Callable[[Array], Array],
         step_size: Optional[float],
         condition_mask: Optional[Array] = None,
-        method: Union[str, AbstractERK] = "dopri5",
+        method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid = [1.0, 0.0],

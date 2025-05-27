@@ -43,7 +43,7 @@ class RiemannianODESolver(Solver):
         step_size: float,
         projx: bool = True,
         proju: bool = True,
-        method: str = "euler",
+        method: str = "Euler",
         time_grid: Tensor = torch.tensor([0.0, 1.0]),
         return_intermediates: bool = False,
         verbose: bool = False,
@@ -57,7 +57,7 @@ class RiemannianODESolver(Solver):
             step_size (float): The step size.
             projx (bool): Whether to project the point onto the manifold at each step. Defaults to True.
             proju (bool): Whether to project the vector field onto the tangent plane at each step. Defaults to True.
-            method (str): One of ["euler", "midpoint", "rk4"]. Defaults to "euler".
+            method (str): One of ["Euler", "midpoint", "rk4"]. Defaults to "Euler".
             time_grid (Tensor, optional): The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. Defaults to torch.tensor([0.0,1.0]).
             return_intermediates (bool, optional): If True then return intermediate time steps according to time_grid. Defaults to False.
             verbose (bool, optional): Whether to print progress bars. Defaults to False.
@@ -71,7 +71,7 @@ class RiemannianODESolver(Solver):
             ImportError: To run in verbose mode, tqdm must be installed.
         """
         step_fns = {
-            "euler": _euler_step,
+            "Euler": _Euler_step,
             "midpoint": _midpoint_step,
             "rk4": _rk4_step,
         }
@@ -152,7 +152,7 @@ def interp(manifold, xt, xt_next, t, t_next, t_ret):
     ).reshape_as(xt)
 
 
-def _euler_step(
+def _Euler_step(
     velocity_model: Callable,
     xt: Tensor,
     t0: Tensor,

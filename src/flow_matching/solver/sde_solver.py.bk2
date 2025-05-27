@@ -91,57 +91,33 @@ class BaseSDESolver(Solver):
         vf = self.velocity_model.get_vector_field(**kwargs)
 
         def score(t,x,args):
-            res = (-t*vf(t,x,args) + self.mu0 - x) / ((1-t)*self.sigma0**2)
+            res = ((1-t)*vf(1-t,x,args) + self.mu0 - x) / (t*self.sigma0**2)
             return res
         
         return score
 
     
-    def get_sampler(self, args=None, nsteps=300, method="SEA", **kwargs) -> Callable:
+    def get_sampler(self, args=None, nsteps=300, solver=Euler(), **kwargs) -> Callable:
         """Stochastic sampler for the SDE.
         Args:
             args: additional arguments to pass to the velocity model
             nsteps: number of steps for the SDE solver
         """
-
-        solvers = {
-            "Euler": diffrax.Euler,
-            "Heun": diffrax.Heun,
-            "Midpoint": diffrax.Midpoint,
-            "Ralston": diffrax.Ralston,
-            "ItoMilstein": diffrax.ItoMilstein,
-            "SEA": diffrax.SEA,
-            "ShARK": diffrax.ShARK,
-            "SPaRK": diffrax.SPaRK,
-            }
-        if method not in solvers.keys():
-            raise ValueError(f"Method {method} not supported. Choose from {solvers.keys()}.")
-        
-        solver = solvers[method]()
-        
-        if method in ["Euler", "Heun", "Midpoint", "Ralston"]:
-            levy_area = diffrax.BrownianIncrement
-        else:
-            levy_area = diffrax.SpaceTimeLevyArea
-
-
         drift = self.get_f_tilde(**kwargs) # drift term, (t,x,args) -> f_tilde
         diff = self.get_g_tilde() # diffusion term, (t,x,args) -> g_tilde
 
         t0 = self.eps0
         t1 = 1
 
-        dt = t1 / nsteps
-
-
+        dt = -t1 / nsteps
 
         @jit
         def sample_batch(key, y0):
             brownian_motion = VirtualBrownianTree(
-                t0, t1, tol=1e-5, shape=(self.dim,), key=key, levy_area=levy_area
+                t0, t1, tol=1e-5, shape=(self.dim,), key=key
             )
             terms = MultiTerm(ODETerm(drift), ControlTerm(diff, brownian_motion))
-            sol = diffeqsolve(terms, solver, t0, t1, dt0=dt, y0=y0, args=args)
+            sol = diffeqsolve(terms, solver, t1, t0, dt0=dt, y0=y0, args=args)
             return sol.ys[-1]
 
         @partial(jit, static_argnums=(1))
@@ -170,19 +146,37 @@ class BaseSDESolver(Solver):
         
 class ZeroEnds(BaseSDESolver):
     """
-    ZeroEnds SDE, from tab 1 of http://arxiv.org/abs/2410.02217, with change of variable for time: t -> 1-t to match our time notation.
+    ZeroEnds SDE, from tab 1 of http://arxiv.org/abs/2410.02217
     """
     def __init__(self, velocity_model: ModelWrapper, mu0: Array, sigma0: Array, alpha: float):
         super().__init__(velocity_model, mu0, sigma0)
         self.alpha = alpha
 
+    # def get_f_tilde(self, **kwargs) -> Callable:
+    #     score = self.get_score(**kwargs)
+    #     vf = self.velocity_model.get_vector_field(**kwargs)
+
+    #     def f_tilde(t, x, args):
+    #         return vf(1-t,x,args) + 0.5*self.alpha**2 * t * (1-t) * score(t, x, args)
+
+    #     return f_tilde
+
+    # def get_g_tilde(self) -> Callable:
+    #     def g_tilde(t, x, args):
+    #         b,d = x.shape
+    #         res =  self.alpha * jnp.sqrt(t*(1-t)) # scalar
+    #         res = jnp.repeat(res, d)
+    #         res = jnp.diag(res)
+    #         res = repeat(res, 'i j -> b i j', b=b)
+    #         return res
+    #     return g_tilde
 
     def get_f_tilde(self, **kwargs) -> Callable:
         score = self.get_score(**kwargs)
         vf = self.velocity_model.get_vector_field(**kwargs)
 
         def f_tilde(t, x, args):
-            res = vf(t,x,args) + 0.5*self.alpha**2 * t * (1-t) * score(t, x, args)
+            res = -vf(1-t,x,args) + 0.5*self.alpha**2 * t * (1-t) * score(t, x, args)
             return res
 
         return f_tilde
@@ -202,7 +196,7 @@ class ZeroEnds(BaseSDESolver):
 
 class NonSingular(BaseSDESolver):
     """
-    NonSingular SDE, from tab 1 of http://arxiv.org/abs/2410.02217, with change of variable for time: t -> 1-t to match our time notation.
+    NonSingular SDE, from tab 1 of http://arxiv.org/abs/2410.02217
     """
     def __init__(self, velocity_model: ModelWrapper, mu0: Array, sigma0: Array, alpha: float):
         super().__init__(velocity_model, mu0, sigma0)
@@ -212,14 +206,14 @@ class NonSingular(BaseSDESolver):
         score = self.get_score(**kwargs)
         vf = self.velocity_model.get_vector_field(**kwargs)
         def f_tilde(t, x, args):
-            return vf(t,x,args) + 0.5*self.alpha**2 * (1-t) * score(t, x, args)
+            return vf(1-t,x,args) + 0.5*self.alpha**2 * t * score(t, x, args)
 
         return f_tilde
 
     def get_g_tilde(self) -> Callable:
         def g_tilde(t, x, args):
             b,d = x.shape
-            res =  self.alpha * jnp.sqrt(1-t) # scalar
+            res =  self.alpha * jnp.sqrt(t) # scalar
             res = jnp.repeat(res, d)
             res = jnp.diag(res)
             res = repeat(res, 'i j -> b i j', b=b)
