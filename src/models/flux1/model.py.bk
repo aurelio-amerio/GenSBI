@@ -1,8 +1,5 @@
 from dataclasses import dataclass
 
-from typing import Union
-
-import jax
 import jax.numpy as jnp
 from jax import Array
 from flax import nnx
@@ -92,9 +89,6 @@ class Flux(nnx.Module):
             param_dtype=params.param_dtype,
         )
 
-        self.condition_embedding = nnx.Param(0.01 * jnp.ones((1, self.hidden_size)))
-        self.condition_null = nnx.Param(jax.random.normal(params.rngs.cond(), (1,1,params.context_in_dim)))
-
         self.double_blocks = nnx.Sequential(
             *[
                 DoubleStreamBlock(
@@ -137,7 +131,6 @@ class Flux(nnx.Module):
         cond: Array,
         cond_ids: Array,
         timesteps: Array,
-        conditional: bool = False,
         guidance: Array | None = None,
     ) -> Array:
         if obs.ndim != 3 or cond.ndim != 3:
@@ -146,26 +139,12 @@ class Flux(nnx.Module):
         # running on sequences obs
         obs = self.obs_in(obs)
         vec = self.time_in(timestep_embedding(timesteps, 256))
-
-        conditional = jnp.asarray(conditional, dtype=jnp.int32)
-
-        condition_embedding = (
-            self.condition_embedding * (1-conditional)
-        )
-
-        vec = vec + condition_embedding # we add the condition embedding to the vector
-
         if self.params.guidance_embed:
             if guidance is None:
                 raise ValueError(
                     "Didn't get guidance strength for guidance distilled model."
                 )
             vec = vec + self.vector_in(guidance)
-
-        
-        cond_null = jnp.broadcast_to(self.condition_null.value, cond.shape)
-        cond = jnp.where(conditional, cond, cond_null) # we replace the condition with a null vector if not conditional
-
         cond = self.cond_in(cond)
 
         ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
