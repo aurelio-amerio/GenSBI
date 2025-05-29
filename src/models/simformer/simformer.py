@@ -52,11 +52,15 @@ class Simformer(nnx.Module):
         # self.embedding_net_value = lambda x: jnp.repeat(x, dim_value, axis=-1)
 
         fourier_features = params.fourier_features
-        self.embedding_time = GaussianFourierEmbedding(fourier_features, rngs=params.rngs)
+        self.embedding_time = GaussianFourierEmbedding(
+            fourier_features, rngs=params.rngs
+        )
         self.embedding_net_id = nnx.Embed(
             num_embeddings=params.dim_joint, features=params.dim_id, rngs=params.rngs
         )
-        self.condition_embedding = nnx.Param(0.01 * jnp.ones((1, 1, params.dim_condition)))
+        self.condition_embedding = nnx.Param(
+            0.01 * jnp.ones((1, 1, params.dim_condition))
+        )
 
         self.total_tokens = params.dim_value + params.dim_id + params.dim_condition
 
@@ -119,22 +123,24 @@ class Simformer(nnx.Module):
         out = jnp.squeeze(out, axis=-1)
         return out
 
+
 class SimformerConditioner(nnx.Module):
     def __init__(self, model: Simformer):
         self.model = model
         self.dim_joint = model.params.dim_joint
 
-    def __call__(self, obs, obs_ids, cond, cond_ids, t, edge_mask=None):
-
+    def conditioned(self, obs, obs_ids, cond, cond_ids, t, edge_mask=None):
         obs = jnp.atleast_1d(obs)
         cond = jnp.atleast_1d(cond)
         t = jnp.atleast_1d(t)
 
         if obs.ndim < 3:
-            obs = rearrange(obs, '... -> 1 ... 1' if obs.ndim == 1 else '... -> ... 1')
+            obs = rearrange(obs, "... -> 1 ... 1" if obs.ndim == 1 else "... -> ... 1")
 
         if cond.ndim < 3:
-            cond = rearrange(cond, '... -> 1 ... 1' if cond.ndim == 1 else '... -> ... 1')
+            cond = rearrange(
+                cond, "... -> 1 ... 1" if cond.ndim == 1 else "... -> ... 1"
+            )
 
         obs, cond = jnp.broadcast_arrays(obs, cond)
 
@@ -146,7 +152,7 @@ class SimformerConditioner(nnx.Module):
 
         # Sort the nodes and the corresponding values
         nodes_sort = jnp.argsort(node_ids)
-        x = x[:,nodes_sort]
+        x = x[:, nodes_sort]
         node_ids = node_ids[nodes_sort]
 
         res = self.model(
@@ -160,4 +166,35 @@ class SimformerConditioner(nnx.Module):
         res = res[:, obs_ids]
         return res
 
-        
+    def unconditioned(self, obs, obs_ids, t, edge_mask=None):
+        # we compute the marginal distribution for the observations
+        obs = jnp.atleast_1d(obs)
+        t = jnp.atleast_1d(t)
+
+        if obs.ndim < 3:
+            obs = rearrange(obs, "... -> 1 ... 1" if obs.ndim == 1 else "... -> ... 1")
+
+        condition_mask = jnp.zeros((obs.shape[1],), dtype=jnp.bool_)
+
+        node_ids = obs_ids
+        x = obs
+
+        res = self.model(
+            x=x,
+            t=t,
+            node_ids=node_ids,
+            condition_mask=condition_mask,
+            edge_mask=edge_mask,
+        )
+        return res
+
+    def __call__(
+        self, obs, obs_ids, cond, cond_ids, timesteps, conditioned: bool = True, edge_mask=None
+    ):
+
+        if conditioned:
+            return self.conditioned(
+                obs, obs_ids, cond, cond_ids, timesteps, edge_mask=edge_mask
+            )
+        else:
+            return self.unconditioned(obs, obs_ids, timesteps, edge_mask=edge_mask)

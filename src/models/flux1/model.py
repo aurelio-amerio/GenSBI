@@ -137,7 +137,7 @@ class Flux(nnx.Module):
         cond: Array,
         cond_ids: Array,
         timesteps: Array,
-        conditional: bool = False,
+        conditioned: bool = True,
         guidance: Array | None = None,
     ) -> Array:
         if obs.ndim != 3 or cond.ndim != 3:
@@ -147,10 +147,10 @@ class Flux(nnx.Module):
         obs = self.obs_in(obs)
         vec = self.time_in(timestep_embedding(timesteps, 256))
 
-        conditional = jnp.asarray(conditional, dtype=jnp.int32)
+        conditioned = jnp.asarray(conditioned, dtype=jnp.int32)
 
         condition_embedding = (
-            self.condition_embedding * (1-conditional)
+            self.condition_embedding * (1-conditioned)
         )
 
         vec = vec + condition_embedding # we add the condition embedding to the vector
@@ -164,7 +164,7 @@ class Flux(nnx.Module):
 
         
         cond_null = jnp.broadcast_to(self.condition_null.value, cond.shape)
-        cond = jnp.where(conditional, cond, cond_null) # we replace the condition with a null vector if not conditional
+        cond = jnp.where(conditioned, cond, cond_null) # we replace the condition with a null vector if not conditioned
 
         cond = self.cond_in(cond)
 

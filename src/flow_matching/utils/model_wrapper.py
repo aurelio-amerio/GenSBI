@@ -91,81 +91,9 @@ class ModelWrapper(nnx.Module):
 
         
         return div_
-    
         
 
-
-class ConditionalModelWrapper(ModelWrapper):
-    """
-    This class is used to wrap around another model. We define a call method which returns the model output. 
-    Furthermore, we define a vector_field method which computes the vector field of the model,
-    and a divergence method which computes the divergence of the model, in a form useful for diffrax.
-    This is useful for ODE solvers that require the vector field and divergence of the model.
-
-    """
-
-    def __init__(self, model):
-        super().__init__(model)
-    
-    def get_conditioned_vector_field(self, condition_mask, **kwargs) -> Array:
-        r"""Compute the vector field conditioned on the condition mask.
-        """
-        kwargs["condition_mask"] = condition_mask
-        def c_vf(t, x, args):
-            vf = self(x, t, args, **kwargs)
-            vf *= jnp.logical_not(condition_mask)[None,...]
-            if vf.shape[0] == 1:
-                vf = jnp.squeeze(vf, axis=0)
-            return vf
-        return c_vf
-    
-    def get_conditioned_divergence(self, condition_mask, **kwargs) -> Array:
-        r"""Compute the divergence of the model conditioned on the condition mask.
-        """
-        vf = self.get_conditioned_vector_field(condition_mask, **kwargs)
-        def div_(t, x, args):
-            div = divergence(vf, t, x, args)
-            # squeeze the first dimension of the divergence if it is 1
-            if div.shape[0] == 1:
-                div = jnp.squeeze(div, axis=0)
-            return div
-
-        
-        return div_
-
-    def get_guided_vector_field(self, condition_mask, cfg_scale=0.7, **kwargs) -> Array:
-        r"""Compute the vector field conditioned on the condition mask.
-        """
-
-        c_vf = self.get_conditioned_vector_field(condition_mask, **kwargs)
-        u_vf = self.get_conditioned_vector_field(jnp.zeros_like(condition_mask), **kwargs)
-
-        def g_vf(t, x, args):
-            c_vf_ = c_vf(t, x, args)
-            u_vf_ = u_vf(t, x, args)
-            g_vf_ = (1 - cfg_scale) * u_vf_ + cfg_scale * c_vf_
-            if g_vf_.shape[0] == 1:
-                g_vf_ = jnp.squeeze(g_vf_, axis=0)
-            return g_vf_
-        
-        return g_vf
-    
-    def get_guided_divergence(self, condition_mask, cfg_scale=0.7, **kwargs) -> Array:
-        r"""Compute the divergence of the model conditioned on the condition mask.
-        """
-        g_vf = self.get_guided_vector_field(condition_mask, cfg_scale=cfg_scale, **kwargs)
-        def div_(t, x, args):
-            div = divergence(g_vf, t, x, args)
-            # squeeze the first dimension of the divergence if it is 1
-            if div.shape[0] == 1:
-                div = jnp.squeeze(div, axis=0)
-            return div
-
-        
-        return div_
-        
-
-class GuidedModelWrapper(ConditionalModelWrapper):
+class GuidedModelWrapper(ModelWrapper):
     """
     This class is used to wrap around another model. We define a call method which returns the model output. 
     Furthermore, we define a vector_field method which computes the vector field of the model,
@@ -177,12 +105,12 @@ class GuidedModelWrapper(ConditionalModelWrapper):
     def __init__(self, model):
         super().__init__(model)
 
-    def get_guided_vector_field(self, condition_mask, cfg_scale=0.7, **kwargs) -> Array:
-        r"""Compute the vector field conditioned on the condition mask.
+    def get_guided_vector_field(self, cfg_scale=0.7, **kwargs) -> Array:
+        r"""Compute the vector field with classifier free guidance.
         """
 
-        c_vf = self.get_conditioned_vector_field(condition_mask, **kwargs)
-        u_vf = self.get_conditioned_vector_field(jnp.zeros_like(condition_mask), **kwargs)
+        c_vf = self.get_vector_field(conditioned=True, **kwargs)
+        u_vf = self.get_vector_field(conditioned=False, **kwargs)
 
         def g_vf(t, x, args):
             c_vf_ = c_vf(t, x, args)
@@ -194,10 +122,10 @@ class GuidedModelWrapper(ConditionalModelWrapper):
         
         return g_vf
     
-    def get_guided_divergence(self, condition_mask, cfg_scale=0.7, **kwargs) -> Array:
-        r"""Compute the divergence of the model conditioned on the condition mask.
+    def get_guided_divergence(self, cfg_scale=0.7, **kwargs) -> Array:
+        r"""Compute the divergence of the model with classifier free guidance.
         """
-        g_vf = self.get_guided_vector_field(condition_mask, cfg_scale=cfg_scale, **kwargs)
+        g_vf = self.get_guided_vector_field(cfg_scale=cfg_scale, **kwargs)
         def div_(t, x, args):
             div = divergence(g_vf, t, x, args)
             # squeeze the first dimension of the divergence if it is 1
