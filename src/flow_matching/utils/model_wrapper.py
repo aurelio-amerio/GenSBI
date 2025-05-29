@@ -101,38 +101,32 @@ class GuidedModelWrapper(ModelWrapper):
     This is useful for ODE solvers that require the vector field and divergence of the model.
 
     """
+    cfg_scale: float 
 
-    def __init__(self, model):
+    def __init__(self, model, cfg_scale=0.7):
         super().__init__(model)
+        self.cfg_scale = cfg_scale
 
-    def get_guided_vector_field(self, cfg_scale=0.7, **kwargs) -> Array:
-        r"""Compute the vector field with classifier free guidance.
-        """
+    # def get_guided_vector_field(self, **kwargs) -> Array:
+    #     """Compute the guided vector field as a weighted sum of conditioned and unconditioned predictions."""
+    #     # Get vector fields from parent class
+    #     c_vf = self.get_vector_field(conditioned=True, **kwargs)
+    #     u_vf = self.get_vector_field(conditioned=False, **kwargs)
 
-        c_vf = self.get_vector_field(conditioned=True, **kwargs)
-        u_vf = self.get_vector_field(conditioned=False, **kwargs)
+    #     def g_vf(t, x, args):
+    #         return (1 - self.cfg_scale) * u_vf(t, x, args) + self.cfg_scale * c_vf(t, x, args)
+        
+    #     return g_vf
+
+    def get_vector_field(self, **kwargs) -> Array:
+        """Compute the guided vector field as a weighted sum of conditioned and unconditioned predictions."""
+        # Get vector fields from parent class
+        c_vf = super().get_vector_field(conditioned=True, **kwargs)
+        u_vf = super().get_vector_field(conditioned=False, **kwargs)
 
         def g_vf(t, x, args):
-            c_vf_ = c_vf(t, x, args)
-            u_vf_ = u_vf(t, x, args)
-            g_vf_ = (1 - cfg_scale) * u_vf_ + cfg_scale * c_vf_
-            if g_vf_.shape[0] == 1:
-                g_vf_ = jnp.squeeze(g_vf_, axis=0)
-            return g_vf_
+            return (1 - self.cfg_scale) * u_vf(t, x, args) + self.cfg_scale * c_vf(t, x, args)
         
         return g_vf
     
-    def get_guided_divergence(self, cfg_scale=0.7, **kwargs) -> Array:
-        r"""Compute the divergence of the model with classifier free guidance.
-        """
-        g_vf = self.get_guided_vector_field(cfg_scale=cfg_scale, **kwargs)
-        def div_(t, x, args):
-            div = divergence(g_vf, t, x, args)
-            # squeeze the first dimension of the divergence if it is 1
-            if div.shape[0] == 1:
-                div = jnp.squeeze(div, axis=0)
-            return div
-
-        
-        return div_
         
