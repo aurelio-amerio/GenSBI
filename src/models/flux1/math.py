@@ -4,7 +4,7 @@ from einops import rearrange
 from jax import numpy as jnp
 
 
-def attention(q: Array, k: Array, v: Array, pe: Array| None = None) -> Array:
+def attention(q: Array, k: Array, v: Array, pe: Array| None = None, mask: Array|None = None) -> Array:
     if pe is not None:
         q, k = apply_rope(q, k, pe)
 
@@ -12,7 +12,7 @@ def attention(q: Array, k: Array, v: Array, pe: Array| None = None) -> Array:
     k = rearrange(k, "B H L D -> B L H D")  # for jax
     v = rearrange(v, "B H L D -> B L H D")  # for jax
 
-    x = jax.nn.dot_product_attention(q, k, v)
+    x = jax.nn.dot_product_attention(q, k, v, mask=mask)
 
     x = rearrange(x, "B L H D -> B L (H D)")
 

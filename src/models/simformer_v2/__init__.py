@@ -1,9 +1,6 @@
-from .simformer import Simformer, SimformerParams, SimformerConditioner
-from .loss import SimformerCFMLoss
+from .simformer import Simformer2, SimformerParams2
 
 __all__ = [
-    "Simformer",
-    "SimformerParams",
-    "SimformerConditioner",
-    "SimformerCFMLoss",
+    "Simformer2",
+    "SimformerParams2",
 ]

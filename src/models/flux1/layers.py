@@ -135,11 +135,11 @@ class SelfAttention(nnx.Module):
             param_dtype=param_dtype,
         )
 
-    def __call__(self, x: Array, pe: Array) -> Array:
+    def __call__(self, x: Array, pe: Array, mask: Array | None = None) -> Array:
         qkv = self.qkv(x)
         q, k, v = rearrange(qkv, "B L (K H D) -> K B H L D", K=3, H=self.num_heads)
         q, k = self.norm(q, k, v)
-        x = attention(q, k, v, pe=pe)
+        x = attention(q, k, v, pe=pe, mask=mask)
         x = self.proj(x)
         return x
 
@@ -254,7 +254,6 @@ class DoubleStreamBlock(nnx.Module):
             rngs=rngs,
             param_dtype=param_dtype,
         )
-        
 
         self.cond_norm2 = nnx.LayerNorm(
             num_features=hidden_size,
@@ -283,7 +282,12 @@ class DoubleStreamBlock(nnx.Module):
         )
 
     def __call__(
-        self, obs: Array, cond: Array, vec: Array, pe: Array | None = None
+        self,
+        obs: Array,
+        cond: Array,
+        vec: Array,
+        pe: Array | None = None,
+        mask: Array | None = None,
     ) -> tuple[Array, Array]:
         obs_mod1, obs_mod2 = self.obs_mod(vec)
         cond_mod1, cond_mod2 = self.cond_mod(vec)
@@ -311,7 +315,7 @@ class DoubleStreamBlock(nnx.Module):
         k = jnp.concatenate((cond_k, obs_k), axis=2)
         v = jnp.concatenate((cond_v, obs_v), axis=2)
 
-        attn = attention(q, k, v, pe=pe)
+        attn = attention(q, k, v, pe=pe, mask=mask)
         cond_attn, obs_attn = attn[:, : cond.shape[1]], attn[:, cond.shape[1] :]
 
         # calculate the obs bloks
@@ -381,7 +385,9 @@ class SingleStreamBlock(nnx.Module):
             hidden_size, double=False, rngs=rngs, param_dtype=param_dtype
         )
 
-    def __call__(self, x: Array, vec: Array, pe: Array | None = None) -> Array:
+    def __call__(
+        self, x: Array, vec: Array, pe: Array | None = None, mask: Array | None = None
+    ) -> Array:
         mod, _ = self.modulation(vec)
         x_mod = (1 + mod.scale) * self.pre_norm(x) + mod.shift
         qkv, mlp = jnp.split(self.linear1(x_mod), [3 * self.hidden_size], axis=-1)
@@ -390,7 +396,7 @@ class SingleStreamBlock(nnx.Module):
         q, k = self.norm(q, k, v)
 
         # compute attention
-        attn = attention(q, k, v, pe=pe)
+        attn = attention(q, k, v, pe=pe, mask=mask)
         # compute activation in mlp stream, cat again and run second linear layer
         output = self.linear2(jnp.concatenate((attn, self.mlp_act(mlp)), 2))
         return x + mod.gate * output
