@@ -24,6 +24,7 @@ class FluxParams:
     vec_in_dim: int
     context_in_dim: int
     hidden_size: int
+    qkv_bottleneck: int
     mlp_ratio: float
     num_heads: int
     depth: int
@@ -54,12 +55,14 @@ class Flux(nnx.Module):
             raise ValueError(
                 f"Hidden size {params.hidden_size} must be divisible by num_heads {params.num_heads}"  # noqa: E501
             )
-        pe_dim = params.hidden_size // params.num_heads
+        self.hidden_size = params.hidden_size
+        self.qkv_features = params.hidden_size // params.qkv_bottleneck
+
+        pe_dim = self.hidden_size // params.num_heads
         if sum(params.axes_dim) != pe_dim:
             raise ValueError(
                 f"Got {params.axes_dim} but expected positional dim {pe_dim}"
             )
-        self.hidden_size = params.hidden_size
         self.num_heads = params.num_heads
         self.pe_embedder = EmbedND(
             dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
@@ -101,6 +104,7 @@ class Flux(nnx.Module):
                     self.hidden_size,
                     self.num_heads,
                     mlp_ratio=params.mlp_ratio,
+                    qkv_features=self.qkv_features,
                     qkv_bias=params.qkv_bias,
                     rngs=params.rngs,
                     param_dtype=params.param_dtype,
@@ -115,6 +119,7 @@ class Flux(nnx.Module):
                     self.hidden_size,
                     self.num_heads,
                     mlp_ratio=params.mlp_ratio,
+                    qkv_features=self.qkv_features,
                     rngs=params.rngs,
                     param_dtype=params.param_dtype,
                 )
