@@ -6,6 +6,7 @@ from jax import Array
 from einops import rearrange
 from flax import nnx
 from jax.typing import DTypeLike
+import jax
 
 from .math import attention, rope
 
@@ -167,6 +168,8 @@ class Modulation(nnx.Module):
             use_bias=True,
             rngs=rngs,
             param_dtype=param_dtype,
+            kernel_init=jax.nn.initializers.zeros, # this ensures that the initial modulation is neutral
+            bias_init=jax.nn.initializers.zeros # this ensures that the initial modulation is neutral
         )
 
     def __call__(self, vec: Array) -> tuple[ModulationOut, ModulationOut | None]:
