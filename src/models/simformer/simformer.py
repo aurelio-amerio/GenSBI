@@ -25,9 +25,9 @@ class SimformerParams:
     num_heads: int = 4
     num_layers: int = 6
     widening_factor: int = 3
-    # transformer_features: int = 8
+    qkv_features: int = 8
     num_hidden_layers: int = 1
-    dropout_rate: float = 0.1
+    dropout_rate: float = 0.0
     # param_dtype: DTypeLike = jnp.float32
 
 
@@ -69,7 +69,7 @@ class Simformer(nnx.Module):
             dcontext=fourier_features,
             num_heads=params.num_heads,
             num_layers=params.num_layers,
-            # features=params.transformer_features,
+            features=params.qkv_features,
             widening_factor=params.widening_factor,
             dropout_rate=params.dropout_rate,
             num_hidden_layers=params.num_hidden_layers,

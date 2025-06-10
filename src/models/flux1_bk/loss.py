@@ -4,7 +4,7 @@ from flax import nnx
 
 
 class FluxCFMLoss(nnx.Module):
-    def __init__(self, path, reduction="mean", cfg_scale=None):
+    def __init__(self, path, reduction="mean", cfg_scale=0.5):
         """
         ContinuousFMLoss is a class that computes the continuous flow matching loss.
 
@@ -48,17 +48,12 @@ class FluxCFMLoss(nnx.Module):
         x_t = path_sample.x_t
 
         model_output = vf(x_t, obs_ids, cond, cond_ids, t, conditioned=True)
+        model_output_uncond = vf(x_t, obs_ids, cond, cond_ids, t, conditioned=False)
+
         loss_cond = model_output - path_sample.dx_t
+        loss_uncond = model_output_uncond - path_sample.dx_t
 
-        if self.cfg_scale is not None:
-            model_output_uncond = vf(x_t, obs_ids, cond, cond_ids, t, conditioned=False)
-            loss_uncond = model_output_uncond - path_sample.dx_t
+        weight = self.cfg_scale
 
-            weight = self.cfg_scale
-
-
-            loss = weight*jnp.square(loss_cond) + (1-weight)*jnp.square(loss_uncond)
-        else:
-            loss = jnp.square(loss_cond)
-            
+        loss = weight*jnp.square(loss_cond) + (1-weight)*jnp.square(loss_uncond)
         return self.reduction(loss)

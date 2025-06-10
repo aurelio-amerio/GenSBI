@@ -30,9 +30,6 @@ class FluxParams:
     axes_dim: list[int]
     qkv_bias: bool
     rngs: nnx.Rngs
-    obs_dim: int | None = None  # Optional, can be used to specify the observation dimension
-    cond_dim: int | None = None  # Optional, can be used to specify the condition dimension
-    use_rope: bool = True
     theta: int = 10_000
     guidance_embed: bool = False
     qkv_bottleneck: int = 1
@@ -137,22 +134,6 @@ class Flux(nnx.Module):
             param_dtype=params.param_dtype,
         )
 
-        self.use_rope = params.use_rope
-
-        if not self.use_rope:
-            assert params.obs_dim is not None and params.cond_dim is not None, \
-                "If not using RoPE, obs_dim and cond_dim must be specified."
-            
-            self.id_embedder = nnx.Embed(
-                num_embeddings=params.obs_dim + params.cond_dim,
-                features=self.hidden_size,
-                rngs=params.rngs,
-                param_dtype=params.param_dtype)
-        else:
-            self.obs_id_embedder = None
-            self.cond_id_embedder = None
-
-
     def __call__(
         self,
         obs: Array,
@@ -191,20 +172,8 @@ class Flux(nnx.Module):
 
         cond = self.cond_in(cond)
 
-
         ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
-        if self.use_rope:
-            pe = self.pe_embedder(ids)
-        else:
-            id_emb = self.obs_id_embedder(ids)
-
-            cond_ids_emb = id_emb[:, :cond.shape[1], :]
-            obs_ids_emb = id_emb[:, cond.shape[1]:, :]
-            
-            obs = obs + obs_ids_emb
-            cond = cond + cond_ids_emb
-
-            pe=None
+        pe = self.pe_embedder(ids)
 
         for block in self.double_blocks.layers:
             obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)
