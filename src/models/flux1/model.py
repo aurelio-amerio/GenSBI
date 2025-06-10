@@ -149,8 +149,7 @@ class Flux(nnx.Module):
                 rngs=params.rngs,
                 param_dtype=params.param_dtype)
         else:
-            self.obs_id_embedder = None
-            self.cond_id_embedder = None
+            self.id_embedder = None
 
 
     def __call__(
@@ -196,7 +195,13 @@ class Flux(nnx.Module):
         if self.use_rope:
             pe = self.pe_embedder(ids)
         else:
-            id_emb = self.obs_id_embedder(ids)
+            ids = jnp.squeeze(ids, axis=-1) # ids should have dimension (B, F, 1)
+
+            id_emb = self.id_embedder(ids)
+
+            id_emb = jnp.broadcast_to(
+            id_emb, (obs.shape[0], self.params.obs_dim + self.params.cond_dim, self.hidden_size)
+        )
 
             cond_ids_emb = id_emb[:, :cond.shape[1], :]
             obs_ids_emb = id_emb[:, cond.shape[1]:, :]
