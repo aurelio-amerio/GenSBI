@@ -156,6 +156,7 @@ class ModulationOut:
     gate: Array
 
 
+# includes AdaLN-zero initialization
 class Modulation(nnx.Module):
     def __init__(
         self,
