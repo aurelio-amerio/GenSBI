@@ -9,8 +9,6 @@
 import jax
 import jax.numpy as jnp
 from jax import random
-from flax import struct
-from typing import Any
 
 from flow_matching.path.path import ProbPath
 from flow_matching.path.path_sample import DiscretePathSample
@@ -48,7 +46,7 @@ class MixtureDiscreteProbPath(ProbPath):
         self.assert_sample_shape(x_0=x_0, x_1=x_1, t=t)
 
         sigma_t = self.scheduler(t).sigma_t
-        sigma_t = expand_tensor_like(input_tensor=sigma_t, expand_to=x_1)
+        sigma_t = expand_tensor_like(input_array=sigma_t, expand_to=x_1)
 
         # Generate random values using JAX
         random_values = random.uniform(key, shape=x_1.shape)

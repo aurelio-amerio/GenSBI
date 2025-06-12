@@ -2,8 +2,10 @@ import jax.numpy as jnp
 import jax
 from flax import nnx
 
+from flow_matching.loss import ContinuousFMLoss
 
-class FluxCFMLoss(nnx.Module):
+
+class FluxCFMLoss(ContinuousFMLoss):
     def __init__(self, path, reduction="mean", cfg_scale=None):
         """
         ContinuousFMLoss is a class that computes the continuous flow matching loss.
@@ -12,20 +14,22 @@ class FluxCFMLoss(nnx.Module):
             path: Probability path (x-prediction training).
             reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
         """
-        self.path = path
-        if reduction not in ["None", "mean", "sum"]:
-            raise ValueError(f"{reduction} is not a valid value for reduction")
+        # self.path = path
+        # if reduction not in ["None", "mean", "sum"]:
+        #     raise ValueError(f"{reduction} is not a valid value for reduction")
 
-        if reduction == "mean":
-            self.reduction = jnp.mean
-        elif reduction == "sum":
-            self.reduction = jnp.sum
-        else:
-            self.reduction = lambda x: x
+        # if reduction == "mean":
+        #     self.reduction = jnp.mean
+        # elif reduction == "sum":
+        #     self.reduction = jnp.sum
+        # else:
+        #     self.reduction = lambda x: x
+
+        super().__init__(path, reduction)
 
         self.cfg_scale = cfg_scale
 
-    def __call__(self, vf, batch, cond, obs_ids, cond_ids, **kwargs):
+    def __call__(self, vf, batch, cond, obs_ids, cond_ids):
         """
         Evaluates the continuous flow matching loss.
 
@@ -35,7 +39,6 @@ class FluxCFMLoss(nnx.Module):
             cond (jnp.ndarray): The conditioning data.
             obs_ids (jnp.ndarray): The observation IDs.
             cond_ids (jnp.ndarray): The conditioning IDs.
-            **kwargs: Additional keyword arguments for the function.
 
         Returns:
             jnp.ndarray: The computed loss.

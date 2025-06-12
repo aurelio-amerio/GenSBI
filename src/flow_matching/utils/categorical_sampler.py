@@ -11,7 +11,7 @@ import jax.numpy as jnp
 from jax import Array
 
 
-def categorical(probs: Array) -> Array:
+def categorical(key, probs: Array) -> Array:
     r"""Categorical sampler according to weights in the last dimension of ``probs`` using JAX's random.categorical.
 
     Args:
@@ -21,6 +21,5 @@ def categorical(probs: Array) -> Array:
         Array: Samples.
     """
     flat_probs = jnp.reshape(probs, (-1, probs.shape[-1]))
-    key = jax.random.PRNGKey(0)  # You may want to pass this as an argument
     samples = jax.random.categorical(key, flat_probs)
     return jnp.reshape(samples, probs.shape[:-1])
