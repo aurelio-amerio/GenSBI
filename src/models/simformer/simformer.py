@@ -129,7 +129,7 @@ class SimformerConditioner(nnx.Module):
         self.model = model
         self.dim_joint = model.params.dim_joint
 
-    def conditioned(self, obs, obs_ids, cond, cond_ids, t, edge_mask=None):
+    def conditioned(self, obs, obs_ids, cond, cond_ids, t,  edge_mask=None):
         obs = jnp.atleast_1d(obs)
         cond = jnp.atleast_1d(cond)
         t = jnp.atleast_1d(t)
@@ -186,6 +186,7 @@ class SimformerConditioner(nnx.Module):
             condition_mask=condition_mask,
             edge_mask=edge_mask,
         )
+
         return res
 
     def __call__(

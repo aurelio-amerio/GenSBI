@@ -232,9 +232,7 @@ class ODESolver(Solver):
 
             source_log_p = log_p0(x_source)
 
-            # return x_source, source_log_p + log_det[...,0]
-            return x_source, source_log_p + log_det
-            # return x_source, log_det
+            return source_log_p + log_det
 
         return sampler
     
