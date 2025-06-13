@@ -96,7 +96,7 @@ def expand_tensor_like(input_array: Array, expand_to: Array) -> Array:
 #     return jax.grad(inner_product)(x)
 
 def _divergence_single(vf, t, x):
-    res = jnp.trace(jax.jacfwd(vf, argnums=1)(t, x))
+    res = jnp.trace(jax.jacfwd(vf, argnums=1)(t, x),axis1=-2, axis2=-1)
     return res
 
     
@@ -123,15 +123,15 @@ def divergence(
         t, (*x.shape[:-1], t.shape[-1])
     )
 
-    vf_wapped = lambda t, x: vf(t, x, args=args)
+    # vf_wapped = lambda t, x: vf(t, x, args=args)
 
-    res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x)
-    # if res.ndim < x.ndim:
-    #     nextra = x.ndim - res.ndim
-    #     for i in range(nextra):
-    #         res = jnp.expand_dims(res, axis=-1)
+    # res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x)
 
-    return res
+    vf_wrapped = lambda t, x: vf(t, x, args=args)
+
+    res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wrapped, t, x)
+
+    return jnp.squeeze(res)
     
 # def divergence(
 #         vf: Callable, 

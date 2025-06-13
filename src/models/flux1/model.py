@@ -23,17 +23,24 @@ class FluxParams:
     in_channels: int
     vec_in_dim: int
     context_in_dim: int
-    hidden_size: int
     mlp_ratio: float
     num_heads: int
     depth: int
     depth_single_blocks: int
     axes_dim: list[int]
-    theta: int
     qkv_bias: bool
-    guidance_embed: bool
     rngs: nnx.Rngs
-    param_dtype: DTypeLike
+    obs_dim: int | None = None  # Optional, can be used to specify the observation dimension
+    cond_dim: int | None = None  # Optional, can be used to specify the condition dimension
+    use_rope: bool = True
+    theta: int = 10_000
+    guidance_embed: bool = False
+    qkv_bottleneck: int = 1
+    param_dtype: DTypeLike = jnp.bfloat16
+
+    def __post_init__(self):
+        self.hidden_size = int(jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.qkv_bottleneck * self.num_heads)
+        self.qkv_features = self.hidden_size // self.qkv_bottleneck
 
 
 class Identity(nnx.Module):
@@ -50,16 +57,14 @@ class Flux(nnx.Module):
         self.params = params
         self.in_channels = params.in_channels
         self.out_channels = params.in_channels
-        if params.hidden_size % params.num_heads != 0:
-            raise ValueError(
-                f"Hidden size {params.hidden_size} must be divisible by num_heads {params.num_heads}"  # noqa: E501
-            )
-        pe_dim = params.hidden_size // params.num_heads
+        self.hidden_size = params.hidden_size
+        self.qkv_features = params.qkv_features
+
+        pe_dim = self.qkv_features // params.num_heads
         if sum(params.axes_dim) != pe_dim:
             raise ValueError(
                 f"Got {params.axes_dim} but expected positional dim {pe_dim}"
             )
-        self.hidden_size = params.hidden_size
         self.num_heads = params.num_heads
         self.pe_embedder = EmbedND(
             dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
@@ -101,6 +106,7 @@ class Flux(nnx.Module):
                     self.hidden_size,
                     self.num_heads,
                     mlp_ratio=params.mlp_ratio,
+                    qkv_features=self.qkv_features,
                     qkv_bias=params.qkv_bias,
                     rngs=params.rngs,
                     param_dtype=params.param_dtype,
@@ -115,6 +121,7 @@ class Flux(nnx.Module):
                     self.hidden_size,
                     self.num_heads,
                     mlp_ratio=params.mlp_ratio,
+                    qkv_features=self.qkv_features,
                     rngs=params.rngs,
                     param_dtype=params.param_dtype,
                 )
@@ -129,6 +136,21 @@ class Flux(nnx.Module):
             rngs=params.rngs,
             param_dtype=params.param_dtype,
         )
+
+        self.use_rope = params.use_rope
+
+        if not self.use_rope:
+            assert params.obs_dim is not None and params.cond_dim is not None, \
+                "If not using RoPE, obs_dim and cond_dim must be specified."
+            
+            self.id_embedder = nnx.Embed(
+                num_embeddings=params.obs_dim + params.cond_dim,
+                features=self.hidden_size,
+                rngs=params.rngs,
+                param_dtype=params.param_dtype)
+        else:
+            self.id_embedder = None
+
 
     def __call__(
         self,
@@ -168,8 +190,26 @@ class Flux(nnx.Module):
 
         cond = self.cond_in(cond)
 
+
         ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
-        pe = self.pe_embedder(ids)
+        if self.use_rope:
+            pe = self.pe_embedder(ids)
+        else:
+            ids = jnp.squeeze(ids, axis=-1) # ids should have dimension (B, F, 1)
+
+            id_emb = self.id_embedder(ids)
+
+            id_emb = jnp.broadcast_to(
+            id_emb, (obs.shape[0], self.params.obs_dim + self.params.cond_dim, self.hidden_size)
+        )
+
+            cond_ids_emb = id_emb[:, :cond.shape[1], :]
+            obs_ids_emb = id_emb[:, cond.shape[1]:, :]
+            
+            obs = obs + obs_ids_emb
+            cond = cond + cond_ids_emb
+
+            pe=None
 
         for block in self.double_blocks.layers:
             obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)

@@ -113,23 +113,27 @@ class SelfAttention(nnx.Module):
         self,
         dim: int,
         rngs: nnx.Rngs,
+        qkv_features: int | None = None,
         param_dtype: DTypeLike = jnp.bfloat16,
         num_heads: int = 8,
         qkv_bias: bool = False,
     ):
+        if qkv_features is None:
+            qkv_features = dim
+
         self.num_heads = num_heads
-        head_dim = dim // num_heads
+        head_dim = qkv_features // num_heads
 
         self.qkv = nnx.Linear(
             in_features=dim,
-            out_features=dim * 3,
+            out_features=qkv_features * 3,
             use_bias=qkv_bias,
             rngs=rngs,
             param_dtype=param_dtype,
         )
         self.norm = QKNorm(dim=head_dim, rngs=rngs, param_dtype=param_dtype)
         self.proj = nnx.Linear(
-            in_features=dim,
+            in_features=qkv_features,
             out_features=dim,
             use_bias=True,
             rngs=rngs,
@@ -152,6 +156,7 @@ class ModulationOut:
     gate: Array
 
 
+# includes AdaLN-zero initialization
 class Modulation(nnx.Module):
     def __init__(
         self,
@@ -188,12 +193,14 @@ class DoubleStreamBlock(nnx.Module):
         num_heads: int,
         mlp_ratio: float,
         rngs: nnx.Rngs,
+        qkv_features: int | None = None,
         param_dtype: DTypeLike = jnp.bfloat16,
         qkv_bias: bool = False,
     ):
         mlp_hidden_dim = int(hidden_size * mlp_ratio)
         self.num_heads = num_heads
         self.hidden_size = hidden_size
+        self.qkv_features = qkv_features if qkv_features is not None else hidden_size
         self.obs_mod = Modulation(
             dim=hidden_size, double=True, rngs=rngs, param_dtype=param_dtype
         )
@@ -208,6 +215,7 @@ class DoubleStreamBlock(nnx.Module):
         self.obs_attn = SelfAttention(
             dim=hidden_size,
             num_heads=num_heads,
+            qkv_features=self.qkv_features,
             qkv_bias=qkv_bias,
             rngs=rngs,
             param_dtype=param_dtype,
@@ -253,6 +261,7 @@ class DoubleStreamBlock(nnx.Module):
         self.cond_attn = SelfAttention(
             dim=hidden_size,
             num_heads=num_heads,
+            qkv_features=self.qkv_features,
             qkv_bias=qkv_bias,
             rngs=rngs,
             param_dtype=param_dtype,
@@ -346,26 +355,31 @@ class SingleStreamBlock(nnx.Module):
         hidden_size: int,
         num_heads: int,
         rngs: nnx.Rngs,
+        qkv_features: int | None = None,
         param_dtype: DTypeLike = jnp.bfloat16,
         mlp_ratio: float = 4.0,
         qk_scale: float | None = None,
     ):
         self.hidden_dim = hidden_size
+        if qkv_features is None:
+            self.qkv_features = hidden_size
+        else:
+            self.qkv_features = qkv_features
         self.num_heads = num_heads
-        head_dim = hidden_size // num_heads
+        head_dim = qkv_features // num_heads
         self.scale = qk_scale or head_dim**-0.5
 
         self.mlp_hidden_dim = int(hidden_size * mlp_ratio)
         # qkv and mlp_in
         self.linear1 = nnx.Linear(
             in_features=hidden_size,
-            out_features=hidden_size * 3 + self.mlp_hidden_dim,
+            out_features=self.qkv_features * 3 + self.mlp_hidden_dim,
             rngs=rngs,
             param_dtype=param_dtype,
         )
         # proj and mlp_out
         self.linear2 = nnx.Linear(
-            in_features=hidden_size + self.mlp_hidden_dim,
+            in_features=self.qkv_features + self.mlp_hidden_dim,
             out_features=hidden_size,
             rngs=rngs,
             param_dtype=param_dtype,
@@ -393,7 +407,7 @@ class SingleStreamBlock(nnx.Module):
     ) -> Array:
         mod, _ = self.modulation(vec)
         x_mod = (1 + mod.scale) * self.pre_norm(x) + mod.shift
-        qkv, mlp = jnp.split(self.linear1(x_mod), [3 * self.hidden_size], axis=-1)
+        qkv, mlp = jnp.split(self.linear1(x_mod), [3 * self.qkv_features], axis=-1)
 
         q, k, v = rearrange(qkv, "B L (K H D) -> K B H L D", K=3, H=self.num_heads)
         q, k = self.norm(q, k, v)

@@ -84,7 +84,7 @@ class GeodesicProbPath(ProbPath):
             PathSample: A conditional sample at :math:`X_t \sim p_t`.
         """
         self.assert_sample_shape(x_0=x_0, x_1=x_1, t=t)
-        t = expand_tensor_like(input_tensor=t, expand_to=x_1[..., 0:1]).clone()
+        t = expand_tensor_like(input_array=t, expand_to=x_1[..., 0:1]).clone()
 
         def cond_u(x_0, x_1, t):
             path = geodesic(self.manifold, x_0, x_1)
