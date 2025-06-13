@@ -2,7 +2,10 @@ import jax.numpy as jnp
 from flax import nnx
 
 
-class SimformerCFMLoss(nnx.Module):
+from flow_matching.loss import ContinuousFMLoss
+
+
+class SimformerCFMLoss(ContinuousFMLoss):
     def __init__(self, path, reduction="mean"):
         """
         ContinuousFMLoss is a class that computes the continuous flow matching loss.
@@ -11,16 +14,7 @@ class SimformerCFMLoss(nnx.Module):
             path: Probability path (x-prediction training).
             reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
         """
-        self.path = path
-        if reduction not in ["None", "mean", "sum"]:
-            raise ValueError(f"{reduction} is not a valid value for reduction")
-
-        if reduction == "mean":
-            self.reduction = jnp.mean
-        elif reduction == "sum":
-            self.reduction = jnp.sum
-        else:
-            self.reduction = lambda x: x
+        super().__init__(path, reduction)
 
     def __call__(self, vf, batch, args=None, condition_mask=None, **kwargs):
         """

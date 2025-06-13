@@ -4,14 +4,16 @@
 # This source code is licensed under the CC-by-NC license found in the
 # LICENSE file in the root directory of this source tree.
 
-import torch
-from torch import Tensor
-from torch.nn.modules.loss import _Loss
+from typing import Literal
+
+import jax
+from jax import Array
+import jax.numpy as jnp
 
 from flow_matching.path import MixtureDiscreteProbPath
 
 
-class MixturePathGeneralizedKL(_Loss):
+class MixturePathGeneralizedKL:
     r"""A generalized KL loss for discrete flow matching.
     A class that measures the generalized KL of a discrete flow model :math:`p_{1|t}` w.r.t. a probability path given by ``path``. Note: this class is assuming that the model is trained on the same path.
 
@@ -27,53 +29,59 @@ class MixturePathGeneralizedKL(_Loss):
         reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
     """
 
-    def __init__(self, path: MixtureDiscreteProbPath, reduction: str = "mean") -> None:
-        super().__init__(None, None, reduction)
+    def __init__(self, path: MixtureDiscreteProbPath, reduction: Literal["none", "mean", "sum"] = "mean") -> None:
         self.path = path
+        self.reduction = reduction
 
-    def forward(self, logits: Tensor, x_1: Tensor, x_t: Tensor, t: Tensor) -> Tensor:
+    def __call__(self, logits: Array, x_1: Array, x_t: Array, t: Array) -> Array:
         r"""Evaluates the generalized KL loss.
 
         Args:
-            logits (Tensor): posterior model output (i.e., softmax(``logits``) :math:`=p_{1|t}(x|x_t)`), shape (batch, d, K).
-            x_1 (Tensor): target data point :math:`x_1 \sim q`, shape (batch, d).
-            x_t (Tensor): conditional sample at :math:`x_t \sim p_t(\cdot|x_1)`, shape (batch, d).
-            t (Tensor): times in :math:`[0,1]`, shape (batch).
+            logits (Array): posterior model output (i.e., softmax(``logits``) :math:`=p_{1|t}(x|x_t)`), shape (batch, d, K).
+            x_1 (Array): target data point :math:`x_1 \sim q`, shape (batch, d).
+            x_t (Array): conditional sample at :math:`x_t \sim p_t(\cdot|x_1)`, shape (batch, d).
+            t (Array): times in :math:`[0,1]`, shape (batch).
 
         Raises:
             ValueError: reduction value must be one of ``'none'`` | ``'mean'`` | ``'sum'``.
 
         Returns:
-            Tensor: Generalized KL loss.
+            Array: Generalized KL loss.
         """
         x_1_shape = x_1.shape
 
         # extract x_1 value of log(p_{1|t}(x|x_t)).
-        log_p_1t = torch.log_softmax(logits, dim=-1)
-        log_p_1t_x1 = torch.gather(log_p_1t, dim=-1, index=x_1.unsqueeze(-1))
-        log_p_1t_x1 = log_p_1t_x1.view(*x_1_shape)
+        log_p_1t = jax.nn.log_softmax(logits, axis=-1)
+        # JAX equivalent of torch.gather - use advanced indexing
+        batch_indices = jnp.arange(x_1.shape[0])[:, None]
+        d_indices = jnp.arange(x_1.shape[1])[None, :]
+        log_p_1t_x1 = log_p_1t[batch_indices, d_indices, x_1]
 
         # extract x_t value of p_{1|t}(x|x_t).
-        p_1t = torch.exp(log_p_1t)
-        p_1t_xt = torch.gather(p_1t, dim=-1, index=x_t.unsqueeze(-1))
-        p_1t_xt = p_1t_xt.view(*x_1_shape)
+        p_1t = jnp.exp(log_p_1t)
+        p_1t_xt = p_1t[batch_indices, d_indices, x_t]
 
         scheduler_output = self.path.scheduler(t)
 
-        jump_coefficient = (
-            scheduler_output.d_alpha_t / (1 - scheduler_output.alpha_t)
-        )[(...,) + (None,) * (x_1.dim() - 1)]
-        jump_coefficient = jump_coefficient.repeat(1, *x_1_shape[1:])
-        delta_x1_xt = (x_t == x_1).to(log_p_1t.dtype)
+        # Create broadcasting shape for jump_coefficient
+        jump_coefficient = scheduler_output.d_alpha_t / (1 - scheduler_output.alpha_t)
+        # Reshape to broadcast properly: (batch,) -> (batch, 1, 1, ...)
+        expand_dims = (slice(None),) + (None,) * (x_1.ndim - 1)
+        jump_coefficient = jump_coefficient[expand_dims]
+        # Tile to match x_1 shape
+        tile_shape = (1,) + x_1_shape[1:]
+        jump_coefficient = jnp.tile(jump_coefficient, tile_shape)
+        
+        delta_x1_xt = (x_t == x_1).astype(log_p_1t.dtype)
 
         loss = -jump_coefficient * (
             p_1t_xt - delta_x1_xt + (1 - delta_x1_xt) * log_p_1t_x1
         )
 
         if self.reduction == "mean":
-            return torch.mean(loss)
+            return jnp.mean(loss)
         elif self.reduction == "sum":
-            return torch.sum(loss)
+            return jnp.sum(loss)
         elif self.reduction == "none":
             return loss
         else:

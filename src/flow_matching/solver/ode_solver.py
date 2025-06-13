@@ -157,7 +157,6 @@ class ODESolver(Solver):
         self,
         log_p0: Callable[[Array], Array],
         step_size: Optional[float],
-        condition_mask: Optional[Array] = None,
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
@@ -190,12 +189,9 @@ class ODESolver(Solver):
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
-        if condition_mask is None:
-            vector_field = self.velocity_model.get_vector_field(**model_extras)
-            divergence = self.velocity_model.get_divergence(**model_extras)
-        else:
-            vector_field = self.velocity_model.get_conditioned_vector_field(condition_mask, **model_extras)
-            divergence = self.velocity_model.get_conditioned_divergence(condition_mask, **model_extras)
+        vector_field = self.velocity_model.get_vector_field(**model_extras)
+        divergence = self.velocity_model.get_divergence(**model_extras)
+
 
         def dynamics_func(t, states, args):
             xt, _ = states
@@ -236,9 +232,7 @@ class ODESolver(Solver):
 
             source_log_p = log_p0(x_source)
 
-            # return x_source, source_log_p + log_det[...,0]
-            return x_source, source_log_p + log_det
-            # return x_source, log_det
+            return source_log_p + log_det
 
         return sampler
     
@@ -248,7 +242,6 @@ class ODESolver(Solver):
         x_1: Array,
         log_p0: Callable[[Array], Array],
         step_size: Optional[float],
-        condition_mask: Optional[Array] = None,
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
@@ -263,13 +256,11 @@ class ODESolver(Solver):
         sampler = self.get_unnormalized_logprob(
             log_p0=log_p0,
             step_size=step_size,
-            condition_mask=condition_mask,
             method=method,
             atol=atol,
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
-            # exact_divergence=exact_divergence,
             model_extras=model_extras
         )
         solution = sampler(x_1)

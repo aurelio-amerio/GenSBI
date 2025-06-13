@@ -22,7 +22,7 @@ class ContinuousFMLoss(nnx.Module):
         else:
             self.reduction = lambda x: x
 
-    def __call__(self, vf, batch, args=None, condition_mask=None, **kwargs):
+    def __call__(self, vf, batch, args=None, **kwargs):
         """
         Evaluates the continuous flow matching loss.
 
@@ -36,22 +36,13 @@ class ContinuousFMLoss(nnx.Module):
         Returns:
             jnp.ndarray: The computed loss.
         """
-        _, x_1, _ = batch
+
         path_sample = self.path.sample(*batch)
 
-        if condition_mask is not None:
-            kwargs["condition_mask"] = condition_mask
-
         x_t = path_sample.x_t
-
-        if condition_mask is not None:
-            condition_mask = condition_mask.reshape(x_t.shape)
-            x_t = jnp.where(condition_mask, x_1, x_t)
 
         model_output = vf(x_t, path_sample.t, args=args, **kwargs)
         
         loss = model_output - path_sample.dx_t
-        if condition_mask is not None:
-            loss = jnp.where(condition_mask, 0.0, loss)
 
         return self.reduction(jnp.square(loss))
