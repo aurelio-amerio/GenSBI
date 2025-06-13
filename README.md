@@ -8,7 +8,7 @@
 
 - **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching]
 - **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm]
-- **Simformer model**: [https://github.com/mackelab/simformer/tree/main]
+- **Simformer model**: [https://github.com/mackelab/simformer]
 - **Flux1 model from BlackForest Lab**: [https://github.com/black-forest-labs/flux]
 
 ## Contents
