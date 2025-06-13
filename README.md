@@ -1,14 +1,17 @@
-# cfm-jax
+# gen-sbi
 
-Continuous Flow Matching in JAX.
+**Warning**: This library is in an early stage of development and will change significantly in the future.
 
-This library implements continuous flow matching techniques for probabilistic modeling and simulation using JAX. It is inspired by the Facebook Flow Matching library ([link]), the Simformer model for all-in-one simulation ([link]), and the Flux1 model from BlackForest Lab ([link]).
+Continuous Flow Matching and Diffusion models in JAX.
+
+This library implements continuous flow matching and diffusion techniques for probabilistic modeling and simulation using JAX. It is inspired by the Facebook Flow Matching library ([link]) and EDM ([link]), the Simformer model for all-in-one simulation ([link]), and the Flux1 model from BlackForest Lab ([link]).
 
 ## Contents
 
 ### `src/`
 The `src` directory contains the core implementation of the library:
 - **Flow Matching**: Implements continuous flow matching techniques, including paths, solvers, and utilities.
+- **Diffusion**: Contains diffusion models and utilities for training and evaluation.
 - **Models**:
   - `flux1`: Contains the Flux1 model, a transformer-based architecture for flow matching on sequences.
   - `simformer`: Implements the Simformer model for all-in-one simulation tasks.
