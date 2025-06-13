@@ -4,7 +4,7 @@
 
 Continuous Flow Matching and Diffusion models in JAX.
 
-This library implements continuous flow matching and diffusion techniques for probabilistic modeling and simulation using JAX. It is inspired by the Facebook Flow Matching library ([link]) and EDM ([link]), the Simformer model for all-in-one simulation ([link]), and the Flux1 model from BlackForest Lab ([link]).
+This library implements continuous flow matching and diffusion techniques for probabilistic modeling and simulation using JAX. It is inspired by the Facebook Flow Matching library ([link]) and EDM ([link]), the Simformer model from all-in-one simulation based inference ([link]), and the Flux1 model from BlackForest Lab ([link]) and the jflux implementation ([link]).
 
 ## Contents
 
