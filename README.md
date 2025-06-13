@@ -4,7 +4,7 @@
 
 ## Overview
 
-**gen-sbi** is a library for Simulation-Based Inference (SBI) adopting Flow Matching and Diffusion models in JAX. It provides tools for probabilistic modeling and simulation, inspired by cutting-edge research and implementations, including:
+**gen-sbi** is a library for Simulation-Based Inference (SBI) adopting Optimal Transport Flow Matching and Diffusion models in JAX. It provides tools for probabilistic modeling and simulation, inspired by cutting-edge research and implementations, including:
 
 - **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching]
 - **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm]
@@ -16,7 +16,7 @@
 ### `src/`
 The `src` directory contains the core implementation of the library:
 
-- **Flow Matching**: Implements continuous flow matching techniques, including paths, solvers, and utilities.
+- **Flow Matching**: Implements flow matching techniques, including paths, solvers, and utilities.
 - **Diffusion**: Contains diffusion models and utilities for training and evaluation.
 - **Models**:
   - **Flux1**: A transformer-based architecture for flow matching on sequences.
@@ -29,7 +29,7 @@ The `src` directory contains the core implementation of the library:
 The `examples` directory provides Jupyter notebooks demonstrating the usage of the library:
 
 #### Flow Matching
-- `flow_matching_2d.ipynb`: Demonstrates continuous flow matching in 2D.
+- `flow_matching_2d.ipynb`: Demonstrates flow matching in 2D.
 - `flow_matching_2d_discrete.ipynb`: Explores discrete flow matching techniques.
 
 #### SBI Benchmarks
@@ -42,7 +42,7 @@ These examples showcase training, evaluation, and visualization of flow matching
 
 The following tasks are planned for future development:
 
-- [x] Implement continuous flow matching techniques.
+- [x] Implement OT flow matching techniques.
 - [x] Implement diffusion models (EDM and score matching).
 - [x] Implement Transformer-based models for conditional posterior estimation (Flux1 and Simformer).
 - [ ] Unify the API for flow matching and diffusion models.
