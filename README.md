@@ -28,8 +28,19 @@ The `examples` directory provides Jupyter notebooks demonstrating the usage of t
 
 These examples showcase training, evaluation, and visualization of flow matching models.
 
+## TODO
+- [x] Implement continuous flow matching techniques.
+- [x] Implement diffusion models (EDM and score matching).
+- [x] Implement Transformer-based models for conditional posterior estimation (Flux1 and Simformer).
+- [ ] Unify the API for flow matching and diffusion models.
+- [ ] Implemente wrappers to make training of flow matching and diffusion models similar.
+- [ ] Add more examples and benchmarks.
+- [ ] Improve documentation and tutorials.
+- [ ] Write tests for core functionalities.
+
 ## Citation
-If you use this library, please cite the original sources:
-- Facebook Flow Matching library ([link])
-- Simformer model ([link])
-- Flux1 model from BlackForest Lab ([link])
+If you use this library, please consider citing also the original sources:
+- Facebook Flow Matching library ([https://github.com/facebookresearch/flow_matching])
+- Elucidating the Design Space of Diffusion-Based Generative Models ([https://github.com/NVlabs/edm])
+- Simformer model ([https://github.com/mackelab/simformer/tree/main])
+- Flux1 model from BlackForest Lab ([https://github.com/black-forest-labs/flux])
