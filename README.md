@@ -6,10 +6,10 @@
 
 **gen-sbi** is a library for Continuous Flow Matching and Diffusion models in JAX. It provides tools for probabilistic modeling and simulation, inspired by cutting-edge research and implementations, including:
 
-- **Facebook Flow Matching library** ([link])
-- **EDM** ([link])
-- **Simformer model** for all-in-one simulation-based inference ([link])
-- **Flux1 model** from BlackForest Lab ([link])
+- **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching]
+- **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm]
+- **Simformer model**: [https://github.com/mackelab/simformer/tree/main]
+- **Flux1 model from BlackForest Lab**: [https://github.com/black-forest-labs/flux]
 
 ## Contents
 
@@ -53,9 +53,5 @@ The following tasks are planned for future development:
 
 ## Citation
 
-If you use this library, please consider citing the original sources:
+If you use this library, please consider citing the original sources.
 
-- **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching]
-- **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm]
-- **Simformer model**: [https://github.com/mackelab/simformer/tree/main]
-- **Flux1 model from BlackForest Lab**: [https://github.com/black-forest-labs/flux]
