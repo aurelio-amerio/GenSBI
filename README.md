@@ -4,7 +4,7 @@
 
 ## Overview
 
-**gen-sbi** is a library for Simulation-Based Inference (SBI) adopting Continuous Flow Matching and Diffusion models in JAX. It provides tools for probabilistic modeling and simulation, inspired by cutting-edge research and implementations, including:
+**gen-sbi** is a library for Simulation-Based Inference (SBI) adopting Flow Matching and Diffusion models in JAX. It provides tools for probabilistic modeling and simulation, inspired by cutting-edge research and implementations, including:
 
 - **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching]
 - **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm]
