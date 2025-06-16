@@ -14,7 +14,8 @@ from tqdm import tqdm
 
 from flow_matching.path import MixtureDiscreteProbPath
 from flow_matching.solver.solver import Solver
-from flow_matching.utils import categorical, ModelWrapper
+from flow_matching.utils import categorical
+from utils.model_wrapping import ModelWrapper
 from .utils import get_nearest_times
 
 

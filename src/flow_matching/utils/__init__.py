@@ -5,15 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 from .categorical_sampler import categorical
-from .model_wrapper import ModelWrapper, GuidedModelWrapper
-from .utils import expand_tensor_like, divergence, unsqueeze_to_match, plot_trajectories
+from .utils import expand_tensor_like, unsqueeze_to_match
 
 __all__ = [
     "unsqueeze_to_match",
     "expand_tensor_like",
-    "divergence",
-    "plot_trajectories",
     "categorical",
-    "ModelWrapper",
-    "GuidedModelWrapper",
 ]

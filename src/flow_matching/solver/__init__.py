@@ -13,7 +13,7 @@ from .solver import Solver
 __all__ = [
     "ODESolver",
     "Solver",
-    "ModelWrapper",
+    # "ModelWrapper",
     "ZeroEnds",
     "NonSingular",
     # "MixtureDiscreteEulerSolver",

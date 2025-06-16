@@ -9,7 +9,7 @@
 from jax import Array
 
 from flow_matching.path.scheduler.scheduler import Scheduler
-from flow_matching.utils import ModelWrapper
+from utils.model_wrapping import ModelWrapper
 
 
 class ScheduleTransformedModel(ModelWrapper):

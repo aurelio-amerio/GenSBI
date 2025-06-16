@@ -19,7 +19,7 @@ import diffrax
 from diffrax import AbstractERK
 
 from flow_matching.solver.solver import Solver
-from flow_matching.utils import divergence, ModelWrapper
+from utils.model_wrapping import ModelWrapper
 
 
 class ODESolver(Solver):

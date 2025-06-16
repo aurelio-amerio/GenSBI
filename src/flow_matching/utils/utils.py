@@ -68,70 +68,11 @@ def expand_tensor_like(input_array: Array, expand_to: Array) -> Array:
     return jnp.broadcast_to(t_expanded, expand_to.shape)
 
 
-# def gradient(
-#     output: Array,
-#     x: Array,
-#     grad_outputs: Optional[Array] = None,
-# ) -> Array:
-#     """
-#     Compute the gradient of the inner product of output and grad_outputs w.r.t :math:`x`.
 
-#     Args:
-#         output (Array): [N, D] Output of the function.
-#         x (Array): [N, d_1, d_2, ... ] input
-#         grad_outputs (Optional[Array]): [N, D] Gradient of outputs, if `None`,
-#             then will use an array of ones
-#         create_graph (bool): If True, graph of the derivative will be constructed, allowing
-#             to compute higher order derivative products. Defaults to False.
-#     Returns:
-#         Array: [N, d_1, d_2, ... ]. the gradient w.r.t x.
-#     """
-#     if grad_outputs is None:
-#         grad_outputs = jnp.ones_like(output)
-    
-#     # Use JAX's grad with vjp for custom gradients
-#     def inner_product(x):
-#         return jnp.sum(output * grad_outputs)
-    
-#     return jax.grad(inner_product)(x)
+# def _divergence_single(vf, t, x):
+#     res = jnp.trace(jax.jacfwd(vf, argnums=1)(t, x),axis1=-2, axis2=-1)
+#     return res
 
-def _divergence_single(vf, t, x):
-    res = jnp.trace(jax.jacfwd(vf, argnums=1)(t, x),axis1=-2, axis2=-1)
-    return res
-
-    
-def divergence(
-        vf: Callable, 
-        t: Array,
-        x: Array,
-        args: Optional[Array] = None,
-        ):
-    """
-    Compute the divergence of the vector field vf at point x and time t.
-    Args:
-        vf (Callable): The vector field function.
-        x (Array): The point at which to compute the divergence.
-        t (Array): The time at which to compute the divergence.
-    Returns:
-        Array: The divergence of the vector field at point x and time t.
-    """
-    x = jnp.atleast_1d(x)
-    if x.ndim < 2: 
-        x = jnp.expand_dims(x, axis=0)
-    t = jnp.atleast_1d(t)
-    t = jnp.broadcast_to(
-        t, (*x.shape[:-1], t.shape[-1])
-    )
-
-    # vf_wapped = lambda t, x: vf(t, x, args=args)
-
-    # res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x)
-
-    vf_wrapped = lambda t, x: vf(t, x, args=args)
-
-    res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wrapped, t, x)
-
-    return jnp.squeeze(res)
     
 # def divergence(
 #         vf: Callable, 
@@ -148,26 +89,33 @@ def divergence(
 #     Returns:
 #         Array: The divergence of the vector field at point x and time t.
 #     """
-#     x = jnp.atleast_2d(x)
+#     x = jnp.atleast_1d(x)
+#     if x.ndim < 2: 
+#         x = jnp.expand_dims(x, axis=0)
 #     t = jnp.atleast_1d(t)
-#     if len(t.shape) < 2:
-#         for i in range(len(x.shape) - 1):
-#             t = jnp.expand_dims(t, axis=-1)
-#         t = jnp.broadcast_to(t, (*x.shape[:-1], t.shape[-1]))
+#     t = jnp.broadcast_to(
+#         t, (*x.shape[:-1], t.shape[-1])
+#     )
 
-#     trace = jax.jacfwd(vf, argnums=1)(t, x, args=args)
-#     res = einsum(trace, "b i i ... -> b ...")
-#     return res
+#     # vf_wapped = lambda t, x: vf(t, x, args=args)
 
+#     # res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wapped, t, x)
 
-# plotting utils
-def plot_trajectories(traj):
-    traj = np.array(traj)
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.scatter(traj[0,:,0], traj[0,:,1], color="red", s=1, alpha=1)
-    ax.plot(traj[:,:,0], traj[:,:,1], color="white", lw=0.5, alpha=0.7)
-    ax.scatter(traj[-1,:,0], traj[-1,:,1], color="blue", s=2, alpha=1, zorder=2)
-    ax.set_aspect('equal', adjustable='box')
-    # set black background
-    ax.set_facecolor('#A6AEBF')
-    return fig, ax
+#     vf_wrapped = lambda t, x: vf(t, x, args=args)
+
+#     res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wrapped, t, x)
+
+#     return jnp.squeeze(res)
+    
+
+# # plotting utils
+# def plot_trajectories(traj):
+#     traj = np.array(traj)
+#     fig, ax = plt.subplots(figsize=(6, 6))
+#     ax.scatter(traj[0,:,0], traj[0,:,1], color="red", s=1, alpha=1)
+#     ax.plot(traj[:,:,0], traj[:,:,1], color="white", lw=0.5, alpha=0.7)
+#     ax.scatter(traj[-1,:,0], traj[-1,:,1], color="blue", s=2, alpha=1, zorder=2)
+#     ax.set_aspect('equal', adjustable='box')
+#     # set black background
+#     ax.set_facecolor('#A6AEBF')
+#     return fig, ax
