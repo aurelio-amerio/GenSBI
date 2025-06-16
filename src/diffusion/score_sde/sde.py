@@ -112,16 +112,14 @@ class BaseSDE(abc.ABC):
         def loss_fn(score_model, x0, loss_mask=None, *args, rng, **kwargs):
             N_batch = x0.shape[0]
             t_shape = (N_batch,) + (1,) * (x0.ndim - 1)
-            # t needs to have the same number of dimensions as x0, so we broadcast it
+            #t needs to have the same number of dimensions as x0, so we broadcast it
             rng, step_key = random.split(rng)
             T_min = 1 / self.diff_steps
             t = jax.random.uniform(step_key, t_shape, minval=T_min, maxval=1.0)
 
+            noise = random.normal(rng, x0.shape)
             mean_t = self.marginal_mean(x0, t)
             std_t = self.marginal_stddev(x0, t)
-
-            rng, step_key = random.split(rng)
-            noise = random.normal(step_key, x0.shape)
             xt = mean_t + noise * std_t
 
             # if the loss_mask is not None, we use it to mask some features, effectively conditioning on them
@@ -131,11 +129,11 @@ class BaseSDE(abc.ABC):
 
             score_pred = score_model(xt, t, *args, **kwargs)
             score_target = -noise / std_t
-            weight = weight_fn(t)
-
-            loss = weight * jnp.sum((score_pred - score_target) ** 2, axis=-1, keepdims=True)
+            loss = (score_pred - score_target) ** 2
             if loss_mask is not None:
-                loss = jnp.where(loss_mask, 0.0, loss)
+                loss = jnp.where(loss_mask, 0.0,loss)
+
+            loss = weight_fn(t) * jnp.sum(loss, axis=-1, keepdims=True)
             loss = jnp.mean(loss)
 
             return loss
@@ -146,7 +144,7 @@ class BaseSDE(abc.ABC):
         if scale_min is None:
             assert not self.scale_min is None, "scale_min must be implemented in the SDE class or provided as an argument"
             scale_min = self.scale_min
-        def output_scale_fn(t, x):
+        def output_scale_fn(x,t):
             scale = jnp.clip(jnp.sqrt(jnp.sum(self.marginal_variance(t[..., None])*jnp.ones(x.shape), -1)), scale_min)
             return 1/scale[..., None] * x
         
@@ -194,6 +192,7 @@ class ReverseSDE(abc.ABC):
         self,
         rng,
         n_samples,
+        eps=1e-3,
         condition_mask=None,
         condition_value=None,
         solver=Euler(),
@@ -206,7 +205,7 @@ class ReverseSDE(abc.ABC):
         Sample from the reverse SDE.
         """
         t0 = self.forward_sde.T
-        t1 = 1 / n_steps
+        t1 = eps
         dt = -t0 / n_steps
 
         if condition_mask is not None:

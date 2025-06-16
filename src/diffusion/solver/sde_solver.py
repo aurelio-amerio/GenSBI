@@ -1,0 +1,112 @@
+from typing import Callable, Optional, Sequence, Tuple, Union
+
+from abc import abstractmethod
+
+import jax
+from jax import jit, vmap
+import jax.numpy as jnp
+from jax import Array
+
+from flax import nnx
+
+from functools import partial
+
+from einops import repeat
+
+
+from diffusion.solver.solver import Solver
+from diffusion.solver.edm_samplers import edm_sampler, edm_ablation_sampler
+from diffusion.path import EDMPath
+
+
+class SDESolver(Solver):
+    def __init__(self, score_model: Callable, path: EDMPath):
+
+        self.score_model = score_model
+        self.path = path
+        assert self.path.name in [
+            "EDM",
+            "EDM-VP",
+            "EDM-VE",
+        ], f"Path must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.path.name}."
+
+        self.reverse_sde = self.path.reverse(self.score_model)
+
+    def get_sampler(
+        self,
+        condition_mask: Optional[Array] = None,
+        condition_value: Optional[Array] = None,
+        cfg_scale=None,
+        nsteps=18,
+        method: str = "Heun",
+        return_intermediates: bool = False,
+        model_extras: dict = {},
+        solver_params: Optional[dict] = {},
+    ):
+        if self.path.name == "EDM":
+            sampler_ = edm_sampler
+        else:
+            sampler_ = edm_ablation_sampler
+
+        if cfg_scale is not None:
+            raise NotImplementedError(
+                "CFG scale is not implemented for EDM samplers yet."
+            )
+
+        if return_intermediates:
+            raise NotImplementedError(
+                "Returning intermediates is not implemented for EDM samplers yet."
+            )
+
+        # wrap the sampler
+        S_churn = solver_params.get("S_churn", 0)
+        S_min = solver_params.get("S_min", 0)
+        S_max = solver_params.get("S_max", float("inf"))
+        S_noise = solver_params.get("S_noise", 1)
+
+        @jit
+        def sample(key, x_init):
+            return sampler_(
+                self.path.scheduler,
+                self.score_model,
+                x_init,
+                key=key,
+                condition_mask=condition_mask,
+                condition_value=condition_value,
+                n_steps=nsteps,
+                S_churn=S_churn,
+                S_min=S_min,
+                S_max=S_max,
+                S_noise=S_noise,
+                method=method,
+                model_kwargs=model_extras,
+            )
+
+        return sample
+
+    def sample(
+        self,
+        key,
+        nsamples,
+        condition_mask: Optional[Array] = None,
+        condition_value: Optional[Array] = None,
+        cfg_scale=None,
+        nsteps=18,
+        method: str = "Heun",
+        return_intermediates: bool = False,
+        model_extras: dict = {},
+        solver_params: Optional[dict] = {},
+    ):
+        sample = self.get_sampler(
+            condition_mask=condition_mask,
+            condition_value=condition_value,
+            cfg_scale=cfg_scale,
+            nsteps=nsteps,
+            method=method,
+            return_intermediates=return_intermediates,
+            model_extras=model_extras,
+            solver_params=solver_params,
+        )
+        forward_sde = self.path.scheduler
+        x_init = forward_sde.sample_prior(key, (nsamples, forward_sde.dim))
+        return sample(key, x_init)
