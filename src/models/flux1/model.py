@@ -35,12 +35,12 @@ class FluxParams:
     use_rope: bool = True
     theta: int = 10_000
     guidance_embed: bool = False
-    qkv_bottleneck: int = 1
+    qkv_multiplier: int = 1
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        self.hidden_size = int(jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.qkv_bottleneck * self.num_heads)
-        self.qkv_features = self.hidden_size // self.qkv_bottleneck
+        self.hidden_size = int(jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.qkv_multiplier * self.num_heads)
+        self.qkv_features = self.hidden_size // self.qkv_multiplier
 
 
 class Identity(nnx.Module):
