@@ -1,4 +1,4 @@
-# gen-sbi
+# GenSBI
 
 **Warning**: This library is in an early stage of development and will change significantly in the future.
 
