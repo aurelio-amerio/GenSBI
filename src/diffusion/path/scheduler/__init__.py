@@ -1,7 +1,7 @@
-from .edm import EDM, EDM_VP, EDM_VE
+from .edm import EDMScheduler, VPScheduler, VEScheduler
 
 __all__ = [
-    "EDM",
-    "EDM_VP",
-    "EDM_VE",
+    "EDMScheduler",
+    "VPScheduler",
+    "VEScheduler",
 ]

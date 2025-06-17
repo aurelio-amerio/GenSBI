@@ -16,13 +16,12 @@ class SDESolver(Solver):
 
         self.score_model = score_model
         self.path = path
-        assert self.path.name in [
+        assert self.path.scheduler.name in [
             "EDM",
             "EDM-VP",
             "EDM-VE",
         ], f"Path must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.path.name}."
 
-        self.reverse_sde = self.path.reverse(self.score_model)
 
     def get_sampler(
         self,
@@ -45,10 +44,10 @@ class SDESolver(Solver):
                 "CFG scale is not implemented for EDM samplers yet."
             )
 
-        if return_intermediates:
-            raise NotImplementedError(
-                "Returning intermediates is not implemented for EDM samplers yet."
-            )
+        # if return_intermediates:
+        #     raise NotImplementedError(
+        #         "Returning intermediates is not implemented for EDM samplers yet."
+        #     )
 
         # wrap the sampler
         S_churn = solver_params.get("S_churn", 0)
@@ -65,6 +64,7 @@ class SDESolver(Solver):
                 key=key,
                 condition_mask=condition_mask,
                 condition_value=condition_value,
+                return_intermediates=return_intermediates,
                 n_steps=nsteps,
                 S_churn=S_churn,
                 S_min=S_min,
@@ -79,7 +79,7 @@ class SDESolver(Solver):
     def sample(
         self,
         key,
-        nsamples,
+        x_init: Array,
         condition_mask: Optional[Array] = None,
         condition_value: Optional[Array] = None,
         cfg_scale=None,
@@ -99,6 +99,4 @@ class SDESolver(Solver):
             model_extras=model_extras,
             solver_params=solver_params,
         )
-        forward_sde = self.path.scheduler
-        x_init = forward_sde.sample_prior(key, (nsamples, forward_sde.dim))
         return sample(key, x_init)

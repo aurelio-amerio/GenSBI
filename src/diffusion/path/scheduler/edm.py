@@ -16,8 +16,7 @@ from typing import Callable
 
 
 class BaseSDE(abc.ABC):
-    def __init__(self, dim: int):
-        self.dim = dim
+    def __init__(self):
         return
 
     @property
@@ -79,11 +78,6 @@ class BaseSDE(abc.ABC):
         # c_noise for preconditioning
         pass
 
-    # def sample_sigma(self, key, shape):
-    #     # sample sigma from the prior noise distribution
-    #     u = jax.random.uniform(key, shape)
-    #     t = self.time_schedule(u)
-    #     return self.sigma(t)
     @abc.abstractmethod
     def sample_sigma(self, key, shape):
         return
@@ -130,41 +124,37 @@ class BaseSDE(abc.ABC):
 
         return score
 
-    def get_loss_function(self):
+    def get_loss_fn(self):
 
-        def loss_fn(F, x0, loss_mask=None, *args, key, **kwargs):
+        def loss_fn(F, batch, loss_mask=None, *args, **kwargs):
             # a typical trainig loop will sample t from Unif(eps, 1), then get sigma(t) and compute the loss
             # get the denoising score matching loss, as Eq. 8 of the EDM paper
 
-            key_sigma, key_noise = random.split(key)
-
-            sigma = self.sample_sigma(key_sigma, x0.shape[0])[..., None]
+            (x_1, x_t, sigma) = batch
 
             lam = self.loss_weight(sigma)
             c_out = self.c_out(sigma)
             c_in = self.c_in(sigma)
             c_noise = self.c_noise(sigma)
             c_skip = self.c_skip(sigma)
-            noise = self.sample_noise(key_noise, x0.shape, sigma)
 
-            xt = x0 + noise  # noisy sample
             if loss_mask is not None:
-                loss_mask = jnp.broadcast_to(loss_mask, x0.shape)
-                xt = jnp.where(loss_mask, x0, xt)
+                loss_mask = jnp.broadcast_to(loss_mask, x_1.shape)
+                x_t = jnp.where(loss_mask, x_1, x_t)
 
             loss = (
                 lam
                 * c_out**2
                 * (
-                    F(c_in * (xt), c_noise, *args, **kwargs)
-                    - 1 / c_out * (x0 - c_skip * (xt))
+                    F(c_in * (x_t), c_noise, *args, **kwargs)
+                    - 1 / c_out * (x_1 - c_skip * (x_t))
                 )
                 ** 2
             )
             if loss_mask is not None:
                 loss = jnp.where(loss_mask, 0.0, loss)
             # we sum the loss on any dimension that is not the batch dimentsion, and then we compute the mean over the batch dimension (the first)
-            return jnp.mean(jnp.sum(loss, axis=tuple(range(1, len(x0.shape)))))
+            return jnp.mean(jnp.sum(loss, axis=tuple(range(1, len(x_1.shape)))))
 
         return loss_fn
 
@@ -187,9 +177,9 @@ class BaseSDE(abc.ABC):
     #     return samples
 
 
-class EDM_VP(BaseSDE):
-    def __init__(self, dim, beta_min=0.1, beta_max=20.0, e_s=1e-3, e_t=1e-5, M=1000):
-        super().__init__(dim)
+class VPScheduler(BaseSDE):
+    def __init__(self, beta_min=0.1, beta_max=20.0, e_s=1e-3, e_t=1e-5, M=1000):
+        super().__init__()
         self.beta_min = beta_min
         self.beta_max = beta_max
         self.beta_d = beta_max - beta_min
@@ -264,9 +254,9 @@ class EDM_VP(BaseSDE):
         return self.sigma(u)
 
 
-class EDM_VE(BaseSDE):
-    def __init__(self, dim, sigma_min=1e-3, sigma_max=15.0):
-        super().__init__(dim)
+class VEScheduler(BaseSDE):
+    def __init__(self, sigma_min=1e-3, sigma_max=15.0):
+        super().__init__()
         self.sigma_min = sigma_min
         self.sigma_max = sigma_max
         return
@@ -323,10 +313,9 @@ class EDM_VE(BaseSDE):
         return jnp.exp(log_sigma)
 
 
-class EDM(BaseSDE):
+class EDMScheduler(BaseSDE):
     def __init__(
         self,
-        dim,
         sigma_min=0.002,
         sigma_max=80.0,
         sigma_data=1.0,
@@ -334,7 +323,7 @@ class EDM(BaseSDE):
         P_mean=-1.2,
         P_std=1.2,
     ):
-        super().__init__(dim)
+        super().__init__()
         self.sigma_min = sigma_min
         self.sigma_max = sigma_max
         self.sigma_data = sigma_data

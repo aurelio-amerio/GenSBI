@@ -7,5 +7,5 @@ class Solver(ABC):
     """Abstract base class for solvers."""
 
     @abstractmethod
-    def sample(self, key, x_0: Array) -> Array:
+    def sample(self, key, x_1: Array) -> Array:
         ...

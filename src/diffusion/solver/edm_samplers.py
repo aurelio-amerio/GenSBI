@@ -5,10 +5,11 @@ from jax import jit
 
 # TODO still need to test
 def edm_sampler(
-    sde, model, x_0, *,
+    sde, model, x_1, *,
     key,
     condition_mask = None,
     condition_value = None,
+    return_intermediates = False,
     n_steps=18,
     S_churn=0, S_min=0, S_max=float('inf'), S_noise=1,
     method="Heun",
@@ -31,7 +32,7 @@ def edm_sampler(
     t_steps = jnp.append(t_steps, 0)
 
     # Main sampling loop.
-    x_next = x_0 * t_steps[0]
+    x_next = x_1 * t_steps[0]
 
     def one_step(carry, i):
         x_next, key = carry
@@ -65,20 +66,31 @@ def edm_sampler(
             
             x_next = jax.lax.cond(i < (n_steps - 1), apply_2nd_order_correction, lambda: x_next)  # Apply 2nd order correction if i < (n_steps - 1)
         
-        return (x_next, key), ()
+        if return_intermediates:
+            return (x_next, key), x_next
+        else:
+            return (x_next, key), ()
     
     i = jnp.arange(n_steps)
     # return one_step, x_next
         
-    carry, _ = jax.lax.scan(one_step, (x_next, key), i)
-    return carry[0]
+    carry, x_scan = jax.lax.scan(one_step, (x_next, key), i)
+    if return_intermediates:
+        return x_scan
+    else:
+        # if condition_mask is not None:
+        #     carry = jnp.where(condition_mask, condition_value, carry[0])
+        # else:
+        #     carry = carry[0]
+        return carry[0]
 
 
 def edm_ablation_sampler(
-    sde, model, x_0, *,
+    sde, model, x_1, *,
     key,
     condition_mask = None,
     condition_value = None,
+    return_intermediates = False,
     n_steps=18,
     S_churn=0, S_min=0, S_max=float('inf'), S_noise=1,
     method="Heun",
@@ -102,7 +114,7 @@ def edm_ablation_sampler(
 
     # Main sampling loop.
     t_next = t_steps[0]
-    x_next = x_0 * (sde.sigma(t_next) * sde.s(t_next))
+    x_next = x_1 * (sde.sigma(t_next) * sde.s(t_next))
 
     def one_step(carry, i):
         x_next, key = carry
@@ -140,29 +152,21 @@ def edm_ablation_sampler(
         else:
             x_next = x_prime
 
-        return (x_next, key), ()
+        if return_intermediates:
+            return (x_next, key), x_next
+        else:
+            return (x_next, key), ()
     
     i = jnp.arange(n_steps)
     # return one_step, x_next
         
-    carry, _ = jax.lax.scan(one_step, (x_next, key), i)
-    return carry[0]
+    carry, x_scan = jax.lax.scan(one_step, (x_next, key), i)
+    if return_intermediates:
+        return x_scan
+    else:
+        # if condition_mask is not None:
+        #     carry = jnp.where(condition_mask, condition_value, carry[0])
+        # else:
+        #     carry = carry[0]
+        return carry[0]
 
-
-# def sampler(
-#     sde, model, x_0, *,
-#     key,
-#     **kwargs,
-# ):
-#     # get conditional mask from kwargs, or set it to none. pop it from kwargs
-#     condition_mask = kwargs.pop("condition_mask", None)
-#     condition_value = kwargs.pop("condition_value", None)
-
-#     if sde.name in ["EDM-VP", "EDM-VE"]:
-#         sampler_ = edm_ablation_sampler
-#     elif sde.name == "EDM":
-#         sampler_ = edm_sampler
-#     else:
-#         raise ValueError(f"Unknown SDE name: {sde.name}. Supported names are ['EDM', 'EDM-VP', 'EDM-VE'].")
-    
-#     return sampler_(sde, model, x_0, key=key, condition_mask=condition_mask, condition_value=condition_value, **kwargs)
