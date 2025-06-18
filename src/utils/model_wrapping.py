@@ -26,7 +26,23 @@ class ModelWrapper(nnx.Module):
     def __init__(self, model: nnx.Module):
         self.model = model
 
-    def __call__(self, x: Array, t: Array, args, **kwargs) -> Array:
+    def _call_model(self, x: Array, t: Array, args, **kwargs) -> Array:
+        r"""
+        This method is a wrapper around the model's call method. It allows us to pass additional arguments
+        to the model, such as text conditions or other auxiliary information.
+
+        Args:
+            x (Array): input data to the model (batch_size, ...).
+            t (Array): time (batch_size).
+            args: additional information forwarded to the model, e.g., text condition.
+            **kwargs: additional keyword arguments.
+
+        Returns:
+            Array: model output.
+        """
+        return self.model(x, t, args=args, **kwargs)
+
+    def __call__(self, x: Array, t: Array, args=None, **kwargs) -> Array:
         r"""
         This method defines how inputs should be passed through the wrapped model.
         Here, we're assuming that the wrapped model takes both :math:`x` and :math:`t` as input,
@@ -48,7 +64,7 @@ class ModelWrapper(nnx.Module):
         Returns:
             Array: model output.
         """
-        return self.model(x, t, args=args, **kwargs)
+        return self._call_model(x, t, args, **kwargs)
 
     def get_vector_field(self, **kwargs) -> Array:
         r"""Compute the vector field of the model, properly squeezed for the ODE term.
@@ -62,7 +78,7 @@ class ModelWrapper(nnx.Module):
             Array: vector field of the model.
         """
         def vf(t, x, args):
-            vf = self(x, t, args, **kwargs)
+            vf = self._call_model(x, t, args, **kwargs)
             # squeeze the first dimension of the vector field if it is 1
             if vf.shape[0] == 1:
                 vf = jnp.squeeze(vf, axis=0)
@@ -106,6 +122,24 @@ class GuidedModelWrapper(ModelWrapper):
     def __init__(self, model, cfg_scale=0.7):
         super().__init__(model)
         self.cfg_scale = cfg_scale
+
+    def __call__(self, x: Array, t: Array, args=None, **kwargs) -> Array:
+        r"""Compute the guided model output as a weighted sum of conditioned and unconditioned predictions.
+
+        Args:
+            x (Array): input data to the model (batch_size, ...).
+            t (Array): time (batch_size).
+            args: additional information forwarded to the model, e.g., text condition.
+            **kwargs: additional keyword arguments.
+
+        Returns:
+            Array: guided model output.
+        """
+        # Get outputs from parent class
+        c_out = self._call_model(x, t, args, conditioned=True, **kwargs)
+        u_out = self._call_model(x, t, args, conditioned=False, **kwargs)
+
+        return (1 - self.cfg_scale) * u_out + self.cfg_scale * c_out
 
     def get_vector_field(self, **kwargs) -> Array:
         """Compute the guided vector field as a weighted sum of conditioned and unconditioned predictions."""
