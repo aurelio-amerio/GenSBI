@@ -45,7 +45,7 @@ The following tasks are planned for future development:
 - [x] Implement OT flow matching techniques.
 - [x] Implement diffusion models (EDM and score matching).
 - [x] Implement Transformer-based models for conditional posterior estimation (Flux1 and Simformer).
-- [ ] Unify the API for flow matching and diffusion models.
+- [x] Unify the API for flow matching and diffusion models.
 - [ ] Implement wrappers to make training of flow matching and diffusion models similar.
 - [ ] Add more examples and benchmarks.
 - [ ] Improve documentation and tutorials.
