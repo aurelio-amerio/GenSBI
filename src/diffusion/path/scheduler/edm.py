@@ -126,7 +126,7 @@ class BaseSDE(abc.ABC):
 
     def get_loss_fn(self):
 
-        def loss_fn(F, batch, loss_mask=None, *args, **kwargs):
+        def loss_fn(F, batch, loss_mask=None, model_extras={}):
             # a typical trainig loop will sample t from Unif(eps, 1), then get sigma(t) and compute the loss
             # get the denoising score matching loss, as Eq. 8 of the EDM paper
 
@@ -146,7 +146,7 @@ class BaseSDE(abc.ABC):
                 lam
                 * c_out**2
                 * (
-                    F(c_in * (x_t), c_noise, *args, **kwargs)
+                    F(c_in * (x_t), c_noise, **model_extras)
                     - 1 / c_out * (x_1 - c_skip * (x_t))
                 )
                 ** 2
