@@ -7,6 +7,7 @@ from einops import rearrange
 from flax import nnx
 
 from functools import partial
+from typing import Optional
 
 from dataclasses import dataclass
 
@@ -37,7 +38,8 @@ class Simformer(nnx.Module):
         params: SimformerParams,
     ):
         """
-        Simformer model for time series forecasting.
+        Initialize the Simformer model for joint density estimation.
+
         Args:
             params (SimformerParams): Parameters for the Simformer model.
         """
@@ -82,7 +84,30 @@ class Simformer(nnx.Module):
         self.output_fn = nnx.Linear(self.total_tokens, 1, rngs=params.rngs)
         return
 
-    def __call__(self, x, t, args=None, *, node_ids, condition_mask, edge_mask=None):
+    def __call__(
+        self, 
+        x: Array, 
+        t: Array, 
+        args: Optional[dict] = None, 
+        *, 
+        node_ids: Array, 
+        condition_mask: Array, 
+        edge_mask: Optional[Array] = None
+    ) -> Array:
+        """
+        Forward pass of the Simformer model.
+
+        Args:
+            x (Array): Input data.
+            t (Array): Time steps.
+            args (Optional[dict]): Additional arguments.
+            node_ids (Array): Node identifiers.
+            condition_mask (Array): Mask for conditioning.
+            edge_mask (Optional[Array]): Mask for edges.
+
+        Returns:
+            Array: Model output.
+        """
         x = jnp.atleast_1d(x)
         t = jnp.atleast_1d(t)
 
@@ -125,11 +150,39 @@ class Simformer(nnx.Module):
 
 
 class SimformerConditioner(nnx.Module):
-    def __init__(self, model):
+    def __init__(self, model: Simformer):
+        """
+        Initialize the SimformerConditioner.
+
+        Args:
+            model (Simformer): Simformer model instance.
+        """
         self.model = model
         self.dim_joint = model.params.dim_joint
 
-    def conditioned(self, obs, obs_ids, cond, cond_ids, t,  edge_mask=None):
+    def conditioned(
+        self, 
+        obs: Array, 
+        obs_ids: Array, 
+        cond: Array, 
+        cond_ids: Array, 
+        t: Array, 
+        edge_mask: Optional[Array] = None
+    ) -> Array:
+        """
+        Perform conditioned inference.
+
+        Args:
+            obs (Array): Observations.
+            obs_ids (Array): Observation identifiers.
+            cond (Array): Conditioning values.
+            cond_ids (Array): Conditioning identifiers.
+            t (Array): Time steps.
+            edge_mask (Optional[Array]): Mask for edges.
+
+        Returns:
+            Array: Conditioned output.
+        """
         obs = jnp.atleast_1d(obs)
         cond = jnp.atleast_1d(cond)
         t = jnp.atleast_1d(t)
@@ -166,8 +219,25 @@ class SimformerConditioner(nnx.Module):
         res = res[:, obs_ids]
         return res
 
-    def unconditioned(self, obs, obs_ids, t, edge_mask=None):
-        # we compute the marginal distribution for the observations
+    def unconditioned(
+        self, 
+        obs: Array, 
+        obs_ids: Array, 
+        t: Array, 
+        edge_mask: Optional[Array] = None
+    ) -> Array:
+        """
+        Perform unconditioned inference.
+
+        Args:
+            obs (Array): Observations.
+            obs_ids (Array): Observation identifiers.
+            t (Array): Time steps.
+            edge_mask (Optional[Array]): Mask for edges.
+
+        Returns:
+            Array: Unconditioned output.
+        """
         obs = jnp.atleast_1d(obs)
         t = jnp.atleast_1d(t)
 
@@ -190,9 +260,30 @@ class SimformerConditioner(nnx.Module):
         return res
 
     def __call__(
-        self, obs, obs_ids, cond, cond_ids, timesteps, conditioned: bool = True, edge_mask=None
-    ):
+        self, 
+        obs: Array, 
+        obs_ids: Array, 
+        cond: Array, 
+        cond_ids: Array, 
+        timesteps: Array, 
+        conditioned: bool = True, 
+        edge_mask: Optional[Array] = None
+    ) -> Array:
+        """
+        Perform inference based on conditioning.
 
+        Args:
+            obs (Array): Observations.
+            obs_ids (Array): Observation identifiers.
+            cond (Array): Conditioning values.
+            cond_ids (Array): Conditioning identifiers.
+            timesteps (Array): Time steps.
+            conditioned (bool): Whether to perform conditioned inference.
+            edge_mask (Optional[Array]): Mask for edges.
+
+        Returns:
+            Array: Model output.
+        """
         if conditioned:
             return self.conditioned(
                 obs, obs_ids, cond, cond_ids, timesteps, edge_mask=edge_mask

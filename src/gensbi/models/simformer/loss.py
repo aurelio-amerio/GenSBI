@@ -1,34 +1,42 @@
 import jax.numpy as jnp
 from flax import nnx
-
+from typing import Callable, Tuple, Optional
+from jax.numpy import ndarray as Array
 
 from flow_matching.loss import ContinuousFMLoss
 
 
 class SimformerCFMLoss(ContinuousFMLoss):
-    def __init__(self, path, reduction="mean"):
+    def __init__(self, path, reduction: str = "mean"):
         """
-        ContinuousFMLoss is a class that computes the continuous flow matching loss.
+        Initialize the Simformer Continuous Flow Matching Loss.
 
         Args:
-            path: Probability path (x-prediction training).
-            reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
+            path: Probability path for training.
+            reduction (str): Reduction method ('none', 'mean', 'sum').
         """
         super().__init__(path, reduction)
 
-    def __call__(self, vf, batch, args=None, condition_mask=None, **kwargs):
+    def __call__(
+        self, 
+        vf: Callable, 
+        batch: Tuple[Array, Array, Array], 
+        args: Optional[dict] = None, 
+        condition_mask: Optional[Array] = None, 
+        **kwargs
+    ) -> Array:
         """
-        Evaluates the continuous flow matching loss.
+        Evaluate the continuous flow matching loss.
 
         Args:
-            vf (callable): The vector field model to evaluate.
-            batch (tuple): A tuple containing the input data (x_0, x_1, t).
-            args (optional): Additional arguments for the function.
-            condition_mask (optional): A mask to apply to the input data.
-            **kwargs: Additional keyword arguments for the function.
+            vf (Callable): Vector field model.
+            batch (Tuple[Array, Array, Array]): Input data (x_0, x_1, t).
+            args (Optional[dict]): Additional arguments.
+            condition_mask (Optional[Array]): Mask for conditioning.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            jnp.ndarray: The computed loss.
+            Array: Computed loss.
         """
         _, x_1, _ = batch
         path_sample = self.path.sample(*batch)
