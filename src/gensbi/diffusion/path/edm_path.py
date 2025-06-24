@@ -4,8 +4,8 @@ from jax import Array
 from jax import numpy as jnp
 
 
-from diffusion.path.path import ProbPath
-from diffusion.path.path_sample import PathSample
+from gensbi.diffusion.path.path import ProbPath
+from gensbi.diffusion.path.path_sample import PathSample
 
 
 class EDMPath(ProbPath):

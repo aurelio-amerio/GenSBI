@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import jax
 from flax import nnx
 
-from flow_matching.loss import ContinuousFMLoss
+from gensbi.flow_matching.loss import ContinuousFMLoss
 
 
 class FluxCFMLoss(ContinuousFMLoss):

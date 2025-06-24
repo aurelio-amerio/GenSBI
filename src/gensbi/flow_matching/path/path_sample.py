@@ -36,7 +36,7 @@ class PathSample:
 
 @dataclass
 class DiscretePathSample:
-    """
+    r"""
     Represents a sample of a conditional-flow generated discrete probability path.
 
     Attributes:

@@ -8,7 +8,7 @@ from jax import Array
 from flax import nnx
 from jax.typing import DTypeLike
 
-from .layers import (
+from gensbi.models.flux1.layers import (
     DoubleStreamBlock,
     EmbedND,
     LastLayer,
@@ -149,7 +149,7 @@ class Flux(nnx.Module):
                 rngs=params.rngs,
                 param_dtype=params.param_dtype)
         else:
-            self.id_embedder = None
+            self.id_embedder = Identity()
 
 
     def __call__(
@@ -169,7 +169,7 @@ class Flux(nnx.Module):
         obs = self.obs_in(obs)
         vec = self.time_in(timestep_embedding(timesteps, 256))
 
-        conditioned = jnp.asarray(conditioned, dtype=jnp.int32)
+        conditioned = jnp.asarray(conditioned, dtype=jnp.int32) # type: ignore
 
         condition_embedding = (
             self.condition_embedding * (1-conditioned)
@@ -200,7 +200,7 @@ class Flux(nnx.Module):
             id_emb = self.id_embedder(ids)
 
             id_emb = jnp.broadcast_to(
-            id_emb, (obs.shape[0], self.params.obs_dim + self.params.cond_dim, self.hidden_size)
+            id_emb, (obs.shape[0], self.params.obs_dim + self.params.cond_dim, self.hidden_size)  # type: ignore
         )
 
             cond_ids_emb = id_emb[:, :cond.shape[1], :]

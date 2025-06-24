@@ -28,7 +28,10 @@ class BaseSDE(abc.ABC):
     @abc.abstractmethod
     def time_schedule(self, u):
         # given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule
-        pass
+        ...
+        raise NotImplementedError(
+            "time_schedule is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     def timesteps(self, i, N):
         u = i / (N - 1)
@@ -37,47 +40,73 @@ class BaseSDE(abc.ABC):
     @abc.abstractmethod
     def sigma(self, t):
         # also known as the schedule, as in tab 1 of EDM paper
-        pass
+        ...
+        raise NotImplementedError(
+            "sigma is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
+
 
     @abc.abstractmethod
     def sigma_inv(self, sigma):
         # sigma_inv(sigma)=t
-        pass
+        ...
+        raise NotImplementedError(
+            "sigma_inv is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     @abc.abstractmethod
     def sigma_deriv(self, t):
         # also known as the schedule derivative
-        pass
+        ...
+        raise NotImplementedError(
+            "sigma_deriv is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     @abc.abstractmethod
     def s(self, t):
         # also known as scaling, as in tab 1 of EDM paper
-        pass
+        ...
+        raise NotImplementedError(
+            "s is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     @abc.abstractmethod
     def s_deriv(self, t):
         # also known as scaling derivative
-        pass
-
+        ...
+        raise NotImplementedError(
+            "s_deriv is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
     @abc.abstractmethod
     def c_skip(self, sigma):
         # c_skip for preconditioning
-        pass
+        ...
+        raise NotImplementedError(
+            "c_skip is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     @abc.abstractmethod
     def c_out(self, sigma):
         # c_out for preconditioning
-        pass
-
+        ...
+        raise NotImplementedError(
+            "c_out is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
     @abc.abstractmethod
     def c_in(self, sigma):
         # c_in for preconditioning
-        pass
+        ...
+        raise NotImplementedError(
+            "c_in is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     @abc.abstractmethod
     def c_noise(self, sigma):
         # c_noise for preconditioning
-        pass
+        ...
+        raise NotImplementedError(
+            "c_noise is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     # def sample_sigma(self, key, shape):
     #     # sample sigma from the prior noise distribution
@@ -86,7 +115,10 @@ class BaseSDE(abc.ABC):
     #     return self.sigma(t)
     @abc.abstractmethod
     def sample_sigma(self, key, shape):
-        return
+        ...
+        raise NotImplementedError(
+            "sample_sigma is not implemented for this SDE. Please implement it in the subclass."
+        )  # noqa: E501
 
     def sample_noise(self, key, shape, sigma):
         # sample noise from the prior noise distribution with noise scale sigma(t)
@@ -100,7 +132,7 @@ class BaseSDE(abc.ABC):
     @abc.abstractmethod
     def loss_weight(self, sigma):
         # weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper
-        pass
+        ...
 
     def f(self, x, t):
         # f(x, sigma) in the SDE, also known as drift term for the forward diffusion process
@@ -164,6 +196,7 @@ class BaseSDE(abc.ABC):
             if loss_mask is not None:
                 loss = jnp.where(loss_mask, 0.0, loss)
             # we sum the loss on any dimension that is not the batch dimentsion, and then we compute the mean over the batch dimension (the first)
+            loss = jnp.asarray(loss)
             return jnp.mean(jnp.sum(loss, axis=tuple(range(1, len(x0.shape)))))
 
         return loss_fn

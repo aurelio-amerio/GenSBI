@@ -2,16 +2,6 @@ import jax
 from jax import numpy as jnp
 from jax import jit
 
-# from diffrax import (
-#     diffeqsolve,
-#     ControlTerm,
-#     MultiTerm,
-#     ODETerm,
-#     VirtualBrownianTree,
-#     UnsafeBrownianPath,
-#     DirectAdjoint,
-#     Euler,
-# )
 
 # TODO still need to test
 def edm_sampler(

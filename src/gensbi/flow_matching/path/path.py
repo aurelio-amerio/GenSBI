@@ -12,12 +12,13 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 
-from flow_matching.path.path_sample import PathSample
+from gensbi.flow_matching.path.path_sample import PathSample
 
 
 
 class ProbPath(ABC):
-    r"""Abstract class, representing a probability path.
+    r"""
+    Abstract class, representing a probability path.
 
     A probability path transforms the distribution :math:`p(X_0)` into :math:`p(X_1)` over :math:`t=0\rightarrow 1`.
 
@@ -42,25 +43,36 @@ class ProbPath(ABC):
             grads = jax.grad(loss_fn)(params)
     """
 
-
-    #FIXME: probably need to include a rng here
     @abstractmethod
     def sample(self, x_0: Array, x_1: Array, t: Array) -> PathSample:
-        r"""Sample from an abstract probability path:
+        r"""
+        Sample from an abstract probability path.
 
-        | given :math:`(X_0,X_1) \sim \pi(X_0,X_1)`.
-        | returns :math:`X_0, X_1, X_t \sim p_t(X_t)`, and a conditional target :math:`Y`, all objects are under ``PathSample``.
+        Given :math:`(X_0,X_1) \sim \pi(X_0,X_1)`.
+        Returns :math:`X_0, X_1, X_t \sim p_t(X_t|X_0,X_1)`, and a conditional target :math:`Y`, all objects are under ``PathSample``.
 
         Args:
-            x_0 (Array): source data point, shape (batch_size, ...).
-            x_1 (Array): target data point, shape (batch_size, ...).
-            t (Array): times in [0,1], shape (batch_size).
+            x_0 (Array): Source data point, shape (batch_size, ...).
+            x_1 (Array): Target data point, shape (batch_size, ...).
+            t (Array): Times in [0,1], shape (batch_size,).
 
         Returns:
-            PathSample: a conditional sample.
+            PathSample: A conditional sample.
         """
+        pass
 
     def assert_sample_shape(self, x_0: Array, x_1: Array, t: Array):
+        """
+        Checks that the shapes of x_0, x_1, and t are compatible for sampling.
+
+        Args:
+            x_0 (Array): Source data point.
+            x_1 (Array): Target data point.
+            t (Array): Time vector.
+
+        Raises:
+            AssertionError: If the shapes are not compatible.
+        """
         assert (
             t.ndim == 1
         ), f"The time vector t must have shape [batch_size]. Got {t.shape}."

@@ -11,6 +11,8 @@ from flax import nnx
 from jax import Array
 import jax.numpy as jnp
 
+from typing import Callable
+
 from .math import divergence
 
 
@@ -40,7 +42,7 @@ class ModelWrapper(nnx.Module):
         Returns:
             Array: model output.
         """
-        return self.model(x, t, args=args, **kwargs)
+        return self.model(x, t, args=args, **kwargs) # type: ignore
 
     def __call__(self, x: Array, t: Array, args=None, **kwargs) -> Array:
         r"""
@@ -66,7 +68,7 @@ class ModelWrapper(nnx.Module):
         """
         return self._call_model(x, t, args, **kwargs)
 
-    def get_vector_field(self, **kwargs) -> Array:
+    def get_vector_field(self, **kwargs) -> Callable:
         r"""Compute the vector field of the model, properly squeezed for the ODE term.
 
         Args:
@@ -86,7 +88,7 @@ class ModelWrapper(nnx.Module):
         return vf
     
 
-    def get_divergence(self, **kwargs) -> Array:
+    def get_divergence(self, **kwargs) -> Callable:
         r"""Compute the divergence of the model.
 
         Args:
@@ -141,7 +143,7 @@ class GuidedModelWrapper(ModelWrapper):
 
         return (1 - self.cfg_scale) * u_out + self.cfg_scale * c_out
 
-    def get_vector_field(self, **kwargs) -> Array:
+    def get_vector_field(self, **kwargs) -> Callable:
         """Compute the guided vector field as a weighted sum of conditioned and unconditioned predictions."""
         # Get vector fields from parent class
         c_vf = super().get_vector_field(conditioned=True, **kwargs)

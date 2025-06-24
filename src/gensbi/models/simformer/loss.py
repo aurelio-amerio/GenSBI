@@ -3,7 +3,7 @@ from flax import nnx
 from typing import Callable, Tuple, Optional
 from jax.numpy import ndarray as Array
 
-from flow_matching.loss import ContinuousFMLoss
+from gensbi.flow_matching.loss import ContinuousFMLoss
 
 
 class SimformerCFMLoss(ContinuousFMLoss):
@@ -56,4 +56,4 @@ class SimformerCFMLoss(ContinuousFMLoss):
         if condition_mask is not None:
             loss = jnp.where(condition_mask, 0.0, loss)
 
-        return self.reduction(jnp.square(loss))
+        return self.reduction(jnp.square(loss)) # type: ignore

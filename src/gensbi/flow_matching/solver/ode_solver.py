@@ -1,4 +1,4 @@
-#FIXME: first pass
+# FIXME: first pass
 
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
@@ -18,8 +18,8 @@ from jax import Array
 import diffrax
 from diffrax import AbstractERK
 
-from flow_matching.solver.solver import Solver
-from utils.model_wrapping import ModelWrapper
+from gensbi.flow_matching.solver.solver import Solver
+from gensbi.utils.model_wrapping import ModelWrapper
 
 
 class ODESolver(Solver):
@@ -38,15 +38,13 @@ class ODESolver(Solver):
     def get_sampler(
         self,
         step_size: Optional[float],
-        condition_mask: Optional[Array] = None,
-        cfg_scale = None,
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        model_extras : dict ={},
-    ) -> Union[Array, Sequence[Array]]:
+        model_extras: dict = {},
+    ) -> Callable:
         r"""Solve the ODE with the velocity field.
 
         Example:
@@ -85,16 +83,8 @@ class ODESolver(Solver):
         Returns:
             Union[Tensor, Sequence[Tensor]]: The last timestep when return_intermediates=False, otherwise all values specified in time_grid.
         """
-        if condition_mask is not None:
-            if cfg_scale is not None:
-                term = diffrax.ODETerm(
-                    self.velocity_model.get_guided_vector_field(condition_mask, cfg_scale=cfg_scale, **model_extras))
-            else:   
-                term = diffrax.ODETerm(
-                    self.velocity_model.get_conditioned_vector_field(condition_mask, **model_extras)
-                )
-        else:
-            term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))
+
+        term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))
 
         if isinstance(method, str):
             solver = {
@@ -103,7 +93,6 @@ class ODESolver(Solver):
             }[method]()
         else:
             solver = method
-
 
         stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
 
@@ -117,56 +106,57 @@ class ODESolver(Solver):
                 t1=time_grid[-1],
                 dt0=step_size,
                 y0=x_init,
-                saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
+                saveat=(
+                    diffrax.SaveAt(ts=time_grid)
+                    if return_intermediates
+                    else diffrax.SaveAt(t1=True)
+                ),
                 stepsize_controller=stepsize_controller,
             )
-            return solution.ys if return_intermediates else solution.ys[-1]
-        
+            return solution.ys if return_intermediates else solution.ys[-1] # type: ignore
+
         return sampler
-    
+
     def sample(
         self,
         x_init: Array,
         step_size: Optional[float],
-        condition_mask: Optional[Array] = None,
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        model_extras : dict ={},
+        model_extras: dict = {},
     ) -> Union[Array, Sequence[Array]]:
 
         sampler = self.get_sampler(
             step_size=step_size,
-            condition_mask=condition_mask,
             method=method,
             atol=atol,
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
-            model_extras=model_extras
+            model_extras=model_extras,
         )
 
         solution = sampler(x_init)
 
         return solution
 
-    
     def get_unnormalized_logprob(
         self,
         log_p0: Callable[[Array], Array],
-        step_size: Optional[float],
+        step_size: float = 0.01,
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid = [1.0, 0.0],
+        time_grid=[1.0, 0.0],
         return_intermediates: bool = False,
         # exact_divergence: bool = True,
         *,
         # key: jax.random.PRNGKey = None,
-        model_extras : dict ={},
-    ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
+        model_extras: dict = {},
+    ) -> Callable:
         r"""Solve for log likelihood given a target sample at :math:`t=0`.
 
         Args:
@@ -182,7 +172,7 @@ class ODESolver(Solver):
             **model_extras: Additional model inputs.
 
         Returns:
-            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: 
+            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
             Samples and log likelihood values.
         """
         assert (
@@ -192,14 +182,11 @@ class ODESolver(Solver):
         vector_field = self.velocity_model.get_vector_field(**model_extras)
         divergence = self.velocity_model.get_divergence(**model_extras)
 
-
         def dynamics_func(t, states, args):
             xt, _ = states
             ut = vector_field(t, xt, args)
             div = divergence(t, xt, args)
             return ut, div
-
-        
 
         term = diffrax.ODETerm(dynamics_func)
 
@@ -211,12 +198,14 @@ class ODESolver(Solver):
         else:
             solver = method
 
-
         stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
 
         def sampler(x_1):
             # y_init = (x_1, jnp.ones(x_1.shape)) # the divergence is a scalar, so it has one less dimension than the vector field
-            y_init = (x_1, jnp.zeros(x_1.shape[0])) # the divergence is a scalar, so it has one less dimension than the vector field
+            y_init = (
+                x_1,
+                jnp.zeros(x_1.shape[0]),
+            )  # the divergence is a scalar, so it has one less dimension than the vector field
             solution = diffrax.diffeqsolve(
                 term,
                 solver,
@@ -224,33 +213,36 @@ class ODESolver(Solver):
                 t1=time_grid[-1],
                 dt0=-step_size,
                 y0=y_init,
-                saveat=diffrax.SaveAt(ts=time_grid) if return_intermediates else diffrax.SaveAt(t1=True),
+                saveat=(
+                    diffrax.SaveAt(ts=time_grid)
+                    if return_intermediates
+                    else diffrax.SaveAt(t1=True)
+                ),
                 stepsize_controller=stepsize_controller,
             )
-        
-            x_source, log_det = solution.ys[0], solution.ys[1]
+
+            x_source, log_det = solution.ys[0], solution.ys[1] # type: ignore
 
             source_log_p = log_p0(x_source)
 
             return source_log_p + log_det
 
         return sampler
-    
 
     def unnormalized_logprob(
         self,
         x_1: Array,
         log_p0: Callable[[Array], Array],
-        step_size: Optional[float],
+        step_size: float = 0.01,
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid = [1.0, 0.0],
+        time_grid=[1.0, 0.0],
         return_intermediates: bool = False,
         # exact_divergence: bool = True,
         *,
         # key: jax.random.PRNGKey = None,
-        model_extras : dict ={},
+        model_extras: dict = {},
     ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
 
         sampler = self.get_unnormalized_logprob(
@@ -261,7 +253,7 @@ class ODESolver(Solver):
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
-            model_extras=model_extras
+            model_extras=model_extras,
         )
         solution = sampler(x_1)
         return solution

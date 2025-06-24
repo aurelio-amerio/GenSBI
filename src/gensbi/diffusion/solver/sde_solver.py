@@ -6,9 +6,9 @@ from jax import jit
 from jax import Array
 
 
-from diffusion.solver.solver import Solver
-from diffusion.solver.edm_samplers import edm_sampler, edm_ablation_sampler
-from diffusion.path import EDMPath
+from gensbi.diffusion.solver.solver import Solver
+from gensbi.diffusion.solver.edm_samplers import edm_sampler, edm_ablation_sampler
+from gensbi.diffusion.path import EDMPath
 
 
 class SDESolver(Solver):
@@ -50,10 +50,10 @@ class SDESolver(Solver):
         #     )
 
         # wrap the sampler
-        S_churn = solver_params.get("S_churn", 0)
-        S_min = solver_params.get("S_min", 0)
-        S_max = solver_params.get("S_max", float("inf"))
-        S_noise = solver_params.get("S_noise", 1)
+        S_churn = solver_params.get("S_churn", 0) # type: ignore
+        S_min = solver_params.get("S_min", 0) # type: ignore
+        S_max = solver_params.get("S_max", float("inf")) # type: ignore
+        S_noise = solver_params.get("S_noise", 1) # type: ignore
 
         @jit
         def sample(key, x_init):

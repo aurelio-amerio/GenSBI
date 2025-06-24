@@ -46,3 +46,4 @@ class ContinuousFMLoss(nnx.Module):
         loss = model_output - path_sample.dx_t
 
         return self.reduction(jnp.square(loss))
+        return self.reduction(jnp.square(loss))

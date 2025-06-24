@@ -8,12 +8,14 @@
 
 from jax import Array
 
-from flow_matching.path.scheduler.scheduler import Scheduler
-from utils.model_wrapping import ModelWrapper
+from gensbi.flow_matching.path.scheduler.scheduler import Scheduler
+from gensbi.utils.model_wrapping import ModelWrapper
+
+from flax import nnx
 
 
 class ScheduleTransformedModel(ModelWrapper):
-    """
+    r"""
     Change of scheduler for a velocity model.
 
     This class wraps a given velocity model and transforms its scheduling
@@ -63,10 +65,18 @@ class ScheduleTransformedModel(ModelWrapper):
 
     def __init__(
         self,
-        velocity_model: ModelWrapper,
+        velocity_model: nnx.Module,
         original_scheduler: Scheduler,
         new_scheduler: Scheduler,
     ):
+        """
+        Initialize the ScheduleTransformedModel.
+
+        Args:
+            velocity_model (nnx.Module): The original velocity model.
+            original_scheduler (Scheduler): The scheduler used by the original model.
+            new_scheduler (Scheduler): The new scheduler to be applied.
+        """
         super().__init__(model=velocity_model)
         self.original_scheduler = original_scheduler
         self.new_scheduler = new_scheduler
@@ -85,6 +95,7 @@ class ScheduleTransformedModel(ModelWrapper):
             x (Array): :math:`x_t`, the input array.
             t (Array): The time array (denoted as :math:`r` above).
             **extras: Additional arguments for the model.
+
         Returns:
             Array: The transformed velocity.
         """
@@ -117,7 +128,7 @@ class ScheduleTransformedModel(ModelWrapper):
 
         ds_r = (sigma_t * d_sigma_r - sigma_r * d_sigma_t * dt_r) / (sigma_t * sigma_t)
 
-        u_t = self.model(x=x / s_r, t=t, **extras)
+        u_t = self.model(x=x / s_r, t=t, **extras) # type: ignore
         u_r = ds_r * x / s_r + dt_r * s_r * u_t
 
         return u_r
