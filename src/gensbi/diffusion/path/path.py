@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from jax import Array
-from gensbi.diffusion.path.path_sample import PathSample
+from gensbi.diffusion.path.path_sample import EDMPathSample
 from typing import Any
 
 class ProbPath(ABC):
@@ -38,7 +38,7 @@ class ProbPath(ABC):
         return self.scheduler.name
 
     @abstractmethod
-    def sample(self, *args: Any, **kwargs: Any) -> "PathSample":
+    def sample(self, *args: Any, **kwargs: Any) -> "EDMPathSample":
         """
         Abstract method to sample from the probability path.
 

@@ -4,7 +4,7 @@ from typing import Tuple
 
 
 @dataclass
-class PathSample:
+class EDMPathSample:
     r"""Represents a sample of a diffusion generated probability path.
 
     Attributes:

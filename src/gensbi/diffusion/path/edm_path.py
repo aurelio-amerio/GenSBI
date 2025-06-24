@@ -6,7 +6,7 @@ from typing import Callable
 import chex
 
 from gensbi.diffusion.path.path import ProbPath
-from gensbi.diffusion.path.path_sample import PathSample
+from gensbi.diffusion.path.path_sample import EDMPathSample
 
 
 class EDMPath(ProbPath):
@@ -25,7 +25,7 @@ class EDMPath(ProbPath):
         ], f"Scheduler must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.scheduler.name}."
         return
 
-    def sample(self, key: Array, x_1: Array, sigma: Array) -> PathSample:
+    def sample(self, key: Array, x_1: Array, sigma: Array) -> EDMPathSample:
         """
         Sample from the EDM probability path.
 
@@ -39,7 +39,7 @@ class EDMPath(ProbPath):
         """
         noise = self.scheduler.sample_noise(key, x_1.shape, sigma)
         x_t = x_1 + noise
-        return PathSample(
+        return EDMPathSample(
             x_1=x_1,
             sigma=sigma,
             x_t=x_t,
