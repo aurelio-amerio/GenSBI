@@ -1,0 +1,931 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>gensbi.flow_matching.solver package &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'source/gensbi.flow_matching.solver';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gensbi.flow_matching.utils package" href="gensbi.flow_matching.utils.html" />
+    <link rel="prev" title="gensbi.flow_matching.path.scheduler package" href="gensbi.flow_matching.path.scheduler.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">GenSBI  documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="modules.html">
+    gensbi
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="modules.html">
+    gensbi
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="gensbi.html">gensbi package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="gensbi.diffusion.html">gensbi.diffusion package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="gensbi.diffusion.path.html">gensbi.diffusion.path package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="gensbi.diffusion.path.scheduler.html">gensbi.diffusion.path.scheduler package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="gensbi.diffusion.solver.html">gensbi.diffusion.solver package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="gensbi.flow_matching.html">gensbi.flow_matching package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gensbi.flow_matching.loss.html">gensbi.flow_matching.loss package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="gensbi.flow_matching.path.html">gensbi.flow_matching.path package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="gensbi.flow_matching.path.scheduler.html">gensbi.flow_matching.path.scheduler package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">gensbi.flow_matching.solver package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="gensbi.flow_matching.utils.html">gensbi.flow_matching.utils package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="gensbi.flow_matching.utils.manifolds_not_implemented.html">gensbi.flow_matching.utils.manifolds_not_implemented package</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="gensbi.models.html">gensbi.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="gensbi.models.flux1.html">gensbi.models.flux1 package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gensbi.models.simformer.html">gensbi.models.simformer package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="gensbi.utils.html">gensbi.utils package</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="modules.html" class="nav-link">gensbi</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="gensbi.html" class="nav-link">gensbi package</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="gensbi.flow_matching.html" class="nav-link">gensbi.flow_matching package</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.flow_matching.solver package</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="gensbi-flow-matching-solver-package">
+<h1>gensbi.flow_matching.solver package<a class="headerlink" href="#gensbi-flow-matching-solver-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-gensbi.flow_matching.solver.ode_solver">
+<span id="gensbi-flow-matching-solver-ode-solver-module"></span><h2>gensbi.flow_matching.solver.ode_solver module<a class="headerlink" href="#module-gensbi.flow_matching.solver.ode_solver" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ode_solver.ODESolver">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.ode_solver.</span></span><span class="sig-name descname"><span class="pre">ODESolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">velocity_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><span class="pre">ModelWrapper</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ode_solver.ODESolver" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.flow_matching.solver.solver.Solver" title="gensbi.flow_matching.solver.solver.Solver"><code class="xref py py-class docutils literal notranslate"><span class="pre">Solver</span></code></a></p>
+<p>A class to solve ordinary differential equations (ODEs) using a specified velocity model.</p>
+<p>This class utilizes a velocity field model to solve ODEs over a given time grid using numerical ode solvers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>velocity_model</strong> (<em>Union</em><em>[</em><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><em>ModelWrapper</em></a><em>, </em><em>Callable</em><em>]</em>) – a velocity field model receiving <span class="math notranslate nohighlight">\((x,t)\)</span> and returning <span class="math notranslate nohighlight">\(u_t(x)\)</span></p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ode_solver.ODESolver.get_sampler">
+<span class="sig-name descname"><span class="pre">get_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Array([0.,</span> <span class="pre">1.],</span> <span class="pre">dtype=float32)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.get_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.get_sampler" title="Link to this definition">#</a></dt>
+<dd><p>Solve the ODE with the velocity field.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flow_matching.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelWrapper</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ODESolver</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DummyModel</span><span class="p">(</span><span class="n">ModelWrapper</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">**</span><span class="n">extras</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mf">3.0</span> <span class="o">*</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="n">velocity_model</span> <span class="o">=</span> <span class="n">DummyModel</span><span class="p">()</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">ODESolver</span><span class="p">(</span><span class="n">velocity_model</span><span class="o">=</span><span class="n">velocity_model</span><span class="p">)</span>
+<span class="n">x_init</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+<span class="n">step_size</span> <span class="o">=</span> <span class="mf">0.001</span>
+<span class="n">time_grid</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x_init</span><span class="o">=</span><span class="n">x_init</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_init</strong> (<em>Tensor</em>) – initial conditions (e.g., source samples <span class="math notranslate nohighlight">\(X_0 \sim p\)</span>). Shape: [batch_size, …].</p></li>
+<li><p><strong>step_size</strong> (<em>Optional</em><em>[</em><em>float</em><em>]</em>) – The step size. Must be None for adaptive step solvers.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – A method supported by torchdiffeq. Defaults to “Euler”. Other commonly used solvers are “Dopri5”, “midpoint” and “heun3”. For a complete list, see torchdiffeq.</p></li>
+<li><p><strong>atol</strong> (<em>float</em>) – Absolute tolerance, used for adaptive step solvers.</p></li>
+<li><p><strong>rtol</strong> (<em>float</em>) – Relative tolerance, used for adaptive step solvers.</p></li>
+<li><p><strong>time_grid</strong> (<em>Tensor</em>) – The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to torch.tensor([0.0, 1.0]).</p></li>
+<li><p><strong>return_intermediates</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True then return intermediate time steps according to time_grid. Defaults to False.</p></li>
+<li><p><strong>**model_extras</strong> – Additional input for the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The last timestep when return_intermediates=False, otherwise all values specified in time_grid.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Union[Tensor, Sequence[Tensor]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ode_solver.ODESolver.get_unnormalized_logprob">
+<span class="sig-name descname"><span class="pre">get_unnormalized_logprob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_p0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.get_unnormalized_logprob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.get_unnormalized_logprob" title="Link to this definition">#</a></dt>
+<dd><p>Solve for log likelihood given a target sample at <span class="math notranslate nohighlight">\(t=0\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_1</strong> (<em>Array</em>) – target sample (e.g., samples <span class="math notranslate nohighlight">\(X_1 \sim p_1\)</span>).</p></li>
+<li><p><strong>log_p0</strong> (<em>Callable</em><em>[</em><em>[</em><em>Array</em><em>]</em><em>, </em><em>Array</em><em>]</em>) – Log probability function of source distribution.</p></li>
+<li><p><strong>step_size</strong> (<em>Optional</em><em>[</em><em>float</em><em>]</em>) – Step size for fixed-step solvers.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – Integration method to use.</p></li>
+<li><p><strong>atol</strong> (<em>float</em>) – Absolute tolerance for adaptive solvers.</p></li>
+<li><p><strong>rtol</strong> (<em>float</em>) – Relative tolerance for adaptive solvers.</p></li>
+<li><p><strong>time_grid</strong> (<em>Array</em>) – Must start at 1.0 and end at 0.0.</p></li>
+<li><p><strong>return_intermediates</strong> (<em>bool</em>) – Whether to return intermediate steps.</p></li>
+<li><p><strong>exact_divergence</strong> (<em>bool</em>) – Use exact divergence vs Hutchinson estimator.</p></li>
+<li><p><strong>**model_extras</strong> – Additional model inputs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Samples and log likelihood values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ode_solver.ODESolver.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Array([0.,</span> <span class="pre">1.],</span> <span class="pre">dtype=float32)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ode_solver.ODESolver.unnormalized_logprob">
+<span class="sig-name descname"><span class="pre">unnormalized_logprob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_p0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.unnormalized_logprob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.unnormalized_logprob" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gensbi.flow_matching.solver.sde_solver">
+<span id="gensbi-flow-matching-solver-sde-solver-module"></span><h2>gensbi.flow_matching.solver.sde_solver module<a class="headerlink" href="#module-gensbi.flow_matching.solver.sde_solver" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.BaseSDESolver">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.sde_solver.</span></span><span class="sig-name descname"><span class="pre">BaseSDESolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">velocity_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><span class="pre">ModelWrapper</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#BaseSDESolver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Solver</span></code></p>
+<p>A class to solve ordinary differential equations (ODEs) using a specified velocity model.</p>
+<p>This class utilizes a velocity field model to solve ODEs over a given time grid using numerical ode solvers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>velocity_model</strong> (<em>Union</em><em>[</em><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><em>ModelWrapper</em></a><em>, </em><em>Callable</em><em>]</em>) – a velocity field model receiving <span class="math notranslate nohighlight">\((x,t)\)</span> and returning <span class="math notranslate nohighlight">\(u_t(x)\)</span></p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_f_tilde">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_f_tilde</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#BaseSDESolver.get_f_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_f_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{f}` for the velocity model. See arXiv.2410.02217
+Also known as the “drift” term in the SDE context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_g_tilde">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_g_tilde</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#BaseSDESolver.get_g_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_g_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{g}` for the velocity model. See arXiv.2410.02217
+Also known as the “diffusion” term in the SDE context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_sampler">
+<span class="sig-name descname"><span class="pre">get_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsteps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'SEA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adaptive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#BaseSDESolver.get_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_sampler" title="Link to this definition">#</a></dt>
+<dd><p>Stochastic sampler for the SDE.
+:param args: additional arguments to pass to the velocity model
+:param nsteps: number of steps for the SDE solver
+:param method: the method to use for the SDE solver, can be one of “Euler”, “SEA”, “ShARK”. Defaults to “SEA”. Euler is the simplest algorithm. SEA (Shifted Euler method) has a better constant factor in the global error and an improved local error. ShARK (Shifted Additive-noise Runge-Kutta) provides a more accurate solution with a higher computational cost, and implements adaptive stepsize control.
+:param adaptive: whether to use adaptive stepsize control (only for ShARK). Defaults to True.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_score">
+<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#BaseSDESolver.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_score" title="Link to this definition">#</a></dt>
+<dd><p>Obtain the score function given the velocity model. See arXiv.2410.02217</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.BaseSDESolver.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsteps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'SEA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adaptive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#BaseSDESolver.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.sample" title="Link to this definition">#</a></dt>
+<dd><p>Sample from the SDE using the provided key and number of samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>jax.Array</em>) – JAX random key for sampling.</p></li>
+<li><p><strong>nsamples</strong> (<em>int</em>) – Number of samples to generate.</p></li>
+<li><p><strong>nsteps</strong> (<em>int</em>) – Number of steps for the SDE solver.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to pass to the velocity model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sampled trajectories from the SDE.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.NonSingular">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.sde_solver.</span></span><span class="sig-name descname"><span class="pre">NonSingular</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">velocity_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><span class="pre">ModelWrapper</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#NonSingular"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.NonSingular" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver" title="gensbi.flow_matching.solver.sde_solver.BaseSDESolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseSDESolver</span></code></a></p>
+<p>NonSingular SDE, from tab 1 of <a class="reference external" href="http://arxiv.org/abs/2410.02217">http://arxiv.org/abs/2410.02217</a>, with change of variable for time: t -&gt; 1-t to match our time notation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.NonSingular.get_f_tilde">
+<span class="sig-name descname"><span class="pre">get_f_tilde</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#NonSingular.get_f_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.NonSingular.get_f_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{f}` for the velocity model. See arXiv.2410.02217
+Also known as the “drift” term in the SDE context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.NonSingular.get_g_tilde">
+<span class="sig-name descname"><span class="pre">get_g_tilde</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#NonSingular.get_g_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.NonSingular.get_g_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{g}` for the velocity model. See arXiv.2410.02217
+Also known as the “diffusion” term in the SDE context.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.ZeroEnds">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.sde_solver.</span></span><span class="sig-name descname"><span class="pre">ZeroEnds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">velocity_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><span class="pre">ModelWrapper</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#ZeroEnds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.ZeroEnds" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver" title="gensbi.flow_matching.solver.sde_solver.BaseSDESolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseSDESolver</span></code></a></p>
+<p>ZeroEnds SDE, from tab 1 of <a class="reference external" href="http://arxiv.org/abs/2410.02217">http://arxiv.org/abs/2410.02217</a>, with change of variable for time: t -&gt; 1-t to match our time notation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.ZeroEnds.get_f_tilde">
+<span class="sig-name descname"><span class="pre">get_f_tilde</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#ZeroEnds.get_f_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.ZeroEnds.get_f_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{f}` for the velocity model. See arXiv.2410.02217
+Also known as the “drift” term in the SDE context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.sde_solver.ZeroEnds.get_g_tilde">
+<span class="sig-name descname"><span class="pre">get_g_tilde</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#ZeroEnds.get_g_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.sde_solver.ZeroEnds.get_g_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{g}` for the velocity model. See arXiv.2410.02217
+Also known as the “diffusion” term in the SDE context.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gensbi.flow_matching.solver.solver">
+<span id="gensbi-flow-matching-solver-solver-module"></span><h2>gensbi.flow_matching.solver.solver module<a class="headerlink" href="#module-gensbi.flow_matching.solver.solver" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.solver.Solver">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.solver.</span></span><span class="sig-name descname"><span class="pre">Solver</span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/solver.html#Solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.solver.Solver" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract base class for solvers.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.solver.Solver.sample">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/solver.html#Solver.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.solver.Solver.sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gensbi.flow_matching.solver.utils">
+<span id="gensbi-flow-matching-solver-utils-module"></span><h2>gensbi.flow_matching.solver.utils module<a class="headerlink" href="#module-gensbi.flow_matching.solver.utils" title="Link to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.utils.get_nearest_times">
+<span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.utils.</span></span><span class="sig-name descname"><span class="pre">get_nearest_times</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_discretization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/utils.html#get_nearest_times"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.utils.get_nearest_times" title="Link to this definition">#</a></dt>
+<dd><p>Find the nearest times in t_discretization for each time in time_grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time_grid</strong> (<em>Array</em>) – Query times to find nearest neighbors for, shape (N,)</p></li>
+<li><p><strong>t_discretization</strong> (<em>Array</em>) – Reference time points to match against, shape (M,)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Nearest times from t_discretization for each point in time_grid, shape (N,)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-gensbi.flow_matching.solver">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gensbi.flow_matching.solver" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.NonSingular">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.</span></span><span class="sig-name descname"><span class="pre">NonSingular</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">velocity_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><span class="pre">ModelWrapper</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#NonSingular"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.NonSingular" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver" title="gensbi.flow_matching.solver.sde_solver.BaseSDESolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseSDESolver</span></code></a></p>
+<p>NonSingular SDE, from tab 1 of <a class="reference external" href="http://arxiv.org/abs/2410.02217">http://arxiv.org/abs/2410.02217</a>, with change of variable for time: t -&gt; 1-t to match our time notation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.NonSingular.get_f_tilde">
+<span class="sig-name descname"><span class="pre">get_f_tilde</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#NonSingular.get_f_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.NonSingular.get_f_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{f}` for the velocity model. See arXiv.2410.02217
+Also known as the “drift” term in the SDE context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.NonSingular.get_g_tilde">
+<span class="sig-name descname"><span class="pre">get_g_tilde</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#NonSingular.get_g_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.NonSingular.get_g_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{g}` for the velocity model. See arXiv.2410.02217
+Also known as the “diffusion” term in the SDE context.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ODESolver">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.</span></span><span class="sig-name descname"><span class="pre">ODESolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">velocity_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><span class="pre">ModelWrapper</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ODESolver" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.flow_matching.solver.solver.Solver" title="gensbi.flow_matching.solver.solver.Solver"><code class="xref py py-class docutils literal notranslate"><span class="pre">Solver</span></code></a></p>
+<p>A class to solve ordinary differential equations (ODEs) using a specified velocity model.</p>
+<p>This class utilizes a velocity field model to solve ODEs over a given time grid using numerical ode solvers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>velocity_model</strong> (<em>Union</em><em>[</em><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><em>ModelWrapper</em></a><em>, </em><em>Callable</em><em>]</em>) – a velocity field model receiving <span class="math notranslate nohighlight">\((x,t)\)</span> and returning <span class="math notranslate nohighlight">\(u_t(x)\)</span></p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ODESolver.get_sampler">
+<span class="sig-name descname"><span class="pre">get_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Array([0.,</span> <span class="pre">1.],</span> <span class="pre">dtype=float32)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.get_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ODESolver.get_sampler" title="Link to this definition">#</a></dt>
+<dd><p>Solve the ODE with the velocity field.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flow_matching.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelWrapper</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ODESolver</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DummyModel</span><span class="p">(</span><span class="n">ModelWrapper</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">**</span><span class="n">extras</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mf">3.0</span> <span class="o">*</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="n">velocity_model</span> <span class="o">=</span> <span class="n">DummyModel</span><span class="p">()</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">ODESolver</span><span class="p">(</span><span class="n">velocity_model</span><span class="o">=</span><span class="n">velocity_model</span><span class="p">)</span>
+<span class="n">x_init</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+<span class="n">step_size</span> <span class="o">=</span> <span class="mf">0.001</span>
+<span class="n">time_grid</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x_init</span><span class="o">=</span><span class="n">x_init</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_init</strong> (<em>Tensor</em>) – initial conditions (e.g., source samples <span class="math notranslate nohighlight">\(X_0 \sim p\)</span>). Shape: [batch_size, …].</p></li>
+<li><p><strong>step_size</strong> (<em>Optional</em><em>[</em><em>float</em><em>]</em>) – The step size. Must be None for adaptive step solvers.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – A method supported by torchdiffeq. Defaults to “Euler”. Other commonly used solvers are “Dopri5”, “midpoint” and “heun3”. For a complete list, see torchdiffeq.</p></li>
+<li><p><strong>atol</strong> (<em>float</em>) – Absolute tolerance, used for adaptive step solvers.</p></li>
+<li><p><strong>rtol</strong> (<em>float</em>) – Relative tolerance, used for adaptive step solvers.</p></li>
+<li><p><strong>time_grid</strong> (<em>Tensor</em>) – The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to torch.tensor([0.0, 1.0]).</p></li>
+<li><p><strong>return_intermediates</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True then return intermediate time steps according to time_grid. Defaults to False.</p></li>
+<li><p><strong>**model_extras</strong> – Additional input for the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The last timestep when return_intermediates=False, otherwise all values specified in time_grid.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Union[Tensor, Sequence[Tensor]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ODESolver.get_unnormalized_logprob">
+<span class="sig-name descname"><span class="pre">get_unnormalized_logprob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_p0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.get_unnormalized_logprob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ODESolver.get_unnormalized_logprob" title="Link to this definition">#</a></dt>
+<dd><p>Solve for log likelihood given a target sample at <span class="math notranslate nohighlight">\(t=0\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_1</strong> (<em>Array</em>) – target sample (e.g., samples <span class="math notranslate nohighlight">\(X_1 \sim p_1\)</span>).</p></li>
+<li><p><strong>log_p0</strong> (<em>Callable</em><em>[</em><em>[</em><em>Array</em><em>]</em><em>, </em><em>Array</em><em>]</em>) – Log probability function of source distribution.</p></li>
+<li><p><strong>step_size</strong> (<em>Optional</em><em>[</em><em>float</em><em>]</em>) – Step size for fixed-step solvers.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – Integration method to use.</p></li>
+<li><p><strong>atol</strong> (<em>float</em>) – Absolute tolerance for adaptive solvers.</p></li>
+<li><p><strong>rtol</strong> (<em>float</em>) – Relative tolerance for adaptive solvers.</p></li>
+<li><p><strong>time_grid</strong> (<em>Array</em>) – Must start at 1.0 and end at 0.0.</p></li>
+<li><p><strong>return_intermediates</strong> (<em>bool</em>) – Whether to return intermediate steps.</p></li>
+<li><p><strong>exact_divergence</strong> (<em>bool</em>) – Use exact divergence vs Hutchinson estimator.</p></li>
+<li><p><strong>**model_extras</strong> – Additional model inputs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Samples and log likelihood values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ODESolver.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Array([0.,</span> <span class="pre">1.],</span> <span class="pre">dtype=float32)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ODESolver.sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ODESolver.unnormalized_logprob">
+<span class="sig-name descname"><span class="pre">unnormalized_logprob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_p0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AbstractERK</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0,</span> <span class="pre">0.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Array</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/ode_solver.html#ODESolver.unnormalized_logprob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ODESolver.unnormalized_logprob" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.Solver">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.</span></span><span class="sig-name descname"><span class="pre">Solver</span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/solver.html#Solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.Solver" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract base class for solvers.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.Solver.sample">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/solver.html#Solver.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.Solver.sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ZeroEnds">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gensbi.flow_matching.solver.</span></span><span class="sig-name descname"><span class="pre">ZeroEnds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">velocity_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gensbi.utils.html#gensbi.utils.model_wrapping.ModelWrapper" title="gensbi.utils.model_wrapping.ModelWrapper"><span class="pre">ModelWrapper</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#ZeroEnds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ZeroEnds" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver" title="gensbi.flow_matching.solver.sde_solver.BaseSDESolver"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseSDESolver</span></code></a></p>
+<p>ZeroEnds SDE, from tab 1 of <a class="reference external" href="http://arxiv.org/abs/2410.02217">http://arxiv.org/abs/2410.02217</a>, with change of variable for time: t -&gt; 1-t to match our time notation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ZeroEnds.get_f_tilde">
+<span class="sig-name descname"><span class="pre">get_f_tilde</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#ZeroEnds.get_f_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ZeroEnds.get_f_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{f}` for the velocity model. See arXiv.2410.02217
+Also known as the “drift” term in the SDE context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.flow_matching.solver.ZeroEnds.get_g_tilde">
+<span class="sig-name descname"><span class="pre">get_g_tilde</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="reference internal" href="../_modules/gensbi/flow_matching/solver/sde_solver.html#ZeroEnds.get_g_tilde"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.flow_matching.solver.ZeroEnds.get_g_tilde" title="Link to this definition">#</a></dt>
+<dd><p>Get the function :math:`        ilde{g}` for the velocity model. See arXiv.2410.02217
+Also known as the “diffusion” term in the SDE context.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="gensbi.flow_matching.path.scheduler.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">gensbi.flow_matching.path.scheduler package</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="gensbi.flow_matching.utils.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">gensbi.flow_matching.utils package</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-gensbi.flow_matching.solver.ode_solver">gensbi.flow_matching.solver.ode_solver module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ode_solver.ODESolver"><code class="docutils literal notranslate"><span class="pre">ODESolver</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.get_sampler"><code class="docutils literal notranslate"><span class="pre">ODESolver.get_sampler()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.get_unnormalized_logprob"><code class="docutils literal notranslate"><span class="pre">ODESolver.get_unnormalized_logprob()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.sample"><code class="docutils literal notranslate"><span class="pre">ODESolver.sample()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ode_solver.ODESolver.unnormalized_logprob"><code class="docutils literal notranslate"><span class="pre">ODESolver.unnormalized_logprob()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-gensbi.flow_matching.solver.sde_solver">gensbi.flow_matching.solver.sde_solver module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver"><code class="docutils literal notranslate"><span class="pre">BaseSDESolver</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_f_tilde"><code class="docutils literal notranslate"><span class="pre">BaseSDESolver.get_f_tilde()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_g_tilde"><code class="docutils literal notranslate"><span class="pre">BaseSDESolver.get_g_tilde()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_sampler"><code class="docutils literal notranslate"><span class="pre">BaseSDESolver.get_sampler()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.get_score"><code class="docutils literal notranslate"><span class="pre">BaseSDESolver.get_score()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.BaseSDESolver.sample"><code class="docutils literal notranslate"><span class="pre">BaseSDESolver.sample()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.NonSingular"><code class="docutils literal notranslate"><span class="pre">NonSingular</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.NonSingular.get_f_tilde"><code class="docutils literal notranslate"><span class="pre">NonSingular.get_f_tilde()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.NonSingular.get_g_tilde"><code class="docutils literal notranslate"><span class="pre">NonSingular.get_g_tilde()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.ZeroEnds"><code class="docutils literal notranslate"><span class="pre">ZeroEnds</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.ZeroEnds.get_f_tilde"><code class="docutils literal notranslate"><span class="pre">ZeroEnds.get_f_tilde()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.sde_solver.ZeroEnds.get_g_tilde"><code class="docutils literal notranslate"><span class="pre">ZeroEnds.get_g_tilde()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-gensbi.flow_matching.solver.solver">gensbi.flow_matching.solver.solver module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.solver.Solver"><code class="docutils literal notranslate"><span class="pre">Solver</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.solver.Solver.sample"><code class="docutils literal notranslate"><span class="pre">Solver.sample()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-gensbi.flow_matching.solver.utils">gensbi.flow_matching.solver.utils module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.utils.get_nearest_times"><code class="docutils literal notranslate"><span class="pre">get_nearest_times()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-gensbi.flow_matching.solver">Module contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.NonSingular"><code class="docutils literal notranslate"><span class="pre">NonSingular</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.NonSingular.get_f_tilde"><code class="docutils literal notranslate"><span class="pre">NonSingular.get_f_tilde()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.NonSingular.get_g_tilde"><code class="docutils literal notranslate"><span class="pre">NonSingular.get_g_tilde()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ODESolver"><code class="docutils literal notranslate"><span class="pre">ODESolver</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ODESolver.get_sampler"><code class="docutils literal notranslate"><span class="pre">ODESolver.get_sampler()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ODESolver.get_unnormalized_logprob"><code class="docutils literal notranslate"><span class="pre">ODESolver.get_unnormalized_logprob()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ODESolver.sample"><code class="docutils literal notranslate"><span class="pre">ODESolver.sample()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ODESolver.unnormalized_logprob"><code class="docutils literal notranslate"><span class="pre">ODESolver.unnormalized_logprob()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.Solver"><code class="docutils literal notranslate"><span class="pre">Solver</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.Solver.sample"><code class="docutils literal notranslate"><span class="pre">Solver.sample()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ZeroEnds"><code class="docutils literal notranslate"><span class="pre">ZeroEnds</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ZeroEnds.get_f_tilde"><code class="docutils literal notranslate"><span class="pre">ZeroEnds.get_f_tilde()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.flow_matching.solver.ZeroEnds.get_g_tilde"><code class="docutils literal notranslate"><span class="pre">ZeroEnds.get_g_tilde()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/gensbi.flow_matching.solver.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
