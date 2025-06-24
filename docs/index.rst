@@ -8,6 +8,8 @@ GenSBI documentation
 
 Work in progress!
 
+TODO: implement markdown
+
 
 .. toctree::
    :maxdepth: 1
