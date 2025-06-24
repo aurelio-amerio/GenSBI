@@ -5,6 +5,9 @@
 
 GenSBI documentation
 ====================
+.. image:: img/logo.png
+   :alt: GenSBI
+   :align: center
 
 Work in progress!
 
