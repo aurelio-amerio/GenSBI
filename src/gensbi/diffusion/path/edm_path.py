@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import jax
 from jax import Array
 from jax import numpy as jnp
+from typing import Callable
 import chex
 
 from gensbi.diffusion.path.path import ProbPath
@@ -10,6 +11,12 @@ from gensbi.diffusion.path.path_sample import PathSample
 
 class EDMPath(ProbPath):
     def __init__(self, scheduler) -> None:
+        """
+        Initialize the EDMPath with a scheduler.
+
+        Args:
+            scheduler: The scheduler object.
+        """
         self.scheduler = scheduler
         assert self.scheduler.name in [
             "EDM",
@@ -18,7 +25,18 @@ class EDMPath(ProbPath):
         ], f"Scheduler must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.scheduler.name}."
         return
 
-    def sample(self, key: chex.PRNGKey, x_1: Array, sigma: Array) -> PathSample:
+    def sample(self, key: Array, x_1: Array, sigma: Array) -> PathSample:
+        """
+        Sample from the EDM probability path.
+
+        Args:
+            key (Array): JAX random key.
+            x_1 (Array): Target data point, shape (batch_size, ...).
+            sigma (Array): Noise scale, shape (batch_size, ...).
+
+        Returns:
+            PathSample: A sample from the EDM path.
+        """
         noise = self.scheduler.sample_noise(key, x_1.shape, sigma)
         x_t = x_1 + noise
         return PathSample(
@@ -27,29 +45,24 @@ class EDMPath(ProbPath):
             x_t=x_t,
         )
 
-    def sample_sigma(self, key: chex.PRNGKey, batch_size: int) -> Array:
+    def sample_sigma(self, key: Array, batch_size: int) -> Array:
         """
         Sample the noise scale sigma from the scheduler.
 
         Args:
-            key: JAX random key.
-            batch_size: Number of samples to generate.
+            key (Array): JAX random key.
+            batch_size (int): Number of samples to generate.
 
         Returns:
             Array: Samples of sigma, shape (batch_size, ...).
         """
         return self.scheduler.sample_sigma(key, batch_size)[..., None]
 
-    def get_loss_fn(self):
+    def get_loss_fn(self) -> Callable:
         """
         Returns the loss function for the EDM path.
 
-        # Args:
-        #     F: The model, in the form F(x, t, *args, **kwargs).
-        #     x0: The original image or data point.
-        #     loss_mask: An optional mask to apply to the loss for conditioning.
-        #     *args: Additional positional arguments for the model F.
-        #     key: JAX random key for stochastic operations.
-        #     **kwargs: Additional keyword arguments for the model F.
+        Returns:
+            Callable: The loss function as provided by the scheduler.
         """
         return self.scheduler.get_loss_fn()

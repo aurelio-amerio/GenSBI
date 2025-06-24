@@ -1,26 +1,54 @@
 import jax
 from jax import numpy as jnp
 from jax import jit
+from jax import Array
+from typing import Callable, Optional, Any
 
 
-# TODO still need to test
 def edm_sampler(
-    sde, model, x_1, *,
-    key,
-    condition_mask = None,
-    condition_value = None,
-    return_intermediates = False,
-    n_steps=18,
-    S_churn=0, S_min=0, S_max=float('inf'), S_noise=1,
-    method="Heun",
-    model_kwargs={},
-):
+    sde: Any,
+    model: Callable,
+    x_1: Array,
+    *,
+    key: Array,
+    condition_mask: Optional[Array] = None,
+    condition_value: Optional[Array] = None,
+    return_intermediates: bool = False,
+    n_steps: int = 18,
+    S_churn: float = 0,
+    S_min: float = 0,
+    S_max: float = float('inf'),
+    S_noise: float = 1,
+    method: str = "Heun",
+    model_kwargs: dict = {},
+) -> Array:
+    """
+    EDM sampler for diffusion models.
 
+    Args:
+        sde: SDE scheduler object.
+        model (Callable): Model function.
+        x_1 (Array): Initial value.
+        key (Array): JAX random key.
+        condition_mask (Optional[Array]): Mask for conditioning.
+        condition_value (Optional[Array]): Value for conditioning.
+        return_intermediates (bool): Whether to return intermediate steps.
+        n_steps (int): Number of steps.
+        S_churn (float): Churn parameter.
+        S_min (float): Minimum S value.
+        S_max (float): Maximum S value.
+        S_noise (float): Noise scale.
+        method (str): Integration method ("Euler" or "Heun").
+        model_kwargs (dict): Additional model arguments.
+
+    Returns:
+        Array: Sampled output.
+    """
     assert method in ["Euler", "Heun"], f"Unknown method: {method}"
     if condition_mask is not None:
-            assert (
-                condition_value is not None
-            ), "Condition value must be provided if condition mask is provided"
+        assert (
+            condition_value is not None
+        ), "Condition value must be provided if condition mask is provided"
     else:
         condition_mask = 0
         condition_value = 0

@@ -11,7 +11,6 @@ class PathSample:
         x_1 (Array): the target sample :math:`X_1`.
         sigma (Array): the noise scale :math:`t`.
         x_t (Array): samples :math:`X_t \sim p_t(X_t)`, shape (batch_size, ...).
-
     """
 
     x_1: Array = field(metadata={"help": "target samples X_1 (batch_size, ...)."})
@@ -20,5 +19,11 @@ class PathSample:
         metadata={"help": "samples x_t ~ p_t(X_t), shape (batch_size, ...)."}
     )
 
-    def get_batch(self) -> Tuple:
+    def get_batch(self) -> Tuple[Array, Array, Array]:
+        """
+        Returns the batch as a tuple (x_1, x_t, sigma).
+
+        Returns:
+            Tuple[Array, Array, Array]: The target sample, the noisy sample, and the noise scale.
+        """
         return self.x_1, self.x_t, self.sigma

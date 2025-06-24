@@ -1,11 +1,8 @@
 import abc
-import jax.numpy as jnp
 import jax
-from jax import grad, jit, vmap
-import jax.random as random
-from functools import partial
-
-from typing import Callable
+import jax.numpy as jnp
+from jax import Array
+from typing import Callable, Any
 
 # from .samplers import sampler #moved to samplers module
 
@@ -16,120 +13,313 @@ from typing import Callable
 
 
 class BaseSDE(abc.ABC):
-    def __init__(self):
+    def __init__(self) -> None:
+        """Base class for SDE schedulers."""
         return
 
     @property
     @abc.abstractmethod
-    def name(self):
-        pass
+    def name(self) -> str:
+        """Returns the name of the SDE scheduler."""
+        ...
 
     @abc.abstractmethod
-    def time_schedule(self, u):
-        # given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule
-        pass
+    def time_schedule(self, u: Array) -> Array:
+        """
+        Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.
 
-    def timesteps(self, i, N):
+        Args:
+            u (Array): Uniform random variable in [0, 1].
+
+        Returns:
+            Array: Time in the schedule.
+        """
+        ...
+
+    def timesteps(self, i: Array, N: int) -> Array:
+        """
+        Compute the time steps for a given index array and total number of steps.
+
+        Args:
+            i (Array): Step indices.
+            N (int): Total number of steps.
+
+        Returns:
+            Array: Time steps.
+        """
         u = i / (N - 1)
         return self.time_schedule(u)
 
     @abc.abstractmethod
-    def sigma(self, t):
-        # also known as the schedule, as in tab 1 of EDM paper
-        pass
+    def sigma(self, t: Array) -> Array:
+        """
+        Returns the noise scale (schedule) at time t.
+
+        Args:
+            t (Array): Time.
+
+        Returns:
+            Array: Noise scale.
+        """
+        ...
 
     @abc.abstractmethod
-    def sigma_inv(self, sigma):
-        # sigma_inv(sigma)=t
-        pass
+    def sigma_inv(self, sigma: Array) -> Array:
+        """
+        Inverse of the noise scale function.
+
+        Args:
+            sigma (Array): Noise scale.
+
+        Returns:
+            Array: Time corresponding to the given sigma.
+        """
+        ...
 
     @abc.abstractmethod
-    def sigma_deriv(self, t):
-        # also known as the schedule derivative
-        pass
+    def sigma_deriv(self, t: Array) -> Array:
+        """
+        Derivative of the noise scale with respect to time.
+
+        Args:
+            t (Array): Time.
+
+        Returns:
+            Array: Derivative of sigma.
+        """
+        ...
 
     @abc.abstractmethod
-    def s(self, t):
-        # also known as scaling, as in tab 1 of EDM paper
-        pass
+    def s(self, t: Array) -> Array:
+        """
+        Scaling function as in EDM paper.
+
+        Args:
+            t (Array): Time.
+
+        Returns:
+            Array: Scaling value.
+        """
+        ...
 
     @abc.abstractmethod
-    def s_deriv(self, t):
-        # also known as scaling derivative
-        pass
+    def s_deriv(self, t: Array) -> Array:
+        """
+        Derivative of the scaling function.
+
+        Args:
+            t (Array): Time.
+
+        Returns:
+            Array: Derivative of scaling.
+        """
+        ...
 
     @abc.abstractmethod
-    def c_skip(self, sigma):
-        # c_skip for preconditioning
-        pass
+    def c_skip(self, sigma: Array) -> Array:
+        """
+        Preconditioning skip connection coefficient.
+
+        Args:
+            sigma (Array): Noise scale.
+
+        Returns:
+            Array: Skip coefficient.
+        """
+        ...
 
     @abc.abstractmethod
-    def c_out(self, sigma):
-        # c_out for preconditioning
-        pass
+    def c_out(self, sigma: Array) -> Array:
+        """
+        Preconditioning output coefficient.
+
+        Args:
+            sigma (Array): Noise scale.
+
+        Returns:
+            Array: Output coefficient.
+        """
+        ...
 
     @abc.abstractmethod
-    def c_in(self, sigma):
-        # c_in for preconditioning
-        pass
+    def c_in(self, sigma: Array) -> Array:
+        """
+        Preconditioning input coefficient.
+
+        Args:
+            sigma (Array): Noise scale.
+
+        Returns:
+            Array: Input coefficient.
+        """
+        ...
 
     @abc.abstractmethod
-    def c_noise(self, sigma):
-        # c_noise for preconditioning
-        pass
+    def c_noise(self, sigma: Array) -> Array:
+        """
+        Preconditioning noise coefficient.
+
+        Args:
+            sigma (Array): Noise scale.
+
+        Returns:
+            Array: Noise coefficient.
+        """
+        ...
 
     @abc.abstractmethod
-    def sample_sigma(self, key, shape):
-        return
+    def sample_sigma(self, key: Array, shape: Any) -> Array:
+        """
+        Sample sigma from the prior noise distribution.
 
-    def sample_noise(self, key, shape, sigma):
-        # sample noise from the prior noise distribution with noise scale sigma(t)
+        Args:
+            key (Array): JAX random key.
+            shape (Any): Shape of the output.
+
+        Returns:
+            Array: Sampled sigma.
+        """
+        ...
+
+    def sample_noise(self, key: Array, shape: Any, sigma: Array) -> Array:
+        """
+        Sample noise from the prior noise distribution with noise scale sigma(t).
+
+        Args:
+            key (Array): JAX random key.
+            shape (Any): Shape of the output.
+            sigma (Array): Noise scale.
+
+        Returns:
+            Array: Sampled noise.
+        """
         n = jax.random.normal(key, shape) * sigma
         return n
 
-    def sample_prior(self, key, shape):
-        # sample x from the prior distribution
+    def sample_prior(self, key: Array, shape: Any) -> Array:
+        """
+        Sample x from the prior distribution.
+
+        Args:
+            key (Array): JAX random key.
+            shape (Any): Shape of the output.
+
+        Returns:
+            Array: Sampled prior.
+        """
         return jax.random.normal(key, shape)
 
     @abc.abstractmethod
-    def loss_weight(self, sigma):
-        # weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper
-        pass
+    def loss_weight(self, sigma: Array) -> Array:
+        """
+        Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.
 
-    def f(self, x, t):
-        # f(x, sigma) in the SDE, also known as drift term for the forward diffusion process
+        Args:
+            sigma (Array): Noise scale.
+
+        Returns:
+            Array: Loss weight.
+        """
+        ...
+
+    def f(self, x: Array, t: Array) -> Array:
+        r"""
+        Drift term for the forward diffusion process.
+
+        Computes the drift term :math:`f(x, t) = x \frac{ds}{dt} / s(t)` as used in the SDE formulation.
+
+        Args:
+            x (Array): Input data.
+            t (Array): Time.
+
+        Returns:
+            Array: Drift term.
+        """
         return x * self.s_deriv(t) / self.s(t)
 
-    def g(self, x, t):
-        # g(sigma) in the SDE, also known as diffusion term for the forward diffusion process
+    def g(self, x: Array, t: Array) -> Array:
+        r"""
+        Diffusion term for the forward diffusion process.
+
+        Computes the diffusion term :math:`g(x, t) = s(t) \sqrt{2 \frac{d\sigma}{dt} \sigma(t)}` as used in the SDE formulation.
+
+        Args:
+            x (Array): Input data.
+            t (Array): Time.
+
+        Returns:
+            Array: Diffusion term.
+        """
         return self.s(t) * jnp.sqrt(2 * self.sigma_deriv(t) * self.sigma(t))
 
-    def denoise(self, F, x, sigma, *args, **kwargs):
-        # denoise function, D in the EDM paper, which shares a connection with the score function:
-        # ∇_x log p(x; σ) = (D(x; σ) − x)/σ^2
+    def denoise(self, F: Callable, x: Array, sigma: Array, *args, **kwargs) -> Array:
+        r"""
+        Denoise function, :math:`D` in the EDM paper, which shares a connection with the score function:
 
-        # this function includes the preconditioning and is connected to the NN objective F:
-        # D_θ(x; σ) = c_skip(σ) x + c_out(σ) F_θ (c_in(σ) x; c_noise(σ))
+        .. math::
+            \nabla_x \log p(x; \sigma) = \frac{D(x; \sigma) - x}{\sigma^2}
+
+        This function includes the preconditioning and is connected to the NN objective :math:`F`:
+
+        .. math::
+            D_\theta(x; \sigma) = c_\text{skip}(\sigma) x + c_\text{out}(\sigma) F_\theta (c_\text{in}(\sigma) x; c_\text{noise}(\sigma))
+
+        Args:
+            F (Callable): Model function.
+            x (Array): Input data.
+            sigma (Array): Noise scale.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            Array: Denoised output.
+        """
         return self.c_skip(sigma) * x + self.c_out(sigma) * F(
             self.c_in(sigma) * x, self.c_noise(sigma), *args, **kwargs
         )
 
-    def get_score_function(self, F):
-        # score function, ∇_x log p(x; σ) = (D(x; σ) − x)/σ^2
-        def score(x, u, *args, **kwargs):
+    def get_score_function(self, F: Callable) -> Callable:
+        r"""
+        Returns the score function :math:`\nabla_x \log p(x; \sigma)` as described in the EDM paper.
+
+        The score function is computed as:
+
+        .. math::
+            \nabla_x \log p(x; \sigma) = \frac{D(x; \sigma) - x}{\sigma^2}
+
+        where :math:`D(x; \sigma)` is the denoised output (see `denoise` method).
+
+        Args:
+            F (Callable): Model function.
+
+        Returns:
+            Callable: Score function.
+        """
+        def score(x: Array, u: Array, *args, **kwargs) -> Array:
             t = self.time_schedule(u)
-            # t = u
             sigma = self.sigma(t)
             return (self.denoise(F, x, sigma, *args, **kwargs) - x) / (sigma**2)
-
         return score
 
-    def get_loss_fn(self):
+    def get_loss_fn(self) -> Callable:
+        r"""
+        Returns the loss function for EDM training, as described in the EDM paper.
 
-        def loss_fn(F, batch, loss_mask=None, model_extras={}):
-            # a typical trainig loop will sample t from Unif(eps, 1), then get sigma(t) and compute the loss
-            # get the denoising score matching loss, as Eq. 8 of the EDM paper
+        The loss is computed as (see Eq. 8 in the EDM paper):
 
+        .. math::
+            \lambda(\sigma) \, c_\text{out}^2(\sigma) \left[
+                F(c_\text{in}(\sigma) x_t, c_\text{noise}(\sigma), \ldots)
+                - \frac{1}{c_\text{out}(\sigma)} (x_1 - c_\text{skip}(\sigma) x_t)
+            \right]^2
+
+        Args:
+            None directly; returns a function that computes the loss.
+
+        Returns:
+            Callable: Loss function.
+        """
+        def loss_fn(F: Callable, batch: tuple, loss_mask: Any = None, model_extras: dict = {}) -> Array:
             (x_1, x_t, sigma) = batch
 
             lam = self.loss_weight(sigma)
@@ -154,27 +344,9 @@ class BaseSDE(abc.ABC):
             if loss_mask is not None:
                 loss = jnp.where(loss_mask, 0.0, loss)
             # we sum the loss on any dimension that is not the batch dimentsion, and then we compute the mean over the batch dimension (the first)
-            return jnp.mean(jnp.sum(loss, axis=tuple(range(1, len(x_1.shape)))))
+            return jnp.mean(jnp.sum(loss, axis=tuple(range(1, len(x_1.shape)))))  # type: ignore
 
         return loss_fn
-
-    # def reverse(self, F_model):
-    #     return ReverseSDE(self, F_model)
-
-
-# class ReverseSDE(abc.ABC):
-#     def __init__(self, forward_sde: BaseSDE, F_model: Callable):
-#         self.forward_sde = forward_sde
-#         self.F_model = F_model
-#         return
-
-    #TODO: to implement in the sampler module
-
-    # def sample(self, key, nsamples, **kwargs):
-    #     key, subkey = random.split(key)
-    #     x0 = self.forward_sde.sample_prior(subkey, (nsamples, self.forward_sde.dim))
-    #     samples = sampler(self.forward_sde, self.F_model, x0, key=key, **kwargs)
-    #     return samples
 
 
 class VPScheduler(BaseSDE):

@@ -1,17 +1,26 @@
-from abc import ABC
+from abc import ABC, abstractmethod
+from jax import Array
+from gensbi.diffusion.path.path_sample import PathSample
+from typing import Any
 
 class ProbPath(ABC):
-    def __init__(self, scheduler):
+    def __init__(self, scheduler: Any) -> None:
+        """
+        Initialize the probability path.
+
+        Args:
+            scheduler: Scheduler object.
+        """
         self.scheduler = scheduler
         return
 
-    def sample_prior(self, key, shape):
+    def sample_prior(self, key: Array, shape: Any) -> Array:
         """
         Sample from the prior distribution.
 
         Args:
-            key: JAX random key.
-            shape: Shape of the samples to generate, should be (nsamples, ndim).
+            key (Array): JAX random key.
+            shape (Any): Shape of the samples to generate, should be (nsamples, ndim).
 
         Returns:
             Array: Samples from the prior distribution, shape (nsamples, ndim).
@@ -19,5 +28,21 @@ class ProbPath(ABC):
         return self.scheduler.sample_prior(key, shape)
 
     @property 
-    def name(self):
+    def name(self) -> str:
+        """
+        Returns the name of the scheduler.
+
+        Returns:
+            str: Scheduler name.
+        """
         return self.scheduler.name
+
+    @abstractmethod
+    def sample(self, *args: Any, **kwargs: Any) -> "PathSample":
+        """
+        Abstract method to sample from the probability path.
+
+        Returns:
+            PathSample: Sample from the path.
+        """
+        ...
