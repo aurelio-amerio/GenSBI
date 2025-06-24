@@ -2,14 +2,14 @@ from abc import ABC, abstractmethod
 import jax
 from jax import Array
 from jax import numpy as jnp
-
+import chex
 
 from gensbi.diffusion.path.path import ProbPath
 from gensbi.diffusion.path.path_sample import PathSample
 
 
 class EDMPath(ProbPath):
-    def __init__(self, scheduler):
+    def __init__(self, scheduler) -> None:
         self.scheduler = scheduler
         assert self.scheduler.name in [
             "EDM",
@@ -18,7 +18,7 @@ class EDMPath(ProbPath):
         ], f"Scheduler must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.scheduler.name}."
         return
 
-    def sample(self, key, x_1, sigma) -> PathSample:
+    def sample(self, key: chex.PRNGKey, x_1: Array, sigma: Array) -> PathSample:
         noise = self.scheduler.sample_noise(key, x_1.shape, sigma)
         x_t = x_1 + noise
         return PathSample(
@@ -27,13 +27,13 @@ class EDMPath(ProbPath):
             x_t=x_t,
         )
 
-    def sample_sigma(self, key, batch_size) -> Array:
+    def sample_sigma(self, key: chex.PRNGKey, batch_size: int) -> Array:
         """
         Sample the noise scale sigma from the scheduler.
 
         Args:
             key: JAX random key.
-            shape: Shape of the samples to generate.
+            batch_size: Number of samples to generate.
 
         Returns:
             Array: Samples of sigma, shape (batch_size, ...).

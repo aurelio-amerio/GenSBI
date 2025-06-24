@@ -7,10 +7,11 @@
 # LICENSE file in the root directory of this source tree.
 
 from abc import ABC, abstractmethod
+from jax import Array
 
 import jax
 import jax.numpy as jnp
-from jax import Array
+
 
 from gensbi.flow_matching.path.path_sample import PathSample
 
@@ -61,7 +62,7 @@ class ProbPath(ABC):
         """
         pass
 
-    def assert_sample_shape(self, x_0: Array, x_1: Array, t: Array):
+    def assert_sample_shape(self, x_0: Array, x_1: Array, t: Array) -> None:
         """
         Checks that the shapes of x_0, x_1, and t are compatible for sampling.
 

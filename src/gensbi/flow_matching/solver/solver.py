@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 from abc import ABC, abstractmethod
-
 from jax import Array
 
 

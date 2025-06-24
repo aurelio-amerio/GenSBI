@@ -53,7 +53,7 @@ class AffineProbPath(ProbPath):
         scheduler (Scheduler): An instance of a scheduler that provides the parameters :math:`\alpha_t`, :math:`\sigma_t`, and their derivatives over time.
     """
 
-    def __init__(self, scheduler: Scheduler):
+    def __init__(self, scheduler: Scheduler) -> None:
         """
         Initialize the AffineProbPath.
 
@@ -253,5 +253,5 @@ class CondOTProbPath(AffineProbPath):
         \alpha_t = t \quad \text{and} \quad \sigma_t = 1 - t.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.scheduler = CondOTScheduler()

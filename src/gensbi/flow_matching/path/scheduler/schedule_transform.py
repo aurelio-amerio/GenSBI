@@ -68,7 +68,7 @@ class ScheduleTransformedModel(ModelWrapper):
         velocity_model: nnx.Module,
         original_scheduler: Scheduler,
         new_scheduler: Scheduler,
-    ):
+    ) -> None:
         """
         Initialize the ScheduleTransformedModel.
 

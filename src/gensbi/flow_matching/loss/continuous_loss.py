@@ -1,9 +1,11 @@
 import jax.numpy as jnp
 from flax import nnx
+from typing import Callable, Tuple, Any
+from jax import Array
 
 
 class ContinuousFMLoss(nnx.Module):
-    def __init__(self, path, reduction="mean"):
+    def __init__(self, path, reduction: str = "mean"):
         """
         ContinuousFMLoss is a class that computes the continuous flow matching loss.
 
@@ -22,7 +24,13 @@ class ContinuousFMLoss(nnx.Module):
         else:
             self.reduction = lambda x: x
 
-    def __call__(self, vf, batch, args=None, **kwargs):
+    def __call__(
+        self,
+        vf: Callable,
+        batch: Tuple[Array, Array, Array],
+        args: Any = None,
+        **kwargs
+    ) -> Array:
         """
         Evaluates the continuous flow matching loss.
 
@@ -34,7 +42,7 @@ class ContinuousFMLoss(nnx.Module):
             **kwargs: Additional keyword arguments for the function.
 
         Returns:
-            jnp.ndarray: The computed loss.
+            Array: The computed loss.
         """
 
         path_sample = self.path.sample(*batch)
@@ -42,7 +50,7 @@ class ContinuousFMLoss(nnx.Module):
         x_t = path_sample.x_t
 
         model_output = vf(x_t, path_sample.t, args=args, **kwargs)
-        
+
         loss = model_output - path_sample.dx_t
 
         return self.reduction(jnp.square(loss))
