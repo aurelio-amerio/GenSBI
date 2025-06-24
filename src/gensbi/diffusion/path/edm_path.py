@@ -11,7 +11,7 @@ from gensbi.diffusion.path.path_sample import EDMPathSample
 
 class EDMPath(ProbPath):
     def __init__(self, scheduler) -> None:
-        """
+        r"""
         Initialize the EDMPath with a scheduler.
 
         Args:
@@ -26,7 +26,7 @@ class EDMPath(ProbPath):
         return
 
     def sample(self, key: Array, x_1: Array, sigma: Array) -> EDMPathSample:
-        """
+        r"""
         Sample from the EDM probability path.
 
         Args:
@@ -46,7 +46,7 @@ class EDMPath(ProbPath):
         )
 
     def sample_sigma(self, key: Array, batch_size: int) -> Array:
-        """
+        r"""
         Sample the noise scale sigma from the scheduler.
 
         Args:
@@ -59,7 +59,7 @@ class EDMPath(ProbPath):
         return self.scheduler.sample_sigma(key, batch_size)[..., None]
 
     def get_loss_fn(self) -> Callable:
-        """
+        r"""
         Returns the loss function for the EDM path.
 
         Returns:

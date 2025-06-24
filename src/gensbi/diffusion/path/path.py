@@ -5,7 +5,7 @@ from typing import Any
 
 class ProbPath(ABC):
     def __init__(self, scheduler: Any) -> None:
-        """
+        r"""
         Initialize the probability path.
 
         Args:
@@ -15,7 +15,7 @@ class ProbPath(ABC):
         return
 
     def sample_prior(self, key: Array, shape: Any) -> Array:
-        """
+        r"""
         Sample from the prior distribution.
 
         Args:
@@ -29,7 +29,7 @@ class ProbPath(ABC):
 
     @property 
     def name(self) -> str:
-        """
+        r"""
         Returns the name of the scheduler.
 
         Returns:
@@ -39,7 +39,7 @@ class ProbPath(ABC):
 
     @abstractmethod
     def sample(self, *args: Any, **kwargs: Any) -> "EDMPathSample":
-        """
+        r"""
         Abstract method to sample from the probability path.
 
         Returns:

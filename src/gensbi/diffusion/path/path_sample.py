@@ -20,7 +20,7 @@ class EDMPathSample:
     )
 
     def get_batch(self) -> Tuple[Array, Array, Array]:
-        """
+        r"""
         Returns the batch as a tuple (x_1, x_t, sigma).
 
         Returns:
