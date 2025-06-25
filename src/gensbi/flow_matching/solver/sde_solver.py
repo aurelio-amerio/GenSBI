@@ -22,8 +22,8 @@ from diffrax import (
     VirtualBrownianTree,
 )
 
-from flow_matching.solver.solver import Solver
-from utils.model_wrapping import ModelWrapper
+from gensbi.flow_matching.solver.solver import Solver
+from gensbi.utils.model_wrapping import ModelWrapper
 
 
 class BaseSDESolver(Solver):

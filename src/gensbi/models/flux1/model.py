@@ -21,7 +21,7 @@ from gensbi.models.flux1.layers import (
 @dataclass
 class FluxParams:
     in_channels: int
-    vec_in_dim: int
+    vec_in_dim: Union[int, None]
     context_in_dim: int
     mlp_ratio: float
     num_heads: int
