@@ -235,6 +235,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Drift term.
         """
+        t = self.time_schedule(t)
         return x * self.s_deriv(t) / self.s(t)
 
     def g(self, x: Array, t: Array) -> Array:
@@ -250,6 +251,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Diffusion term.
         """
+        t = self.time_schedule(t)
         return self.s(t) * jnp.sqrt(2 * self.sigma_deriv(t) * self.sigma(t))
 
     def denoise(self, F: Callable, x: Array, sigma: Array, *args, **kwargs) -> Array:
@@ -298,6 +300,7 @@ class BaseSDE(abc.ABC):
         def score(x: Array, u: Array, *args, **kwargs) -> Array:
             t = self.time_schedule(u)
             sigma = self.sigma(t)
+            x = x/self.s(t) # todo: check this
             return (self.denoise(F, x, sigma, *args, **kwargs) - x) / (sigma**2)
         return score
 
