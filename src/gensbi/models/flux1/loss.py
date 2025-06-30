@@ -50,18 +50,16 @@ class FluxCFMLoss(ContinuousFMLoss):
 
         x_t = path_sample.x_t
 
-        model_output = vf(x_t, obs_ids, cond, cond_ids, t, conditioned=True)
-        loss_cond = model_output - path_sample.dx_t
 
         if self.cfg_scale is not None:
-            model_output_uncond = vf(x_t, obs_ids, cond, cond_ids, t, conditioned=False)
-            loss_uncond = model_output_uncond - path_sample.dx_t
-
-            weight = self.cfg_scale
-
-
-            loss = weight*jnp.square(loss_cond) + (1-weight)*jnp.square(loss_uncond)
+            key = jax.random.PRNGKey(0)
+            conditioned = jax.random.bernoulli(key, p=self.cfg_scale, shape=(x_t.shape[0],))
         else:
-            loss = jnp.square(loss_cond)
+            conditioned = jnp.ones((x_t.shape[0],), dtype=jnp.bool_)
+
+
+        model_output = vf(x_t, obs_ids, cond, cond_ids, t, conditioned=conditioned)
+        loss = model_output - path_sample.dx_t
+        loss = jnp.square(loss)
             
         return self.reduction(loss)

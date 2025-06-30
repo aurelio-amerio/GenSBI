@@ -1,10 +1,11 @@
 # GenSBI
+![GenSBI Logo](docs/img/logo.png)
 
 **Warning**: This library is in an early stage of development and will change significantly in the future.
 
 ## Overview
 
-**gen-sbi** is a library for Simulation-Based Inference (SBI) adopting Optimal Transport Flow Matching and Diffusion models in JAX. It provides tools for probabilistic modeling and simulation, inspired by cutting-edge research and implementations, including:
+**GenSBI** is a library for Simulation-Based Inference (SBI) adopting Optimal Transport Flow Matching and Diffusion models in JAX. It provides tools for probabilistic modeling and simulation, inspired by cutting-edge research and implementations, including:
 
 - **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching]
 - **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm]

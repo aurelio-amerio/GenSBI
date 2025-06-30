@@ -8,8 +8,6 @@ from jax import Array
 from flax import nnx
 from jax.typing import DTypeLike
 
-from einops import repeat
-
 from gensbi.models.flux1.layers import (
     DoubleStreamBlock,
     EmbedND,
@@ -32,8 +30,8 @@ class FluxParams:
     axes_dim: list[int]
     qkv_bias: bool
     rngs: nnx.Rngs
-    obs_dim: int   # observation dimension
-    cond_dim: int  # condition dimension
+    obs_dim: int | None = None  # Optional, can be used to specify the observation dimension
+    cond_dim: int | None = None  # Optional, can be used to specify the condition dimension
     use_rope: bool = True
     theta: int = 10_000
     guidance_embed: bool = False
@@ -100,7 +98,7 @@ class Flux(nnx.Module):
         )
 
         self.condition_embedding = nnx.Param(0.01 * jnp.ones((1, self.hidden_size), dtype=params.param_dtype))
-        self.condition_null = nnx.Param(jax.random.normal(params.rngs.cond(), (1,params.cond_dim, self.hidden_size), dtype=params.param_dtype))
+        self.condition_null = nnx.Param(jax.random.normal(params.rngs.cond(), (1,1,params.context_in_dim), dtype=params.param_dtype))
 
         self.double_blocks = nnx.Sequential(
             *[
@@ -142,8 +140,8 @@ class Flux(nnx.Module):
         self.use_rope = params.use_rope
 
         if not self.use_rope:
-            # assert params.obs_dim is not None and params.cond_dim is not None, \
-            #     "If not using RoPE, obs_dim and cond_dim must be specified."
+            assert params.obs_dim is not None and params.cond_dim is not None, \
+                "If not using RoPE, obs_dim and cond_dim must be specified."
             
             self.id_embedder = nnx.Embed(
                 num_embeddings=params.obs_dim + params.cond_dim,
@@ -153,6 +151,7 @@ class Flux(nnx.Module):
         else:
             self.id_embedder = Identity()
 
+
     def __call__(
         self,
         obs: Array,
@@ -160,14 +159,9 @@ class Flux(nnx.Module):
         cond: Array,
         cond_ids: Array,
         timesteps: Array,
-        conditioned: bool | Array = True,
+        conditioned: bool = True,
         guidance: Array | None = None,
     ) -> Array:
-        
-        obs = jnp.asarray(obs, dtype=self.params.param_dtype)  
-        cond = jnp.asarray(cond, dtype=self.params.param_dtype)  
-        timesteps = jnp.asarray(timesteps, dtype=self.params.param_dtype)  
-
         if obs.ndim != 3 or cond.ndim != 3:
             raise ValueError("Input obs and cond tensors must have 3 dimensions.")
 
@@ -175,11 +169,10 @@ class Flux(nnx.Module):
         obs = self.obs_in(obs)
         vec = self.time_in(timestep_embedding(timesteps, 256))
 
-        conditioned = jnp.asarray(conditioned, dtype=jnp.bool_)  # type: ignore
-        conditioned_int = jnp.asarray(conditioned, dtype=jnp.int32)[...,None] # type: ignore
+        conditioned = jnp.asarray(conditioned, dtype=jnp.int32) # type: ignore
 
         condition_embedding = (
-            self.condition_embedding * (1-conditioned_int)
+            self.condition_embedding * (1-conditioned)
         )
 
         vec = vec + condition_embedding # we add the condition embedding to the vector
@@ -191,30 +184,12 @@ class Flux(nnx.Module):
                 )
             vec = vec + self.vector_in(guidance)
 
-        cond_processed = self.cond_in(cond)  # (B, F, H)
-        cond_null = repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0])  # type: ignore
-        cond = jnp.where(conditioned[...,None,None], cond_processed, cond_null)  # we replace the condition with a null vector if not conditioned
+        
+        cond_null = jnp.broadcast_to(self.condition_null.value, cond.shape)
+        cond = jnp.where(conditioned, cond, cond_null) # we replace the condition with a null vector if not conditioned
 
-        # if jnp.all(conditioned):
-        #     cond = cond_processed
-        # else:
-        #     cond_null = repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0])  # type: ignore
-        #     cond = jnp.where(conditioned[...,None,None], cond_processed, cond_null)  # we replace the condition with a null vector if not conditioned
+        cond = self.cond_in(cond)
 
-        # cond = jax.lax.cond(conditioned, 
-        #                     lambda x: self.cond_in(x), 
-        #                     lambda x: repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0]), 
-        #                     cond)
-
-        # if conditioned:
-        #     cond = self.cond_in(cond)
-        # else:
-        #     cond = repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0])  # type: ignore
-
-        # cond = self.cond_in(cond)
-
-        # cond_null = repeat(self.condition_null.value, '1 h c -> b h c', b=cond.shape[0])
-        # cond = jnp.where(conditioned, cond, cond_null) # we replace the condition with a null vector if not conditioned
 
         ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
         if self.use_rope:
