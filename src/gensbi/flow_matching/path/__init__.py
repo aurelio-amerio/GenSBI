@@ -10,16 +10,10 @@ from .affine import AffineProbPath, CondOTProbPath
 from .path import ProbPath
 from .path_sample import PathSample
 
-# from .path_sample import DiscretePathSample
-# from .mixture import MixtureDiscreteProbPath
-# from .geodesic import GeodesicProbPath
 
 __all__ = [
     "ProbPath",
     "PathSample",
     "AffineProbPath",
     "CondOTProbPath",
-    # "DiscretePathSample",
-    # "MixtureDiscreteProbPath", 
-    # "GeodesicProbPath", # not implemented yet
 ]

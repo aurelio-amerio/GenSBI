@@ -5,10 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from .continuous_loss import ContinuousFMLoss
-# from .discrete_loss import MixturePathGeneralizedKL
 
 
 __all__ = [
-    # "MixturePathGeneralizedKL",
     "ContinuousFMLoss",
 ]
