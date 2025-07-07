@@ -54,5 +54,5 @@ The following tasks are planned for future development:
 
 ## Citation
 
-If you use this library, please consider citing the original sources.
+If you use this library, please consider citing this work and the original methodology papers.
 
