@@ -30,8 +30,8 @@ The `src` directory contains the core implementation of the library:
 The `examples` directory provides Jupyter notebooks demonstrating the usage of the library:
 
 #### Flow Matching
-- `flow_matching_2d.ipynb`: Demonstrates flow matching in 2D.
-- `flow_matching_2d_discrete.ipynb`: Explores discrete flow matching techniques.
+- [`flow_matching_2d_unconditional.ipynb`](https://github.com/aurelio-amerio/GenSBI/blob/main/examples/flow_matching_2d_unconditional.ipynb): Demonstrates how to use flow matching in 2D.
+- [`diffusion_2d_unconditional.ipynb`](https://github.com/aurelio-amerio/GenSBI/blob/main/examples/diffusion_2d_unconditional.ipynb): Demonstrates how to use diffusion models in 2D.
 
 #### SBI Benchmarks
 - `sbi_example.ipynb`: Example of simulation-based inference using flow matching.
