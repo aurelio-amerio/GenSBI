@@ -34,6 +34,7 @@ colors = [(rgb_base[0], rgb_base[1], rgb_base[2], 0), # At data value 0, color i
 transparent_cmap= LinearSegmentedColormap.from_list("transparent_red", colors, N=256)
 
 def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}):
+    data = np.array(data)
     if labels is None:
         labels = [r"$\theta_{}$".format(i) for i in range(1, data.shape[1] + 1)]
     dataframe = pd.DataFrame(data, columns=labels)
@@ -51,6 +52,7 @@ def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_
     return g
 
 def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}):
+    data = np.array(data)
     if labels is None:
         labels = [r"$\theta_{}$".format(i) for i in range(1, data.shape[1] + 1)]
     dataframe = pd.DataFrame(data, columns=labels)
