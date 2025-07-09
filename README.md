@@ -30,7 +30,9 @@ The `src` directory contains the core implementation of the library:
 Examples for this library are avaialble separately in the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples)
 
 #### Flow Matching
-- [`flow_matching_2d_unconditional.ipynb`](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/flow_matching_2d_unconditional.ipynb): Demonstrates how to use flow matching in 2D.
+- `flow_matching_2d_unconditional.ipynb`: Demonstrates how to use flow matching in 2D <a target="_blank" href="https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/flow_matching_2d_unconditional.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>. 
 - [`diffusion_2d_unconditional.ipynb`](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/diffusion_2d_unconditional.ipynb): Demonstrates how to use diffusion models in 2D.
 
 #### SBI Benchmarks
