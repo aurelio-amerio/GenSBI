@@ -18,6 +18,7 @@ def plot_trajectories(traj):
     ax.set_aspect('equal', adjustable='box')
     # set black background
     ax.set_facecolor('#A6AEBF')
+    plt.grid(False)
     return fig, ax
 
 #plot marginals using seaborn's PairGrid
