@@ -17,7 +17,7 @@ from .embedding import GaussianFourierEmbedding, MLPEmbedder
 
 @dataclass
 class SimformerParams:
-    # rngs: nnx.Rngs
+    rngs: nnx.Rngs
     dim_value: int
     dim_id: int
     dim_condition: int
@@ -36,8 +36,6 @@ class Simformer(nnx.Module):
     def __init__(
         self,
         params: SimformerParams,
-        *,
-        rngs: nnx.Rngs 
     ):
         """
         Initialize the Simformer model for joint density estimation.
@@ -51,16 +49,16 @@ class Simformer(nnx.Module):
         self.dim_condition = params.dim_condition
 
         self.embedding_net_value = MLPEmbedder(
-            in_dim=1, hidden_dim=params.dim_value, rngs=rngs
+            in_dim=1, hidden_dim=params.dim_value, rngs=params.rngs
         )
         # self.embedding_net_value = lambda x: jnp.repeat(x, dim_value, axis=-1)
 
         fourier_features = params.fourier_features
         self.embedding_time = GaussianFourierEmbedding(
-            fourier_features, rngs=rngs
+            fourier_features, rngs=params.rngs
         )
         self.embedding_net_id = nnx.Embed(
-            num_embeddings=params.dim_joint, features=params.dim_id, rngs=rngs
+            num_embeddings=params.dim_joint, features=params.dim_id, rngs=params.rngs
         )
         self.condition_embedding = nnx.Param(
             0.01 * jnp.ones((1, 1, params.dim_condition))
@@ -80,10 +78,10 @@ class Simformer(nnx.Module):
             act=jax.nn.gelu,
             skip_connection_attn=True,
             skip_connection_mlp=True,
-            rngs=rngs,
+            rngs=params.rngs,
         )
 
-        self.output_fn = nnx.Linear(self.total_tokens, 1, rngs=rngs)
+        self.output_fn = nnx.Linear(self.total_tokens, 1, rngs=params.rngs)
         return
 
     def __call__(
