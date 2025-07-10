@@ -1,4 +1,6 @@
 # GenSBI
+![Coverage](img/badges/coverage.svg)
+![Tests](img/badges/tests.svg)
 ![GenSBI Logo](docs/img/logo.png)
 
 **Warning**: This library is in an early stage of development and will change significantly in the future.
