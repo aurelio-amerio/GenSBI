@@ -38,3 +38,18 @@ def test_edm_path_get_loss_fn_callable():
     path = EDMPath(scheduler=scheduler)
     loss_fn = path.get_loss_fn()
     assert callable(loss_fn)
+
+
+def test_edm_path_sample():
+    scheduler = EDMScheduler()
+    path = EDMPath(scheduler=scheduler)
+    key = jax.random.PRNGKey(0)
+    x_1 = jnp.ones((2, 3))
+    sigma = jnp.ones((2, 1))
+    sample = path.sample(key, x_1, sigma)
+    assert hasattr(sample, 'x_1')
+    assert hasattr(sample, 'sigma')
+    assert hasattr(sample, 'x_t')
+    assert sample.x_1.shape == x_1.shape
+    assert sample.sigma.shape == sigma.shape
+    assert sample.x_t.shape == x_1.shape
