@@ -4,8 +4,8 @@ os.environ['JAX_PLATFORMS'] = "cpu"
 import jax
 import jax.numpy as jnp
 import pytest
-from gensbi.diffusion.path.edm_path import EDMPath
-from gensbi.diffusion.path.scheduler.edm import EDMScheduler
+from gensbi.diffusion.path import EDMPath
+from gensbi.diffusion.path.scheduler import EDMScheduler
 
 
 def test_edm_path_initialization():
@@ -21,7 +21,7 @@ def test_edm_path_sample_sigma_shape():
     key = jax.random.PRNGKey(0)
     batch_size = 10
     sigma = path.sample_sigma(key, batch_size)
-    assert sigma.shape == (batch_size,)
+    assert sigma.shape == (batch_size,1)
 
 
 def test_edm_path_sample_prior_shape():

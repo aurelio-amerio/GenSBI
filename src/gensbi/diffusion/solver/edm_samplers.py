@@ -74,7 +74,7 @@ def edm_sampler(
         # print(in_range)
         gamma = jax.lax.cond(in_range, lambda: jnp.minimum(S_churn / n_steps, jnp.sqrt(2) - 1), lambda: 0.0)
         t_hat = t_cur + gamma * t_cur # sigma at the specific time step
-        sqrt_arg = jnp.clip(t_hat ** 2 - t_cur ** 2, a_min=0, a_max=None)
+        sqrt_arg = jnp.clip(t_hat ** 2 - t_cur ** 2, min=0, max=None)
         x_hat = x_curr + jnp.sqrt(sqrt_arg) * S_noise * jax.random.normal(subkey, x_curr.shape)
         x_hat = x_hat * (1 - condition_mask) + condition_value * condition_mask # Apply conditioning.
         # Euler step.
@@ -156,7 +156,7 @@ def edm_ablation_sampler(
 
         gamma = jax.lax.cond(in_range, lambda: jnp.minimum(S_churn / n_steps, jnp.sqrt(2) - 1), lambda: 0.0)
         t_hat = sde.sigma_inv(sde.sigma(t_cur) + gamma * sde.sigma(t_cur)) # sigma at the specific time step
-        sqrt_arg = jnp.clip(sde.sigma(t_hat) ** 2 - sde.sigma(t_cur) ** 2, a_min=0, a_max=None)
+        sqrt_arg = jnp.clip(sde.sigma(t_hat) ** 2 - sde.sigma(t_cur) ** 2, min=0, max=None)
         x_hat = sde.s(t_hat) / sde.s(t_cur)*x_curr + jnp.sqrt(sqrt_arg) * sde.s(t_hat)*S_noise * jax.random.normal(subkey, x_curr.shape)
         x_hat = x_hat * (1 - condition_mask) + condition_value * condition_mask # Apply conditioning.
         # Euler step.

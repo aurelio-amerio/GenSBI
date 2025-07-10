@@ -2,7 +2,7 @@ import os
 os.environ['JAX_PLATFORMS'] = "cpu"
 
 import pytest
-from gensbi.diffusion.path.scheduler.edm import EDMScheduler
+from gensbi.diffusion.path.scheduler import EDMScheduler
 
 
 def test_edm_scheduler_initialization():
