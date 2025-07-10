@@ -47,12 +47,17 @@ jobs:
           # Generate test results badge
           genbadge tests --input-file reports/junit/junit.xml --output-file reports/badges/tests.svg
 
-      - name: Upload badges
-        uses: actions/upload-artifact@v4
+      - name: Copy badges to img/badges
+        run: |
+          mkdir -p img/badges
+          cp reports/badges/*.svg img/badges/
+
+      - name: Commit and push badges to main
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: badges
-          # upload all the badges 
-          path: reports/badges/*.svg
+          commit_message: "Update badges [skip ci]"
+          branch: main
+          file_pattern: img/badges/*.svg
       
 
       
