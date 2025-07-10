@@ -280,29 +280,31 @@ class BaseSDE(abc.ABC):
             self.c_in(sigma) * x, self.c_noise(sigma), *args, **kwargs
         )
 
-    def get_score_function(self, F: Callable) -> Callable:
-        r"""
-        Returns the score function :math:`\nabla_x \log p(x; \sigma)` as described in the EDM paper.
+    # FIXME: for some reason, when sampling using the score, instead of the algorithm provided by the EDM paper, the sample quality is very bad
+    # there must be something wrong in the function signatures, but the diffusion and drift terms for the forward process seem to be correct
+    # def get_score_function(self, F: Callable) -> Callable:
+    #     r"""
+    #     Returns the score function :math:`\nabla_x \log p(x; \sigma)` as described in the EDM paper.
 
-        The score function is computed as:
+    #     The score function is computed as:
 
-        .. math::
-            \nabla_x \log p(x; \sigma) = \frac{D(x; \sigma) - x}{\sigma^2}
+    #     .. math::
+    #         \nabla_x \log p(x; \sigma) = \frac{D(x; \sigma) - x}{\sigma^2}
 
-        where :math:`D(x; \sigma)` is the denoised output (see `denoise` method).
+    #     where :math:`D(x; \sigma)` is the denoised output (see `denoise` method).
 
-        Args:
-            F (Callable): Model function.
+    #     Args:
+    #         F (Callable): Model function.
 
-        Returns:
-            Callable: Score function.
-        """
-        def score(x: Array, u: Array, *args, **kwargs) -> Array:
-            t = self.time_schedule(u)
-            sigma = self.sigma(t)
-            x = x/self.s(t) # todo: check this
-            return (self.denoise(F, x, sigma, *args, **kwargs) - x) / (sigma**2)
-        return score
+    #     Returns:
+    #         Callable: Score function.
+    #     """
+    #     def score(x: Array, u: Array, *args, **kwargs) -> Array:
+    #         t = self.time_schedule(u)
+    #         sigma = self.sigma(t)
+    #         x = x/self.s(t) # todo: check this
+    #         return (self.denoise(F, x, sigma, *args, **kwargs) - x) / (sigma**2)
+    #     return score
 
     def get_loss_fn(self) -> Callable:
         r"""

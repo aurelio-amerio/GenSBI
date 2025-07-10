@@ -136,7 +136,7 @@ class GaussianFourierEmbedding(nnx.Module):
         half_dim = self.output_dim // 2 + 1
         self.B = nnx.Param(jax.random.normal(rngs.params(), [half_dim , 1]))
         if not learnable:
-            self.B = jax.lax.stop_gradient(self.B)
+            self.B = jax.lax.stop_gradient(jnp.array(self.B))
    
         return
 
