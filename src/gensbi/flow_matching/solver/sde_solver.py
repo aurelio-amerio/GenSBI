@@ -198,7 +198,7 @@ class BaseSDESolver(Solver):
 
 class ZeroEnds(BaseSDESolver):
     """
-    ZeroEnds SDE, from tab 1 of http://arxiv.org/abs/2410.02217, with change of variable for time: t -> 1-t to match our time notation.
+    ZeroEnds SDE, from tab 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_, with change of variable for time: t -> 1-t to match our time notation.
     """
 
     def __init__(
@@ -238,7 +238,7 @@ class ZeroEnds(BaseSDESolver):
 
 class NonSingular(BaseSDESolver):
     """
-    NonSingular SDE, from tab 1 of http://arxiv.org/abs/2410.02217, with change of variable for time: t -> 1-t to match our time notation.
+    NonSingular SDE, from tab 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_, with change of variable for time: t -> 1-t to match our time notation.
     """
 
     def __init__(

@@ -347,7 +347,7 @@ class DoubleStreamBlock(nnx.Module):
 class SingleStreamBlock(nnx.Module):
     """
     A DiT block with parallel linear layers as described in
-    https://arxiv.org/abs/2302.05442 and adapted modulation interface.
+    `arXiv:2302.05442 <https://arxiv.org/abs/2302.05442>`_ and adapted modulation interface.
     """
 
     def __init__(

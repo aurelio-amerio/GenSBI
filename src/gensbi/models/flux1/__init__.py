@@ -8,8 +8,8 @@ Flux1 Model in GenSBI
 
 This package provides the Flux1 transformer-based model and related loss functions for flow matching and simulation-based inference. The implementation is derived and adapted from the jflux library and inspired by the following foundational work:
 
-- Black Forest Labs et al. "FLUX.1 Kontext: Flow Matching for In-Context Image Generation and Editing in Latent Space." [arXiv:2506.15742](https://arxiv.org/abs/2506.15742)
-- [ml-gde/jflux](https://github.com/ml-gde/jflux)
+* Black Forest Labs et al. "FLUX.1 Kontext: Flow Matching for In-Context Image Generation and Editing in Latent Space." `arXiv:2506.15742 <https://arxiv.org/abs/2506.15742>`_
+* `ml-gde/jflux <https://github.com/ml-gde/jflux>`_
 """
 
 from .model import Flux, FluxParams
