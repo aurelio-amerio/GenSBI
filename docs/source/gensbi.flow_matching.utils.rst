@@ -1,14 +1,6 @@
 gensbi.flow\_matching.utils package
 ===================================
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   gensbi.flow_matching.utils.manifolds_not_implemented
-
 Submodules
 ----------
 
