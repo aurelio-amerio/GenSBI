@@ -23,7 +23,6 @@ def get_params():
         widening_factor=2,
         qkv_features=4,
         num_hidden_layers=1,
-        dropout_rate=0.0,
     )
 
 def test_simformer_forward_shape():
