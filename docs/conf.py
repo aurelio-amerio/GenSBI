@@ -19,36 +19,93 @@ project = "GenSBI"
 copyright = "2025, Aurelio Amerio"
 author = "Aurelio Amerio"
 
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
 extensions = [
-    "myst_parser",
-    'sphinx.ext.apidoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.duration',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.todo",
     "sphinx.ext.viewcode",
-    "sphinx.ext.githubpages",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.graphviz",
+    "sphinxext.rediraffe",
+    "sphinx_design",
+    "sphinx_copybutton",
+    "autoapi.extension",
+    # For extension examples and demos
+    "myst_parser",
+    "ablog",
+    "jupyter_sphinx",
+    "nbsphinx",
+    "numpydoc",
+    "sphinx_togglebutton",
+    "jupyterlite_sphinx",
+    "sphinx_favicon",
 ]
 
-apidoc_modules = [
-    {'path': '../src/gensbi', 'destination': 'source/'}]
 
-pygments_style = "sphinx"       # enable syntax highlighting
+# -- MyST options ------------------------------------------------------------
+myst_enable_extensions = ["colon_fence", "linkify", "substitution"]
+myst_heading_anchors = 2
+myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
 
-# # Napoleon settings for Google/NumPy-style docstrings
-napoleon_google_docstring = True
-napoleon_numpy_docstring = True
+# -- Internationalization ----------------------------------------------------
+language = "en"
 
-templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-
+# -- Sphinx-copybutton options ---------------------------------------------
+copybutton_exclude = ".linenos, .gp"
+copybutton_selector = ":not(.prompt) > div.highlight pre"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "pydata_sphinx_theme"
-# html_static_path = ["_static"]
+html_logo = "_static/logo.png"
+html_favicon = "_static/logo.png"
+
+html_theme_options = {
+    
+    "header_links_before_dropdown": 4,
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/aurelio-amerio/GenSBI",
+            "icon": "fa-brands fa-github",
+        },
+    ],
+    "logo": {
+        "text": "GenSBI",
+        "image_dark": "_static/logo.png",
+        # You can add "image_dark" if you have a dark mode logo
+    },
+    "use_edit_page_button": False,
+    "show_toc_level": 1,
+    "navbar_align": "left",
+    "footer_start": ["copyright"],
+    "footer_center": ["sphinx-version"],
+    "search_as_you_type": True,
+}
+
+# Hide "Show Source" button and right sidebar "This page" panel
+# html_sidebars = {
+#     "**": [
+#         "sidebar-nav-bs.html",
+#     ]
+# }
+
+# -- Options for autosummary/autodoc output ------------------------------------
+autosummary_generate = True
+autodoc_typehints = "description"
+autodoc_member_order = "groupwise"
+
+# -- Options for autoapi -------------------------------------------------------
+autoapi_type = "python"
+autoapi_dirs = ["../src/gensbi"]
+autoapi_keep_files = True
+autoapi_root = "api"
+autoapi_member_order = "groupwise"
+
+pygments_style = "sphinx"
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]

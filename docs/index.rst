@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: /img/logo.png
+.. image:: _static/logo.png
    :alt: GenSBI
    :align: center
    
@@ -15,10 +15,10 @@ Work in progress!
 TODO: implement markdown
 
 
-.. toctree::
+..  toctree::
    :maxdepth: 1
    :caption: API Documentation
 
-   source/modules
+   .. source/modules
 
 
