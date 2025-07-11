@@ -33,7 +33,7 @@ colors = [(rgb_base[0], rgb_base[1], rgb_base[2], 0), # At data value 0, color i
 
 transparent_cmap= LinearSegmentedColormap.from_list("transparent_red", colors, N=256)
 
-def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}):
+def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, **kwargs):
     data = np.array(data)
     if labels is None:
         labels = [r"$\theta_{}$".format(i) for i in range(1, data.shape[1] + 1)]
@@ -44,14 +44,14 @@ def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_
     gridsize = hexbin_kwargs.pop('gridsize', gridsize)
 
 
-    g = sns.jointplot(data=dataframe, x=labels[0], y=labels[1], kind="hex", height=6, gridsize=gridsize, marginal_kws=dict(bins=gridsize, fill=True, color=hist_color),joint_kws=dict(cmap=cmap, color=color, gridsize=gridsize))
+    g = sns.jointplot(data=dataframe, x=labels[0], y=labels[1], kind="hex", height=6, gridsize=gridsize, marginal_kws=dict(bins=gridsize, fill=True, color=hist_color, **histplot_kwargs),joint_kws=dict(cmap=cmap, color=color, gridsize=gridsize, **hexbin_kwargs), **kwargs)
 
     if plot_levels:
         levels = np.sort(1-np.array([0.6827, 0.9545]))
         g.plot_joint(sns.kdeplot, color=hist_color, zorder=3, levels=levels, alpha=1, linewidths=1)
     return g
 
-def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}):
+def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, **kwargs):
     data = np.array(data)
     if labels is None:
         labels = [r"$\theta_{}$".format(i) for i in range(1, data.shape[1] + 1)]
@@ -73,8 +73,8 @@ def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_
     g.map_diag(sns.histplot, bins=bins, color=color, fill=fill, **histplot_kwargs)
     return g
 
-def plot_marginals(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}):
+def plot_marginals(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, **kwargs):
     if data.shape[1] == 2:
-        return _plot_marginals_2d(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs)
+        return _plot_marginals_2d(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs, **kwargs)
     else:
-        return _plot_marginals_nd(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs)
+        return _plot_marginals_nd(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs, **kwargs)

@@ -17,21 +17,16 @@ class AttentionBlock(nnx.Module):
         din: int,
         num_heads: int,
         features: int,
-        dropout_rate: float,
         skip_connection: bool,
         rngs: nnx.Rngs,
     ):
         self.skip_connection = skip_connection
-        self.dropout_rate = dropout_rate
-        self.deterministic = not dropout_rate > 0
 
         self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
         self.attn = nnx.MultiHeadAttention(
             in_features=din,
             num_heads=num_heads,
             qkv_features=features,
-            dropout_rate=self.dropout_rate,
-            deterministic=self.deterministic,
             decode=False,
             rngs=rngs,
         )
@@ -53,7 +48,6 @@ class DenseBlock(nnx.Module):
         dcontext,
         num_hidden_layers,
         widening_factor: int,
-        dropout_rate: float,
         act: Callable,
         skip_connection: bool,
         rngs: nnx.Rngs,
@@ -74,8 +68,6 @@ class DenseBlock(nnx.Module):
 
         self.hidden_blocks.append(nnx.Linear(n_features, din, rngs=rngs))
         self.act = act
-        self.dropout_rate = dropout_rate
-        self.dropout = nnx.Dropout(rate=dropout_rate, rngs=rngs)
         self.context_block = nnx.Linear(dcontext, din, rngs=rngs)
         return
 
@@ -89,8 +81,6 @@ class DenseBlock(nnx.Module):
             x = self.act(x)
 
         x = self.hidden_blocks[-1](x)
-        if self.dropout_rate > 0:
-            x = self.dropout(x)
 
         if context is not None:
             context_emb = self.context_block(context)
@@ -116,7 +106,6 @@ class Transformer(nnx.Module):
         num_heads: int,
         num_layers: int,
         features: int,
-        dropout_rate: float = 0,
         widening_factor: int = 4,
         num_hidden_layers: int = 1,
         act: Callable = jax.nn.gelu,
@@ -130,7 +119,6 @@ class Transformer(nnx.Module):
         self.num_heads = num_heads
         self.num_layers = num_layers
 
-        self.dropout_rate = dropout_rate
         self.widening_factor = widening_factor
         self.num_hidden_layers = num_hidden_layers
         self.act = act
@@ -149,7 +137,6 @@ class Transformer(nnx.Module):
                     din=self.din,
                     num_heads=num_heads,
                     features=features,
-                    dropout_rate=self.dropout_rate,
                     skip_connection=skip_connection_attn,
                     rngs=rngs,
                 )
@@ -160,7 +147,6 @@ class Transformer(nnx.Module):
                     dcontext,
                     num_hidden_layers,
                     widening_factor,
-                    self.dropout_rate,
                     act=self.act,
                     skip_connection=skip_connection_mlp,
                     rngs=rngs,

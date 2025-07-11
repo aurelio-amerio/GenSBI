@@ -28,7 +28,6 @@ class SimformerParams:
     widening_factor: int = 3
     qkv_features: int = 8
     num_hidden_layers: int = 1
-    dropout_rate: float = 0.0
     # param_dtype: DTypeLike = jnp.float32
 
 
@@ -73,7 +72,6 @@ class Simformer(nnx.Module):
             num_layers=params.num_layers,
             features=params.qkv_features,
             widening_factor=params.widening_factor,
-            dropout_rate=params.dropout_rate,
             num_hidden_layers=params.num_hidden_layers,
             act=jax.nn.gelu,
             skip_connection_attn=True,
