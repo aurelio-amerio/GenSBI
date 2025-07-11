@@ -22,6 +22,28 @@ from gensbi.models.flux1.layers import (
 
 @dataclass
 class FluxParams:
+    """Parameters for the Flux model.
+    
+    Args:
+        in_channels (int): Number of input channels.
+        vec_in_dim (Union[int, None]): Dimension of the vector input, if applicable.
+        context_in_dim (int): Dimension of the context input.
+        mlp_ratio (float): Ratio for the MLP layers.
+        num_heads (int): Number of attention heads.
+        depth (int): Number of double stream blocks.
+        depth_single_blocks (int): Number of single stream blocks.
+        axes_dim (list[int]): Dimensions of the axes for positional encoding.
+        qkv_bias (bool): Whether to use bias in QKV layers.
+        rngs (nnx.Rngs): Random number generators for initialization.
+        obs_dim (int): Observation dimension.
+        cond_dim (int): Condition dimension.
+        use_rope (bool): Whether to use Rotary Position Embedding (RoPE).
+        theta (int): Scaling factor for positional encoding.
+        guidance_embed (bool): Whether to use guidance embedding.
+        qkv_multiplier (int): Multiplier for QKV features.
+        param_dtype (DTypeLike): Data type for model parameters.
+        
+    """
     in_channels: int
     vec_in_dim: Union[int, None]
     context_in_dim: int

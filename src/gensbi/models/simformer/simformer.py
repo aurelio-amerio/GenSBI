@@ -17,6 +17,22 @@ from .embedding import GaussianFourierEmbedding, MLPEmbedder
 
 @dataclass
 class SimformerParams:
+    """Parameters for the Simformer model.
+    
+    Args:
+        rngs (nnx.Rngs): Random number generators for initialization.
+        dim_value (int): Dimension of the value embeddings.
+        dim_id (int): Dimension of the ID embeddings.
+        dim_condition (int): Dimension of the condition embeddings.
+        dim_joint (int): Total dimension of the joint embeddings.
+        fourier_features (int): Number of Fourier features for time embedding.
+        num_heads (int): Number of attention heads.
+        num_layers (int): Number of transformer layers.
+        widening_factor (int): Widening factor for the transformer.
+        qkv_features (int): Number of features for QKV layers.
+        num_hidden_layers (int): Number of hidden layers in the transformer.
+
+    """
     rngs: nnx.Rngs
     dim_value: int
     dim_id: int
@@ -32,16 +48,16 @@ class SimformerParams:
 
 
 class Simformer(nnx.Module):
+    """
+    Simformer model for joint density estimation.
+
+    Args:
+        params (SimformerParams): Parameters for the Simformer model.
+    """
     def __init__(
         self,
         params: SimformerParams,
     ):
-        """
-        Initialize the Simformer model for joint density estimation.
-
-        Args:
-            params (SimformerParams): Parameters for the Simformer model.
-        """
         self.params = params
         self.dim_value = params.dim_value
         self.dim_id = params.dim_id
@@ -148,13 +164,13 @@ class Simformer(nnx.Module):
 
 
 class SimformerConditioner(nnx.Module):
-    def __init__(self, model: Simformer):
-        """
-        Initialize the SimformerConditioner.
+    """
+    Module to handle conditioning in the Simformer model.
 
-        Args:
-            model (Simformer): Simformer model instance.
-        """
+    Args:
+        model (Simformer): Simformer model instance.
+    """
+    def __init__(self, model: Simformer):
         self.model = model
         self.dim_joint = model.params.dim_joint
 
