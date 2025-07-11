@@ -1,5 +1,3 @@
-# FIXME: first pass
-
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 # import torch
