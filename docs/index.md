@@ -1,30 +1,35 @@
-# GenSBI Documentation
+# GenSBI 
+```{image} _static/logo.png
+  :alt: GenSBI Logo
+  :align: center
+  :width: 600px
+  :class: logo-transparent-bg
+```
 
-Welcome to the GenSBI documentation!
+## Work in progress!
+GenSBI is a work in progress, and we are actively developing new features and improvements. Expect the API and examples to evolve over time. We welcome contributions and feedback from the community!
 
+## Getting Started
 
----
+To get started with GenSBI, install the package using pip:
 
-![GenSBI Logo](../docs/_static/logo.png)
+```bash
+pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
+```
 
-**Work in progress!**
+We advise to take a look at the [Getting Started](getting_started.md) page for additional installation instructions and basic usage. 
 
-To get started with GenSBI, see the [Getting Started](getting_started.md) page and explore the [Examples](examples.md) for practical demonstrations. 
+You can also explore the [Examples](examples.md) page for practical demonstrations of GenSBI's capabilities.
 
+You can find the API documentation in the [API Documentation](api/gensbi/index.md) section.
+
+## Table of Contents
 ```{toctree}
 :maxdepth: 1
 
 Getting Started <getting_started>
 Examples <examples>
 References <references>
-```
-
-## API Documentation
-This section provides an overview of the GenSBI API. For detailed documentation, see the respective module pages.
-
-```{toctree}
-:maxdepth: 1
-
 API Documentation <api/gensbi/index>
 ```
 

@@ -61,8 +61,8 @@ copybutton_selector = ":not(.prompt) > div.highlight pre"
 
 html_show_sourcelink = False
 html_theme = "pydata_sphinx_theme"
-html_logo = "_static/logo.png"
-html_favicon = "_static/logo.png"
+html_logo = "_static/logo_small.png"
+html_favicon = "_static/logo_small.png"
 
 html_theme_options = {
     
@@ -75,8 +75,7 @@ html_theme_options = {
         },
     ],
     "logo": {
-        "text": "GenSBI",
-        "image_dark": "_static/logo.png",
+        "text": "",
         # You can add "image_dark" if you have a dark mode logo
     },
     "use_edit_page_button": False,
@@ -86,6 +85,11 @@ html_theme_options = {
     "footer_center": ["sphinx-version"],
     "search_as_you_type": True,
 }
+
+html_static_path = ['_static']
+html_css_files = [
+    'custom.css',
+]
 
 # -- Options for autosummary/autodoc output ------------------------------------
 autosummary_generate = True
