@@ -1,3 +1,4 @@
+# :no-index:
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
@@ -18,12 +19,12 @@ from .scheduler import (
 
 __all__ = [
     "CondOTScheduler",
-    "CosineScheduler",
     "ConvexScheduler",
-    "PolynomialConvexScheduler",
-    "ScheduleTransformedModel",
-    "Scheduler",
-    "VPScheduler",
+    "CosineScheduler",
     "LinearVPScheduler",
+    "PolynomialConvexScheduler",
+    "Scheduler",
     "SchedulerOutput",
+    "VPScheduler",
+    "ScheduleTransformedModel",
 ]

@@ -1,3 +1,4 @@
+# :no-index:
 from .model import Flux, FluxParams
 from .loss import FluxCFMLoss
 

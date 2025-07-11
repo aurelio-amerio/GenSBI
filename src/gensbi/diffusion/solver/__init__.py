@@ -1,3 +1,4 @@
+# :no-index:
 from .solver import Solver
 from .sde_solver import SDESolver
 
