@@ -16,6 +16,22 @@ class EDMPath(ProbPath):
 
         Args:
             scheduler: The scheduler object.
+
+        Example:
+            .. code-block:: python
+
+                from gensbi.diffusion.path import EDMPath
+                from gensbi.diffusion.path.scheduler import EDMScheduler
+                import jax, jax.numpy as jnp
+                scheduler = EDMScheduler()
+                path = EDMPath(scheduler)
+                key = jax.random.PRNGKey(0)
+                x_1 = jax.random.normal(key, (32, 2))
+                sigma = jnp.ones((32, 1))
+                sample = path.sample(key, x_1, sigma)
+                print(sample.x_t.shape)
+                # (32, 2)
+
         """
         self.scheduler = scheduler
         assert self.scheduler.name in [

@@ -19,27 +19,23 @@ class AffineProbPath(ProbPath):
 
     The scheduler is responsible for providing the time-dependent parameters :math:`\alpha_t` and :math:`\sigma_t`, as well as their derivatives, which define the affine transformation at any given time `t`.
 
-    Using ``AffineProbPath`` in the flow matching framework:
+    Example:
+        .. code-block:: python
 
-    .. code-block:: python
-
-        # Instantiates a probability path
-        my_path = AffineProbPath(...)
-        mse_loss = torch.nn.MSELoss()
-
-        for x_1 in dataset:
-            # Sets x_0 to random noise
-            x_0 = torch.randn()
-
-            # Sets t to a random value in [0,1]
-            t = torch.rand()
-
-            # Samples the conditional path X_t ~ p_t(X_t|X_0,X_1)
-            path_sample = my_path.sample(x_0=x_0, x_1=x_1, t=t)
-
-            # Computes the MSE loss w.r.t. the velocity
-            loss = mse_loss(path_sample.dx_t, my_model(x_t, t))
-            loss.backward()
+            from gensbi.flow_matching.path.scheduler import CondOTScheduler
+            from gensbi.flow_matching.path import AffineProbPath
+            import jax, jax.numpy as jnp
+            scheduler = CondOTScheduler()
+            path = AffineProbPath(scheduler)
+            key = jax.random.PRNGKey(0)
+            # x_1 should come from your dataset (e.g., a batch of real data)
+            x_1 = jax.random.normal(key, (128, 2))  # replace with your data batch
+            # x_0 is typically sampled from a prior, e.g., standard normal noise
+            x_0 = jax.random.normal(key, (128, 2))
+            t = jax.random.uniform(key, (128,))  # random times in [0, 1]
+            sample = path.sample(x_0, x_1, t)
+            print(sample.x_t.shape)
+            # (128, 2)
 
     Args:
         scheduler (Scheduler): An instance of a scheduler that provides the parameters :math:`\alpha_t`, :math:`\sigma_t`, and their derivatives over time.
@@ -243,6 +239,22 @@ class CondOTProbPath(AffineProbPath):
     .. math::
 
         \alpha_t = t \quad \text{and} \quad \sigma_t = 1 - t.
+
+    Example:
+        .. code-block:: python
+
+            from gensbi.flow_matching.path import CondOTProbPath
+            import jax, jax.numpy as jnp
+            path = CondOTProbPath()
+            key = jax.random.PRNGKey(0)
+            # x_1 should come from your dataset (e.g., a batch of real data)
+            x_1 = jax.random.normal(key, (64, 2))  # replace with your data batch
+            # x_0 is typically sampled from a prior, e.g., standard normal noise
+            x_0 = jax.random.normal(key, (64, 2))
+            t = jax.random.uniform(key, (64,))  # random times in [0, 1]
+            sample = path.sample(x_0, x_1, t)
+            print(sample.x_t.shape)
+            # (64, 2)
     """
 
     def __init__(self) -> None:

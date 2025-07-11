@@ -23,6 +23,23 @@ class ODESolver(Solver):
 
     Args:
         velocity_model (Union[ModelWrapper, Callable]): a velocity field model receiving :math:`(x,t)` and returning :math:`u_t(x)`
+
+    Example:
+        .. code-block:: python
+
+            from gensbi.flow_matching.solver import ODESolver
+            from gensbi.utils.model_wrapping import ModelWrapper
+            import jax, jax.numpy as jnp
+            class DummyModel:
+                def __call__(self, x, t, args=None):
+                    return x + t
+            model = ModelWrapper(DummyModel())
+            solver = ODESolver(velocity_model=model)
+            x_init = jnp.zeros((10, 2))
+            time_grid = jnp.linspace(0, 1, 5)
+            sol = solver.sample(x_init=x_init, step_size=0.05, time_grid=time_grid)
+            print(sol.shape)
+            # (5, 10, 2)
     """
 
     def __init__(self, velocity_model: ModelWrapper):
@@ -41,29 +58,6 @@ class ODESolver(Solver):
     ) -> Callable:
         r"""Solve the ODE with the velocity field.
 
-        Example:
-
-        .. code-block:: python
-
-            import torch
-            from flow_matching.utils import ModelWrapper
-            from flow_matching.solver import ODESolver
-
-            class DummyModel(ModelWrapper):
-                def __init__(self):
-                    super().__init__(None)
-
-                def forward(self, x: torch.Tensor, t: torch.Tensor, **extras) -> torch.Tensor:
-                    return torch.ones_like(x) * 3.0 * t**2
-
-            velocity_model = DummyModel()
-            solver = ODESolver(velocity_model=velocity_model)
-            x_init = torch.tensor([0.0, 0.0])
-            step_size = 0.001
-            time_grid = torch.tensor([0.0, 1.0])
-
-            result = solver.sample(x_init=x_init, step_size=step_size, time_grid=time_grid)
-
         Args:
             x_init (Tensor): initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
             step_size (Optional[float]): The step size. Must be None for adaptive step solvers.
@@ -74,8 +68,27 @@ class ODESolver(Solver):
             return_intermediates (bool, optional): If True then return intermediate time steps according to time_grid. Defaults to False.
             **model_extras: Additional input for the model.
 
-        Returns:
-            Union[Tensor, Sequence[Tensor]]: The last timestep when return_intermediates=False, otherwise all values specified in time_grid.
+        Example:
+            .. code-block:: python
+
+                import torch
+                from flow_matching.utils import ModelWrapper
+                from flow_matching.solver import ODESolver
+
+                class DummyModel(ModelWrapper):
+                    def __init__(self):
+                        super().__init__(None)
+
+                    def forward(self, x: torch.Tensor, t: torch.Tensor, **extras) -> torch.Tensor:
+                        return torch.ones_like(x) * 3.0 * t**2
+
+                velocity_model = DummyModel()
+                solver = ODESolver(velocity_model=velocity_model)
+                x_init = torch.tensor([0.0, 0.0])
+                step_size = 0.001
+                time_grid = torch.tensor([0.0, 1.0])
+
+                result = solver.sample(x_init=x_init, step_size=step_size, time_grid=time_grid)
         """
 
         term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))

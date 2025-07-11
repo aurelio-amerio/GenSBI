@@ -18,6 +18,25 @@ class SDESolver(Solver):
         Args:
             score_model (Callable): The score model function.
             path (EDMPath): The EDMPath object.
+
+        Example:
+            .. code-block:: python
+
+                from gensbi.diffusion.solver import SDESolver
+                from gensbi.diffusion.path import EDMPath
+                from gensbi.diffusion.path.scheduler import EDMScheduler
+                import jax, jax.numpy as jnp
+                scheduler = EDMScheduler()
+                path = EDMPath(scheduler)
+                def score_model(x, t):
+                    return x + t
+                solver = SDESolver(score_model, path)
+                key = jax.random.PRNGKey(0)
+                x_init = jax.random.normal(key, (16, 2))
+                samples = solver.sample(key, x_init, nsteps=10)
+                print(samples.shape)
+                # (10, 16, 2)
+
         """
         self.score_model = score_model
         self.path = path
