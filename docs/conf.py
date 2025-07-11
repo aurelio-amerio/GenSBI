@@ -58,6 +58,8 @@ copybutton_selector = ":not(.prompt) > div.highlight pre"
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
+
+html_show_sourcelink = False
 html_theme = "pydata_sphinx_theme"
 html_logo = "_static/logo.png"
 html_favicon = "_static/logo.png"
@@ -84,13 +86,6 @@ html_theme_options = {
     "footer_center": ["sphinx-version"],
     "search_as_you_type": True,
 }
-
-# Hide "Show Source" button and right sidebar "This page" panel
-# html_sidebars = {
-#     "**": [
-#         "sidebar-nav-bs.html",
-#     ]
-# }
 
 # -- Options for autosummary/autodoc output ------------------------------------
 autosummary_generate = True
