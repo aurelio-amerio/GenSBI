@@ -5,8 +5,7 @@ This page provides links and descriptions for example notebooks and scripts demo
 
 
 ## Unconditional density estimation
-This example demonstrates how to use density estimation techniques in a 2D space. 
-Includes training and evaluation of flow matching and diffusion models.
+These examples demonstrate how to use density estimation techniques in a 2D space, using flow matching and diffusion models.
 
 ```{toctree}
 :maxdepth: 1
