@@ -1,4 +1,7 @@
 # GenSBI 
+![Tests](../img/badges/tests.svg)
+![Coverage](../img/badges/coverage.svg)
+
 ```{image} _static/logo.png
   :alt: GenSBI Logo
   :align: center
