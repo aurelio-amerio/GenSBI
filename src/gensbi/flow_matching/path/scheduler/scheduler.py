@@ -1,11 +1,3 @@
-#FIXME: first pass
-
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the CC-by-NC license found in the
-# LICENSE file in the root directory of this source tree.
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Union

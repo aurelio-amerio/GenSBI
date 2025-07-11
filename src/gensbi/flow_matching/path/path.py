@@ -1,17 +1,8 @@
-#FIXME: first pass
-
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the CC-by-NC license found in the
-# LICENSE file in the root directory of this source tree.
-
 from abc import ABC, abstractmethod
 from jax import Array
 
 import jax
 import jax.numpy as jnp
-
 
 from gensbi.flow_matching.path.path_sample import PathSample
 

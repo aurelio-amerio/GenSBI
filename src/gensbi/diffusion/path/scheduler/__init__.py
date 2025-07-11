@@ -1,4 +1,3 @@
-# :no-index:
 from .edm import EDMScheduler, VPScheduler, VEScheduler
 
 __all__ = [
