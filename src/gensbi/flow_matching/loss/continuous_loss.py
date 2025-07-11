@@ -5,35 +5,35 @@ from jax import Array
 
 
 class ContinuousFMLoss(nnx.Module):
+    """
+    ContinuousFMLoss is a class that computes the continuous flow matching loss.
+
+    Args:
+        path (MixtureDiscreteProbPath): Probability path (x-prediction training).
+        reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
+
+    Example:
+        .. code-block:: python
+
+            from gensbi.flow_matching.loss import ContinuousFMLoss
+            from gensbi.flow_matching.path import AffineProbPath
+            from gensbi.flow_matching.path.scheduler import CondOTScheduler
+            import jax, jax.numpy as jnp
+            scheduler = CondOTScheduler()
+            path = AffineProbPath(scheduler)
+            loss_fn = ContinuousFMLoss(path)
+            def vf(x, t, args=None):
+                return x + t
+            x_0 = jnp.zeros((8, 2))
+            x_1 = jnp.ones((8, 2))
+            t = jnp.linspace(0, 1, 8)
+            batch = (x_0, x_1, t)
+            loss = loss_fn(vf, batch)
+            print(loss.shape)
+            # ()
+
+    """
     def __init__(self, path, reduction: str = "mean"):
-        """
-        ContinuousFMLoss is a class that computes the continuous flow matching loss.
-
-        Args:
-            path (MixtureDiscreteProbPath): Probability path (x-prediction training).
-            reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
-
-        Example:
-            .. code-block:: python
-
-                from gensbi.flow_matching.loss import ContinuousFMLoss
-                from gensbi.flow_matching.path import AffineProbPath
-                from gensbi.flow_matching.path.scheduler import CondOTScheduler
-                import jax, jax.numpy as jnp
-                scheduler = CondOTScheduler()
-                path = AffineProbPath(scheduler)
-                loss_fn = ContinuousFMLoss(path)
-                def vf(x, t, args=None):
-                    return x + t
-                x_0 = jnp.zeros((8, 2))
-                x_1 = jnp.ones((8, 2))
-                t = jnp.linspace(0, 1, 8)
-                batch = (x_0, x_1, t)
-                loss = loss_fn(vf, batch)
-                print(loss.shape)
-                # ()
-
-        """
         self.path = path
         if reduction not in ["None", "mean", "sum"]:
             raise ValueError(f"{reduction} is not a valid value for reduction")

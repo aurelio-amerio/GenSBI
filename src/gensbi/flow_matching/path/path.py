@@ -22,17 +22,12 @@ class ProbPath(ABC):
         # Instantiate a probability path
         my_path = ProbPath(...)
 
-        for x_0, x_1 in dataset:
-            # Sets t to a random value in [0,1]
-            key = jax.random.PRNGKey(0)
-            t = jax.random.uniform(key)
+        # Sets t to a random value in [0,1]
+        key = jax.random.PRNGKey(0)
+        t = jax.random.uniform(key)
 
-            # Samples the conditional path X_t ~ p_t(X_t|X_0,X_1)
-            path_sample = my_path.sample(x_0=x_0, x_1=x_1, t=t)
-
-            # Optimizes the model. The loss function varies, depending on model and path.
-            loss = loss_fn(path_sample, my_model(x_t, t))
-            grads = jax.grad(loss_fn)(params)
+        # Samples the conditional path X_t ~ p_t(X_t|X_0,X_1)
+        path_sample = my_path.sample(x_0=x_0, x_1=x_1, t=t)
     """
 
     @abstractmethod
