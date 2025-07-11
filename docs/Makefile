@@ -24,11 +24,11 @@ deploy:	html
 	python deploy.py
 
 download-examples:
-	@echo "Downloading example notebooks to _static/notebooks ..."
-	@mkdir -p _static/notebooks
-	curl -L -o _static/notebooks/diffusion_2d_unconditional.ipynb \
+	@echo "Downloading example notebooks to notebooks ..."
+	@mkdir -p notebooks
+	curl -L -o notebooks/diffusion_2d_unconditional.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/diffusion_2d_unconditional.ipynb
-	curl -L -o _static/notebooks/flow_matching_2d_unconditional.ipynb \
+	curl -L -o notebooks/flow_matching_2d_unconditional.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/flow_matching_2d_unconditional.ipynb
 
 
