@@ -7,14 +7,14 @@ from gensbi.flow_matching.loss import ContinuousFMLoss
 
 
 class SimformerCFMLoss(ContinuousFMLoss):
-    def __init__(self, path, reduction: str = "mean"):
-        """
-        Initialize the Simformer Continuous Flow Matching Loss.
+    """
+    SimformerCFMLoss is a class that computes the continuous flow matching loss for the Simformer model.
 
-        Args:
-            path: Probability path for training.
-            reduction (str): Reduction method ('none', 'mean', 'sum').
-        """
+    Args:
+        path: Probability path for training.
+        reduction (str): Reduction method ('none', 'mean', 'sum').
+    """
+    def __init__(self, path, reduction: str = "mean"):
         super().__init__(path, reduction)
 
     def __call__(

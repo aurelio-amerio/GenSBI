@@ -6,14 +6,14 @@ from gensbi.flow_matching.loss import ContinuousFMLoss
 
 
 class FluxCFMLoss(ContinuousFMLoss):
-    def __init__(self, path, reduction="mean", cfg_scale=None):
-        """
-        ContinuousFMLoss is a class that computes the continuous flow matching loss.
+    """
+    FluxCFMLoss is a class that computes the continuous flow matching loss for the Flux model.
 
-        Args:
-            path: Probability path (x-prediction training).
-            reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
-        """
+    Args:
+        path: Probability path (x-prediction training).
+        reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
+    """
+    def __init__(self, path, reduction="mean", cfg_scale=None):
         # self.path = path
         # if reduction not in ["None", "mean", "sum"]:
         #     raise ValueError(f"{reduction} is not a valid value for reduction")
