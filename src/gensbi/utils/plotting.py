@@ -78,7 +78,7 @@ def _plot_marginals_2d(
     ndim = data.shape[1]
     fontsize = 12
     if labels is None:
-        labels = [r"$\theta_{}$".format(i) for i in np.arange(1, ndim + 1)]
+        labels = ["$\\theta_{{{}}}$".format(i) for i in np.arange(1, data.shape[1] + 1)]
     dataframe = pd.DataFrame(data, columns=labels)
 
     axis_ranges = _parse_range(range, ndim)
@@ -173,7 +173,7 @@ def _plot_marginals_nd(
     fontsize = 12
 
     if labels is None:
-        labels = [r"$\theta_{}$".format(i) for i in np.arange(1, ndim + 1)]
+        labels = ["$\\theta_{{{}}}$".format(i) for i in np.arange(1, data.shape[1] + 1)]
     axis_ranges = _parse_range(range, ndim)
     cmap = hexbin_kwargs.pop("cmap", transparent_cmap)
     color = hexbin_kwargs.pop("color", [0, 0, 0, 0])
@@ -311,7 +311,7 @@ def _plot_marginals_corner(
         true_param = np.array(true_param)
         
     if labels is None:
-        labels = [r"$\theta_{}$".format(i) for i in np.arange(1, data.shape[1] + 1)]
+        labels = ["$\\theta_{{{}}}$".format(i) for i in np.arange(1, data.shape[1] + 1)]
     plt.clf()
     corner(
         data,
@@ -356,6 +356,7 @@ def plot_marginals(
         Which plotting backend to use. Options:
         - 'corner': Use the corner.py package for a classic corner plot.
         - 'seaborn': Use seaborn's jointplot (2D) or custom grid (ND) for marginals.
+        The seaborn backend is slower, but will produce smoother plots with KDE contours.
     plot_levels : bool, default=True
         If True and using seaborn, plot 1- and 2-sigma KDE contours on off-diagonal plots. When using 'corner', levels are automatically computed.
     labels : list of str or None, default=None
