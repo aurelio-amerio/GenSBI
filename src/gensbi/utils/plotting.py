@@ -309,7 +309,7 @@ def _plot_marginals_corner(
     data = np.array(data)
     if true_param is not None:
         true_param = np.array(true_param)
-        
+
     if labels is None:
         labels = ["$\\theta_{{{}}}$".format(i) for i in np.arange(1, data.shape[1] + 1)]
     plt.clf()
@@ -344,7 +344,7 @@ def plot_marginals(
     range=None,
     true_param=None,
     **kwargs,
-):  
+):
     """
     Plot marginal distributions of multidimensional data using either the 'corner' or 'seaborn' backend.
 
@@ -389,7 +389,7 @@ def plot_marginals(
     - For 'corner', the function uses the corner.py package and supports labels, gridsize, range, and true_param.
     - For 'seaborn', 2D data uses jointplot, higher dimensions use a custom grid of hexbin and histogram plots.
     """
-    if backend=="corner":
+    if backend == "corner":
         return _plot_marginals_corner(
             data,
             labels=labels,
@@ -398,7 +398,7 @@ def plot_marginals(
             true_param=true_param,
             **kwargs,
         )
-    elif backend=="seaborn":
+    elif backend == "seaborn":
         if data.shape[1] == 2:
             return _plot_marginals_2d(
                 data,
@@ -425,3 +425,122 @@ def plot_marginals(
             )
     else:
         raise ValueError(f"Unknown backend: {backend}. Use 'corner' or 'seaborn'.")
+
+
+# code to plot a 2D likelihood
+
+cmap_lcontour = sns.cubehelix_palette(
+    start=0.5, rot=-0.5, light=1.0, dark=0.2, as_cmap=True
+)
+
+
+def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545]):
+    """
+    Plot 2D levels on a given axis.
+
+    Parameters
+    ----------
+    x : array-like
+        X values.
+    y : array-like
+        Y values.
+    Z : array-like
+        Z values corresponding to (x, y).
+    ax : matplotlib Axes
+        The axes to plot on.
+    levels : list of float
+        The contour levels to plot.
+    """
+
+    # --- 1. Prepare the data ---
+
+    x = np.asarray(x)  # make sure we have numpy arrays
+    y = np.asarray(y)  # make sure we have numpy arrays
+    Z = np.asarray(Z)  # make sure we have numpy arrays
+
+    # --- 2. Define Desired Area Levels ---
+    # These are the fractions of the total volume you want to enclose.
+    # For a probability distribution, these are often confidence levels.
+    area_levels = levels
+
+    # --- 3. Calculate Contour Levels (Z-values) from Areas ---
+    # To find the z-values that enclose a certain area, we follow these steps:
+    # a. Flatten the 2D Z array into a 1D list of all values.
+    # b. Sort these values in descending order (from highest to lowest).
+    z_flat_sorted = np.sort(Z.ravel())[::-1]
+
+    # c. Calculate the cumulative sum of the sorted values. Each element in
+    #    this array represents the sum of all preceding (higher) values.
+    z_cumsum = np.cumsum(z_flat_sorted)
+
+    # d. Normalize the cumulative sum by the total sum of all Z values.
+    #    This converts the cumulative sum into a fraction of the total volume,
+    #    ranging from 0 to 1.
+    z_cumsum_normalized = z_cumsum / z_cumsum[-1]
+
+    # e. Find the z-values that correspond to our desired area fractions.
+    #    We use np.searchsorted to find the index where the normalized
+    #    cumulative sum first exceeds our target area level.
+    indices = np.searchsorted(z_cumsum_normalized, area_levels)
+    z_levels = z_flat_sorted[indices]
+
+    # The levels must be sorted in ascending order for matplotlib's contour functions.
+    z_levels = np.sort(z_levels)
+
+    # --- 4. Plot the Results ---
+
+    # To create filled contours, we need to define the boundaries of each color.
+    # We start at 0, use our calculated z_levels, and end at the max value.
+    # contour_fill_levels = np.concatenate(([Z.min()], z_levels, [Z.max()]))
+
+    # a. Plot the filled contours (contourf).
+
+    # b. Plot the contour lines (contour) for clarity.
+    #    These lines will clearly mark the boundaries of the enclosed areas.
+    cnt = ax.contour(x, y, Z, levels=z_levels, colors="k", linewidths=1.5)
+
+    labels = {z: f"{int(a*100)}%" for z, a in zip(z_levels, np.flip(area_levels))}
+    ax.clabel(cnt, levels=z_levels, inline=True, fontsize=10, fmt=labels)
+
+    return
+
+
+def plot_2d_dist_contour(
+    x,
+    y,
+    Z,
+    levels=[0.6827, 0.9545],
+    cmap=cmap_lcontour,
+):
+    """
+    Plot a 2D contour plot of a distribution.
+
+    Parameters
+    ----------
+    x : array-like
+        X values.
+    y : array-like
+        Y values.
+    Z : array-like
+        Z values corresponding to (x, y).
+    levels : list or None, optional
+        Contour levels to plot. If None, contours will not be plotted.
+
+    Returns
+    -------
+    fig, ax : matplotlib Figure and Axes objects
+        The figure and axes containing the plot.
+    """
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    x = np.asarray(x)  # make sure we have numpy arrays
+    y = np.asarray(y)  # make sure we have numpy arrays
+    Z = np.asarray(Z)  # make sure we have numpy arrays
+
+    ax.contourf(x, y, Z, levels=20, cmap=cmap, vmin=0)
+
+    if levels is not None:
+        plot_2d_levels(x, y, Z, ax, levels=levels)
+
+    return fig, ax
