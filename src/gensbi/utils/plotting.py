@@ -301,7 +301,7 @@ def _plot_marginals_nd(
 def _plot_marginals_corner(
     data,
     labels=None,
-    gridsize=15,
+    gridsize=25,
     range=None,
     true_param=None,
     **kwargs,
