@@ -25,6 +25,7 @@ def plot_trajectories(traj):
 
 base_color = "#CD5656"  # Base color for the hexbin and kdeplot
 hist_color = "#202A44"  # Color for the histograms 
+true_val_color = "#687FE5"
 
 rgb_base = np.array(mcolors.to_rgb(base_color))
 
@@ -43,7 +44,7 @@ def _parse_range(range_arg, ndim):
     raise ValueError("range must be a tuple (min, max) or a sequence of such tuples, one per axis")
 
 
-def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, range=None, **kwargs):
+def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, range=None, true_param=None, **kwargs):
     data = np.array(data)
     ndim = data.shape[1]
     fontsize=12
@@ -81,7 +82,7 @@ def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_
         g.ax_marg_x.set_xlim(xlim)
     if ylim is not None:
         g.ax_joint.set_ylim(ylim)
-        g.ax_marg_y.set_xlim(ylim)
+        g.ax_marg_y.set_ylim(ylim)
 
     # Set fontsize for axis labels
     g.ax_joint.set_xlabel(labels[0], fontsize=fontsize)
@@ -90,11 +91,16 @@ def _plot_marginals_2d(data, plot_levels=True, labels=None, gridsize=15, hexbin_
     if plot_levels:
         levels = np.sort(1-np.array([0.6827, 0.9545]))
         g.plot_joint(sns.kdeplot, color=hist_color, zorder=3, levels=levels, alpha=1, linewidths=1)
+    
+    # Plot true_param if provided
+    if true_param is not None:
+        g.ax_joint.scatter(true_param[0], true_param[1], color=true_val_color, marker='*', s=200, zorder=10, label='True', edgecolors='white', linewidths=0.7)
+        g.ax_joint.legend()
     return g
 
 
 
-def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, range=None, **kwargs):
+def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, range=None, true_param=None, **kwargs):
     data = np.array(data)
     ndim = data.shape[1]
     fontsize=12
@@ -141,6 +147,10 @@ def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_
             if plot_levels:
                 levels = np.sort(1-np.array([0.6827, 0.9545]))
                 sns.kdeplot(x=x, y=y, levels=levels, color=hist_color, zorder=3, alpha=1, linewidths=1, ax=ax)
+            # Plot true_param if provided
+            if true_param is not None:
+                ax.scatter(true_param[j], true_param[i], color=true_val_color, marker='*', s=120, zorder=10, label='True', edgecolors='white', linewidths=0.5)
+                # ax.scatter(true_param[j], true_param[i], color=true_val_color, marker='*', zorder=10, label='True', edgecolors='white', linewidths=0.5)
             # Only set axis labels for border plots
             if i == ndim-1:
                 ax.set_xlabel(labels[j], fontsize=fontsize)
@@ -171,8 +181,8 @@ def _plot_marginals_nd(data, plot_levels=True, labels=None, gridsize=15, hexbin_
     return fig, axes
 
 
-def plot_marginals(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, range=None, **kwargs):
+def plot_marginals(data, plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, range=None, true_param=None, **kwargs):
     if data.shape[1] == 2:
-        return _plot_marginals_2d(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs, range=range, **kwargs)
+        return _plot_marginals_2d(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs, range=range, true_param=true_param, **kwargs)
     else:
-        return _plot_marginals_nd(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs, range=range, **kwargs)
+        return _plot_marginals_nd(data, plot_levels=plot_levels, labels=labels, gridsize=gridsize, hexbin_kwargs=hexbin_kwargs, histplot_kwargs=histplot_kwargs, range=range, true_param=true_param, **kwargs)
