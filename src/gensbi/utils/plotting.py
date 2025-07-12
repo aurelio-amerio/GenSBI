@@ -543,4 +543,7 @@ def plot_2d_dist_contour(
     if levels is not None:
         plot_2d_levels(x, y, Z, ax, levels=levels)
 
+    # Set aspect ratio to equal for better visualization
+    ax.set_aspect("equal", adjustable="box")
+
     return fig, ax
