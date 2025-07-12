@@ -212,8 +212,11 @@ class SimformerConditioner(nnx.Module):
             cond = rearrange(
                 cond, "... -> 1 ... 1" if cond.ndim == 1 else "... -> ... 1"
             )
-
-        obs, cond = jnp.broadcast_arrays(obs, cond)
+        
+        # repeat cond on the first dimension to match obs
+        cond = jnp.broadcast_to(
+            cond, (obs.shape[0], *cond.shape[1:])
+        )
 
         condition_mask_dim = len(obs_ids) + len(cond_ids)
 
