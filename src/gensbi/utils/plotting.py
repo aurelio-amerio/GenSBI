@@ -73,6 +73,8 @@ def _plot_marginals_2d(
     **kwargs,
 ):
     data = np.array(data)
+    if true_param is not None:
+        true_param = np.array(true_param)
     ndim = data.shape[1]
     fontsize = 12
     if labels is None:
@@ -164,6 +166,9 @@ def _plot_marginals_nd(
     true_param=None,
 ):
     data = np.array(data)
+    if true_param is not None:
+        true_param = np.array(true_param)
+
     ndim = data.shape[1]
     fontsize = 12
 
@@ -302,6 +307,9 @@ def _plot_marginals_corner(
     **kwargs,
 ):
     data = np.array(data)
+    if true_param is not None:
+        true_param = np.array(true_param)
+        
     if labels is None:
         labels = [r"$\theta_{}$".format(i) for i in np.arange(1, data.shape[1] + 1)]
     plt.clf()
