@@ -497,7 +497,7 @@ def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545]):
 
     # b. Plot the contour lines (contour) for clarity.
     #    These lines will clearly mark the boundaries of the enclosed areas.
-    cnt = ax.contour(x, y, Z, levels=z_levels, colors="k", linewidths=1.5)
+    cnt = ax.contour(x, y, Z, levels=z_levels, colors=hist_color, linewidths=1.5)
 
     labels = {z: f"{int(a*100)}%" for z, a in zip(z_levels, np.flip(area_levels))}
     ax.clabel(cnt, levels=z_levels, inline=True, fontsize=10, fmt=labels)
