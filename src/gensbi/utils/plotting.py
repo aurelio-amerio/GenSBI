@@ -509,6 +509,7 @@ def plot_2d_dist_contour(
     x,
     y,
     Z,
+    true_param=None,
     levels=[0.6827, 0.9545],
     cmap=cmap_lcontour,
 ):
@@ -542,6 +543,11 @@ def plot_2d_dist_contour(
 
     if levels is not None:
         plot_2d_levels(x, y, Z, ax, levels=levels)
+
+    if true_param is not None:
+        ax.scatter(true_param[0], true_param[1], color=base_color, s=50, marker="s", zorder=10)
+        ax.axvline(true_param[0], color=base_color, linestyle='-', linewidth=1, zorder=9)
+        ax.axhline(true_param[1], color=base_color, linestyle='-', linewidth=1, zorder=9)
 
     # Set aspect ratio to equal for better visualization
     ax.set_aspect("equal", adjustable="box")
