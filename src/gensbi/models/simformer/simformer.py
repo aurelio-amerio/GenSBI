@@ -38,13 +38,17 @@ class SimformerParams:
     dim_id: int
     dim_condition: int
     dim_joint: int
-    fourier_features: int = 128
-    num_heads: int = 4
-    num_layers: int = 6
-    widening_factor: int = 3
-    qkv_features: int = 8
+    num_heads: int 
+    num_layers: int 
     num_hidden_layers: int = 1
+    fourier_features: int = 128
+    widening_factor: int = 3
+    qkv_features: int | None = None
     # param_dtype: DTypeLike = jnp.float32
+
+    def __post_init__(self):
+        if self.qkv_features is None:
+            self.qkv_features = self.dim_value + self.dim_id + self.dim_condition
 
 
 class Simformer(nnx.Module):
