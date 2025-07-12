@@ -211,16 +211,18 @@ class SimformerConditioner(nnx.Module):
 
         obs, cond = jnp.broadcast_arrays(obs, cond)
 
-        condition_mask = jnp.zeros((self.dim_joint,), dtype=jnp.bool_)
+        condition_mask_dim = len(obs_ids) + len(cond_ids)
+
+        condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
         condition_mask = condition_mask.at[cond_ids].set(True)
 
         x = jnp.concatenate([obs, cond], axis=1)
         node_ids = jnp.concatenate([obs_ids, cond_ids])
 
         # Sort the nodes and the corresponding values
-        nodes_sort = jnp.argsort(node_ids)
-        x = x[:, nodes_sort]
-        node_ids = node_ids[nodes_sort]
+        # nodes_sort = jnp.argsort(node_ids)
+        # x = x[:, nodes_sort]
+        # node_ids = node_ids[nodes_sort]
 
         res = self.model(
             x=x,
@@ -230,7 +232,7 @@ class SimformerConditioner(nnx.Module):
             edge_mask=edge_mask,
         )
         # now return only the values on which we are not conditioning
-        res = res[:, obs_ids]
+        res = res[:, :len(obs_ids)]
         return res
 
     def unconditioned(
