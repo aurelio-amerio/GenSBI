@@ -546,8 +546,8 @@ def plot_2d_dist_contour(
 
     if true_param is not None:
         ax.scatter(true_param[0], true_param[1], color=base_color, s=50, marker="s", zorder=10)
-        ax.axvline(true_param[0], color=base_color, linestyle='-', linewidth=1, zorder=9)
-        ax.axhline(true_param[1], color=base_color, linestyle='-', linewidth=1, zorder=9)
+        ax.axvline(true_param[0], color=base_color, linestyle='-', linewidth=1.5, zorder=9)
+        ax.axhline(true_param[1], color=base_color, linestyle='-', linewidth=1.5, zorder=9)
 
     # Set aspect ratio to equal for better visualization
     ax.set_aspect("equal", adjustable="box")
