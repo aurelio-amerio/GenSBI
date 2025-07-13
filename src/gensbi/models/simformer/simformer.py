@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from .transformer import Transformer
 from .embedding import GaussianFourierEmbedding, MLPEmbedder
 
+from gensbi.utils.model_wrapping import ModelWrapper
+
 
 @dataclass
 class SimformerParams:
@@ -313,3 +315,12 @@ class SimformerConditioner(nnx.Module):
             )
         else:
             return self.unconditioned(obs, obs_ids, timesteps, edge_mask=edge_mask)
+
+
+class SimformerWrapper(ModelWrapper):
+    def __init__(self, model):
+        model_conditioned = SimformerConditioner(model)
+        super().__init__(model_conditioned)
+
+    def _call_model(self, x, t, args, **kwargs):
+        return self.model(obs=x, timesteps=t, **kwargs)

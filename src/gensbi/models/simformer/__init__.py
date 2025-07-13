@@ -13,12 +13,13 @@ This package provides the Simformer transformer-based model and related loss fun
 # If you use this package, please consider citing the original Simformer paper.
 
 
-from .simformer import Simformer, SimformerParams, SimformerConditioner
+from .simformer import Simformer, SimformerParams, SimformerConditioner, SimformerWrapper
 from .loss import SimformerCFMLoss
 
 __all__ = [
     "Simformer",
     "SimformerParams",
     "SimformerConditioner",
+    "SimformerWrapper",
     "SimformerCFMLoss",
 ]

@@ -8,7 +8,7 @@ from jax import Array
 from flax import nnx
 from jax.typing import DTypeLike
 
-from einops import repeat
+from einops import repeat, rearrange
 
 from gensbi.models.flux1.layers import (
     DoubleStreamBlock,
@@ -18,6 +18,8 @@ from gensbi.models.flux1.layers import (
     SingleStreamBlock,
     timestep_embedding,
 )
+
+from gensbi.utils.model_wrapping import ModelWrapper
 
 
 @dataclass
@@ -268,3 +270,16 @@ class Flux(nnx.Module):
 
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
         return obs
+
+class Flux1Wrapper(ModelWrapper):
+    def __init__(self, model):
+        super().__init__(model)
+
+    def _call_model(self, x, t, args, **kwargs):
+        x = jnp.atleast_1d(x)
+        t = jnp.atleast_1d(t)
+
+        if x.ndim < 3:
+            x = rearrange(x, '... -> 1 ... 1' if x.ndim == 1 else '... -> ... 1')
+
+        return jnp.squeeze(self.model(obs=x, timesteps=t, conditioned=True, **kwargs), axis=-1)
