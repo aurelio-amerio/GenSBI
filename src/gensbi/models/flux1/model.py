@@ -271,7 +271,7 @@ class Flux(nnx.Module):
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
         return obs
 
-class Flux1Wrapper(ModelWrapper):
+class FluxWrapper(ModelWrapper):
     def __init__(self, model):
         super().__init__(model)
 

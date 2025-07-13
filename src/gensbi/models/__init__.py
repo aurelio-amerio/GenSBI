@@ -1,14 +1,15 @@
-from .flux1 import FluxParams, Flux, FluxCFMLoss
-from .simformer import Simformer, SimformerParams, SimformerConditioner, SimformerCFMLoss
+from .flux1 import FluxParams, Flux, FluxCFMLoss, FluxWrapper
+from .simformer import Simformer, SimformerParams, SimformerWrapper, SimformerCFMLoss
 
 __all__ = [
     "FluxParams",
     "Flux",
     "FluxCFMLoss",
+    "FluxWrapper",
 
     "Simformer",
     "SimformerParams",
-    "SimformerConditioner",
+    "SimformerWrapper",
     "SimformerCFMLoss",
 ]
 
