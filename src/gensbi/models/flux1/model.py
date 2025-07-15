@@ -219,27 +219,6 @@ class Flux(nnx.Module):
         cond_null = repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0])  # type: ignore
         cond = jnp.where(conditioned[...,None,None], cond_processed, cond_null)  # we replace the condition with a null vector if not conditioned
 
-        # if jnp.all(conditioned):
-        #     cond = cond_processed
-        # else:
-        #     cond_null = repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0])  # type: ignore
-        #     cond = jnp.where(conditioned[...,None,None], cond_processed, cond_null)  # we replace the condition with a null vector if not conditioned
-
-        # cond = jax.lax.cond(conditioned, 
-        #                     lambda x: self.cond_in(x), 
-        #                     lambda x: repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0]), 
-        #                     cond)
-
-        # if conditioned:
-        #     cond = self.cond_in(cond)
-        # else:
-        #     cond = repeat(self.condition_null.value, '1 h c -> b h c', b=obs.shape[0])  # type: ignore
-
-        # cond = self.cond_in(cond)
-
-        # cond_null = repeat(self.condition_null.value, '1 h c -> b h c', b=cond.shape[0])
-        # cond = jnp.where(conditioned, cond, cond_null) # we replace the condition with a null vector if not conditioned
-
         ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
         if self.use_rope:
             pe = self.pe_embedder(ids)
