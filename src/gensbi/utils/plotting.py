@@ -277,9 +277,10 @@ def _plot_marginals_nd(
             stat="density",
             **histplot_kwargs,
         )
-        ax.axvline(
-            true_param[i], color=true_val_color, linestyle="-", linewidth=1.5, zorder=5
-        )
+        if true_param is not None:
+            ax.axvline(
+                true_param[i], color=true_val_color, linestyle="-", linewidth=1.5, zorder=5
+            )
         if axis_ranges[i] is not None:
             ax.set_xlim(axis_ranges[i])
         ax.autoscale(enable=True, axis="y", tight=False)

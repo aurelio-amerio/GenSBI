@@ -105,6 +105,9 @@ class BaseSDESolver(Solver):
             nsteps: number of steps for the SDE solver
             method: the method to use for the SDE solver, can be one of "Euler", "SEA", "ShARK". Defaults to "SEA". Euler is the simplest algorithm. SEA (Shifted Euler method) has a better constant factor in the global error and an improved local error. ShARK (Shifted Additive-noise Runge-Kutta) provides a more accurate solution with a higher computational cost, and implements adaptive stepsize control.
             adaptive: whether to use adaptive stepsize control (only for ShARK). Defaults to True.
+
+        Returns:
+            Callable: A function that takes initial conditions and returns the solution at final time.
         """
 
         solvers = {
@@ -188,7 +191,7 @@ class BaseSDESolver(Solver):
             **kwargs: Additional arguments to pass to the velocity model.
 
         Returns:
-            jax.Array: Sampled trajectories from the SDE.
+            Array: Sampled trajectories from the SDE.
         """
         sampler = self.get_sampler(
             nsteps=nsteps, method=method, adaptive=adaptive, **kwargs
