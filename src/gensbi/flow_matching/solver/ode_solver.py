@@ -28,11 +28,15 @@ class ODESolver(Solver):
             from gensbi.flow_matching.solver import ODESolver
             from gensbi.utils.model_wrapping import ModelWrapper
             import jax, jax.numpy as jnp
+
             class DummyModel:
-                def __call__(self, x, t, args=None):
-                    return x + t
-            model = ModelWrapper(DummyModel())
-            solver = ODESolver(velocity_model=model)
+                def __call__(self, obs, timesteps, **kwargs):
+                    return obs + t
+
+            vf_model = DummyModel() # replace with your actual velocity field model, Simformer or Flux1
+
+            model_wrapped = ModelWrapper(vf_model) # you should use the appropriate ModelWrapper for your model, either FluxWrapper or SimformerWrapper, or a custom subclass of ModelWrapper
+            solver = ODESolver(velocity_model=model_wrapped)
             x_init = jnp.zeros((10, 2))
             time_grid = jnp.linspace(0, 1, 5)
             sol = solver.sample(x_init=x_init, step_size=0.05, time_grid=time_grid)
@@ -54,7 +58,7 @@ class ODESolver(Solver):
         return_intermediates: bool = False,
         model_extras: dict = {},
     ) -> Callable:
-        r"""Solve the ODE with the velocity field.
+        r"""Obtain a sampler to solve the ODE with the velocity field.
 
         Args:
             x_init (Tensor): initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
@@ -66,27 +70,8 @@ class ODESolver(Solver):
             return_intermediates (bool, optional): If True then return intermediate time steps according to time_grid. Defaults to False.
             **model_extras: Additional input for the model.
 
-        Example:
-            .. code-block:: python
-
-                import torch
-                from flow_matching.utils import ModelWrapper
-                from flow_matching.solver import ODESolver
-
-                class DummyModel(ModelWrapper):
-                    def __init__(self):
-                        super().__init__(None)
-
-                    def forward(self, x: torch.Tensor, t: torch.Tensor, **extras) -> torch.Tensor:
-                        return torch.ones_like(x) * 3.0 * t**2
-
-                velocity_model = DummyModel()
-                solver = ODESolver(velocity_model=velocity_model)
-                x_init = torch.tensor([0.0, 0.0])
-                step_size = 0.001
-                time_grid = torch.tensor([0.0, 1.0])
-
-                result = solver.sample(x_init=x_init, step_size=step_size, time_grid=time_grid)
+        Returns:
+            Callable: A function that takes initial conditions and returns the solution at final time or intermediate times.
         """
 
         term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))
@@ -133,6 +118,22 @@ class ODESolver(Solver):
         return_intermediates: bool = False,
         model_extras: dict = {},
     ) -> Union[Array, Sequence[Array]]:
+        r"""Sample from the ODE defined by the velocity field.
+
+        Args:
+            x_init (Array): initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
+            step_size (Optional[float]): The step size. Must be None for adaptive step solvers.
+            method (str): A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler". For a complete list, see diffrax.
+            atol (float): Absolute tolerance, used for adaptive step solvers.
+            rtol (float): Relative tolerance, used for adaptive step solvers.
+            time_grid (Array): The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
+            return_intermediates (bool, optional): If True then return intermediate time steps according to time_grid. Defaults to False.
+            **model_extras: Additional input for the model.
+
+        Returns:
+            Union[Array, Sequence[Array]]: The final state or the states at all intermediate time steps.
+        """
+
 
         sampler = self.get_sampler(
             step_size=step_size,
@@ -177,8 +178,7 @@ class ODESolver(Solver):
             **model_extras: Additional model inputs.
 
         Returns:
-            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
-            Samples and log likelihood values.
+            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: Samples and log likelihood values.
         """
         assert (
             time_grid[0] == 1.0 and time_grid[-1] == 0.0

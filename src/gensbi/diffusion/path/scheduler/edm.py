@@ -324,7 +324,10 @@ class BaseSDE(abc.ABC):
         Returns:
             Callable: Loss function.
         """
-        def loss_fn(F: Callable, batch: tuple, loss_mask: Any = None, model_extras: dict = {}) -> Array:
+
+        def loss_fn(
+            F: Callable, batch: tuple, loss_mask: Any = None, model_extras: dict = {}
+        ) -> Array:
             (x_1, x_t, sigma) = batch
 
             lam = self.loss_weight(sigma)
@@ -355,6 +358,21 @@ class BaseSDE(abc.ABC):
 
 
 class VPScheduler(BaseSDE):
+    """
+    Variance Preserving (VP) SDE scheduler as described in the EDM paper.
+
+    Args:
+        beta_min (float): Minimum beta value.
+        beta_max (float): Maximum beta value.
+        e_s (float): Starting epsilon value for time schedule.
+        e_t (float): Ending epsilon value for time schedule.
+        M (int): Scaling factor for noise preconditioning.
+
+
+    References:
+        - Karras, Tero, et al. "Elucidating the design space of diffusion-based generative models." `arXiv:2206.00364 <https://arxiv.org/abs/2206.00364>`_
+    """
+
     def __init__(self, beta_min=0.1, beta_max=20.0, e_s=1e-3, e_t=1e-5, M=1000):
         super().__init__()
         self.beta_min = beta_min
