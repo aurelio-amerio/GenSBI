@@ -48,10 +48,16 @@ The following tasks are planned for future development:
 - [x] Implement diffusion models (EDM and score matching).
 - [x] Implement Transformer-based models for conditional posterior estimation (Flux1 and Simformer).
 - [x] Unify the API for flow matching and diffusion models.
-- [ ] Implement wrappers to make training of flow matching and diffusion models similar.
+- [x] Implement wrappers to make training of flow matching and diffusion models similar.
+- [x] Write tests for core functionalities.
 - [ ] Add more examples and benchmarks.
 - [ ] Improve documentation and tutorials.
-- [ ] Write tests for core functionalities.
+- [ ] Provide better pre-trained models and checkpoints (currently the training is sub-optimal and for illustration purposes only).
+
+## Known Issues
+- Bfloat16 support is currently limited and may lead to unexpected behavior.
+- Currently, it is not straight forward to load a checkpoint created on GPU on a CPU-only machine (and vice-versa). This is an underlying issue with Flax/Orbax serialization, and the documentation will be updated once I find a solution. 
+- Currently `diffrax` is not compatible with `jax >= 0.7.*`, as such the library is pinned to `jax==0.6.2`. This will be fixed as soon as `diffrax` supports `jax` 0.7.
 
 ## Citation
 
