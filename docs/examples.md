@@ -1,7 +1,9 @@
 # Examples
 
 
-This page provides links and descriptions for example notebooks and scripts demonstrating the use of GenSBI. For more details, see the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples).
+This page provides links and descriptions for example notebooks and scripts demonstrating the use of GenSBI. 
+Every notebook is a self-contained example that can be run independently.
+All examples are available in the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples).
 
 
 ## Unconditional density estimation
@@ -21,4 +23,7 @@ We adopt either the Flux1 or Simformer models for this task.
 ```{toctree}
 :maxdepth: 1
 
+notebooks/two_moons_simformer
+notebooks/two_moons_flux
+notebooks/gaussian_linear_simformer
 ```
