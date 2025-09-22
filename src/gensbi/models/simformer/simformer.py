@@ -76,7 +76,7 @@ class Simformer(nnx.Module):
 
         fourier_features = params.fourier_features
         self.embedding_time = GaussianFourierEmbedding(
-            fourier_features, rngs=params.rngs
+            fourier_features, rngs=params.rngs, learnable=True
         )
         self.embedding_net_id = nnx.Embed(
             num_embeddings=params.dim_joint, features=params.dim_id, rngs=params.rngs
