@@ -125,6 +125,7 @@ class AbstractPipeline(abc.ABC):
         self.vf_model_wrapped = None # to be set in subclass
 
         self.ema_model = nnx.clone(self.vf_model)
+        self.ema_model_wrapped = None # to be set in subclass
 
         self.p0_dist_model = None # to be set in subclass
         self.loss_fn_cfm = None  # to be set in subclass
