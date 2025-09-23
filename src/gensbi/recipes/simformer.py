@@ -216,6 +216,21 @@ class SimformerPipeline(AbstractPipeline):
                 args=ocp.args.Composite(state=ocp.args.PyTreeRestore(item=model_state)),
             )
         self.vf_model = nnx.merge(graphdef, restored["state"])
+
+        # restore the ema model
+        model_state_ema = nnx.state(self.ema_model)
+        graphdef_ema, abstract_state_ema = nnx.split(self.ema_model)
+        with ocp.CheckpointManager( 
+            os.path.join(self.training_config["checkpoint_dir"], "ema"),
+            options=ocp.CheckpointManagerOptions(read_only=True),
+        ) as read_mgr_ema:
+            restored_ema = read_mgr_ema.restore(
+                experiment_id,
+                args=ocp.args.Composite(state=ocp.args.PyTreeRestore(item=model_state_ema)),
+            )
+        self.ema_model = nnx.merge(graphdef_ema, restored_ema["state"])
+
+        #wrap models
         self._wrap_model()
 
         print("Restored model from checkpoint")
@@ -223,15 +238,19 @@ class SimformerPipeline(AbstractPipeline):
 
     def _wrap_model(self):
         self.vf_model_wrapped = SimformerWrapper(self.vf_model)
+        self.ema_model_wrapped = SimformerWrapper(self.ema_model)
         return
 
-    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01):
-
+    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.vf_model_wrapped
 
         x_init = jax.random.normal(rng, (nsamples, self.dim_theta))
         cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_data, 1))
 
-        solver = ODESolver(velocity_model=self.vf_model_wrapped)
+        solver = ODESolver(velocity_model=model)
         model_extras = {
             "cond": cond,
             "obs_ids": self.obs_ids,
