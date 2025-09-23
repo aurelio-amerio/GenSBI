@@ -46,6 +46,31 @@ from tqdm import tqdm
 
 import os
 
+class ModelEMA(nnx.Optimizer):
+
+    def __init__(
+        self,
+        model: nnx.Module,
+        tx: optax.GradientTransformation,
+    ):
+        super().__init__(model, tx, wrt=[nnx.Param, nnx.BatchStat])
+
+
+    def update(self, model, model_orginal: nnx.Module):
+        params = nnx.state(model_orginal, self.wrt)
+        ema_params = nnx.state(model, self.wrt)
+        self.step.value += 1
+
+        ema_state = optax.EmaState(count=self.step, ema=ema_params)
+
+        _, new_ema_state = self.tx.update(params, ema_state)
+
+        nnx.update(model, new_ema_state.ema)
+
+@nnx.jit
+def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
+    ema_optimizer.update(ema_model, model)
+
 class AbstractPipeline(abc.ABC):
     """
     Abstract base class for GenSBI training pipelines.
@@ -99,6 +124,8 @@ class AbstractPipeline(abc.ABC):
         self.vf_model = self._make_model()
         self.vf_model_wrapped = None # to be set in subclass
 
+        self.ema_model = nnx.clone(self.vf_model)
+
         self.p0_dist_model = None # to be set in subclass
         self.loss_fn_cfm = None  # to be set in subclass
         self.path = None  # to be set in subclass
@@ -111,6 +138,18 @@ class AbstractPipeline(abc.ABC):
         Create and return the model to be trained.
         """
         return 
+
+    def _get_ema_optimizer(self):
+        """
+        Construct the EMA optimizer for maintaining an exponential moving average of model parameters.
+        Returns
+        -------
+        ema_optimizer : ModelEMA
+            The EMA optimizer instance.
+        """
+        ema_tx = optax.ema(self.training_config["ema_decay"])
+        ema_optimizer = ModelEMA(self.ema_model, ema_tx)
+        return ema_optimizer
 
     def _get_optimizer(self):
         """
@@ -158,6 +197,8 @@ class AbstractPipeline(abc.ABC):
         training_config = {}
 
         training_config["num_steps"] = 30_000
+
+        training_config["ema_decay"] = 0.99
 
         training_config["patience"] = 10
         training_config["cooldown"] = 2
@@ -299,9 +340,10 @@ class AbstractPipeline(abc.ABC):
         """
 
         optimizer = self._get_optimizer()
+        ema_optimizer = self._get_ema_optimizer()
 
         best_state = nnx.state(self.vf_model)
-        # best_state_ema = nnx.state(self.ema_model)
+        best_state_ema = nnx.state(self.ema_model)
 
         val_loss = self.get_val_loss_fn(self.get_loss_fn())
         train_step = self.get_train_step_fn()
@@ -321,6 +363,7 @@ class AbstractPipeline(abc.ABC):
         val_every = self.training_config["val_every"]
 
         checkpoint_dir = self.training_config["checkpoint_dir"]
+        checkpoint_dir_ema = os.path.join(self.training_config["checkpoint_dir"], "ema")
         experiment_id = self.training_config["experiment_id"]
 
         pbar = tqdm(range(nsteps)) 
@@ -331,12 +374,12 @@ class AbstractPipeline(abc.ABC):
                 print("Early stopping")
                 graphdef, abstract_state = nnx.split(self.vf_model)
                 self.vf_model = nnx.merge(graphdef, best_state)
-                # ema_params = best_state_ema
+                self.ema_model = nnx.merge(graphdef, best_state_ema)
 
                 break
             loss = train_step(self.vf_model, optimizer, rngs.train_step())
             # update the parameters ema
-            # ema_step(ema_model, vf_model, ema_optimizer)  # Update the EMA model.
+            ema_step(ema_optimizer, self.vf_model, ema_optimizer)
 
             if j == 0:
                 l_train = loss
@@ -363,7 +406,7 @@ class AbstractPipeline(abc.ABC):
                 if l_val < min_val:
                     min_val = l_val
                     best_state = nnx.state(self.vf_model)
-                    # best_state_ema = nnx.state(ema_model)
+                    best_state_ema = nnx.state(self.ema_model)
 
                 l_val = 0
                 l_train = 0
@@ -383,6 +426,24 @@ class AbstractPipeline(abc.ABC):
             experiment_id, args=ocp.args.Composite(state=ocp.args.PyTreeSave(model_state))
         )
         checkpoint_manager.close()
+
+        # now we create the ema model and save it 
+        ema_state = nnx.state(self.ema_model)
+
+        #save the ema model
+        checkpoint_manager_ema = ocp.CheckpointManager(
+            checkpoint_dir_ema,
+            options=ocp.CheckpointManagerOptions(
+                max_to_keep=None,
+                keep_checkpoints_without_metrics=True,      
+                create=True,
+            ),
+        )
+
+        checkpoint_manager_ema.save(
+            experiment_id, args=ocp.args.Composite(state=ocp.args.PyTreeSave(ema_state))
+        )
+        checkpoint_manager_ema.close()  
 
         print("Training complete and model saved.")
         self._wrap_model()

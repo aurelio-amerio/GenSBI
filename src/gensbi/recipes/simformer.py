@@ -16,7 +16,7 @@ from gensbi.flow_matching.solver import ODESolver
 
 import os
 
-from gensbi.recipes.pipeline import AbstractPipeline
+from gensbi.recipes.pipeline import AbstractPipeline, ModelEMA
 
 
 def sample_strutured_conditional_mask(
