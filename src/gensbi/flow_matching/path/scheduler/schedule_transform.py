@@ -17,37 +17,37 @@ class ScheduleTransformedModel(ModelWrapper):
 
     Example:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        import jax
-        import jax.numpy as jnp
-        from flow_matching.path.scheduler import CondOTScheduler, CosineScheduler, ScheduleTransformedModel
-        from flow_matching.solver import ODESolver
+            import jax
+            import jax.numpy as jnp
+            from flow_matching.path.scheduler import CondOTScheduler, CosineScheduler, ScheduleTransformedModel
+            from flow_matching.solver import ODESolver
 
-        # Initialize the model and schedulers
-        model = ...
+            # Initialize the model and schedulers
+            model = ...
 
-        original_scheduler = CondOTScheduler()
-        new_scheduler = CosineScheduler()
+            original_scheduler = CondOTScheduler()
+            new_scheduler = CosineScheduler()
 
-        # Create the transformed model
-        transformed_model = ScheduleTransformedModel(
-            velocity_model=model,
-            original_scheduler=original_scheduler,
-            new_scheduler=new_scheduler
-        )
+            # Create the transformed model
+            transformed_model = ScheduleTransformedModel(
+                velocity_model=model,
+                original_scheduler=original_scheduler,
+                new_scheduler=new_scheduler
+            )
 
-        # Set up the solver
-        solver = ODESolver(velocity_model=transformed_model)
+            # Set up the solver
+            solver = ODESolver(velocity_model=transformed_model)
 
-        key = jax.random.PRNGKey(0)
-        x_0 = jax.random.normal(key, shape=(10, 2))  # Example initial condition
+            key = jax.random.PRNGKey(0)
+            x_0 = jax.random.normal(key, shape=(10, 2))  # Example initial condition
 
-        x_1 = solver.sample(
-            time_steps=jnp.array([0.0, 1.0]),
-            x_init=x_0,
-            step_size=1/1000
-            )[1]
+            x_1 = solver.sample(
+                time_steps=jnp.array([0.0, 1.0]),
+                x_init=x_0,
+                step_size=1/1000
+                )[1]
 
     Args:
         velocity_model (ModelWrapper): The original velocity model to be transformed.

@@ -1,40 +1,39 @@
 """
 Pipeline for training and using a Flux1 model for simulation-based inference.
 
-Example usage
--------------
-```python
-import itertools
-import jax
-from jax import numpy as jnp
-from gensbi.recipes import FluxPipeline
+Example: 
+    .. code-block:: python
+        import itertools
+        import jax
+        from jax import numpy as jnp
+        from gensbi.recipes import FluxPipeline
 
-# Define your training and validation datasets.
-train_data = jax.random.rand((1024, 4)) # your training dataset
-val_data = jax.random.rand((128, 4)) # your validation dataset
+        # Define your training and validation datasets.
+        train_data = jax.random.rand((1024, 4)) # your training dataset
+        val_data = jax.random.rand((128, 4)) # your validation dataset
 
-batch_size = 32
+        batch_size = 32
 
-train_batch = train_data.reshape(-1, batch_size, train_data.shape[-1])
-val_batch = val_data.reshape(-1, batch_size, val_data.shape[-1])
+        train_batch = train_data.reshape(-1, batch_size, train_data.shape[-1])
+        val_batch = val_data.reshape(-1, batch_size, val_data.shape[-1])
 
-# Create datasets iterators (in this case with itertools, although a grain dataset is recommended)
-train_dataset = itertools.cycle(train_batch)
-val_dataset = itertools.cycle(val_batch)
+        # Create datasets iterators (in this case with itertools, although a grain dataset is recommended)
+        train_dataset = itertools.cycle(train_batch)
+        val_dataset = itertools.cycle(val_batch)
 
-# Define the model
-dim_theta = 2  # Dimension of the parameter space
-dim_x = 2      # Dimension of the observation space
-pipeline = FluxPipeline(train_dataset, val_dataset, dim_theta, dim_x)
+        # Define the model
+        dim_theta = 2  # Dimension of the parameter space
+        dim_x = 2      # Dimension of the observation space
+        pipeline = FluxPipeline(train_dataset, val_dataset, dim_theta, dim_x)
 
-# Train the model
-rngs = jax.random.PRNGKey(0)
-pipeline.train(rngs)
+        # Train the model
+        rngs = jax.random.PRNGKey(0)
+        pipeline.train(rngs)
 
-# Sample from the posterior
-x_o = jnp.array([0.5, -0.2])  # Example
-samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-```
+        # Sample from the posterior
+        x_o = jnp.array([0.5, -0.2])  # Example
+        samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
+    
 """
 
 import jax

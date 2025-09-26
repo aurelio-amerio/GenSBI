@@ -6,9 +6,10 @@ This module provides an abstract pipeline class for training and evaluating cond
 (such as conditional flow matching or diffusion models) in the GenSBI framework. It handles model creation,
 training loop, optimizer setup, checkpointing, and evaluation utilities.
 
-Example usage::
+Example:
+    .. code-block:: python
 
-    from gensbi.cookies.pipeline import AbstractPipeline
+    from gensbi.recipes.pipeline import AbstractPipeline
     # Implement a subclass with your model and loss definition
     class MyPipeline(AbstractPipeline):
         def _make_model(self):
@@ -46,6 +47,20 @@ from tqdm import tqdm
 import os
 
 class ModelEMA(nnx.Optimizer):
+    """
+    Exponential Moving Average (EMA) optimizer for maintaining a smoothed version of model parameters.
+    
+    This optimizer keeps an exponential moving average of the model parameters, which can help stabilize training
+    and improve evaluation performance. The EMA parameters are updated at each training step.
+    
+    Parameters
+    ----------
+    model : nnx.Module
+        The model whose parameters will be tracked.
+    tx : optax.GradientTransformation
+        The Optax transformation defining the EMA update rule.  
+        
+    """
 
     def __init__(
         self,
@@ -56,6 +71,15 @@ class ModelEMA(nnx.Optimizer):
 
 
     def update(self, model, model_orginal: nnx.Module):
+        """
+        Update the EMA parameters using the current model parameters.
+        Parameters
+        ----------
+        model : nnx.Module
+            The model with EMA parameters to be updated.
+        model_orginal : nnx.Module
+            The original model with current parameters.
+        """
         params = nnx.state(model_orginal, self.wrt)
         ema_params = nnx.state(model, self.wrt)
         self.step.value += 1
