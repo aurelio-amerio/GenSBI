@@ -72,7 +72,7 @@ class EDMPath(ProbPath):
         Returns:
             Array: Samples of sigma, shape (batch_size, ...).
         """
-        return self.scheduler.sample_sigma(key, batch_size)[..., None]
+        return self.scheduler.sample_sigma(key, batch_size)
 
     def get_loss_fn(self) -> Callable:
         r"""

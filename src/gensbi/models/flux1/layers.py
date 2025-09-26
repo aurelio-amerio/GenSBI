@@ -43,6 +43,10 @@ def timestep_embedding(
     Returns:
         timestep embeddings.
     """
+    t = jnp.atleast_1d(t)
+
+    t = t.ravel() # FIXME will return an error later on in case the shape is not (N,1...), we should find a better way to handle this
+
     t = time_factor * t
     half = dim // 2
 

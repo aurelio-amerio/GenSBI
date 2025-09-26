@@ -7,6 +7,19 @@ from typing import Callable
 
 from .math import divergence
 
+from einops import rearrange
+
+def _expand_dims(x: Array) -> Array:
+    if x.ndim < 3:
+        x = rearrange(x, '... -> 1 ... 1' if x.ndim == 1 else '... -> ... 1')
+    return x
+
+def _expand_time(t: Array) -> Array:
+    t = jnp.atleast_1d(t)
+    if t.ndim < 2:
+        t = t[..., None]
+    return t
+
 
 class ModelWrapper(nnx.Module):
     """
@@ -20,26 +33,22 @@ class ModelWrapper(nnx.Module):
     def __init__(self, model: nnx.Module):
         self.model = model
 
-    def _call_model(self, x: Array, t: Array, args, **kwargs) -> Array:
-        r"""
-        This method is a wrapper around the model's call method. It allows us to pass additional arguments
-        to the model, such as text conditions or other auxiliary information.
+    def _expand_dims(self, x: Array) -> Array:
+        if x.ndim < 3:
+            x = rearrange(x, '... -> 1 ... 1' if x.ndim == 1 else '... -> ... 1')
+        return x
+    
+    def _expand_time(self, t: Array) -> Array:
+        t = jnp.atleast_1d(t)
+        if t.ndim < 2:
+            t = t[..., None]
+        return t
 
-        Args:
-            x (Array): input data to the model (batch_size, ...).
-            t (Array): time (batch_size).
-            args: additional information forwarded to the model, e.g., text condition.
-            **kwargs: additional keyword arguments.
 
-        Returns:
-            Array: model output.
-        """
-        return self.model(x, t, args=args, **kwargs) # type: ignore
-
-    def __call__(self, x: Array, t: Array, args=None, **kwargs) -> Array:
+    def __call__(self, t: Array, obs: Array, *args, **kwargs) -> Array:
         r"""
         This method defines how inputs should be passed through the wrapped model.
-        Here, we're assuming that the wrapped model takes both :math:`x` and :math:`t` as input,
+        Here, we're assuming that the wrapped model takes both :math:`obs` and :math:`t` as input,
         along with any additional keyword arguments.
 
         Optional things to do here:
@@ -47,18 +56,21 @@ class ModelWrapper(nnx.Module):
             - add a custom forward pass logic.
             - call the wrapped model.
 
-        | given x, t
-        | returns the model output for input x at time t, with extra information `extra`.
+        | given obs, t
+        | returns the model output for input obs at time t, with extra information `extra`.
 
         Args:
-            x (Array): input data to the model (batch_size, ...).
+            obs (Array): input data to the model (batch_size, ...).
             t (Array): time (batch_size).
             **extras: additional information forwarded to the model, e.g., text condition.
 
         Returns:
             Array: model output.
         """
-        return self._call_model(x, t, args, **kwargs)
+        obs = _expand_dims(obs)
+        # t = self._expand_time(t)
+
+        return self.model(obs, t, *args, **kwargs)
 
     def get_vector_field(self, **kwargs) -> Callable:
         r"""Compute the vector field of the model, properly squeezed for the ODE term.
@@ -72,10 +84,14 @@ class ModelWrapper(nnx.Module):
             Array: vector field of the model.
         """
         def vf(t, x, args):
-            vf = self._call_model(x, t, args, **kwargs)
+            # merge args and kwargs
+            args = args if args is not None else {}
+            vf = self(t, x, **args, **kwargs)
             # squeeze the first dimension of the vector field if it is 1
             if vf.shape[0] == 1:
                 vf = jnp.squeeze(vf, axis=0)
+            
+            vf = jnp.squeeze(vf, axis=-1)
             return vf
         return vf
     
@@ -117,11 +133,11 @@ class GuidedModelWrapper(ModelWrapper):
         super().__init__(model)
         self.cfg_scale = cfg_scale
 
-    def __call__(self, x: Array, t: Array, args=None, **kwargs) -> Array:
+    def __call__(self, t: Array, obs: Array, *args, **kwargs) -> Array:
         r"""Compute the guided model output as a weighted sum of conditioned and unconditioned predictions.
 
         Args:
-            x (Array): input data to the model (batch_size, ...).
+            obs (Array): input data to the model (batch_size, ...).
             t (Array): time (batch_size).
             args: additional information forwarded to the model, e.g., text condition.
             **kwargs: additional keyword arguments.
@@ -129,9 +145,10 @@ class GuidedModelWrapper(ModelWrapper):
         Returns:
             Array: guided model output.
         """
+        kwargs.pop('conditioned', None) # we set this flag manually
         # Get outputs from parent class
-        c_out = self._call_model(x, t, args, conditioned=True, **kwargs)
-        u_out = self._call_model(x, t, args, conditioned=False, **kwargs)
+        c_out = super().__call__(t, obs, *args, conditioned=True, **kwargs)
+        u_out = super().__call__(t, obs, *args, conditioned=False, **kwargs)
 
         return (1 - self.cfg_scale) * u_out + self.cfg_scale * c_out
 

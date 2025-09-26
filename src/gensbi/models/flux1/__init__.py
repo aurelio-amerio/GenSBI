@@ -14,11 +14,12 @@ This package provides the Flux1 transformer-based model and related loss functio
 
 
 from .model import Flux, FluxParams, FluxWrapper
-from .loss import FluxCFMLoss
+from .loss import FluxCFMLoss, FluxDiffLoss
 
 __all__ = [
     "Flux",
     "FluxWrapper",
     "FluxParams",
     "FluxCFMLoss",
+    "FluxDiffLoss",
 ]

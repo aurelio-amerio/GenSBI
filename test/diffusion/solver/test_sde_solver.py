@@ -10,6 +10,10 @@ from gensbi.diffusion.path.scheduler.edm import EDMScheduler
 from flax import nnx
 
 
+class DummyScoreModel(nnx.Module):
+    def __call__(self, obs, t):
+        return jax.numpy.zeros_like(obs)
+    
 def test_sde_solver_initialization():
     path = EDMPath(scheduler=EDMScheduler())
     solver = SDESolver(score_model=None, path=path)
@@ -19,9 +23,6 @@ def test_sde_solver_initialization():
 
 def test_sde_solver_sample_shape():
 
-    class DummyScoreModel(nnx.Module):
-        def __call__(self, x, t):
-            return jax.numpy.zeros_like(x)
         
     score_model = DummyScoreModel()
 
@@ -38,9 +39,6 @@ def test_sde_solver_sample_shape():
 
 
 def test_sde_solver_cfg_scale_not_implemented():
-    class DummyScoreModel:
-        def __call__(self, x, t):
-            return x
     path = EDMPath(scheduler=EDMScheduler())
     solver = SDESolver(score_model=DummyScoreModel(), path=path)
     key = jax.random.PRNGKey(0)

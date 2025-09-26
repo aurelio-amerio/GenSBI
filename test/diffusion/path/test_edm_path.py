@@ -21,7 +21,7 @@ def test_edm_path_sample_sigma_shape():
     key = jax.random.PRNGKey(0)
     batch_size = 10
     sigma = path.sample_sigma(key, batch_size)
-    assert sigma.shape == (batch_size,1)
+    assert sigma.shape == (batch_size,)
 
 
 def test_edm_path_sample_prior_shape():
