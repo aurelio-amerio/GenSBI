@@ -9,8 +9,9 @@ from gensbi.utils.model_wrapping import ModelWrapper
 from flax import nnx
 
 class DummyModel(nnx.Module):
-    def __call__(self, x, t, args, **kwargs):
-        return jnp.ones_like(x) * 3.0 * t**2
+    def __call__(self, x, t, *args, **kwargs):
+        res=jnp.ones_like(x) * 3.0 * t**2
+        return res
 
 
 @pytest.fixture

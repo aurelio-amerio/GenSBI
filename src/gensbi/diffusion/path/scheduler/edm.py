@@ -277,7 +277,7 @@ class BaseSDE(abc.ABC):
             Array: Denoised output.
         """
         return self.c_skip(sigma) * x + self.c_out(sigma) * F(
-            self.c_in(sigma) * x, self.c_noise(sigma), *args, **kwargs
+            obs=self.c_in(sigma) * x, t=self.c_noise(sigma), *args, **kwargs
         )
 
     # FIXME: for some reason, when sampling using the score, instead of the algorithm provided by the EDM paper, the sample quality is very bad
@@ -344,7 +344,7 @@ class BaseSDE(abc.ABC):
                 lam
                 * c_out**2
                 * (
-                    F(c_in * (x_t), c_noise, **model_extras)
+                    F(obs=c_in * (x_t), t=c_noise, **model_extras)
                     - 1 / c_out * (x_1 - c_skip * (x_t))
                 )
                 ** 2
@@ -450,6 +450,14 @@ class VPScheduler(BaseSDE):
 
 
 class VEScheduler(BaseSDE):
+    """
+    Variance Exploding (VE) SDE scheduler as described in the EDM paper.
+
+    Args:
+        sigma_min (float): Minimum sigma value.
+        sigma_max (float): Maximum sigma value.
+    """
+
     def __init__(self, sigma_min=1e-3, sigma_max=15.0):
         super().__init__()
         self.sigma_min = sigma_min

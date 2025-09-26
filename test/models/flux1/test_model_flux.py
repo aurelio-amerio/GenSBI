@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from flax import nnx
 import pytest
 
-from gensbi.models.flux1.model import Flux, FluxParams
+from gensbi.models.flux1.model import Flux, FluxParams, FluxWrapper
 
 
 def get_rngs():
@@ -14,7 +14,7 @@ def get_rngs():
 
 
 def test_flux_params_instantiation():
-    params = params = FluxParams(
+    params = FluxParams(
         in_channels=1,
         vec_in_dim=None,
         context_in_dim=1,
@@ -45,7 +45,7 @@ def test_flux_params_instantiation():
     assert params.qkv_features == qkv_features
 
 def init_test_model(use_rope=False):
-    params = params = FluxParams(
+    params = FluxParams(
         in_channels=1,
         vec_in_dim=None,
         context_in_dim=1,
@@ -77,25 +77,25 @@ def test_flux_forward_shape_embed_layer():
     cond = jnp.ones((3, 2, 1))
     obs_ids = jnp.arange(2).reshape(1,-1,1)
     cond_ids = jnp.arange(2).reshape(1,-1,1)
-    timesteps = jnp.ones((3))
+    t = jnp.ones((3))
 
     out = model(
+        t=t,
         obs=obs,
         obs_ids=obs_ids,
         cond=cond,
         cond_ids=cond_ids,
-        timesteps=timesteps,
         conditioned=True,
     )
 
     assert out.shape == (3, 2, 1)
 
     out = model(
+        t=t,
         obs=obs,
         obs_ids=obs_ids,
         cond=cond,
         cond_ids=cond_ids,
-        timesteps=timesteps,
         conditioned=False,
     )
 
@@ -109,16 +109,46 @@ def test_flux_forward_shape_embed_rope():
     cond = jnp.ones((3, 2, 1))
     obs_ids = jnp.arange(2).reshape(1,-1,1)
     cond_ids = jnp.arange(2).reshape(1,-1,1)
-    timesteps = jnp.ones((3))
+    t = jnp.ones((3))
 
-    out = out = model(
+    out = model(
+        t=t,
         obs=obs,
         obs_ids=obs_ids,
         cond=cond,
         cond_ids=cond_ids,
-        timesteps=timesteps,
         conditioned=True,
     )
 
     assert out.shape == (3, 2, 1)
 
+def test_flux_wrapper():
+
+    model = init_test_model(use_rope=True)
+    wrapper = FluxWrapper(model)
+
+    obs = jnp.ones((3, 2, 1))
+    cond = jnp.ones((3, 2, 1))
+    obs_ids = jnp.arange(2).reshape(1,-1,1)
+    cond_ids = jnp.arange(2).reshape(1,-1,1)
+    t = jnp.ones((3,1))
+
+    extra_args = {"cond": cond, "cond_ids": cond_ids, "obs_ids": obs_ids, "conditioned": True}
+
+    out = wrapper(
+        t=t,
+        obs=obs,
+        **extra_args,
+    )
+
+    assert out.shape == (3, 2, 1), f"Wrapper output shape is incorrect, got {out.shape}"
+
+    vf = wrapper.get_vector_field(**extra_args)
+    out = vf(t, obs, None)
+
+    assert out.shape == (3, 2), f"Vector field output shape is incorrect, got {out.shape}"
+
+    vf = wrapper.get_vector_field()
+    out = vf(t, obs, args=extra_args)
+
+    assert out.shape == (3, 2), f"Vector field output shape is incorrect, got {out.shape}"

@@ -14,13 +14,13 @@ from dataclasses import dataclass
 from .transformer import Transformer
 from .embedding import GaussianFourierEmbedding, MLPEmbedder
 
-from gensbi.utils.model_wrapping import ModelWrapper
+from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 
 @dataclass
 class SimformerParams:
     """Parameters for the Simformer model.
-    
+
     Args:
         rngs (nnx.Rngs): Random number generators for initialization.
         dim_value (int): Dimension of the value embeddings.
@@ -35,13 +35,14 @@ class SimformerParams:
         num_hidden_layers (int): Number of hidden layers in the transformer.
 
     """
+
     rngs: nnx.Rngs
     dim_value: int
     dim_id: int
     dim_condition: int
     dim_joint: int
-    num_heads: int 
-    num_layers: int 
+    num_heads: int
+    num_layers: int
     num_hidden_layers: int = 1
     fourier_features: int = 128
     widening_factor: int = 3
@@ -60,6 +61,7 @@ class Simformer(nnx.Module):
     Args:
         params (SimformerParams): Parameters for the Simformer model.
     """
+
     def __init__(
         self,
         params: SimformerParams,
@@ -72,7 +74,7 @@ class Simformer(nnx.Module):
         self.embedding_net_value = MLPEmbedder(
             in_dim=1, hidden_dim=params.dim_value, rngs=params.rngs
         )
-        # self.embedding_net_value = lambda x: jnp.repeat(x, dim_value, axis=-1)
+        # self.embedding_net_value = lambda obs: jnp.repeat(obs, dim_value, axis=-1)
 
         fourier_features = params.fourier_features
         self.embedding_time = GaussianFourierEmbedding(
@@ -105,21 +107,19 @@ class Simformer(nnx.Module):
         return
 
     def __call__(
-        self, 
-        x: Array, 
-        t: Array, 
-        args: Optional[dict] = None, 
-        *, 
-        node_ids: Array, 
-        condition_mask: Array, 
-        edge_mask: Optional[Array] = None
+        self,
+        t: Array,
+        obs: Array,
+        node_ids: Array,
+        condition_mask: Array,
+        edge_mask: Optional[Array] = None,
     ) -> Array:
         """
         Forward pass of the Simformer model.
 
         Args:
-            x (Array): Input data.
             t (Array): Time steps.
+            obs (Array): Input data.
             args (Optional[dict]): Additional arguments.
             node_ids (Array): Node identifiers.
             condition_mask (Array): Mask for conditioning.
@@ -128,18 +128,38 @@ class Simformer(nnx.Module):
         Returns:
             Array: Model output.
         """
-        x = jnp.atleast_1d(x)
+
+        obs = jnp.asarray(obs)
         t = jnp.atleast_1d(t)
 
-        if x.ndim < 3:
-            x = rearrange(x, "... -> 1 ... 1" if x.ndim == 1 else "... -> ... 1")
+        assert (
+            obs.ndim == 3
+        ), f"Input obs must be of shape (batch_size, seq_len, 1), got {obs.shape}"
+        assert (
+            len(t.ravel()) == obs.shape[0] or len(t.ravel()) == 1
+        ), "t must have the same batch size as obs or size 1, got {} and {}".format(
+            t.shape, obs.shape
+        )
+
         t = t.reshape(-1, 1, 1)
 
-        batch_size, seq_len, _ = x.shape
+        batch_size, seq_len, _ = obs.shape
         condition_mask = condition_mask.astype(jnp.bool_).reshape(-1, seq_len, 1)
         condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
 
-        node_ids = node_ids.reshape(-1, seq_len)
+        if node_ids.ndim == 1:
+            node_ids = node_ids.reshape(-1, seq_len)
+        elif node_ids.ndim == 2:
+            assert (
+                node_ids.shape[1] == seq_len
+            ), f"node_ids must have shape (-1, {seq_len}), got {node_ids.shape}"
+        elif node_ids.ndim == 3:
+            assert (
+                node_ids.shape[1] == seq_len and node_ids.shape[2] == 1
+            ), f"node_ids must have shape (-1, {seq_len}, 1), got {node_ids.shape}"
+            node_ids = jnp.squeeze(node_ids, axis=-1)
+        else:
+            raise ValueError(f"node_ids must have ndim <=3, got {node_ids.ndim}")
 
         time_embeddings = self.embedding_time(t)
 
@@ -151,7 +171,7 @@ class Simformer(nnx.Module):
         )
 
         # Embed inputs and broadcast
-        value_embeddings = self.embedding_net_value(x)
+        value_embeddings = self.embedding_net_value(obs)
         id_embeddings = self.embedding_net_id(node_ids)
         id_embeddings = jnp.broadcast_to(
             id_embeddings, (batch_size, seq_len, self.dim_id)
@@ -165,29 +185,24 @@ class Simformer(nnx.Module):
         h = self.transformer(x_encoded, context=time_embeddings, mask=edge_mask)
 
         out = self.output_fn(h)
-        out = jnp.squeeze(out, axis=-1)
+        # out = jnp.squeeze(out, axis=-1)
         return out
 
 
-class SimformerConditioner(nnx.Module):
-    """
-    Module to handle conditioning in the Simformer model.
+class SimformerWrapper(ModelWrapper):
 
-    Args:
-        model (Simformer): Simformer model instance.
-    """
     def __init__(self, model: Simformer):
         self.model = model
         self.dim_joint = model.params.dim_joint
 
     def conditioned(
-        self, 
-        obs: Array, 
-        obs_ids: Array, 
-        cond: Array, 
-        cond_ids: Array, 
-        t: Array, 
-        edge_mask: Optional[Array] = None
+        self,
+        t: Array,
+        obs: Array,
+        obs_ids: Array,
+        cond: Array,
+        cond_ids: Array,
+        edge_mask: Optional[Array] = None,
     ) -> Array:
         """
         Perform conditioned inference.
@@ -203,53 +218,34 @@ class SimformerConditioner(nnx.Module):
         Returns:
             Array: Conditioned output.
         """
-        obs = jnp.atleast_1d(obs)
-        cond = jnp.atleast_1d(cond)
-        t = jnp.atleast_1d(t)
 
-        if obs.ndim < 3:
-            obs = rearrange(obs, "... -> 1 ... 1" if obs.ndim == 1 else "... -> ... 1")
-
-        if cond.ndim < 3:
-            cond = rearrange(
-                cond, "... -> 1 ... 1" if cond.ndim == 1 else "... -> ... 1"
-            )
-        
         # repeat cond on the first dimension to match obs
-        cond = jnp.broadcast_to(
-            cond, (obs.shape[0], *cond.shape[1:])
-        )
+        batch_size = obs.shape[0]
 
-        condition_mask_dim = len(obs_ids) + len(cond_ids)
+        cond = jnp.broadcast_to(cond, (batch_size, *cond.shape[1:]))
+        cond_ids = jnp.broadcast_to(cond_ids, (batch_size, *cond_ids.shape[1:]))
+        obs_ids = jnp.broadcast_to(obs_ids, (batch_size, *obs_ids.shape[1:]))
 
-        condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
+        condition_mask_dim = obs.shape[1] + cond.shape[1]
+
+        condition_mask = jnp.zeros((batch_size, condition_mask_dim), dtype=jnp.bool_)
         condition_mask = condition_mask.at[cond_ids].set(True)
 
-        x = jnp.concatenate([obs, cond], axis=1)
-        node_ids = jnp.concatenate([obs_ids, cond_ids])
-
-        # Sort the nodes and the corresponding values
-        # nodes_sort = jnp.argsort(node_ids)
-        # x = x[:, nodes_sort]
-        # node_ids = node_ids[nodes_sort]
+        obs = jnp.concatenate((obs, cond), axis=1)
+        node_ids = jnp.concatenate((obs_ids, cond_ids), axis=1)
 
         res = self.model(
-            x=x,
+            obs=obs,
             t=t,
             node_ids=node_ids,
             condition_mask=condition_mask,
             edge_mask=edge_mask,
         )
         # now return only the values on which we are not conditioning
-        res = res[:, :len(obs_ids)]
-        return res
+        return jnp.take_along_axis(res, obs_ids, axis=1)
 
     def unconditioned(
-        self, 
-        obs: Array, 
-        obs_ids: Array, 
-        t: Array, 
-        edge_mask: Optional[Array] = None
+        self, t: Array, obs: Array, obs_ids: Array, edge_mask: Optional[Array] = None
     ) -> Array:
         """
         Perform unconditioned inference.
@@ -263,64 +259,62 @@ class SimformerConditioner(nnx.Module):
         Returns:
             Array: Unconditioned output.
         """
-        obs = jnp.atleast_1d(obs)
-        t = jnp.atleast_1d(t)
 
-        if obs.ndim < 3:
-            obs = rearrange(obs, "... -> 1 ... 1" if obs.ndim == 1 else "... -> ... 1")
+        batch_size = obs.shape[0]
 
-        condition_mask = jnp.zeros((obs.shape[1],), dtype=jnp.bool_)
+        condition_mask = jnp.zeros((batch_size, obs.shape[1:]), dtype=jnp.bool_)
+
+        obs_ids = jnp.broadcast_to(obs_ids, (batch_size, *obs_ids.shape[1:]))
 
         node_ids = obs_ids
-        x = obs
 
         res = self.model(
-            x=x,
+            obs=obs,
             t=t,
             node_ids=node_ids,
             condition_mask=condition_mask,
             edge_mask=edge_mask,
         )
 
-        return res
+        return jnp.take_along_axis(res, obs_ids, axis=1)
 
     def __call__(
-        self, 
-        obs: Array, 
-        obs_ids: Array, 
-        cond: Array, 
-        cond_ids: Array, 
-        timesteps: Array, 
-        conditioned: bool = True, 
-        edge_mask: Optional[Array] = None
+        self,
+        t: Array,
+        obs: Array,
+        obs_ids: Array,
+        cond: Array,
+        cond_ids: Array,
+        conditioned: bool | Array = True,
+        edge_mask: Optional[Array] = None,
     ) -> Array:
-        """
-        Perform inference based on conditioning.
+        r"""
+        This method defines how inputs should be passed through the wrapped model.
+        Here, we're assuming that the wrapped model takes both :math:`obs` and :math:`t` as input,
+        along with additional keyword arguments.
 
         Args:
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            cond (Array): Conditioning values.
-            cond_ids (Array): Conditioning identifiers.
-            timesteps (Array): Time steps.
-            conditioned (bool): Whether to perform conditioned inference.
-            edge_mask (Optional[Array]): Mask for edges.
+            obs (Array): input data to the model (batch_size, ...).
+            t (Array): time (batch_size).
+            cond (Array): conditioning data to the model (batch_size, ...).
+            obs_ids (Array): observation ids (batch_size, obs_dim).
+            cond_ids (Array): condition ids (batch_size, cond_dim).
+            conditioned (bool | Array): whether to use conditioning or not.
+            edge_mask (Optional[Array]): mask for edges.
 
         Returns:
-            Array: Model output.
+            Array: model output.
         """
+
+        obs = _expand_dims(obs)
+        t = _expand_time(t)
+        cond = _expand_dims(cond)
+        obs_ids = _expand_dims(obs_ids)
+        cond_ids = _expand_dims(cond_ids)
+
         if conditioned:
             return self.conditioned(
-                obs, obs_ids, cond, cond_ids, timesteps, edge_mask=edge_mask
+                t, obs, obs_ids, cond, cond_ids, edge_mask=edge_mask
             )
         else:
-            return self.unconditioned(obs, obs_ids, timesteps, edge_mask=edge_mask)
-
-
-class SimformerWrapper(ModelWrapper):
-    def __init__(self, model):
-        model_conditioned = SimformerConditioner(model)
-        super().__init__(model_conditioned)
-
-    def _call_model(self, x, t, args, **kwargs):
-        return self.model(obs=x, timesteps=t, **kwargs)
+            return self.unconditioned(t, obs, obs_ids, edge_mask=edge_mask)

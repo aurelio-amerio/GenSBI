@@ -11,8 +11,8 @@ from gensbi.flow_matching.path import AffineProbPath
 def test_simformer_cfmloss_runs():
     path = AffineProbPath(scheduler=CondOTScheduler())
     loss = SimformerCFMLoss(path)
-    def vf(x, t, args=None, **kwargs):
-        return x + t
+    def vf(obs, t, *args, **kwargs):
+        return obs + t
     x0 = jnp.ones((2, 2))
     x1 = jnp.ones((2, 2))
     t = jnp.ones((2,))

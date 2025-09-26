@@ -1,3 +1,42 @@
+"""
+Pipeline for training and using a Flux1 model for simulation-based inference.
+
+Example usage
+-------------
+```python
+import itertools
+import jax
+from jax import numpy as jnp
+from gensbi.recipes import SimformerPipeline
+
+# Define your training and validation datasets.
+train_data = jax.random.rand((1024, 4)) # your training dataset
+val_data = jax.random.rand((128, 4)) # your validation dataset
+
+batch_size = 32
+
+train_batch = train_data.reshape(-1, batch_size, train_data.shape[-1])
+val_batch = val_data.reshape(-1, batch_size, val_data.shape[-1])
+
+# Create datasets iterators (in this case with itertools, although a grain dataset is recommended)
+train_dataset = itertools.cycle(train_batch)
+val_dataset = itertools.cycle(val_batch)
+
+# Define the model
+dim_theta = 2  # Dimension of the parameter space
+dim_x = 2      # Dimension of the observation space
+pipeline = SimformerPipeline(train_dataset, val_dataset, dim_theta, dim_x)
+
+# Train the model
+rngs = jax.random.PRNGKey(0)
+pipeline.train(rngs)
+
+# Sample from the posterior
+x_o = jnp.array([0.5, -0.2])  # Example
+samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
+```
+"""
+
 import jax
 import jax.numpy as jnp
 from flax import nnx
@@ -7,12 +46,26 @@ from numpyro import distributions as dist
 from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.models import Simformer, SimformerParams, SimformerCFMLoss, SimformerWrapper
-from gensbi_examples.c2st import c2st
 
+from gensbi.flow_matching.path import AffineProbPath
+from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
+
+from gensbi.diffusion.path import EDMPath
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
+from gensbi.diffusion.solver import SDESolver
+
+from einops import repeat
+
+from gensbi.models import (
+    Simformer,
+    SimformerParams,
+    SimformerCFMLoss,
+    SimformerWrapper,
+    SimformerDiffLoss,
+)
+
+from gensbi.utils.model_wrapping import _expand_dims
 
 import os
 
@@ -91,10 +144,10 @@ def sample_strutured_conditional_mask(
     all_ones_mask = jnp.all(condition_mask, axis=-1)
     # If all are ones, then set to false
     condition_mask = jnp.where(all_ones_mask[..., None], False, condition_mask)
-    return condition_mask
+    return condition_mask[...,None]
 
 
-class SimformerPipeline(AbstractPipeline):
+class SimformerFlowPipeline(AbstractPipeline):
     def __init__(
         self,
         train_dataset,
@@ -105,8 +158,8 @@ class SimformerPipeline(AbstractPipeline):
         training_config=None,
     ):
         """
-        Pipeline for training and using a Simformer model for simulation-based inference.
-        
+        Flow pipeline for training and using a Simformer model for simulation-based inference.
+
         Parameters
         ----------
         train_dataset : grain dataset or iterator over batches
@@ -120,7 +173,7 @@ class SimformerPipeline(AbstractPipeline):
         params : SimformerParams, optional
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
-            Configuration for training. If None, default configuration is used. 
+            Configuration for training. If None, default configuration is used.
 
         """
         super().__init__(
@@ -129,7 +182,7 @@ class SimformerPipeline(AbstractPipeline):
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
-        self.loss_fn_cfm = SimformerCFMLoss(self.path)
+        self.loss_fn = SimformerCFMLoss(self.path)
 
         self.undirected_edge_mask = jnp.ones(
             (self.dim_joint, self.dim_joint), dtype=jnp.bool_
@@ -137,7 +190,7 @@ class SimformerPipeline(AbstractPipeline):
 
         self.p0_dist_model = dist.Independent(
             dist.Normal(
-                loc=jnp.zeros((self.dim_joint,)), scale=jnp.ones((self.dim_joint,))
+                loc=jnp.zeros((self.dim_joint, 1)), scale=jnp.ones((self.dim_joint, 1))
             ),
             reinterpreted_batch_ndims=1,
         )
@@ -172,7 +225,7 @@ class SimformerPipeline(AbstractPipeline):
         self,
     ):
         def loss_fn(
-            vf_model,
+            model,
             x_1,
             key: jax.random.PRNGKey,
         ):
@@ -191,8 +244,8 @@ class SimformerPipeline(AbstractPipeline):
 
             edge_masks = self.undirected_edge_mask
 
-            loss = self.loss_fn_cfm(
-                vf_model,
+            loss = self.loss_fn(
+                model,
                 batch,
                 node_ids=self.node_ids,
                 edge_mask=edge_masks,
@@ -202,53 +255,20 @@ class SimformerPipeline(AbstractPipeline):
 
         return loss_fn
 
-    def restore_model(self, experiment_id=None):
-        if experiment_id is None:
-            experiment_id = self.training_config["experiment_id"]
-        model_state = nnx.state(self.vf_model)
-        graphdef, abstract_state = nnx.split(self.vf_model)
-        with ocp.CheckpointManager(
-            self.training_config["checkpoint_dir"],
-            options=ocp.CheckpointManagerOptions(read_only=True),
-        ) as read_mgr:
-            restored = read_mgr.restore(
-                experiment_id,
-                args=ocp.args.Composite(state=ocp.args.PyTreeRestore(item=model_state)),
-            )
-        self.vf_model = nnx.merge(graphdef, restored["state"])
-
-        # restore the ema model
-        model_state_ema = nnx.state(self.ema_model)
-        graphdef_ema, abstract_state_ema = nnx.split(self.ema_model)
-        with ocp.CheckpointManager( 
-            os.path.join(self.training_config["checkpoint_dir"], "ema"),
-            options=ocp.CheckpointManagerOptions(read_only=True),
-        ) as read_mgr_ema:
-            restored_ema = read_mgr_ema.restore(
-                experiment_id,
-                args=ocp.args.Composite(state=ocp.args.PyTreeRestore(item=model_state_ema)),
-            )
-        self.ema_model = nnx.merge(graphdef_ema, restored_ema["state"])
-
-        #wrap models
-        self._wrap_model()
-
-        print("Restored model from checkpoint")
-        return
-
     def _wrap_model(self):
-        self.vf_model_wrapped = SimformerWrapper(self.vf_model)
+        self.model_wrapped = SimformerWrapper(self.model)
         self.ema_model_wrapped = SimformerWrapper(self.ema_model)
         return
 
-    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True):
+    def sample(self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True):
         if use_ema:
             model = self.ema_model_wrapped
         else:
-            model = self.vf_model_wrapped
+            model = self.model_wrapped
 
-        x_init = jax.random.normal(rng, (nsamples, self.dim_theta))
-        cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_data, 1))
+        x_init = jax.random.normal(key, (nsamples, self.dim_theta))
+        # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_x, 1))
+        cond = _expand_dims(x_o)
 
         solver = ODESolver(velocity_model=model)
         model_extras = {
@@ -267,9 +287,154 @@ class SimformerPipeline(AbstractPipeline):
         samples = sampler_(x_init)
         return samples
 
-    def evaluate_c2st(self, rng, x_o, reference_samples):
-        samples = self.sample(
-            rng, x_o, nsamples=reference_samples.shape[0], step_size=0.01
+
+class SimformerDiffusionPipeline(AbstractPipeline):
+    def __init__(
+        self,
+        train_dataset,
+        val_dataset,
+        dim_theta: int,
+        dim_x: int,
+        params=None,
+        training_config=None,
+    ):
+        """
+        Diffusion pipeline for training and using a Simformer model for simulation-based inference.
+
+        Parameters
+        ----------
+        train_dataset : grain dataset or iterator over batches
+            Training dataset.
+        val_dataset : grain dataset or iterator over batches
+            Validation dataset.
+        dim_theta : int
+            Dimension of the parameter space.
+        dim_x : int
+            Dimension of the observation space.
+        params : SimformerParams, optional
+            Parameters for the Simformer model. If None, default parameters are used.
+        training_config : dict, optional
+            Configuration for training. If None, default configuration is used.
+
+        """
+        super().__init__(
+            train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
-        c2st_accuracy = c2st(reference_samples, samples)
-        return c2st_accuracy
+
+        self.path = EDMPath(
+            scheduler=EDMScheduler(
+                sigma_min=self.training_config["sigma_min"],
+                sigma_max=self.training_config["sigma_max"],
+            )
+        )
+
+        self.loss_fn = SimformerDiffLoss(self.path)
+
+        self.undirected_edge_mask = jnp.ones(
+            (self.dim_joint, self.dim_joint), dtype=jnp.bool_
+        )
+
+    def _make_model(self):
+        """
+        Create and return the Simformer model to be trained.
+        """
+        model = Simformer(self.params)
+        return model
+
+    def _get_default_params(self):
+        """
+        Return default parameters for the Simformer model.
+        """
+        params = SimformerParams(
+            dim_value=40,
+            dim_id=40,
+            dim_condition=10,
+            dim_joint=self.dim_joint,
+            fourier_features=128,
+            num_heads=4,
+            num_layers=8,
+            widening_factor=3,
+            qkv_features=40,
+            rngs=nnx.Rngs(0),
+            num_hidden_layers=1,
+        )
+        return params
+
+    @classmethod
+    def _get_default_training_config(cls):
+        config = super()._get_default_training_config()
+        config.update(
+            {
+                "sigma_min": 0.002,  # from edm paper
+                "sigma_max": 80.0,
+            }
+        )
+        return config
+
+    def get_loss_fn(
+        self,
+    ):
+        def loss_fn(
+            model,
+            x_1,
+            key: jax.random.PRNGKey,
+        ):
+            batch_size = x_1.shape[0]
+
+            rng_x0, rng_sigma, rng_condition = jax.random.split(key, 3)
+
+            sigma = self.path.sample_sigma(rng_sigma, x_1.shape[0])
+            sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")
+
+            batch = (x_1, sigma)
+
+            condition_mask = sample_strutured_conditional_mask(
+                rng_condition,
+                batch_size,
+                self.dim_theta,
+                self.dim_x,
+            )
+
+            edge_masks = self.undirected_edge_mask
+
+            loss = self.loss_fn(
+                rng_x0,
+                model,
+                batch,
+                condition_mask=condition_mask,
+                node_ids=self.node_ids,
+                edge_mask=edge_masks,
+            )
+            return loss
+
+        return loss_fn
+
+    def _wrap_model(self):
+        self.model_wrapped = SimformerWrapper(self.model)
+        self.ema_model_wrapped = SimformerWrapper(self.ema_model)
+        return
+
+    def sample(self, key, x_o, nsamples=10_000, nsteps=18, use_ema=True):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        key1, key2 = jax.random.split(key, 2)
+
+        cond = _expand_dims(x_o)
+
+        solver = SDESolver(score_model=model, path=self.path)
+
+        model_extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+            "edge_mask": self.undirected_edge_mask,
+        }
+
+        x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1)) 
+
+        samples = solver.sample(key2, x_init, nsteps=nsteps, model_extras=model_extras)
+
+        return jnp.squeeze(samples, axis=-1)

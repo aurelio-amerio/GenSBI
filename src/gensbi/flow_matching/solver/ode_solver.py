@@ -30,8 +30,8 @@ class ODESolver(Solver):
             import jax, jax.numpy as jnp
 
             class DummyModel:
-                def __call__(self, obs, timesteps, **kwargs):
-                    return obs + t
+                def __call__(self, obs, t, *args, **kwargs):
+                    return jnp.squeeze(obs + t, axis=-1)
 
             vf_model = DummyModel() # replace with your actual velocity field model, Simformer or Flux1
 

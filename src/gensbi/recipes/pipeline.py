@@ -19,8 +19,7 @@ Example usage::
             ...
         def sample(self, rng, x_o, nsamples=10000, step_size=0.01):
             ...
-        def evaluate_c2st(self, rng, x_o, reference_samples):
-            ...
+   
     # Instantiate and train
     pipeline = MyPipeline(train_dataset, val_dataset, dim_theta=2, dim_x=2)
     pipeline.train(rngs)
@@ -71,6 +70,8 @@ class ModelEMA(nnx.Optimizer):
 def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
     ema_optimizer.update(ema_model, model)
 
+
+
 class AbstractPipeline(abc.ABC):
     """
     Abstract base class for GenSBI training pipelines.
@@ -97,7 +98,7 @@ class AbstractPipeline(abc.ABC):
     def __init__(self, train_dataset, val_dataset, dim_theta: int, dim_x: int, params=None, training_config=None):
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
-
+        
         self.train_dataset_iter = iter(self.train_dataset)
         self.val_dataset_iter = iter(self.val_dataset)
 
@@ -121,17 +122,15 @@ class AbstractPipeline(abc.ABC):
 
         os.makedirs(self.training_config["checkpoint_dir"], exist_ok=True)
 
-        self.vf_model = self._make_model()
-        self.vf_model_wrapped = None # to be set in subclass
+        self.model = self._make_model()
+        self.model_wrapped = None # to be set in subclass
 
-        self.ema_model = nnx.clone(self.vf_model)
+        self.ema_model = nnx.clone(self.model)
         self.ema_model_wrapped = None # to be set in subclass
 
         self.p0_dist_model = None # to be set in subclass
-        self.loss_fn_cfm = None  # to be set in subclass
+        self.loss_fn = None  # to be set in subclass
         self.path = None  # to be set in subclass
-
-        # self.
 
     @abc.abstractmethod
     def _make_model(self):
@@ -176,7 +175,7 @@ class AbstractPipeline(abc.ABC):
         if self.training_config["multistep"] > 1:
             opt = optax.MultiSteps(opt, self.training_config["multistep"])
 
-        optimizer = nnx.Optimizer(self.vf_model, opt, wrt=nnx.Param)
+        optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
         return optimizer
     
     @abc.abstractmethod
@@ -184,9 +183,10 @@ class AbstractPipeline(abc.ABC):
         """
         Return a dictionary of default model parameters.
         """
-        return 
-    
-    def _get_default_training_config(self):
+        return
+
+    @classmethod
+    def _get_default_training_config(cls):
         """
         Return a dictionary of default training configuration parameters.
 
@@ -215,6 +215,19 @@ class AbstractPipeline(abc.ABC):
         training_config["checkpoint_dir"] = os.path.join(os.getcwd(), "checkpoints")
 
         return training_config
+
+    def update_training_config(self, new_config):
+        """
+        Update the training configuration with new parameters.
+
+        Parameters
+        ----------
+        new_config : dict
+            New training configuration parameters.
+        """
+        self.training_config.update(new_config)
+        self.training_config["min_scale"] = self.training_config["min_lr"] / self.training_config["max_lr"] if self.training_config["max_lr"] > 0 else 0.0
+        return
     
     def update_params(self, new_params):
         """
@@ -226,8 +239,8 @@ class AbstractPipeline(abc.ABC):
             New model parameters.
         """
         self.params = new_params
-        self.vf_model = self._make_model()
-        self.vf_model_wrapped = None # to be set in subclass
+        self.model = self._make_model()
+        self.model_wrapped = None # to be set in subclass
         return
 
     def _next_batch(self):
@@ -241,27 +254,6 @@ class AbstractPipeline(abc.ABC):
         Return the next batch from the validation dataset.
         """
         return next(self.val_dataset_iter)
-
-    def get_train_loss_fn(self, loss_fn_):
-        """
-        Wrap the training loss function for use in the training loop.
-
-        Parameters
-        ----------
-        loss_fn_ : Callable
-            The loss function to use.
-
-        Returns
-        -------
-        train_loss : Callable
-            JIT-compiled training loss function.
-        """
-        @nnx.jit
-        def train_loss(vf_model, key: jax.random.PRNGKey):
-            x_1 = self._next_batch()
-            return loss_fn_(vf_model, x_1, key)
-
-        return train_loss
     
     @abc.abstractmethod
     def get_loss_fn(self):
@@ -270,28 +262,8 @@ class AbstractPipeline(abc.ABC):
         """
         return
 
-    def get_val_loss_fn(self, loss_fn_):
-        """
-        Wrap the validation loss function for use in the training loop.
-
-        Parameters
-        ----------
-        loss_fn_ : Callable
-            The loss function to use.
-
-        Returns
-        -------
-        val_loss : Callable
-            JIT-compiled validation loss function.
-        """
-        @nnx.jit
-        def val_loss(vf_model, key: jax.random.PRNGKey):
-            x_1 = self._next_val_batch()
-            return loss_fn_(vf_model, x_1, key)
-
-        return val_loss
     
-    def get_train_step_fn(self):
+    def get_train_step_fn(self, loss_fn):
         """
         Return the training step function, which performs a single optimization step.
 
@@ -300,119 +272,86 @@ class AbstractPipeline(abc.ABC):
         train_step : Callable
             JIT-compiled training step function.
         """
-        train_loss = self.get_train_loss_fn(self.get_loss_fn())
 
         @nnx.jit
-        def train_step(model, optimizer, rng):
-            loss_fn = lambda model: train_loss(model, rng)
-            loss, grads = nnx.value_and_grad(loss_fn)(model)
+        def train_step(model, optimizer, x_1: Array, rng: jax.random.PRNGKey):
+            loss, grads = nnx.value_and_grad(loss_fn)(model, x_1, rng)
             optimizer.update(model, grads, value=loss)
             return loss
 
         return train_step
 
-    @abc.abstractmethod
-    def restore_model(self, experiment_id=None):
+    def get_val_step_fn(self, loss_fn):
         """
-        Restore model parameters from a checkpoint.
-
-        Parameters
-        ----------
-        experiment_id : int, optional
-            Experiment ID to restore. If None, uses the one in training_config.
-        """
-        return
-    
-    def train(self, rngs: nnx.Rngs):
-        """
-        Run the training loop for the model.
-
-        Parameters
-        ----------
-        rngs : nnx.Rngs
-            Random number generators for training/validation steps.
+        Return the validation step function, which performs a single optimization step.
 
         Returns
         -------
-        loss_array : list
-            List of training losses.
-        val_loss_array : list
-            List of validation losses.
+        val_step : Callable
+            JIT-compiled validation step function.
         """
 
-        optimizer = self._get_optimizer()
-        ema_optimizer = self._get_ema_optimizer()
+        @nnx.jit
+        def val_step(model, x_1: Array, rng: jax.random.PRNGKey):
+            loss = loss_fn(model, x_1, rng)
+            return loss
 
-        best_state = nnx.state(self.vf_model)
-        best_state_ema = nnx.state(self.ema_model)
+        return val_step
 
-        val_loss = self.get_val_loss_fn(self.get_loss_fn())
-        train_step = self.get_train_step_fn()
+    def restore_model(self, experiment_id=None):
+        if experiment_id is None:
+            experiment_id = self.training_config["experiment_id"]
 
-        min_val = val_loss(self.vf_model, rngs.val_step())
-        val_error_ratio = 1.1
-        counter = 0
-        cmax = 10
+        graphdef, model_state = nnx.split(self.model)
 
-        loss_array = []
-        val_loss_array = []
+        with ocp.CheckpointManager(
+            self.training_config["checkpoint_dir"],
+            options=ocp.CheckpointManagerOptions(read_only=True),
+        ) as read_mgr:
+            restored = read_mgr.restore(
+                experiment_id,
+                args=ocp.args.Composite(state=ocp.args.PyTreeRestore(item=model_state)),
+            )
+        self.model = nnx.merge(graphdef, restored["state"])
 
-        self.vf_model.train()
+        # restore the ema model
+        model_state_ema = nnx.state(self.ema_model)
+ 
+        with ocp.CheckpointManager(
+            os.path.join(self.training_config["checkpoint_dir"], "ema"),
+            options=ocp.CheckpointManagerOptions(read_only=True),
+        ) as read_mgr_ema:
+            restored_ema = read_mgr_ema.restore(
+                experiment_id,
+                args=ocp.args.Composite(
+                    state=ocp.args.PyTreeRestore(item=model_state_ema)
+                ),
+            )
+        self.ema_model = nnx.merge(graphdef, restored_ema["state"])
 
-        nsteps = self.training_config["num_steps"]
-        early_stopping = self.training_config["early_stopping"]
-        val_every = self.training_config["val_every"]
+        # wrap models
+        self._wrap_model()
+
+        print("Restored model from checkpoint")
+        return
+
+    @abc.abstractmethod
+    def _wrap_model(self):
+        """
+        Wrap the model for evaluation (either using SimformerWrapper or Flux1Wrapper).
+        """
+        return
+
+    def save_model(self, experiment_id=None):
+        if experiment_id is None:
+            experiment_id = self.training_config["experiment_id"]
 
         checkpoint_dir = self.training_config["checkpoint_dir"]
         checkpoint_dir_ema = os.path.join(self.training_config["checkpoint_dir"], "ema")
-        experiment_id = self.training_config["experiment_id"]
 
-        pbar = tqdm(range(nsteps)) 
-        l_train = None
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        os.makedirs(checkpoint_dir_ema, exist_ok=True)
 
-        for j in pbar:
-            if counter > cmax and early_stopping:
-                print("Early stopping")
-                graphdef, abstract_state = nnx.split(self.vf_model)
-                self.vf_model = nnx.merge(graphdef, best_state)
-                self.ema_model = nnx.merge(graphdef, best_state_ema)
-
-                break
-            loss = train_step(self.vf_model, optimizer, rngs.train_step())
-            # update the parameters ema
-            ema_step(ema_optimizer, self.vf_model, ema_optimizer)
-
-            if j == 0:
-                l_train = loss
-            else:
-                l_train = 0.9 * l_train + 0.1 * loss
-
-            if j > 50 and j % val_every == 0:
-                l_val = val_loss(self.vf_model, rngs.val_step())
-                ratio = l_val / l_train
-                if ratio > val_error_ratio:
-                    counter += 1
-                else:
-                    counter = 0
-
-                pbar.set_postfix(
-                    loss=f"{l_train:.4f}",
-                    ratio=f"{ratio:.4f}",
-                    counter=counter,
-                    val_loss=f"{l_val:.4f}",
-                )
-                loss_array.append(l_train)
-                val_loss_array.append(l_val)
-
-                if l_val < min_val:
-                    min_val = l_val
-                    best_state = nnx.state(self.vf_model)
-                    best_state_ema = nnx.state(self.ema_model)
-
-                l_val = 0
-                l_train = 0
-
-        self.vf_model.eval()
         # Save the model
         checkpoint_manager = ocp.CheckpointManager(
             checkpoint_dir,
@@ -422,7 +361,7 @@ class AbstractPipeline(abc.ABC):
                 create=True,
             ),
         )
-        model_state = nnx.state(self.vf_model)
+        model_state = nnx.state(self.model)
         checkpoint_manager.save(
             experiment_id, args=ocp.args.Composite(state=ocp.args.PyTreeSave(model_state))
         )
@@ -446,7 +385,110 @@ class AbstractPipeline(abc.ABC):
         )
         checkpoint_manager_ema.close()  
 
-        print("Training complete and model saved.")
+        print("Saved model to checkpoint")
+        return
+    
+
+    def train(self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True) -> Tuple[list, list]:
+        """
+        Run the training loop for the model.
+
+        Parameters
+        ----------
+        rngs : nnx.Rngs
+            Random number generators for training/validation steps.
+
+        Returns
+        -------
+        loss_array : list
+            List of training losses.
+        val_loss_array : list
+            List of validation losses.
+        """
+
+        optimizer = self._get_optimizer()
+        ema_optimizer = self._get_ema_optimizer()
+
+        best_state = nnx.state(self.model)
+        best_state_ema = nnx.state(self.ema_model)
+
+        loss_fn = self.get_loss_fn()
+
+        train_step = self.get_train_step_fn(loss_fn)
+        val_step = self.get_val_step_fn(loss_fn)
+
+
+        min_val = val_step(self.model, self._next_val_batch(), rngs.val_step())
+
+        val_error_ratio = 1.1
+        counter = 0
+        cmax = 10
+
+        loss_array = []
+        val_loss_array = []
+
+        self.model.train()
+
+        if nsteps is None:
+            nsteps = self.training_config["num_steps"]
+        early_stopping = self.training_config["early_stopping"]
+        val_every = self.training_config["val_every"]
+
+        experiment_id = self.training_config["experiment_id"]
+
+        pbar = tqdm(range(nsteps)) 
+        l_train = None
+
+        for j in pbar:
+            if counter > cmax and early_stopping:
+                print("Early stopping")
+                graphdef = nnx.graphdef(self.model)
+                self.model = nnx.merge(graphdef, best_state)
+                self.ema_model = nnx.merge(graphdef, best_state_ema)
+
+                break
+
+
+            loss = train_step(self.model, optimizer, self._next_batch(), rngs.train_step())
+            # update the parameters ema
+            ema_step(self.ema_model, self.model, ema_optimizer)
+
+            if j == 0:
+                l_train = loss
+            else:
+                l_train = 0.9 * l_train + 0.1 * loss
+
+            if j > 50 and j % val_every == 0:
+                l_val = val_step(self.model, self._next_val_batch(), rngs.val_step())
+
+                ratio = l_val / l_train
+                if ratio > val_error_ratio:
+                    counter += 1
+                else:
+                    counter = 0
+
+                pbar.set_postfix(
+                    loss=f"{l_train:.4f}",
+                    ratio=f"{ratio:.4f}",
+                    counter=counter,
+                    val_loss=f"{l_val:.4f}",
+                )
+                loss_array.append(l_train)
+                val_loss_array.append(l_val)
+
+                if l_val < min_val:
+                    min_val = l_val
+                    best_state = nnx.state(self.model)
+                    best_state_ema = nnx.state(self.ema_model)
+
+                l_val = 0
+                l_train = 0
+
+        self.model.eval()
+
+        if save_model:
+            self.save_model(experiment_id)
+
         self._wrap_model()
 
         return loss_array, val_loss_array
@@ -474,24 +516,4 @@ class AbstractPipeline(abc.ABC):
         """
         return
 
-    @abc.abstractmethod
-    def evaluate_c2st(self, rng, x_o, reference_samples):
-        """
-        Evaluate the classifier two-sample test (C2ST) between model and reference samples.
 
-        Parameters
-        ----------
-        rng : jax.random.PRNGKey
-            Random number generator key.
-        x_o : array-like
-            Conditioning variable.
-        reference_samples : array-like
-            Reference samples to compare against.
-
-        Returns
-        -------
-        c2st_score : float
-            C2ST score.
-        """
-        return
-    

@@ -5,7 +5,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 import jax.numpy as jnp
 from flax import nnx
 
-from gensbi.models.simformer.simformer import Simformer, SimformerParams, SimformerConditioner
+from gensbi.models.simformer.model import Simformer, SimformerParams, SimformerWrapper
 
 def get_rngs():
     return nnx.Rngs(0)
@@ -25,24 +25,45 @@ def get_params():
         num_hidden_layers=1,
     )
 
+
 def test_simformer_forward_shape():
     params = get_params()
     model = Simformer(params)
     x = jnp.ones((1, 4, 1))
-    t = jnp.ones((1, 1, 1))
+    t = jnp.ones((1, 1))
     node_ids = jnp.arange(4).reshape(1, 4)
     condition_mask = jnp.zeros((1, 4, 1))
-    out = model(x, t, node_ids=node_ids, condition_mask=condition_mask)
-    assert out.shape == (1, 4)
+    out = model(t, x, node_ids=node_ids, condition_mask=condition_mask)
+    assert out.shape == (1, 4, 1), f"Output shape is incorrect, got {out.shape}"
 
-def test_simformer_conditioner_shapes():
+
+def test_simformer_wrapper():
     params = get_params()
     model = Simformer(params)
-    conditioner = SimformerConditioner(model)
-    obs = jnp.ones((1, 2, 1))
-    obs_ids = jnp.array([0, 1])
-    cond = jnp.ones((1, 2, 1))
-    cond_ids = jnp.array([2, 3])
-    t = jnp.ones((1, 1, 1))
-    out = conditioner(obs, obs_ids, cond, cond_ids, t, conditioned=True)
-    assert out.shape[0] == 1
+    wrapper = SimformerWrapper(model)
+
+    obs = jnp.ones((12, 2, 1))
+    cond = jnp.ones((12, 2, 1))
+    obs_ids = jnp.arange(2).reshape(1,-1)
+    cond_ids = jnp.arange(2).reshape(1,-1)
+    t = jnp.ones((12,1))
+
+    extra_args = {"cond": cond, "cond_ids": cond_ids, "obs_ids": obs_ids, "edge_mask": None, "conditioned": True}
+
+    out = wrapper(
+        t=t,
+        obs=obs,
+        **extra_args,
+    )
+
+    assert out.shape == (12, 2, 1), f"1 - Wrapper output shape is incorrect, got {out.shape}"
+
+    vf = wrapper.get_vector_field(**extra_args)
+    out = vf(t, obs, None)
+
+    assert out.shape == (12, 2), f"2 - Vector field output shape is incorrect, got {out.shape}"
+
+    vf = wrapper.get_vector_field()
+    out = vf(t, obs, args=extra_args)
+
+    assert out.shape == (12, 2), f"3 - Vector field output shape is incorrect, got {out.shape}"
