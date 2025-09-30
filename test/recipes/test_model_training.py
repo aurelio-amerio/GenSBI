@@ -79,7 +79,6 @@ params_flux = FluxParams(
             depth=2,
             depth_single_blocks=2,
             axes_dim=[2,],
-            use_rope = False,
             qkv_bias=True,
             obs_dim = dim_theta,
             cond_dim = dim_data,
