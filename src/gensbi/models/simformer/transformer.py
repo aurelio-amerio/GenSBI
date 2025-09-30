@@ -55,18 +55,22 @@ class DenseBlock(nnx.Module):
         self.skip_connection = skip_connection
         n_features = din
         self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
-        self.hidden_blocks = []
-        self.hidden_blocks.append(
+        hidden_blocks = []
+        hidden_blocks.append(
                     nnx.Linear(n_features, widening_factor * n_features, rngs=rngs)
                 )
+        
         n_features *= widening_factor
         
         for i in range(1, num_hidden_layers):
-            self.hidden_blocks.append(
+            hidden_blocks.append(
                     nnx.Linear(n_features, n_features, rngs=rngs)
                 )
 
-        self.hidden_blocks.append(nnx.Linear(n_features, din, rngs=rngs))
+        hidden_blocks.append(nnx.Linear(n_features, din, rngs=rngs))
+
+        self.hidden_blocks = nnx.List(hidden_blocks)
+
         self.act = act
         self.context_block = nnx.Linear(dcontext, din, rngs=rngs)
         return
@@ -127,12 +131,12 @@ class Transformer(nnx.Module):
         self.rngs = rngs
 
         # now we define attention and dense blocks
-        self.attention_blocks = []
-        self.dense_blocks = []
+        attention_blocks = []
+        dense_blocks = []
         self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
 
         for _ in range(num_layers):
-            self.attention_blocks.append(
+            attention_blocks.append(
                 AttentionBlock(
                     din=self.din,
                     num_heads=num_heads,
@@ -141,7 +145,7 @@ class Transformer(nnx.Module):
                     rngs=rngs,
                 )
             )
-            self.dense_blocks.append(
+            dense_blocks.append(
                 DenseBlock(
                     din,
                     dcontext,
@@ -152,6 +156,9 @@ class Transformer(nnx.Module):
                     rngs=rngs,
                 )
             )
+
+        self.attention_blocks = nnx.List(attention_blocks)
+        self.dense_blocks = nnx.List(dense_blocks)
 
         return
 

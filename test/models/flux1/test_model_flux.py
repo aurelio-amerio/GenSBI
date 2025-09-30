@@ -26,7 +26,6 @@ def test_flux_params_instantiation():
         axes_dim=[
             4,
         ],
-        use_rope=False,
         obs_dim=2,
         cond_dim=2,
         qkv_bias=True,
@@ -44,7 +43,7 @@ def test_flux_params_instantiation():
     assert params.hidden_size == hidden_size
     assert params.qkv_features == qkv_features
 
-def init_test_model(use_rope=False):
+def init_test_model():
     params = FluxParams(
         in_channels=1,
         vec_in_dim=None,
@@ -57,7 +56,6 @@ def init_test_model(use_rope=False):
         axes_dim=[
             4,
         ],
-        use_rope=use_rope,
         obs_dim=2,
         cond_dim=2,
         qkv_bias=True,
@@ -69,41 +67,9 @@ def init_test_model(use_rope=False):
     return model
 
 
-def test_flux_forward_shape_embed_layer():
-
-    model = init_test_model(use_rope=False)
-    
-    obs = jnp.ones((3, 2, 1))
-    cond = jnp.ones((3, 2, 1))
-    obs_ids = jnp.arange(2).reshape(1,-1,1)
-    cond_ids = jnp.arange(2).reshape(1,-1,1)
-    t = jnp.ones((3))
-
-    out = model(
-        t=t,
-        obs=obs,
-        obs_ids=obs_ids,
-        cond=cond,
-        cond_ids=cond_ids,
-        conditioned=True,
-    )
-
-    assert out.shape == (3, 2, 1)
-
-    out = model(
-        t=t,
-        obs=obs,
-        obs_ids=obs_ids,
-        cond=cond,
-        cond_ids=cond_ids,
-        conditioned=False,
-    )
-
-    assert out.shape == (3, 2, 1)
-
 def test_flux_forward_shape_embed_rope():
 
-    model = init_test_model(use_rope=True)
+    model = init_test_model()
 
     obs = jnp.ones((3, 2, 1))
     cond = jnp.ones((3, 2, 1))
@@ -124,7 +90,7 @@ def test_flux_forward_shape_embed_rope():
 
 def test_flux_wrapper():
 
-    model = init_test_model(use_rope=True)
+    model = init_test_model()
     wrapper = FluxWrapper(model)
 
     obs = jnp.ones((3, 2, 1))
