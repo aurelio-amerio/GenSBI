@@ -84,7 +84,10 @@ class ODESolver(Solver):
         else:
             solver = method
 
-        stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
+        if isinstance(solver, AbstractERK):
+            stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
+        else:
+            stepsize_controller = diffrax.ConstantStepSize()
 
         @jax.jit
         def sampler(x_init):
@@ -203,7 +206,10 @@ class ODESolver(Solver):
         else:
             solver = method
 
-        stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
+        if isinstance(solver, AbstractERK):
+            stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
+        else:
+            stepsize_controller = diffrax.ConstantStepSize()
 
         def sampler(x_1):
             # y_init = (x_1, jnp.ones(x_1.shape)) # the divergence is a scalar, so it has one less dimension than the vector field

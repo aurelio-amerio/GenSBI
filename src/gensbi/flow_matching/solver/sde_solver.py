@@ -26,6 +26,9 @@ from gensbi.flow_matching.solver.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
+
+# TODO: we might want add support for intermediate sampling steps
+
 class BaseSDESolver(Solver):
     """A class to solve ordinary differential equations (ODEs) using a specified velocity model.
 
@@ -65,25 +68,14 @@ class BaseSDESolver(Solver):
         """Get the function :math:`\tilde{f}` for the velocity model. See arXiv.2410.02217
         Also known as the "drift" term in the SDE context.
         """
-
-        score = self.get_score()
         ...
-
-        def f_tilde(t, x, args):
-            return
-
-        return f_tilde
 
     @abstractmethod
     def get_g_tilde(self) -> Callable:
         """Get the function :math:`\tilde{g}` for the velocity model. See arXiv.2410.02217
         Also known as the "diffusion" term in the SDE context.
         """
-
-        def g_tilde(t, x, args):
-            return
-
-        return g_tilde
+        ...
 
     def get_score(self, **kwargs):
         """Obtain the score function given the velocity model. See arXiv.2410.02217"""
@@ -199,10 +191,21 @@ class BaseSDESolver(Solver):
         return sampler(key, nsamples)
 
 
+def _make_diag(t, d):
+    # t must be a scalar of dimension 1
+    t = jnp.atleast_1d(t)
+    assert (
+        t.ndim == 1 and t.shape[0] == 1
+    ), f"Expected t shape {(1,)}, but got {t.shape}"
+    res = jnp.repeat(t, d)
+    res = jnp.diag(res)
+    return res
+
+
 class ZeroEnds(BaseSDESolver):
     """
     ZeroEnds SDE solver.
-    
+
     From tab 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_, with change of variable for time: t -> 1-t to match our time notation.
     """
 
@@ -227,15 +230,34 @@ class ZeroEnds(BaseSDESolver):
 
         return f_tilde
 
+    # def get_g_tilde(self) -> Callable:
+    #     def g_tilde(t, x, args):
+
+    #         b, d = x.shape
+
+    #         res = self.alpha * jnp.sqrt(t * (1 - t))  # scalar
+    #         res = jnp.repeat(res, d)
+    #         res = jnp.diag(res)
+    #         res = repeat(res, "i j -> b i j", b=b)
+    #         return res
+
+    #     return g_tilde
+
     def get_g_tilde(self) -> Callable:
         def g_tilde(t, x, args):
-
+            t = jnp.atleast_1d(t)
             b, d = x.shape
+            assert t.shape == (b,) or t.shape == (
+                1,
+            ), f"Expected t shape {(b,)} or {(1,)}, but got {t.shape}"
+            if t.shape == (1,):
+                t = jnp.repeat(t, b)  # make t shape (b,)
 
-            res = self.alpha * jnp.sqrt(t * (1 - t))  # scalar
-            res = jnp.repeat(res, d)
-            res = jnp.diag(res)
-            res = repeat(res, "i j -> b i j", b=b)
+            t = t[:, None]  # shape (b, 1)
+
+            t_d = vmap(partial(_make_diag, d=d))(t)  # shape (b, d, d)
+
+            res = self.alpha * jnp.sqrt(t_d * (1 - t_d))  # scalar
             return res
 
         return g_tilde
@@ -244,7 +266,7 @@ class ZeroEnds(BaseSDESolver):
 class NonSingular(BaseSDESolver):
     """
     NonSingular SDE solver.
-    
+
     From tab 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_, with change of variable for time: t -> 1-t to match our time notation.
     """
 
