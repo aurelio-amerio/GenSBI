@@ -1,3 +1,13 @@
+"""
+Schedulers for flow-matching paths.
+
+It is advised to use the `CondOTScheduler` for optimal performance with conditional flow matching.
+
+"""
+
+
+
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Union
