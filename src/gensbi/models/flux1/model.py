@@ -22,6 +22,7 @@ from gensbi.models.flux1.layers import (
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 
+#TODO enforce rope usage, remove unused code
 @dataclass
 class FluxParams:
     """Parameters for the Flux model.
@@ -39,7 +40,6 @@ class FluxParams:
         rngs (nnx.Rngs): Random number generators for initialization.
         obs_dim (int): Observation dimension.
         cond_dim (int): Condition dimension.
-        use_rope (bool): Whether to use Rotary Position Embedding (RoPE).
         theta (int): Scaling factor for positional encoding.
         guidance_embed (bool): Whether to use guidance embedding.
         qkv_multiplier (int): Multiplier for QKV features.
@@ -59,7 +59,6 @@ class FluxParams:
     rngs: nnx.Rngs
     obs_dim: int  # observation dimension
     cond_dim: int  # condition dimension
-    use_rope: bool = True
     theta: int = 10_000
     guidance_embed: bool = False
     qkv_multiplier: int = 1
@@ -180,21 +179,6 @@ class Flux(nnx.Module):
             param_dtype=params.param_dtype,
         )
 
-        self.use_rope = params.use_rope
-
-        if not self.use_rope:
-            # assert params.obs_dim is not None and params.cond_dim is not None, \
-            #     "If not using RoPE, obs_dim and cond_dim must be specified."
-
-            self.id_embedder = nnx.Embed(
-                num_embeddings=params.obs_dim + params.cond_dim,
-                features=self.hidden_size,
-                rngs=params.rngs,
-                param_dtype=params.param_dtype,
-            )
-        else:
-            self.id_embedder = Identity()
-
     def __call__(
         self,
         t: Array,
@@ -244,24 +228,9 @@ class Flux(nnx.Module):
         )  # we replace the condition with a null vector if not conditioned
 
         ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
-        if self.use_rope:
-            pe = self.pe_embedder(ids)
-        else:
-            ids = jnp.squeeze(ids, axis=-1)  # ids should have dimension (B, F, 1)
 
-            id_emb = self.id_embedder(ids)
+        pe = self.pe_embedder(ids)
 
-            id_emb = jnp.broadcast_to(
-                id_emb, (obs.shape[0], self.params.obs_dim + self.params.cond_dim, self.hidden_size)  # type: ignore
-            )
-
-            cond_ids_emb = id_emb[:, : cond.shape[1], :]
-            obs_ids_emb = id_emb[:, cond.shape[1] :, :]
-
-            obs = obs + obs_ids_emb
-            cond = cond + cond_ids_emb
-
-            pe = None
 
         for block in self.double_blocks.layers:
             obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)
