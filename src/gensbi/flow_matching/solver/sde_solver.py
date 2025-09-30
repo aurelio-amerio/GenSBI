@@ -26,8 +26,8 @@ from gensbi.flow_matching.solver.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
-
 # TODO: we might want add support for intermediate sampling steps
+
 
 class BaseSDESolver(Solver):
     """A class to solve ordinary differential equations (ODEs) using a specified velocity model.
@@ -191,17 +191,6 @@ class BaseSDESolver(Solver):
         return sampler(key, nsamples)
 
 
-def _make_diag(t, d):
-    # t must be a scalar of dimension 1
-    t = jnp.atleast_1d(t)
-    assert (
-        t.ndim == 1 and t.shape[0] == 1
-    ), f"Expected t shape {(1,)}, but got {t.shape}"
-    res = jnp.repeat(t, d)
-    res = jnp.diag(res)
-    return res
-
-
 class ZeroEnds(BaseSDESolver):
     """
     ZeroEnds SDE solver.
@@ -230,35 +219,21 @@ class ZeroEnds(BaseSDESolver):
 
         return f_tilde
 
-    # def get_g_tilde(self) -> Callable:
-    #     def g_tilde(t, x, args):
-
-    #         b, d = x.shape
-
-    #         res = self.alpha * jnp.sqrt(t * (1 - t))  # scalar
-    #         res = jnp.repeat(res, d)
-    #         res = jnp.diag(res)
-    #         res = repeat(res, "i j -> b i j", b=b)
-    #         return res
-
-    #     return g_tilde
-
     def get_g_tilde(self) -> Callable:
         def g_tilde(t, x, args):
             t = jnp.atleast_1d(t)
-            b, d = x.shape
-            assert t.shape == (b,) or t.shape == (
+            assert t.ndim == 1, f"t must be a 1D array, got shape {t.shape}"
+            assert t.shape[0] in [
                 1,
-            ), f"Expected t shape {(b,)} or {(1,)}, but got {t.shape}"
-            if t.shape == (1,):
-                t = jnp.repeat(t, b)  # make t shape (b,)
+                x.shape[0],
+            ], f"t must have shape (1,) or ({x.shape[0]},), got {t.shape}"
+            b, d = x.shape
 
-            t = t[:, None]  # shape (b, 1)
-
-            t_d = vmap(partial(_make_diag, d=d))(t)  # shape (b, d, d)
-
-            res = self.alpha * jnp.sqrt(t_d * (1 - t_d))  # scalar
-            return res
+            res = self.alpha * jnp.sqrt(t * (1 - t))  # scalar
+            if t.shape[0] == 1:
+                res = jnp.repeat(res, b)
+            eye = jnp.eye(d)
+            return res[..., None, None] * eye[None, :, :]
 
         return g_tilde
 
@@ -287,11 +262,17 @@ class NonSingular(BaseSDESolver):
 
     def get_g_tilde(self) -> Callable:
         def g_tilde(t, x, args):
+            t = jnp.atleast_1d(t)
+            assert t.ndim == 1, f"t must be a 1D array, got shape {t.shape}"
+            assert t.shape[0] in [
+                1,
+                x.shape[0],
+            ], f"t must have shape (1,) or ({x.shape[0]},), got {t.shape}"
             b, d = x.shape
             res = self.alpha * jnp.sqrt(1 - t)  # scalar
-            res = jnp.repeat(res, d)
-            res = jnp.diag(res)
-            res = repeat(res, "i j -> b i j", b=b)
-            return res
+            if t.shape[0] == 1:
+                res = jnp.repeat(res, b)
+            eye = jnp.eye(d)
+            return res[..., None, None] * eye[None, :, :]
 
         return g_tilde

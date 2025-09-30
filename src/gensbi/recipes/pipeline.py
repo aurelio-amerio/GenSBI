@@ -161,7 +161,7 @@ class AbstractPipeline(abc.ABC):
         """
         Create and return the model to be trained.
         """
-        return 
+        ...
 
     def _get_ema_optimizer(self):
         """
@@ -284,7 +284,7 @@ class AbstractPipeline(abc.ABC):
         """
         Return the loss function for training/validation.
         """
-        return
+        ...
 
     
     def get_train_step_fn(self, loss_fn):
@@ -364,7 +364,7 @@ class AbstractPipeline(abc.ABC):
         """
         Wrap the model for evaluation (either using SimformerWrapper or Flux1Wrapper).
         """
-        return
+        ...
 
     def save_model(self, experiment_id=None):
         if experiment_id is None:
@@ -538,6 +538,6 @@ class AbstractPipeline(abc.ABC):
         samples : array-like
             Generated samples.
         """
-        return
+        ...
 
 
