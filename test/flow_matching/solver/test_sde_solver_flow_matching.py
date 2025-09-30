@@ -37,7 +37,6 @@ def test_f_tilde(solver_cls):
     assert res.shape == x.shape, f"Expected shape {x.shape}, but got {res.shape}"
 
 
-# TODO: stopped here
 @pytest.mark.parametrize("solver_cls", [ZeroEnds, NonSingular])
 def test_g_tilde(solver_cls):
     model = DummyModel()
@@ -70,6 +69,16 @@ def test_sample_shape(solver_cls):
     solver = solver_cls(velocity_model=wrapped_model, mu0=jnp.zeros(2), sigma0=jnp.ones(2), alpha=0.5)
 
     x_init = jnp.ones((5, 2))
+
+    sol = solver.sample(
+        key=jax.random.PRNGKey(0),
+        nsamples=5,
+        nsteps=300,
+        method="Euler",
+        adaptive=True,
+    ) 
+    assert sol.shape == x_init.shape, f"Expected shape {x_init.shape}, but got {sol.shape}"
+
  
     sol = solver.sample(
         key=jax.random.PRNGKey(0),
@@ -80,4 +89,21 @@ def test_sample_shape(solver_cls):
     ) 
     assert sol.shape == x_init.shape, f"Expected shape {x_init.shape}, but got {sol.shape}"
 
+    sol = solver.sample(
+        key=jax.random.PRNGKey(0),
+        nsamples=5,
+        nsteps=300,
+        method="ShARK",
+        adaptive=True,
+    ) 
+    assert sol.shape == x_init.shape, f"Expected shape {x_init.shape}, but got {sol.shape}"
 
+    # test error
+    with pytest.raises(ValueError):
+        sol = solver.sample(
+            key=jax.random.PRNGKey(0),
+            nsamples=5,
+            nsteps=300,
+            method="InvalidMethod",
+            adaptive=True,
+        )
