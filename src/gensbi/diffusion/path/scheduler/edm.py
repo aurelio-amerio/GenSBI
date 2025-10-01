@@ -21,7 +21,7 @@ class BaseSDE(abc.ABC):
     @abc.abstractmethod
     def name(self) -> str:
         """Returns the name of the SDE scheduler."""
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def time_schedule(self, u: Array) -> Array:
@@ -34,7 +34,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Time in the schedule.
         """
-        ...
+        ... # pragma: no cover
 
     def timesteps(self, i: Array, N: int) -> Array:
         """
@@ -61,7 +61,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Noise scale.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def sigma_inv(self, sigma: Array) -> Array:
@@ -74,7 +74,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Time corresponding to the given sigma.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def sigma_deriv(self, t: Array) -> Array:
@@ -87,7 +87,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Derivative of sigma.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def s(self, t: Array) -> Array:
@@ -100,7 +100,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Scaling value.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def s_deriv(self, t: Array) -> Array:
@@ -113,7 +113,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Derivative of scaling.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def c_skip(self, sigma: Array) -> Array:
@@ -126,7 +126,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Skip coefficient.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def c_out(self, sigma: Array) -> Array:
@@ -139,7 +139,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Output coefficient.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def c_in(self, sigma: Array) -> Array:
@@ -152,7 +152,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Input coefficient.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def c_noise(self, sigma: Array) -> Array:
@@ -165,7 +165,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Noise coefficient.
         """
-        ...
+        ... # pragma: no cover
 
     @abc.abstractmethod
     def sample_sigma(self, key: Array, shape: Any) -> Array:
@@ -179,7 +179,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Sampled sigma.
         """
-        ...
+        ... # pragma: no cover
 
     def sample_noise(self, key: Array, shape: Any, sigma: Array) -> Array:
         """
@@ -220,7 +220,7 @@ class BaseSDE(abc.ABC):
         Returns:
             Array: Loss weight.
         """
-        ...
+        ... # pragma: no cover
 
     def f(self, x: Array, t: Array) -> Array:
         r"""

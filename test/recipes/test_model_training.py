@@ -1,3 +1,4 @@
+# %%
 import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
@@ -6,25 +7,19 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
+import warnings
 
-# def test_flux_cfmloss_runs():
-#     path = AffineProbPath(scheduler=CondOTScheduler())
-#     loss = FluxCFMLoss(path)
-#     def vf(x, obs_ids, cond, cond_ids, t, conditioned=True):
-#         return x + 1
-#     x0 = jnp.ones((2, 2))
-#     x1 = jnp.ones((2, 2))
-#     t = jnp.ones((2,))
-#     cond = jnp.ones((2, 2))
-#     obs_ids = jnp.array([0, 1])
-#     cond_ids = jnp.array([2, 3])
-#     batch = (x0, x1, t)
-#     result = loss(vf, batch, cond, obs_ids, cond_ids)
-#     assert result is not None
+import pytest
 
+import tempfile
 
 from gensbi.models import SimformerParams, FluxParams
-from gensbi.recipes import SimformerFlowPipeline, SimformerDiffusionPipeline, FluxFlowPipeline, FluxDiffusionPipeline
+from gensbi.recipes import (
+    SimformerFlowPipeline,
+    SimformerDiffusionPipeline,
+    FluxFlowPipeline,
+    FluxDiffusionPipeline,
+)
 
 import itertools
 
@@ -49,69 +44,143 @@ train_dataset = itertools.cycle(train_data)
 val_dataset = itertools.cycle(val_data)
 
 params_simf = SimformerParams(
-    rngs = nnx.Rngs(0),
-    dim_value = 2,
-    dim_id = 2, 
-    dim_condition = 2, 
-    dim_joint= dim_joint,
-    fourier_features = 32,
-    num_heads = 2,
-    num_layers = 1,
-    widening_factor = 3,
-    qkv_features = 10, 
-    num_hidden_layers = 1)
-
-pipeline_smf_flow = SimformerFlowPipeline(
-    train_dataset, val_dataset, dim_theta, dim_data, params_simf
-)
-
-pipeline_smf_diff = SimformerDiffusionPipeline(
-    train_dataset, val_dataset, dim_theta, dim_data, params_simf
+    rngs=nnx.Rngs(0),
+    dim_value=2,
+    dim_id=2,
+    dim_condition=2,
+    dim_joint=dim_joint,
+    fourier_features=32,
+    num_heads=2,
+    num_layers=1,
+    widening_factor=3,
+    qkv_features=4,
+    num_hidden_layers=1,
 )
 
 params_flux = FluxParams(
-            in_channels=1,
-            vec_in_dim=None,
-            context_in_dim=1,
-            mlp_ratio=1,
-            qkv_multiplier=1,
-            num_heads=2,
-            depth=2,
-            depth_single_blocks=2,
-            axes_dim=[2,],
-            qkv_bias=True,
-            obs_dim = dim_theta,
-            cond_dim = dim_data,
-            theta=20,
-            rngs=nnx.Rngs(default=42),
-            param_dtype=jnp.float32,
+    in_channels=1,
+    vec_in_dim=None,
+    context_in_dim=1,
+    mlp_ratio=1,
+    qkv_multiplier=1,
+    num_heads=2,
+    depth=2,
+    depth_single_blocks=2,
+    axes_dim=[
+        2,
+    ],
+    qkv_bias=True,
+    obs_dim=dim_theta,
+    cond_dim=dim_data,
+    theta=20,
+    rngs=nnx.Rngs(default=42),
+    param_dtype=jnp.float32,
+)
+
+# %%
+
+
+@pytest.mark.parametrize(
+    "pipeline_cls, params",
+    [
+        (SimformerFlowPipeline, params_simf),
+        (SimformerDiffusionPipeline, params_simf),
+        (FluxFlowPipeline, params_flux),
+        (FluxDiffusionPipeline, params_flux),
+    ],
+)
+def test_model(pipeline_cls, params):
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = pipeline_cls._get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1  # validate every epoch
+
+        # first we try to initialize a default pipeline, to make sure it works
+        default_pipeline = pipeline_cls(train_dataset, val_dataset, dim_theta, dim_data)
+
+        assert isinstance(
+            default_pipeline, pipeline_cls
+        ), f"Expected {pipeline_cls}, got {type(default_pipeline)}"
+
+        # then we use a real pipeline
+
+        pipeline = pipeline_cls(
+            train_dataset,
+            val_dataset,
+            dim_theta,
+            dim_data,
+            params,
+            training_config=training_config,
         )
 
-pipeline_flux_flow = FluxFlowPipeline(
-    train_dataset, val_dataset, dim_theta, dim_data, params_flux
-)
+        batch_size = 3
+        t = jnp.linspace(0, 1, batch_size)
+        obs = jnp.ones((batch_size, dim_theta, 1))
+        cond = jnp.ones((batch_size, dim_data, 1))
 
-pipeline_flux_diff = FluxDiffusionPipeline(
-    train_dataset, val_dataset, dim_theta, dim_data, params_flux
-)
+        obs_ids = pipeline.obs_ids
+        cond_ids = pipeline.cond_ids
 
-def test_simformer_flow_training_step():
-    pipeline_smf_flow.train(nnx.Rngs(0), nsteps=2, save_model=False)
-    sample = pipeline_smf_flow.sample(jax.random.PRNGKey(1), jnp.arange(dim_data)[None,...], nsamples=32)
-    assert sample.shape == (32, dim_theta), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+        # try getting the default parameters
+        default_params = pipeline._get_default_params()
+        # make sure the default parameters are of the same class as params
+        assert isinstance(
+            default_params, type(params)
+        ), f"Expected {type(params)}, got {type(default_params)}"
 
-def test_simformer_diff_training_step():
-    pipeline_smf_diff.train(nnx.Rngs(0), nsteps=2, save_model=False)
-    sample = pipeline_smf_diff.sample(jax.random.PRNGKey(1), jnp.arange(dim_data)[None,...], nsamples=32)
-    assert sample.shape == (32, dim_theta), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+        # try training the model
+        pipeline.train(nnx.Rngs(0), nsteps=2, save_model=True)
+        # wrap the model
+        pipeline._wrap_model()
 
-def test_flux_flow_training_step():
-    pipeline_flux_flow.train(nnx.Rngs(0), nsteps=2, save_model=False)
-    sample = pipeline_flux_flow.sample(jax.random.PRNGKey(1), jnp.arange(dim_data)[None,...], nsamples=32)
-    assert sample.shape == (32, dim_theta), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+        # try evaluating the model, and save the result
+        out = pipeline.model_wrapped(t, obs, obs_ids, cond, cond_ids)
+        out_ema = pipeline.ema_model_wrapped(t, obs, obs_ids, cond, cond_ids)
+        assert out.shape == (
+            batch_size,
+            dim_theta,
+            1,
+        ), f"Expected shape {(batch_size, dim_theta, 1)}, got {out.shape}"
+        assert out_ema.shape == (
+            batch_size,
+            dim_theta,
+            1,
+        ), f"Expected shape {(batch_size, dim_theta, 1)}, got {out_ema.shape}"
 
-def test_flux_diff_training_step():
-    pipeline_flux_diff.train(nnx.Rngs(0), nsteps=2, save_model=False)
-    sample = pipeline_flux_diff.sample(jax.random.PRNGKey(1), jnp.arange(dim_data)[None,...], nsamples=32)
-    assert sample.shape == (32, dim_theta), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+        # try restoring the model from the checkpoint
+        # ignore warnings about sharding for the next line
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pipeline.restore_model()
 
+        # we evaluate again the model, and check that the output is the same as before
+        out_restored = pipeline.model_wrapped(t, obs, obs_ids, cond, cond_ids)
+        out_ema_restored = pipeline.ema_model_wrapped(t, obs, obs_ids, cond, cond_ids)
+        assert jnp.allclose(out, out_restored), "Restored model output does not match"
+        assert jnp.allclose(
+            out_ema, out_ema_restored
+        ), "Restored EMA model output does not match"
+
+        # try sampling from the model
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            jnp.arange(dim_data)[None, ...],
+            nsamples=32,
+            use_ema=True,
+        )
+        assert sample.shape == (
+            32,
+            dim_theta,
+        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            jnp.arange(dim_data)[None, ...],
+            nsamples=32,
+            use_ema=False,
+        )
+        assert sample.shape == (
+            32,
+            dim_theta,
+        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"

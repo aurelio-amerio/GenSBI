@@ -8,4 +8,4 @@ class Solver(ABC):
 
     @abstractmethod
     def sample(self, key, x_1: Array) -> Array:
-        ...
+        ... # pragma: no cover

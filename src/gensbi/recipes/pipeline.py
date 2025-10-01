@@ -161,7 +161,7 @@ class AbstractPipeline(abc.ABC):
         """
         Create and return the model to be trained.
         """
-        ...
+        ... # pragma: no cover
 
     def _get_ema_optimizer(self):
         """
@@ -207,7 +207,7 @@ class AbstractPipeline(abc.ABC):
         """
         Return a dictionary of default model parameters.
         """
-        return
+        ... # pragma: no cover
 
     @classmethod
     def _get_default_training_config(cls):
@@ -284,7 +284,7 @@ class AbstractPipeline(abc.ABC):
         """
         Return the loss function for training/validation.
         """
-        ...
+        ... # pragma: no cover
 
     
     def get_train_step_fn(self, loss_fn):
@@ -364,7 +364,7 @@ class AbstractPipeline(abc.ABC):
         """
         Wrap the model for evaluation (either using SimformerWrapper or Flux1Wrapper).
         """
-        ...
+        ... # pragma: no cover
 
     def save_model(self, experiment_id=None):
         if experiment_id is None:
@@ -482,7 +482,7 @@ class AbstractPipeline(abc.ABC):
             else:
                 l_train = 0.9 * l_train + 0.1 * loss
 
-            if j > 50 and j % val_every == 0:
+            if j > 0 and j % val_every == 0:
                 l_val = val_step(self.model, self._next_val_batch(), rngs.val_step())
 
                 ratio = l_val / l_train
@@ -538,6 +538,6 @@ class AbstractPipeline(abc.ABC):
         samples : array-like
             Generated samples.
         """
-        ...
+        ... # pragma: no cover
 
 

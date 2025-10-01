@@ -45,4 +45,4 @@ class ProbPath(ABC):
         Returns:
             PathSample: Sample from the path.
         """
-        ...
+        ... # pragma: no cover
