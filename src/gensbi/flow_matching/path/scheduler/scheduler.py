@@ -45,7 +45,7 @@ class Scheduler(ABC):
         Returns:
             SchedulerOutput: :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
         """
-        ...
+        ... # pragma: no cover
 
     @abstractmethod
     def snr_inverse(self, snr: Array) -> Array:
@@ -58,7 +58,7 @@ class Scheduler(ABC):
         Returns:
             Array: t, shape (...)
         """
-        ...
+        ... # pragma: no cover
 
 
 
@@ -73,7 +73,7 @@ class ConvexScheduler(Scheduler):
         Returns:
             SchedulerOutput: :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
         """
-        ...
+        ... # pragma: no cover
 
     @abstractmethod
     def kappa_inverse(self, kappa: Array) -> Array:
@@ -86,7 +86,7 @@ class ConvexScheduler(Scheduler):
         Returns:
             Array: t, shape (...)
         """
-        ...
+        ... # pragma: no cover
 
     def snr_inverse(self, snr: Array) -> Array:
         r"""

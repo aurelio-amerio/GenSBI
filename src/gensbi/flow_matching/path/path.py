@@ -46,7 +46,7 @@ class ProbPath(ABC):
         Returns:
             PathSample: A conditional sample.
         """
-        pass
+        ... # pragma: no cover
 
     def assert_sample_shape(self, x_0: Array, x_1: Array, t: Array) -> None:
         """
