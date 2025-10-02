@@ -11,3 +11,5 @@ __all__ = [
     "FluxFlowPipeline",
     "FluxDiffusionPipeline",
 ]
+
+# 97% coverage, need to improve pipeline to hit some branches

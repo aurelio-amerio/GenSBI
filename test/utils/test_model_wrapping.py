@@ -24,6 +24,17 @@ class DummyModel(nnx.Module):
         res = x + t if conditioned else x - t
         return res
 
+    
+def test_util_functions():
+    model = DummyModel()
+    wrapper = ModelWrapper(model)
+    x = jnp.ones((2, 3))
+    t = jnp.ones((2,))
+    expanded_x = wrapper._expand_dims(x)
+    expanded_t = wrapper._expand_time(t)
+    assert expanded_x.shape == (2, 3, 1), f"Expected shape (2, 3, 1), got {expanded_x.shape}"
+    assert expanded_t.shape == (2, 1), f"Expected shape (2, 1), got {expanded_t.shape}"
+
 
 def test_model_wrapper_call_and_vector_field():
     model = DummyModel()
@@ -40,11 +51,17 @@ def test_model_wrapper_call_and_vector_field():
 def test_model_wrapper_divergence():
     model = DummyModel()
     wrapper = ModelWrapper(model)
+    div_fn = wrapper.get_divergence()
+
     x = jnp.ones((2, 2))
     t = jnp.ones((2, 1))
-    div_fn = wrapper.get_divergence()
     div = div_fn(t, x, None)
     assert div.shape == (2,), f"Expected divergence shape (2,), got {div.shape}"
+
+    x = jnp.ones((1, 2))
+    t = jnp.ones((1,))
+    div = div_fn(t, x, None)
+    assert div.shape == (), f"Expected divergence shape (), got {div.shape}"
 
 
 def test_guided_model_wrapper_call_and_vector_field():

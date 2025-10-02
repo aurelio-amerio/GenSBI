@@ -36,5 +36,5 @@ def divergence(
 
     res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wrapped, t, x)
 
-    return jnp.squeeze(res)
+    return jnp.squeeze(res,axis=1) if res.ndim > 1 else res
     

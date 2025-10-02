@@ -20,3 +20,5 @@ __all__ = [
     "SimformerDiffLoss",
     "SimformerWrapper",
 ]
+
+# coverage 79% still need to work on this

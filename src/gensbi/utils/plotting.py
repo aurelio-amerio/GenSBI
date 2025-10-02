@@ -47,18 +47,29 @@ transparent_cmap = LinearSegmentedColormap.from_list("transparent_red", colors, 
 
 def _parse_range(range_arg, ndim):
     if range_arg is None:
-        return [None] * ndim
-    if (
+        res = [None]*ndim
+    elif (
         isinstance(range_arg, tuple)
         and len(range_arg) == 2
-        and not isinstance(range_arg[0], tuple)
+        and all(isinstance(x, (int, float)) for x in range_arg)
     ):
-        return [range_arg] * ndim
-    if isinstance(range_arg, (list, tuple)) and len(range_arg) == ndim:
-        return list(range_arg)
-    raise ValueError(
-        "range must be a tuple (min, max) or a sequence of such tuples, one per axis"
-    )
+        res = [range_arg] * ndim
+    elif (
+        isinstance(range_arg, (list, tuple))
+        and len(range_arg) == ndim
+        and all(
+            isinstance(r, tuple)
+            and len(r) == 2
+            and all(isinstance(x, (int, float)) for x in r)
+            for r in range_arg
+        )
+    ):
+        res = list(range_arg)
+    else:
+        raise ValueError(
+            "Range must be None, a tuple (min, max), or a sequence of such tuples, one per axis"
+        )
+    return res
 
 
 def _plot_marginals_2d(
@@ -308,6 +319,9 @@ def _plot_marginals_corner(
     **kwargs,
 ):
     data = np.array(data)
+    ndim = data.shape[1]
+    if range is not None:
+        range = _parse_range(range, ndim)
     if true_param is not None:
         true_param = np.array(true_param)
 
