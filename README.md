@@ -15,7 +15,7 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 ## Key Features
 
 - **Modern SBI Algorithms**: Implements cutting-edge techniques like **Optimal Transport Conditional Flow Matching** and **Diffusion Models** for robust and flexible posterior inference.
-- **Built on JAX**: Leverages the power of JAX for automatic differentiation, vectorization, and seamless execution on CPUs, GPUs, and TPUs.
+- **Built on JAX and Flax NNX**: Leverages the power of JAX for automatic differentiation, vectorization, and seamless execution on CPUs, GPUs, and TPUs.
 - **High-Level Recipes API**: A simplified interface for common workflows, allowing you to train models and run inference with just a few lines of code.
 - **Powerful Transformer Models**: Includes implementations of recent, high-performing models like **Flux1** and **Simformer** for handling complex, high-dimensional data.
 - **Modular and Extensible**: A clean, well-structured codebase that is easy to understand, modify, and extend for your own research.
