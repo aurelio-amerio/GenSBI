@@ -7,7 +7,6 @@ import jax.numpy as jnp
 from gensbi.flow_matching.path.path_sample import PathSample
 
 
-
 class ProbPath(ABC):
     r"""
     Abstract class, representing a probability path.
@@ -46,7 +45,7 @@ class ProbPath(ABC):
         Returns:
             PathSample: A conditional sample.
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     def assert_sample_shape(self, x_0: Array, x_1: Array, t: Array) -> None:
         """

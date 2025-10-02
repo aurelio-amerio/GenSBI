@@ -68,14 +68,14 @@ class BaseSDESolver(Solver):
         """Get the function :math:`\tilde{f}` for the velocity model. See arXiv.2410.02217
         Also known as the "drift" term in the SDE context.
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     @abstractmethod
     def get_g_tilde(self) -> Callable:
         """Get the function :math:`\tilde{g}` for the velocity model. See arXiv.2410.02217
         Also known as the "diffusion" term in the SDE context.
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     def get_score(self, **kwargs):
         """Obtain the score function given the velocity model. See arXiv.2410.02217"""

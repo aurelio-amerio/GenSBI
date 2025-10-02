@@ -6,5 +6,4 @@ class Solver(ABC):
     """Abstract base class for solvers."""
 
     @abstractmethod
-    def sample(self, x_0: Array) -> Array:
-        ... # pragma: no cover
+    def sample(self, x_0: Array) -> Array: ...  # pragma: no cover

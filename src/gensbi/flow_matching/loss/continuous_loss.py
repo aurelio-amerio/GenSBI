@@ -33,6 +33,7 @@ class ContinuousFMLoss(nnx.Module):
             # ()
 
     """
+
     def __init__(self, path, reduction: str = "mean"):
         self.path = path
         if reduction not in ["None", "mean", "sum"]:
@@ -50,7 +51,7 @@ class ContinuousFMLoss(nnx.Module):
         vf: Callable,
         batch: Tuple[Array, Array, Array],
         args: Any = None,
-        **kwargs
+        **kwargs,
     ) -> Array:
         """
         Evaluates the continuous flow matching loss.

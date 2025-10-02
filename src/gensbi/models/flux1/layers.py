@@ -45,7 +45,9 @@ def timestep_embedding(
     """
     t = jnp.atleast_1d(t)
 
-    t = t.ravel() # FIXME will return an error later on in case the shape is not (N,1...), we should find a better way to handle this
+    t = (
+        t.ravel()
+    )  # FIXME will return an error later on in case the shape is not (N,1...), we should find a better way to handle this
 
     t = time_factor * t
     half = dim // 2
@@ -177,8 +179,8 @@ class Modulation(nnx.Module):
             use_bias=True,
             rngs=rngs,
             param_dtype=param_dtype,
-            kernel_init=jax.nn.initializers.zeros, # this ensures that the initial modulation is neutral
-            bias_init=jax.nn.initializers.zeros # this ensures that the initial modulation is neutral
+            kernel_init=jax.nn.initializers.zeros,  # this ensures that the initial modulation is neutral
+            bias_init=jax.nn.initializers.zeros,  # this ensures that the initial modulation is neutral
         )
 
     def __call__(self, vec: Array) -> tuple[ModulationOut, ModulationOut | None]:

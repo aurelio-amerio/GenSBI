@@ -1,7 +1,7 @@
 """
 Pipeline for training and using a Flux1 model for simulation-based inference.
 
-Example: 
+Example:
     .. code-block:: python
         import itertools
         import jax
@@ -33,7 +33,7 @@ Example:
         # Sample from the posterior
         x_o = jnp.array([0.5, -0.2])  # Example
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-    
+
 """
 
 import jax
@@ -300,7 +300,7 @@ class FluxDiffusionPipeline(AbstractPipeline):
 
             x_1 = obs
             sigma = self.path.sample_sigma(rng_sigma, x_1.shape[0])
-            sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}") # TODO fixme
+            sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             batch = (x_1, sigma)
             loss = self.loss_fn(rng_x0, model, batch, cond, self.obs_ids, self.cond_ids)

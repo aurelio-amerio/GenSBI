@@ -5,9 +5,6 @@ It is advised to use the `CondOTScheduler` for optimal performance with conditio
 
 """
 
-
-
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Union
@@ -27,6 +24,7 @@ class SchedulerOutput:
         d_alpha_t (Array): :math:`\frac{\partial}{\partial t}\alpha_t`, shape (...).
         d_sigma_t (Array): :math:`\frac{\partial}{\partial t}\sigma_t`, shape (...).
     """
+
     alpha_t: Array = field(metadata={"help": "alpha_t"})
     sigma_t: Array = field(metadata={"help": "sigma_t"})
     d_alpha_t: Array = field(metadata={"help": "Derivative of alpha_t."})
@@ -45,7 +43,7 @@ class Scheduler(ABC):
         Returns:
             SchedulerOutput: :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     @abstractmethod
     def snr_inverse(self, snr: Array) -> Array:
@@ -58,8 +56,7 @@ class Scheduler(ABC):
         Returns:
             Array: t, shape (...)
         """
-        ... # pragma: no cover
-
+        ...  # pragma: no cover
 
 
 class ConvexScheduler(Scheduler):
@@ -73,7 +70,7 @@ class ConvexScheduler(Scheduler):
         Returns:
             SchedulerOutput: :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     @abstractmethod
     def kappa_inverse(self, kappa: Array) -> Array:
@@ -86,7 +83,7 @@ class ConvexScheduler(Scheduler):
         Returns:
             Array: t, shape (...)
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     def snr_inverse(self, snr: Array) -> Array:
         r"""
@@ -108,7 +105,7 @@ class CondOTScheduler(ConvexScheduler):
     def __call__(self, t: Array) -> SchedulerOutput:
         return SchedulerOutput(
             alpha_t=t,
-            sigma_t=1 - t, 
+            sigma_t=1 - t,
             d_alpha_t=jnp.ones_like(t),
             d_sigma_t=-jnp.ones_like(t),
         )
@@ -117,12 +114,13 @@ class CondOTScheduler(ConvexScheduler):
         return kappa
 
 
-
 class PolynomialConvexScheduler(ConvexScheduler):
     """Polynomial Scheduler."""
 
     def __init__(self, n: Union[float, int]) -> None:
-        assert isinstance(n, (float, int)), f"`n` must be a float or int. Got {type(n)=}."
+        assert isinstance(
+            n, (float, int)
+        ), f"`n` must be a float or int. Got {type(n)=}."
         assert n > 0, f"`n` must be positive. Got {n=}."
         self.n = n
 
@@ -165,7 +163,6 @@ class VPScheduler(Scheduler):
         B = self.beta_max
         t = 1 - ((-b + jnp.sqrt(b**2 + 2 * (B - b) * T)) / (B - b))
         return t
-
 
 
 class LinearVPScheduler(Scheduler):

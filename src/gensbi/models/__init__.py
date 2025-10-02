@@ -13,7 +13,6 @@ __all__ = [
     "FluxCFMLoss",
     "FluxDiffLoss",
     "FluxWrapper",
-
     "Simformer",
     "SimformerParams",
     "SimformerCFMLoss",
@@ -21,4 +20,4 @@ __all__ = [
     "SimformerWrapper",
 ]
 
-# coverage 79% still need to work on this
+# coverage 79% still need to work on this

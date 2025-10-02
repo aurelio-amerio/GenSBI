@@ -106,7 +106,7 @@ class ODESolver(Solver):
                 ),
                 stepsize_controller=stepsize_controller,
             )
-            return solution.ys if return_intermediates else solution.ys[-1] # type: ignore
+            return solution.ys if return_intermediates else solution.ys[-1]  # type: ignore
 
         return sampler
 
@@ -136,7 +136,6 @@ class ODESolver(Solver):
         Returns:
             Union[Array, Sequence[Array]]: The final state or the states at all intermediate time steps.
         """
-
 
         sampler = self.get_sampler(
             step_size=step_size,
@@ -232,7 +231,7 @@ class ODESolver(Solver):
                 stepsize_controller=stepsize_controller,
             )
 
-            x_source, log_det = solution.ys[0], solution.ys[1] # type: ignore
+            x_source, log_det = solution.ys[0], solution.ys[1]  # type: ignore
 
             source_log_p = log_p0(x_source)
 

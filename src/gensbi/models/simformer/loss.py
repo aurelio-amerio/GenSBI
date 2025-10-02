@@ -15,16 +15,17 @@ class SimformerCFMLoss(ContinuousFMLoss):
         path: Probability path for training.
         reduction (str): Reduction method ('none', 'mean', 'sum').
     """
+
     def __init__(self, path, reduction: str = "mean"):
         super().__init__(path, reduction)
 
     def __call__(
-        self, 
-        vf: Callable, 
-        batch: Tuple[Array, Array, Array], 
+        self,
+        vf: Callable,
+        batch: Tuple[Array, Array, Array],
         *args,
-        condition_mask: Optional[Array] = None, 
-        **kwargs
+        condition_mask: Optional[Array] = None,
+        **kwargs,
     ) -> Array:
         """
         Evaluate the continuous flow matching loss.
@@ -52,13 +53,12 @@ class SimformerCFMLoss(ContinuousFMLoss):
             x_t = jnp.where(condition_mask, x_1, x_t)
 
         model_output = vf(path_sample.t, x_t, *args, **kwargs)
-        
+
         loss = model_output - path_sample.dx_t
         if condition_mask is not None:
             loss = jnp.where(condition_mask, 0.0, loss)
 
-        return self.reduction(jnp.square(loss)) # type: ignore
-    
+        return self.reduction(jnp.square(loss))  # type: ignore
 
 
 class SimformerDiffLoss(nnx.Module):
@@ -68,18 +68,19 @@ class SimformerDiffLoss(nnx.Module):
     Args:
         path: Probability path for training.
     """
+
     def __init__(self, path):
         self.path = path
 
         self.loss_fn = self.path.get_loss_fn()
 
     def __call__(
-        self, 
+        self,
         key: jax.random.PRNGKey,
-        model: Callable, 
-        batch: Tuple[Array, Array, Array], 
-        condition_mask: Optional[Array] = None, 
-        **kwargs
+        model: Callable,
+        batch: Tuple[Array, Array, Array],
+        condition_mask: Optional[Array] = None,
+        **kwargs,
     ) -> Array:
         """
         Evaluate the continuous flow matching loss.
@@ -105,5 +106,4 @@ class SimformerDiffLoss(nnx.Module):
 
         loss = self.loss_fn(model, batch, loss_mask=condition_mask, model_extras=kwargs)
 
-        return loss # type: ignore
-
+        return loss  # type: ignore

@@ -55,6 +55,6 @@ def expand_tensor_like(input_array: Array, expand_to: Array) -> Array:
     ), f"The first (batch_size) dimension must match. Got shape {input_array.shape} and {expand_to.shape}."
 
     dim_diff = len(expand_to.shape) - len(input_array.shape)
-    
+
     t_expanded = jnp.reshape(input_array, (-1,) + (1,) * dim_diff)
     return jnp.broadcast_to(t_expanded, expand_to.shape)
