@@ -4,7 +4,7 @@
 ![GenSBI Logo](docs/_static/logo.png)
 
 > [!IMPORTANT]  
-> This library is in an early stage of development and will change significantly in the future.
+> This library is in an early stage of development. The API is potentially subject to change.
 
 ## Overview
 
