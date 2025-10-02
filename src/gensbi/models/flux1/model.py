@@ -22,7 +22,7 @@ from gensbi.models.flux1.layers import (
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 
-#TODO enforce rope usage, remove unused code
+# TODO enforce rope usage, remove unused code
 @dataclass
 class FluxParams:
     """Parameters for the Flux model.
@@ -190,8 +190,8 @@ class Flux(nnx.Module):
         guidance: Array | None = None,
     ) -> Array:
 
-        # assumes obs, cond, obs_ids, cond_ids have shape (B, F, C) 
-        # assumes t has shape (B,) or (B, 1)
+        # assumes obs, cond, obs_ids, cond_ids have shape (B, F, C)
+        # assumes t has shape (B,) or (B, 1)
 
         obs = jnp.asarray(obs, dtype=self.params.param_dtype)
         cond = jnp.asarray(cond, dtype=self.params.param_dtype)
@@ -201,7 +201,11 @@ class Flux(nnx.Module):
         # cond = _expand_dims(cond)
 
         if obs.ndim != 3 or cond.ndim != 3:
-            raise ValueError("Input obs and cond tensors must have 3 dimensions, got {} and {}".format(obs.ndim, cond.ndim))
+            raise ValueError(
+                "Input obs and cond tensors must have 3 dimensions, got {} and {}".format(
+                    obs.ndim, cond.ndim
+                )
+            )
 
         # running on sequences obs
         obs = self.obs_in(obs)
@@ -230,7 +234,6 @@ class Flux(nnx.Module):
         ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
 
         pe = self.pe_embedder(ids)
-
 
         for block in self.double_blocks.layers:
             obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)

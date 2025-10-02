@@ -47,7 +47,7 @@ transparent_cmap = LinearSegmentedColormap.from_list("transparent_red", colors, 
 
 def _parse_range(range_arg, ndim):
     if range_arg is None:
-        res = [None]*ndim
+        res = [None] * ndim
     elif (
         isinstance(range_arg, tuple)
         and len(range_arg) == 2
@@ -290,7 +290,11 @@ def _plot_marginals_nd(
         )
         if true_param is not None:
             ax.axvline(
-                true_param[i], color=true_val_color, linestyle="-", linewidth=1.5, zorder=5
+                true_param[i],
+                color=true_val_color,
+                linestyle="-",
+                linewidth=1.5,
+                zorder=5,
             )
         if axis_ranges[i] is not None:
             ax.set_xlim(axis_ranges[i])
@@ -560,9 +564,15 @@ def plot_2d_dist_contour(
         plot_2d_levels(x, y, Z, ax, levels=levels)
 
     if true_param is not None:
-        ax.scatter(true_param[0], true_param[1], color=base_color, s=50, marker="s", zorder=10)
-        ax.axvline(true_param[0], color=base_color, linestyle='-', linewidth=1.5, zorder=9)
-        ax.axhline(true_param[1], color=base_color, linestyle='-', linewidth=1.5, zorder=9)
+        ax.scatter(
+            true_param[0], true_param[1], color=base_color, s=50, marker="s", zorder=10
+        )
+        ax.axvline(
+            true_param[0], color=base_color, linestyle="-", linewidth=1.5, zorder=9
+        )
+        ax.axhline(
+            true_param[1], color=base_color, linestyle="-", linewidth=1.5, zorder=9
+        )
 
     # Set aspect ratio to equal for better visualization
     ax.set_aspect("equal", adjustable="box")

@@ -46,7 +46,6 @@ class SDESolver(Solver):
             "EDM-VE",
         ], f"Path must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.path.name}."
 
-
     def get_sampler(
         self,
         condition_mask: Optional[Array] = None,
@@ -84,10 +83,10 @@ class SDESolver(Solver):
                 "CFG scale is not implemented for EDM samplers yet."
             )
 
-        S_churn = solver_params.get("S_churn", 0) # type: ignore
-        S_min = solver_params.get("S_min", 0) # type: ignore
-        S_max = solver_params.get("S_max", float("inf")) # type: ignore
-        S_noise = solver_params.get("S_noise", 1) # type: ignore
+        S_churn = solver_params.get("S_churn", 0)  # type: ignore
+        S_min = solver_params.get("S_min", 0)  # type: ignore
+        S_max = solver_params.get("S_max", float("inf"))  # type: ignore
+        S_noise = solver_params.get("S_noise", 1)  # type: ignore
 
         @jit
         def sample(key: Array, x_init: Array) -> Array:

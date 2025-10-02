@@ -57,15 +57,13 @@ class DenseBlock(nnx.Module):
         self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
         hidden_blocks = []
         hidden_blocks.append(
-                    nnx.Linear(n_features, widening_factor * n_features, rngs=rngs)
-                )
-        
+            nnx.Linear(n_features, widening_factor * n_features, rngs=rngs)
+        )
+
         n_features *= widening_factor
-        
+
         for i in range(1, num_hidden_layers):
-            hidden_blocks.append(
-                    nnx.Linear(n_features, n_features, rngs=rngs)
-                )
+            hidden_blocks.append(nnx.Linear(n_features, n_features, rngs=rngs))
 
         hidden_blocks.append(nnx.Linear(n_features, din, rngs=rngs))
 
@@ -78,7 +76,6 @@ class DenseBlock(nnx.Module):
     def __call__(self, x, context):
         x = self.layer_norm(x)
         x_in = x
-
 
         for i in range(len(self.hidden_blocks) - 1):
             x = self.hidden_blocks[i](x)
@@ -115,7 +112,7 @@ class Transformer(nnx.Module):
         act: Callable = jax.nn.gelu,
         skip_connection_attn: bool = True,
         skip_connection_mlp: bool = True,
-        *, # Enforce keyword arguments
+        *,  # Enforce keyword arguments
         rngs: nnx.Rngs,
     ):
         self.din = din
@@ -175,7 +172,7 @@ class Transformer(nnx.Module):
                 mask = mask[:, None, :, :]
             else:
                 raise ValueError(f"Mask must have ndim 2 or 3, got {mask.ndim}.")
-            
+
         x = inputs
         for i in range(self.num_layers):
             x = self.attention_blocks[i](x, mask)
@@ -183,4 +180,3 @@ class Transformer(nnx.Module):
 
         out = self.layer_norm(x)
         return out
-

@@ -33,7 +33,7 @@ Example:
         # Sample from the posterior
         x_o = jnp.array([0.5, -0.2])  # Example
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-    
+
 """
 
 import jax
@@ -143,7 +143,7 @@ def sample_strutured_conditional_mask(
     all_ones_mask = jnp.all(condition_mask, axis=-1)
     # If all are ones, then set to false
     condition_mask = jnp.where(all_ones_mask[..., None], False, condition_mask)
-    return condition_mask[...,None]
+    return condition_mask[..., None]
 
 
 class SimformerFlowPipeline(AbstractPipeline):
@@ -432,7 +432,7 @@ class SimformerDiffusionPipeline(AbstractPipeline):
             "edge_mask": self.undirected_edge_mask,
         }
 
-        x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1)) 
+        x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
 
         samples = solver.sample(key2, x_init, nsteps=nsteps, model_extras=model_extras)
 

@@ -9,12 +9,11 @@ Provides tools for probabilistic modeling, simulation, and training of generativ
 See the documentation for details and usage examples.
 """
 
-
 __version__ = "0.0.1"
 
-# coverage report:
-# diffusion: 100%
-# flow_matching: 100%
-# recipes: 97%
-# models: 87%
-# utils: 100%
+# coverage report:
+# diffusion: 100%
+# flow_matching: 100%
+# recipes: 97%
+# models: 87%
+# utils: 100%

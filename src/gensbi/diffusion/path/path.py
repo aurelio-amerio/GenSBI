@@ -3,6 +3,7 @@ from jax import Array
 from gensbi.diffusion.path.path_sample import EDMPathSample
 from typing import Any
 
+
 class ProbPath(ABC):
     def __init__(self, scheduler: Any) -> None:
         r"""
@@ -27,7 +28,7 @@ class ProbPath(ABC):
         """
         return self.scheduler.sample_prior(key, shape)
 
-    @property 
+    @property
     def name(self) -> str:
         r"""
         Returns the name of the scheduler.
@@ -45,4 +46,4 @@ class ProbPath(ABC):
         Returns:
             PathSample: Sample from the path.
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover

@@ -9,10 +9,12 @@ from .math import divergence
 
 from einops import rearrange
 
+
 def _expand_dims(x: Array) -> Array:
     if x.ndim < 3:
-        x = rearrange(x, '... -> 1 ... 1' if x.ndim == 1 else '... -> ... 1')
+        x = rearrange(x, "... -> 1 ... 1" if x.ndim == 1 else "... -> ... 1")
     return x
+
 
 def _expand_time(t: Array) -> Array:
     t = jnp.atleast_1d(t)
@@ -23,7 +25,7 @@ def _expand_time(t: Array) -> Array:
 
 class ModelWrapper(nnx.Module):
     """
-    This class is used to wrap around another model. We define a call method which returns the model output. 
+    This class is used to wrap around another model. We define a call method which returns the model output.
     Furthermore, we define a vector_field method which computes the vector field of the model,
     and a divergence method which computes the divergence of the model, in a form useful for diffrax.
     This is useful for ODE solvers that require the vector field and divergence of the model.
@@ -35,15 +37,14 @@ class ModelWrapper(nnx.Module):
 
     def _expand_dims(self, x: Array) -> Array:
         if x.ndim < 3:
-            x = rearrange(x, '... -> 1 ... 1' if x.ndim == 1 else '... -> ... 1')
+            x = rearrange(x, "... -> 1 ... 1" if x.ndim == 1 else "... -> ... 1")
         return x
-    
+
     def _expand_time(self, t: Array) -> Array:
         t = jnp.atleast_1d(t)
         if t.ndim < 2:
             t = t[..., None]
         return t
-
 
     def __call__(self, t: Array, obs: Array, *args, **kwargs) -> Array:
         r"""
@@ -83,6 +84,7 @@ class ModelWrapper(nnx.Module):
         Returns:
             Array: vector field of the model.
         """
+
         def vf(t, x, args):
             # merge args and kwargs
             args = args if args is not None else {}
@@ -90,11 +92,11 @@ class ModelWrapper(nnx.Module):
             # squeeze the first dimension of the vector field if it is 1
             if vf.shape[0] == 1:
                 vf = jnp.squeeze(vf, axis=0)
-            
+
             vf = jnp.squeeze(vf, axis=-1)
             return vf
+
         return vf
-    
 
     def get_divergence(self, **kwargs) -> Callable:
         r"""Compute the divergence of the model.
@@ -108,6 +110,7 @@ class ModelWrapper(nnx.Module):
             Array: divergence of the model.
         """
         vf = self.get_vector_field(**kwargs)
+
         def div_(t, x, args):
             div = divergence(vf, t, x, args)
             # squeeze the first dimension of the divergence if it is 1
@@ -115,19 +118,19 @@ class ModelWrapper(nnx.Module):
                 div = jnp.squeeze(div, axis=0)
             return div
 
-        
         return div_
-        
+
 
 class GuidedModelWrapper(ModelWrapper):
     """
-    This class is used to wrap around another model. We define a call method which returns the model output. 
+    This class is used to wrap around another model. We define a call method which returns the model output.
     Furthermore, we define a vector_field method which computes the vector field of the model,
     and a divergence method which computes the divergence of the model, in a form useful for diffrax.
     This is useful for ODE solvers that require the vector field and divergence of the model.
 
     """
-    cfg_scale: float 
+
+    cfg_scale: float
 
     def __init__(self, model, cfg_scale=0.7):
         super().__init__(model)
@@ -145,7 +148,7 @@ class GuidedModelWrapper(ModelWrapper):
         Returns:
             Array: guided model output.
         """
-        kwargs.pop('conditioned', None) # we set this flag manually
+        kwargs.pop("conditioned", None)  # we set this flag manually
         # Get outputs from parent class
         c_out = super().__call__(t, obs, *args, conditioned=True, **kwargs)
         u_out = super().__call__(t, obs, *args, conditioned=False, **kwargs)
@@ -159,8 +162,8 @@ class GuidedModelWrapper(ModelWrapper):
         u_vf = super().get_vector_field(conditioned=False, **kwargs)
 
         def g_vf(t, x, args):
-            return (1 - self.cfg_scale) * u_vf(t, x, args) + self.cfg_scale * c_vf(t, x, args)
-        
+            return (1 - self.cfg_scale) * u_vf(t, x, args) + self.cfg_scale * c_vf(
+                t, x, args
+            )
+
         return g_vf
-    
-        

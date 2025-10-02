@@ -6,11 +6,11 @@ from typing import Optional, Tuple
 
 
 def attention(
-    q: Array, 
-    k: Array, 
-    v: Array, 
-    pe: Optional[Array] = None, 
-    mask: Optional[Array] = None
+    q: Array,
+    k: Array,
+    v: Array,
+    pe: Optional[Array] = None,
+    mask: Optional[Array] = None,
 ) -> Array:
     """
     Compute attention mechanism.
