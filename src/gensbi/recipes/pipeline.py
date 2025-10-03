@@ -283,17 +283,6 @@ class AbstractPipeline(abc.ABC):
         self.model_wrapped = None  # to be set in subclass
         return
 
-    def _next_batch(self):
-        """
-        Return the next batch from the training dataset.
-        """
-        return next(self.train_dataset_iter)
-
-    def _next_val_batch(self):
-        """
-        Return the next batch from the validation dataset.
-        """
-        return next(self.val_dataset_iter)
 
     @abc.abstractmethod
     def get_loss_fn(self):
@@ -313,7 +302,8 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def train_step(model, optimizer, x_1: Array, rng: jax.random.PRNGKey):
+        def train_step(model, optimizer, rng: jax.random.PRNGKey):
+            x_1 = next(self.train_dataset_iter)
             loss, grads = nnx.value_and_grad(loss_fn)(model, x_1, rng)
             optimizer.update(model, grads, value=loss)
             return loss
@@ -331,7 +321,8 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def val_step(model, x_1: Array, rng: jax.random.PRNGKey):
+        def val_step(model, rng: jax.random.PRNGKey):
+            x_1 = next(self.val_dataset_iter)
             loss = loss_fn(model, x_1, rng)
             return loss
 
@@ -458,7 +449,7 @@ class AbstractPipeline(abc.ABC):
         train_step = self.get_train_step_fn(loss_fn)
         val_step = self.get_val_step_fn(loss_fn)
 
-        min_val = val_step(self.model, self._next_val_batch(), rngs.val_step())
+        min_val = val_step(self.model, rngs.val_step())
 
         val_error_ratio = 1.1
         counter = 0
@@ -489,7 +480,7 @@ class AbstractPipeline(abc.ABC):
                 break
 
             loss = train_step(
-                self.model, optimizer, self._next_batch(), rngs.train_step()
+                self.model, optimizer, rngs.train_step()
             )
             # update the parameters ema
             ema_step(self.ema_model, self.model, ema_optimizer)
@@ -500,7 +491,7 @@ class AbstractPipeline(abc.ABC):
                 l_train = 0.9 * l_train + 0.1 * loss
 
             if j > 0 and j % val_every == 0:
-                l_val = val_step(self.model, self._next_val_batch(), rngs.val_step())
+                l_val = val_step(self.model, rngs.val_step())
 
                 ratio = l_val / l_train
                 if ratio > val_error_ratio:
