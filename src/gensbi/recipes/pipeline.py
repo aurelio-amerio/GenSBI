@@ -302,9 +302,8 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def train_step(model, optimizer, rng: jax.random.PRNGKey):
-            x_1 = next(self.train_dataset_iter)
-            loss, grads = nnx.value_and_grad(loss_fn)(model, x_1, rng)
+        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, rng)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -321,9 +320,8 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def val_step(model, rng: jax.random.PRNGKey):
-            x_1 = next(self.val_dataset_iter)
-            loss = loss_fn(model, x_1, rng)
+        def val_step(model, batch, rng: jax.random.PRNGKey):
+            loss = loss_fn(model, batch, rng)
             return loss
 
         return val_step
@@ -449,7 +447,8 @@ class AbstractPipeline(abc.ABC):
         train_step = self.get_train_step_fn(loss_fn)
         val_step = self.get_val_step_fn(loss_fn)
 
-        min_val = val_step(self.model, rngs.val_step())
+        batch_val = next(self.val_dataset_iter)
+        min_val = val_step(self.model, batch_val, rngs.val_step())
 
         val_error_ratio = 1.1
         counter = 0
@@ -479,8 +478,10 @@ class AbstractPipeline(abc.ABC):
 
                 break
 
+            batch = next(self.train_dataset_iter)
+
             loss = train_step(
-                self.model, optimizer, rngs.train_step()
+                self.model, optimizer, batch, rngs.train_step()
             )
             # update the parameters ema
             ema_step(self.ema_model, self.model, ema_optimizer)
@@ -491,7 +492,8 @@ class AbstractPipeline(abc.ABC):
                 l_train = 0.9 * l_train + 0.1 * loss
 
             if j > 0 and j % val_every == 0:
-                l_val = val_step(self.model, rngs.val_step())
+                batch_val = next(self.val_dataset_iter)
+                l_val = val_step(self.model, batch_val, rngs.val_step())
 
                 ratio = l_val / l_train
                 if ratio > val_error_ratio:
