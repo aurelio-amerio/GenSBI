@@ -326,6 +326,53 @@ class AbstractPipeline(abc.ABC):
 
         return val_step
 
+    def save_model(self, experiment_id=None):
+        if experiment_id is None:
+            experiment_id = self.training_config["experiment_id"]
+
+        checkpoint_dir = self.training_config["checkpoint_dir"]
+        checkpoint_dir_ema = os.path.join(self.training_config["checkpoint_dir"], "ema")
+
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        os.makedirs(checkpoint_dir_ema, exist_ok=True)
+
+        # Save the model
+        checkpoint_manager = ocp.CheckpointManager(
+            checkpoint_dir,
+            options=ocp.CheckpointManagerOptions(
+                max_to_keep=None,
+                keep_checkpoints_without_metrics=True,
+                create=True,
+            ),
+        )
+        _, state = nnx.split(self.model)
+        checkpoint_manager.save(
+            experiment_id,
+            args=ocp.args.Composite(state=ocp.args.StandardSave(state)),
+        )
+        checkpoint_manager.close()
+
+        # now we create the ema model and save it
+        _, ema_state = nnx.split(self.ema_model)
+
+        # save the ema model
+        checkpoint_manager_ema = ocp.CheckpointManager(
+            checkpoint_dir_ema,
+            options=ocp.CheckpointManagerOptions(
+                max_to_keep=None,
+                keep_checkpoints_without_metrics=True,
+                create=True,
+            ),
+        )
+
+        checkpoint_manager_ema.save(
+            experiment_id, args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)))
+        
+        checkpoint_manager_ema.close()
+
+        print("Saved model to checkpoint")
+        return
+    
     def restore_model(self, experiment_id=None):
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
@@ -343,7 +390,7 @@ class AbstractPipeline(abc.ABC):
         self.model = nnx.merge(graphdef, restored["state"])
 
         # restore the ema model
-        model_state_ema = nnx.state(self.ema_model)
+        graphdef, model_state_ema = nnx.split(self.ema_model)
 
         with ocp.CheckpointManager(
             os.path.join(self.training_config["checkpoint_dir"], "ema"),
@@ -370,52 +417,6 @@ class AbstractPipeline(abc.ABC):
         """
         ...  # pragma: no cover
 
-    def save_model(self, experiment_id=None):
-        if experiment_id is None:
-            experiment_id = self.training_config["experiment_id"]
-
-        checkpoint_dir = self.training_config["checkpoint_dir"]
-        checkpoint_dir_ema = os.path.join(self.training_config["checkpoint_dir"], "ema")
-
-        os.makedirs(checkpoint_dir, exist_ok=True)
-        os.makedirs(checkpoint_dir_ema, exist_ok=True)
-
-        # Save the model
-        checkpoint_manager = ocp.CheckpointManager(
-            checkpoint_dir,
-            options=ocp.CheckpointManagerOptions(
-                max_to_keep=None,
-                keep_checkpoints_without_metrics=True,
-                create=True,
-            ),
-        )
-        model_state = nnx.state(self.model)
-        checkpoint_manager.save(
-            experiment_id,
-            args=ocp.args.Composite(state=ocp.args.PyTreeSave(model_state)),
-        )
-        checkpoint_manager.close()
-
-        # now we create the ema model and save it
-        ema_state = nnx.state(self.ema_model)
-
-        # save the ema model
-        checkpoint_manager_ema = ocp.CheckpointManager(
-            checkpoint_dir_ema,
-            options=ocp.CheckpointManagerOptions(
-                max_to_keep=None,
-                keep_checkpoints_without_metrics=True,
-                create=True,
-            ),
-        )
-
-        checkpoint_manager_ema.save(
-            experiment_id, args=ocp.args.Composite(state=ocp.args.PyTreeSave(ema_state))
-        )
-        checkpoint_manager_ema.close()
-
-        print("Saved model to checkpoint")
-        return
 
     def train(
         self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True
