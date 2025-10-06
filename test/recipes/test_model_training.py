@@ -150,19 +150,41 @@ def test_model(pipeline_cls, params):
 
         # try restoring the model from the checkpoint
         # ignore warnings about sharding for the next line
+        
+        pipeline2 = pipeline_cls(
+            train_dataset,
+            val_dataset,
+            dim_theta,
+            dim_data,
+            params,
+            training_config=training_config,
+        )
+        
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            pipeline.restore_model()
+            pipeline2.restore_model()
 
         # we evaluate again the model, and check that the output is the same as before
-        out_restored = pipeline.model_wrapped(t, obs, obs_ids, cond, cond_ids)
-        out_ema_restored = pipeline.ema_model_wrapped(t, obs, obs_ids, cond, cond_ids)
+        out_restored = pipeline2.model_wrapped(t, obs, obs_ids, cond, cond_ids)
+        out_ema_restored = pipeline2.ema_model_wrapped(t, obs, obs_ids, cond, cond_ids)
         assert jnp.allclose(out, out_restored), "Restored model output does not match"
         assert jnp.allclose(
             out_ema, out_ema_restored
         ), "Restored EMA model output does not match"
 
         # try sampling from the model
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            jnp.arange(dim_data)[None, ...],
+            nsamples=32,
+            use_ema=False,
+        )
+        assert sample.shape == (
+            32,
+            dim_theta,
+        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+        
+        
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
             jnp.arange(dim_data)[None, ...],
@@ -174,13 +196,12 @@ def test_model(pipeline_cls, params):
             dim_theta,
         ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
 
-        sample = pipeline.sample(
+        
+        # sample from the restored model
+        sample_restored = pipeline2.sample(
             jax.random.PRNGKey(1),
             jnp.arange(dim_data)[None, ...],
             nsamples=32,
-            use_ema=False,
+            use_ema=True,
         )
-        assert sample.shape == (
-            32,
-            dim_theta,
-        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+        assert jnp.allclose(sample, sample_restored), "Restored model samples do not match"
