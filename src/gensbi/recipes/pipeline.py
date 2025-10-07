@@ -385,7 +385,7 @@ class AbstractPipeline(abc.ABC):
         ) as read_mgr:
             restored = read_mgr.restore(
                 experiment_id,
-                args=ocp.args.Composite(state=ocp.args.PyTreeRestore(item=model_state)),
+                args=ocp.args.Composite(state=ocp.args.StandardRestore(item=model_state)),
             )
         self.model = nnx.merge(graphdef, restored["state"])
 
@@ -399,7 +399,7 @@ class AbstractPipeline(abc.ABC):
             restored_ema = read_mgr_ema.restore(
                 experiment_id,
                 args=ocp.args.Composite(
-                    state=ocp.args.PyTreeRestore(item=model_state_ema)
+                    state=ocp.args.StandardRestore(item=model_state_ema)
                 ),
             )
         self.ema_model = nnx.merge(graphdef, restored_ema["state"])
