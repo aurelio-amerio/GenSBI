@@ -50,6 +50,7 @@ The following tasks are planned for future development:
 - [x] Unify the API for flow matching and diffusion models.
 - [x] Implement wrappers to make training of flow matching and diffusion models similar.
 - [x] Write tests for core functionalities.
+- [ ] Consider implementing classifier free guidance for conditional models.
 - [ ] Add more examples and benchmarks.
 - [ ] Improve documentation and tutorials.
 - [ ] Provide better pre-trained models and checkpoints (currently the training is sub-optimal and for illustration purposes only).
