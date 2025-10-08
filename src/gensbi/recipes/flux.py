@@ -171,7 +171,7 @@ class FluxFlowPipeline(AbstractPipeline):
         self.ema_model_wrapped = FluxWrapper(self.ema_model)
         return
 
-    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True):
+    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True, return_intermediates=False, time_grid=jnp.array([0., 1.])):
         if use_ema:
             vf_wrapped = self.ema_model_wrapped
         else:
@@ -191,8 +191,9 @@ class FluxFlowPipeline(AbstractPipeline):
         sampler_ = solver.get_sampler(
             method="Dopri5",
             step_size=step_size,
-            return_intermediates=False,
+            return_intermediates=return_intermediates,
             model_extras=model_extras,
+            time_grid=time_grid,
         )
         samples = sampler_(x_init)
         return samples
