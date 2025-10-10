@@ -138,7 +138,7 @@ class FluxFlowPipeline(AbstractPipeline):
             qkv_bias=True,
             obs_dim=self.dim_theta,
             cond_dim=self.dim_x,
-            theta=20,
+            theta=10*(self.dim_theta + self.dim_x),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
@@ -268,7 +268,7 @@ class FluxDiffusionPipeline(AbstractPipeline):
             qkv_bias=True,
             obs_dim=self.dim_theta,
             cond_dim=self.dim_x,
-            theta=20,
+            theta=10*(self.dim_theta + self.dim_x),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
