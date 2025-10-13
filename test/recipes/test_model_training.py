@@ -13,10 +13,12 @@ import pytest
 
 import tempfile
 
-from gensbi.models import SimformerParams, FluxParams
+from gensbi.models import SimformerParams, Simformer2Params, FluxParams
 from gensbi.recipes import (
     SimformerFlowPipeline,
     SimformerDiffusionPipeline,
+    Simformer2FlowPipeline,
+    Simformer2DiffusionPipeline,
     FluxFlowPipeline,
     FluxDiffusionPipeline,
 )
@@ -57,6 +59,22 @@ params_simf = SimformerParams(
     num_hidden_layers=1,
 )
 
+params_simf2 = Simformer2Params(
+    in_channels=1,
+    vec_in_dim=None,
+    mlp_ratio=3.0,
+    num_heads=2,
+    depth_single_blocks=2,
+    axes_dim=[4],
+    condition_dim=[2],
+    qkv_bias=True,
+    rngs=nnx.Rngs(0),
+    joint_dim=4,
+    theta=16,
+    guidance_embed=False,
+    param_dtype=jnp.float32,
+)
+
 params_flux = FluxParams(
     in_channels=1,
     vec_in_dim=None,
@@ -85,6 +103,8 @@ params_flux = FluxParams(
     [
         (SimformerFlowPipeline, params_simf),
         (SimformerDiffusionPipeline, params_simf),
+        (Simformer2FlowPipeline, params_simf2),
+        (Simformer2DiffusionPipeline, params_simf2),
         (FluxFlowPipeline, params_flux),
         (FluxDiffusionPipeline, params_flux),
     ],
@@ -150,7 +170,7 @@ def test_model(pipeline_cls, params):
 
         # try restoring the model from the checkpoint
         # ignore warnings about sharding for the next line
-        
+
         pipeline2 = pipeline_cls(
             train_dataset,
             val_dataset,
@@ -159,7 +179,7 @@ def test_model(pipeline_cls, params):
             params,
             training_config=training_config,
         )
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             pipeline2.restore_model()
@@ -183,8 +203,7 @@ def test_model(pipeline_cls, params):
             32,
             dim_theta,
         ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
-        
-        
+
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
             jnp.arange(dim_data)[None, ...],
@@ -196,7 +215,6 @@ def test_model(pipeline_cls, params):
             dim_theta,
         ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
 
-        
         # sample from the restored model
         sample_restored = pipeline2.sample(
             jax.random.PRNGKey(1),
@@ -204,4 +222,6 @@ def test_model(pipeline_cls, params):
             nsamples=32,
             use_ema=True,
         )
-        assert jnp.allclose(sample, sample_restored), "Restored model samples do not match"
+        assert jnp.allclose(
+            sample, sample_restored
+        ), "Restored model samples do not match"

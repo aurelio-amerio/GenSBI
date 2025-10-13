@@ -485,7 +485,8 @@ class AbstractPipeline(abc.ABC):
                 self.model, optimizer, batch, rngs.train_step()
             )
             # update the parameters ema
-            ema_step(self.ema_model, self.model, ema_optimizer)
+            if j % self.training_config["multistep"] == 0:
+                ema_step(self.ema_model, self.model, ema_optimizer)
 
             if j == 0:
                 l_train = loss
