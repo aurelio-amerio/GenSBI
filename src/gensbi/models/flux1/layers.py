@@ -10,6 +10,9 @@ import jax
 
 from .math import attention, rope
 
+class Identity(nnx.Module):
+    def __call__(self, x: Array) -> Array:
+        return x
 
 class EmbedND(nnx.Module):
     def __init__(self, dim: int, theta: int, axes_dim: list[int]):

@@ -1,32 +1,34 @@
-from dataclasses import dataclass
-
-from typing import Union
-
 import jax
 import jax.numpy as jnp
 from jax import Array
-from flax import nnx
 from jax.typing import DTypeLike
 
-from einops import repeat, rearrange
+from einops import rearrange
+from flax import nnx
+
+import numpy as np
+from functools import partial
+from typing import Optional
+
+from dataclasses import dataclass
+
+from gensbi.models.simformer import SimformerWrapper
 
 from gensbi.models.flux1.layers import (
-    DoubleStreamBlock,
     EmbedND,
     LastLayer,
     MLPEmbedder,
     SingleStreamBlock,
     timestep_embedding,
-    Identity
+    Identity,
 )
 
-from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
+from typing import Union, Callable, Optional
 
 
-# TODO enforce rope usage, remove unused code
 @dataclass
-class FluxParams:
-    """Parameters for the Flux model.
+class Simformer2Params:
+    """Parameters for the Simformer2 model.
 
     Args:
         in_channels (int): Number of input channels.
@@ -50,37 +52,37 @@ class FluxParams:
 
     in_channels: int
     vec_in_dim: Union[int, None]
-    context_in_dim: int
     mlp_ratio: float
     num_heads: int
-    depth: int
     depth_single_blocks: int
     axes_dim: list[int]
+    condition_dim: list[int]
     qkv_bias: bool
     rngs: nnx.Rngs
-    obs_dim: int  # observation dimension
-    cond_dim: int  # condition dimension
+    joint_dim: int  # joint dimension
     theta: int = 10_000
     guidance_embed: bool = False
-    qkv_multiplier: int = 1
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        self.hidden_size = int(
-            jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32))
-            * self.qkv_multiplier
-            * self.num_heads
-        )
-        self.qkv_features = self.hidden_size // self.qkv_multiplier
+
+        self.input_token_dim = np.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32))*self.num_heads
+        self.condition_token_dim = np.sum(jnp.asarray(self.condition_dim, dtype=jnp.int32))*self.num_heads
+        self.hidden_size = int(self.input_token_dim + self.condition_token_dim)
+
+        self.qkv_features = self.hidden_size
 
 
 
-class Flux(nnx.Module):
+class Simformer2(nnx.Module):
     """
-    Transformer model for flow matching on sequences.
+    Simformer model for joint density estimation.
+
+    Args:
+        params (Simformer2Params): Parameters for the Simformer2 model.
     """
 
-    def __init__(self, params: FluxParams):
+    def __init__(self, params: Simformer2Params):
         self.params = params
         self.in_channels = params.in_channels
         self.out_channels = params.in_channels
@@ -88,17 +90,21 @@ class Flux(nnx.Module):
         self.qkv_features = params.qkv_features
 
         pe_dim = self.qkv_features // params.num_heads
-        if sum(params.axes_dim) != pe_dim:
+        if sum(params.axes_dim) + sum(params.condition_dim) != pe_dim:
             raise ValueError(
-                f"Got {params.axes_dim} but expected positional dim {pe_dim}"
+                f"Got axes_dim:{params.axes_dim} + condition_dim:{params.condition_dim} but expected positional dim {pe_dim}"
             )
         self.num_heads = params.num_heads
+
+        assert np.array(params.axes_dim).ndim == np.array(params.condition_dim).ndim, "axes_dim and condition_dim must have the same dimension, got {} and {}".format(params.axes_dim, params.condition_dim)
+
+        axes_dim = [a + b for a, b in zip(params.axes_dim, params.condition_dim)]
         self.pe_embedder = EmbedND(
-            dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
+            dim=pe_dim, theta=params.theta, axes_dim=axes_dim
         )
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
-            out_features=self.hidden_size,
+            out_features=self.params.input_token_dim,
             use_bias=True,
             rngs=params.rngs,
             param_dtype=params.param_dtype,
@@ -120,38 +126,9 @@ class Flux(nnx.Module):
             else Identity()
         )
 
-        self.cond_in = nnx.Linear(
-            in_features=params.context_in_dim,
-            out_features=self.hidden_size,
-            use_bias=True,
-            rngs=params.rngs,
-            param_dtype=params.param_dtype,
-        )
-
+        # need to check this
         self.condition_embedding = nnx.Param(
-            0.01 * jnp.ones((1, self.hidden_size), dtype=params.param_dtype)
-        )
-        self.condition_null = nnx.Param(
-            jax.random.normal(
-                params.rngs.cond(),
-                (1, params.cond_dim, self.hidden_size),
-                dtype=params.param_dtype,
-            )
-        )
-
-        self.double_blocks = nnx.Sequential(
-            *[
-                DoubleStreamBlock(
-                    self.hidden_size,
-                    self.num_heads,
-                    mlp_ratio=params.mlp_ratio,
-                    qkv_features=self.qkv_features,
-                    qkv_bias=params.qkv_bias,
-                    rngs=params.rngs,
-                    param_dtype=params.param_dtype,
-                )
-                for _ in range(params.depth)
-            ]
+            0.01 * jnp.ones((1, 1, self.params.condition_token_dim), dtype=params.param_dtype)
         )
 
         self.single_blocks = nnx.Sequential(
@@ -180,40 +157,32 @@ class Flux(nnx.Module):
         self,
         t: Array,
         obs: Array,
-        obs_ids: Array,
-        cond: Array,
-        cond_ids: Array,
-        conditioned: bool | Array = True,
+        node_ids: Array,
+        condition_mask: Array,
         guidance: Array | None = None,
+        edge_mask: Optional[Array] = None,  # for compatibility, does nothing
     ) -> Array:
 
-        # assumes obs, cond, obs_ids, cond_ids have shape (B, F, C)
-        # assumes t has shape (B,) or (B, 1)
+        batch_size, seq_len, _ = obs.shape
 
         obs = jnp.asarray(obs, dtype=self.params.param_dtype)
-        cond = jnp.asarray(cond, dtype=self.params.param_dtype)
         t = jnp.asarray(t, dtype=self.params.param_dtype)
 
-        # obs = _expand_dims(obs)
-        # cond = _expand_dims(cond)
-
-        if obs.ndim != 3 or cond.ndim != 3:
+        if obs.ndim != 3:
             raise ValueError(
-                "Input obs and cond tensors must have 3 dimensions, got {} and {}".format(
-                    obs.ndim, cond.ndim
-                )
+                "Input obs tensor must have 3 dimensions, got {}".format(obs.ndim)
             )
 
         # running on sequences obs
         obs = self.obs_in(obs)
+
+        condition_mask = condition_mask.astype(jnp.bool_).reshape(-1, seq_len, 1)
+        condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
+        condition_embedding = self.condition_embedding * condition_mask
+
+        obs = jnp.concatenate([obs, condition_embedding], axis=-1) # add the condition information to the token dimension
+
         vec = self.time_in(timestep_embedding(t, 256))
-
-        conditioned = jnp.asarray(conditioned, dtype=jnp.bool_)  # type: ignore
-        conditioned_int = jnp.asarray(conditioned, dtype=jnp.int32)[..., None]  # type: ignore
-
-        condition_embedding = self.condition_embedding * (1 - conditioned_int)
-
-        vec = vec + condition_embedding  # we add the condition embedding to the vector
 
         if self.params.guidance_embed:
             if guidance is None:
@@ -222,29 +191,24 @@ class Flux(nnx.Module):
                 )
             vec = vec + self.vector_in(guidance)
 
-        cond_processed = self.cond_in(cond)  # (B, F, H)
-        cond_null = repeat(self.condition_null.value, "1 h c -> b h c", b=obs.shape[0])  # type: ignore
-        cond = jnp.where(
-            conditioned[..., None, None], cond_processed, cond_null
-        )  # we replace the condition with a null vector if not conditioned
+        pe = self.pe_embedder(node_ids)
 
-        ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
-
-        pe = self.pe_embedder(ids)
-
-        for block in self.double_blocks.layers:
-            obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)
-
-        obs = jnp.concatenate((cond, obs), axis=1)
         for block in self.single_blocks.layers:
             obs = block(obs, vec=vec, pe=pe)
-        obs = obs[:, cond.shape[1] :, ...]
 
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
         return obs
 
 
-class FluxWrapper(ModelWrapper):
+# the wrapper is the same as the Simformer one, we reuse the class
+class Simformer2Wrapper(SimformerWrapper):
+    """
+    Module to handle conditioning in the Simformer2 model.
+
+    Args:
+        model (Simformer2): Simformer2 model instance.
+    """
+
     def __init__(self, model):
         super().__init__(model)
 
@@ -255,22 +219,20 @@ class FluxWrapper(ModelWrapper):
         obs_ids: Array,
         cond: Array,
         cond_ids: Array,
-        conditioned: bool | Array = True,
-        guidance: Array | None = None,
+        conditioned: bool = True,
     ) -> Array:
+        """
+        Perform inference based on conditioning.
 
-        obs = _expand_dims(obs)
-        # t = self._expand_time(t)
-        cond = _expand_dims(cond)
-        obs_ids = _expand_dims(obs_ids)
-        cond_ids = _expand_dims(cond_ids)
+        Args:
+            obs (Array): Observations.
+            obs_ids (Array): Observation identifiers.
+            cond (Array): Conditioning values.
+            cond_ids (Array): Conditioning identifiers.
+            timesteps (Array): Time steps.
+            conditioned (bool): Whether to perform conditioned inference.
 
-        return self.model(
-            obs=obs,
-            t=t,
-            cond=cond,
-            obs_ids=obs_ids,
-            cond_ids=cond_ids,
-            conditioned=conditioned,
-            guidance=guidance,
-        )
+        Returns:
+            Array: Model output.
+        """
+        return super().__call__(t, obs, obs_ids, cond, cond_ids, conditioned)
