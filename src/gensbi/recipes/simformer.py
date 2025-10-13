@@ -259,14 +259,20 @@ class SimformerFlowPipeline(AbstractPipeline):
         self.ema_model_wrapped = SimformerWrapper(self.ema_model)
         return
 
-    def sample(self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, return_intermediates=False,  time_grid=jnp.array([0., 1.])):
+    def sample(self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None):
         if use_ema:
             model = self.ema_model_wrapped
         else:
             model = self.model_wrapped
 
+        if time_grid is None:
+            time_grid = jnp.array([0.0, 1.0])
+            return_intermediates = False
+        else:
+            assert jnp.all(time_grid[:-1] <= time_grid[1:])
+            return_intermediates = True
+
         x_init = jax.random.normal(key, (nsamples, self.dim_theta))
-        # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_x, 1))
         cond = _expand_dims(x_o)
 
         solver = ODESolver(velocity_model=model)
@@ -286,6 +292,44 @@ class SimformerFlowPipeline(AbstractPipeline):
         )
         samples = sampler_(x_init)
         return samples
+    
+    def compute_unnorm_logprob(self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        if time_grid is None:
+            time_grid = jnp.array([1.0, 0.0])
+            return_intermediates = False
+        else:
+            # assert time grid is decreasing
+            assert jnp.all(time_grid[:-1] >= time_grid[1:])
+            return_intermediates = True
+
+        solver = ODESolver(velocity_model=model)
+
+        # x_1 = _expand_dims(x_1)
+        assert x_1.ndim == 2, "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
+        cond = _expand_dims(x_o)
+
+        p0_cond = dist.Independent(
+                dist.Normal(loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))),
+                reinterpreted_batch_ndims=1
+            )
+
+        model_extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+            "edge_mask": self.undirected_edge_mask,
+        }
+
+        logp_sampler = solver.get_unnormalized_logprob(time_grid=time_grid,method='Dopri5', step_size=step_size, log_p0=p0_cond.log_prob, model_extras=model_extras, return_intermediates=return_intermediates)
+
+        exact_log_p = logp_sampler(x_1)
+        p = jnp.exp(exact_log_p)
+        return p
 
 
 class SimformerDiffusionPipeline(AbstractPipeline):
@@ -414,7 +458,7 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         self.ema_model_wrapped = SimformerWrapper(self.ema_model)
         return
 
-    def sample(self, key, x_o, nsamples=10_000, nsteps=18, use_ema=True):
+    def sample(self, key, x_o, nsamples=10_000, nsteps=18, use_ema=True, return_intermediates=False):
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -435,6 +479,8 @@ class SimformerDiffusionPipeline(AbstractPipeline):
 
         x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
 
-        samples = solver.sample(key2, x_init, nsteps=nsteps, model_extras=model_extras)
+        samples = solver.sample(key2, x_init, nsteps=nsteps, model_extras=model_extras, return_intermediates=return_intermediates)
 
         return jnp.squeeze(samples, axis=-1)
+    
+
