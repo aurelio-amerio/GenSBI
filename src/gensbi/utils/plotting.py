@@ -108,15 +108,13 @@ def _plot_marginals_2d(
         joint_kws["extent"] = extent
 
     marginal_kws = dict(bins=gridsize, fill=True, color=hist_color, **histplot_kwargs)
-    if xlim is not None:
-        marginal_kws["binrange"] = xlim
-    if ylim is not None:
-        marginal_kws["binrange"] = ylim
 
     g = sns.jointplot(
         data=dataframe,
         x=labels[0],
         y=labels[1],
+        xlim=xlim,
+        ylim=ylim,
         kind="hex",
         height=6,
         gridsize=gridsize,
@@ -453,7 +451,7 @@ cmap_lcontour = sns.cubehelix_palette(
 )
 
 
-def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545]):
+def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545], display_labels=False):
     """
     Plot 2D levels on a given axis.
 
@@ -518,8 +516,9 @@ def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545]):
     #    These lines will clearly mark the boundaries of the enclosed areas.
     cnt = ax.contour(x, y, Z, levels=z_levels, colors=hist_color, linewidths=1.5)
 
-    labels = {z: f"{int(a*100)}%" for z, a in zip(z_levels, np.flip(area_levels))}
-    ax.clabel(cnt, levels=z_levels, inline=True, fontsize=10, fmt=labels)
+    if display_labels:
+        labels = {z: f"{int(a*100)}%" for z, a in zip(z_levels, np.flip(area_levels))}
+        ax.clabel(cnt, levels=z_levels, inline=True, fontsize=10, fmt=labels)
 
     return
 
@@ -531,6 +530,7 @@ def plot_2d_dist_contour(
     true_param=None,
     levels=[0.6827, 0.9545],
     cmap=cmap_lcontour,
+    display_labels=False
 ):
     """
     Plot a 2D contour plot of a distribution.
@@ -561,7 +561,7 @@ def plot_2d_dist_contour(
     ax.contourf(x, y, Z, levels=20, cmap=cmap, vmin=0)
 
     if levels is not None:
-        plot_2d_levels(x, y, Z, ax, levels=levels)
+        plot_2d_levels(x, y, Z, ax, levels=levels, display_labels=display_labels)
 
     if true_param is not None:
         ax.scatter(
