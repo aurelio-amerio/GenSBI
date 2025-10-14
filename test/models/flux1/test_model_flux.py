@@ -19,7 +19,6 @@ def test_flux_params_instantiation():
         vec_in_dim=None,
         context_in_dim=1,
         mlp_ratio=4,
-        qkv_multiplier=1,
         num_heads=4,
         depth=1,
         depth_single_blocks=2,
@@ -35,10 +34,9 @@ def test_flux_params_instantiation():
     )
     hidden_size = int(
         jnp.sum(jnp.asarray(params.axes_dim, dtype=jnp.int32))
-        * params.qkv_multiplier
         * params.num_heads
     )
-    qkv_features = params.hidden_size // params.qkv_multiplier
+    qkv_features = params.hidden_size
 
     assert params.hidden_size == hidden_size
     assert params.qkv_features == qkv_features
@@ -49,7 +47,6 @@ def init_test_model():
         vec_in_dim=None,
         context_in_dim=1,
         mlp_ratio=4,
-        qkv_multiplier=1,
         num_heads=4,
         depth=1,
         depth_single_blocks=2,

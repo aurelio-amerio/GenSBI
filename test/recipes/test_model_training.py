@@ -80,7 +80,6 @@ params_flux = Flux1Params(
     vec_in_dim=None,
     context_in_dim=1,
     mlp_ratio=1,
-    qkv_multiplier=1,
     num_heads=2,
     depth=2,
     depth_single_blocks=2,

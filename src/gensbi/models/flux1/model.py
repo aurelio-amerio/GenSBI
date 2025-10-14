@@ -42,8 +42,6 @@ class Flux1Params:
         obs_dim (int): Observation dimension.
         cond_dim (int): Condition dimension.
         theta (int): Scaling factor for positional encoding.
-        guidance_embed (bool): Whether to use guidance embedding.
-        qkv_multiplier (int): Multiplier for QKV features.
         param_dtype (DTypeLike): Data type for model parameters.
 
     """
@@ -62,16 +60,14 @@ class Flux1Params:
     cond_dim: int  # condition dimension
     theta: int = 10_000
     guidance_embed: bool = False
-    qkv_multiplier: int = 1
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
         self.hidden_size = int(
             jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32))
-            * self.qkv_multiplier
             * self.num_heads
         )
-        self.qkv_features = self.hidden_size // self.qkv_multiplier
+        self.qkv_features = self.hidden_size
 
 
 
