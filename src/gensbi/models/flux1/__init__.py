@@ -13,13 +13,13 @@ This package provides the Flux1 transformer-based model and related loss functio
 # If you use this package, please consider citing the original jflux library and the FLUX.1 Kontext paper.
 
 
-from .model import Flux, FluxParams, FluxWrapper
-from .loss import FluxCFMLoss, FluxDiffLoss
+from .model import Flux1, Flux1Params, Flux1Wrapper
+from .loss import Flux1CFMLoss, Flux1DiffLoss
 
 __all__ = [
-    "Flux",
-    "FluxWrapper",
-    "FluxParams",
-    "FluxCFMLoss",
-    "FluxDiffLoss",
+    "Flux1",
+    "Flux1Wrapper",
+    "Flux1Params",
+    "Flux1CFMLoss",
+    "Flux1DiffLoss",
 ]

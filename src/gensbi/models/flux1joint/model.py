@@ -27,8 +27,8 @@ from typing import Union, Callable, Optional
 
 
 @dataclass
-class Simformer2Params:
-    """Parameters for the Simformer2 model.
+class Flux1JointParams:
+    """Parameters for the Flux1Joint model.
 
     Args:
         in_channels (int): Number of input channels.
@@ -65,24 +65,21 @@ class Simformer2Params:
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-
         self.input_token_dim = np.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32))*self.num_heads
         self.condition_token_dim = np.sum(jnp.asarray(self.condition_dim, dtype=jnp.int32))*self.num_heads
         self.hidden_size = int(self.input_token_dim + self.condition_token_dim)
-
         self.qkv_features = self.hidden_size
 
 
-
-class Simformer2(nnx.Module):
+class Flux1Joint(nnx.Module):
     """
-    Simformer model for joint density estimation.
+    Flux1Joint model for joint density estimation.
 
     Args:
-        params (Simformer2Params): Parameters for the Simformer2 model.
+        params (Flux1JointParams): Parameters for the Flux1Joint model.
     """
 
-    def __init__(self, params: Simformer2Params):
+    def __init__(self, params: Flux1JointParams):
         self.params = params
         self.in_channels = params.in_channels
         self.out_channels = params.in_channels
@@ -126,7 +123,6 @@ class Simformer2(nnx.Module):
             else Identity()
         )
 
-        # need to check this
         self.condition_embedding = nnx.Param(
             0.01 * jnp.ones((1, 1, self.params.condition_token_dim), dtype=params.param_dtype)
         )
@@ -160,58 +156,43 @@ class Simformer2(nnx.Module):
         node_ids: Array,
         condition_mask: Array,
         guidance: Array | None = None,
-        edge_mask: Optional[Array] = None,  # for compatibility, does nothing
+        edge_mask: Optional[Array] = None,
     ) -> Array:
-
         batch_size, seq_len, _ = obs.shape
-
         obs = jnp.asarray(obs, dtype=self.params.param_dtype)
         t = jnp.asarray(t, dtype=self.params.param_dtype)
-
         if obs.ndim != 3:
             raise ValueError(
                 "Input obs tensor must have 3 dimensions, got {}".format(obs.ndim)
             )
-
-        # running on sequences obs
         obs = self.obs_in(obs)
-
         condition_mask = condition_mask.astype(jnp.bool_).reshape(-1, seq_len, 1)
         condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
         condition_embedding = self.condition_embedding * condition_mask
-
-        obs = jnp.concatenate([obs, condition_embedding], axis=-1) # add the condition information to the token dimension
-
+        obs = jnp.concatenate([obs, condition_embedding], axis=-1)
         vec = self.time_in(timestep_embedding(t, 256))
-
         if self.params.guidance_embed:
             if guidance is None:
                 raise ValueError(
                     "Didn't get guidance strength for guidance distilled model."
                 )
             vec = vec + self.vector_in(guidance)
-
         pe = self.pe_embedder(node_ids)
-
         for block in self.single_blocks.layers:
             obs = block(obs, vec=vec, pe=pe)
-
-        obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
+        obs = self.final_layer(obs, vec)
         return obs
 
-
 # the wrapper is the same as the Simformer one, we reuse the class
-class Simformer2Wrapper(SimformerWrapper):
+class Flux1JointWrapper(SimformerWrapper):
     """
-    Module to handle conditioning in the Simformer2 model.
+    Module to handle conditioning in the Flux1Joint model.
 
     Args:
-        model (Simformer2): Simformer2 model instance.
+        model (Flux1Joint): Flux1Joint model instance.
     """
-
     def __init__(self, model):
         super().__init__(model)
-
     def __call__(
         self,
         t: Array,
@@ -221,18 +202,4 @@ class Simformer2Wrapper(SimformerWrapper):
         cond_ids: Array,
         conditioned: bool = True,
     ) -> Array:
-        """
-        Perform inference based on conditioning.
-
-        Args:
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            cond (Array): Conditioning values.
-            cond_ids (Array): Conditioning identifiers.
-            timesteps (Array): Time steps.
-            conditioned (bool): Whether to perform conditioned inference.
-
-        Returns:
-            Array: Model output.
-        """
         return super().__call__(t, obs, obs_ids, cond, cond_ids, conditioned)

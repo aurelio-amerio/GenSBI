@@ -6,7 +6,7 @@ Example:
         import itertools
         import jax
         from jax import numpy as jnp
-        from gensbi.recipes import FluxPipeline
+        from gensbi.recipes import Flux1Pipeline
 
         # Define your training and validation datasets.
         train_data = jax.random.rand((1024, 4)) # your training dataset
@@ -24,7 +24,7 @@ Example:
         # Define the model
         dim_theta = 2  # Dimension of the parameter space
         dim_x = 2      # Dimension of the observation space
-        pipeline = FluxPipeline(train_dataset, val_dataset, dim_theta, dim_x)
+        pipeline = Flux1Pipeline(train_dataset, val_dataset, dim_theta, dim_x)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
@@ -54,7 +54,7 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
 
-from gensbi.models import Flux, FluxParams, FluxCFMLoss, FluxWrapper, FluxDiffLoss
+from gensbi.models import Flux1, Flux1Params, Flux1CFMLoss, Flux1Wrapper, Flux1DiffLoss
 
 from einops import repeat
 
@@ -65,7 +65,7 @@ import os
 from gensbi.recipes.pipeline import AbstractPipeline
 
 
-class FluxFlowPipeline(AbstractPipeline):
+class Flux1FlowPipeline(AbstractPipeline):
     def __init__(
         self,
         train_dataset,
@@ -88,8 +88,8 @@ class FluxFlowPipeline(AbstractPipeline):
             Dimension of the parameter space.
         dim_x : int
             Dimension of the observation space.
-        params : FluxParams, optional
-            Parameters for the Flux model. If None, default parameters are used.
+        params : Flux1Params, optional
+            Parameters for the Flux1 model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
@@ -105,7 +105,7 @@ class FluxFlowPipeline(AbstractPipeline):
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
-        self.loss_fn = FluxCFMLoss(self.path)
+        self.loss_fn = Flux1CFMLoss(self.path)
 
         self.p0_dist_model = dist.Independent(
             dist.Normal(
@@ -116,16 +116,16 @@ class FluxFlowPipeline(AbstractPipeline):
 
     def _make_model(self):
         """
-        Create and return the Flux model to be trained.
+        Create and return the Flux1 model to be trained.
         """
-        model = Flux(self.params)
+        model = Flux1(self.params)
         return model
 
     def _get_default_params(self):
         """
-        Return default parameters for the Flux model.
+        Return default parameters for the Flux1 model.
         """
-        params = FluxParams(
+        params = Flux1Params(
             in_channels=1,
             vec_in_dim=None,
             context_in_dim=1,
@@ -167,8 +167,8 @@ class FluxFlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = FluxWrapper(self.model)
-        self.ema_model_wrapped = FluxWrapper(self.ema_model)
+        self.model_wrapped = Flux1Wrapper(self.model)
+        self.ema_model_wrapped = Flux1Wrapper(self.ema_model)
         return
 
     def sample(self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True, return_intermediates=False, time_grid=jnp.array([0., 1.])):
@@ -199,7 +199,7 @@ class FluxFlowPipeline(AbstractPipeline):
         return samples
 
 
-class FluxDiffusionPipeline(AbstractPipeline):
+class Flux1DiffusionPipeline(AbstractPipeline):
     def __init__(
         self,
         train_dataset,
@@ -222,8 +222,8 @@ class FluxDiffusionPipeline(AbstractPipeline):
             Dimension of the parameter space.
         dim_x : int
             Dimension of the observation space.
-        params : FluxParams, optional
-            Parameters for the Flux model. If None, default parameters are used.
+        params : Flux1Params, optional
+            Parameters for the Flux1 model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
@@ -242,20 +242,20 @@ class FluxDiffusionPipeline(AbstractPipeline):
             )
         )
 
-        self.loss_fn = FluxDiffLoss(self.path)
+        self.loss_fn = Flux1DiffLoss(self.path)
 
     def _make_model(self):
         """
-        Create and return the Flux model to be trained.
+        Create and return the Flux1 model to be trained.
         """
-        model = Flux(self.params)
+        model = Flux1(self.params)
         return model
 
     def _get_default_params(self):
         """
-        Return default parameters for the Flux model.
+        Return default parameters for the Flux1 model.
         """
-        params = FluxParams(
+        params = Flux1Params(
             in_channels=1,
             vec_in_dim=None,
             context_in_dim=1,
@@ -310,8 +310,8 @@ class FluxDiffusionPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = FluxWrapper(self.model)
-        self.ema_model_wrapped = FluxWrapper(self.ema_model)
+        self.model_wrapped = Flux1Wrapper(self.model)
+        self.ema_model_wrapped = Flux1Wrapper(self.ema_model)
         return
 
     def sample(self, rng, x_o, nsamples=10_000, nsteps=18, use_ema=True):

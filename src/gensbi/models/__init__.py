@@ -1,4 +1,4 @@
-from .flux1 import FluxParams, Flux, FluxCFMLoss, FluxWrapper, FluxDiffLoss
+from .flux1 import Flux1Params, Flux1, Flux1CFMLoss, Flux1Wrapper, Flux1DiffLoss
 from .simformer import (
     Simformer,
     SimformerParams,
@@ -7,20 +7,20 @@ from .simformer import (
     SimformerDiffLoss,
 )
 
-from .simformer2 import (
-    Simformer2,
-    Simformer2Params,
-    Simformer2Wrapper,
-    Simformer2CFMLoss,
-    Simformer2DiffLoss,
+from .flux1joint import (
+    Flux1Joint,
+    Flux1JointParams,
+    Flux1JointWrapper,
+    Flux1JointCFMLoss,
+    Flux1JointDiffLoss,
 )   
 
 __all__ = [
-    "Flux",
-    "FluxParams",
-    "FluxCFMLoss",
-    "FluxDiffLoss",
-    "FluxWrapper",
+    "Flux1",
+    "Flux1Params",
+    "Flux1CFMLoss",
+    "Flux1DiffLoss",
+    "Flux1Wrapper",
 
     "Simformer",
     "SimformerParams",
@@ -28,11 +28,11 @@ __all__ = [
     "SimformerDiffLoss",
     "SimformerWrapper",
 
-    "Simformer2",
-    "Simformer2Params",
-    "Simformer2Wrapper",
-    "Simformer2CFMLoss",
-    "Simformer2DiffLoss",
+    "Flux1Joint",
+    "Flux1JointParams",
+    "Flux1JointWrapper",
+    "Flux1JointCFMLoss",
+    "Flux1JointDiffLoss",
 ]
 
 # coverage 79% still need to work on this

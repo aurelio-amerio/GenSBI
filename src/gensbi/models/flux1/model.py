@@ -25,8 +25,8 @@ from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 # TODO enforce rope usage, remove unused code
 @dataclass
-class FluxParams:
-    """Parameters for the Flux model.
+class Flux1Params:
+    """Parameters for the Flux1 model.
 
     Args:
         in_channels (int): Number of input channels.
@@ -75,12 +75,12 @@ class FluxParams:
 
 
 
-class Flux(nnx.Module):
+class Flux1(nnx.Module):
     """
     Transformer model for flow matching on sequences.
     """
 
-    def __init__(self, params: FluxParams):
+    def __init__(self, params: Flux1Params):
         self.params = params
         self.in_channels = params.in_channels
         self.out_channels = params.in_channels
@@ -244,7 +244,7 @@ class Flux(nnx.Module):
         return obs
 
 
-class FluxWrapper(ModelWrapper):
+class Flux1Wrapper(ModelWrapper):
     def __init__(self, model):
         super().__init__(model)
 

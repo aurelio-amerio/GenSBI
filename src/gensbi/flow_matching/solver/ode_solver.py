@@ -35,7 +35,7 @@ class ODESolver(Solver):
 
             vf_model = DummyModel() # replace with your actual velocity field model, Simformer or Flux1
 
-            model_wrapped = ModelWrapper(vf_model) # you should use the appropriate ModelWrapper for your model, either FluxWrapper or SimformerWrapper, or a custom subclass of ModelWrapper
+            model_wrapped = ModelWrapper(vf_model) # you should use the appropriate ModelWrapper for your model, either Flux1Wrapper or SimformerWrapper, or a custom subclass of ModelWrapper
             solver = ODESolver(velocity_model=model_wrapped)
             x_init = jnp.zeros((10, 2))
             time_grid = jnp.linspace(0, 1, 5)
