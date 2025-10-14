@@ -45,7 +45,6 @@ class Flux1JointParams:
         cond_dim (int): Condition dimension.
         theta (int): Scaling factor for positional encoding.
         guidance_embed (bool): Whether to use guidance embedding.
-        qkv_multiplier (int): Multiplier for QKV features.
         param_dtype (DTypeLike): Data type for model parameters.
 
     """
