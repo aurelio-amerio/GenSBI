@@ -3,14 +3,14 @@ import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
-from gensbi.models.flux1.loss import FluxCFMLoss
+from gensbi.models.flux1.loss import Flux1CFMLoss
 
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.path import AffineProbPath
 
 def test_flux_cfmloss_runs():
     path = AffineProbPath(scheduler=CondOTScheduler())
-    loss = FluxCFMLoss(path)
+    loss = Flux1CFMLoss(path)
     def vf(x, obs_ids, cond, cond_ids, t, conditioned=True):
         return x + 1
     x0 = jnp.ones((2, 2))

@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from flax import nnx
 import pytest
 
-from gensbi.models.flux1.model import Flux, FluxParams, FluxWrapper
+from gensbi.models.flux1.model import Flux1, Flux1Params, Flux1Wrapper
 
 
 def get_rngs():
@@ -14,7 +14,7 @@ def get_rngs():
 
 
 def test_flux_params_instantiation():
-    params = FluxParams(
+    params = Flux1Params(
         in_channels=1,
         vec_in_dim=None,
         context_in_dim=1,
@@ -44,7 +44,7 @@ def test_flux_params_instantiation():
     assert params.qkv_features == qkv_features
 
 def init_test_model():
-    params = FluxParams(
+    params = Flux1Params(
         in_channels=1,
         vec_in_dim=None,
         context_in_dim=1,
@@ -63,7 +63,7 @@ def init_test_model():
         rngs=get_rngs(),
         param_dtype=jnp.float32,
     )
-    model = Flux(params)
+    model = Flux1(params)
     return model
 
 
@@ -91,7 +91,7 @@ def test_flux_forward_shape_embed_rope():
 def test_flux_wrapper():
 
     model = init_test_model()
-    wrapper = FluxWrapper(model)
+    wrapper = Flux1Wrapper(model)
 
     obs = jnp.ones((3, 2, 1))
     cond = jnp.ones((3, 2, 1))

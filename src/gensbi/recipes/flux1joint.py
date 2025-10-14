@@ -57,11 +57,11 @@ from gensbi.diffusion.solver import SDESolver
 from einops import repeat
 
 from gensbi.models import (
-    Simformer2,
-    Simformer2Params,
-    Simformer2CFMLoss,
-    Simformer2Wrapper,
-    Simformer2DiffLoss,
+    Flux1Joint,
+    Flux1JointParams,
+    Flux1JointCFMLoss,
+    Flux1JointWrapper,
+    Flux1JointDiffLoss,
 )
 
 import numpyro.distributions as dist
@@ -148,7 +148,7 @@ def sample_strutured_conditional_mask(
     return condition_mask[..., None]
 
 
-class Simformer2FlowPipeline(AbstractPipeline):
+class Flux1JointFlowPipeline(AbstractPipeline):
     def __init__(
         self,
         train_dataset,
@@ -187,7 +187,7 @@ class Simformer2FlowPipeline(AbstractPipeline):
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
-        self.loss_fn = Simformer2CFMLoss(self.path)
+        self.loss_fn = Flux1JointCFMLoss(self.path)
 
         self.p0_dist_model = dist.Independent(
             dist.Normal(
@@ -200,7 +200,7 @@ class Simformer2FlowPipeline(AbstractPipeline):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Simformer2(self.params)
+        model = Flux1Joint(self.params)
         return model
 
     def _get_default_params(self):
@@ -208,7 +208,7 @@ class Simformer2FlowPipeline(AbstractPipeline):
         Return default parameters for the Simformer model.
         """
         # TODO
-        params = Simformer2Params(
+        params = Flux1JointParams(
             in_channels = 1,
             vec_in_dim = None,
             mlp_ratio = 3.0,
@@ -258,8 +258,8 @@ class Simformer2FlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = Simformer2Wrapper(self.model)
-        self.ema_model_wrapped = Simformer2Wrapper(self.ema_model)
+        self.model_wrapped = Flux1JointWrapper(self.model)
+        self.ema_model_wrapped = Flux1JointWrapper(self.ema_model)
         return
 
     def sample(self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, return_intermediates=False,  time_grid=jnp.array([0., 1.])):
@@ -290,7 +290,7 @@ class Simformer2FlowPipeline(AbstractPipeline):
         return samples
 
 
-class Simformer2DiffusionPipeline(AbstractPipeline):
+class Flux1JointDiffusionPipeline(AbstractPipeline):
     def __init__(
         self,
         train_dataset,
@@ -334,21 +334,21 @@ class Simformer2DiffusionPipeline(AbstractPipeline):
             )
         )
 
-        self.loss_fn = Simformer2DiffLoss(self.path)
+        self.loss_fn = Flux1JointDiffLoss(self.path)
 
 
     def _make_model(self):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Simformer2(self.params)
+        model = Flux1Joint(self.params)
         return model
 
     def _get_default_params(self):
         """
         Return default parameters for the Simformer model.
         """
-        params = Simformer2Params(
+        params = Flux1JointParams(
             in_channels = 1,
             vec_in_dim = None,
             mlp_ratio = 3.0,
@@ -413,8 +413,8 @@ class Simformer2DiffusionPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = Simformer2Wrapper(self.model)
-        self.ema_model_wrapped = Simformer2Wrapper(self.ema_model)
+        self.model_wrapped = Flux1JointWrapper(self.model)
+        self.ema_model_wrapped = Flux1JointWrapper(self.ema_model)
         return
 
     def sample(self, key, x_o, nsamples=10_000, nsteps=18, use_ema=True):

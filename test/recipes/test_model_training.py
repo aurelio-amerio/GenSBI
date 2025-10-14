@@ -13,14 +13,14 @@ import pytest
 
 import tempfile
 
-from gensbi.models import SimformerParams, Simformer2Params, FluxParams
+from gensbi.models import SimformerParams, Flux1JointParams, Flux1Params
 from gensbi.recipes import (
     SimformerFlowPipeline,
     SimformerDiffusionPipeline,
-    Simformer2FlowPipeline,
-    Simformer2DiffusionPipeline,
-    FluxFlowPipeline,
-    FluxDiffusionPipeline,
+    Flux1JointFlowPipeline,
+    Flux1JointDiffusionPipeline,
+    Flux1FlowPipeline,
+    Flux1DiffusionPipeline,
 )
 
 import itertools
@@ -59,7 +59,7 @@ params_simf = SimformerParams(
     num_hidden_layers=1,
 )
 
-params_simf2 = Simformer2Params(
+params_simf2 = Flux1JointParams(
     in_channels=1,
     vec_in_dim=None,
     mlp_ratio=3.0,
@@ -75,7 +75,7 @@ params_simf2 = Simformer2Params(
     param_dtype=jnp.float32,
 )
 
-params_flux = FluxParams(
+params_flux = Flux1Params(
     in_channels=1,
     vec_in_dim=None,
     context_in_dim=1,
@@ -103,10 +103,10 @@ params_flux = FluxParams(
     [
         (SimformerFlowPipeline, params_simf),
         (SimformerDiffusionPipeline, params_simf),
-        (Simformer2FlowPipeline, params_simf2),
-        (Simformer2DiffusionPipeline, params_simf2),
-        (FluxFlowPipeline, params_flux),
-        (FluxDiffusionPipeline, params_flux),
+        (Flux1JointFlowPipeline, params_simf2),
+        (Flux1JointDiffusionPipeline, params_simf2),
+        (Flux1FlowPipeline, params_flux),
+        (Flux1DiffusionPipeline, params_flux),
     ],
 )
 def test_model(pipeline_cls, params):
