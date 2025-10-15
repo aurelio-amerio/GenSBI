@@ -21,6 +21,8 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 - **Modular and Extensible**: A clean, well-structured codebase that is easy to understand, modify, and extend for your own research.
 
 ## Examples
+<img src="img/animated_plot_samples_simformer.gif" alt="two-moons posterior sampling" width="500">
+
 
 Examples for this library are available separately in the [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository.
 
