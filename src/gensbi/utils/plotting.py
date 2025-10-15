@@ -340,7 +340,7 @@ def _plot_marginals_seaborn(
 
     grid_kw = {}
     if ndim == 2:
-        grid_kw = {'width_ratios': [3, 1], 'height_ratios': [1, 3]}
+        grid_kw = {'width_ratios': [6, 1], 'height_ratios': [1, 6]}
 
     fig, axes = plt.subplots(
         ndim, ndim, figsize=(2.5 * ndim, 2.5 * ndim), gridspec_kw=grid_kw
@@ -383,6 +383,7 @@ def _plot_marginals_seaborn(
             if i == ndim - 1: ax.set_xlabel(labels[j], fontsize=fontsize)
             if j == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
 
+    # diagonal: histograms
     for i in np.arange(ndim):
         ax = axes[i, i]
         x_data = data[:, i]
@@ -410,6 +411,8 @@ def _plot_marginals_seaborn(
                 ax.axhline(true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5)
             if axis_ranges[i]: ax.set_ylim(axis_ranges[i])
             ax.autoscale(enable=True, axis="x", tight=False)
+            ax.set_yticklabels([])
+            ax.set_ylabel("")
         else:
             if true_param is not None:
                 ax.axvline(true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5)
@@ -422,7 +425,20 @@ def _plot_marginals_seaborn(
             if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
             if i == ndim - 1: ax.set_xlabel(labels[i], fontsize=fontsize)
     
-    fig.tight_layout()
+    if ndim == 2:
+
+        y_ticks = axes[0,0].get_yticks()
+        y_ticks = y_ticks[y_ticks > 0]
+        axes[0,0].set_yticks(y_ticks)
+
+        x_ticks = axes[1,1].get_xticks()
+        x_ticks = x_ticks[x_ticks > 0]
+        axes[1,1].set_xticks(x_ticks)
+
+        fig.subplots_adjust(hspace=0.03, wspace=0.03, left=0.12, right=0.98, top=0.98, bottom=0.12)
+
+    else:
+        plt.tight_layout()
     return fig, axes
 
 
@@ -679,5 +695,6 @@ def plot_2d_dist_contour(
 
     # Set aspect ratio to equal for better visualization
     ax.set_aspect("equal", adjustable="box")
+    fig.tight_layout()
 
     return fig, ax
