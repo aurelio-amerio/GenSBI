@@ -13,8 +13,7 @@ import pytest
 from gensbi.utils.plotting import (
     _parse_range,
     plot_trajectories,
-    _plot_marginals_2d,
-    _plot_marginals_nd,
+    _plot_marginals_seaborn,
     plot_marginals,
     plot_2d_levels,
     plot_2d_dist_contour,
@@ -59,15 +58,12 @@ def test_plot_marginals_nd(ndim):
     true_param = np.random.normal(size=(ndim,))
     # Should not raise
 
-    _plot_marginals_nd(data)
+    plot_marginals(
+        data,
+        backend="seaborn",
+    )
 
-    _plot_marginals_nd(data, true_param=true_param)
-
-    if ndim == 2:
-
-        _plot_marginals_2d(data)
-
-        _plot_marginals_2d(data, true_param=true_param)
+    plot_marginals(data, backend="seaborn", true_param=true_param)
 
     plot_marginals(
         data,
@@ -94,13 +90,17 @@ def test_plot_marginals_with_range(ndim):
     data = np.random.normal(size=(100, ndim))
     ranges = [(-2, 2)] * ndim
 
-    _plot_marginals_nd(data, range=ranges)
+    plot_marginals(
+        data,
+        range=ranges,
+        backend="seaborn",
+    )
 
-    if ndim == 2:
-
-        _plot_marginals_2d(data, range=ranges)
-
-    _plot_marginals_nd(data, range=ranges)
+    plot_marginals(
+        data,
+        range=ranges,
+        backend="corner",
+    )
 
     plt.close("all")
 
@@ -109,9 +109,7 @@ def test_plot_marginals_labels():
     data = np.random.normal(size=(100, 3))
     labels = ["A", "B", "C"]
 
-    _plot_marginals_nd(data, labels=labels)
-
-    _plot_marginals_2d(data[:, :2], labels=labels[:2])
+    plot_marginals(data, backend="seaborn", labels=labels)
 
     plot_marginals(data, backend="corner", labels=labels)
 
@@ -122,20 +120,13 @@ def test_plot_marginals_invalid_range():
     data = np.random.normal(size=(100, 2))
     with pytest.raises(ValueError) as e:
 
-        _plot_marginals_2d(data, range=[(-2, 2)])
+        plot_marginals(data, backend="seaborn", range=[(-2, 2)])
 
     assert (
         str(e.value)
         == "Range must be None, a tuple (min, max), or a sequence of such tuples, one per axis"
     )
-    with pytest.raises(ValueError) as e:
 
-        _plot_marginals_nd(data, range=[(-2, 2)])
-
-    assert (
-        str(e.value)
-        == "Range must be None, a tuple (min, max), or a sequence of such tuples, one per axis"
-    )
     with pytest.raises(ValueError) as e:
 
         plot_marginals(data, backend="corner", range=[(-2, 2)])
