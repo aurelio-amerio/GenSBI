@@ -31,12 +31,16 @@ download-examples:
 	curl -L -o notebooks/flow_matching_2d_unconditional.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/flow_matching_2d_unconditional.ipynb
 
-	curl -L -o notebooks/two_moons_simformer.ipynb \
-		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/two_moons_simformer.ipynb
-	curl -L -o notebooks/two_moons_flux.ipynb \
-		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/two_moons_flux.ipynb
-	curl -L -o notebooks/gaussian_linear_simformer.ipynb \
-		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gaussian_linear/gaussian_linear_simformer.ipynb
+	curl -L -o notebooks/two_moons_flow_flux.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_flux/two_moons_flow_flux.ipynb
+	curl -L -o notebooks/two_moons_flow_simformer.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/two_moons_flow_simformer.ipynb
+		
+	curl -L -o notebooks/gaussian_linear_flux1joint.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gaussian_linear/flow_flux1joint/gaussian_linear_flow_flux1joint.ipynb
+
+	curl -L -o notebooks/slcp_flow_simformer.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb
 
 	@echo "Done."
 
