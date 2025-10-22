@@ -1,7 +1,6 @@
-
 strategy:
-  method: "diffusion"
-  model: "flux"
+  method: "flow"
+  model: "simformer"
 
 optimizer:
   patience: 10
@@ -13,18 +12,15 @@ optimizer:
   min_lr: 1.0e-8
 
 model:
-  in_channels: 1
-  vec_in_dim: null
-  context_in_dim: 1
-  mlp_ratio: 4
-  num_heads: 4
-  depth: 8
-  depth_single_blocks: 16
-  axes_dim: [10]
-  qkv_bias: true
-  theta: -1
-  params_dtype: "float32"
-
+  dim_value: 40
+  dim_id: 40
+  dim_condition: 10
+  fourier_features: 128
+  num_heads: 2
+  num_layers: 2
+  widening_factor: 2
+  qkv_features: 10
+  num_hidden_layers: 1
 
 training:
   batch_size: 4096
@@ -33,6 +29,6 @@ training:
   multistep: 1
   early_stopping: true
   val_every: 100
-  experiment_id: 1
+  experiment_id: 3
   restore_model: true
   train_model: false
