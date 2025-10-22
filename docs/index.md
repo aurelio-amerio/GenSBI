@@ -27,8 +27,16 @@ You can also explore the [Examples](examples.md) page for practical demonstratio
 You can find the API documentation in the [API Documentation](api/gensbi/index.md) section.
 
 ## Examples
-<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
-<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
+<table align="center" style="width:95%;">
+  <tr>
+    <td align="center">
+      <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
+    </td>
+    <td align="center">
+      <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
+    </td>
+  </tr>
+</table>
 
 
 
