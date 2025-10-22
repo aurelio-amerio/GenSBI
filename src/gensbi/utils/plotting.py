@@ -424,7 +424,12 @@ def _plot_marginals_seaborn(
         if ndim > 2:
             # if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
             if i == ndim - 1: ax.set_xlabel(labels[i], fontsize=fontsize)
-        if i != ndim - 1 and not is_rotated:
+        if i != ndim - 1:
+            ax.set_ylabel("")
+            ax.set_yticklabels([])
+            ax.set_xlabel("")
+            ax.set_xticklabels([])
+        if ndim == 2:
             ax.set_ylabel("")
             ax.set_yticklabels([])
             ax.set_xlabel("")

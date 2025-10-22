@@ -21,7 +21,10 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 - **Modular and Extensible**: A clean, well-structured codebase that is easy to understand, modify, and extend for your own research.
 
 ## Examples
-<img src="img/animated_plot_samples_simformer.gif" alt="two-moons posterior sampling" width="500">
+<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
+<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
+
+
 
 
 Examples for this library are available separately in the [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository.
@@ -37,7 +40,15 @@ Demonstrates how to use diffusion models in 2D for unconditional density estimat
 
 **Conditional Density Estimation:**
 
-- `two_moons`: \[WIP\] Showcases how to use training pipelines for the benchmark two-moons dataset using Flux1 and Simformer models.
+- `two_moons_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/two_moons_flow_simformer.ipynb) <br>
+Uses the Simformer model for posterior density estimation on the two-moons benchmark.
+- `two_moons_flow_flux.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_flux/two_moons_flow_flux.ipynb) <br>
+Uses the Flux1 model for posterior density estimation on the two-moons benchmark.
+- `gaussian_linear_flow_flux1joint.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/gaussian_linear/flow_flux1joint/gaussian_linear_flow_flux1joint.ipynb) <br>
+Uses the Flux1Joint model for posterior density estimation on the Gaussian Linear benchmark.
+- `slcp_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb) <br>
+Uses the Simformer model for posterior density estimation on the SLCP benchmark.    
+
 
 > [!NOTE]
 > A full list of the currently available examples is available at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
