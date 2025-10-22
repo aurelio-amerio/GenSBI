@@ -38,13 +38,15 @@ Example:
 
 import jax
 import jax.numpy as jnp
-from flax import nnx
+from flax import config, nnx
 import optax
 from optax.contrib import reduce_on_plateau
 from numpyro import distributions as dist
 from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
+
+import yaml
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
@@ -69,6 +71,100 @@ from gensbi.utils.model_wrapping import _expand_dims
 import os
 
 from gensbi.recipes.pipeline import AbstractPipeline, ModelEMA
+
+
+def parse_simformer_params(config_path: str):
+    """
+    Parse a Simformer configuration file.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    config : dict
+        Parsed configuration dictionary.
+
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    model_params = config.get("model", {})
+
+    params_dict = dict(
+        dim_value=model_params.get("dim_value", 40),
+        dim_id=model_params.get("dim_id", 40),
+        dim_condition=model_params.get("dim_condition", 10),
+        fourier_features=model_params.get("fourier_features", 128),
+        num_heads=model_params.get("num_heads", 4),
+        num_layers=model_params.get("num_layers", 8),
+        widening_factor=model_params.get("widening_factor", 3),
+        qkv_features=model_params.get("qkv_features", 90),
+        num_hidden_layers=model_params.get("num_hidden_layers", 1),
+    )
+
+    return params_dict
+
+
+def parse_training_config(config_path: str):
+    """
+    Parse a training configuration file.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    config : dict
+        Parsed configuration dictionary.
+
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    # Training parameters
+    train_params = config.get("training", {})
+    multistep = train_params.get("multistep", 1)
+    experiment_id = train_params.get("experiment_id", 1)
+    early_stopping = train_params.get("early_stopping", True)
+    nsteps = train_params.get("nsteps", 30000) * multistep
+    val_every = train_params.get("val_every", 100) * multistep
+
+    # Optimizer parameters
+    opt_params = config.get("optimizer", {})
+    PATIENCE = opt_params.get("patience", 10)
+    COOLDOWN = opt_params.get("cooldown", 2)
+    FACTOR = opt_params.get("factor", 0.5)
+    ACCUMULATION_SIZE = opt_params.get("accumulation_size", 100) * multistep
+    RTOL = opt_params.get("rtol", 1e-4)
+    MAX_LR = opt_params.get("max_lr", 1e-3)
+    MIN_LR = opt_params.get("min_lr", 0.0)
+    MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
+
+    ema_decay = opt_params.get("ema_decay", 0.999)
+
+    training_config = {}
+    # overwrite the defaults with the config file values
+    training_config["num_steps"] = nsteps
+    training_config["ema_decay"] = ema_decay
+    training_config["patience"] = PATIENCE
+    training_config["cooldown"] = COOLDOWN
+    training_config["factor"] = FACTOR
+    training_config["accumulation_size"] = ACCUMULATION_SIZE
+    training_config["rtol"] = RTOL
+    training_config["max_lr"] = MAX_LR
+    training_config["min_lr"] = MIN_LR
+    training_config["min_scale"] = MIN_SCALE
+    training_config["val_every"] = val_every
+    training_config["early_stopping"] = early_stopping
+    training_config["experiment_id"] = experiment_id
+    training_config["multistep"] = multistep
+
+    return training_config
 
 
 def sample_strutured_conditional_mask(
@@ -194,6 +290,71 @@ class SimformerFlowPipeline(AbstractPipeline):
             reinterpreted_batch_ndims=1,
         )
 
+    @classmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_theta: int,
+        dim_x: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
+
+        """
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        # methodology
+        strategy = config.get("strategy", {})
+        method = strategy.get("method")
+        model_type = strategy.get("model")
+
+        assert (
+            method == "flow"
+        ), f"Method {method} not supported in SimformerFlowPipeline."
+        assert (
+            model_type == "simformer"
+        ), f"Model type {model_type} not supported in SimformerFlowPipeline."
+
+        # Model parameters from config
+        dim_joint = dim_theta + dim_x
+
+        params_dict = parse_simformer_params(config_path)
+
+        params = SimformerParams(
+            rngs=nnx.Rngs(0),
+            dim_joint=dim_joint,
+            **params_dict,
+        )
+
+        # Training parameters
+        training_config = cls._get_default_training_config()
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        training_config_ = parse_training_config(config_path)
+
+        for key, value in training_config_.items():
+            training_config[key] = value # update with config file values
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            dim_theta,
+            dim_x,
+            params,
+            training_config,
+        )
+
+        return pipeline
+
     def _make_model(self):
         """
         Create and return the Simformer model to be trained.
@@ -259,7 +420,9 @@ class SimformerFlowPipeline(AbstractPipeline):
         self.ema_model_wrapped = SimformerWrapper(self.ema_model)
         return
 
-    def sample(self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None):
+    def sample(
+        self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
+    ):
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -292,8 +455,10 @@ class SimformerFlowPipeline(AbstractPipeline):
         )
         samples = sampler_(x_init)
         return samples
-    
-    def compute_unnorm_logprob(self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None):
+
+    def compute_unnorm_logprob(
+        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
+    ):
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -310,13 +475,17 @@ class SimformerFlowPipeline(AbstractPipeline):
         solver = ODESolver(velocity_model=model)
 
         # x_1 = _expand_dims(x_1)
-        assert x_1.ndim == 2, "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
+        assert (
+            x_1.ndim == 2
+        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
         cond = _expand_dims(x_o)
 
         p0_cond = dist.Independent(
-                dist.Normal(loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))),
-                reinterpreted_batch_ndims=1
-            )
+            dist.Normal(
+                loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))
+            ),
+            reinterpreted_batch_ndims=1,
+        )
 
         model_extras = {
             "cond": cond,
@@ -325,7 +494,14 @@ class SimformerFlowPipeline(AbstractPipeline):
             "edge_mask": self.undirected_edge_mask,
         }
 
-        logp_sampler = solver.get_unnormalized_logprob(time_grid=time_grid,method='Dopri5', step_size=step_size, log_p0=p0_cond.log_prob, model_extras=model_extras, return_intermediates=return_intermediates)
+        logp_sampler = solver.get_unnormalized_logprob(
+            time_grid=time_grid,
+            method="Dopri5",
+            step_size=step_size,
+            log_p0=p0_cond.log_prob,
+            model_extras=model_extras,
+            return_intermediates=return_intermediates,
+        )
 
         exact_log_p = logp_sampler(x_1)
         p = jnp.exp(exact_log_p)
@@ -377,6 +553,72 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         self.undirected_edge_mask = jnp.ones(
             (self.dim_joint, self.dim_joint), dtype=jnp.bool_
         )
+
+    @classmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_theta: int,
+        dim_x: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
+
+        """
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        # methodology
+        strategy = config.get("strategy", {})
+        method = strategy.get("method")
+        model_type = strategy.get("model")
+
+        assert (
+            method == "diffusion"
+        ), f"Method {method} not supported in SimformerDiffusionPipeline."
+        assert (
+            model_type == "simformer"
+        ), f"Model type {model_type} not supported in SimformerDiffusionPipeline."
+
+        # Model parameters from config
+        dim_joint = dim_theta + dim_x
+
+        params_dict = parse_simformer_params(config_path)
+
+        params = SimformerParams(
+            rngs=nnx.Rngs(0),
+            dim_joint=dim_joint,
+            **params_dict,
+        )
+
+        # Training parameters
+        training_config = cls._get_default_training_config()
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        training_config_ = parse_training_config(config_path)
+
+        for key, value in training_config_.items():
+            training_config[key] = value # update with config file values
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            dim_theta,
+            dim_x,
+            params,
+            training_config,
+        )
+
+        return pipeline
+
 
     def _make_model(self):
         """
@@ -458,7 +700,15 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         self.ema_model_wrapped = SimformerWrapper(self.ema_model)
         return
 
-    def sample(self, key, x_o, nsamples=10_000, nsteps=18, use_ema=True, return_intermediates=False):
+    def sample(
+        self,
+        key,
+        x_o,
+        nsamples=10_000,
+        nsteps=18,
+        use_ema=True,
+        return_intermediates=False,
+    ):
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -479,8 +729,12 @@ class SimformerDiffusionPipeline(AbstractPipeline):
 
         x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
 
-        samples = solver.sample(key2, x_init, nsteps=nsteps, model_extras=model_extras, return_intermediates=return_intermediates)
+        samples = solver.sample(
+            key2,
+            x_init,
+            nsteps=nsteps,
+            model_extras=model_extras,
+            return_intermediates=return_intermediates,
+        )
 
         return jnp.squeeze(samples, axis=-1)
-    
-

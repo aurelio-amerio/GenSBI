@@ -169,6 +169,41 @@ class AbstractPipeline(abc.ABC):
         self.path = None  # to be set in subclass
 
     @abc.abstractmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_theta: int,
+        dim_x: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        train_dataset : iterable
+            Training dataset.
+        val_dataset : iterable
+            Validation dataset.
+        dim_theta : int
+            Dimensionality of the parameter (theta) space.
+        dim_x : int
+            Dimensionality of the observation (x) space.
+        config_path : str
+            Path to the configuration file.
+        checkpoint_dir : str
+            Directory for saving checkpoints.
+
+        Returns
+        -------
+        pipeline : AbstractPipeline
+            An instance of the pipeline initialized from the configuration.
+        """
+        ...  # pragma: no cover
+
+    @abc.abstractmethod
     def _make_model(self):
         """
         Create and return the model to be trained.

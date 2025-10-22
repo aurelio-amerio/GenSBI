@@ -62,7 +62,105 @@ from gensbi.utils.model_wrapping import _expand_dims
 
 import os
 
+import yaml
+
 from gensbi.recipes.pipeline import AbstractPipeline
+
+
+def parse_flux1_params(config_path: str):
+    """
+    Parse a Flux1 configuration file.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    config : dict
+        Parsed configuration dictionary.
+
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    model_params = config.get("model", {})
+
+    params_dict = dict(
+        in_channels=model_params.get("in_channels", 1),
+        vec_in_dim=model_params.get("vec_in_dim", None),
+        context_in_dim=model_params.get("context_in_dim", 1),
+        mlp_ratio=model_params.get("mlp_ratio", 4),
+        num_heads=model_params.get("num_heads", 6),
+        depth=model_params.get("depth", 8),
+        depth_single_blocks=model_params.get("depth_single_blocks", 16),
+        axes_dim=model_params.get("axes_dim", [6]),
+        qkv_bias=model_params.get("qkv_bias", True),
+        theta=model_params.get("theta", -1),
+        param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
+    )
+
+    return params_dict
+
+
+def parse_training_config(config_path: str):
+    """
+    Parse a training configuration file.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    config : dict
+        Parsed configuration dictionary.
+
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    # Training parameters
+    train_params = config.get("training", {})
+    multistep = train_params.get("multistep", 1)
+    experiment_id = train_params.get("experiment_id", 1)
+    early_stopping = train_params.get("early_stopping", True)
+    nsteps = train_params.get("nsteps", 30000) * multistep
+    val_every = train_params.get("val_every", 100) * multistep
+
+    # Optimizer parameters
+    opt_params = config.get("optimizer", {})
+    PATIENCE = opt_params.get("patience", 10)
+    COOLDOWN = opt_params.get("cooldown", 2)
+    FACTOR = opt_params.get("factor", 0.5)
+    ACCUMULATION_SIZE = opt_params.get("accumulation_size", 100) * multistep
+    RTOL = opt_params.get("rtol", 1e-4)
+    MAX_LR = opt_params.get("max_lr", 1e-3)
+    MIN_LR = opt_params.get("min_lr", 0.0)
+    MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
+
+    ema_decay = opt_params.get("ema_decay", 0.999)
+
+    training_config = {}
+    # overwrite the defaults with the config file values
+    training_config["num_steps"] = nsteps
+    training_config["ema_decay"] = ema_decay
+    training_config["patience"] = PATIENCE
+    training_config["cooldown"] = COOLDOWN
+    training_config["factor"] = FACTOR
+    training_config["accumulation_size"] = ACCUMULATION_SIZE
+    training_config["rtol"] = RTOL
+    training_config["max_lr"] = MAX_LR
+    training_config["min_lr"] = MIN_LR
+    training_config["min_scale"] = MIN_SCALE
+    training_config["val_every"] = val_every
+    training_config["early_stopping"] = early_stopping
+    training_config["experiment_id"] = experiment_id
+    training_config["multistep"] = multistep
+
+    return training_config
 
 
 class Flux1FlowPipeline(AbstractPipeline):
@@ -114,6 +212,73 @@ class Flux1FlowPipeline(AbstractPipeline):
             reinterpreted_batch_ndims=1,
         )
 
+    @classmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_theta: int,
+        dim_x: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
+
+        """
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        # methodology
+        strategy = config.get("strategy", {})
+        method = strategy.get("method")
+        model_type = strategy.get("model")
+
+        assert method == "flow", f"Method {method} not supported in Flux1FlowPipeline."
+        assert (
+            model_type == "flux"
+        ), f"Model type {model_type} not supported in Flux1FlowPipeline."
+
+        # Model parameters from config
+        dim_joint = dim_theta + dim_x
+
+        params_dict = parse_flux1_params(config_path)
+
+        if params_dict["theta"] == -1:
+            params_dict["theta"] = 4 * dim_joint
+
+        params = Flux1Params(
+            rngs=nnx.Rngs(0),
+            obs_dim=dim_theta,
+            cond_dim=dim_x,
+            **params_dict,
+        )
+
+        # Training parameters
+        training_config = cls._get_default_training_config()
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        training_config_ = parse_training_config(config_path)
+
+        for key, value in training_config_.items():
+            training_config[key] = value  # update with config file values
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            dim_theta,
+            dim_x,
+            params,
+            training_config,
+        )
+
+        return pipeline
+
     def _make_model(self):
         """
         Create and return the Flux1 model to be trained.
@@ -137,7 +302,7 @@ class Flux1FlowPipeline(AbstractPipeline):
             qkv_bias=True,
             obs_dim=self.dim_theta,
             cond_dim=self.dim_x,
-            theta=10*(self.dim_theta + self.dim_x),
+            theta=10 * (self.dim_theta + self.dim_x),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
@@ -170,11 +335,20 @@ class Flux1FlowPipeline(AbstractPipeline):
         self.ema_model_wrapped = Flux1Wrapper(self.ema_model)
         return
 
-    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True, return_intermediates=False, time_grid=jnp.array([0., 1.])):
+    def sample(
+        self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
+    ):
         if use_ema:
             vf_wrapped = self.ema_model_wrapped
         else:
             vf_wrapped = self.model_wrapped
+
+        if time_grid is None:
+            time_grid = jnp.array([0.0, 1.0])
+            return_intermediates = False
+        else:
+            assert jnp.all(time_grid[:-1] <= time_grid[1:])
+            return_intermediates = True
 
         x_init = jax.random.normal(rng, (nsamples, self.dim_theta))
         # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_x, 1))
@@ -196,6 +370,56 @@ class Flux1FlowPipeline(AbstractPipeline):
         )
         samples = sampler_(x_init)
         return samples
+    
+    def compute_unnorm_logprob(
+        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
+    ):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        if time_grid is None:
+            time_grid = jnp.array([1.0, 0.0])
+            return_intermediates = False
+        else:
+            # assert time grid is decreasing
+            assert jnp.all(time_grid[:-1] >= time_grid[1:])
+            return_intermediates = True
+
+        solver = ODESolver(velocity_model=model)
+
+        # x_1 = _expand_dims(x_1)
+        assert (
+            x_1.ndim == 2
+        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
+        cond = _expand_dims(x_o)
+
+        p0_cond = dist.Independent(
+            dist.Normal(
+                loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))
+            ),
+            reinterpreted_batch_ndims=1,
+        )
+
+        model_extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+        }
+
+        logp_sampler = solver.get_unnormalized_logprob(
+            time_grid=time_grid,
+            method="Dopri5",
+            step_size=step_size,
+            log_p0=p0_cond.log_prob,
+            model_extras=model_extras,
+            return_intermediates=return_intermediates,
+        )
+
+        exact_log_p = logp_sampler(x_1)
+        p = jnp.exp(exact_log_p)
+        return p
 
 
 class Flux1DiffusionPipeline(AbstractPipeline):
@@ -243,6 +467,75 @@ class Flux1DiffusionPipeline(AbstractPipeline):
 
         self.loss_fn = Flux1DiffLoss(self.path)
 
+    @classmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_theta: int,
+        dim_x: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
+
+        """
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        # methodology
+        strategy = config.get("strategy", {})
+        method = strategy.get("method")
+        model_type = strategy.get("model")
+
+        assert (
+            method == "diffusion"
+        ), f"Method {method} not supported in Flux1DiffusionPipeline."
+        assert (
+            model_type == "flux"
+        ), f"Model type {model_type} not supported in Flux1DiffusionPipeline."
+
+        # Model parameters from config
+        dim_joint = dim_theta + dim_x
+
+        params_dict = parse_flux1_params(config_path)
+
+        if params_dict["theta"] == -1:
+            params_dict["theta"] = 4 * dim_joint
+
+        params = Flux1Params(
+            rngs=nnx.Rngs(0),
+            obs_dim=dim_theta,
+            cond_dim=dim_x,
+            **params_dict,
+        )
+
+        # Training parameters
+        training_config = cls._get_default_training_config()
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        training_config_ = parse_training_config(config_path)
+
+        for key, value in training_config_.items():
+            training_config[key] = value  # update with config file values
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            dim_theta,
+            dim_x,
+            params,
+            training_config,
+        )
+
+        return pipeline
+
     def _make_model(self):
         """
         Create and return the Flux1 model to be trained.
@@ -266,7 +559,7 @@ class Flux1DiffusionPipeline(AbstractPipeline):
             qkv_bias=True,
             obs_dim=self.dim_theta,
             cond_dim=self.dim_x,
-            theta=10*(self.dim_theta + self.dim_x),
+            theta=10 * (self.dim_theta + self.dim_x),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
@@ -312,7 +605,15 @@ class Flux1DiffusionPipeline(AbstractPipeline):
         self.ema_model_wrapped = Flux1Wrapper(self.ema_model)
         return
 
-    def sample(self, rng, x_o, nsamples=10_000, nsteps=18, use_ema=True):
+    def sample(
+        self,
+        rng,
+        x_o,
+        nsamples=10_000,
+        nsteps=18,
+        use_ema=True,
+        return_intermediates=False,
+    ):
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -333,6 +634,12 @@ class Flux1DiffusionPipeline(AbstractPipeline):
 
         x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
 
-        samples = solver.sample(key2, x_init, nsteps=nsteps, model_extras=model_extras)
+        samples = solver.sample(
+            key2,
+            x_init,
+            nsteps=nsteps,
+            model_extras=model_extras,
+            return_intermediates=return_intermediates,
+        )
 
         return jnp.squeeze(samples, axis=-1)
