@@ -270,7 +270,7 @@ class AbstractPipeline(abc.ABC):
 
         training_config["num_steps"] = 30_000
 
-        training_config["ema_decay"] = 0.99
+        training_config["ema_decay"] = 0.999
 
         training_config["patience"] = 10
         training_config["cooldown"] = 2
