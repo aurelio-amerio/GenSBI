@@ -23,7 +23,9 @@ We adopt either the Flux1 or Simformer models for this task.
 ```{toctree}
 :maxdepth: 1
 
-notebooks/two_moons_simformer
-notebooks/two_moons_flux
+notebooks/two_moons_flow_simformer
+notebooks/two_moons_flow_flux
 notebooks/gaussian_linear_simformer
+notebooks/gaussian_linear_flux1joint
+notebooks/slcp_flow_simformer
 ```

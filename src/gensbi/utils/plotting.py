@@ -405,14 +405,13 @@ def _plot_marginals_seaborn(
         # 3. Make a single, clean plot call
         sns.histplot(ax=ax, **hist_params)
 
+
         # 4. Handle limits and true values based on orientation
         if is_rotated:
             if true_param is not None:
                 ax.axhline(true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5)
             if axis_ranges[i]: ax.set_ylim(axis_ranges[i])
             ax.autoscale(enable=True, axis="x", tight=False)
-            ax.set_yticklabels([])
-            ax.set_ylabel("")
         else:
             if true_param is not None:
                 ax.axvline(true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5)
@@ -421,9 +420,15 @@ def _plot_marginals_seaborn(
 
         # 5. Handle labels with simplified logic
         ax.set_xlabel(""); ax.set_ylabel("") # Default: no labels
+        ax.set_yticklabels([])
         if ndim > 2:
-            if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
+            # if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
             if i == ndim - 1: ax.set_xlabel(labels[i], fontsize=fontsize)
+        if i != ndim - 1 and not is_rotated:
+            ax.set_ylabel("")
+            ax.set_yticklabels([])
+            ax.set_xlabel("")
+            ax.set_xticklabels([])
     
     if ndim == 2:
 
@@ -438,7 +443,7 @@ def _plot_marginals_seaborn(
         fig.subplots_adjust(hspace=0.03, wspace=0.03, left=0.12, right=0.98, top=0.98, bottom=0.12)
 
     else:
-        plt.tight_layout()
+        fig.subplots_adjust(hspace=0.05, wspace=0.05, left=0.06, right=0.98, top=0.98, bottom=0.06)
     return fig, axes
 
 
