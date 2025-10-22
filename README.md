@@ -17,7 +17,7 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 - **Modern SBI Algorithms**: Implements cutting-edge techniques like **Optimal Transport Conditional Flow Matching** and **Diffusion Models** for robust and flexible posterior inference.
 - **Built on JAX and Flax NNX**: Leverages the power of JAX for automatic differentiation, vectorization, and seamless execution on CPUs, GPUs, and TPUs.
 - **High-Level Recipes API**: A simplified interface for common workflows, allowing you to train models and run inference with just a few lines of code.
-- **Powerful Transformer Models**: Includes implementations of recent, high-performing models like **Flux1** and **Simformer** for handling complex, high-dimensional data.
+- **Powerful Transformer Models**: Includes implementations of recent, high-performing models like **Flux1**, **Flux1Join**, and **Simformer** for handling complex, high-dimensional data.
 - **Modular and Extensible**: A clean, well-structured codebase that is easy to understand, modify, and extend for your own research.
 
 ## Examples
@@ -77,7 +77,7 @@ The following tasks are planned for future development:
 - [ ] Provide SOTA pre-trained models and checkpoints for some SBI benchmark cases
 
 ## Known Issues
-- Bfloat16 support is currently limited and may lead to unexpected behavior.
+- `bfloat16` support is currently limited and may lead to unexpected behavior.
 
 ## Citation
 
@@ -88,4 +88,5 @@ If you use this library, please consider citing this work and the original metho
 - **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm](https://github.com/NVlabs/edm)
 - **Simformer model**: [https://github.com/mackelab/simformer](https://github.com/mackelab/simformer)
 - **Flux1 model from BlackForest Lab**: [https://github.com/black-forest-labs/flux](https://github.com/black-forest-labs/flux)
+- **Simulation-Based Inference Benchmark**: [https://github.com/sbi-benchmark/sbibm](https://github.com/sbi-benchmark/sbibm)
 
