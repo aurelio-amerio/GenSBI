@@ -417,6 +417,10 @@ class Flux1FlowPipeline(AbstractPipeline):
             return_intermediates=return_intermediates,
         )
 
+        if len(x_1)>4:
+            # we trigger precompilation first
+            _ = logp_sampler(x_1[:4])
+
         exact_log_p = logp_sampler(x_1)
         p = jnp.exp(exact_log_p)
         return p

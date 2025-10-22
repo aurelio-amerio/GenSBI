@@ -320,11 +320,11 @@ class Flux1JointFlowPipeline(AbstractPipeline):
         model_type = strategy.get("model")
 
         assert (
-            method == "diffusion"
-        ), f"Method {method} not supported in SimformerDiffusionPipeline."
+            method == "flow"
+        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
         assert (
-            model_type == "simformer"
-        ), f"Model type {model_type} not supported in SimformerDiffusionPipeline."
+            model_type == "flux1joint"
+        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
 
         # Model parameters from config
         dim_joint = dim_theta + dim_x
@@ -558,6 +558,74 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
         )
 
         self.loss_fn = Flux1JointDiffLoss(self.path)
+
+    @classmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_theta: int,
+        dim_x: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
+
+        """
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        # methodology
+        strategy = config.get("strategy", {})
+        method = strategy.get("method")
+        model_type = strategy.get("model")
+
+        assert (
+            method == "diffusion"
+        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
+        assert (
+            model_type == "flux1joint"
+        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
+
+        # Model parameters from config
+        dim_joint = dim_theta + dim_x
+
+        params_dict = parse_flux1joint_params(config_path)
+
+        if params_dict["theta"] == -1:
+            params_dict["theta"] = 4 * dim_joint
+
+        params = Flux1JointParams(
+            rngs=nnx.Rngs(0),
+            joint_dim=dim_joint,
+            **params_dict,
+        )
+
+        # Training parameters
+        training_config = cls._get_default_training_config()
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        training_config_ = parse_training_config(config_path)
+
+        for key, value in training_config_.items():
+            training_config[key] = value  # update with config file values
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            dim_theta,
+            dim_x,
+            params,
+            training_config,
+        )
+
+        return pipeline
 
     def _make_model(self):
         """

@@ -96,6 +96,44 @@ params_flux = Flux1Params(
 
 # %%
 
+config_diff_flux = "test/recipes/configs/config_diffusion_flux.yaml"
+config_flow_flux = "test/recipes/configs/config_flow_flux.yaml"
+config_diff_simformer = "test/recipes/configs/config_diffusion_simformer.yaml"
+config_flow_simformer = "test/recipes/configs/config_flow_simformer.yaml"
+config_diff_flux1joint = "test/recipes/configs/config_diffusion_flux1joint.yaml"
+config_flow_flux1joint = "test/recipes/configs/config_flow_flux1joint.yaml"
+
+@pytest.mark.parametrize(
+    "pipeline_cls, config_path",
+    [
+        (SimformerFlowPipeline,  config_flow_simformer),
+        (SimformerDiffusionPipeline, config_diff_simformer),
+        (Flux1JointFlowPipeline, config_flow_flux1joint),
+        (Flux1JointDiffusionPipeline, config_diff_flux1joint),
+        (Flux1FlowPipeline, config_flow_flux),
+        (Flux1DiffusionPipeline, config_diff_flux),
+    ],
+)
+def test_load_configs(pipeline_cls, config_path):
+
+    checkpoint_dir = tempfile.mkdtemp()
+
+    pipeline = pipeline_cls.init_pipeline_from_config(
+        train_dataset,
+        val_dataset,
+        dim_theta,
+        dim_data,
+        config_path=config_path,
+        checkpoint_dir=checkpoint_dir,
+    )
+
+    assert isinstance(
+        pipeline, pipeline_cls
+    ), f"Expected {pipeline_cls}, got {type(pipeline)}"
+    
+    return
+
+
 
 @pytest.mark.parametrize(
     "pipeline_cls, params",
@@ -224,3 +262,4 @@ def test_model(pipeline_cls, params):
         assert jnp.allclose(
             sample, sample_restored
         ), "Restored model samples do not match"
+
