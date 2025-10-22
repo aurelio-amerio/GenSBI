@@ -4,7 +4,7 @@
 ![GenSBI Logo](docs/_static/logo.png)
 
 > [!IMPORTANT]  
-> This library is in an early stage of development. The API is potentially subject to change.
+> This library is at an early stage of development. The API is potentially subject to change.
 
 ## Overview
 
@@ -74,11 +74,10 @@ The following tasks are planned for future development:
 - [ ] Consider implementing classifier free guidance for conditional models.
 - [ ] Add more examples and benchmarks.
 - [ ] Improve documentation and tutorials.
-- [ ] Provide better pre-trained models and checkpoints (currently the training is sub-optimal and for illustration purposes only).
+- [ ] Provide SOTA pre-trained models and checkpoints for some SBI benchmark cases
 
 ## Known Issues
 - Bfloat16 support is currently limited and may lead to unexpected behavior.
-- Currently, it is not straight forward to load a checkpoint created on GPU on a CPU-only machine (and vice-versa). Soon the model building pipeline will become sharding-aware, which should fix the issue.
 
 ## Citation
 
