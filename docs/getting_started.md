@@ -80,7 +80,7 @@ pipeline.train(num_steps=10000)
 
 rng = jax.random.PRNGKey(0)
 nsamples = 10_000
-observation = ... # observed data for which to infer the theta parameters, shape (1, dim_data, 1)
+observation = ... # target observation, shape (1, dim_data, 1)
 samples = pipeline.sample(rng, observation, nsamples)
 
 # plot the posterior distributions 
