@@ -454,27 +454,6 @@ class Decoder2D(nnx.Module):
         return h
 
 
-class DiagonalGaussian(nnx.Module):
-    def __init__(
-        self,
-        sample: bool = True,
-        chunk_dim: int = -1,
-        key: Array = jax.random.PRNGKey(42),
-    ):
-        self.sample = sample
-        self.chunk_dim = chunk_dim
-        self.key = key
-
-    def __call__(self, z: Array) -> Array:
-        mean, logvar = jnp.split(z, 2, axis=self.chunk_dim)
-        if self.sample:
-            std = jnp.exp(0.5 * logvar)
-            return mean + std * jax.random.normal(
-                key=self.key, shape=mean.shape, dtype=z.dtype
-            )
-        else:
-            return mean
-
 
 class AutoEncoder2D(nnx.Module):
     def __init__(
