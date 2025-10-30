@@ -67,8 +67,6 @@ class DiagonalGaussian(nnx.Module):
         self.chunk_dim = chunk_dim
         self.key = key
 
-        self.kl_loss = None
-
     def __call__(self, z: Array) -> Array:
         mean, logvar = jnp.split(z, 2, axis=self.chunk_dim)
         std = jnp.exp(0.5 * logvar)
