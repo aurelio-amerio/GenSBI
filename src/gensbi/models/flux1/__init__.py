@@ -14,12 +14,9 @@ This package provides the Flux1 transformer-based model and related loss functio
 
 
 from .model import Flux1, Flux1Params, Flux1Wrapper
-from .loss import Flux1CFMLoss, Flux1DiffLoss
 
 __all__ = [
     "Flux1",
     "Flux1Wrapper",
     "Flux1Params",
-    "Flux1CFMLoss",
-    "Flux1DiffLoss",
 ]

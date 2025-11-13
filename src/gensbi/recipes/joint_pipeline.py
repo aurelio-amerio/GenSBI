@@ -38,15 +38,13 @@ Example:
 
 import jax
 import jax.numpy as jnp
-from flax import config, nnx
+from flax import nnx
 import optax
 from optax.contrib import reduce_on_plateau
 from numpyro import distributions as dist
 from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
-
-import yaml
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
@@ -59,112 +57,21 @@ from gensbi.diffusion.solver import SDESolver
 from einops import repeat
 
 from gensbi.models import (
-    Simformer,
-    SimformerParams,
+    Flux1Joint,
+    Flux1JointParams,
     JointCFMLoss,
-    SimformerWrapper,
+    Flux1JointWrapper,
     JointDiffLoss,
 )
+
+import numpyro.distributions as dist
 
 from gensbi.utils.model_wrapping import _expand_dims
 
 import os
+import yaml
 
 from gensbi.recipes.pipeline import AbstractPipeline, ModelEMA
-
-
-def parse_simformer_params(config_path: str):
-    """
-    Parse a Simformer configuration file.
-
-    Parameters
-    ----------
-    config_path : str
-        Path to the configuration file.
-
-    Returns
-    -------
-    config : dict
-        Parsed configuration dictionary.
-
-    """
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-
-    model_params = config.get("model", {})
-
-    params_dict = dict(
-        dim_value=model_params.get("dim_value", 40),
-        dim_id=model_params.get("dim_id", 40),
-        dim_condition=model_params.get("dim_condition", 10),
-        fourier_features=model_params.get("fourier_features", 128),
-        num_heads=model_params.get("num_heads", 4),
-        num_layers=model_params.get("num_layers", 8),
-        widening_factor=model_params.get("widening_factor", 3),
-        qkv_features=model_params.get("qkv_features", 90),
-        num_hidden_layers=model_params.get("num_hidden_layers", 1),
-    )
-
-    return params_dict
-
-
-def parse_training_config(config_path: str):
-    """
-    Parse a training configuration file.
-
-    Parameters
-    ----------
-    config_path : str
-        Path to the configuration file.
-
-    Returns
-    -------
-    config : dict
-        Parsed configuration dictionary.
-
-    """
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-
-    # Training parameters
-    train_params = config.get("training", {})
-    multistep = train_params.get("multistep", 1)
-    experiment_id = train_params.get("experiment_id", 1)
-    early_stopping = train_params.get("early_stopping", True)
-    nsteps = train_params.get("nsteps", 30000) * multistep
-    val_every = train_params.get("val_every", 100) * multistep
-
-    # Optimizer parameters
-    opt_params = config.get("optimizer", {})
-    PATIENCE = opt_params.get("patience", 10)
-    COOLDOWN = opt_params.get("cooldown", 2)
-    FACTOR = opt_params.get("factor", 0.5)
-    ACCUMULATION_SIZE = opt_params.get("accumulation_size", 100) * multistep
-    RTOL = opt_params.get("rtol", 1e-4)
-    MAX_LR = opt_params.get("max_lr", 1e-3)
-    MIN_LR = opt_params.get("min_lr", 0.0)
-    MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
-
-    ema_decay = opt_params.get("ema_decay", 0.999)
-
-    training_config = {}
-    # overwrite the defaults with the config file values
-    training_config["num_steps"] = nsteps
-    training_config["ema_decay"] = ema_decay
-    training_config["patience"] = PATIENCE
-    training_config["cooldown"] = COOLDOWN
-    training_config["factor"] = FACTOR
-    training_config["accumulation_size"] = ACCUMULATION_SIZE
-    training_config["rtol"] = RTOL
-    training_config["max_lr"] = MAX_LR
-    training_config["min_lr"] = MIN_LR
-    training_config["min_scale"] = MIN_SCALE
-    training_config["val_every"] = val_every
-    training_config["early_stopping"] = early_stopping
-    training_config["experiment_id"] = experiment_id
-    training_config["multistep"] = multistep
-
-    return training_config
 
 
 def sample_strutured_conditional_mask(
@@ -242,7 +149,7 @@ def sample_strutured_conditional_mask(
     return condition_mask[..., None]
 
 
-class SimformerFlowPipeline(AbstractPipeline):
+class JointFlowPipeline(AbstractPipeline):
     def __init__(
         self,
         train_dataset,
@@ -253,7 +160,7 @@ class SimformerFlowPipeline(AbstractPipeline):
         training_config=None,
     ):
         """
-        Flow pipeline for training and using a Simformer model for simulation-based inference.
+        Flow pipeline for training and using a Joint model for simulation-based inference.
 
         Parameters
         ----------
@@ -275,13 +182,13 @@ class SimformerFlowPipeline(AbstractPipeline):
             train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
 
+        self.cond_ids = _expand_dims(self.cond_ids)
+        self.obs_ids = _expand_dims(self.obs_ids)
+        self.node_ids = _expand_dims(self.node_ids)
+
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
         self.loss_fn = JointCFMLoss(self.path)
-
-        self.undirected_edge_mask = jnp.ones(
-            (self.dim_joint, self.dim_joint), dtype=jnp.bool_
-        )
 
         self.p0_dist_model = dist.Independent(
             dist.Normal(
@@ -289,6 +196,11 @@ class SimformerFlowPipeline(AbstractPipeline):
             ),
             reinterpreted_batch_ndims=1,
         )
+        
+        if self.dim_x == 0:
+            self.unconditional = True
+        else:
+            self.unconditional = False
 
     @classmethod
     def init_pipeline_from_config(
@@ -319,19 +231,22 @@ class SimformerFlowPipeline(AbstractPipeline):
 
         assert (
             method == "flow"
-        ), f"Method {method} not supported in SimformerFlowPipeline."
+        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
         assert (
-            model_type == "simformer"
-        ), f"Model type {model_type} not supported in SimformerFlowPipeline."
+            model_type == "flux1joint"
+        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
 
         # Model parameters from config
         dim_joint = dim_theta + dim_x
 
-        params_dict = parse_simformer_params(config_path)
+        params_dict = parse_flux1joint_params(config_path)
 
-        params = SimformerParams(
+        if params_dict["theta"] == -1:
+            params_dict["theta"] = 4 * dim_joint
+
+        params = Flux1JointParams(
             rngs=nnx.Rngs(0),
-            dim_joint=dim_joint,
+            joint_dim=dim_joint,
             **params_dict,
         )
 
@@ -342,7 +257,7 @@ class SimformerFlowPipeline(AbstractPipeline):
         training_config_ = parse_training_config(config_path)
 
         for key, value in training_config_.items():
-            training_config[key] = value # update with config file values
+            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -359,25 +274,28 @@ class SimformerFlowPipeline(AbstractPipeline):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Simformer(self.params)
+        model = Flux1Joint(self.params)
         return model
 
     def _get_default_params(self):
         """
         Return default parameters for the Simformer model.
         """
-        params = SimformerParams(
-            rngs=nnx.Rngs(0),
-            dim_value=40,
-            dim_id=40,
-            dim_condition=10,
-            dim_joint=self.dim_joint,
-            fourier_features=128,
+        # TODO
+        params = Flux1JointParams(
+            in_channels=1,
+            vec_in_dim=None,
+            mlp_ratio=3.0,
             num_heads=4,
-            num_layers=8,
-            widening_factor=3,
-            qkv_features=40,
-            num_hidden_layers=1,
+            depth_single_blocks=8,
+            axes_dim=[10],
+            condition_dim=[4],
+            qkv_bias=True,
+            rngs=nnx.Rngs(0),
+            joint_dim=self.dim_joint,
+            theta=self.dim_joint * 4,
+            guidance_embed=False,
+            param_dtype=jnp.bfloat16,
         )
         return params
 
@@ -395,20 +313,21 @@ class SimformerFlowPipeline(AbstractPipeline):
             t = jax.random.uniform(rng_t, x_1.shape[0])
             batch = (x_0, x_1, t)
 
-            condition_mask = sample_strutured_conditional_mask(
-                rng_condition,
-                batch_size,
-                self.dim_theta,
-                self.dim_x,
-            )
-
-            edge_masks = self.undirected_edge_mask
+            if self.unconditional:
+                condition_mask = jnp.zeros((batch_size, self.dim_joint, 1), dtype=jnp.bool_)
+                
+            else:
+                condition_mask = sample_strutured_conditional_mask(
+                    rng_condition,
+                    batch_size,
+                    self.dim_theta,
+                    self.dim_x,
+                )
 
             loss = self.loss_fn(
                 model,
                 batch,
                 node_ids=self.node_ids,
-                edge_mask=edge_masks,
                 condition_mask=condition_mask,
             )
             return loss
@@ -416,8 +335,8 @@ class SimformerFlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = SimformerWrapper(self.model)
-        self.ema_model_wrapped = SimformerWrapper(self.ema_model)
+        self.model_wrapped = Flux1JointWrapper(self.model)
+        self.ema_model_wrapped = Flux1JointWrapper(self.ema_model)
         return
 
     def sample(
@@ -436,6 +355,7 @@ class SimformerFlowPipeline(AbstractPipeline):
             return_intermediates = True
 
         x_init = jax.random.normal(key, (nsamples, self.dim_theta))
+        # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_x, 1))
         cond = _expand_dims(x_o)
 
         solver = ODESolver(velocity_model=model)
@@ -443,7 +363,6 @@ class SimformerFlowPipeline(AbstractPipeline):
             "cond": cond,
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
-            "edge_mask": self.undirected_edge_mask,
         }
 
         sampler_ = solver.get_sampler(
@@ -508,7 +427,7 @@ class SimformerFlowPipeline(AbstractPipeline):
         return p
 
 
-class SimformerDiffusionPipeline(AbstractPipeline):
+class Flux1JointDiffusionPipeline(AbstractPipeline):
     def __init__(
         self,
         train_dataset,
@@ -541,6 +460,10 @@ class SimformerDiffusionPipeline(AbstractPipeline):
             train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
 
+        self.cond_ids = _expand_dims(self.cond_ids)
+        self.obs_ids = _expand_dims(self.obs_ids)
+        self.node_ids = _expand_dims(self.node_ids)
+
         self.path = EDMPath(
             scheduler=EDMScheduler(
                 sigma_min=self.training_config["sigma_min"],
@@ -549,10 +472,6 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         )
 
         self.loss_fn = JointDiffLoss(self.path)
-
-        self.undirected_edge_mask = jnp.ones(
-            (self.dim_joint, self.dim_joint), dtype=jnp.bool_
-        )
 
     @classmethod
     def init_pipeline_from_config(
@@ -583,19 +502,22 @@ class SimformerDiffusionPipeline(AbstractPipeline):
 
         assert (
             method == "diffusion"
-        ), f"Method {method} not supported in SimformerDiffusionPipeline."
+        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
         assert (
-            model_type == "simformer"
-        ), f"Model type {model_type} not supported in SimformerDiffusionPipeline."
+            model_type == "flux1joint"
+        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
 
         # Model parameters from config
         dim_joint = dim_theta + dim_x
 
-        params_dict = parse_simformer_params(config_path)
+        params_dict = parse_flux1joint_params(config_path)
 
-        params = SimformerParams(
+        if params_dict["theta"] == -1:
+            params_dict["theta"] = 4 * dim_joint
+
+        params = Flux1JointParams(
             rngs=nnx.Rngs(0),
-            dim_joint=dim_joint,
+            joint_dim=dim_joint,
             **params_dict,
         )
 
@@ -606,7 +528,7 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         training_config_ = parse_training_config(config_path)
 
         for key, value in training_config_.items():
-            training_config[key] = value # update with config file values
+            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -619,30 +541,31 @@ class SimformerDiffusionPipeline(AbstractPipeline):
 
         return pipeline
 
-
     def _make_model(self):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Simformer(self.params)
+        model = Flux1Joint(self.params)
         return model
 
     def _get_default_params(self):
         """
         Return default parameters for the Simformer model.
         """
-        params = SimformerParams(
-            dim_value=40,
-            dim_id=40,
-            dim_condition=10,
-            dim_joint=self.dim_joint,
-            fourier_features=128,
+        params = Flux1JointParams(
+            in_channels=1,
+            vec_in_dim=None,
+            mlp_ratio=3.0,
             num_heads=4,
-            num_layers=8,
-            widening_factor=3,
-            qkv_features=40,
+            depth_single_blocks=8,
+            axes_dim=[10],
+            condition_dim=[4],
+            qkv_bias=True,
             rngs=nnx.Rngs(0),
-            num_hidden_layers=1,
+            joint_dim=self.dim_joint,
+            theta=self.dim_joint * 4,
+            guidance_embed=False,
+            param_dtype=jnp.bfloat16,
         )
         return params
 
@@ -681,23 +604,20 @@ class SimformerDiffusionPipeline(AbstractPipeline):
                 self.dim_x,
             )
 
-            edge_masks = self.undirected_edge_mask
-
             loss = self.loss_fn(
                 rng_x0,
                 model,
                 batch,
                 condition_mask=condition_mask,
                 node_ids=self.node_ids,
-                edge_mask=edge_masks,
             )
             return loss
 
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = SimformerWrapper(self.model)
-        self.ema_model_wrapped = SimformerWrapper(self.ema_model)
+        self.model_wrapped = Flux1JointWrapper(self.model)
+        self.ema_model_wrapped = Flux1JointWrapper(self.ema_model)
         return
 
     def sample(
@@ -724,7 +644,6 @@ class SimformerDiffusionPipeline(AbstractPipeline):
             "cond": cond,
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
-            "edge_mask": self.undirected_edge_mask,
         }
 
         x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))

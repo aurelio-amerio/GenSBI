@@ -14,12 +14,9 @@ This package provides the Simformer transformer-based model and related loss fun
 
 
 from .model import Simformer, SimformerParams, SimformerWrapper
-from .loss import SimformerCFMLoss, SimformerDiffLoss
 
 __all__ = [
     "Simformer",
     "SimformerParams",
     "SimformerWrapper",
-    "SimformerCFMLoss",
-    "SimformerDiffLoss",
 ]
