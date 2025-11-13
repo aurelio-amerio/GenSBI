@@ -71,7 +71,7 @@ from gensbi.utils.model_wrapping import _expand_dims
 import os
 import yaml
 
-from gensbi.recipes.pipeline import AbstractPipeline, ModelEMA
+from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline
 
 
 def parse_flux1joint_params(config_path: str):
@@ -244,7 +244,7 @@ def sample_strutured_conditional_mask(
     return condition_mask[..., None]
 
 
-class Flux1JointFlowPipeline(AbstractPipeline):
+class Flux1JointFlowPipeline(JointFlowPipeline):
     def __init__(
         self,
         train_dataset,
@@ -274,28 +274,11 @@ class Flux1JointFlowPipeline(AbstractPipeline):
 
         """
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, params, training_config
-        )
-
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
-
-        self.path = AffineProbPath(scheduler=CondOTScheduler())
-
-        self.loss_fn = JointCFMLoss(self.path)
-
-        self.p0_dist_model = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros((self.dim_joint, 1)), scale=jnp.ones((self.dim_joint, 1))
-            ),
-            reinterpreted_batch_ndims=1,
+            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
         
-        if self.dim_x == 0:
-            self.unconditional = True
-        else:
-            self.unconditional = False
+        self.model = self._make_model(self.params)
+        self.ema_model = nnx.clone(self.model)
 
     @classmethod
     def init_pipeline_from_config(
@@ -365,11 +348,11 @@ class Flux1JointFlowPipeline(AbstractPipeline):
 
         return pipeline
 
-    def _make_model(self):
+    def _make_model(self, params):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Flux1Joint(self.params)
+        model = Flux1Joint(params)
         return model
 
     def _get_default_params(self):
@@ -394,135 +377,8 @@ class Flux1JointFlowPipeline(AbstractPipeline):
         )
         return params
 
-    def get_loss_fn(
-        self,
-    ):
-        def loss_fn(
-            model,
-            x_1,
-            key: jax.random.PRNGKey,
-        ):
-            batch_size = x_1.shape[0]
-            rng_x0, rng_t, rng_condition = jax.random.split(key, 3)
-            x_0 = self.p0_dist_model.sample(rng_x0, (batch_size,))
-            t = jax.random.uniform(rng_t, x_1.shape[0])
-            batch = (x_0, x_1, t)
 
-            if self.unconditional:
-                condition_mask = jnp.zeros((batch_size, self.dim_joint, 1), dtype=jnp.bool_)
-                
-            else:
-                condition_mask = sample_strutured_conditional_mask(
-                    rng_condition,
-                    batch_size,
-                    self.dim_theta,
-                    self.dim_x,
-                )
-
-            loss = self.loss_fn(
-                model,
-                batch,
-                node_ids=self.node_ids,
-                condition_mask=condition_mask,
-            )
-            return loss
-
-        return loss_fn
-
-    def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model)
-        self.ema_model_wrapped = JointWrapper(self.ema_model)
-        return
-
-    def sample(
-        self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
-    ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
-
-        if time_grid is None:
-            time_grid = jnp.array([0.0, 1.0])
-            return_intermediates = False
-        else:
-            assert jnp.all(time_grid[:-1] <= time_grid[1:])
-            return_intermediates = True
-
-        x_init = jax.random.normal(key, (nsamples, self.dim_theta))
-        # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_x, 1))
-        cond = _expand_dims(x_o)
-
-        solver = ODESolver(velocity_model=model)
-        model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-        }
-
-        sampler_ = solver.get_sampler(
-            method="Dopri5",
-            step_size=step_size,
-            return_intermediates=return_intermediates,
-            model_extras=model_extras,
-            time_grid=time_grid,
-        )
-        samples = sampler_(x_init)
-        return samples
-
-    def compute_unnorm_logprob(
-        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
-    ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
-
-        if time_grid is None:
-            time_grid = jnp.array([1.0, 0.0])
-            return_intermediates = False
-        else:
-            # assert time grid is decreasing
-            assert jnp.all(time_grid[:-1] >= time_grid[1:])
-            return_intermediates = True
-
-        solver = ODESolver(velocity_model=model)
-
-        # x_1 = _expand_dims(x_1)
-        assert (
-            x_1.ndim == 2
-        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
-        cond = _expand_dims(x_o)
-
-        p0_cond = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))
-            ),
-            reinterpreted_batch_ndims=1,
-        )
-
-        model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            "edge_mask": self.undirected_edge_mask,
-        }
-
-        logp_sampler = solver.get_unnormalized_logprob(
-            time_grid=time_grid,
-            method="Dopri5",
-            step_size=step_size,
-            log_p0=p0_cond.log_prob,
-            model_extras=model_extras,
-            return_intermediates=return_intermediates,
-        )
-
-        exact_log_p = logp_sampler(x_1)
-        p = jnp.exp(exact_log_p)
-        return p
-
-
-class Flux1JointDiffusionPipeline(AbstractPipeline):
+class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
     def __init__(
         self,
         train_dataset,
@@ -551,22 +407,13 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
             Configuration for training. If None, default configuration is used.
 
         """
+        
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, params, training_config
+            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
-
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
-
-        self.path = EDMPath(
-            scheduler=EDMScheduler(
-                sigma_min=self.training_config["sigma_min"],
-                sigma_max=self.training_config["sigma_max"],
-            )
-        )
-
-        self.loss_fn = JointDiffLoss(self.path)
+        
+        self.model = self._make_model(self.params)
+        self.ema_model = nnx.clone(self.model)
 
     @classmethod
     def init_pipeline_from_config(
@@ -636,11 +483,11 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
 
         return pipeline
 
-    def _make_model(self):
+    def _make_model(self, params):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Flux1Joint(self.params)
+        model = Flux1Joint(params)
         return model
 
     def _get_default_params(self):
@@ -663,92 +510,3 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
             param_dtype=jnp.bfloat16,
         )
         return params
-
-    @classmethod
-    def _get_default_training_config(cls):
-        config = super()._get_default_training_config()
-        config.update(
-            {
-                "sigma_min": 0.002,  # from edm paper
-                "sigma_max": 80.0,
-            }
-        )
-        return config
-
-    def get_loss_fn(
-        self,
-    ):
-        def loss_fn(
-            model,
-            x_1,
-            key: jax.random.PRNGKey,
-        ):
-            batch_size = x_1.shape[0]
-
-            rng_x0, rng_sigma, rng_condition = jax.random.split(key, 3)
-
-            sigma = self.path.sample_sigma(rng_sigma, x_1.shape[0])
-            sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")
-
-            batch = (x_1, sigma)
-
-            condition_mask = sample_strutured_conditional_mask(
-                rng_condition,
-                batch_size,
-                self.dim_theta,
-                self.dim_x,
-            )
-
-            loss = self.loss_fn(
-                rng_x0,
-                model,
-                batch,
-                condition_mask=condition_mask,
-                node_ids=self.node_ids,
-            )
-            return loss
-
-        return loss_fn
-
-    def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model)
-        self.ema_model_wrapped = JointWrapper(self.ema_model)
-        return
-
-    def sample(
-        self,
-        key,
-        x_o,
-        nsamples=10_000,
-        nsteps=18,
-        use_ema=True,
-        return_intermediates=False,
-    ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
-
-        key1, key2 = jax.random.split(key, 2)
-
-        cond = _expand_dims(x_o)
-
-        solver = SDESolver(score_model=model, path=self.path)
-
-        model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-        }
-
-        x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
-
-        samples = solver.sample(
-            key2,
-            x_init,
-            nsteps=nsteps,
-            model_extras=model_extras,
-            return_intermediates=return_intermediates,
-        )
-
-        return jnp.squeeze(samples, axis=-1)

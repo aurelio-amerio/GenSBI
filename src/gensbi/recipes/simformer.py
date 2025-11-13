@@ -70,7 +70,7 @@ from gensbi.utils.model_wrapping import _expand_dims
 
 import os
 
-from gensbi.recipes.pipeline import AbstractPipeline, ModelEMA
+from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline
 
 
 def parse_simformer_params(config_path: str):
@@ -242,7 +242,7 @@ def sample_strutured_conditional_mask(
     return condition_mask[..., None]
 
 
-class SimformerFlowPipeline(AbstractPipeline):
+class SimformerFlowPipeline(JointFlowPipeline):
     def __init__(
         self,
         train_dataset,
@@ -251,6 +251,7 @@ class SimformerFlowPipeline(AbstractPipeline):
         dim_x: int,
         params=None,
         training_config=None,
+        edge_mask = None,
     ):
         """
         Flow pipeline for training and using a Simformer model for simulation-based inference.
@@ -269,26 +270,18 @@ class SimformerFlowPipeline(AbstractPipeline):
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+        edge_mask : jnp.ndarray, optional
+            Edge mask for the Simformer model. If None, no mask is applied.
 
         """
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, params, training_config
+            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
-
-        self.path = AffineProbPath(scheduler=CondOTScheduler())
-
-        self.loss_fn = JointCFMLoss(self.path)
-
-        self.undirected_edge_mask = jnp.ones(
-            (self.dim_joint, self.dim_joint), dtype=jnp.bool_
-        )
-
-        self.p0_dist_model = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros((self.dim_joint, 1)), scale=jnp.ones((self.dim_joint, 1))
-            ),
-            reinterpreted_batch_ndims=1,
-        )
+        
+        self.model = self._make_model(self.params)
+        self.ema_model = nnx.clone(self.model)
+        
+        self.edge_mask = edge_mask
 
     @classmethod
     def init_pipeline_from_config(
@@ -355,11 +348,11 @@ class SimformerFlowPipeline(AbstractPipeline):
 
         return pipeline
 
-    def _make_model(self):
+    def _make_model(self, params):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Simformer(self.params)
+        model = Simformer(params)
         return model
 
     def _get_default_params(self):
@@ -381,134 +374,43 @@ class SimformerFlowPipeline(AbstractPipeline):
         )
         return params
 
-    def get_loss_fn(
-        self,
-    ):
-        def loss_fn(
-            model,
-            x_1,
-            key: jax.random.PRNGKey,
-        ):
-            batch_size = x_1.shape[0]
-            rng_x0, rng_t, rng_condition = jax.random.split(key, 3)
-            x_0 = self.p0_dist_model.sample(rng_x0, (batch_size,))
-            t = jax.random.uniform(rng_t, x_1.shape[0])
-            batch = (x_0, x_1, t)
-
-            condition_mask = sample_strutured_conditional_mask(
-                rng_condition,
-                batch_size,
-                self.dim_theta,
-                self.dim_x,
-            )
-
-            edge_masks = self.undirected_edge_mask
-
-            loss = self.loss_fn(
-                model,
-                batch,
-                node_ids=self.node_ids,
-                edge_mask=edge_masks,
-                condition_mask=condition_mask,
-            )
-            return loss
-
-        return loss_fn
-
-    def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model)
-        self.ema_model_wrapped = JointWrapper(self.ema_model)
-        return
+    
 
     def sample(
         self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
     ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
-
-        if time_grid is None:
-            time_grid = jnp.array([0.0, 1.0])
-            return_intermediates = False
-        else:
-            assert jnp.all(time_grid[:-1] <= time_grid[1:])
-            return_intermediates = True
-
-        x_init = jax.random.normal(key, (nsamples, self.dim_theta))
-        cond = _expand_dims(x_o)
-
-        solver = ODESolver(velocity_model=model)
         model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            "edge_mask": self.undirected_edge_mask,
+            "edge_mask": self.edge_mask,
         }
 
-        sampler_ = solver.get_sampler(
-            method="Dopri5",
+        return super().sample(
+            key,
+            x_o,
+            nsamples=nsamples,
             step_size=step_size,
-            return_intermediates=return_intermediates,
-            model_extras=model_extras,
+            use_ema=use_ema,
             time_grid=time_grid,
+            **model_extras,
         )
-        samples = sampler_(x_init)
-        return samples
 
     def compute_unnorm_logprob(
         self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
     ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
-
-        if time_grid is None:
-            time_grid = jnp.array([1.0, 0.0])
-            return_intermediates = False
-        else:
-            # assert time grid is decreasing
-            assert jnp.all(time_grid[:-1] >= time_grid[1:])
-            return_intermediates = True
-
-        solver = ODESolver(velocity_model=model)
-
-        # x_1 = _expand_dims(x_1)
-        assert (
-            x_1.ndim == 2
-        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
-        cond = _expand_dims(x_o)
-
-        p0_cond = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))
-            ),
-            reinterpreted_batch_ndims=1,
-        )
-
         model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            "edge_mask": self.undirected_edge_mask,
+            "edge_mask": self.edge_mask,
         }
-
-        logp_sampler = solver.get_unnormalized_logprob(
-            time_grid=time_grid,
-            method="Dopri5",
+        
+        return super().compute_unnorm_logprob(
+            x_1,
+            x_o,
             step_size=step_size,
-            log_p0=p0_cond.log_prob,
+            use_ema=use_ema,
+            time_grid=time_grid,
             model_extras=model_extras,
-            return_intermediates=return_intermediates,
         )
 
-        exact_log_p = logp_sampler(x_1)
-        p = jnp.exp(exact_log_p)
-        return p
 
-
-class SimformerDiffusionPipeline(AbstractPipeline):
+class SimformerDiffusionPipeline(JointDiffusionPipeline):
     def __init__(
         self,
         train_dataset,
@@ -517,6 +419,8 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         dim_x: int,
         params=None,
         training_config=None,
+        edge_mask = None,
+        
     ):
         """
         Diffusion pipeline for training and using a Simformer model for simulation-based inference.
@@ -535,24 +439,19 @@ class SimformerDiffusionPipeline(AbstractPipeline):
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+        edge_mask : jnp.ndarray, optional
+            Edge mask for the Simformer model. If None, no mask is applied.
 
         """
+        
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, params, training_config
+            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
+        
+        self.model = self._make_model(self.params)
+        self.ema_model = nnx.clone(self.model)
 
-        self.path = EDMPath(
-            scheduler=EDMScheduler(
-                sigma_min=self.training_config["sigma_min"],
-                sigma_max=self.training_config["sigma_max"],
-            )
-        )
-
-        self.loss_fn = JointDiffLoss(self.path)
-
-        self.undirected_edge_mask = jnp.ones(
-            (self.dim_joint, self.dim_joint), dtype=jnp.bool_
-        )
+        self.edge_mask = edge_mask
 
     @classmethod
     def init_pipeline_from_config(
@@ -620,11 +519,11 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         return pipeline
 
 
-    def _make_model(self):
+    def _make_model(self, params):
         """
         Create and return the Simformer model to be trained.
         """
-        model = Simformer(self.params)
+        model = Simformer(params)
         return model
 
     def _get_default_params(self):
@@ -646,59 +545,7 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         )
         return params
 
-    @classmethod
-    def _get_default_training_config(cls):
-        config = super()._get_default_training_config()
-        config.update(
-            {
-                "sigma_min": 0.002,  # from edm paper
-                "sigma_max": 80.0,
-            }
-        )
-        return config
 
-    def get_loss_fn(
-        self,
-    ):
-        def loss_fn(
-            model,
-            x_1,
-            key: jax.random.PRNGKey,
-        ):
-            batch_size = x_1.shape[0]
-
-            rng_x0, rng_sigma, rng_condition = jax.random.split(key, 3)
-
-            sigma = self.path.sample_sigma(rng_sigma, x_1.shape[0])
-            sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")
-
-            batch = (x_1, sigma)
-
-            condition_mask = sample_strutured_conditional_mask(
-                rng_condition,
-                batch_size,
-                self.dim_theta,
-                self.dim_x,
-            )
-
-            edge_masks = self.undirected_edge_mask
-
-            loss = self.loss_fn(
-                rng_x0,
-                model,
-                batch,
-                condition_mask=condition_mask,
-                node_ids=self.node_ids,
-                edge_mask=edge_masks,
-            )
-            return loss
-
-        return loss_fn
-
-    def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model)
-        self.ema_model_wrapped = JointWrapper(self.ema_model)
-        return
 
     def sample(
         self,
@@ -709,32 +556,18 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         use_ema=True,
         return_intermediates=False,
     ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
 
-        key1, key2 = jax.random.split(key, 2)
-
-        cond = _expand_dims(x_o)
-
-        solver = SDESolver(score_model=model, path=self.path)
 
         model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            "edge_mask": self.undirected_edge_mask,
+            "edge_mask": self.edge_mask,
         }
 
-        x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
-
-        samples = solver.sample(
-            key2,
-            x_init,
+        return super().sample(
+            key,
+            x_o,
+            nsamples=nsamples,
             nsteps=nsteps,
-            model_extras=model_extras,
+            use_ema=use_ema,
             return_intermediates=return_intermediates,
+            **model_extras,
         )
-
-        return jnp.squeeze(samples, axis=-1)
