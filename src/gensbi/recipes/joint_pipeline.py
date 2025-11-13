@@ -6,7 +6,7 @@ Example:
         import itertools
         import jax
         from jax import numpy as jnp
-        from gensbi.recipes import SimformerPipeline
+        from gensbi.recipes import JointPipeline
 
         # Define your training and validation datasets.
         train_data = jax.random.rand((1024, 4)) # your training dataset
@@ -24,7 +24,7 @@ Example:
         # Define the model
         dim_theta = 2  # Dimension of the parameter space
         dim_x = 2      # Dimension of the observation space
-        pipeline = SimformerPipeline(train_dataset, val_dataset, dim_theta, dim_x)
+        pipeline = JointPipeline(train_dataset, val_dataset, dim_theta, dim_x)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
@@ -88,7 +88,7 @@ def sample_strutured_conditional_mask(
     rnd2_prob=0.7,
 ):
     """
-    Sample structured conditional masks for the Simformer model.
+    Sample structured conditional masks for the Joint model.
 
     Parameters
     ----------
@@ -152,6 +152,7 @@ def sample_strutured_conditional_mask(
 class JointFlowPipeline(AbstractPipeline):
     def __init__(
         self,
+        model,
         train_dataset,
         val_dataset,
         dim_theta: int,
@@ -172,14 +173,14 @@ class JointFlowPipeline(AbstractPipeline):
             Dimension of the parameter space.
         dim_x : int
             Dimension of the observation space.
-        params : SimformerParams, optional
-            Parameters for the Simformer model. If None, default parameters are used.
+        params : JointParams, optional
+            Parameters for the Joint model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, params, training_config
+            train_dataset, val_dataset, dim_theta, dim_x, model, params, training_config
         )
 
         self.cond_ids = _expand_dims(self.cond_ids)
@@ -203,101 +204,20 @@ class JointFlowPipeline(AbstractPipeline):
             self.unconditional = False
 
     @classmethod
-    def init_pipeline_from_config(
-        cls,
-        train_dataset,
-        val_dataset,
-        dim_theta: int,
-        dim_x: int,
-        config_path: str,
-        checkpoint_dir: str,
-    ):
-        """
-        Initialize the pipeline from a configuration file.
-
-        Parameters
-        ----------
-        config_path : str
-            Path to the configuration file.
-
-        """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
-
-        assert (
-            method == "flow"
-        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
-        assert (
-            model_type == "flux1joint"
-        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
-
-        # Model parameters from config
-        dim_joint = dim_theta + dim_x
-
-        params_dict = parse_flux1joint_params(config_path)
-
-        if params_dict["theta"] == -1:
-            params_dict["theta"] = 4 * dim_joint
-
-        params = Flux1JointParams(
-            rngs=nnx.Rngs(0),
-            joint_dim=dim_joint,
-            **params_dict,
+    def init_pipeline_from_config(cls):
+        raise NotImplementedError(
+            "init_pipeline_from_config is not implemented for JointFlowPipeline."
         )
-
-        # Training parameters
-        training_config = cls._get_default_training_config()
-        training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
-
-        pipeline = cls(
-            train_dataset,
-            val_dataset,
-            dim_theta,
-            dim_x,
-            params,
-            training_config,
-        )
-
-        return pipeline
 
     def _make_model(self):
-        """
-        Create and return the Simformer model to be trained.
-        """
-        model = Flux1Joint(self.params)
-        return model
+        raise NotImplementedError(
+            "_make_model is not implemented for JointFlowPipeline."
+        )   
 
     def _get_default_params(self):
-        """
-        Return default parameters for the Simformer model.
-        """
-        # TODO
-        params = Flux1JointParams(
-            in_channels=1,
-            vec_in_dim=None,
-            mlp_ratio=3.0,
-            num_heads=4,
-            depth_single_blocks=8,
-            axes_dim=[10],
-            condition_dim=[4],
-            qkv_bias=True,
-            rngs=nnx.Rngs(0),
-            joint_dim=self.dim_joint,
-            theta=self.dim_joint * 4,
-            guidance_embed=False,
-            param_dtype=jnp.bfloat16,
+        raise NotImplementedError(
+            "_get_default_params is not implemented for JointFlowPipeline."
         )
-        return params
 
     def get_loss_fn(
         self,
@@ -340,8 +260,13 @@ class JointFlowPipeline(AbstractPipeline):
         return
 
     def sample(
-        self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
+        self, key, x_o=None, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None, **model_extras
     ):
+        
+        if x_o is None:
+            assert not self.unconditional, "x_o must be provided for conditional sampling."
+            x_o = jnp.zeros((0,))
+            
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -363,6 +288,7 @@ class JointFlowPipeline(AbstractPipeline):
             "cond": cond,
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
+            **model_extras
         }
 
         sampler_ = solver.get_sampler(
@@ -376,8 +302,11 @@ class JointFlowPipeline(AbstractPipeline):
         return samples
 
     def compute_unnorm_logprob(
-        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
+        self, x_1, x_o=None, step_size=0.01, use_ema=True, time_grid=None, **model_extras
     ):
+        if x_o is None:
+            assert not self.unconditional, "x_o must be provided for conditional sampling."
+            x_o = jnp.zeros((0,))
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -410,7 +339,7 @@ class JointFlowPipeline(AbstractPipeline):
             "cond": cond,
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
-            "edge_mask": self.undirected_edge_mask,
+            **model_extras
         }
 
         logp_sampler = solver.get_unnormalized_logprob(
@@ -427,9 +356,10 @@ class JointFlowPipeline(AbstractPipeline):
         return p
 
 
-class Flux1JointDiffusionPipeline(AbstractPipeline):
+class JointDiffusionPipeline(AbstractPipeline):
     def __init__(
         self,
+        model,
         train_dataset,
         val_dataset,
         dim_theta: int,
@@ -438,7 +368,7 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
         training_config=None,
     ):
         """
-        Diffusion pipeline for training and using a Simformer model for simulation-based inference.
+        Diffusion pipeline for training and using a Joint model for simulation-based inference.
 
         Parameters
         ----------
@@ -450,19 +380,20 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
             Dimension of the parameter space.
         dim_x : int
             Dimension of the observation space.
-        params : SimformerParams, optional
-            Parameters for the Simformer model. If None, default parameters are used.
+        params : optional
+            Parameters for the Joint model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, params, training_config
+            train_dataset, val_dataset, dim_theta, dim_x, model, params, training_config
         )
 
         self.cond_ids = _expand_dims(self.cond_ids)
         self.obs_ids = _expand_dims(self.obs_ids)
         self.node_ids = _expand_dims(self.node_ids)
+        
 
         self.path = EDMPath(
             scheduler=EDMScheduler(
@@ -472,102 +403,30 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
         )
 
         self.loss_fn = JointDiffLoss(self.path)
+        
+        
+        if self.dim_x == 0:
+            self.unconditional = True
+        else:
+            self.unconditional = False
 
     @classmethod
     def init_pipeline_from_config(
         cls,
-        train_dataset,
-        val_dataset,
-        dim_theta: int,
-        dim_x: int,
-        config_path: str,
-        checkpoint_dir: str,
     ):
-        """
-        Initialize the pipeline from a configuration file.
-
-        Parameters
-        ----------
-        config_path : str
-            Path to the configuration file.
-
-        """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
-
-        assert (
-            method == "diffusion"
-        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
-        assert (
-            model_type == "flux1joint"
-        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
-
-        # Model parameters from config
-        dim_joint = dim_theta + dim_x
-
-        params_dict = parse_flux1joint_params(config_path)
-
-        if params_dict["theta"] == -1:
-            params_dict["theta"] = 4 * dim_joint
-
-        params = Flux1JointParams(
-            rngs=nnx.Rngs(0),
-            joint_dim=dim_joint,
-            **params_dict,
+        raise NotImplementedError(
+            "init_pipeline_from_config is not implemented for JointDiffusionPipeline."
         )
-
-        # Training parameters
-        training_config = cls._get_default_training_config()
-        training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
-
-        pipeline = cls(
-            train_dataset,
-            val_dataset,
-            dim_theta,
-            dim_x,
-            params,
-            training_config,
-        )
-
-        return pipeline
 
     def _make_model(self):
-        """
-        Create and return the Simformer model to be trained.
-        """
-        model = Flux1Joint(self.params)
-        return model
+        raise NotImplementedError(
+            "_make_model is not implemented for JointDiffusionPipeline."
+        )
 
     def _get_default_params(self):
-        """
-        Return default parameters for the Simformer model.
-        """
-        params = Flux1JointParams(
-            in_channels=1,
-            vec_in_dim=None,
-            mlp_ratio=3.0,
-            num_heads=4,
-            depth_single_blocks=8,
-            axes_dim=[10],
-            condition_dim=[4],
-            qkv_bias=True,
-            rngs=nnx.Rngs(0),
-            joint_dim=self.dim_joint,
-            theta=self.dim_joint * 4,
-            guidance_embed=False,
-            param_dtype=jnp.bfloat16,
+        raise NotImplementedError(
+            "_get_default_params is not implemented for JointDiffusionPipeline."
         )
-        return params
 
     @classmethod
     def _get_default_training_config(cls):
@@ -596,13 +455,16 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
             sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")
 
             batch = (x_1, sigma)
-
-            condition_mask = sample_strutured_conditional_mask(
-                rng_condition,
-                batch_size,
-                self.dim_theta,
-                self.dim_x,
-            )
+            if self.unconditional:
+                condition_mask = jnp.zeros((batch_size, self.dim_joint, 1), dtype=jnp.bool_)
+                
+            else:
+                condition_mask = sample_strutured_conditional_mask(
+                    rng_condition,
+                    batch_size,
+                    self.dim_theta,
+                    self.dim_x,
+                )
 
             loss = self.loss_fn(
                 rng_x0,
@@ -623,11 +485,12 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
     def sample(
         self,
         key,
-        x_o,
+        x_o=None,
         nsamples=10_000,
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
+        **model_extras,
     ):
         if use_ema:
             model = self.ema_model_wrapped
@@ -635,6 +498,10 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
             model = self.model_wrapped
 
         key1, key2 = jax.random.split(key, 2)
+        
+        if x_o is None:
+            assert not self.unconditional, "x_o must be provided for conditional sampling."
+            x_o = jnp.zeros((0,))
 
         cond = _expand_dims(x_o)
 
@@ -644,6 +511,8 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
             "cond": cond,
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
+            **model_extras,
+            
         }
 
         x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
