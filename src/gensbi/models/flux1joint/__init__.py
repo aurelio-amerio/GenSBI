@@ -13,12 +13,9 @@ This package provides the Flux1Joint transformer-based model and related loss fu
 # If you use this package, please consider citing the original Simformer paper.
 
 from .model import Flux1Joint, Flux1JointParams, Flux1JointWrapper
-from .loss import Flux1JointCFMLoss, Flux1JointDiffLoss
 
 __all__ = [
     "Flux1Joint",
     "Flux1JointParams",
     "Flux1JointWrapper",
-    "Flux1JointCFMLoss",
-    "Flux1JointDiffLoss",
 ]

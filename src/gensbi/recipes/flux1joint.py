@@ -59,9 +59,9 @@ from einops import repeat
 from gensbi.models import (
     Flux1Joint,
     Flux1JointParams,
-    Flux1JointCFMLoss,
+    JointCFMLoss,
     Flux1JointWrapper,
-    Flux1JointDiffLoss,
+    JointDiffLoss,
 )
 
 import numpyro.distributions as dist
@@ -283,7 +283,7 @@ class Flux1JointFlowPipeline(AbstractPipeline):
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
-        self.loss_fn = Flux1JointCFMLoss(self.path)
+        self.loss_fn = JointCFMLoss(self.path)
 
         self.p0_dist_model = dist.Independent(
             dist.Normal(
@@ -291,6 +291,11 @@ class Flux1JointFlowPipeline(AbstractPipeline):
             ),
             reinterpreted_batch_ndims=1,
         )
+        
+        if self.dim_x == 0:
+            self.unconditional = True
+        else:
+            self.unconditional = False
 
     @classmethod
     def init_pipeline_from_config(
@@ -403,12 +408,16 @@ class Flux1JointFlowPipeline(AbstractPipeline):
             t = jax.random.uniform(rng_t, x_1.shape[0])
             batch = (x_0, x_1, t)
 
-            condition_mask = sample_strutured_conditional_mask(
-                rng_condition,
-                batch_size,
-                self.dim_theta,
-                self.dim_x,
-            )
+            if self.unconditional:
+                condition_mask = jnp.zeros((batch_size, self.dim_joint, 1), dtype=jnp.bool_)
+                
+            else:
+                condition_mask = sample_strutured_conditional_mask(
+                    rng_condition,
+                    batch_size,
+                    self.dim_theta,
+                    self.dim_x,
+                )
 
             loss = self.loss_fn(
                 model,
@@ -557,7 +566,7 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
             )
         )
 
-        self.loss_fn = Flux1JointDiffLoss(self.path)
+        self.loss_fn = JointDiffLoss(self.path)
 
     @classmethod
     def init_pipeline_from_config(

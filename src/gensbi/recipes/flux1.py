@@ -54,7 +54,7 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
 
-from gensbi.models import Flux1, Flux1Params, Flux1CFMLoss, Flux1Wrapper, Flux1DiffLoss
+from gensbi.models import Flux1, Flux1Params, ConditionalCFMLoss, Flux1Wrapper, ConditionalDiffLoss
 
 from einops import repeat
 
@@ -203,7 +203,7 @@ class Flux1FlowPipeline(AbstractPipeline):
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
-        self.loss_fn = Flux1CFMLoss(self.path)
+        self.loss_fn = ConditionalCFMLoss(self.path)
 
         self.p0_dist_model = dist.Independent(
             dist.Normal(
@@ -469,7 +469,7 @@ class Flux1DiffusionPipeline(AbstractPipeline):
             )
         )
 
-        self.loss_fn = Flux1DiffLoss(self.path)
+        self.loss_fn = ConditionalDiffLoss(self.path)
 
     @classmethod
     def init_pipeline_from_config(
