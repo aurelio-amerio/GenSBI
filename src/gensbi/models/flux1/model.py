@@ -240,33 +240,33 @@ class Flux1(nnx.Module):
         return obs
 
 
-class Flux1Wrapper(ModelWrapper):
-    def __init__(self, model):
-        super().__init__(model)
+# class ConditionalWrapper(ModelWrapper):
+#     def __init__(self, model):
+#         super().__init__(model)
 
-    def __call__(
-        self,
-        t: Array,
-        obs: Array,
-        obs_ids: Array,
-        cond: Array,
-        cond_ids: Array,
-        conditioned: bool | Array = True,
-        guidance: Array | None = None,
-    ) -> Array:
+#     def __call__(
+#         self,
+#         t: Array,
+#         obs: Array,
+#         obs_ids: Array,
+#         cond: Array,
+#         cond_ids: Array,
+#         conditioned: bool | Array = True,
+#         guidance: Array | None = None,
+#     ) -> Array:
 
-        obs = _expand_dims(obs)
-        # t = self._expand_time(t)
-        cond = _expand_dims(cond)
-        obs_ids = _expand_dims(obs_ids)
-        cond_ids = _expand_dims(cond_ids)
+#         obs = _expand_dims(obs)
+#         # t = self._expand_time(t)
+#         cond = _expand_dims(cond)
+#         obs_ids = _expand_dims(obs_ids)
+#         cond_ids = _expand_dims(cond_ids)
 
-        return self.model(
-            obs=obs,
-            t=t,
-            cond=cond,
-            obs_ids=obs_ids,
-            cond_ids=cond_ids,
-            conditioned=conditioned,
-            guidance=guidance,
-        )
+#         return self.model(
+#             obs=obs,
+#             t=t,
+#             cond=cond,
+#             obs_ids=obs_ids,
+#             cond_ids=cond_ids,
+#             conditioned=conditioned,
+#             guidance=guidance,
+#         )

@@ -448,7 +448,7 @@ class AbstractPipeline(abc.ABC):
     @abc.abstractmethod
     def _wrap_model(self):
         """
-        Wrap the model for evaluation (either using SimformerWrapper or Flux1Wrapper).
+        Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
         """
         ...  # pragma: no cover
 
