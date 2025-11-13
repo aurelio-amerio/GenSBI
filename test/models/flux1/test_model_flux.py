@@ -6,7 +6,8 @@ import jax.numpy as jnp
 from flax import nnx
 import pytest
 
-from gensbi.models.flux1.model import Flux1, Flux1Params, Flux1Wrapper
+from gensbi.models.flux1.model import Flux1, Flux1Params
+from gensbi.models.wrappers import ConditionalWrapper
 
 
 def get_rngs():
@@ -88,7 +89,7 @@ def test_flux_forward_shape_embed_rope():
 def test_flux_wrapper():
 
     model = init_test_model()
-    wrapper = Flux1Wrapper(model)
+    wrapper = ConditionalWrapper(model)
 
     obs = jnp.ones((3, 2, 1))
     cond = jnp.ones((3, 2, 1))

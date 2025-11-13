@@ -62,7 +62,7 @@ from gensbi.models import (
     Simformer,
     SimformerParams,
     JointCFMLoss,
-    SimformerWrapper,
+    JointWrapper,
     JointDiffLoss,
 )
 
@@ -416,8 +416,8 @@ class SimformerFlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = SimformerWrapper(self.model)
-        self.ema_model_wrapped = SimformerWrapper(self.ema_model)
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
 
     def sample(
@@ -696,8 +696,8 @@ class SimformerDiffusionPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = SimformerWrapper(self.model)
-        self.ema_model_wrapped = SimformerWrapper(self.ema_model)
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
 
     def sample(

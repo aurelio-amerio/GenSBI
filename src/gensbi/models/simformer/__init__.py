@@ -13,10 +13,9 @@ This package provides the Simformer transformer-based model and related loss fun
 # If you use this package, please consider citing the original Simformer paper.
 
 
-from .model import Simformer, SimformerParams, SimformerWrapper
+from .model import Simformer, SimformerParams
 
 __all__ = [
     "Simformer",
     "SimformerParams",
-    "SimformerWrapper",
 ]

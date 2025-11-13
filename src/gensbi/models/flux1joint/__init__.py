@@ -12,10 +12,9 @@ This package provides the Flux1Joint transformer-based model and related loss fu
 # Substantial modifications and extensions by Aurelio Amerio, 2025.
 # If you use this package, please consider citing the original Simformer paper.
 
-from .model import Flux1Joint, Flux1JointParams, Flux1JointWrapper
+from .model import Flux1Joint, Flux1JointParams
 
 __all__ = [
     "Flux1Joint",
     "Flux1JointParams",
-    "Flux1JointWrapper",
 ]

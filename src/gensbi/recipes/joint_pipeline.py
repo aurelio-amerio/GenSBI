@@ -60,7 +60,7 @@ from gensbi.models import (
     Flux1Joint,
     Flux1JointParams,
     JointCFMLoss,
-    Flux1JointWrapper,
+    JointWrapper,
     JointDiffLoss,
 )
 
@@ -335,8 +335,8 @@ class JointFlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = Flux1JointWrapper(self.model)
-        self.ema_model_wrapped = Flux1JointWrapper(self.ema_model)
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
 
     def sample(
@@ -616,8 +616,8 @@ class Flux1JointDiffusionPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = Flux1JointWrapper(self.model)
-        self.ema_model_wrapped = Flux1JointWrapper(self.ema_model)
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
 
     def sample(

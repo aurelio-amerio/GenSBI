@@ -189,135 +189,135 @@ class Simformer(nnx.Module):
         return out
 
 
-class SimformerWrapper(ModelWrapper):
-    """
-    Module to handle conditioning in the Simformer model.
+# class JointWrapper(ModelWrapper):
+#     """
+#     Module to handle conditioning in the Simformer model.
 
-    Args:
-        model (Simformer): Simformer model instance.
-    """
-    def __init__(self, model):
-        super().__init__(model)
+#     Args:
+#         model (Simformer): Simformer model instance.
+#     """
+#     def __init__(self, model):
+#         super().__init__(model)
 
-    def conditioned(
-        self, 
-        obs: Array, 
-        obs_ids: Array, 
-        cond: Array, 
-        cond_ids: Array, 
-        t: Array, 
-        edge_mask: Optional[Array] = None
-    ) -> Array:
-        """
-        Perform conditioned inference.
+#     def conditioned(
+#         self, 
+#         obs: Array, 
+#         obs_ids: Array, 
+#         cond: Array, 
+#         cond_ids: Array, 
+#         t: Array, 
+#         edge_mask: Optional[Array] = None
+#     ) -> Array:
+#         """
+#         Perform conditioned inference.
 
-        Args:
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            cond (Array): Conditioning values.
-            cond_ids (Array): Conditioning identifiers.
-            t (Array): Time steps.
-            edge_mask (Optional[Array]): Mask for edges.
+#         Args:
+#             obs (Array): Observations.
+#             obs_ids (Array): Observation identifiers.
+#             cond (Array): Conditioning values.
+#             cond_ids (Array): Conditioning identifiers.
+#             t (Array): Time steps.
+#             edge_mask (Optional[Array]): Mask for edges.
 
-        Returns:
-            Array: Conditioned output.
-        """
+#         Returns:
+#             Array: Conditioned output.
+#         """
         
-        obs_dim = obs.shape[1]
-        cond_dim = cond.shape[1]
-        # repeat cond on the first dimension to match obs
-        cond = jnp.broadcast_to(
-            cond, (obs.shape[0], *cond.shape[1:])
-        )
+#         obs_dim = obs.shape[1]
+#         cond_dim = cond.shape[1]
+#         # repeat cond on the first dimension to match obs
+#         cond = jnp.broadcast_to(
+#             cond, (obs.shape[0], *cond.shape[1:])
+#         )
 
-        condition_mask_dim = obs_dim + cond_dim
+#         condition_mask_dim = obs_dim + cond_dim
 
-        condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
-        condition_mask = condition_mask.at[obs_dim:].set(True)
+#         condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
+#         condition_mask = condition_mask.at[obs_dim:].set(True)
 
-        x = jnp.concatenate([obs, cond], axis=1)
-        node_ids = jnp.concatenate([obs_ids, cond_ids], axis=1)
+#         x = jnp.concatenate([obs, cond], axis=1)
+#         node_ids = jnp.concatenate([obs_ids, cond_ids], axis=1)
 
-        res = self.model(
-            obs=x,
-            t=t,
-            node_ids=node_ids,
-            condition_mask=condition_mask,
-            edge_mask=edge_mask,
-        )
-        # now return only the values on which we are not conditioning
-        res = res[:, :obs_dim]
-        return res
+#         res = self.model(
+#             obs=x,
+#             t=t,
+#             node_ids=node_ids,
+#             condition_mask=condition_mask,
+#             edge_mask=edge_mask,
+#         )
+#         # now return only the values on which we are not conditioning
+#         res = res[:, :obs_dim]
+#         return res
 
-    def unconditioned(
-        self, 
-        obs: Array, 
-        obs_ids: Array, 
-        t: Array, 
-        edge_mask: Optional[Array] = None
-    ) -> Array:
-        """
-        Perform unconditioned inference.
+#     def unconditioned(
+#         self, 
+#         obs: Array, 
+#         obs_ids: Array, 
+#         t: Array, 
+#         edge_mask: Optional[Array] = None
+#     ) -> Array:
+#         """
+#         Perform unconditioned inference.
 
-        Args:
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            t (Array): Time steps.
-            edge_mask (Optional[Array]): Mask for edges.
+#         Args:
+#             obs (Array): Observations.
+#             obs_ids (Array): Observation identifiers.
+#             t (Array): Time steps.
+#             edge_mask (Optional[Array]): Mask for edges.
 
-        Returns:
-            Array: Unconditioned output.
-        """
+#         Returns:
+#             Array: Unconditioned output.
+#         """
 
-        condition_mask = jnp.zeros((obs.shape[1],), dtype=jnp.bool_)
+#         condition_mask = jnp.zeros((obs.shape[1],), dtype=jnp.bool_)
 
-        node_ids = obs_ids
+#         node_ids = obs_ids
 
-        res = self.model(
-            obs=obs,
-            t=t,
-            node_ids=node_ids,
-            condition_mask=condition_mask,
-            edge_mask=edge_mask,
-        )
+#         res = self.model(
+#             obs=obs,
+#             t=t,
+#             node_ids=node_ids,
+#             condition_mask=condition_mask,
+#             edge_mask=edge_mask,
+#         )
 
-        return res
+#         return res
 
-    def __call__(
-        self, 
-        t: Array, 
-        obs: Array, 
-        obs_ids: Array, 
-        cond: Array, 
-        cond_ids: Array, 
-        conditioned: bool = True, 
-        edge_mask: Optional[Array] = None
-    ) -> Array:
-        """
-        Perform inference based on conditioning.
+#     def __call__(
+#         self, 
+#         t: Array, 
+#         obs: Array, 
+#         obs_ids: Array, 
+#         cond: Array, 
+#         cond_ids: Array, 
+#         conditioned: bool = True, 
+#         edge_mask: Optional[Array] = None
+#     ) -> Array:
+#         """
+#         Perform inference based on conditioning.
 
-        Args:
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            cond (Array): Conditioning values.
-            cond_ids (Array): Conditioning identifiers.
-            timesteps (Array): Time steps.
-            conditioned (bool): Whether to perform conditioned inference.
-            edge_mask (Optional[Array]): Mask for edges.
+#         Args:
+#             obs (Array): Observations.
+#             obs_ids (Array): Observation identifiers.
+#             cond (Array): Conditioning values.
+#             cond_ids (Array): Conditioning identifiers.
+#             timesteps (Array): Time steps.
+#             conditioned (bool): Whether to perform conditioned inference.
+#             edge_mask (Optional[Array]): Mask for edges.
 
-        Returns:
-            Array: Model output.
-        """
-        t = _expand_time(t)
-        obs = _expand_dims(obs)
-        cond = _expand_dims(cond)
+#         Returns:
+#             Array: Model output.
+#         """
+#         t = _expand_time(t)
+#         obs = _expand_dims(obs)
+#         cond = _expand_dims(cond)
         
-        obs_ids = _expand_dims(obs_ids)
-        cond_ids = _expand_dims(cond_ids)
+#         obs_ids = _expand_dims(obs_ids)
+#         cond_ids = _expand_dims(cond_ids)
         
-        if conditioned:
-            return self.conditioned(
-                obs, obs_ids, cond, cond_ids, t, edge_mask=edge_mask
-            )
-        else:
-            return self.unconditioned(obs, obs_ids, t, edge_mask=edge_mask)
+#         if conditioned:
+#             return self.conditioned(
+#                 obs, obs_ids, cond, cond_ids, t, edge_mask=edge_mask
+#             )
+#         else:
+#             return self.unconditioned(obs, obs_ids, t, edge_mask=edge_mask)

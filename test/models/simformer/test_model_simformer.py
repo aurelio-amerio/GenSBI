@@ -5,7 +5,8 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 import jax.numpy as jnp
 from flax import nnx
 
-from gensbi.models.simformer.model import Simformer, SimformerParams, SimformerWrapper
+from gensbi.models.simformer.model import Simformer, SimformerParams
+from gensbi.models.wrappers import JointWrapper
 
 def get_rngs():
     return nnx.Rngs(0)
@@ -40,7 +41,7 @@ def test_simformer_forward_shape():
 def test_simformer_wrapper():
     params = get_params()
     model = Simformer(params)
-    wrapper = SimformerWrapper(model)
+    wrapper = JointWrapper(model)
 
     obs = jnp.ones((12, 2, 1))
     cond = jnp.ones((12, 2, 1))

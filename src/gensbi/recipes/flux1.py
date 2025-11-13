@@ -54,7 +54,7 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
 
-from gensbi.models import Flux1, Flux1Params, ConditionalCFMLoss, Flux1Wrapper, ConditionalDiffLoss
+from gensbi.models import Flux1, Flux1Params, ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
 
 from einops import repeat
 
@@ -331,8 +331,8 @@ class Flux1FlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = Flux1Wrapper(self.model)
-        self.ema_model_wrapped = Flux1Wrapper(self.ema_model)
+        self.model_wrapped = ConditionalWrapper(self.model)
+        self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
         return
 
     def sample(
@@ -605,8 +605,8 @@ class Flux1DiffusionPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = Flux1Wrapper(self.model)
-        self.ema_model_wrapped = Flux1Wrapper(self.ema_model)
+        self.model_wrapped = ConditionalWrapper(self.model)
+        self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
         return
 
     def sample(
