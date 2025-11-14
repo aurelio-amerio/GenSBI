@@ -232,7 +232,7 @@ class JointFlowPipeline(AbstractPipeline):
             batch = (x_0, x_1, t)
 
             if self.unconditional:
-                condition_mask = jnp.zeros((batch_size, self.dim_joint, 1), dtype=jnp.bool_)
+                condition_mask = jnp.zeros(x_0.shape, dtype=jnp.bool_)
                 
             else:
                 condition_mask = sample_strutured_conditional_mask(
@@ -253,8 +253,8 @@ class JointFlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model)
-        self.ema_model_wrapped = JointWrapper(self.ema_model)
+        self.model_wrapped = JointWrapper(self.model, conditioned=not self.unconditional)
+        self.ema_model_wrapped = JointWrapper(self.ema_model, conditioned=not self.unconditional)
         return
 
     def sample(
@@ -282,6 +282,7 @@ class JointFlowPipeline(AbstractPipeline):
         cond = _expand_dims(x_o)
 
         solver = ODESolver(velocity_model=model)
+
         model_extras = {
             "cond": cond,
             "obs_ids": self.obs_ids,
@@ -332,6 +333,7 @@ class JointFlowPipeline(AbstractPipeline):
             ),
             reinterpreted_batch_ndims=1,
         )
+
 
         model_extras = {
             "cond": cond,
@@ -475,8 +477,8 @@ class JointDiffusionPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model)
-        self.ema_model_wrapped = JointWrapper(self.ema_model)
+        self.model_wrapped = JointWrapper(self.model, conditioned=not self.unconditional)
+        self.ema_model_wrapped = JointWrapper(self.ema_model, conditioned=not self.unconditional)
         return
 
     def sample(

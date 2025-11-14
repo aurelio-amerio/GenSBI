@@ -9,11 +9,9 @@ from .flux1joint import (
     Flux1JointParams,
 )   
 
-from .losses import JointCFMLoss, JointDiffLoss
-    
-from .losses import ConditionalCFMLoss, ConditionalDiffLoss
+from .losses import JointCFMLoss, JointDiffLoss, ConditionalCFMLoss, ConditionalDiffLoss, UnconditionalCFMLoss, UnconditionalDiffLoss   
 
-from .wrappers import JointWrapper, ConditionalWrapper
+from .wrappers import JointWrapper, ConditionalWrapper, UnconditionalWrapper
 
 __all__ = [
     "Flux1",
@@ -29,9 +27,12 @@ __all__ = [
     "JointDiffLoss",
     "ConditionalCFMLoss",
     "ConditionalDiffLoss",
+    "UnconditionalCFMLoss",
+    "UnconditionalDiffLoss",
     
     "JointWrapper",
     "ConditionalWrapper",
+    "UnconditionalWrapper",
 ]
 
 # coverage 79% still need to work on this
