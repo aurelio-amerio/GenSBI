@@ -57,8 +57,6 @@ from gensbi.diffusion.solver import SDESolver
 from einops import repeat
 
 from gensbi.models import (
-    Flux1Joint,
-    Flux1JointParams,
     JointCFMLoss,
     JointWrapper,
     JointDiffLoss,
@@ -157,7 +155,7 @@ class JointFlowPipeline(AbstractPipeline):
         val_dataset,
         dim_theta: int,
         dim_x: int,
-        params=None,
+        params,
         training_config=None,
     ):
         """
@@ -264,7 +262,7 @@ class JointFlowPipeline(AbstractPipeline):
     ):
         
         if x_o is None:
-            assert not self.unconditional, "x_o must be provided for conditional sampling."
+            assert self.unconditional, "x_o must be provided for conditional sampling."
             x_o = jnp.zeros((0,))
             
         if use_ema:
@@ -305,7 +303,7 @@ class JointFlowPipeline(AbstractPipeline):
         self, x_1, x_o=None, step_size=0.01, use_ema=True, time_grid=None, **model_extras
     ):
         if x_o is None:
-            assert not self.unconditional, "x_o must be provided for conditional sampling."
+            assert self.unconditional, "x_o must be provided for conditional sampling."
             x_o = jnp.zeros((0,))
         if use_ema:
             model = self.ema_model_wrapped
@@ -352,8 +350,7 @@ class JointFlowPipeline(AbstractPipeline):
         )
 
         exact_log_p = logp_sampler(x_1)
-        p = jnp.exp(exact_log_p)
-        return p
+        return exact_log_p
 
 
 class JointDiffusionPipeline(AbstractPipeline):
@@ -364,7 +361,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         val_dataset,
         dim_theta: int,
         dim_x: int,
-        params=None,
+        params,
         training_config=None,
     ):
         """
@@ -500,7 +497,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         key1, key2 = jax.random.split(key, 2)
         
         if x_o is None:
-            assert not self.unconditional, "x_o must be provided for conditional sampling."
+            assert self.unconditional, "x_o must be provided for conditional sampling."
             x_o = jnp.zeros((0,))
 
         cond = _expand_dims(x_o)

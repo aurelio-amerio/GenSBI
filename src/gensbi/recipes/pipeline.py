@@ -127,8 +127,8 @@ class AbstractPipeline(abc.ABC):
         val_dataset,
         dim_theta: int,
         dim_x: int,
-        model=None,
-        params=None,
+        model: nnx.Module,
+        params,
         training_config=None,
     ):
         self.train_dataset = train_dataset
@@ -146,8 +146,8 @@ class AbstractPipeline(abc.ABC):
         self.cond_ids = jnp.arange(self.dim_theta, self.dim_joint)  # conditional ids
 
         self.params = params
-        if params is None:
-            self.params = self._get_default_params()
+        # if params is None:
+        #     self.params = self._get_default_params()
 
         self.training_config = training_config
         if training_config is None:

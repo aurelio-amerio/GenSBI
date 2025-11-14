@@ -277,6 +277,8 @@ class SimformerFlowPipeline(JointFlowPipeline):
         super().__init__(
             None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
+        if params is None:
+            self.params = self._get_default_params()
         
         self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)
@@ -447,6 +449,8 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         super().__init__(
             None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
+        if params is None:
+            self.params = self._get_default_params()
         
         self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)
