@@ -197,6 +197,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         super().__init__(
             None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
+        if params is None:
+            self.params = self._get_default_params()
         
         self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)
@@ -329,9 +331,12 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
 
         """
         
+        
         super().__init__(
             None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
+        if params is None:
+            self.params = self._get_default_params()
         
         self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)

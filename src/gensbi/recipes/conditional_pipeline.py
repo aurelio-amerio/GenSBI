@@ -253,8 +253,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             _ = logp_sampler(x_1[:4])
 
         exact_log_p = logp_sampler(x_1)
-        p = jnp.exp(exact_log_p)
-        return p
+        return exact_log_p
 
 
 class ConditionalDiffusionPipeline(AbstractPipeline):
