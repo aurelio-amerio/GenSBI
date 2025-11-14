@@ -16,8 +16,9 @@ class JointWrapper(ModelWrapper):
     Args:
         model: Joint model model instance.
     """
-    def __init__(self, model):
+    def __init__(self, model, conditioned=True):
         super().__init__(model)
+        self.conditioned = conditioned
 
     def conditioned(
         self, 
@@ -87,7 +88,7 @@ class JointWrapper(ModelWrapper):
             Array: Unconditioned output.
         """
 
-        condition_mask = jnp.zeros((obs.shape[1],), dtype=jnp.bool_)
+        condition_mask = jnp.zeros(obs.shape, dtype=jnp.bool_)
 
         node_ids = obs_ids
 
@@ -108,7 +109,7 @@ class JointWrapper(ModelWrapper):
         obs_ids: Array, 
         cond: Array, 
         cond_ids: Array, 
-        conditioned: bool = True, 
+        conditioned: bool = None, 
         **kwargs,
     ) -> Array:
         """
@@ -125,6 +126,8 @@ class JointWrapper(ModelWrapper):
         Returns:
             Array: Model output.
         """
+        if conditioned is None:
+            conditioned = self.conditioned  
         t = _expand_time(t)
         obs = _expand_dims(obs)
         cond = _expand_dims(cond)

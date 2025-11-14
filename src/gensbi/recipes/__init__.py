@@ -8,6 +8,7 @@ from .flux1 import Flux1FlowPipeline, Flux1DiffusionPipeline
 
 from .joint_pipeline import JointDiffusionPipeline, JointFlowPipeline
 from .conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline
+from .unconditional_pipeline import UnconditionalFlowPipeline, UnconditionalDiffusionPipeline
 
 __all__ = [
     "SimformerFlowPipeline",
@@ -21,6 +22,8 @@ __all__ = [
     "JointFlowPipeline",
     "ConditionalFlowPipeline",
     "ConditionalDiffusionPipeline",
+    "UnconditionalFlowPipeline",
+    "UnconditionalDiffusionPipeline",
 ]
 
 # 97% coverage, need to improve pipeline to hit some branches
