@@ -155,7 +155,7 @@ class JointFlowPipeline(AbstractPipeline):
         val_dataset,
         dim_theta: int,
         dim_x: int,
-        params,
+        params=None,
         training_config=None,
     ):
         """
@@ -197,9 +197,8 @@ class JointFlowPipeline(AbstractPipeline):
         )
         
         if self.dim_x == 0:
-            self.unconditional = True
-        else:
-            self.unconditional = False
+            raise ValueError("JointFlowPipeline initialized as unconditional since dim_x=0. Please use `UnconditionalFlowPipeline` instead.")
+
 
     @classmethod
     def init_pipeline_from_config(cls):
@@ -231,16 +230,13 @@ class JointFlowPipeline(AbstractPipeline):
             t = jax.random.uniform(rng_t, x_1.shape[0])
             batch = (x_0, x_1, t)
 
-            if self.unconditional:
-                condition_mask = jnp.zeros(x_0.shape, dtype=jnp.bool_)
-                
-            else:
-                condition_mask = sample_strutured_conditional_mask(
-                    rng_condition,
-                    batch_size,
-                    self.dim_theta,
-                    self.dim_x,
-                )
+
+            condition_mask = sample_strutured_conditional_mask(
+                rng_condition,
+                batch_size,
+                self.dim_theta,
+                self.dim_x,
+            )
 
             loss = self.loss_fn(
                 model,
@@ -253,17 +249,13 @@ class JointFlowPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model, conditioned=not self.unconditional)
-        self.ema_model_wrapped = JointWrapper(self.ema_model, conditioned=not self.unconditional)
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
 
     def sample(
-        self, key, x_o=None, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+        self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None, **model_extras
     ):
-        
-        if x_o is None:
-            assert self.unconditional, "x_o must be provided for conditional sampling."
-            x_o = jnp.zeros((0,))
             
         if use_ema:
             model = self.ema_model_wrapped
@@ -301,11 +293,9 @@ class JointFlowPipeline(AbstractPipeline):
         return samples
 
     def compute_unnorm_logprob(
-        self, x_1, x_o=None, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
     ):
-        if x_o is None:
-            assert self.unconditional, "x_o must be provided for conditional sampling."
-            x_o = jnp.zeros((0,))
+
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -363,7 +353,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         val_dataset,
         dim_theta: int,
         dim_x: int,
-        params,
+        params=None,
         training_config=None,
     ):
         """
@@ -403,11 +393,8 @@ class JointDiffusionPipeline(AbstractPipeline):
 
         self.loss_fn = JointDiffLoss(self.path)
         
-        
         if self.dim_x == 0:
-            self.unconditional = True
-        else:
-            self.unconditional = False
+            raise ValueError("JointFlowPipeline initialized as unconditional since dim_x=0. Please use `UnconditionalFlowPipeline` instead.")
 
     @classmethod
     def init_pipeline_from_config(
@@ -454,16 +441,13 @@ class JointDiffusionPipeline(AbstractPipeline):
             sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")
 
             batch = (x_1, sigma)
-            if self.unconditional:
-                condition_mask = jnp.zeros((batch_size, self.dim_joint, 1), dtype=jnp.bool_)
-                
-            else:
-                condition_mask = sample_strutured_conditional_mask(
-                    rng_condition,
-                    batch_size,
-                    self.dim_theta,
-                    self.dim_x,
-                )
+
+            condition_mask = sample_strutured_conditional_mask(
+                rng_condition,
+                batch_size,
+                self.dim_theta,
+                self.dim_x,
+            )
 
             loss = self.loss_fn(
                 rng_x0,
@@ -477,14 +461,14 @@ class JointDiffusionPipeline(AbstractPipeline):
         return loss_fn
 
     def _wrap_model(self):
-        self.model_wrapped = JointWrapper(self.model, conditioned=not self.unconditional)
-        self.ema_model_wrapped = JointWrapper(self.ema_model, conditioned=not self.unconditional)
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
 
     def sample(
         self,
         key,
-        x_o=None,
+        x_o,
         nsamples=10_000,
         nsteps=18,
         use_ema=True,
@@ -497,10 +481,7 @@ class JointDiffusionPipeline(AbstractPipeline):
             model = self.model_wrapped
 
         key1, key2 = jax.random.split(key, 2)
-        
-        if x_o is None:
-            assert self.unconditional, "x_o must be provided for conditional sampling."
-            x_o = jnp.zeros((0,))
+
 
         cond = _expand_dims(x_o)
 

@@ -327,7 +327,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             batch = (x_1, sigma)
-            loss = self.loss_fn(rng_x0, model, batch, self.obs_ids)
+            loss = self.loss_fn(rng_x0, model, batch, node_ids=self.obs_ids)
             return loss
 
         return loss_fn

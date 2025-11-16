@@ -9,30 +9,38 @@ from jax.typing import DTypeLike
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 
+
 class UnconditionalWrapper(ModelWrapper):
     """
-    Module to handle conditioning in the Unconditional estimation model.
+    Wrapper for unconditional models to handle input expansion and calling convention.
 
     Args:
-        model: Unconditional model instance.
+        model: The unconditional model instance to wrap.
     """
     def __init__(self, model):
+        """
+        Initialize the UnconditionalWrapper.
+
+        Args:
+            model: The unconditional model instance to wrap.
+        """
         super().__init__(model)
 
     def __call__(
-        self, 
-        t: Array, 
-        obs: Array, 
-        obs_ids: Array, 
+        self,
+        t: Array,
+        obs: Array,
+        obs_ids: Array,
         **kwargs,
     ) -> Array:
         """
-        Perform inference based on conditioning.
+        Call the wrapped model with expanded inputs.
 
         Args:
             t (Array): Time steps.
             obs (Array): Observations.
             obs_ids (Array): Observation identifiers.
+            **kwargs: Additional keyword arguments passed to the model.
 
         Returns:
             Array: Model output.
