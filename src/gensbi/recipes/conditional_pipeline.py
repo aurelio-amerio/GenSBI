@@ -21,7 +21,20 @@ Example:
         train_dataset = itertools.cycle(train_batch)
         val_dataset = itertools.cycle(val_batch)
 
-        # Define the model
+        # Define your model 
+        model = ...  # your nnx.Module model here, e.g., a simple MLP, or the Simformer model
+        # if you define a custom model, it should take as input the following arguments:
+        #    t: Array,
+        #    obs: Array,
+        #    obs_ids: Array,
+        #    cond: Array,
+        #    cond_ids: Array, 
+        
+        # the obs should have shape (batch_size, dim_theta, c), 
+        # the cond should have shape (batch_size, dim_x, c),
+        # obs_ids and cond_ids should match obs and cond respectively,
+        # and the output will be of the same shape as obs
+
         dim_theta = 2  # Dimension of the parameter space
         dim_x = 2      # Dimension of the observation space
         pipeline = ConditionalPipeline(train_dataset, val_dataset, dim_theta, dim_x)

@@ -50,6 +50,7 @@ val_dataset = itertools.cycle(val_data)
 
 params_simf = SimformerParams(
     rngs=nnx.Rngs(0),
+    in_channels=1,
     dim_value=4,
     dim_id=2,
     dim_condition=2,

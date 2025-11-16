@@ -267,7 +267,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             Dimension of the parameter space.
         dim_x : int
             Dimension of the observation space.
-        params : SimformerParams, optional
+        params : Flux1JointParams, optional
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
@@ -404,7 +404,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             Dimension of the parameter space.
         dim_x : int
             Dimension of the observation space.
-        params : SimformerParams, optional
+        params : Flux1JointParams, optional
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
