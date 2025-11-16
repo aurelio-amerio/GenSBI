@@ -22,6 +22,8 @@ from gensbi.recipes import (
     JointDiffusionPipeline,
 )
 
+from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
+
 import itertools
 
 
@@ -44,41 +46,56 @@ val_data = data[800:].reshape(10, -1, dim_joint, 1)
 train_dataset = itertools.cycle(train_data)
 val_dataset = itertools.cycle(val_data)
 
+# we define a conditional and a joint model for testing
 
+params_simf = SimformerParams(
+    rngs=nnx.Rngs(0),
+    dim_value=4,
+    dim_id=2,
+    dim_condition=2,
+    dim_joint=dim_joint,
+    fourier_features=128,
+    num_heads=2,
+    num_layers=2,
+    widening_factor=2,
+    qkv_features=10,
+    num_hidden_layers=1,
+)
 
-# Define a simple MLP velocity field model for testing
-class MLP(nnx.Module):
-    def __init__(self, input_dim: int = 2, hidden_dim: int = 128, *, rngs: nnx.Rngs, **kwargs):
+model_joint = Simformer(params_simf)
 
-        self.input_dim = input_dim
-        self.hidden_dim = hidden_dim
+params = Flux1Params(
+    in_channels=1,
+    vec_in_dim=None,
+    context_in_dim=1,
+    mlp_ratio=4,
+    num_heads=4,
+    depth=1,
+    depth_single_blocks=2,
+    axes_dim=[
+        2,
+    ],
+    obs_dim=dim_theta,
+    cond_dim=dim_data,
+    qkv_bias=True,
+    guidance_embed=False,
+    rngs=nnx.Rngs(0),
+    param_dtype=jnp.float32,
+)
 
-        din = input_dim + 1
-
-        self.linear1 = nnx.Linear(din, self.hidden_dim, rngs=rngs)
-        self.linear2 = nnx.Linear(self.hidden_dim, self.input_dim, rngs=rngs)
-
-    def __call__(self, t: jax.Array, obs: jax.Array,*args, **kwargs):
-        assert (
-            obs.ndim == 3
-        ), f"Input obs must have shape (batch_size, input_dim, 1), got {obs.shape}"
-        t = jnp.atleast_1d(t)
-        x = jnp.squeeze(obs, axis=-1)
-        if t.ndim < 2:
-            t = t[..., None]
-
-        t = jnp.broadcast_to(t, (x.shape[0], t.shape[-1]))
-        h = jnp.concatenate([x, t], axis=-1)
-
-        x = self.linear1(h)
-        x = jax.nn.gelu(x)
-
-        x = self.linear2(x)
-
-        return x[..., None]
+model_conditional = Flux1(params)
 
 
 # %%
+
+def get_model(pipeline_cls):
+    if pipeline_cls in [
+        ConditionalFlowPipeline,
+        ConditionalDiffusionPipeline,
+    ]:
+        return model_conditional
+    else:
+        return model_joint
 
 
 @pytest.mark.parametrize(
@@ -97,7 +114,7 @@ def test_model_general_conditional(pipeline_cls):
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 
-        model = MLP(input_dim=dim_joint, hidden_dim=2, rngs=nnx.Rngs(0))
+        model = get_model(pipeline_cls)
 
         # first we try to initialize a default pipeline, to make sure it works
         default_pipeline = pipeline_cls(
@@ -107,7 +124,6 @@ def test_model_general_conditional(pipeline_cls):
         assert isinstance(
             default_pipeline, pipeline_cls
         ), f"Expected {pipeline_cls}, got {type(default_pipeline)}"
-
 
         pipeline = pipeline_cls(
             model,
@@ -204,6 +220,8 @@ def test_model_general_conditional(pipeline_cls):
         ), "Restored model samples do not match"
 
 
+########
+
 @pytest.mark.parametrize(
     "pipeline_cls",
     [
@@ -218,14 +236,11 @@ def test_model_general_unconditional(pipeline_cls):
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 
-        model = MLP(input_dim=dim_joint, hidden_dim=2, rngs=nnx.Rngs(0))
+        model = get_model(pipeline_cls)
 
         # first we try to initialize a default pipeline, to make sure it works
 
-        default_pipeline = pipeline_cls(
-            model, train_dataset, val_dataset, dim_joint
-        )
- 
+        default_pipeline = pipeline_cls(model, train_dataset, val_dataset, dim_joint)
 
         assert isinstance(
             default_pipeline, pipeline_cls
