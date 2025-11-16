@@ -14,6 +14,7 @@ def get_rngs():
 def get_params():
     return SimformerParams(
         rngs=get_rngs(),
+        in_channels=1,
         dim_value=2,
         dim_id=2,
         dim_condition=2,

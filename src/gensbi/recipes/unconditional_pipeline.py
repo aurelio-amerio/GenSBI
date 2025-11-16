@@ -20,11 +20,24 @@ Example:
         # Create datasets iterators (in this case with itertools, although a grain dataset is recommended)
         train_dataset = itertools.cycle(train_batch)
         val_dataset = itertools.cycle(val_batch)
+        
+        # Define your model 
+        model = ...  # your nnx.Module model here, e.g., a simple MLP, or the Simformer model
+        # if you define a custom model, it should take as input the following arguments:
+        #    t: Array,
+        #    obs: Array,
+        #    node_ids: Array (optional, if your model is a transformer-based model)
+        #    *args 
+        #    **kwargs   
+        
+        # the obs input should have shape (batch_size, dim_joint, c), and the output will be of the same shape
+
+    
 
         # Define the model
         dim_theta = 2  # Dimension of the parameter space
         dim_x = 2      # Dimension of the observation space
-        pipeline = UnconditionalPipeline(train_dataset, val_dataset, dim_theta, dim_x)
+        pipeline = UnconditionalPipeline(model, train_dataset, val_dataset, dim_theta, dim_x)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
@@ -32,7 +45,7 @@ Example:
 
         # Sample from the posterior
         x_o = jnp.array([0.5, -0.2])  # Example
-        samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
+        samples = pipeline.sample(rngs, nsamples=10000, step_size=0.01)
 
 """
 

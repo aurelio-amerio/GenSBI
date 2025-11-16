@@ -94,6 +94,7 @@ def parse_simformer_params(config_path: str):
     model_params = config.get("model", {})
 
     params_dict = dict(
+        in_channels=model_params.get("in_channels", 1),
         dim_value=model_params.get("dim_value", 40),
         dim_id=model_params.get("dim_id", 40),
         dim_condition=model_params.get("dim_condition", 10),
@@ -363,6 +364,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         """
         params = SimformerParams(
             rngs=nnx.Rngs(0),
+            in_channels=1,
             dim_value=40,
             dim_id=40,
             dim_condition=10,
@@ -535,6 +537,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         Return default parameters for the Simformer model.
         """
         params = SimformerParams(
+            in_channels=1,
             dim_value=40,
             dim_id=40,
             dim_condition=10,

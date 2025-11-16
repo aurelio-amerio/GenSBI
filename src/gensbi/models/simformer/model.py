@@ -23,6 +23,7 @@ class SimformerParams:
 
     Args:
         rngs (nnx.Rngs): Random number generators for initialization.
+        in_channels (int): Number of input channels.
         dim_value (int): Dimension of the value embeddings.
         dim_id (int): Dimension of the ID embeddings.
         dim_condition (int): Dimension of the condition embeddings.
@@ -37,6 +38,7 @@ class SimformerParams:
     """
 
     rngs: nnx.Rngs
+    in_channels: int
     dim_value: int
     dim_id: int
     dim_condition: int
@@ -67,12 +69,13 @@ class Simformer(nnx.Module):
         params: SimformerParams,
     ):
         self.params = params
+        self.in_channels = params.in_channels
         self.dim_value = params.dim_value
         self.dim_id = params.dim_id
         self.dim_condition = params.dim_condition
 
         self.embedding_net_value = MLPEmbedder(
-            in_dim=1, hidden_dim=params.dim_value, rngs=params.rngs
+            in_dim=self.in_channels, hidden_dim=params.dim_value, rngs=params.rngs
         )
         # self.embedding_net_value = lambda obs: jnp.repeat(obs, dim_value, axis=-1)
 
@@ -103,7 +106,7 @@ class Simformer(nnx.Module):
             rngs=params.rngs,
         )
 
-        self.output_fn = nnx.Linear(self.total_tokens, 1, rngs=params.rngs)
+        self.output_fn = nnx.Linear(self.total_tokens, self.in_channels, rngs=params.rngs)
         return
 
     def __call__(
