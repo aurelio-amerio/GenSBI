@@ -3,7 +3,7 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 Example:
     .. code-block:: python
-        import itertools
+        import grain
         import jax
         from jax import numpy as jnp
         from gensbi.recipes import Flux1Pipeline
@@ -14,17 +14,32 @@ Example:
 
         batch_size = 32
 
-        train_batch = train_data.reshape(-1, batch_size, train_data.shape[-1])
-        val_batch = val_data.reshape(-1, batch_size, val_data.shape[-1])
+        train_dataset_grain = (
+            grain.MapDataset.source(np.array(train_data)[...,None])
+            .shuffle(42)
+            .repeat()
+            .to_iter_dataset()
+            .batch(batch_size)
+            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+        )
 
-        # Create datasets iterators (in this case with itertools, although a grain dataset is recommended)
-        train_dataset = itertools.cycle(train_batch)
-        val_dataset = itertools.cycle(val_batch)
+        val_dataset_grain = (
+            grain.MapDataset.source(np.array(val_data)[...,None])
+            .shuffle(42)
+            .repeat()
+            .to_iter_dataset()
+            .batch(batch_size) 
+            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+        )
+        
+        .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
+
 
         # Define the model
         dim_theta = 2  # Dimension of the parameter space
         dim_x = 2      # Dimension of the observation space
-        pipeline = Flux1Pipeline(train_dataset, val_dataset, dim_theta, dim_x)
+        pipeline = Flux1Pipeline(train_dataset_grain, val_dataset_grain, dim_theta, dim_x)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
