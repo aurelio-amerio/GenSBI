@@ -32,9 +32,6 @@ Example:
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
 
-        .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
-
         # Define the model
         dim_theta = 2  # Dimension of the parameter space
         dim_x = 2      # Dimension of the observation space
@@ -47,6 +44,9 @@ Example:
         # Sample from the posterior
         x_o = jnp.array([0.5, -0.2])  # Example
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
 
