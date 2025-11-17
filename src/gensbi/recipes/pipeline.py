@@ -112,6 +112,8 @@ class AbstractPipeline(abc.ABC):
         Dimensionality of the parameter (theta) space.
     dim_x : int
         Dimensionality of the observation (x) space.
+    model : nnx.Module, optional
+        The model to be trained. If None, the model is created using `_make_model`.
     params : dict, optional
         Model parameters. If None, uses defaults from `_get_default_params`.
     training_config : dict, optional
@@ -125,7 +127,8 @@ class AbstractPipeline(abc.ABC):
         val_dataset,
         dim_theta: int,
         dim_x: int,
-        params=None,
+        model: nnx.Module,
+        params,
         training_config=None,
     ):
         self.train_dataset = train_dataset
@@ -143,8 +146,8 @@ class AbstractPipeline(abc.ABC):
         self.cond_ids = jnp.arange(self.dim_theta, self.dim_joint)  # conditional ids
 
         self.params = params
-        if params is None:
-            self.params = self._get_default_params()
+        # if params is None:
+        #     self.params = self._get_default_params()
 
         self.training_config = training_config
         if training_config is None:
@@ -158,10 +161,14 @@ class AbstractPipeline(abc.ABC):
 
         os.makedirs(self.training_config["checkpoint_dir"], exist_ok=True)
 
-        self.model = self._make_model()
+
+        self.model = model
         self.model_wrapped = None  # to be set in subclass
 
-        self.ema_model = nnx.clone(self.model)
+        if model is None:
+            self.ema_model = None
+        else:
+            self.ema_model = nnx.clone(model)
         self.ema_model_wrapped = None  # to be set in subclass
 
         self.p0_dist_model = None  # to be set in subclass
@@ -204,7 +211,7 @@ class AbstractPipeline(abc.ABC):
         ...  # pragma: no cover
 
     @abc.abstractmethod
-    def _make_model(self):
+    def _make_model(self, params):
         """
         Create and return the model to be trained.
         """
@@ -314,7 +321,7 @@ class AbstractPipeline(abc.ABC):
             New model parameters.
         """
         self.params = new_params
-        self.model = self._make_model()
+        self.model = self._make_model(self.params)
         self.model_wrapped = None  # to be set in subclass
         return
 
@@ -448,7 +455,7 @@ class AbstractPipeline(abc.ABC):
     @abc.abstractmethod
     def _wrap_model(self):
         """
-        Wrap the model for evaluation (either using SimformerWrapper or Flux1Wrapper).
+        Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
         """
         ...  # pragma: no cover
 

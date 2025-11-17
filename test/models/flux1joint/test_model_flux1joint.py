@@ -6,7 +6,8 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 import jax.numpy as jnp
 from flax import nnx
 
-from gensbi.models.flux1joint.model import Flux1Joint, Flux1JointParams, Flux1JointWrapper
+from gensbi.models.flux1joint.model import Flux1Joint, Flux1JointParams
+from gensbi.models.wrappers import JointWrapper
 
 def get_rngs():
 	return nnx.Rngs(0)
@@ -42,7 +43,7 @@ def test_flux1joint_forward_shape():
 def test_flux1joint_wrapper():
 	params = get_params()
 	model = Flux1Joint(params)
-	wrapper = Flux1JointWrapper(model)
+	wrapper = JointWrapper(model)
 
 	obs = jnp.ones((12, 2, 1))
 	cond = jnp.ones((12, 2, 1))

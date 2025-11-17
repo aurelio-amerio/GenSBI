@@ -7,9 +7,9 @@ from jax.numpy import ndarray as Array
 from gensbi.flow_matching.loss import ContinuousFMLoss
 
 
-class SimformerCFMLoss(ContinuousFMLoss):
+class JointCFMLoss(ContinuousFMLoss):
     """
-    SimformerCFMLoss is a class that computes the continuous flow matching loss for the Simformer model.
+    JointCFMLoss is a class that computes the continuous flow matching loss for the Joint model.
 
     Args:
         path: Probability path for training.
@@ -61,9 +61,9 @@ class SimformerCFMLoss(ContinuousFMLoss):
         return self.reduction(jnp.square(loss))  # type: ignore
 
 
-class SimformerDiffLoss(nnx.Module):
+class JointDiffLoss(nnx.Module):
     """
-    SimformerDiffLoss is a class that computes the diffusion score matching loss for the Simformer model.
+    JointDiffLoss is a class that computes the diffusion score matching loss for the Joint model.
 
     Args:
         path: Probability path for training.

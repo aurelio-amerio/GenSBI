@@ -12,8 +12,6 @@ from typing import Optional
 
 from dataclasses import dataclass
 
-from gensbi.models.simformer import SimformerWrapper
-
 from gensbi.models.flux1.layers import (
     EmbedND,
     LastLayer,
@@ -183,22 +181,22 @@ class Flux1Joint(nnx.Module):
         return obs
 
 # the wrapper is the same as the Simformer one, we reuse the class
-class Flux1JointWrapper(SimformerWrapper):
-    """
-    Module to handle conditioning in the Flux1Joint model.
+# class JointWrapper(JointWrapper):
+#     """
+#     Module to handle conditioning in the Flux1Joint model.
 
-    Args:
-        model (Flux1Joint): Flux1Joint model instance.
-    """
-    def __init__(self, model):
-        super().__init__(model)
-    def __call__(
-        self,
-        t: Array,
-        obs: Array,
-        obs_ids: Array,
-        cond: Array,
-        cond_ids: Array,
-        conditioned: bool = True,
-    ) -> Array:
-        return super().__call__(t, obs, obs_ids, cond, cond_ids, conditioned)
+#     Args:
+#         model (Flux1Joint): Flux1Joint model instance.
+#     """
+#     def __init__(self, model):
+#         super().__init__(model)
+#     def __call__(
+#         self,
+#         t: Array,
+#         obs: Array,
+#         obs_ids: Array,
+#         cond: Array,
+#         cond_ids: Array,
+#         conditioned: bool = True,
+#     ) -> Array:
+#         return super().__call__(t, obs, obs_ids, cond, cond_ids, conditioned)
