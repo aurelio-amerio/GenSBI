@@ -8,9 +8,9 @@ from jax.numpy import ndarray as Array
 from gensbi.flow_matching.loss import ContinuousFMLoss
 
 
-class Flux1CFMLoss(ContinuousFMLoss):
+class ConditionalCFMLoss(ContinuousFMLoss):
     """
-    Flux1CFMLoss is a class that computes the continuous flow matching loss for the Flux1 model.
+    ConditionalCFMLoss is a class that computes the continuous flow matching loss for the Conditional model.
 
     Args:
         path: Probability path (x-prediction training).
@@ -70,9 +70,9 @@ class Flux1CFMLoss(ContinuousFMLoss):
 
 
 # TODO: WIP
-class Flux1DiffLoss(nnx.Module):
+class ConditionalDiffLoss(nnx.Module):
     """
-    Flux1DiffLoss is a class that computes the diffusion score matching loss for the Flux1 model.
+    ConditionalDiffLoss is a class that computes the diffusion score matching loss for the Conditional model.
 
     Args:
         path: Probability path for training.

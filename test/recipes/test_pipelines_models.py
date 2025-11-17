@@ -47,6 +47,7 @@ val_dataset = itertools.cycle(val_data)
 
 params_simf = SimformerParams(
     rngs=nnx.Rngs(0),
+    in_channels=1,
     dim_value=2,
     dim_id=2,
     dim_condition=2,
@@ -103,10 +104,11 @@ config_flow_simformer = "test/recipes/configs/config_flow_simformer.yaml"
 config_diff_flux1joint = "test/recipes/configs/config_diffusion_flux1joint.yaml"
 config_flow_flux1joint = "test/recipes/configs/config_flow_flux1joint.yaml"
 
+
 @pytest.mark.parametrize(
     "pipeline_cls, config_path",
     [
-        (SimformerFlowPipeline,  config_flow_simformer),
+        (SimformerFlowPipeline, config_flow_simformer),
         (SimformerDiffusionPipeline, config_diff_simformer),
         (Flux1JointFlowPipeline, config_flow_flux1joint),
         (Flux1JointDiffusionPipeline, config_diff_flux1joint),
@@ -130,9 +132,8 @@ def test_load_configs(pipeline_cls, config_path):
     assert isinstance(
         pipeline, pipeline_cls
     ), f"Expected {pipeline_cls}, got {type(pipeline)}"
-    
-    return
 
+    return
 
 
 @pytest.mark.parametrize(
@@ -146,7 +147,7 @@ def test_load_configs(pipeline_cls, config_path):
         (Flux1DiffusionPipeline, params_flux),
     ],
 )
-def test_model(pipeline_cls, params):
+def test_model_pipeline(pipeline_cls, params):
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         training_config = pipeline_cls._get_default_training_config()
