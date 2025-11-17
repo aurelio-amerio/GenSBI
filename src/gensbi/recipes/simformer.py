@@ -3,7 +3,7 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 Example:
     .. code-block:: python
-        import itertools
+        import grain
         import jax
         from jax import numpy as jnp
         from gensbi.recipes import SimformerPipeline
@@ -14,17 +14,31 @@ Example:
 
         batch_size = 32
 
-        train_batch = train_data.reshape(-1, batch_size, train_data.shape[-1])
-        val_batch = val_data.reshape(-1, batch_size, val_data.shape[-1])
+        train_dataset_grain = (
+            grain.MapDataset.source(np.array(train_data)[...,None])
+            .shuffle(42)
+            .repeat()
+            .to_iter_dataset()
+            .batch(batch_size)
+            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+        )
 
-        # Create datasets iterators (in this case with itertools, although a grain dataset is recommended)
-        train_dataset = itertools.cycle(train_batch)
-        val_dataset = itertools.cycle(val_batch)
+        val_dataset_grain = (
+            grain.MapDataset.source(np.array(val_data)[...,None])
+            .shuffle(42)
+            .repeat()
+            .to_iter_dataset()
+            .batch(batch_size) 
+            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+        )
+
+        .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
         # Define the model
         dim_theta = 2  # Dimension of the parameter space
         dim_x = 2      # Dimension of the observation space
-        pipeline = SimformerPipeline(train_dataset, val_dataset, dim_theta, dim_x)
+        pipeline = SimformerPipeline(train_dataset_grain, val_dataset_grain, dim_theta, dim_x)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
@@ -39,36 +53,15 @@ Example:
 import jax
 import jax.numpy as jnp
 from flax import config, nnx
-import optax
-from optax.contrib import reduce_on_plateau
-from numpyro import distributions as dist
-from tqdm.auto import tqdm
-from functools import partial
-import orbax.checkpoint as ocp
 
 import yaml
 
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
-
-from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
-from gensbi.diffusion.solver import SDESolver
-
-from einops import repeat
 
 from gensbi.models import (
     Simformer,
     SimformerParams,
-    JointCFMLoss,
-    JointWrapper,
-    JointDiffLoss,
 )
 
-from gensbi.utils.model_wrapping import _expand_dims
-
-import os
 
 from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline
 
@@ -252,7 +245,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         dim_x: int,
         params=None,
         training_config=None,
-        edge_mask = None,
+        edge_mask=None,
     ):
         """
         Flow pipeline for training and using a Simformer model for simulation-based inference.
@@ -280,10 +273,10 @@ class SimformerFlowPipeline(JointFlowPipeline):
         )
         if params is None:
             self.params = self._get_default_params()
-        
+
         self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)
-        
+
         self.edge_mask = edge_mask
 
     @classmethod
@@ -338,7 +331,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         training_config_ = parse_training_config(config_path)
 
         for key, value in training_config_.items():
-            training_config[key] = value # update with config file values
+            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -378,8 +371,6 @@ class SimformerFlowPipeline(JointFlowPipeline):
         )
         return params
 
-    
-
     def sample(
         self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
     ):
@@ -403,7 +394,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         model_extras = {
             "edge_mask": self.edge_mask,
         }
-        
+
         return super().compute_unnorm_logprob(
             x_1,
             x_o,
@@ -423,8 +414,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         dim_x: int,
         params=None,
         training_config=None,
-        edge_mask = None,
-        
+        edge_mask=None,
     ):
         """
         Diffusion pipeline for training and using a Simformer model for simulation-based inference.
@@ -447,13 +437,13 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
             Edge mask for the Simformer model. If None, no mask is applied.
 
         """
-        
+
         super().__init__(
             None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
         )
         if params is None:
             self.params = self._get_default_params()
-        
+
         self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)
 
@@ -511,7 +501,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         training_config_ = parse_training_config(config_path)
 
         for key, value in training_config_.items():
-            training_config[key] = value # update with config file values
+            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -523,7 +513,6 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         )
 
         return pipeline
-
 
     def _make_model(self, params):
         """
@@ -552,8 +541,6 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         )
         return params
 
-
-
     def sample(
         self,
         key,
@@ -563,7 +550,6 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         use_ema=True,
         return_intermediates=False,
     ):
-
 
         model_extras = {
             "edge_mask": self.edge_mask,
