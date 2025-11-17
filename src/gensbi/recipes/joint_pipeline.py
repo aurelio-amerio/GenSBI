@@ -32,9 +32,6 @@ Example:
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
 
-        .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
-
         # Define your model 
         model = ...  # your nnx.Module model here, e.g., a simple MLP, or the Simformer or Flux1Joint model
         # if you define a custom model, it should take as input the following arguments:
@@ -60,6 +57,9 @@ Example:
         # Sample from the posterior
         x_o = jnp.array([0.5, -0.2])  # Example
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
 
