@@ -1,9 +1,11 @@
 """
 Pipeline for training and using a Flux1 model for simulation-based inference.
 
-Example:
+Examples:
     .. code-block:: python
+    
         import grain
+        import numpy as np
         import jax
         from jax import numpy as jnp
         from gensbi.recipes import Flux1Pipeline
@@ -46,6 +48,7 @@ Example:
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
 
     .. note::
+    
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
