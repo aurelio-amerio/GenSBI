@@ -1,9 +1,11 @@
 """
 Pipeline for training and using a Unconditional model for simulation-based inference.
 
-Example:
+Examples:
     .. code-block:: python
+    
         import grain
+        import numpy as np
         import jax
         from jax import numpy as jnp
         from gensbi.recipes import UnconditionalPipeline
@@ -57,6 +59,7 @@ Example:
 
         
     .. note::
+    
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 """
 

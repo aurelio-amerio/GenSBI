@@ -5,7 +5,7 @@ This module provides an abstract pipeline class for training and evaluating cond
 (such as conditional flow matching or diffusion models) in the GenSBI framework. It handles model creation,
 training loop, optimizer setup, checkpointing, and evaluation utilities.
 
-Example:
+Examples:
     .. code-block:: python
 
     from gensbi.recipes.pipeline import AbstractPipeline
