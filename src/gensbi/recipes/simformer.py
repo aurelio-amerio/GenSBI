@@ -404,7 +404,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
             step_size=step_size,
             use_ema=use_ema,
             time_grid=time_grid,
-            model_extras=model_extras,
+            **model_extras,
         )
 
 

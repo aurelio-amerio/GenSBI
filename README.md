@@ -1,7 +1,7 @@
 # GenSBI
 [![Build](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml/badge.svg)](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml)
-![Coverage](img/badges/coverage.svg)
-![GenSBI Logo](docs/_static/logo.png)
+![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
+![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
 
 > [!IMPORTANT]  
 > This library is at an early stage of development. The API is potentially subject to change.
