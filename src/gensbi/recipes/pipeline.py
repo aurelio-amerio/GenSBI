@@ -5,24 +5,9 @@ This module provides an abstract pipeline class for training and evaluating cond
 (such as conditional flow matching or diffusion models) in the GenSBI framework. It handles model creation,
 training loop, optimizer setup, checkpointing, and evaluation utilities.
 
-Examples:
-    .. code-block:: python
+For practical implementations, subclasses should implement specific model architectures, loss functions, and sampling methods.
+See `JointPipeline` and `ConditionalPipeline` for concrete examples.
 
-    from gensbi.recipes.pipeline import AbstractPipeline
-    # Implement a subclass with your model and loss definition
-    class MyPipeline(AbstractPipeline):
-        def _make_model(self):
-            ...
-        def _get_default_params(self, rngs):
-            ...
-        def get_loss_fn(self):
-            ...
-        def sample(self, rng, x_o, nsamples=10000, step_size=0.01):
-            ...
-
-    # Instantiate and train
-    pipeline = MyPipeline(train_dataset, val_dataset, dim_theta=2, dim_x=2)
-    pipeline.train(rngs)
 """
 
 from flax import nnx
