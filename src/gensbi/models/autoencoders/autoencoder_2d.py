@@ -8,11 +8,21 @@ from flax import nnx
 from jax.typing import DTypeLike, ArrayLike
 
 
-from gensbi.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian, swish
+from gensbi.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
+from flax.nnx import swish
+
 
 
 
 class AttnBlock2D(nnx.Module):
+    """
+    2D Self-attention block for image or grid data.
+
+    Args:
+        in_channels (int): Number of input channels.
+        rngs (nnx.Rngs): Random number generators for parameter initialization.
+        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    """
     def __init__(
         self,
         in_channels: int,
@@ -59,6 +69,15 @@ class AttnBlock2D(nnx.Module):
         )
 
     def attention(self, h_: Array) -> Array:
+        """
+        Compute self-attention for 2D input.
+
+        Args:
+            h_ (Array): Input tensor of shape (batch, height, width, channels).
+
+        Returns:
+            Array: Output tensor after attention.
+        """
         h_ = self.norm(h_)
         q = self.q(h_)
         k = self.k(h_)
@@ -75,10 +94,28 @@ class AttnBlock2D(nnx.Module):
         return rearrange(h_, "b (h w) 1 c -> b h w c", h=h, w=w, c=c, b=b)
 
     def __call__(self, x: Array) -> Array:
+        """
+        Forward pass for the attention block.
+
+        Args:
+            x (Array): Input tensor.
+
+        Returns:
+            Array: Output tensor after residual attention.
+        """
         return x + self.proj_out(self.attention(x))
 
 
 class ResnetBlock2D(nnx.Module):
+    """
+    2D Residual block with optional channel up/downsampling.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        rngs (nnx.Rngs): Random number generators for parameter initialization.
+        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    """
     def __init__(
         self,
         in_channels: int,
@@ -133,6 +170,15 @@ class ResnetBlock2D(nnx.Module):
             )
 
     def __call__(self, x: Array) -> Array:
+        """
+        Forward pass for the residual block.
+
+        Args:
+            x (Array): Input tensor.
+
+        Returns:
+            Array: Output tensor after residual connection.
+        """
         h = x
         h = self.norm1(h)
         h = swish(h)
@@ -149,6 +195,14 @@ class ResnetBlock2D(nnx.Module):
 
 
 class Downsample2D(nnx.Module):
+    """
+    2D Downsampling block using strided convolution.
+
+    Args:
+        in_channels (int): Number of input channels.
+        rngs (nnx.Rngs): Random number generators for parameter initialization.
+        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    """
     def __init__(
         self,
         in_channels: int,
@@ -166,6 +220,15 @@ class Downsample2D(nnx.Module):
         )
 
     def __call__(self, x: Array) -> Array:
+        """
+        Downsample the input tensor by a factor of 2.
+
+        Args:
+            x (Array): Input tensor of shape (batch, height, width, channels).
+
+        Returns:
+            Array: Downsampled tensor.
+        """
         # no padding for height and channel, padding for height and width
         pad_width = ((0, 0), (0, 1), (0, 1), (0, 0))
         x = jnp.pad(array=x, pad_width=pad_width, mode="constant", constant_values=0)
@@ -174,6 +237,14 @@ class Downsample2D(nnx.Module):
 
 
 class Upsample2D(nnx.Module):
+    """
+    2D Upsampling block using nearest-neighbor interpolation and convolution.
+
+    Args:
+        in_channels (int): Number of input channels.
+        rngs (nnx.Rngs): Random number generators for parameter initialization.
+        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    """
     def __init__(
         self,
         in_channels: int,
@@ -191,6 +262,15 @@ class Upsample2D(nnx.Module):
         )
 
     def __call__(self, x: Array) -> Array:
+        """
+        Upsample the input tensor by a factor of 2.
+
+        Args:
+            x (Array): Input tensor of shape (batch, height, width, channels).
+
+        Returns:
+            Array: Upsampled tensor.
+        """
         # Assuming `x` is a 4D tensor with shape (batch, height, width, channels)
         scale_factor = 2.0
         b, h, w, c = x.shape
@@ -205,6 +285,19 @@ class Upsample2D(nnx.Module):
 
 
 class Encoder2D(nnx.Module):
+    """
+    2D Encoder for autoencoder architectures.
+
+    Args:
+        resolution (int): Input image height/width.
+        in_channels (int): Number of input channels.
+        ch (int): Base number of channels.
+        ch_mult (list[int]): Channel multipliers for each resolution.
+        num_res_blocks (int): Number of residual blocks per resolution.
+        z_channels (int): Number of latent channels.
+        rngs (nnx.Rngs): Random number generators for parameter initialization.
+        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    """
     def __init__(
         self,
         resolution: int,
@@ -304,6 +397,15 @@ class Encoder2D(nnx.Module):
         )
 
     def __call__(self, x: Array) -> Array:
+        """
+        Forward pass for the encoder.
+
+        Args:
+            x (Array): Input tensor of shape (batch, height, width, channels).
+
+        Returns:
+            Array: Encoded latent representation.
+        """
         # downsampling
         hs = [self.conv_in(x)]
         for i_level in range(self.num_resolutions):
@@ -328,6 +430,20 @@ class Encoder2D(nnx.Module):
 
 
 class Decoder2D(nnx.Module):
+    """
+    2D Decoder for autoencoder architectures.
+
+    Args:
+        ch (int): Base number of channels.
+        out_ch (int): Number of output channels.
+        ch_mult (list[int]): Channel multipliers for each resolution.
+        num_res_blocks (int): Number of residual blocks per resolution.
+        in_channels (int): Number of input channels.
+        resolution (int): Output image height/width.
+        z_channels (int): Number of latent channels.
+        rngs (nnx.Rngs): Random number generators for parameter initialization.
+        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    """
     def __init__(
         self,
         ch: int,
@@ -430,6 +546,15 @@ class Decoder2D(nnx.Module):
         )
 
     def __call__(self, z: Array) -> Array:
+        """
+        Forward pass for the decoder.
+
+        Args:
+            z (Array): Latent tensor of shape (batch, latent_height, latent_width, latent_channels).
+
+        Returns:
+            Array: Reconstructed output tensor.
+        """
         # z to block_in
         h = self.conv_in(z)
 
@@ -456,6 +581,12 @@ class Decoder2D(nnx.Module):
 
 
 class AutoEncoder2D(nnx.Module):
+    """
+    2D Autoencoder model with Gaussian latent space.
+
+    Args:
+        params (AutoEncoderParams): Configuration parameters for the autoencoder.
+    """
     def __init__(
         self,
         params: AutoEncoderParams,
@@ -486,20 +617,49 @@ class AutoEncoder2D(nnx.Module):
         self.scale_factor = nnx.Param(params.scale_factor)
         self.shift_factor = nnx.Param(params.shift_factor)
 
-    def encode(self, x: Array) -> Array:
+    def encode(self, x: Array, key) -> Array:
+        """
+        Encode input data into the latent space.
 
-        z = self.reg(self.Encoder2D(x))
+        Args:
+            x (Array): Input tensor.
+            key (Array): PRNG key for sampling the latent variable.
+
+        Returns:
+            Array: Latent representation.
+        """
+
+        z = self.reg(self.Encoder2D(x), key)
         z = self.scale_factor * (z - self.shift_factor)
 
         return z
 
     def decode(self, z: Array) -> Array:
+        """
+        Decode latent representation back to data space.
+
+        Args:
+            z (Array): Latent tensor.
+
+        Returns:
+            Array: Reconstructed output.
+        """
 
         z = z / self.scale_factor + self.shift_factor
         z = self.Decoder2D(z)
 
         return z
 
-    def __call__(self, x: Array) -> Array:
+    def __call__(self, x: Array, key) -> Array:
+        """
+        Forward pass: encode and then decode the input.
 
-        return self.decode(self.encode(x))
+        Args:
+            x (Array): Input tensor.
+            key: PRNG key for sampling.
+
+        Returns:
+            Array: Reconstructed output.
+        """
+
+        return self.decode(self.encode(x, key))
