@@ -53,21 +53,39 @@ class AutoEncoderParams:
 
 
 class Loss(nnx.Variable):
+    """
+    Placeholder variable for storing loss values in the model.
+    """
     pass
 
 
 class DiagonalGaussian(nnx.Module):
+    """
+    Diagonal Gaussian distribution module for VAE latent space.
+
+    Args:
+        sample (bool): Whether to sample from the distribution (default: True).
+        chunk_dim (int): Axis along which to split mean and logvar (default: -1).
+    """
     def __init__(
         self,
         sample: bool = True,
         chunk_dim: int = -1,
-        key: Array = jax.random.PRNGKey(42),
     ):
         self.sample = sample
         self.chunk_dim = chunk_dim
-        self.key = key
 
-    def __call__(self, z: Array) -> Array:
+    def __call__(self, z: Array, key=None) -> Array:
+        """
+        Split input into mean and log-variance, compute KL loss, and sample if required.
+
+        Args:
+            z (Array): Input tensor containing concatenated mean and logvar.
+            key (Array, optional): PRNG key for sampling. Required if sampling is enabled.
+
+        Returns:
+            Array: Sampled latent or mean, depending on self.sample.
+        """
         mean, logvar = jnp.split(z, 2, axis=self.chunk_dim)
         std = jnp.exp(0.5 * logvar)
 
@@ -75,25 +93,31 @@ class DiagonalGaussian(nnx.Module):
             jnp.mean(0.5 * jnp.mean(-jnp.log(std**2) - 1.0 + std**2 + mean**2, axis=-1))
         )
 
-
         if self.sample:
             return mean + std * jax.random.normal(
-                key=self.key, shape=mean.shape, dtype=z.dtype
+                key=key, shape=mean.shape, dtype=z.dtype
             )
         else:
             return mean
 
 
-def swish(x: Array) -> Array:
-    return nnx.swish(x)
+def vae_loss_fn(model: nnx.Module, x: jax.Array, key) -> jax.Array:
+    """
+    Compute the VAE loss as the sum of reconstruction and KL divergence losses.
 
+    Args:
+            model (nnx.Module): The VAE model.
+            x (Array): Input data.
+            key (Array): PRNG key for stochastic operations.
 
-def vae_loss_fn(model: nnx.Module, x: jax.Array) -> jax.Array:
-    logits = model(x)
+    Returns:
+            jax.Array: Scalar loss value.
+    """
+    logits = model(x, key)
     losses = nnx.pop(model, Loss)
     kl_loss = sum(jax.tree_util.tree_leaves(losses), 0.0)
     reconstruction_loss = jnp.mean(
-      optax.sigmoid_binary_cross_entropy(logits, x)
+        optax.sigmoid_binary_cross_entropy(logits, x)
     )
     loss = reconstruction_loss + 0.1 * kl_loss
     return loss
