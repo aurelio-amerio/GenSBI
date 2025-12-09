@@ -9,6 +9,8 @@ from .flux1joint import (
     Flux1JointParams,
 )   
 
+from .autoencoders import AutoEncoder1D, AutoEncoder2D, AutoEncoderParams, vae_loss_fn
+
 from .losses import JointCFMLoss, JointDiffLoss, ConditionalCFMLoss, ConditionalDiffLoss, UnconditionalCFMLoss, UnconditionalDiffLoss   
 
 from .wrappers import JointWrapper, ConditionalWrapper, UnconditionalWrapper
@@ -22,6 +24,11 @@ __all__ = [
 
     "Flux1Joint",
     "Flux1JointParams",
+    
+    "AutoEncoder1D",
+    "AutoEncoder2D",
+    "AutoEncoderParams",
+    "vae_loss_fn",
     
     "JointCFMLoss",
     "JointDiffLoss",

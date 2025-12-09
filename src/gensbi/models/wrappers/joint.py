@@ -56,6 +56,7 @@ class JointWrapper(ModelWrapper):
         condition_mask_dim = obs_dim + cond_dim
         condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
         condition_mask = condition_mask.at[obs_dim:].set(True)
+        condition_mask = condition_mask.reshape(1, condition_mask_dim, 1)
         x = jnp.concatenate([obs, cond], axis=1)
         node_ids = jnp.concatenate([obs_ids, cond_ids], axis=1)
         res = self.model(

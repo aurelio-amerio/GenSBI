@@ -219,7 +219,7 @@ class Flux1(nnx.Module):
             vec = vec + self.vector_in(guidance)
 
         cond_processed = self.cond_in(cond)  # (B, F, H)
-        cond_null = repeat(self.condition_null.value, "1 h c -> b h c", b=obs.shape[0])  # type: ignore
+        cond_null = jnp.repeat(self.condition_null, repeats=obs.shape[0], axis=0) # (B, F, H)
         cond = jnp.where(
             conditioned[..., None, None], cond_processed, cond_null
         )  # we replace the condition with a null vector if not conditioned

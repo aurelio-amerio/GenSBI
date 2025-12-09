@@ -75,6 +75,9 @@ The following tasks are planned for future development:
 - [ ] Add more examples and benchmarks.
 - [ ] Improve documentation and tutorials.
 - [ ] Provide SOTA pre-trained models and checkpoints for some SBI benchmark cases
+- [ ] Implement VAE training pipeline
+- [ ] Implement wrapper to run posterior calibration checks using the `sbi` library (maybe add this as an additional package to avoid torch dependency?)
+- [ ] implement get sampler for every pipeline
 
 ## Known Issues
 - `bfloat16` support is currently limited and may lead to unexpected behavior.

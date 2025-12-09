@@ -39,11 +39,11 @@ import grain # data loaders for jax
 import matplotlib.pyplot as plt # for plotting
 
 
-thetas_train = ... # inference parameters for training, shape (N_train, dim_theta, 1)
-thetas_val = ... # inference parameters for validation, shape (N_val, dim_theta, 1)
+thetas_train = ... # inference parameters for training, shape (N_train, dim_obs, 1)
+thetas_val = ... # inference parameters for validation, shape (N_val, dim_obs, 1)
 
-xs_train = ... # observed/simulated data for training, shape (N_train, dim_data, 1)
-xs_val = ...  # observed/simulated data for validation, shape (N_val, dim_data, 1)
+xs_train = ... # observed/simulated data for training, shape (N_train, dim_cond, 1)
+xs_val = ...  # observed/simulated data for validation, shape (N_val, dim_cond, 1)
 
 # concatenate thetas and xs for dataset creation
 train_data = np.concatenate((thetas_train, xs_train), axis=1)
@@ -69,18 +69,18 @@ val_dataset = (
 )
 
 # define JAX datasets
-dim_theta = ... # number of inference parameters, that is thetas_train.shape[1]
-dim_data = ... # dimensionality of observed data, that is xs_train.shape[1]
+dim_obs = ... # number of inference parameters, that is thetas_train.shape[1]
+dim_cond = ... # dimensionality of observed data, that is xs_train.shape[1]
 
 # define the pipeline
-pipeline = SimformerFlowPipeline(train_dataset, val_dataset, dim_theta, dim_data)
+pipeline = SimformerFlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond)
 
 # train the model
 pipeline.train(num_steps=10000)
 
 rng = jax.random.PRNGKey(0)
 nsamples = 10_000
-observation = ... # target observation, shape (1, dim_data, 1)
+observation = ... # target observation, shape (1, dim_cond, 1)
 samples = pipeline.sample(rng, observation, nsamples)
 
 # plot the posterior distributions 

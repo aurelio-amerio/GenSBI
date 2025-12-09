@@ -3,7 +3,7 @@ Pipeline for training and using a Unconditional model for simulation-based infer
 
 Examples:
     .. code-block:: python
-    
+
         import grain
         import numpy as np
         import jax
@@ -30,25 +30,25 @@ Examples:
             .shuffle(42)
             .repeat()
             .to_iter_dataset()
-            .batch(batch_size) 
+            .batch(batch_size)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
-        
 
-        # Define your model 
+
+        # Define your model
         model = ...  # your nnx.Module model here, e.g., a simple MLP, or the Simformer model
         # if you define a custom model, it should take as input the following arguments:
         #    t: Array,
         #    obs: Array,
         #    node_ids: Array (optional, if your model is a transformer-based model)
-        #    *args 
-        #    **kwargs   
-        
+        #    *args
+        #    **kwargs
+
         # the obs input should have shape (batch_size, dim_joint, c), and the output will be of the same shape
 
         # Define the model
-        dim_theta = 2  # Dimension of the parameter space
-        pipeline = UnconditionalPipeline(model, train_dataset_grain, val_dataset_grain, dim_theta)
+        dim_obs = 2  # Dimension of the parameter space
+        pipeline = UnconditionalPipeline(model, train_dataset_grain, val_dataset_grain, dim_obs)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
@@ -57,21 +57,18 @@ Examples:
         # Sample from the posterior
         samples = pipeline.sample(rngs, nsamples=10000, step_size=0.01)
 
-        
+
     .. note::
-    
+
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 """
 
 import jax
 import jax.numpy as jnp
 from flax import nnx
-import optax
-from optax.contrib import reduce_on_plateau
+
 from numpyro import distributions as dist
-from tqdm.auto import tqdm
-from functools import partial
-import orbax.checkpoint as ocp
+
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
@@ -81,15 +78,15 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
 
-from gensbi.models import  UnconditionalCFMLoss, UnconditionalWrapper, UnconditionalDiffLoss
+from gensbi.models import (
+    UnconditionalCFMLoss,
+    UnconditionalWrapper,
+    UnconditionalDiffLoss,
+)
 
 from einops import repeat
 
 from gensbi.utils.model_wrapping import _expand_dims
-
-import os
-
-import yaml
 
 from gensbi.recipes.pipeline import AbstractPipeline
 
@@ -100,7 +97,8 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         model,
         train_dataset,
         val_dataset,
-        dim_theta: int,
+        dim_obs: int,
+        ch_obs: int = 1,
         params=None,
         training_config=None,
     ):
@@ -115,10 +113,10 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
-        dim_x : int
-            Dimension of the observation space.
+        ch_obs : int
+            Number of channels in the observation space.
         params : UnconditionalParams, optional
             Parameters for the Unconditional model. If None, default parameters are used.
         training_config : dict, optional
@@ -126,7 +124,14 @@ class UnconditionalFlowPipeline(AbstractPipeline):
 
         """
         super().__init__(
-            train_dataset, val_dataset, dim_theta, 0, model, params, training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=0,
+            ch_obs=ch_obs,
+            params=params,
+            training_config=training_config,
         )
 
         self.obs_ids = _expand_dims(self.obs_ids)
@@ -135,11 +140,12 @@ class UnconditionalFlowPipeline(AbstractPipeline):
 
         self.loss_fn = UnconditionalCFMLoss(self.path)
 
-        self.p0_dist_model = dist.Independent(
+        self.p0_obs = dist.Independent(
             dist.Normal(
-                loc=jnp.zeros((self.dim_theta, 1)), scale=jnp.ones((self.dim_theta, 1))
+                loc=jnp.zeros((self.dim_obs, self.ch_obs)),
+                scale=jnp.ones((self.dim_obs, self.ch_obs)),
             ),
-            reinterpreted_batch_ndims=1,
+            reinterpreted_batch_ndims=2,
         )
 
     @classmethod
@@ -171,13 +177,16 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             rng_x0, rng_t = jax.random.split(key, 2)
 
             x_1 = obs
-            x_0 = self.p0_dist_model.sample(rng_x0, (batch_size,))
+            # x_0 = self.p0_obs.sample(rng_x0, (batch_size,))
+            x_0 = jax.random.normal(rng_x0, (batch_size, self.dim_obs, self.ch_obs))
             t = jax.random.uniform(rng_t, x_1.shape[0])
 
             batch = (x_0, x_1, t)
-            condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)
+            condition_mask = jnp.zeros((*x_1.shape[:-1], 1), dtype=jnp.bool_)
 
-            loss = self.loss_fn(model, batch, node_ids=self.obs_ids, condition_mask=condition_mask)
+            loss = self.loss_fn(
+                model, batch, node_ids=self.obs_ids, condition_mask=condition_mask
+            )
             return loss
 
         return loss_fn
@@ -187,8 +196,12 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         self.ema_model_wrapped = UnconditionalWrapper(self.ema_model)
         return
 
-    def sample(
-        self, rng, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+    def get_sampler(
+        self,
+        step_size=0.01,
+        use_ema=True,
+        time_grid=None,
+        **model_extras,
     ):
         if use_ema:
             vf_wrapped = self.ema_model_wrapped
@@ -202,13 +215,8 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             assert jnp.all(time_grid[:-1] <= time_grid[1:])
             return_intermediates = True
 
-        x_init = jax.random.normal(rng, (nsamples, self.dim_theta))
-
         solver = ODESolver(velocity_model=vf_wrapped)
-        model_extras = {
-            "obs_ids": self.obs_ids,
-            **model_extras
-        }
+        model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
         sampler_ = solver.get_sampler(
             method="Dopri5",
@@ -217,9 +225,31 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             model_extras=model_extras,
             time_grid=time_grid,
         )
-        samples = sampler_(x_init)
+
+        def sampler(rng, nsamples):
+            x_init = jax.random.normal(rng, (nsamples, self.dim_obs, self.ch_obs))
+            return sampler_(x_init)
+
+        return sampler
+
+    def sample(
+        self,
+        rng,
+        nsamples=10_000,
+        step_size=0.01,
+        use_ema=True,
+        time_grid=None,
+        **model_extras,
+    ):
+        sampler = self.get_sampler(
+            step_size=step_size,
+            use_ema=use_ema,
+            time_grid=time_grid,
+            **model_extras,
+        )
+        samples = sampler(rng, nsamples)
         return samples
-    
+
     def compute_unnorm_logprob(
         self, x_1, step_size=0.01, use_ema=True, time_grid=None, **model_extras
     ):
@@ -243,28 +273,19 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             x_1.ndim == 2
         ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
 
-        p0_cond = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))
-            ),
-            reinterpreted_batch_ndims=1,
-        )
-        #todo need to check the model extras, is that node_ids instead?
-        model_extras = {
-            "obs_ids": self.obs_ids,
-            **model_extras
-        }
+        # todo need to check the model extras, is that node_ids instead?
+        model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
         logp_sampler = solver.get_unnormalized_logprob(
             time_grid=time_grid,
             method="Dopri5",
             step_size=step_size,
-            log_p0=p0_cond.log_prob,
+            log_p0=self.p0_obs.log_prob,
             model_extras=model_extras,
             return_intermediates=return_intermediates,
         )
 
-        if len(x_1)>4:
+        if len(x_1) > 4:
             # we trigger precompilation first
             _ = logp_sampler(x_1[:4])
 
@@ -278,7 +299,8 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         model,
         train_dataset,
         val_dataset,
-        dim_theta: int,
+        dim_obs: int,
+        ch_obs: int = 1,
         params=None,
         training_config=None,
     ):
@@ -291,8 +313,10 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
+        ch_obs : int
+            Number of channels in the observation space.
         params : UnconditionalParams, optional
             Parameters for the Unconditional model. If None, default parameters are used.
         training_config : dict, optional
@@ -300,7 +324,14 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
 
         """
         super().__init__(
-            train_dataset, val_dataset, dim_theta, 0, model, params, training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=0,
+            ch_obs=ch_obs,
+            params=params,
+            training_config=training_config,
         )
 
         self.obs_ids = _expand_dims(self.obs_ids)
@@ -350,8 +381,8 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             rng_x0, rng_sigma = jax.random.split(key, 2)
 
             x_1 = batch
-            sigma = self.path.sample_sigma(rng_sigma, x_1.shape[0])
-            sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
+            # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             batch = (x_1, sigma)
             loss = self.loss_fn(rng_x0, model, batch, node_ids=self.obs_ids)
@@ -364,6 +395,36 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         self.ema_model_wrapped = UnconditionalWrapper(self.ema_model)
         return
 
+    def get_sampler(
+        self,
+        nsteps=18,
+        use_ema=True,
+        return_intermediates=False,
+        **model_extras,
+    ):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        solver = SDESolver(score_model=model, path=self.path)
+
+        model_extras = {"obs_ids": self.obs_ids, **model_extras}
+
+        sampler_ = solver.get_sampler(
+            nsteps=nsteps,
+            return_intermediates=return_intermediates,
+            model_extras=model_extras,
+        )
+
+        def sampler(rng, nsamples):
+            key1, key2 = jax.random.split(rng, 2)
+            x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
+            samples = sampler_(key2, x_init)
+            return samples
+
+        return sampler
+
     def sample(
         self,
         rng,
@@ -371,30 +432,14 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
-        **model_extras
+        **model_extras,
     ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
-
-        key1, key2 = jax.random.split(rng, 2)
-
-        solver = SDESolver(score_model=model, path=self.path)
-
-        model_extras = {
-            "obs_ids": self.obs_ids,
-            **model_extras
-        }
-
-        x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
-
-        samples = solver.sample(
-            key2,
-            x_init,
+        sampler = self.get_sampler(
             nsteps=nsteps,
-            model_extras=model_extras,
+            use_ema=use_ema,
             return_intermediates=return_intermediates,
+            **model_extras,
         )
+        samples = sampler(rng, nsamples)
 
-        return jnp.squeeze(samples, axis=-1)
+        return samples

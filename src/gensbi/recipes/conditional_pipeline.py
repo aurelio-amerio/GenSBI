@@ -10,11 +10,15 @@ Examples:
         from jax import numpy as jnp
         from gensbi.recipes import ConditionalPipeline
 
-        # Define your training and validation datasets.
-        train_data = jax.random.rand((1024, 4)) # your training dataset
-        val_data = jax.random.rand((128, 4)) # your validation dataset
+        # Define your training and validation datasets.\
+        key = jax.random.PRNGKey(0)
+        train_data = jax.random.normal(key, (1024, 5)) # your training dataset
+        val_data = jax.random.normal(key, (128, 5)) # your validation dataset
 
         batch_size = 32
+
+        def split_obs_cond(data):
+            return data[:, :2, ...], data[:, 2:, ...]  # assuming first 2 are obs, last 3 are cond
 
         train_dataset_grain = (
             grain.MapDataset.source(np.array(train_data)[...,None])
@@ -22,6 +26,7 @@ Examples:
             .repeat()
             .to_iter_dataset()
             .batch(batch_size)
+            .map(split_obs_cond)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
 
@@ -31,6 +36,7 @@ Examples:
             .repeat()
             .to_iter_dataset()
             .batch(batch_size) 
+            .map(split_obs_cond)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
         
@@ -43,21 +49,21 @@ Examples:
         #    cond: Array,
         #    cond_ids: Array, 
         
-        # the obs should have shape (batch_size, dim_theta, c), 
-        # the cond should have shape (batch_size, dim_x, c),
+        # the obs should have shape (batch_size, dim_obs, c), 
+        # the cond should have shape (batch_size, dim_cond, c),
         # obs_ids and cond_ids should match obs and cond respectively,
         # and the output will be of the same shape as obs
 
-        dim_theta = 2  # Dimension of the parameter space
-        dim_x = 2      # Dimension of the observation space
-        pipeline = ConditionalPipeline(model, train_dataset_grain, val_dataset_grain, dim_theta, dim_x)
+        dim_obs = 2  # Dimension of the parameter space
+        dim_cond = 3      # Dimension of the observation space
+        pipeline = ConditionalPipeline(model, train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
         pipeline.train(rngs)
 
         # Sample from the posterior
-        x_o = jnp.array([0.5, -0.2])  # Example
+        x_o = jnp.array([0.5, -0.2, 0.1])  # Example
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
     
     .. note::
@@ -83,10 +89,11 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
 
-from gensbi.models import  ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
+from gensbi.models import ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
 
 from einops import repeat
 
+from gensbi.models.flux1 import model
 from gensbi.utils.model_wrapping import _expand_dims
 
 import os
@@ -96,15 +103,43 @@ import yaml
 from gensbi.recipes.pipeline import AbstractPipeline
 
 
+class LatentModelWrapper(nnx.Module):
+    def __init__(self, model, vae_obs=None, vae_cond=None):
+        self.sbi_model = model
+        self.vae_obs = vae_obs
+        self.vae_cond = vae_cond
+
+    def __call__(self, t, obs, obs_ids, cond, cond_ids, **model_extras):
+        # if self.vae_obs is not None:
+        #     # encode obs
+        #     obs = self.vae_obs.encode(obs)
+        # if self.vae_cond is not None:
+        #     # encode cond
+        #     cond = self.vae_cond.encode(cond)
+
+        # # call the sbi model
+        # res = self.sbi_model(t, obs, obs_ids, cond, cond_ids, **model_extras)
+
+        # if self.vae_obs is not None:
+        #     # decode latent observations
+        #     res = self.vae_obs.decode(res)
+        # return res
+        return self.sbi_model(t, obs, obs_ids, cond, cond_ids, **model_extras)
+
+
 class ConditionalFlowPipeline(AbstractPipeline):
     def __init__(
         self,
         model,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs=1,
+        ch_cond=1,
         params=None,
+        vae_obs=None,
+        vae_cond=None,
         training_config=None,
     ):
         """
@@ -118,22 +153,45 @@ class ConditionalFlowPipeline(AbstractPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
-        dim_x : int
+        dim_cond : int
             Dimension of the observation space.
+        ch_obs : int, optional
+            Number of channels in the observation data. Default is 1.
+        ch_cond : int, optional
+            Number of channels in the conditional data. Default is 1.
         params : ConditionalParams, optional
             Parameters for the Conditional model. If None, default parameters are used.
+        vae_obs : nnx.Module, optional
+            VAE module for the observation input. If None, no encoding is applied.
+        vae_cond : nnx.Module, optional
+            VAE module for the conditional input. If None, no encoding is applied.
+
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
+
+        # latent_model = LatentModelWrapper(model, vae_obs=vae_obs, vae_cond=vae_cond)
+
+        # if latent diffusion is enabled, make sure to adjust the dimensionality accordingly of the transformer model
+
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, model, params, training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            training_config=training_config,
         )
 
-        # self.cond_ids = self.cond_ids.reshape(1, -1, 1)
-        # self.obs_ids = self.obs_ids.reshape(1, -1, 1)
+        self.vae_obs = vae_obs
+        self.vae_cond = vae_cond
+
         self.cond_ids = _expand_dims(self.cond_ids)
         self.obs_ids = _expand_dims(self.obs_ids)
 
@@ -141,11 +199,12 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         self.loss_fn = ConditionalCFMLoss(self.path)
 
-        self.p0_dist_model = dist.Independent(
+        self.p0_obs = dist.Independent(
             dist.Normal(
-                loc=jnp.zeros((self.dim_theta, 1)), scale=jnp.ones((self.dim_theta, 1))
+                loc=jnp.zeros((self.dim_obs, self.ch_obs)),
+                scale=jnp.ones((self.dim_obs, self.ch_obs)),
             ),
-            reinterpreted_batch_ndims=1,
+            reinterpreted_batch_ndims=2,
         )
 
     @classmethod
@@ -170,32 +229,103 @@ class ConditionalFlowPipeline(AbstractPipeline):
         self,
     ):
         def loss_fn(model, batch, key: jax.random.PRNGKey):
-            obs = batch[:, : self.dim_theta, ...]
-            cond = batch[:, self.dim_theta :, ...]
+            # obs = batch[:, : self.dim_obs, ...]
+            # cond = batch[:, self.dim_obs :, ...]
+            obs, cond = batch
+            rng_x0, rng_t, rng_vae_obs, rng_vae_cond = jax.random.split(key, 4)
 
-            batch_size = batch.shape[0]
+            if self.vae_obs is not None:
+                obs = self.vae_obs.encode(obs, rng_vae_obs)
+            if self.vae_cond is not None:
+                cond = self.vae_cond.encode(cond, rng_vae_cond)
 
-            rng_x0, rng_t = jax.random.split(key, 2)
+            batch_size = obs.shape[0]
 
             x_1 = obs
-            x_0 = self.p0_dist_model.sample(rng_x0, (batch_size,))
+            # x_0 = self.p0_obs.sample(rng_x0, (batch_size,))
+            x_0 = jax.random.normal(rng_x0, (batch_size, self.dim_obs, self.ch_obs))
             t = jax.random.uniform(rng_t, x_1.shape[0])
 
-            batch = (x_0, x_1, t)
+            obs_batch = (x_0, x_1, t)
 
-            loss = self.loss_fn(model, batch, cond, self.obs_ids, self.cond_ids)
+            loss = self.loss_fn(model, obs_batch, cond, self.obs_ids, self.cond_ids)
             return loss
 
         return loss_fn
+
+    # need to change wrt
+    def _get_optimizer(self):
+        """
+        Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+
+        Returns
+        -------
+        optimizer : nnx.Optimizer
+            The optimizer instance for the model.
+        """
+
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains('sbi_model'))
+        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+
+        opt = optax.chain(
+            optax.adaptive_grad_clip(10.0),
+            optax.adamw(self.training_config["max_lr"]),
+            reduce_on_plateau(
+                patience=self.training_config["patience"],
+                cooldown=self.training_config["cooldown"],
+                factor=self.training_config["factor"],
+                rtol=self.training_config["rtol"],
+                accumulation_size=self.training_config["accumulation_size"],
+                min_scale=self.training_config["min_scale"],
+            ),
+        )
+        if self.training_config["multistep"] > 1:
+            opt = optax.MultiSteps(opt, self.training_config["multistep"])
+
+        optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+        return optimizer
+
+    # need to select the right weights to apply the updates
+    def get_train_step_fn(self, loss_fn):
+        """
+        Return the training step function, which performs a single optimization step.
+
+        Returns
+        -------
+        train_step : Callable
+            JIT-compiled training step function.
+        """
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains('sbi_model'))
+        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+
+        @nnx.jit  # something bad happens here
+        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+            diff_state = nnx.DiffState(
+                0, sbi_model_params
+            )  # filter head params of the first argument
+            loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
+                model, batch, rng
+            )
+            optimizer.update(model, grads, value=loss)
+            return loss
+
+        return train_step
 
     def _wrap_model(self):
         self.model_wrapped = ConditionalWrapper(self.model)
         self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
         return
 
-    def sample(
-        self, rng, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+    def get_sampler(
+        self,
+        rng,
+        x_o,
+        step_size=0.01,
+        use_ema=True,
+        time_grid=None,
+        **model_extras,
     ):
+
         if use_ema:
             vf_wrapped = self.ema_model_wrapped
         else:
@@ -207,17 +337,19 @@ class ConditionalFlowPipeline(AbstractPipeline):
         else:
             assert jnp.all(time_grid[:-1] <= time_grid[1:])
             return_intermediates = True
-
-        x_init = jax.random.normal(rng, (nsamples, self.dim_theta))
-        # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_x, 1))
+        
         cond = _expand_dims(x_o)
-
+        
         solver = ODESolver(velocity_model=vf_wrapped)
+        
+        if self.vae_cond is not None:
+            cond = self.vae_cond.encode(cond, rng)
+            
         model_extras = {
             "cond": cond,
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
-            **model_extras
+            **model_extras,
         }
 
         sampler_ = solver.get_sampler(
@@ -227,9 +359,45 @@ class ConditionalFlowPipeline(AbstractPipeline):
             model_extras=model_extras,
             time_grid=time_grid,
         )
-        samples = sampler_(x_init)
+        
+        def sampler(key, nsamples):
+            x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
+
+            samples = sampler_(x_init)
+
+            if self.vae_obs is not None:
+                samples = self.vae_obs.decode(samples)
+
+            return samples
+        
+        return sampler
+
+    def sample(
+        self,
+        rng,
+        x_o,
+        nsamples=10_000,
+        step_size=0.01,
+        use_ema=True,
+        time_grid=None,
+        **model_extras,
+    ):
+        
+        key_init, key_vae_cond = jax.random.split(rng, 2)
+
+        sampler_ = self.get_sampler(
+            key_vae_cond,
+            x_o,
+            step_size=step_size,
+            use_ema=use_ema,
+            time_grid=time_grid,
+            **model_extras,
+        )
+        
+        samples = sampler_(key_init, nsamples)
+
         return samples
-    
+
     def compute_unnorm_logprob(
         self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
     ):
@@ -254,30 +422,23 @@ class ConditionalFlowPipeline(AbstractPipeline):
         ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
         cond = _expand_dims(x_o)
 
-        p0_cond = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros((x_1.shape[1],)), scale=jnp.ones((x_1.shape[1],))
-            ),
-            reinterpreted_batch_ndims=1,
-        )
-
         model_extras = {
             "cond": cond,
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
-            **model_extras
+            **model_extras,
         }
 
         logp_sampler = solver.get_unnormalized_logprob(
             time_grid=time_grid,
             method="Dopri5",
             step_size=step_size,
-            log_p0=p0_cond.log_prob,
+            log_p0=self.p0_obs.log_prob,
             model_extras=model_extras,
             return_intermediates=return_intermediates,
         )
 
-        if len(x_1)>4:
+        if len(x_1) > 4:
             # we trigger precompilation first
             _ = logp_sampler(x_1[:4])
 
@@ -291,9 +452,13 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         model,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs=1,
+        ch_cond=1,
         params=None,
+        vae_obs=None,
+        vae_cond=None,
         training_config=None,
     ):
         """
@@ -305,19 +470,35 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
-        dim_x : int
+        dim_cond : int
             Dimension of the observation space.
         params : ConditionalParams, optional
             Parameters for the Conditional model. If None, default parameters are used.
+        vae_obs : nnx.Module, optional
+            VAE module for the observation input. If None, no encoding is applied.
+        vae_cond : nnx.Module, optional
+            VAE module for the conditional input. If None, no encoding is applied.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
+
         super().__init__(
-            train_dataset, val_dataset, dim_theta, dim_x, model, params, training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            training_config=training_config,
         )
+
+        self.vae_obs = vae_obs
+        self.vae_cond = vae_cond
 
         self.cond_ids = _expand_dims(self.cond_ids)
         self.obs_ids = _expand_dims(self.obs_ids)
@@ -365,29 +546,138 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
     ):
         def loss_fn(model, batch, key: jax.random.PRNGKey):
             # jax debug print(batch.shape)
-            # (batch_size, dim_theta + dim_x)
+            # (batch_size, dim_obs + dim_cond)
 
-            obs = jnp.take_along_axis(batch, self.obs_ids, axis=1)
-            cond = jnp.take_along_axis(batch, self.cond_ids, axis=1)
-            # obs = batch[:, : self.dim_theta, ...]
-            # cond = batch[:, self.dim_theta :, ...]
+            # obs = jnp.take_along_axis(batch, self.obs_ids, axis=1)
+            # cond = jnp.take_along_axis(batch, self.cond_ids, axis=1)
+            # obs = batch[:, : self.dim_obs, ...]
+            # cond = batch[:, self.dim_obs :, ...]
 
-            rng_x0, rng_sigma = jax.random.split(key, 2)
+            obs, cond = batch
+
+            rng_x0, rng_sigma, rng_vae_obs, rng_vae_cond = jax.random.split(key, 4)
+
+            if self.vae_obs is not None:
+                obs = self.vae_obs.encode(obs, rng_vae_obs)
+            if self.vae_cond is not None:
+                cond = self.vae_cond.encode(cond, rng_vae_cond)
 
             x_1 = obs
-            sigma = self.path.sample_sigma(rng_sigma, x_1.shape[0])
-            sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
+            # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
-            batch = (x_1, sigma)
-            loss = self.loss_fn(rng_x0, model, batch, cond, self.obs_ids, self.cond_ids)
+            obs_batch = (x_1, sigma)
+            loss = self.loss_fn(
+                rng_x0, model, obs_batch, cond, self.obs_ids, self.cond_ids
+            )
             return loss
 
         return loss_fn
+
+    def _get_optimizer(self):
+        """
+        Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+
+        Returns
+        -------
+        optimizer : nnx.Optimizer
+            The optimizer instance for the model.
+        """
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("sbi_model"))
+        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+
+        opt = optax.chain(
+            optax.adaptive_grad_clip(10.0),
+            optax.adamw(self.training_config["max_lr"]),
+            reduce_on_plateau(
+                patience=self.training_config["patience"],
+                cooldown=self.training_config["cooldown"],
+                factor=self.training_config["factor"],
+                rtol=self.training_config["rtol"],
+                accumulation_size=self.training_config["accumulation_size"],
+                min_scale=self.training_config["min_scale"],
+            ),
+        )
+        if self.training_config["multistep"] > 1:
+            opt = optax.MultiSteps(opt, self.training_config["multistep"])
+
+        optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+        return optimizer
+
+    def get_train_step_fn(self, loss_fn):
+        """
+        Return the training step function, which performs a single optimization step.
+
+        Returns
+        -------
+        train_step : Callable
+            JIT-compiled training step function.
+        """
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("sbi_model"))
+        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+
+        @nnx.jit
+        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+            diff_state = nnx.DiffState(0, sbi_model_params)
+            loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
+                model, batch, rng
+            )
+            optimizer.update(model, grads, value=loss)
+            return loss
+
+        return train_step
 
     def _wrap_model(self):
         self.model_wrapped = ConditionalWrapper(self.model)
         self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
         return
+    
+    def get_sampler(
+        self,
+        key,
+        x_o,
+        nsteps=18,
+        use_ema=True,
+        return_intermediates=False,
+        **model_extras,
+    ):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        cond = _expand_dims(x_o)
+
+        if self.vae_cond is not None:
+            cond = self.vae_cond.encode(cond, key)
+
+        solver = SDESolver(score_model=model, path=self.path)
+
+        model_extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+            **model_extras,
+        }
+
+        sampler_ = solver.get_sampler(
+            nsteps=nsteps,
+            return_intermediates=return_intermediates,
+            model_extras=model_extras,
+        )
+        
+        def sampler(key, nsamples):
+            key1, key2 = jax.random.split(key, 2)
+            x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
+            samples = sampler_(key2, x_init)
+            if self.vae_obs is not None:
+                samples = self.vae_obs.decode(samples)
+            return samples
+ 
+
+
+        return sampler
+
 
     def sample(
         self,
@@ -397,35 +687,16 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
-        **model_extras
+        **model_extras,
     ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
-
-        key1, key2 = jax.random.split(rng, 2)
-
-        # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_x, 1))
-        cond = _expand_dims(x_o)
-
-        solver = SDESolver(score_model=model, path=self.path)
-
-        model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            **model_extras
-        }
-
-        x_init = self.path.sample_prior(key1, (nsamples, self.dim_theta, 1))
-
-        samples = solver.sample(
-            key2,
-            x_init,
+        
+        rng_vae, rng_samples = jax.random.split(rng, 2)
+        sampler = self.get_sampler(
+            rng_vae,
+            x_o,
             nsteps=nsteps,
-            model_extras=model_extras,
+            use_ema=use_ema,
             return_intermediates=return_intermediates,
+            **model_extras,
         )
-
-        return jnp.squeeze(samples, axis=-1)
+        return sampler(rng_samples, nsamples)

@@ -110,9 +110,9 @@ def test_flux_wrapper():
     vf = wrapper.get_vector_field(**extra_args)
     out = vf(t, obs, None)
 
-    assert out.shape == (3, 2), f"Vector field output shape is incorrect, got {out.shape}"
+    assert out.shape == (3, 2, 1), f"Vector field output shape is incorrect, got {out.shape}"
 
     vf = wrapper.get_vector_field()
     out = vf(t, obs, args=extra_args)
 
-    assert out.shape == (3, 2), f"Vector field output shape is incorrect, got {out.shape}"
+    assert out.shape == (3, 2, 1), f"Vector field output shape is incorrect, got {out.shape}"

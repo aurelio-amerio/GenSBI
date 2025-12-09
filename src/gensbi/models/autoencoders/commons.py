@@ -9,6 +9,7 @@ import jax.numpy as jnp
 
 import optax
 
+
 @dataclass
 class AutoEncoderParams:
     """
@@ -56,6 +57,7 @@ class Loss(nnx.Variable):
     """
     Placeholder variable for storing loss values in the model.
     """
+
     pass
 
 
@@ -67,6 +69,7 @@ class DiagonalGaussian(nnx.Module):
         sample (bool): Whether to sample from the distribution (default: True).
         chunk_dim (int): Axis along which to split mean and logvar (default: -1).
     """
+
     def __init__(
         self,
         sample: bool = True,
@@ -74,6 +77,10 @@ class DiagonalGaussian(nnx.Module):
     ):
         self.sample = sample
         self.chunk_dim = chunk_dim
+
+        self.kl_loss = Loss(jnp.array(1e10))
+
+        self.update_KL = False
 
     def __call__(self, z: Array, key=None) -> Array:
         """
@@ -89,9 +96,12 @@ class DiagonalGaussian(nnx.Module):
         mean, logvar = jnp.split(z, 2, axis=self.chunk_dim)
         std = jnp.exp(0.5 * logvar)
 
-        self.kl_loss = Loss(
-            jnp.mean(0.5 * jnp.mean(-jnp.log(std**2) - 1.0 + std**2 + mean**2, axis=-1))
-        )
+        if self.update_KL:
+            self.kl_loss = Loss(
+                jnp.mean(
+                    0.5 * jnp.mean(-jnp.log(std**2) - 1.0 + std**2 + mean**2, axis=-1)
+                )
+            )
 
         if self.sample:
             return mean + std * jax.random.normal(
@@ -101,7 +111,9 @@ class DiagonalGaussian(nnx.Module):
             return mean
 
 
-def vae_loss_fn(model: nnx.Module, x: jax.Array, key) -> jax.Array:
+def vae_loss_fn(
+    model: nnx.Module, x: jax.Array, key: jax.random.PRNGKey, kl_weight=0.1
+) -> jax.Array:
     """
     Compute the VAE loss as the sum of reconstruction and KL divergence losses.
 
@@ -114,10 +126,8 @@ def vae_loss_fn(model: nnx.Module, x: jax.Array, key) -> jax.Array:
             jax.Array: Scalar loss value.
     """
     logits = model(x, key)
-    losses = nnx.pop(model, Loss)
+    losses = nnx.state(model, Loss)
     kl_loss = sum(jax.tree_util.tree_leaves(losses), 0.0)
-    reconstruction_loss = jnp.mean(
-        optax.sigmoid_binary_cross_entropy(logits, x)
-    )
-    loss = reconstruction_loss + 0.1 * kl_loss
+    reconstruction_loss = jnp.mean(optax.sigmoid_binary_cross_entropy(logits, x))
+    loss = reconstruction_loss + kl_weight * kl_loss
     return loss

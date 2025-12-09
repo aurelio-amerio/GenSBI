@@ -10,6 +10,8 @@ from .joint_pipeline import JointDiffusionPipeline, JointFlowPipeline
 from .conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline
 from .unconditional_pipeline import UnconditionalFlowPipeline, UnconditionalDiffusionPipeline
 
+from .pipeline_vae import VAE1DPipeline, VAE2DPipeline
+
 __all__ = [
     "SimformerFlowPipeline",
     "SimformerDiffusionPipeline",
@@ -24,6 +26,9 @@ __all__ = [
     "ConditionalDiffusionPipeline",
     "UnconditionalFlowPipeline",
     "UnconditionalDiffusionPipeline",
+    
+    "VAE1DPipeline",
+    "VAE2DPipeline",
 ]
 
 # 97% coverage, need to improve pipeline to hit some branches

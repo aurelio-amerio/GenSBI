@@ -591,6 +591,7 @@ class AutoEncoder2D(nnx.Module):
         self,
         params: AutoEncoderParams,
     ):
+        self.rngs = params.rngs
         self.Encoder2D = Encoder2D(
             resolution=params.resolution,
             in_channels=params.in_channels,
@@ -598,7 +599,7 @@ class AutoEncoder2D(nnx.Module):
             ch_mult=params.ch_mult,
             num_res_blocks=params.num_res_blocks,
             z_channels=params.z_channels,
-            rngs=params.rngs,
+            rngs=self.rngs,
             param_dtype=params.param_dtype,
         )
         self.Decoder2D = Decoder2D(
@@ -609,7 +610,7 @@ class AutoEncoder2D(nnx.Module):
             ch_mult=params.ch_mult,
             num_res_blocks=params.num_res_blocks,
             z_channels=params.z_channels,
-            rngs=params.rngs,
+            rngs=self.rngs,
             param_dtype=params.param_dtype,
         )
         self.reg = DiagonalGaussian()
@@ -617,7 +618,7 @@ class AutoEncoder2D(nnx.Module):
         self.scale_factor = nnx.Param(params.scale_factor)
         self.shift_factor = nnx.Param(params.shift_factor)
 
-    def encode(self, x: Array, key) -> Array:
+    def encode(self, x: Array, key=None) -> Array:
         """
         Encode input data into the latent space.
 
@@ -628,7 +629,8 @@ class AutoEncoder2D(nnx.Module):
         Returns:
             Array: Latent representation.
         """
-
+        if key is None:
+            key = self.rngs.encode()
         z = self.reg(self.Encoder2D(x), key)
         z = self.scale_factor * (z - self.shift_factor)
 
@@ -650,16 +652,16 @@ class AutoEncoder2D(nnx.Module):
 
         return z
 
-    def __call__(self, x: Array, key) -> Array:
+    def __call__(self, x: Array, key=None) -> Array:
         """
         Forward pass: encode and then decode the input.
 
         Args:
             x (Array): Input tensor.
-            key: PRNG key for sampling.
 
         Returns:
             Array: Reconstructed output.
         """
 
-        return self.decode(self.encode(x, key))
+        return self.decode(self.encode(x, key=key))
+    
