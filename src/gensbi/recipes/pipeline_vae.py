@@ -1,13 +1,24 @@
+
 """
-Pipeline module for GenSBI.
+VAE Pipeline module for GenSBI.
 
-This module provides an abstract pipeline class for training and evaluating conditional generative models
-(such as conditional flow matching or diffusion models) in the GenSBI framework. It handles model creation,
-training loop, optimizer setup, checkpointing, and evaluation utilities.
+This module provides an abstract pipeline class and concrete implementations for training and evaluating Variational Autoencoders (VAEs)
+within the GenSBI framework. It manages model instantiation, training and validation loops, optimizer and EMA setup, checkpointing,
+and utility functions for saving and restoring models.
 
-For practical implementations, subclasses should implement specific model architectures, loss functions, and sampling methods.
-See `JointPipeline` and `ConditionalPipeline` for concrete examples.
+The `AbstractVAEPipeline` class defines the general workflow for VAE-based models, including optimizer configuration, KL annealing,
+and early stopping. Subclasses such as `VAE1DPipeline` and `VAE2DPipeline` implement pipelines for 1D and 2D autoencoder architectures, respectively.
 
+Typical usage involves subclassing or instantiating the provided pipelines with appropriate datasets, model parameters, and (optionally) training configurations.
+
+Key features:
+- Model and EMA initialization
+- Training and validation step functions (JIT-compiled)
+- Learning rate scheduling and gradient clipping
+- Early stopping and checkpoint management
+- Support for custom training configurations
+
+See the `VAE1DPipeline` and `VAE2DPipeline` classes for concrete examples.
 """
 
 from flax import nnx
@@ -40,8 +51,14 @@ from gensbi.models.autoencoders import (
 from gensbi.recipes.pipeline import ema_step, ModelEMA
 
 
+
 class AbstractVAEPipeline:
-    """ """
+    """
+    Abstract pipeline for training and evaluating Variational Autoencoders (VAEs) in GenSBI.
+
+    This class manages model creation, optimizer and EMA setup, training and validation loops, checkpointing,
+    and utility functions. It is designed to be subclassed for specific VAE architectures.
+    """
 
     def __init__(
         self,
@@ -51,6 +68,22 @@ class AbstractVAEPipeline:
         params: AutoEncoderParams,
         training_config=None,
     ):
+        """
+        Initialize the VAE pipeline.
+
+        Parameters
+        ----------
+        model_cls : type
+            The class of the VAE model to instantiate (e.g., AutoEncoder1D or AutoEncoder2D).
+        train_dataset : iterable
+            Training dataset.
+        val_dataset : iterable
+            Validation dataset.
+        params : AutoEncoderParams
+            Model hyperparameters and configuration.
+        training_config : dict, optional
+            Training configuration dictionary. If None, defaults are used.
+        """
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
 
@@ -115,6 +148,7 @@ class AbstractVAEPipeline:
     def _get_ema_optimizer(self):
         """
         Construct the EMA optimizer for maintaining an exponential moving average of model parameters.
+
         Returns
         -------
         ema_optimizer : ModelEMA
@@ -125,6 +159,19 @@ class AbstractVAEPipeline:
         return ema_optimizer
 
     def _get_kl_schedule(self, nsteps):
+        """
+        Construct a KL annealing schedule for training.
+
+        Parameters
+        ----------
+        nsteps : int
+            Number of training steps.
+
+        Returns
+        -------
+        schedule : Callable
+            KL weight schedule function.
+        """
         schedule = linear_schedule(0.1, 1, nsteps)
         return schedule
 
@@ -158,7 +205,7 @@ class AbstractVAEPipeline:
     @classmethod
     def _get_default_training_config(cls):
         """
-        Return a dictionary of default training configuration parameters.
+        Return a dictionary of default training configuration parameters for VAE training.
 
         Returns
         -------
@@ -203,6 +250,7 @@ class AbstractVAEPipeline:
         )
         return
 
+
     def get_train_step_fn(self):
         """
         Return the training step function, which performs a single optimization step.
@@ -222,9 +270,10 @@ class AbstractVAEPipeline:
 
         return train_step
 
+
     def get_val_step_fn(self):
         """
-        Return the validation step function, which performs a single optimization step.
+        Return the validation step function, which computes the loss on a validation batch.
 
         Returns
         -------
@@ -240,6 +289,14 @@ class AbstractVAEPipeline:
         return val_step
 
     def save_model(self, experiment_id=None):
+        """
+        Save the current model and EMA model to checkpoint directories.
+
+        Parameters
+        ----------
+        experiment_id : int, optional
+            Identifier for the experiment/checkpoint. If None, uses the current training config value.
+        """
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
 
@@ -265,10 +322,8 @@ class AbstractVAEPipeline:
         )
         checkpoint_manager.close()
 
-        # now we create the ema model and save it
+        # Save the EMA model
         _, ema_state = nnx.split(self.ema_model)
-
-        # save the ema model
         checkpoint_manager_ema = ocp.CheckpointManager(
             checkpoint_dir_ema,
             options=ocp.CheckpointManagerOptions(
@@ -277,18 +332,24 @@ class AbstractVAEPipeline:
                 create=True,
             ),
         )
-
         checkpoint_manager_ema.save(
             experiment_id,
             args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)),
         )
-
         checkpoint_manager_ema.close()
 
         print("Saved model to checkpoint")
         return
 
     def restore_model(self, experiment_id=None):
+        """
+        Restore the model and EMA model from checkpoint directories.
+
+        Parameters
+        ----------
+        experiment_id : int, optional
+            Identifier for the experiment/checkpoint. If None, uses the current training config value.
+        """
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
 
@@ -307,7 +368,7 @@ class AbstractVAEPipeline:
         self.model = nnx.merge(graphdef, restored["state"])
         self.model.training = False
 
-        # restore the ema model
+        # Restore the EMA model
         graphdef, model_state_ema = nnx.split(self.ema_model)
 
         with ocp.CheckpointManager(
@@ -326,16 +387,21 @@ class AbstractVAEPipeline:
         print("Restored model from checkpoint")
         return
 
+
     def train(
         self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True
     ) -> Tuple[list, list]:
         """
-        Run the training loop for the model.
+        Run the training loop for the VAE model.
 
         Parameters
         ----------
         rngs : nnx.Rngs
             Random number generators for training/validation steps.
+        nsteps : int, optional
+            Number of training steps. If None, uses the value from training config.
+        save_model : bool, optional
+            Whether to save the model after training.
 
         Returns
         -------
@@ -438,8 +504,13 @@ class AbstractVAEPipeline:
         return loss_array, val_loss_array
 
 
+
 class VAE1DPipeline(AbstractVAEPipeline):
-    """ """
+    """
+    Pipeline for training and evaluating 1D Variational Autoencoders (VAE1D) in GenSBI.
+
+    Inherits from AbstractVAEPipeline and uses the AutoEncoder1D model class.
+    """
 
     def __init__(
         self,
@@ -448,6 +519,20 @@ class VAE1DPipeline(AbstractVAEPipeline):
         params: AutoEncoderParams,
         training_config=None,
     ):
+        """
+        Initialize the 1D VAE pipeline.
+
+        Parameters
+        ----------
+        train_dataset : iterable
+            Training dataset.
+        val_dataset : iterable
+            Validation dataset.
+        params : AutoEncoderParams
+            Model hyperparameters and configuration.
+        training_config : dict, optional
+            Training configuration dictionary. If None, defaults are used.
+        """
         super().__init__(
             AutoEncoder1D,
             train_dataset,
@@ -458,8 +543,13 @@ class VAE1DPipeline(AbstractVAEPipeline):
         return
 
 
+
 class VAE2DPipeline(AbstractVAEPipeline):
-    """ """
+    """
+    Pipeline for training and evaluating 2D Variational Autoencoders (VAE2D) in GenSBI.
+
+    Inherits from AbstractVAEPipeline and uses the AutoEncoder2D model class.
+    """
 
     def __init__(
         self,
@@ -468,7 +558,20 @@ class VAE2DPipeline(AbstractVAEPipeline):
         params: AutoEncoderParams,
         training_config=None,
     ):
+        """
+        Initialize the 2D VAE pipeline.
 
+        Parameters
+        ----------
+        train_dataset : iterable
+            Training dataset.
+        val_dataset : iterable
+            Validation dataset.
+        params : AutoEncoderParams
+            Model hyperparameters and configuration.
+        training_config : dict, optional
+            Training configuration dictionary. If None, defaults are used.
+        """
         super().__init__(
             AutoEncoder2D,
             train_dataset,
