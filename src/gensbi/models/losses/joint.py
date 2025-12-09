@@ -49,7 +49,7 @@ class JointCFMLoss(ContinuousFMLoss):
         x_t = path_sample.x_t
 
         if condition_mask is not None:
-            condition_mask = condition_mask.reshape(x_t.shape)
+            # condition_mask = condition_mask.reshape(x_t.shape[0], x_t.shape[1], 1)
             x_t = jnp.where(condition_mask, x_1, x_t)
 
         model_output = vf(path_sample.t, x_t, *args, **kwargs)

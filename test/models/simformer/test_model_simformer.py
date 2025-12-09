@@ -63,9 +63,9 @@ def test_simformer_wrapper():
     vf = wrapper.get_vector_field(**extra_args)
     out = vf(t, obs, None)
 
-    assert out.shape == (12, 2), f"2 - Vector field output shape is incorrect, got {out.shape}"
+    assert out.shape == (12, 2, 1), f"2 - Vector field output shape is incorrect, got {out.shape}"
 
     vf = wrapper.get_vector_field()
     out = vf(t, obs, args=extra_args)
 
-    assert out.shape == (12, 2), f"3 - Vector field output shape is incorrect, got {out.shape}"
+    assert out.shape == (12, 2, 1), f"3 - Vector field output shape is incorrect, got {out.shape}"

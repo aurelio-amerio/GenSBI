@@ -3,7 +3,7 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 Examples:
     .. code-block:: python
-    
+
         import grain
         import numpy as np
         import jax
@@ -30,14 +30,14 @@ Examples:
             .shuffle(42)
             .repeat()
             .to_iter_dataset()
-            .batch(batch_size) 
+            .batch(batch_size)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
-        
+
         # Define the model
-        dim_theta = 2  # Dimension of the parameter space
-        dim_x = 2      # Dimension of the observation space
-        pipeline = SimformerPipeline(train_dataset_grain, val_dataset_grain, dim_theta, dim_x)
+        dim_obs = 2  # Dimension of the parameter space
+        dim_cond = 2      # Dimension of the observation space
+        pipeline = SimformerPipeline(train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
@@ -48,7 +48,7 @@ Examples:
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
 
     .. note::
-    
+
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
@@ -164,88 +164,14 @@ def parse_training_config(config_path: str):
     return training_config
 
 
-def sample_strutured_conditional_mask(
-    key,
-    num_samples,
-    theta_dim,
-    x_dim,
-    p_joint=0.2,
-    p_posterior=0.2,
-    p_likelihood=0.2,
-    p_rnd1=0.2,
-    p_rnd2=0.2,
-    rnd1_prob=0.3,
-    rnd2_prob=0.7,
-):
-    """
-    Sample structured conditional masks for the Simformer model.
-
-    Parameters
-    ----------
-    key : jax.random.PRNGKey
-        Random key for sampling.
-    num_samples : int
-        Number of samples to generate.
-    theta_dim : int
-        Dimension of the parameter space.
-    x_dim : int
-        Dimension of the observation space.
-    p_joint : float
-        Probability of selecting the joint mask.
-    p_posterior : float
-        Probability of selecting the posterior mask.
-    p_likelihood : float
-        Probability of selecting the likelihood mask.
-    p_rnd1 : float
-        Probability of selecting the first random mask.
-    p_rnd2 : float
-        Probability of selecting the second random mask.
-    rnd1_prob : float
-        Probability of a True value in the first random mask.
-    rnd2_prob : float
-        Probability of a True value in the second random mask.
-
-    Returns
-    -------
-    condition_mask : jnp.ndarray
-        Array of shape (num_samples, theta_dim + x_dim) with boolean masks.
-
-    """
-    # Joint, posterior, likelihood, random1_mask, random2_mask
-    key1, key2, key3 = jax.random.split(key, 3)
-    joint_mask = jnp.array([False] * (theta_dim + x_dim), dtype=jnp.bool_)
-    posterior_mask = jnp.array([False] * theta_dim + [True] * x_dim, dtype=jnp.bool_)
-    likelihood_mask = jnp.array([True] * theta_dim + [False] * x_dim, dtype=jnp.bool_)
-    random1_mask = jax.random.bernoulli(
-        key2, rnd1_prob, shape=(theta_dim + x_dim,)
-    ).astype(jnp.bool_)
-    random2_mask = jax.random.bernoulli(
-        key3, rnd2_prob, shape=(theta_dim + x_dim,)
-    ).astype(jnp.bool_)
-    mask_options = jnp.stack(
-        [joint_mask, posterior_mask, likelihood_mask, random1_mask, random2_mask],
-        axis=0,
-    )  # (5, theta_dim + x_dim)
-    idx = jax.random.choice(
-        key1,
-        5,
-        shape=(num_samples,),
-        p=jnp.array([p_joint, p_posterior, p_likelihood, p_rnd1, p_rnd2]),
-    )
-    condition_mask = mask_options[idx]
-    all_ones_mask = jnp.all(condition_mask, axis=-1)
-    # If all are ones, then set to false
-    condition_mask = jnp.where(all_ones_mask[..., None], False, condition_mask)
-    return condition_mask[..., None]
-
-
 class SimformerFlowPipeline(JointFlowPipeline):
     def __init__(
         self,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs: int = 1,
         params=None,
         training_config=None,
         edge_mask=None,
@@ -259,10 +185,12 @@ class SimformerFlowPipeline(JointFlowPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
-        dim_x : int
+        dim_cond : int
             Dimension of the observation space.
+        ch_obs : int
+            Number of channels in the observation data.
         params : SimformerParams, optional
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
@@ -271,13 +199,27 @@ class SimformerFlowPipeline(JointFlowPipeline):
             Edge mask for the Simformer model. If None, no mask is applied.
 
         """
-        super().__init__(
-            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
-        )
-        if params is None:
-            self.params = self._get_default_params()
+        self.dim_joint = dim_obs + dim_cond
+        
+        self.ch_obs = ch_obs
 
-        self.model = self._make_model(self.params)
+        if params is None:
+            params = self._get_default_params()
+        
+        model = self._make_model(params)
+        
+        
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs = ch_obs,
+            params=params,
+            training_config=training_config,
+        )
+
         self.ema_model = nnx.clone(self.model)
 
         self.edge_mask = edge_mask
@@ -287,8 +229,8 @@ class SimformerFlowPipeline(JointFlowPipeline):
         cls,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
     ):
@@ -317,7 +259,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         ), f"Model type {model_type} not supported in SimformerFlowPipeline."
 
         # Model parameters from config
-        dim_joint = dim_theta + dim_x
+        dim_joint = dim_obs + dim_cond
 
         params_dict = parse_simformer_params(config_path)
 
@@ -339,10 +281,11 @@ class SimformerFlowPipeline(JointFlowPipeline):
         pipeline = cls(
             train_dataset,
             val_dataset,
-            dim_theta,
-            dim_x,
-            params,
-            training_config,
+            dim_obs,
+            dim_cond,
+            ch_obs=params.in_channels,
+            params=params,
+            training_config=training_config,
         )
 
         return pipeline
@@ -360,7 +303,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         """
         params = SimformerParams(
             rngs=nnx.Rngs(0),
-            in_channels=1,
+            in_channels=self.ch_obs,
             dim_value=40,
             dim_id=40,
             dim_condition=10,
@@ -413,8 +356,9 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         self,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs: int = 1,
         params=None,
         training_config=None,
         edge_mask=None,
@@ -428,9 +372,9 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
-        dim_x : int
+        dim_cond : int
             Dimension of the observation space.
         params : SimformerParams, optional
             Parameters for the Simformer model. If None, default parameters are used.
@@ -441,13 +385,27 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
 
         """
 
-        super().__init__(
-            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
-        )
-        if params is None:
-            self.params = self._get_default_params()
+        self.dim_joint = dim_obs + dim_cond
+        
+        self.ch_obs = ch_obs
 
-        self.model = self._make_model(self.params)
+        if params is None:
+            params = self._get_default_params()
+        
+        model = self._make_model(params)
+        
+        
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs = ch_obs,
+            params=params,
+            training_config=training_config,
+        )
+
         self.ema_model = nnx.clone(self.model)
 
         self.edge_mask = edge_mask
@@ -457,8 +415,8 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         cls,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
     ):
@@ -487,7 +445,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         ), f"Model type {model_type} not supported in SimformerDiffusionPipeline."
 
         # Model parameters from config
-        dim_joint = dim_theta + dim_x
+        dim_joint = dim_obs + dim_cond
 
         params_dict = parse_simformer_params(config_path)
 
@@ -509,10 +467,11 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         pipeline = cls(
             train_dataset,
             val_dataset,
-            dim_theta,
-            dim_x,
-            params,
-            training_config,
+            dim_obs,
+            dim_cond,
+            ch_obs = params.in_channels,
+            params=params,
+            training_config=training_config,
         )
 
         return pipeline
@@ -529,7 +488,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         Return default parameters for the Simformer model.
         """
         params = SimformerParams(
-            in_channels=1,
+            in_channels=self.ch_obs,
             dim_value=40,
             dim_id=40,
             dim_condition=10,

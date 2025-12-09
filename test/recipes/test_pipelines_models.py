@@ -13,6 +13,9 @@ import pytest
 
 import tempfile
 
+import grain
+import numpy as np
+
 from gensbi.models import SimformerParams, Flux1JointParams, Flux1Params
 from gensbi.recipes import (
     SimformerFlowPipeline,
@@ -29,25 +32,60 @@ import itertools
 nsamples = 1000
 rng = jax.random.PRNGKey(0)
 
-dim_theta = 2
-dim_data = 7
-dim_joint = dim_theta + dim_data
+dim_obs = 2
+dim_cond = 7
+dim_joint = dim_obs + dim_cond
 
 
-theta = jax.random.normal(rng, (nsamples, dim_theta, 1))
-x = jax.random.normal(rng, (nsamples, dim_data, 1))
+theta = jax.random.normal(rng, (nsamples, dim_obs, 2))
+x = jax.random.normal(rng, (nsamples, dim_cond, 2))
 
 data = jnp.concatenate([theta, x], axis=1)
 
-train_data = data[:800].reshape(10, -1, dim_joint, 1)
-val_data = data[800:].reshape(10, -1, dim_joint, 1)
+def split_obs_cond(data):
+    return data[:, :dim_obs], data[:, dim_obs:]  # assuming first dim_obs are obs, last dim_cond are cond
 
-train_dataset = itertools.cycle(train_data)
-val_dataset = itertools.cycle(val_data)
+train_dataset_joint = (
+    grain.MapDataset.source(np.array(data)[:800])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+)
+
+val_dataset_joint = (
+    grain.MapDataset.source(np.array(data)[800:])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+)
+
+train_dataset_cond = (
+    grain.MapDataset.source(np.array(data)[:800])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+    .map(split_obs_cond)
+    
+    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+)
+
+val_dataset_cond = (
+    grain.MapDataset.source(np.array(data)[800:])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+    .map(split_obs_cond)
+    
+    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+)
 
 params_simf = SimformerParams(
     rngs=nnx.Rngs(0),
-    in_channels=1,
+    in_channels=2,
     dim_value=2,
     dim_id=2,
     dim_condition=2,
@@ -60,8 +98,8 @@ params_simf = SimformerParams(
     num_hidden_layers=1,
 )
 
-params_simf2 = Flux1JointParams(
-    in_channels=1,
+params_flux1joint = Flux1JointParams(
+    in_channels=2,
     vec_in_dim=None,
     mlp_ratio=3.0,
     num_heads=2,
@@ -77,9 +115,9 @@ params_simf2 = Flux1JointParams(
 )
 
 params_flux = Flux1Params(
-    in_channels=1,
+    in_channels=2,
     vec_in_dim=None,
-    context_in_dim=1,
+    context_in_dim=2,
     mlp_ratio=1,
     num_heads=2,
     depth=2,
@@ -88,8 +126,8 @@ params_flux = Flux1Params(
         2,
     ],
     qkv_bias=True,
-    obs_dim=dim_theta,
-    cond_dim=dim_data,
+    obs_dim=dim_obs,
+    cond_dim=dim_cond,
     theta=20,
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
@@ -119,12 +157,22 @@ config_flow_flux1joint = "test/recipes/configs/config_flow_flux1joint.yaml"
 def test_load_configs(pipeline_cls, config_path):
 
     checkpoint_dir = tempfile.mkdtemp()
+    
+    if pipeline_cls in [
+        Flux1FlowPipeline,
+        Flux1DiffusionPipeline,
+    ]:
+        train_dataset = train_dataset_cond
+        val_dataset = val_dataset_cond
+    else:
+        train_dataset = train_dataset_joint
+        val_dataset = val_dataset_joint
 
     pipeline = pipeline_cls.init_pipeline_from_config(
         train_dataset,
         val_dataset,
-        dim_theta,
-        dim_data,
+        dim_obs,
+        dim_cond,
         config_path=config_path,
         checkpoint_dir=checkpoint_dir,
     )
@@ -136,18 +184,29 @@ def test_load_configs(pipeline_cls, config_path):
     return
 
 
+
 @pytest.mark.parametrize(
     "pipeline_cls, params",
     [
         (SimformerFlowPipeline, params_simf),
         (SimformerDiffusionPipeline, params_simf),
-        (Flux1JointFlowPipeline, params_simf2),
-        (Flux1JointDiffusionPipeline, params_simf2),
+        (Flux1JointFlowPipeline, params_flux1joint),
+        (Flux1JointDiffusionPipeline, params_flux1joint),
         (Flux1FlowPipeline, params_flux),
         (Flux1DiffusionPipeline, params_flux),
     ],
 )
 def test_model_pipeline(pipeline_cls, params):
+    if pipeline_cls in [
+        Flux1FlowPipeline,
+        Flux1DiffusionPipeline,
+    ]:
+        train_dataset = train_dataset_cond
+        val_dataset = val_dataset_cond
+    else:
+        train_dataset = train_dataset_joint
+        val_dataset = val_dataset_joint
+        
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         training_config = pipeline_cls._get_default_training_config()
@@ -155,27 +214,44 @@ def test_model_pipeline(pipeline_cls, params):
         training_config["val_every"] = 1  # validate every epoch
 
         # first we try to initialize a default pipeline, to make sure it works
-        default_pipeline = pipeline_cls(train_dataset, val_dataset, dim_theta, dim_data)
+        default_pipeline = pipeline_cls(train_dataset, val_dataset, dim_obs, dim_cond)
 
         assert isinstance(
             default_pipeline, pipeline_cls
         ), f"Expected {pipeline_cls}, got {type(default_pipeline)}"
 
         # then we use a real pipeline
-
-        pipeline = pipeline_cls(
-            train_dataset,
-            val_dataset,
-            dim_theta,
-            dim_data,
-            params,
-            training_config=training_config,
-        )
+        if pipeline_cls in [
+            Flux1FlowPipeline,
+            Flux1DiffusionPipeline,
+        ]:
+            pipeline = pipeline_cls(
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                dim_obs=dim_obs,
+                dim_cond=dim_cond,
+                ch_obs=2,
+                ch_cond=2,
+                params=params,
+                training_config=training_config,
+            )
+        else:
+            pipeline = pipeline_cls(
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                dim_obs=dim_obs,
+                dim_cond=dim_cond,
+                ch_obs=2,
+                params=params,
+                training_config=training_config,
+            )
+        
+        assert model_dir == pipeline.training_config["checkpoint_dir"], "Checkpoint dir mismatch"
 
         batch_size = 3
         t = jnp.linspace(0, 1, batch_size)
-        obs = jnp.ones((batch_size, dim_theta, 1))
-        cond = jnp.ones((batch_size, dim_data, 1))
+        obs = jnp.ones((batch_size, dim_obs, 2))
+        cond = jnp.ones((batch_size, dim_cond, 2))
 
         obs_ids = pipeline.obs_ids
         cond_ids = pipeline.cond_ids
@@ -197,26 +273,41 @@ def test_model_pipeline(pipeline_cls, params):
         out_ema = pipeline.ema_model_wrapped(t, obs, obs_ids, cond, cond_ids)
         assert out.shape == (
             batch_size,
-            dim_theta,
-            1,
-        ), f"Expected shape {(batch_size, dim_theta, 1)}, got {out.shape}"
+            dim_obs,
+            2,
+        ), f"Expected shape {(batch_size, dim_obs, 2)}, got {out.shape}"
         assert out_ema.shape == (
             batch_size,
-            dim_theta,
-            1,
-        ), f"Expected shape {(batch_size, dim_theta, 1)}, got {out_ema.shape}"
+            dim_obs,
+            2,
+        ), f"Expected shape {(batch_size, dim_obs, 2)}, got {out_ema.shape}"
 
         # try restoring the model from the checkpoint
         # ignore warnings about sharding for the next line
-
-        pipeline2 = pipeline_cls(
-            train_dataset,
-            val_dataset,
-            dim_theta,
-            dim_data,
-            params,
-            training_config=training_config,
-        )
+        if pipeline_cls in [
+            Flux1FlowPipeline,
+            Flux1DiffusionPipeline,
+        ]:
+            pipeline2 = pipeline_cls(
+                train_dataset,
+                val_dataset=val_dataset,
+                dim_obs=dim_obs,
+                dim_cond=dim_cond,
+                ch_obs=2,
+                ch_cond=2,
+                params=params,
+                training_config=training_config,
+            )
+        else:
+            pipeline2 = pipeline_cls(
+                train_dataset,
+                val_dataset=val_dataset,
+                dim_obs=dim_obs,
+                dim_cond=dim_cond,
+                ch_obs=2,
+                params=params,
+                training_config=training_config,
+            )
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -230,37 +321,42 @@ def test_model_pipeline(pipeline_cls, params):
             out_ema, out_ema_restored
         ), "Restored EMA model output does not match"
 
+        cond = jnp.ones((1, dim_cond, 2))
         # try sampling from the model
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
-            jnp.arange(dim_data)[None, ...],
+            cond,
             nsamples=32,
             use_ema=False,
         )
         assert sample.shape == (
             32,
-            dim_theta,
-        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+            dim_obs,
+            2
+        ), f"Expected shape (32, {dim_obs}, 2), got {sample.shape}"
 
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
-            jnp.arange(dim_data)[None, ...],
+            cond,
             nsamples=32,
             use_ema=True,
         )
         assert sample.shape == (
             32,
-            dim_theta,
-        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+            dim_obs,
+            2
+        ), f"Expected shape (32, {dim_obs}, 2), got {sample.shape}"
 
         # sample from the restored model
         sample_restored = pipeline2.sample(
             jax.random.PRNGKey(1),
-            jnp.arange(dim_data)[None, ...],
+            cond,
             nsamples=32,
             use_ema=True,
         )
         assert jnp.allclose(
             sample, sample_restored
         ), "Restored model samples do not match"
+
+
 

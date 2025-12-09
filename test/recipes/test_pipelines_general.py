@@ -24,33 +24,71 @@ from gensbi.recipes import (
 
 from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
 
-import itertools
+import grain
+import numpy as np
 
 
 nsamples = 1000
 rng = jax.random.PRNGKey(0)
 
-dim_theta = 2
-dim_data = 7
-dim_joint = dim_theta + dim_data
+dim_obs = 2
+dim_cond = 7
+dim_joint = dim_obs + dim_cond
 
 
-theta = jax.random.normal(rng, (nsamples, dim_theta, 1))
-x = jax.random.normal(rng, (nsamples, dim_data, 1))
+theta = jax.random.normal(rng, (nsamples, dim_obs, 2))
+x = jax.random.normal(rng, (nsamples, dim_cond, 2))
 
 data = jnp.concatenate([theta, x], axis=1)
 
-train_data = data[:800].reshape(10, -1, dim_joint, 1)
-val_data = data[800:].reshape(10, -1, dim_joint, 1)
 
-train_dataset = itertools.cycle(train_data)
-val_dataset = itertools.cycle(val_data)
+def split_obs_cond(data):
+    return (
+        data[:, :dim_obs],
+        data[:, dim_obs:],
+    )  # assuming first dim_obs are obs, last dim_cond are cond
 
+
+train_dataset_joint = (
+    grain.MapDataset.source(np.array(data)[:800])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+)
+
+val_dataset_joint = (
+    grain.MapDataset.source(np.array(data)[800:])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+)
+
+train_dataset_cond = (
+    grain.MapDataset.source(np.array(data)[:800])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+    .map(split_obs_cond)
+    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+)
+
+val_dataset_cond = (
+    grain.MapDataset.source(np.array(data)[800:])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+    .map(split_obs_cond)
+    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+)
 # we define a conditional and a joint model for testing
 
 params_simf = SimformerParams(
     rngs=nnx.Rngs(0),
-    in_channels=1,
+    in_channels=2,
     dim_value=4,
     dim_id=2,
     dim_condition=2,
@@ -66,9 +104,9 @@ params_simf = SimformerParams(
 model_joint = Simformer(params_simf)
 
 params = Flux1Params(
-    in_channels=1,
+    in_channels=2,
     vec_in_dim=None,
-    context_in_dim=1,
+    context_in_dim=2,
     mlp_ratio=4,
     num_heads=4,
     depth=1,
@@ -76,8 +114,8 @@ params = Flux1Params(
     axes_dim=[
         2,
     ],
-    obs_dim=dim_theta,
-    cond_dim=dim_data,
+    obs_dim=dim_obs,
+    cond_dim=dim_cond,
     qkv_bias=True,
     guidance_embed=False,
     rngs=nnx.Rngs(0),
@@ -88,6 +126,7 @@ model_conditional = Flux1(params)
 
 
 # %%
+
 
 def get_model(pipeline_cls):
     if pipeline_cls in [
@@ -109,6 +148,17 @@ def get_model(pipeline_cls):
     ],
 )
 def test_model_general_conditional(pipeline_cls):
+
+    if pipeline_cls in [
+        ConditionalFlowPipeline,
+        ConditionalDiffusionPipeline,
+    ]:
+        train_dataset = train_dataset_cond
+        val_dataset = val_dataset_cond
+    else:
+        train_dataset = train_dataset_joint
+        val_dataset = val_dataset_joint
+
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         training_config = pipeline_cls._get_default_training_config()
@@ -118,27 +168,62 @@ def test_model_general_conditional(pipeline_cls):
         model = get_model(pipeline_cls)
 
         # first we try to initialize a default pipeline, to make sure it works
-        default_pipeline = pipeline_cls(
-            model, train_dataset, val_dataset, dim_theta, dim_data
-        )
+        if pipeline_cls in [
+            ConditionalFlowPipeline,
+            ConditionalDiffusionPipeline,
+        ]:
+            default_pipeline = pipeline_cls(
+                model=model,
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                dim_obs=dim_obs,
+                dim_cond=dim_cond,
+                ch_obs=2,
+                ch_cond=2,
+            )
+        else:
+            default_pipeline = pipeline_cls(
+                model=model,
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                dim_obs=dim_obs,
+                dim_cond=dim_cond,
+                ch_obs=2,
+            )
 
         assert isinstance(
             default_pipeline, pipeline_cls
         ), f"Expected {pipeline_cls}, got {type(default_pipeline)}"
 
-        pipeline = pipeline_cls(
-            model,
-            train_dataset,
-            val_dataset,
-            dim_theta,
-            dim_data,
-            training_config=training_config,
-        )
+        if pipeline_cls in [
+            ConditionalFlowPipeline,
+            ConditionalDiffusionPipeline,
+        ]:
+            pipeline = pipeline_cls(
+                model,
+                train_dataset,
+                val_dataset,
+                dim_obs,
+                dim_cond,
+                ch_obs=2,
+                ch_cond=2,
+                training_config=training_config,
+            )
+        else:
+            pipeline = pipeline_cls(
+                model,
+                train_dataset,
+                val_dataset,
+                dim_obs,
+                dim_cond,
+                ch_obs=2,
+                training_config=training_config,
+            )
 
         batch_size = 3
         t = jnp.linspace(0, 1, batch_size)
-        obs = jnp.ones((batch_size, dim_theta, 1))
-        cond = jnp.ones((batch_size, dim_data, 1))
+        obs = jnp.ones((batch_size, dim_obs, 2))
+        cond = jnp.ones((batch_size, dim_cond, 2))
 
         obs_ids = pipeline.obs_ids
         cond_ids = pipeline.cond_ids
@@ -153,26 +238,41 @@ def test_model_general_conditional(pipeline_cls):
         out_ema = pipeline.ema_model_wrapped(t, obs, obs_ids, cond, cond_ids)
         assert out.shape == (
             batch_size,
-            dim_theta,
-            1,
-        ), f"Expected shape {(batch_size, dim_theta, 1)}, got {out.shape}"
+            dim_obs,
+            2,
+        ), f"Expected shape {(batch_size, dim_obs, 2)}, got {out.shape}"
         assert out_ema.shape == (
             batch_size,
-            dim_theta,
-            1,
-        ), f"Expected shape {(batch_size, dim_theta, 1)}, got {out_ema.shape}"
+            dim_obs,
+            2,
+        ), f"Expected shape {(batch_size, dim_obs, 2)}, got {out_ema.shape}"
 
         # try restoring the model from the checkpoint
         # ignore warnings about sharding for the next line
-
-        pipeline2 = pipeline_cls(
-            model,
-            train_dataset,
-            val_dataset,
-            dim_theta,
-            dim_data,
-            training_config=training_config,
-        )
+        if pipeline_cls in [
+            ConditionalFlowPipeline,
+            ConditionalDiffusionPipeline,
+        ]:
+            pipeline2 = pipeline_cls(
+                model,
+                train_dataset,
+                val_dataset,
+                dim_obs,
+                dim_cond,
+                ch_obs=2,
+                ch_cond=2,
+                training_config=training_config,
+            )
+        else:
+            pipeline2 = pipeline_cls(
+                model,
+                train_dataset,
+                val_dataset,
+                dim_obs,
+                dim_cond,
+                ch_obs=2,
+                training_config=training_config,
+            )
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -186,33 +286,36 @@ def test_model_general_conditional(pipeline_cls):
             out_ema, out_ema_restored
         ), "Restored EMA model output does not match"
 
+        cond = jnp.zeros((32, dim_cond, 2))
         # try sampling from the model
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
-            jnp.arange(dim_data)[None, ...],
+            cond,
             nsamples=32,
             use_ema=False,
         )
         assert sample.shape == (
             32,
-            dim_theta,
-        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+            dim_obs,
+            2,
+        ), f"Expected shape (32, {dim_obs}, 2), got {sample.shape}"
 
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
-            jnp.arange(dim_data)[None, ...],
+            cond,
             nsamples=32,
             use_ema=True,
         )
         assert sample.shape == (
             32,
-            dim_theta,
-        ), f"Expected shape (32, {dim_theta}), got {sample.shape}"
+            dim_obs,
+            2,
+        ), f"Expected shape (32, {dim_obs}, 2), got {sample.shape}"
 
         # sample from the restored model
         sample_restored = pipeline2.sample(
             jax.random.PRNGKey(1),
-            jnp.arange(dim_data)[None, ...],
+            cond,
             nsamples=32,
             use_ema=True,
         )
@@ -223,6 +326,7 @@ def test_model_general_conditional(pipeline_cls):
 
 ########
 
+
 @pytest.mark.parametrize(
     "pipeline_cls",
     [
@@ -231,6 +335,10 @@ def test_model_general_conditional(pipeline_cls):
     ],
 )
 def test_model_general_unconditional(pipeline_cls):
+
+    train_dataset = train_dataset_joint
+    val_dataset = val_dataset_joint
+
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         training_config = pipeline_cls._get_default_training_config()
@@ -254,12 +362,13 @@ def test_model_general_unconditional(pipeline_cls):
             train_dataset,
             val_dataset,
             dim_joint,
+            ch_obs = 2,
             training_config=training_config,
         )
 
         batch_size = 3
         t = jnp.linspace(0, 1, batch_size)
-        obs = jnp.ones((batch_size, dim_joint, 1))
+        obs = jnp.ones((batch_size, dim_joint, 2))
 
         obs_ids = pipeline.obs_ids
 
@@ -274,13 +383,13 @@ def test_model_general_unconditional(pipeline_cls):
         assert out.shape == (
             batch_size,
             dim_joint,
-            1,
-        ), f"Expected shape {(batch_size, dim_joint, 1)}, got {out.shape}"
+            2,
+        ), f"Expected shape {(batch_size, dim_joint, 2)}, got {out.shape}"
         assert out_ema.shape == (
             batch_size,
             dim_joint,
-            1,
-        ), f"Expected shape {(batch_size, dim_joint, 1)}, got {out_ema.shape}"
+            2,
+        ), f"Expected shape {(batch_size, dim_joint, 2)}, got {out_ema.shape}"
 
         # try restoring the model from the checkpoint
         # ignore warnings about sharding for the next line
@@ -290,6 +399,7 @@ def test_model_general_unconditional(pipeline_cls):
             train_dataset,
             val_dataset,
             dim_joint,
+            ch_obs = 2,
             training_config=training_config,
         )
 
@@ -314,7 +424,8 @@ def test_model_general_unconditional(pipeline_cls):
         assert sample.shape == (
             32,
             dim_joint,
-        ), f"Expected shape (32, {dim_joint}), got {sample.shape}"
+            2,
+        ), f"Expected shape (32, {dim_joint}, 2), got {sample.shape}"
 
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
@@ -324,7 +435,8 @@ def test_model_general_unconditional(pipeline_cls):
         assert sample.shape == (
             32,
             dim_joint,
-        ), f"Expected shape (32, {dim_joint}), got {sample.shape}"
+            2,
+        ), f"Expected shape (32, {dim_joint}, 2), got {sample.shape}"
 
         # sample from the restored model
         sample_restored = pipeline2.sample(

@@ -14,6 +14,8 @@ class MLPEmbedder(nnx.Module):
         rngs: nnx.Rngs,
         param_dtype: DTypeLike = jnp.float32,
     ):
+        assert hidden_dim % in_dim == 0, "hidden_dim must be multiple of in_dim"
+        self.repeats = hidden_dim // in_dim
         self.p_skip = nnx.Param(0.01 * jnp.ones((1, 1, hidden_dim)))
         self.in_layer = nnx.Linear(
             in_features=in_dim,
@@ -34,7 +36,7 @@ class MLPEmbedder(nnx.Module):
     def __call__(self, x: Array) -> Array:
         x = jnp.atleast_1d(x)
         out = self.out_layer(self.silu(self.in_layer(x)))
-        x_repeated, out = jnp.broadcast_arrays(x, out)
+        x_repeated = jnp.repeat(x, self.repeats, axis=-1)
         out = x_repeated * self.p_skip + (1 - self.p_skip) * out
         return out
 

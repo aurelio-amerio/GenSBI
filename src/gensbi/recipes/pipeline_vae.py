@@ -23,6 +23,7 @@ from functools import partial
 
 import optax
 from optax.contrib import reduce_on_plateau
+from optax.schedules import linear_schedule
 
 import orbax.checkpoint as ocp
 
@@ -30,96 +31,24 @@ from tqdm import tqdm
 
 import os
 
+from gensbi.models.autoencoders import (
+    AutoEncoderParams,
+    vae_loss_fn,
+    AutoEncoder1D,
+    AutoEncoder2D,
+)
+from gensbi.recipes.pipeline import ema_step, ModelEMA
 
-class ModelEMA(nnx.Optimizer):
-    """
-    Exponential Moving Average (EMA) optimizer for maintaining a smoothed version of model parameters.
 
-    This optimizer keeps an exponential moving average of the model parameters, which can help stabilize training
-    and improve evaluation performance. The EMA parameters are updated at each training step.
-
-    Parameters
-    ----------
-    model : nnx.Module
-        The model whose parameters will be tracked.
-    tx : optax.GradientTransformation
-        The Optax transformation defining the EMA update rule.
-
-    """
+class AbstractVAEPipeline:
+    """ """
 
     def __init__(
         self,
-        model: nnx.Module,
-        tx: optax.GradientTransformation,
-    ):
-        super().__init__(model, tx, wrt=[nnx.Param, nnx.BatchStat])
-
-    def update(self, model, model_orginal: nnx.Module):
-        """
-        Update the EMA parameters using the current model parameters.
-        Parameters
-        ----------
-        model : nnx.Module
-            The model with EMA parameters to be updated.
-        model_orginal : nnx.Module
-            The original model with current parameters.
-        """
-        params = nnx.state(model_orginal, self.wrt)
-        ema_params = nnx.state(model, self.wrt)
-        self.step[...] += 1
-
-        ema_state = optax.EmaState(count=self.step, ema=ema_params)
-
-        _, new_ema_state = self.tx.update(params, ema_state)
-
-        nnx.update(model, new_ema_state.ema)
-
-
-@nnx.jit
-def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
-    ema_optimizer.update(ema_model, model)
-
-
-class AbstractPipeline(abc.ABC):
-    """
-    Abstract base class for GenSBI training pipelines.
-
-    This class provides a template for implementing training and evaluation pipelines for conditional generative models.
-    Subclasses should implement model creation, default parameter setup, loss function, sampling, and evaluation methods.
-
-    Parameters
-    ----------
-    train_dataset : iterable
-        Training dataset, should yield batches of data.
-    val_dataset : iterable
-        Validation dataset, should yield batches of data.
-    dim_obs : int
-        Dimensionality of the parameter (theta) space.
-    dim_cond : int
-        Dimensionality of the observation (x) space.
-    model : nnx.Module, optional
-        The model to be trained. If None, the model is created using `_make_model`.
-    params : dict, optional
-        Model parameters. If None, uses defaults from `_get_default_params`.
-    ch_obs : int, optional
-        Number of channels in the observation data. Default is 1.
-    ch_cond : int, optional
-        Number of channels in the conditional data (if applicable). Default is None.
-    training_config : dict, optional
-        Training configuration. If None, uses defaults from `_get_default_training_config`.
-
-    """
-
-    def __init__(
-        self,
-        model: nnx.Module,
+        model_cls,
         train_dataset,
         val_dataset,
-        dim_obs: int,
-        dim_cond: int,
-        ch_obs = 1,
-        ch_cond = None,
-        params = None,
+        params: AutoEncoderParams,
         training_config=None,
     ):
         self.train_dataset = train_dataset
@@ -127,17 +56,6 @@ class AbstractPipeline(abc.ABC):
 
         self.train_dataset_iter = iter(self.train_dataset)
         self.val_dataset_iter = iter(self.val_dataset)
-
-        self.dim_obs = dim_obs
-        self.dim_cond = dim_cond
-        self.dim_joint = dim_obs + dim_cond
-        
-        self.ch_obs = ch_obs
-        self.ch_cond = ch_cond
-
-        self.node_ids = jnp.arange(self.dim_joint)
-        self.obs_ids = jnp.arange(self.dim_obs)  # observation ids
-        self.cond_ids = jnp.arange(self.dim_obs, self.dim_joint)  # conditional ids
 
         self.params = params
 
@@ -153,61 +71,46 @@ class AbstractPipeline(abc.ABC):
 
         os.makedirs(self.training_config["checkpoint_dir"], exist_ok=True)
 
+        self.model = model_cls(self.params)
 
-        self.model = model
-        self.model_wrapped = None  # to be set in subclass
+        self.ema_model = nnx.clone(self.model)
 
-        if model is None:
-            self.ema_model = None
-        else:
-            self.ema_model = nnx.clone(model)
-        self.ema_model_wrapped = None  # to be set in subclass
+        self.loss_fn = vae_loss_fn
 
-        self.p0_dist_model = None  # to be set in subclass
-        self.loss_fn = None  # to be set in subclass
-        self.path = None  # to be set in subclass
+    # @abc.abstractmethod
+    # def init_pipeline_from_config(
+    #     cls,
+    #     train_dataset,
+    #     val_dataset,
+    #     dim_obs: int,
+    #     dim_cond: int,
+    #     config_path: str,
+    #     checkpoint_dir: str,
+    # ):
+    #     """
+    #     Initialize the pipeline from a configuration file.
 
-    @abc.abstractmethod
-    def init_pipeline_from_config(
-        cls,
-        train_dataset,
-        val_dataset,
-        dim_obs: int,
-        dim_cond: int,
-        config_path: str,
-        checkpoint_dir: str,
-    ):
-        """
-        Initialize the pipeline from a configuration file.
+    #     Parameters
+    #     ----------
+    #     train_dataset : iterable
+    #         Training dataset.
+    #     val_dataset : iterable
+    #         Validation dataset.
+    #     dim_obs : int
+    #         Dimensionality of the parameter (theta) space.
+    #     dim_cond : int
+    #         Dimensionality of the observation (x) space.
+    #     config_path : str
+    #         Path to the configuration file.
+    #     checkpoint_dir : str
+    #         Directory for saving checkpoints.
 
-        Parameters
-        ----------
-        train_dataset : iterable
-            Training dataset.
-        val_dataset : iterable
-            Validation dataset.
-        dim_obs : int
-            Dimensionality of the parameter (theta) space.
-        dim_cond : int
-            Dimensionality of the observation (x) space.
-        config_path : str
-            Path to the configuration file.
-        checkpoint_dir : str
-            Directory for saving checkpoints.
-
-        Returns
-        -------
-        pipeline : AbstractPipeline
-            An instance of the pipeline initialized from the configuration.
-        """
-        ...  # pragma: no cover
-
-    @abc.abstractmethod
-    def _make_model(self, params):
-        """
-        Create and return the model to be trained.
-        """
-        ...  # pragma: no cover
+    #     Returns
+    #     -------
+    #     pipeline : AbstractPipeline
+    #         An instance of the pipeline initialized from the configuration.
+    #     """
+    #     ...  # pragma: no cover
 
     def _get_ema_optimizer(self):
         """
@@ -220,6 +123,10 @@ class AbstractPipeline(abc.ABC):
         ema_tx = optax.ema(self.training_config["ema_decay"])
         ema_optimizer = ModelEMA(self.ema_model, ema_tx)
         return ema_optimizer
+
+    def _get_kl_schedule(self, nsteps):
+        schedule = linear_schedule(0.1, 1, nsteps)
+        return schedule
 
     def _get_optimizer(self):
         """
@@ -247,13 +154,6 @@ class AbstractPipeline(abc.ABC):
 
         optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
         return optimizer
-
-    @abc.abstractmethod
-    def _get_default_params(self, rngs: nnx.Rngs):
-        """
-        Return a dictionary of default model parameters.
-        """
-        ...  # pragma: no cover
 
     @classmethod
     def _get_default_training_config(cls):
@@ -303,29 +203,7 @@ class AbstractPipeline(abc.ABC):
         )
         return
 
-    # def update_params(self, new_params):
-    #     """
-    #     Update the model parameters and re-initialize the model.
-
-    #     Parameters
-    #     ----------
-    #     new_params : dict
-    #         New model parameters.
-    #     """
-    #     self.params = new_params
-    #     self.model = self._make_model(self.params)
-    #     self.model_wrapped = None  # to be set in subclass
-    #     return
-
-
-    @abc.abstractmethod
-    def get_loss_fn(self):
-        """
-        Return the loss function for training/validation.
-        """
-        ...  # pragma: no cover
-
-    def get_train_step_fn(self, loss_fn):
+    def get_train_step_fn(self):
         """
         Return the training step function, which performs a single optimization step.
 
@@ -336,14 +214,15 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
-            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, rng)
+        def train_step(model, optimizer, batch, key, kl_weight):
+            loss, grads = nnx.value_and_grad(self.loss_fn)(model, batch, key, kl_weight)
             optimizer.update(model, grads, value=loss)
+
             return loss
 
         return train_step
 
-    def get_val_step_fn(self, loss_fn):
+    def get_val_step_fn(self):
         """
         Return the validation step function, which performs a single optimization step.
 
@@ -354,8 +233,8 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def val_step(model, batch, rng: jax.random.PRNGKey):
-            loss = loss_fn(model, batch, rng)
+        def val_step(model, batch, key, kl_weight):
+            loss = self.loss_fn(model, batch, key, kl_weight)
             return loss
 
         return val_step
@@ -400,13 +279,15 @@ class AbstractPipeline(abc.ABC):
         )
 
         checkpoint_manager_ema.save(
-            experiment_id, args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)))
-        
+            experiment_id,
+            args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)),
+        )
+
         checkpoint_manager_ema.close()
 
         print("Saved model to checkpoint")
         return
-    
+
     def restore_model(self, experiment_id=None):
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
@@ -419,9 +300,12 @@ class AbstractPipeline(abc.ABC):
         ) as read_mgr:
             restored = read_mgr.restore(
                 experiment_id,
-                args=ocp.args.Composite(state=ocp.args.StandardRestore(item=model_state)),
+                args=ocp.args.Composite(
+                    state=ocp.args.StandardRestore(item=model_state)
+                ),
             )
         self.model = nnx.merge(graphdef, restored["state"])
+        self.model.training = False
 
         # restore the ema model
         graphdef, model_state_ema = nnx.split(self.ema_model)
@@ -437,20 +321,10 @@ class AbstractPipeline(abc.ABC):
                 ),
             )
         self.ema_model = nnx.merge(graphdef, restored_ema["state"])
-
-        # wrap models
-        self._wrap_model()
+        self.ema_model.training = False
 
         print("Restored model from checkpoint")
         return
-
-    @abc.abstractmethod
-    def _wrap_model(self):
-        """
-        Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
-        """
-        ...  # pragma: no cover
-
 
     def train(
         self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True
@@ -471,19 +345,19 @@ class AbstractPipeline(abc.ABC):
             List of validation losses.
         """
 
+        self.model.train(update_KL=True)
+
         optimizer = self._get_optimizer()
         ema_optimizer = self._get_ema_optimizer()
 
         best_state = nnx.state(self.model)
         best_state_ema = nnx.state(self.ema_model)
 
-        loss_fn = self.get_loss_fn()
-
-        train_step = self.get_train_step_fn(loss_fn)
-        val_step = self.get_val_step_fn(loss_fn)
+        train_step = self.get_train_step_fn()
+        val_step = self.get_val_step_fn()
 
         batch_val = next(self.val_dataset_iter)
-        min_val = val_step(self.model, batch_val, rngs.val_step())
+        min_val = val_step(self.model, batch_val, rngs.val_step(), 1.0)
 
         val_error_ratio = 1.1
         counter = 0
@@ -492,12 +366,12 @@ class AbstractPipeline(abc.ABC):
         loss_array = []
         val_loss_array = []
 
-        self.model.train()
-
         if nsteps is None:
             nsteps = self.training_config["num_steps"]
         early_stopping = self.training_config["early_stopping"]
         val_every = self.training_config["val_every"]
+
+        kl_schedule = self._get_kl_schedule(nsteps)
 
         experiment_id = self.training_config["experiment_id"]
 
@@ -513,10 +387,12 @@ class AbstractPipeline(abc.ABC):
 
                 break
 
+            kl_weight = kl_schedule(j)
+
             batch = next(self.train_dataset_iter)
 
             loss = train_step(
-                self.model, optimizer, batch, rngs.train_step()
+                self.model, optimizer, batch, rngs.train_step(), kl_weight
             )
             # update the parameters ema
             if j % self.training_config["multistep"] == 0:
@@ -529,7 +405,7 @@ class AbstractPipeline(abc.ABC):
 
             if j > 0 and j % val_every == 0:
                 batch_val = next(self.val_dataset_iter)
-                l_val = val_step(self.model, batch_val, rngs.val_step())
+                l_val = val_step(self.model, batch_val, rngs.val_step(), kl_weight)
 
                 ratio = l_val / l_train
                 if ratio > val_error_ratio:
@@ -554,34 +430,49 @@ class AbstractPipeline(abc.ABC):
                 l_val = 0
                 l_train = 0
 
-        self.model.eval()
+        self.model.eval(update_KL=False)
 
         if save_model:
             self.save_model(experiment_id)
 
-        self._wrap_model()
-
         return loss_array, val_loss_array
 
-    @abc.abstractmethod
-    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01):
-        """
-        Generate samples from the trained model.
 
-        Parameters
-        ----------
-        rng : jax.random.PRNGKey
-            Random number generator key.
-        x_o : array-like
-            Conditioning variable (e.g., observed data).
-        nsamples : int, optional
-            Number of samples to generate.
-        step_size : float, optional
-            Step size for the sampler.
+class VAE1DPipeline(AbstractVAEPipeline):
+    """ """
 
-        Returns
-        -------
-        samples : array-like
-            Generated samples.
-        """
-        ...  # pragma: no cover
+    def __init__(
+        self,
+        train_dataset,
+        val_dataset,
+        params: AutoEncoderParams,
+        training_config=None,
+    ):
+        super().__init__(
+            AutoEncoder1D,
+            train_dataset,
+            val_dataset,
+            params,
+            training_config,
+        )
+        return
+
+
+class VAE2DPipeline(AbstractVAEPipeline):
+    """ """
+
+    def __init__(
+        self,
+        train_dataset,
+        val_dataset,
+        params: AutoEncoderParams,
+        training_config=None,
+    ):
+
+        super().__init__(
+            AutoEncoder2D,
+            train_dataset,
+            val_dataset,
+            params,
+            training_config,
+        )

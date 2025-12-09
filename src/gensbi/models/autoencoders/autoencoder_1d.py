@@ -589,6 +589,7 @@ class AutoEncoder1D(nnx.Module):
         self,
         params: AutoEncoderParams,
     ):
+        self.rngs = params.rngs
         self.Encoder1D = Encoder1D(
             resolution=params.resolution,
             in_channels=params.in_channels,
@@ -596,7 +597,7 @@ class AutoEncoder1D(nnx.Module):
             ch_mult=params.ch_mult,
             num_res_blocks=params.num_res_blocks,
             z_channels=params.z_channels,
-            rngs=params.rngs,
+            rngs=self.rngs,
             param_dtype=params.param_dtype,
         )
         self.Decoder1D = Decoder1D(
@@ -607,15 +608,18 @@ class AutoEncoder1D(nnx.Module):
             ch_mult=params.ch_mult,
             num_res_blocks=params.num_res_blocks,
             z_channels=params.z_channels,
-            rngs=params.rngs,
+            rngs=self.rngs,
             param_dtype=params.param_dtype,
         )
         self.reg = DiagonalGaussian()
-
+        
         self.scale_factor = nnx.Param(params.scale_factor)
         self.shift_factor = nnx.Param(params.shift_factor)
+        
+        
+        self.latent_shape = (1, params.resolution // (2 ** (len(params.ch_mult) - 1)), params.z_channels)
 
-    def encode(self, x: Array, key) -> Array:
+    def encode(self, x: Array, key=None) -> Array:
         """
         Encode input data into the latent space.
 
@@ -626,6 +630,8 @@ class AutoEncoder1D(nnx.Module):
         Returns:
             Array: Latent representation.
         """
+        if key is None:
+            key = self.rngs.encode()
         z = self.reg(self.Encoder1D(x), key)
         z = self.scale_factor * (z - self.shift_factor)
 
@@ -647,7 +653,7 @@ class AutoEncoder1D(nnx.Module):
 
         return z
 
-    def __call__(self, x: Array, key) -> Array:
+    def __call__(self, x: Array, key=None) -> Array:
         """
         Forward pass: encode and then decode the input.
 

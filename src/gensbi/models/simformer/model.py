@@ -147,8 +147,8 @@ class Simformer(nnx.Module):
         t = t.reshape(-1, 1, 1)
 
         batch_size, seq_len, _ = obs.shape
-        condition_mask = condition_mask.astype(jnp.bool_).reshape(-1, seq_len, 1)
-        condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
+        condition_mask = condition_mask.astype(jnp.bool_)#.reshape(-1, seq_len, 1)
+        # condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
 
         if node_ids.ndim == 1:
             node_ids = node_ids.reshape(-1, seq_len)

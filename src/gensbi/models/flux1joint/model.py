@@ -163,8 +163,9 @@ class Flux1Joint(nnx.Module):
                 "Input obs tensor must have 3 dimensions, got {}".format(obs.ndim)
             )
         obs = self.obs_in(obs)
-        condition_mask = condition_mask.astype(jnp.bool_).reshape(-1, seq_len, 1)
-        condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
+        condition_mask = condition_mask.astype(jnp.bool_)#.reshape(batch_size, seq_len, -1)
+        if condition_mask.shape[0] == 1:
+            condition_mask = jnp.repeat(condition_mask, repeats=batch_size, axis=0)
         condition_embedding = self.condition_embedding * condition_mask
         obs = jnp.concatenate([obs, condition_embedding], axis=-1)
         vec = self.time_in(timestep_embedding(t, 256))

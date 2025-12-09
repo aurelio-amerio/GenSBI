@@ -1,0 +1,275 @@
+# %%
+import os
+
+os.environ["JAX_PLATFORMS"] = "cpu"
+
+import jax
+import jax.numpy as jnp
+from flax import nnx
+
+import grain
+import numpy as np
+
+import warnings
+
+import pytest
+
+import tempfile
+
+from gensbi.recipes import (
+    Flux1FlowPipeline,
+    Flux1DiffusionPipeline,
+)
+
+from gensbi.models import Flux1, Flux1Params, AutoEncoder1D, AutoEncoderParams
+
+
+nsamples = 1000
+rng = jax.random.PRNGKey(0)
+
+dim_obs = 32
+dim_cond = 64
+dim_obs_latent = 8
+dim_cond_latent = 16
+dim_joint = dim_obs + dim_cond
+
+channels = 3
+
+
+theta = jax.random.normal(rng, (nsamples, dim_obs, channels))
+x = jax.random.normal(rng, (nsamples, dim_cond, channels))
+data = jnp.concatenate([theta, x], axis=1)
+
+
+def split_obs_cond(data):
+    return (
+        data[:, :dim_obs],
+        data[:, dim_obs:],
+    )  # assuming first dim_obs are obs, last dim_cond are cond
+
+
+train_dataset = (
+    grain.MapDataset.source(np.array(data)[:800])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+    .map(split_obs_cond)
+    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+)
+
+val_dataset = (
+    grain.MapDataset.source(np.array(data)[800:])
+    .shuffle(42)
+    .repeat()
+    .to_iter_dataset()
+    .batch(32)
+    .map(split_obs_cond)
+    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+)
+
+# we define a conditional and a joint model for testing
+z_ch = 8
+params_vae_cond = AutoEncoderParams(
+    resolution=dim_cond,
+    in_channels=channels,
+    ch=32,
+    out_ch=channels,
+    ch_mult=[1, 1, 1],
+    num_res_blocks=1,
+    z_channels=z_ch,
+    scale_factor=1.0,
+    shift_factor=0.0,
+    rngs=nnx.Rngs(4),
+    param_dtype=jnp.float32,
+)
+vae_cond = AutoEncoder1D(params_vae_cond)
+
+params_vae_obs = AutoEncoderParams(
+    resolution=dim_obs,
+    in_channels=channels,
+    ch=32,
+    out_ch=channels,
+    ch_mult=[1, 1, 1],
+    num_res_blocks=1,
+    z_channels=z_ch,
+    scale_factor=1.0,
+    shift_factor=0.0,
+    rngs=nnx.Rngs(4),
+    param_dtype=jnp.float32,
+)
+vae_obs = AutoEncoder1D(params_vae_obs)
+
+params_flux = Flux1Params(
+    in_channels=z_ch,
+    vec_in_dim=None,
+    context_in_dim=z_ch,
+    mlp_ratio=4,
+    num_heads=4,
+    depth=1,
+    depth_single_blocks=2,
+    axes_dim=[
+        2,
+    ],
+    obs_dim=dim_obs_latent,
+    cond_dim=dim_cond_latent,
+    qkv_bias=True,
+    guidance_embed=False,
+    rngs=nnx.Rngs(0),
+    param_dtype=jnp.float32,
+)
+
+
+# %%
+
+
+@pytest.mark.parametrize(
+    "pipeline_cls, params",
+    [
+        (Flux1FlowPipeline, params_flux),
+        # (Flux1DiffusionPipeline, params_flux),
+    ],
+)
+def test_model_pipeline(pipeline_cls, params):
+
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = pipeline_cls._get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1  # validate every epoch
+
+        # then we use a real pipeline
+
+        pipeline = pipeline_cls(
+            train_dataset,
+            val_dataset,
+            dim_obs,
+            dim_cond,
+            # ch_obs = channels, # not required when specifying vae_obs and vae_cond
+            # ch_cond = channels,
+            vae_obs=vae_obs,
+            vae_cond=vae_cond,
+            params=params,
+            training_config=training_config,
+        )
+
+        assert (
+            model_dir == pipeline.training_config["checkpoint_dir"]
+        ), "Checkpoint dir mismatch"
+
+        batch_size = 3
+        t = jnp.linspace(0, 1, batch_size)
+        obs = jnp.ones((batch_size, dim_obs, channels))
+        cond = jnp.ones((batch_size, dim_cond, channels))
+
+        obs_ids = pipeline.obs_ids
+        cond_ids = pipeline.cond_ids
+
+        # try getting the default parameters
+        default_params = pipeline._get_default_params()
+        # make sure the default parameters are of the same class as params
+        assert isinstance(
+            default_params, type(params)
+        ), f"Expected {type(params)}, got {type(default_params)}"
+
+        # try training the model
+        vae_cond_state = nnx.state(pipeline.vae_cond, nnx.Param)
+        vae_obs_state = nnx.state(pipeline.vae_obs, nnx.Param)
+        pipeline.train(nnx.Rngs(0), nsteps=2, save_model=True)
+        vae_cond_state2 = nnx.state(pipeline.vae_cond, nnx.Param)
+        vae_obs_state2 = nnx.state(pipeline.vae_obs, nnx.Param)
+
+        assert (
+            vae_cond_state == vae_cond_state2 and vae_obs_state == vae_obs_state2
+        ), "VAE states changed after training of the generative model, this is not supposed to happen."
+
+        # wrap the model
+        pipeline._wrap_model()
+
+        # try evaluating the model, and save the result
+
+        obs_latent = pipeline.vae_obs.encode(obs)
+        cond_latent = pipeline.vae_cond.encode(cond)
+        # try evaluating the model, and save the result
+        out = pipeline.model_wrapped(t, obs_latent, obs_ids, cond_latent, cond_ids)
+        out_ema = pipeline.ema_model_wrapped(
+            t, obs_latent, obs_ids, cond_latent, cond_ids
+        )
+        assert out.shape == (
+            batch_size,
+            dim_obs_latent,
+            z_ch,
+        ), f"Expected shape {(batch_size, dim_obs_latent, z_ch)}, got {out.shape}"
+        assert out_ema.shape == (
+            batch_size,
+            dim_obs_latent,
+            z_ch,
+        ), f"Expected shape {(batch_size, dim_obs_latent, z_ch)}, got {out_ema.shape}"
+
+        # try restoring the model from the checkpoint
+        # ignore warnings about sharding for the next line
+
+        pipeline2 = pipeline_cls(
+            train_dataset,
+            val_dataset,
+            dim_obs,
+            dim_cond,
+            vae_obs=vae_obs,
+            vae_cond=vae_cond,
+            params=params,
+            training_config=training_config,
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pipeline2.restore_model()
+
+        # we evaluate again the model, and check that the output is the same as before
+        out_restored = pipeline2.model_wrapped(
+            t, obs_latent, obs_ids, cond_latent, cond_ids
+        )
+        out_ema_restored = pipeline2.ema_model_wrapped(
+            t, obs_latent, obs_ids, cond_latent, cond_ids
+        )
+        assert jnp.allclose(out, out_restored), "Restored model output does not match"
+        assert jnp.allclose(
+            out_ema, out_ema_restored
+        ), "Restored EMA model output does not match"
+
+        cond = jnp.ones((1, dim_cond, channels))
+
+        # try sampling from the model
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            cond,
+            nsamples=32,
+            use_ema=False,
+        )
+        assert sample.shape == (
+            32,
+            dim_obs,
+            channels,
+        ), f"Expected shape (32, {dim_obs}, {channels}), got {sample.shape}"
+
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            cond,
+            nsamples=32,
+            use_ema=True,
+        )
+        assert sample.shape == (
+            32,
+            dim_obs,
+            channels,
+        ), f"Expected shape (32, {dim_obs}, {channels}), got {sample.shape}"
+
+        # sample from the restored model
+        sample_restored = pipeline2.sample(
+            jax.random.PRNGKey(1),
+            cond,
+            nsamples=32,
+            use_ema=True,
+        )
+        assert jnp.allclose(
+            sample, sample_restored
+        ), "Restored model samples do not match"

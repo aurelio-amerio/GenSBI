@@ -35,9 +35,9 @@ Examples:
         )
 
         # Define the model
-        dim_theta = 2  # Dimension of the parameter space
-        dim_x = 2      # Dimension of the observation space
-        pipeline = Flux1Pipeline(train_dataset_grain, val_dataset_grain, dim_theta, dim_x)
+        dim_obs = 2  # Dimension of the parameter space
+        dim_cond = 2      # Dimension of the observation space
+        pipeline = Flux1Pipeline(train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
 
         # Train the model
         rngs = jax.random.PRNGKey(0)
@@ -82,7 +82,6 @@ import os
 import yaml
 
 from gensbi.recipes.conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline
-
 
 def parse_flux1_params(config_path: str):
     """
@@ -185,9 +184,13 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         self,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs=1,
+        ch_cond=1,
         params=None,
+        vae_obs=None,
+        vae_cond=None,
         training_config=None,
     ):
         """
@@ -199,34 +202,82 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
-        dim_x : int
+        dim_cond : int
             Dimension of the observation space.
+        ch_obs : int, optional
+            Number of channels in the observation data. Default is 1.
+        ch_cond : int, optional
+            Number of channels in the conditional data. Default is 1.
         params : Flux1Params, optional
             Parameters for the Flux1 model. If None, default parameters are used.
+        vae_obs : nnx.Module, optional
+            VAE module for the observation input. If None, no encoding is applied.
+        vae_cond : nnx.Module, optional
+            VAE module for the conditional input. If None, no encoding is applied.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
         
+        # if vae are provided, adjust dim_cond and dim_obs accordingly
+        if vae_obs is not None:
+            obs_latent_shape = vae_obs.latent_shape
+            dim_obs = obs_latent_shape[1]
+            ch_obs = obs_latent_shape[2]
+        else:
+            if params is not None:
+                ch_obs = params.in_channels
+
+            
+        if vae_cond is not None:
+            cond_latent_shape = vae_cond.latent_shape
+            dim_cond = cond_latent_shape[1]
+            ch_cond = cond_latent_shape[2]
+        else:
+            if params is not None:
+                ch_cond = params.context_in_dim
+            
+        
+        # FIXME: we need to set these values manually instead of init to allow _get_default_params to work properly
+        # think of a better way to do it, avoiding circular dependencies
+        self.vae_obs = vae_obs
+        self.vae_cond = vae_cond
+        
+        self.dim_obs = dim_obs
+        self.dim_cond = dim_cond
+        
+        self.ch_obs = ch_obs
+        self.ch_cond = ch_cond
+        
+
+        if params is None:
+            params = self._get_default_params()
+        else:
+            if vae_obs is not None:
+                assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
+                assert params.obs_dim == dim_obs, f"obs_dim in params ({params.obs_dim}) does not match the VAE latent dimension ({dim_obs})."
+            if vae_cond is not None:
+                assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
+                assert params.cond_dim == dim_cond, f"cond_dim in params ({params.cond_dim}) does not match the VAE latent dimension ({dim_cond})."
+            
+        
+        model = self._make_model(params)
         
         super().__init__(
-            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
+            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, vae_obs=vae_obs, vae_cond=vae_cond, training_config=training_config
         )
-        if params is None:
-            self.params = self._get_default_params()
-        
-        self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)
 
+    # TODO: check how to implement the in channels and cond channels properly, we may need to modify something here
     @classmethod
     def init_pipeline_from_config(
         cls,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
     ):
@@ -253,7 +304,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         ), f"Model type {model_type} not supported in Flux1FlowPipeline."
 
         # Model parameters from config
-        dim_joint = dim_theta + dim_x
+        dim_joint = dim_obs + dim_cond
 
         params_dict = parse_flux1_params(config_path)
 
@@ -262,8 +313,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_theta,
-            cond_dim=dim_x,
+            obs_dim=dim_obs,
+            cond_dim=dim_cond,
             **params_dict,
         )
 
@@ -279,10 +330,12 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         pipeline = cls(
             train_dataset,
             val_dataset,
-            dim_theta,
-            dim_x,
-            params,
-            training_config,
+            dim_obs,
+            dim_cond,
+            ch_obs = params.in_channels,
+            ch_cond = params.context_in_dim,
+            params=params,
+            training_config=training_config,
         )
 
         return pipeline
@@ -299,18 +352,18 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         Return default parameters for the Flux1 model.
         """
         params = Flux1Params(
-            in_channels=1,
+            in_channels=self.ch_obs,
             vec_in_dim=None,
-            context_in_dim=1,
+            context_in_dim=self.ch_cond,
             mlp_ratio=4,
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
             axes_dim=[6],
             qkv_bias=True,
-            obs_dim=self.dim_theta,
-            cond_dim=self.dim_x,
-            theta=10 * (self.dim_theta + self.dim_x),
+            obs_dim=self.dim_obs,
+            cond_dim=self.dim_cond,
+            theta=10 * (self.dim_obs + self.dim_cond),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
@@ -323,9 +376,13 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         self,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs=1,
+        ch_cond=1,
         params=None,
+        vae_obs=None,
+        vae_cond=None,
         training_config=None,
     ):
         """
@@ -337,34 +394,82 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             Training dataset.
         val_dataset : grain dataset or iterator over batches
             Validation dataset.
-        dim_theta : int
+        dim_obs : int
             Dimension of the parameter space.
-        dim_x : int
+        dim_cond : int
             Dimension of the observation space.
+        ch_obs : int, optional
+            Number of channels in the observation data. Default is 1.
+        ch_cond : int, optional
+            Number of channels in the conditional data. Default is 1.
         params : Flux1Params, optional
             Parameters for the Flux1 model. If None, default parameters are used.
+        vae_obs : nnx.Module, optional
+            VAE module for the observation input. If None, no encoding is applied.
+        vae_cond : nnx.Module, optional
+            VAE module for the conditional input. If None, no encoding is applied.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
+        # if vae are provided, adjust dim_cond and dim_obs accordingly
+        if vae_obs is not None:
+            obs_latent_shape = vae_obs.latent_shape
+            dim_obs = obs_latent_shape[1]
+            ch_obs = obs_latent_shape[2]
+        else:
+            if params is not None:
+                ch_obs = params.in_channels
+
+            
+        if vae_cond is not None:
+            cond_latent_shape = vae_cond.latent_shape
+            dim_cond = cond_latent_shape[1]
+            ch_cond = cond_latent_shape[2]
+        else:
+            if params is not None:
+                ch_cond = params.context_in_dim
+            
         
+        # FIXME: we need to set these values manually instead of init to allow _get_default_params to work properly
+        # think of a better way to do it, avoiding circular dependencies
+        self.vae_obs = vae_obs
+        self.vae_cond = vae_cond
+        
+        self.dim_obs = dim_obs
+        self.dim_cond = dim_cond
+        
+        self.ch_obs = ch_obs
+        self.ch_cond = ch_cond
+        
+
+        if params is None:
+            params = self._get_default_params()
+        else:
+            if vae_obs is not None:
+                assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
+                assert params.obs_dim == dim_obs, f"obs_dim in params ({params.obs_dim}) does not match the VAE latent dimension ({dim_obs})."
+            if vae_cond is not None:
+                assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
+                assert params.cond_dim == dim_cond, f"cond_dim in params ({params.cond_dim}) does not match the VAE latent dimension ({dim_cond})."
+            
+        
+        model = self._make_model(params)
         
         super().__init__(
-            None, train_dataset, val_dataset, dim_theta, dim_x, params, training_config
+            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, vae_obs=vae_obs, vae_cond=vae_cond, training_config=training_config
         )
-        if params is None:
-            self.params = self._get_default_params()
-        
-        self.model = self._make_model(self.params)
         self.ema_model = nnx.clone(self.model)
 
+    
+    # TODO: need to update this too
     @classmethod
     def init_pipeline_from_config(
         cls,
         train_dataset,
         val_dataset,
-        dim_theta: int,
-        dim_x: int,
+        dim_obs: int,
+        dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
     ):
@@ -393,7 +498,7 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         ), f"Model type {model_type} not supported in Flux1DiffusionPipeline."
 
         # Model parameters from config
-        dim_joint = dim_theta + dim_x
+        dim_joint = dim_obs + dim_cond
 
         params_dict = parse_flux1_params(config_path)
 
@@ -402,8 +507,8 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_theta,
-            cond_dim=dim_x,
+            obs_dim=dim_obs,
+            cond_dim=dim_cond,
             **params_dict,
         )
 
@@ -419,10 +524,12 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         pipeline = cls(
             train_dataset,
             val_dataset,
-            dim_theta,
-            dim_x,
-            params,
-            training_config,
+            dim_obs,
+            dim_cond,
+            ch_obs = params.in_channels,
+            ch_cond = params.context_in_dim,
+            params=params,
+            training_config=training_config,
         )
 
         return pipeline
@@ -439,18 +546,18 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         Return default parameters for the Flux1 model.
         """
         params = Flux1Params(
-            in_channels=1,
+            in_channels=self.ch_obs,
             vec_in_dim=None,
-            context_in_dim=1,
+            context_in_dim=self.ch_cond,
             mlp_ratio=4,
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
             axes_dim=[6],
             qkv_bias=True,
-            obs_dim=self.dim_theta,
-            cond_dim=self.dim_x,
-            theta=10 * (self.dim_theta + self.dim_x),
+            obs_dim=self.dim_obs,
+            cond_dim=self.dim_cond,
+            theta=10 * (self.dim_obs + self.dim_cond),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )

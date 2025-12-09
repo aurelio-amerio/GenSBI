@@ -29,11 +29,11 @@ def test_autoencoder_1d():
         param_dtype=jnp.float32,
     )
     model = AutoEncoder1D(params)
-    key = jax.random.PRNGKey(0)
-    res = model(data, key)
+    res = model(data)
     
     assert res.shape == data.shape, f"Expected shape {data.shape}, got {res.shape}"
     
+    key = jax.random.PRNGKey(0)
     loss = vae_loss_fn(model, data, key)
     assert loss >= 0, f"Loss should be non-negative, got {loss}"
     return

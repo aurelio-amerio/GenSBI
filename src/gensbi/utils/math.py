@@ -2,11 +2,26 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 from typing import Callable, Optional
+from einops import rearrange, einsum
+
+def _expand_dims(x: Array) -> Array:
+    if x.ndim < 3:
+        x = rearrange(x, "... -> 1 ... 1" if x.ndim == 1 else "... -> ... 1")
+    return x
 
 
-def _divergence_single(vf, t, x):
-    res = jnp.trace(jax.jacfwd(vf, argnums=1)(t, x), axis1=-2, axis2=-1)
-    return res
+def _expand_time(t: Array) -> Array:
+    t = jnp.atleast_1d(t)
+    if t.ndim < 2:
+        t = t[..., None]
+    return t
+
+
+# def _divergence_single(vf, t, x):
+#     res = jax.jacfwd(vf, argnums=1)(t, x)
+#     res = rearrange(res, ' b c d e ->  (b c) (d e)')
+#     res = jnp.trace(res, axis1=-2, axis2=-1)
+#     return res
 
 
 def divergence(
@@ -24,14 +39,19 @@ def divergence(
     Returns:
         Array: The divergence of the vector field at point x and time t.
     """
-    x = jnp.atleast_1d(x)
-    if x.ndim < 2:
-        x = jnp.expand_dims(x, axis=0)
-    t = jnp.atleast_1d(t)
-    t = jnp.broadcast_to(t, (*x.shape[:-1], t.shape[-1]))
+    x = _expand_dims(x)
+    t = _expand_time(t)
 
     vf_wrapped = lambda t, x: vf(t, x, args=args)
 
-    res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wrapped, t, x)
+    # res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wrapped, t, x)
 
-    return jnp.squeeze(res, axis=1) if res.ndim > 1 else res
+    # res = jax.vmap(jax.jacfwd(vf_wrapped, argnums=1), in_axes=(0,0))(t, x)
+    # res = rearrange(res, 'a b c d e -> a (b c) (d e)')
+    # res = jnp.trace(res, axis1=-2, axis2=-1)
+    # return jnp.squeeze(res, axis=1) if res.ndim > 1 else res
+
+    res = jax.jacfwd(vf_wrapped, argnums=1)(t, x)
+    res = rearrange(res, 'i a b j c d -> i (a b) j (c d)')
+    res = einsum(res, 'i a i c -> i')
+    return jnp.squeeze(res)
