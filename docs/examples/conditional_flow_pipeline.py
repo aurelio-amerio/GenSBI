@@ -108,8 +108,6 @@ true_theta = new_sample[:, :4, :]  # extract observation from the joint sample
 x_o = new_sample[:, 4:, :] # extract condition from the joint sample
 
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=10_000)
-#%%
-samples.shape
 # %% Plot the samples
 plot_marginals(
     np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0,:, 0])

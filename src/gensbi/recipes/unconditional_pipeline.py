@@ -1,66 +1,5 @@
 """
 Pipeline for training and using a Unconditional model for simulation-based inference.
-
-Examples:
-    .. code-block:: python
-
-        import grain
-        import numpy as np
-        import jax
-        from jax import numpy as jnp
-        from gensbi.recipes import UnconditionalPipeline
-
-        # Define your training and validation datasets.
-        train_data = jax.random.rand((1024, 4)) # your training dataset
-        val_data = jax.random.rand((128, 4)) # your validation dataset
-
-        batch_size = 32
-
-        train_dataset_grain = (
-            grain.MapDataset.source(np.array(train_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        val_dataset_grain = (
-            grain.MapDataset.source(np.array(val_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-
-        # Define your model
-        model = ...  # your nnx.Module model here, e.g., a simple MLP, or the Simformer model
-        # if you define a custom model, it should take as input the following arguments:
-        #    t: Array,
-        #    obs: Array,
-        #    node_ids: Array (optional, if your model is a transformer-based model)
-        #    *args
-        #    **kwargs
-
-        # the obs input should have shape (batch_size, dim_joint, c), and the output will be of the same shape
-
-        # Define the model
-        dim_obs = 2  # Dimension of the parameter space
-        pipeline = UnconditionalPipeline(model, train_dataset_grain, val_dataset_grain, dim_obs)
-
-        # Train the model
-        rngs = jax.random.PRNGKey(0)
-        pipeline.train(rngs)
-
-        # Sample from the posterior
-        samples = pipeline.sample(rngs, nsamples=10000, step_size=0.01)
-
-
-    .. note::
-
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 """
 
 import jax
@@ -92,6 +31,39 @@ from gensbi.recipes.pipeline import AbstractPipeline
 
 
 class UnconditionalFlowPipeline(AbstractPipeline):
+    """
+    Flow pipeline for training and using an Unconditional model for simulation-based inference. 
+
+    Parameters
+    ----------
+    model : nnx.Module
+        The model to be trained.
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    ch_obs : int
+        Number of channels in the observation space.
+    params : optional
+        Parameters for the model. Serves no use if a custom model is provided.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+
+    Examples
+    --------
+    Minimal example on how to instantiate and use the UnconditionalFlowPipeline:
+    
+    .. literalinclude:: /examples/unconditional_flow_pipeline.py
+        :language: python
+        :linenos:
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
+        in a ``if __name__ == "__main__":`` guard. 
+        See https://docs.python.org/3/library/multiprocessing.html
+    """
     def __init__(
         self,
         model,
@@ -102,27 +74,6 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         params=None,
         training_config=None,
     ):
-        """
-        Flow pipeline for training and using a Unconditional model for simulation-based inference.
-
-        Parameters
-        ----------
-        model: nnx.Module
-            The model to be trained.
-        train_dataset : grain dataset or iterator over batches
-            Training dataset.
-        val_dataset : grain dataset or iterator over batches
-            Validation dataset.
-        dim_obs : int
-            Dimension of the parameter space.
-        ch_obs : int
-            Number of channels in the observation space.
-        params : UnconditionalParams, optional
-            Parameters for the Unconditional model. If None, default parameters are used.
-        training_config : dict, optional
-            Configuration for training. If None, default configuration is used.
-
-        """
         super().__init__(
             model=model,
             train_dataset=train_dataset,
@@ -294,6 +245,39 @@ class UnconditionalFlowPipeline(AbstractPipeline):
 
 
 class UnconditionalDiffusionPipeline(AbstractPipeline):
+    """
+    Diffusion pipeline for training and using an Unconditional model for simulation-based inference. 
+
+    Parameters
+    ----------
+    model : nnx.Module
+        The model to be trained.
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    ch_obs : int
+        Number of channels in the observation space.
+    params : optional
+        Parameters for the model. Serves no use if a custom model is provided.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+
+    Examples
+    --------
+    Minimal example on how to instantiate and use the UnconditionalDiffusionPipeline:
+    
+    .. literalinclude:: /examples/unconditional_diffusion_pipeline.py
+        :language: python
+        :linenos:
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
+        in a ``if __name__ == "__main__":`` guard. 
+        See https://docs.python.org/3/library/multiprocessing.html
+    """
     def __init__(
         self,
         model,
@@ -305,25 +289,6 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         # sde="EDM",
         training_config=None,
     ):
-        """
-        Diffusion pipeline for training and using a Unconditional model for simulation-based inference.
-
-        Parameters
-        ----------
-        train_dataset : grain dataset or iterator over batches
-            Training dataset.
-        val_dataset : grain dataset or iterator over batches
-            Validation dataset.
-        dim_obs : int
-            Dimension of the parameter space.
-        ch_obs : int
-            Number of channels in the observation space.
-        params : UnconditionalParams, optional
-            Parameters for the Unconditional model. If None, default parameters are used.
-        training_config : dict, optional
-            Configuration for training. If None, default configuration is used.
-
-        """
         super().__init__(
             model=model,
             train_dataset=train_dataset,
