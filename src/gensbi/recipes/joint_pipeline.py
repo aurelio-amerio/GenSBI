@@ -520,6 +520,7 @@ class JointDiffusionPipeline(AbstractPipeline):
             # sigma = self.path.sample_sigma(rng_sigma, x_1.shape[0])
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")
             # sigma = self.path.sample_sigma(rng_sigma, (batch_size, self.dim_obs, self.ch_obs))
+            # sigma = self.path.sample_sigma(rng_sigma, (batch_size,))
             sigma = self.path.sample_sigma(rng_sigma, (batch_size,1,1))
             
             batch = (x_1, sigma)
