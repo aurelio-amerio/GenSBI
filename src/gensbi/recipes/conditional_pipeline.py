@@ -563,7 +563,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
                 cond = self.vae_cond.encode(cond, rng_vae_cond)
 
             x_1 = obs
-            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
+            # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],))
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],1,1))
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             obs_batch = (x_1, sigma)

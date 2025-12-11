@@ -75,7 +75,7 @@ from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler, VPScheduler
 from gensbi.diffusion.solver import SDESolver
 
 from gensbi.models import (
@@ -302,6 +302,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         dim_obs: int,
         ch_obs: int = 1,
         params=None,
+        # sde="EDM",
         training_config=None,
     ):
         """
@@ -335,13 +336,42 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         )
 
         self.obs_ids = _expand_dims(self.obs_ids)
-
+        
+        sigma_min = self.training_config.get("sigma_min", 0.002)
+        sigma_max = self.training_config.get("sigma_max", 80.0)
         self.path = EDMPath(
             scheduler=EDMScheduler(
-                sigma_min=self.training_config["sigma_min"],
-                sigma_max=self.training_config["sigma_max"],
+                sigma_min=sigma_min,
+                sigma_max=sigma_max,
             )
         )
+        
+        # self.sde = sde
+        # if sde == "EDM":
+        #     sigma_min = self.training_config.get("sigma_min", 0.002)
+        #     sigma_max = self.training_config.get("sigma_max", 80.0)
+        #     self.path = EDMPath(
+        #         scheduler=EDMScheduler(
+        #             sigma_min=sigma_min,
+        #             sigma_max=sigma_max,
+        #         )
+        #     )
+        # elif sde == "VE":
+        #     sigma_min = self.training_config.get("sigma_min", 0.001)
+        #     sigma_max = self.training_config.get("sigma_max", 15.0)
+        #     self.path = EDMPath(scheduler=VEScheduler(
+        #         sigma_min=sigma_min,
+        #         sigma_max=sigma_max,
+        #     ))
+        # elif sde == "VP":
+        #     beta_min = self.training_config.get("beta_min", 0.1)
+        #     beta_max = self.training_config.get("beta_max", 20.0)
+        #     self.path = EDMPath(scheduler=VPScheduler(
+        #         beta_min = beta_min,
+        #         beta_max = beta_max,
+        #     ))
+        # else:
+        #     raise ValueError(f"Unknown sde type: {sde}")
 
         self.loss_fn = UnconditionalDiffLoss(self.path)
 
@@ -364,14 +394,35 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         )
 
     @classmethod
-    def _get_default_training_config(cls):
+    def _get_default_training_config(cls, sde="EDM"):
         config = super()._get_default_training_config()
         config.update(
-            {
-                "sigma_min": 0.002,  # from edm paper
-                "sigma_max": 80.0,
-            }
+                {
+                    "sigma_min": 0.002,  # from edm paper
+                    "sigma_max": 80.0,
+                }
         )
+        # if sde == "EDM":
+        #     config.update(
+        #         {
+        #             "sigma_min": 0.002,  # from edm paper
+        #             "sigma_max": 80.0,
+        #         }
+        #     )
+        # elif sde == "VE":
+        #     config.update(
+        #         {
+        #             "sigma_min": 0.001,  # from edm paper
+        #             "sigma_max": 15.0,
+        #         }
+        #     )
+        # elif sde == "VP":
+        #     config.update(
+        #         {
+        #             "beta_min": 0.1,
+        #             "beta_max": 20.0,
+        #         }
+        #     )
         return config
 
     def get_loss_fn(
@@ -381,7 +432,8 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             rng_x0, rng_sigma = jax.random.split(key, 2)
 
             x_1 = batch
-            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
+            # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], ))
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1,1))
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             batch = (x_1, sigma)
