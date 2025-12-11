@@ -20,8 +20,6 @@ from numpyro import distributions as dist
 
 from flax import nnx
 
-#%%
-
 mu_prior = dist.Uniform(low=jnp.array([-1.0, -1.0]), high=jnp.array([3.0, 3.0]))
 std_prior = dist.Uniform(low=jnp.array([0.1, 0.1]), high=jnp.array([2.0, 2.0]))
 
@@ -50,6 +48,15 @@ val_data = simulator(jax.random.PRNGKey(1), 2000)
 # %%
 train_data.shape
 # %%
+# it is advisable to normalize the inference parameter space to zero mean and unit variance for better training performance
+# mean_train = jnp.mean(train_data, axis=0)
+# std_train = jnp.std(train_data, axis=0)
+
+# train_data_ = (train_data - mean_train) / std_train
+# val_data_ = (val_data - mean_train) / std_train
+
+train_data_ = train_data
+val_data_ = val_data
 
 batch_size = 128
 
@@ -91,29 +98,30 @@ params = Flux1JointParams(
 model = Flux1Joint(params)
 
 # %% Instantiate the pipeline
-dim_obs = 4  # dimension of the parameter space (thetas)
-dim_cond = 2  # dimension of the observation space (xs)
+dim_obs = 4  # dimension of the parameter space
+dim_cond = 2  # dimension of the observation space
 pipeline = JointFlowPipeline(model, train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
 
 # %% Train the model
 rngs = nnx.Rngs(42)
 pipeline.train(
-    rngs, nsteps=5000, save_model=False
+    rngs, nsteps=1000, save_model=False
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior
 
 new_sample = simulator(jax.random.PRNGKey(1234), 1)
 true_theta = new_sample[:, :4, :]  # extract observation from the joint sample
-x_o = new_sample[:, 4:, :] # extract condition from the joint sample
+x_o = new_sample[:, 4:, :]
 
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=10_000)
 #%%
 samples.shape
 # %% Plot the samples
 plot_marginals(
-    np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0,:, 0])
+    np.array(samples[..., 0]), gridsize=30
 )
 plt.show()
+
 
 # %%

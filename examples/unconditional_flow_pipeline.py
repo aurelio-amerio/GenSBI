@@ -33,9 +33,6 @@ val_data = simulator(jax.random.PRNGKey(1), 2000).reshape(-1,2,1)
 # train_data_ = (train_data - mean_train) / std_train
 # val_data_ = (val_data - mean_train) / std_train
 
-train_data_ = train_data
-val_data_ = val_data
-
 batch_size = 128
 
 train_dataset_grain = (
