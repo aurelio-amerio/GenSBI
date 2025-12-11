@@ -186,7 +186,7 @@ def parse_training_config(config_path: str):
     return training_config
 
 
-# def sample_strutured_conditional_mask(
+# def sample_structured_conditional_mask(
 #     key,
 #     num_samples,
 #     theta_dim,

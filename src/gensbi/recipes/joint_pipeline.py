@@ -102,7 +102,7 @@ import yaml
 from gensbi.recipes.pipeline import AbstractPipeline, ModelEMA
 
 
-def sample_strutured_conditional_mask(
+def sample_structured_conditional_mask(
     key,
     num_samples,
     theta_dim,
@@ -177,6 +177,48 @@ def sample_strutured_conditional_mask(
     return condition_mask[..., None]
 
 
+def sample_condition_mask(
+    key,
+    num_samples,
+    theta_dim,
+    x_dim,
+    kind="structured",
+):
+
+    if kind == "structured":
+        condition_mask = sample_structured_conditional_mask(
+            key,
+            num_samples,
+            theta_dim,
+            x_dim,
+        )
+    elif kind == "posterior":
+        condition_mask = jnp.array(
+            [False] * theta_dim + [True] * x_dim, dtype=jnp.bool_
+        ).reshape(1, -1, 1)
+        condition_mask = jnp.broadcast_to(
+            condition_mask, (num_samples, theta_dim + x_dim, 1)
+        )
+    elif kind == "likelihood":
+        condition_mask = jnp.array(
+            [True] * theta_dim + [False] * x_dim, dtype=jnp.bool_
+        ).reshape(1, -1, 1)
+        condition_mask = jnp.broadcast_to(
+            condition_mask, (num_samples, theta_dim + x_dim, 1)
+        )
+    elif kind == "joint":
+        condition_mask = jnp.array(
+            [False] * (theta_dim + x_dim), dtype=jnp.bool_
+        ).reshape(1, -1, 1)
+        condition_mask = jnp.broadcast_to(
+            condition_mask, (num_samples, theta_dim + x_dim, 1)
+        )
+    else:
+        raise ValueError(f"Unknown kind {kind} for condition mask.")
+
+    return condition_mask
+
+
 class JointFlowPipeline(AbstractPipeline):
     def __init__(
         self,
@@ -188,6 +230,7 @@ class JointFlowPipeline(AbstractPipeline):
         ch_obs=1,
         params=None,
         training_config=None,
+        condition_mask_kind="structured",
     ):
         """
         Flow pipeline for training and using a Joint model for simulation-based inference.
@@ -208,7 +251,8 @@ class JointFlowPipeline(AbstractPipeline):
             Parameters for the Joint model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
-
+        condition_mask_kind : str, optional
+            Kind of condition mask to use. One of ["structured", "posterior"].
         """
         super().__init__(
             model=model,
@@ -216,7 +260,7 @@ class JointFlowPipeline(AbstractPipeline):
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
-            ch_obs = ch_obs,
+            ch_obs=ch_obs,
             params=params,
             training_config=training_config,
         )
@@ -231,13 +275,15 @@ class JointFlowPipeline(AbstractPipeline):
 
         self.p0_joint = dist.Independent(
             dist.Normal(
-                loc=jnp.zeros((self.dim_joint, self.ch_obs)), scale=jnp.ones((self.dim_joint, self.ch_obs))
+                loc=jnp.zeros((self.dim_joint, self.ch_obs)),
+                scale=jnp.ones((self.dim_joint, self.ch_obs)),
             ),
             reinterpreted_batch_ndims=2,
         )
         self.p0_obs = dist.Independent(
             dist.Normal(
-                loc=jnp.zeros((self.dim_obs, self.ch_obs)), scale=jnp.ones((self.dim_obs, self.ch_obs))
+                loc=jnp.zeros((self.dim_obs, self.ch_obs)),
+                scale=jnp.ones((self.dim_obs, self.ch_obs)),
             ),
             reinterpreted_batch_ndims=2,
         )
@@ -245,6 +291,13 @@ class JointFlowPipeline(AbstractPipeline):
         if self.dim_cond == 0:
             raise ValueError(
                 "JointFlowPipeline initialized as unconditional since dim_cond=0. Please use `UnconditionalFlowPipeline` instead."
+            )
+
+        self.condition_mask_kind = condition_mask_kind
+
+        if self.condition_mask_kind not in ["structured", "posterior"]:
+            raise ValueError(
+                f"condition_mask_kind must be one of ['structured', 'posterior'], got {self.condition_mask_kind}."
             )
 
     @classmethod
@@ -277,11 +330,12 @@ class JointFlowPipeline(AbstractPipeline):
             t = jax.random.uniform(rng_t, x_1.shape[0])
             batch = (x_0, x_1, t)
 
-            condition_mask = sample_strutured_conditional_mask(
+            condition_mask = sample_condition_mask(
                 rng_condition,
                 batch_size,
                 self.dim_obs,
                 self.dim_cond,
+                kind=self.condition_mask_kind,
             )
 
             loss = self.loss_fn(
@@ -298,7 +352,7 @@ class JointFlowPipeline(AbstractPipeline):
         self.model_wrapped = JointWrapper(self.model)
         self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
-    
+
     def get_sampler(
         self,
         x_o,
@@ -339,12 +393,12 @@ class JointFlowPipeline(AbstractPipeline):
             model_extras=model_extras,
             time_grid=time_grid,
         )
-        
+
         def sampler(key, nsamples):
             x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
             samples = sampler_(x_init)
             return samples
-        
+
         return sampler
 
     def sample(
@@ -425,6 +479,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         ch_obs=1,
         params=None,
         training_config=None,
+        condition_mask_kind="structured",
     ):
         """
         Diffusion pipeline for training and using a Joint model for simulation-based inference.
@@ -445,7 +500,8 @@ class JointDiffusionPipeline(AbstractPipeline):
             Parameters for the Joint model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
-
+        condition_mask_kind : str, optional
+            Kind of condition mask to use. One of ["structured", "posterior"].
         """
         super().__init__(
             model=model,
@@ -453,7 +509,7 @@ class JointDiffusionPipeline(AbstractPipeline):
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
-            ch_obs = ch_obs,
+            ch_obs=ch_obs,
             params=params,
             training_config=training_config,
         )
@@ -474,6 +530,13 @@ class JointDiffusionPipeline(AbstractPipeline):
         if self.dim_cond == 0:
             raise ValueError(
                 "JointFlowPipeline initialized as unconditional since dim_cond=0. Please use `UnconditionalFlowPipeline` instead."
+            )
+
+        self.condition_mask_kind = condition_mask_kind
+
+        if self.condition_mask_kind not in ["structured", "posterior"]:
+            raise ValueError(
+                f"condition_mask_kind must be one of ['structured', 'posterior'], got {self.condition_mask_kind}."
             )
 
     @classmethod
@@ -521,15 +584,16 @@ class JointDiffusionPipeline(AbstractPipeline):
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")
             # sigma = self.path.sample_sigma(rng_sigma, (batch_size, self.dim_obs, self.ch_obs))
             # sigma = self.path.sample_sigma(rng_sigma, (batch_size,))
-            sigma = self.path.sample_sigma(rng_sigma, (batch_size,1,1))
-            
+            sigma = self.path.sample_sigma(rng_sigma, (batch_size, 1, 1))
+
             batch = (x_1, sigma)
 
-            condition_mask = sample_strutured_conditional_mask(
+            condition_mask = sample_condition_mask(
                 rng_condition,
                 batch_size,
                 self.dim_obs,
                 self.dim_cond,
+                kind=self.condition_mask_kind,
             )
 
             loss = self.loss_fn(
@@ -547,7 +611,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         self.model_wrapped = JointWrapper(self.model)
         self.ema_model_wrapped = JointWrapper(self.ema_model)
         return
-    
+
     def get_sampler(
         self,
         x_o,
@@ -577,7 +641,7 @@ class JointDiffusionPipeline(AbstractPipeline):
             return_intermediates=return_intermediates,
             model_extras=model_extras,
         )
-        
+
         def sampler(key, nsamples):
             key1, key2 = jax.random.split(key, 2)
             x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
@@ -585,7 +649,6 @@ class JointDiffusionPipeline(AbstractPipeline):
             return samples
 
         return sampler
-    
 
     def sample(
         self,
