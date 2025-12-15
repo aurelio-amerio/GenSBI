@@ -57,7 +57,7 @@ def split_obs_cond(data):
 
 # %%
 
-batch_size = 1024
+batch_size = 128
 
 train_dataset_grain = (
     grain.MapDataset.source(np.array(train_data))
@@ -86,8 +86,8 @@ params = Flux1Params(
     context_in_dim=1,
     mlp_ratio=3,
     num_heads=2,
-    depth=8,
-    depth_single_blocks=16,
+    depth=4,
+    depth_single_blocks=8,
     axes_dim=[
         10,
     ],
@@ -114,7 +114,7 @@ pipeline = ConditionalFlowPipeline(
 # %% Train the model
 rngs = nnx.Rngs(42)
 pipeline.train(
-    rngs, nsteps=1000, save_model=False
+    rngs, nsteps=5000, save_model=False
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior
@@ -123,11 +123,12 @@ new_sample = simulator(jax.random.PRNGKey(20), 1)
 true_theta = new_sample[:, :obs_dim, :]  # extract observation from the joint sample
 x_o = new_sample[:, obs_dim:, :]  # extract condition from the joint sample
 
-samples = pipeline.sample(rngs.sample(), x_o, nsamples=10_000)
+samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # %% Plot the samples
 plot_marginals(
     np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0, :, 0])
 )
+plt.savefig("conditional_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

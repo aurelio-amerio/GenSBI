@@ -61,7 +61,7 @@ class ConditionalCFMLoss(ContinuousFMLoss):
             conditioned = jnp.ones((x_t.shape[0],), dtype=jnp.bool_)
 
         model_output = vf(
-            path_sample.t, x_t, obs_ids, cond, cond_ids, conditioned=conditioned
+            t=path_sample.t, obs=x_t, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids, conditioned=conditioned
         )
         loss = model_output - path_sample.dx_t
         loss = jnp.square(loss)
