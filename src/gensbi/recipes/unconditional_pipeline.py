@@ -58,6 +58,9 @@ class UnconditionalFlowPipeline(AbstractPipeline):
     .. literalinclude:: /examples/unconditional_flow_pipeline.py
         :language: python
         :linenos:
+        
+    .. image:: /examples/unconditional_flow_pipeline_marginals.png
+        :width: 600
 
     .. note::
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
