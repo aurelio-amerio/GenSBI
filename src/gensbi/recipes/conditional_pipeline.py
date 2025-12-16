@@ -371,6 +371,45 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
 
 class ConditionalDiffusionPipeline(AbstractPipeline):
+    """
+    Diffusion pipeline for training and using a Conditional model for simulation-based inference.
+
+    Parameters
+    ----------
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    dim_cond : int
+        Dimension of the observation space.
+    params : ConditionalParams, optional
+        Parameters for the Conditional model. If None, default parameters are used.
+    vae_obs : nnx.Module, optional
+        VAE module for the observation input. If None, no encoding is applied.
+    vae_cond : nnx.Module, optional
+        VAE module for the conditional input. If None, no encoding is applied.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+
+    Examples
+    --------
+    Minimal example on how to instantiate and use the ConditionalDiffusionPipeline:
+
+    .. literalinclude:: /examples/conditional_diffusion_pipeline.py
+        :language: python
+        :linenos:
+        
+    .. image:: /examples/conditional_diffusion_pipeline_marginals.png
+        :width: 600
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
+        in a ``if __name__ == "__main__":`` guard. 
+        See https://docs.python.org/3/library/multiprocessing.html
+
+    """
     def __init__(
         self,
         model,
@@ -385,29 +424,6 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         vae_cond=None,
         training_config=None,
     ):
-        """
-        Diffusion pipeline for training and using a Conditional model for simulation-based inference.
-
-        Parameters
-        ----------
-        train_dataset : grain dataset or iterator over batches
-            Training dataset.
-        val_dataset : grain dataset or iterator over batches
-            Validation dataset.
-        dim_obs : int
-            Dimension of the parameter space.
-        dim_cond : int
-            Dimension of the observation space.
-        params : ConditionalParams, optional
-            Parameters for the Conditional model. If None, default parameters are used.
-        vae_obs : nnx.Module, optional
-            VAE module for the observation input. If None, no encoding is applied.
-        vae_cond : nnx.Module, optional
-            VAE module for the conditional input. If None, no encoding is applied.
-        training_config : dict, optional
-            Configuration for training. If None, default configuration is used.
-
-        """
 
         super().__init__(
             model=model,

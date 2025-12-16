@@ -1,69 +1,5 @@
 """
 Pipeline for training and using a Flux1 model for simulation-based inference.
-
-Examples:
-    .. code-block:: python
-
-        import grain
-        import numpy as np
-        import jax
-        from jax import numpy as jnp
-        from gensbi.recipes import JointPipeline
-
-        # Define your training and validation datasets.
-        train_data = jax.random.rand((1024, 4)) # your training dataset
-        val_data = jax.random.rand((128, 4)) # your validation dataset
-
-        batch_size = 32
-
-        train_dataset_grain = (
-            grain.MapDataset.source(np.array(train_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        val_dataset_grain = (
-            grain.MapDataset.source(np.array(val_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        # Define your model
-        model = ...  # your nnx.Module model here, e.g., a simple MLP, or the Simformer or Flux1Joint model
-        # if you define a custom model, it should take as input the following arguments:
-        #    t: Array,
-        #    obs: Array,
-        #    node_ids: Array,
-        #    condition_mask: Array,
-        #    *args,
-        #    **kwargs,
-
-        # the obs should have shape (batch_size, dim_joint, c),
-        # node_ids and condition_mask should match obs shape,
-        # and the output will be of the same shape as obs
-
-        dim_obs = 2  # Dimension of the parameter space
-        dim_cond = 2      # Dimension of the observation space
-        pipeline = JointPipeline(model, train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
-
-        # Train the model
-        rngs = jax.random.PRNGKey(0)
-        pipeline.train(rngs)
-
-        # Sample from the posterior
-        x_o = jnp.array([0.5, -0.2])  # Example
-        samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-
-    .. note::
-
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
-
 """
 
 import jax
@@ -220,6 +156,45 @@ def sample_condition_mask(
 
 
 class JointFlowPipeline(AbstractPipeline):
+    """
+    Flow pipeline for training and using a Joint model for simulation-based inference.
+
+    Parameters
+    ----------
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    dim_cond : int
+        Dimension of the observation space.
+    ch_obs : int, optional
+        Number of channels for the observation space. Default is 1.
+    params : JointParams, optional
+        Parameters for the Joint model. If None, default parameters are used.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+    condition_mask_kind : str, optional
+        Kind of condition mask to use. One of ["structured", "posterior"].
+        
+    Examples
+    --------
+    Minimal example on how to instantiate and use the JointFlowPipeline:
+
+    .. literalinclude:: /examples/joint_flow_pipeline.py
+        :language: python
+        :linenos:
+        
+    .. image:: /examples/joint_flow_pipeline_marginals.png
+        :width: 600
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
+        in a ``if __name__ == "__main__":`` guard. 
+        See https://docs.python.org/3/library/multiprocessing.html
+
+    """
     def __init__(
         self,
         model,
@@ -232,28 +207,6 @@ class JointFlowPipeline(AbstractPipeline):
         training_config=None,
         condition_mask_kind="structured",
     ):
-        """
-        Flow pipeline for training and using a Joint model for simulation-based inference.
-
-        Parameters
-        ----------
-        train_dataset : grain dataset or iterator over batches
-            Training dataset.
-        val_dataset : grain dataset or iterator over batches
-            Validation dataset.
-        dim_obs : int
-            Dimension of the parameter space.
-        dim_cond : int
-            Dimension of the observation space.
-        ch_obs : int, optional
-            Number of channels for the observation space. Default is 1.
-        params : JointParams, optional
-            Parameters for the Joint model. If None, default parameters are used.
-        training_config : dict, optional
-            Configuration for training. If None, default configuration is used.
-        condition_mask_kind : str, optional
-            Kind of condition mask to use. One of ["structured", "posterior"].
-        """
         super().__init__(
             model=model,
             train_dataset=train_dataset,
@@ -469,6 +422,45 @@ class JointFlowPipeline(AbstractPipeline):
 
 
 class JointDiffusionPipeline(AbstractPipeline):
+    """
+    Diffusion pipeline for training and using a Joint model for simulation-based inference.
+
+    Parameters
+    ----------
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    dim_cond : int
+        Dimension of the observation space.
+    ch_obs : int, optional
+        Number of channels for the observation space. Default is 1.
+    params : optional
+        Parameters for the Joint model. If None, default parameters are used.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+    condition_mask_kind : str, optional
+        Kind of condition mask to use. One of ["structured", "posterior"].
+        
+    Examples
+    --------
+    Minimal example on how to instantiate and use the JointDiffusionPipeline:
+
+    .. literalinclude:: /examples/joint_diffusion_pipeline.py
+        :language: python
+        :linenos:
+        
+    .. image:: /examples/joint_diffusion_pipeline_marginals.png
+        :width: 600
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
+        in a ``if __name__ == "__main__":`` guard. 
+        See https://docs.python.org/3/library/multiprocessing.html
+
+    """
     def __init__(
         self,
         model,
@@ -481,28 +473,6 @@ class JointDiffusionPipeline(AbstractPipeline):
         training_config=None,
         condition_mask_kind="structured",
     ):
-        """
-        Diffusion pipeline for training and using a Joint model for simulation-based inference.
-
-        Parameters
-        ----------
-        train_dataset : grain dataset or iterator over batches
-            Training dataset.
-        val_dataset : grain dataset or iterator over batches
-            Validation dataset.
-        dim_obs : int
-            Dimension of the parameter space.
-        dim_cond : int
-            Dimension of the observation space.
-        ch_obs : int, optional
-            Number of channels for the observation space. Default is 1.
-        params : optional
-            Parameters for the Joint model. If None, default parameters are used.
-        training_config : dict, optional
-            Configuration for training. If None, default configuration is used.
-        condition_mask_kind : str, optional
-            Kind of condition mask to use. One of ["structured", "posterior"].
-        """
         super().__init__(
             model=model,
             train_dataset=train_dataset,

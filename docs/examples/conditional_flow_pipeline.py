@@ -126,7 +126,7 @@ x_o = new_sample[:, obs_dim:, :]  # extract condition from the joint sample
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # %% Plot the samples
 plot_marginals(
-    np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0, :, 0])
+    np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0, :, 0]), range = [(1, 3), (1, 3), (-0.6, 0.5)]
 )
 plt.savefig("conditional_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
