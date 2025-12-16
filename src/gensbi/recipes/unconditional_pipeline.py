@@ -59,7 +59,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         :language: python
         :linenos:
         
-    .. image:: /examples/unconditional_flow_pipeline_marginals.png
+    .. image:: /examples/unconditional_flow_samples.png
         :width: 600
 
     .. note::
@@ -271,15 +271,19 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
     Examples
     --------
     Minimal example on how to instantiate and use the UnconditionalDiffusionPipeline:
-    
+
     .. literalinclude:: /examples/unconditional_diffusion_pipeline.py
         :language: python
         :linenos:
+        
+    .. image:: /examples/unconditional_diffusion_pipeline_samples.png
+        :width: 600
 
     .. note::
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
         in a ``if __name__ == "__main__":`` guard. 
         See https://docs.python.org/3/library/multiprocessing.html
+
     """
     def __init__(
         self,

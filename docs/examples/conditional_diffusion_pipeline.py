@@ -8,16 +8,17 @@ import grain
 import numpy as np
 import jax
 from jax import numpy as jnp
-from gensbi.recipes import JointDiffusionPipeline
-from gensbi.utils.plotting import plot_marginals
+from numpyro import distributions as dist
+from flax import nnx
 
-from gensbi.models import Simformer, SimformerParams
+from gensbi.recipes import ConditionalDiffusionPipeline
+from gensbi.models import Flux1, Flux1Params
+
+from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
 
-from numpyro import distributions as dist
 
 
-from flax import nnx
 
 # %%
 
@@ -50,11 +51,13 @@ def simulator(key, nsamples):
 train_data = simulator(jax.random.PRNGKey(0), 10_000)
 val_data = simulator(jax.random.PRNGKey(1), 2000)
 # %%
-train_data.shape
+def split_obs_cond(data):
+    return data[:, :obs_dim], data[:, obs_dim:]  # assuming first dim_obs are obs, last dim_cond are cond
+
 
 # %%
 
-batch_size = 256
+batch_size = 128
 
 train_dataset_grain = (
     grain.MapDataset.source(np.array(train_data))
@@ -62,6 +65,7 @@ train_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
+    .map(split_obs_cond)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
@@ -71,42 +75,46 @@ val_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
+    .map(split_obs_cond)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 # %% Define your model
-params = SimformerParams(
-    rngs=nnx.Rngs(0),
+params = Flux1Params(
     in_channels=1,
-    dim_value=40,
-    dim_id=40,
-    dim_condition=10,
-    dim_joint=joint_dim,
-    fourier_features=256,
-    num_heads=4,
-    num_layers=8,
-    widening_factor=3,    
-    qkv_features=40,
-    num_hidden_layers=1,
+    vec_in_dim=None,
+    context_in_dim=1,
+    mlp_ratio=3,
+    num_heads=2,
+    depth=4,
+    depth_single_blocks=8,
+    axes_dim=[
+        10,
+    ],
+    qkv_bias=True,
+    obs_dim=obs_dim,
+    cond_dim=cond_dim,
+    theta=10*joint_dim,
+    rngs=nnx.Rngs(default=42),
+    param_dtype=jnp.float32,
 )
 
-model = Simformer(params)
+model = Flux1(params)
 
 # %% Instantiate the pipeline
 
-pipeline = JointDiffusionPipeline(
+pipeline = ConditionalDiffusionPipeline(
     model,
     train_dataset_grain,
     val_dataset_grain,
     obs_dim,
     cond_dim,
-    condition_mask_kind="posterior",
 )
 
 # %% Train the model
 rngs = nnx.Rngs(42)
 pipeline.train(
-    rngs, nsteps=10000, save_model=False
+    rngs, nsteps=5000, save_model=False
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior
@@ -120,7 +128,8 @@ samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 plot_marginals(
     np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0, :, 0]), range = [(1, 3), (1, 3), (-0.6, 0.5)]
 )
-plt.savefig("joint_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+
+plt.savefig("conditional_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

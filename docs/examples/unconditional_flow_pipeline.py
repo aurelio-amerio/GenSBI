@@ -2,7 +2,7 @@
 import os
 
 # Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
-os.environ["JAX_PLATFORMS"] = "cpu"
+os.environ["JAX_PLATFORMS"] = "cuda"
 
 import grain
 import numpy as np
@@ -133,4 +133,6 @@ samples = pipeline.sample(rngs.sample(), nsamples=100_000)
 plot_marginals(
     np.array(samples[..., 0]), true_param=[3, 3], gridsize=30, range=[(-2, 8), (-2, 8)]
 )
+plt.savefig("unconditional_flow_samples.png", dpi=300, bbox_inches='tight')
 plt.show()
+# %%
