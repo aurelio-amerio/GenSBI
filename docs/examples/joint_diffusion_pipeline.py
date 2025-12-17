@@ -54,7 +54,7 @@ train_data.shape
 
 # %%
 
-batch_size = 256
+batch_size = 1024
 
 train_dataset_grain = (
     grain.MapDataset.source(np.array(train_data))

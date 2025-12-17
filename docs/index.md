@@ -57,7 +57,7 @@ Uses the Simformer model for posterior density estimation on the SLCP benchmark.
 ```{toctree}
 :maxdepth: 1
 
-Getting Started <getting_started>
+Getting Started <getting_started/index>
 Examples <examples>
 References <references>
 API Documentation <api/gensbi/index>
