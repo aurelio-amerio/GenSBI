@@ -3,9 +3,9 @@ GenSBI: A library for Simulation-Based Inference (SBI) using Optimal Transport F
 
 Provides tools for probabilistic modeling, simulation, and training of generative models, including:
 
-	- Flow Matching techniques
-	- Diffusion models (EDM, score matching)
-	- Transformer-based models (Flux1, Simformer)
+- Flow Matching techniques
+- Diffusion models (EDM, score matching)
+- Transformer-based models (Flux1, Simformer)
 
 See the documentation for details and usage examples.
 """
