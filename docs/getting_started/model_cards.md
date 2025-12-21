@@ -14,7 +14,7 @@ Flux1 is a scalable architecture using double-stream blocks, capable of handling
 
 **How to use:**
 
-```
+```python
 from gensbi.models.flux1 import Flux1Params
 
 params = Flux1Params(
@@ -66,7 +66,7 @@ Simformer is a transformer-based model designed to learn the joint distribution 
 
 **How to use:**
 
-```
+```python
 from gensbi.models.simformer import SimformerParams
 
 params = SimformerParams(
@@ -114,7 +114,7 @@ Flux1Joint utilizes a pure Single Stream architecture (similar to Simformer but 
 
 **How to use:**
 
-```
+```python
 from gensbi.models.flux1joint import Flux1JointParams
 
 params = Flux1JointParams(
