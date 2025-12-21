@@ -11,8 +11,8 @@ from gensbi.flow_matching.path import AffineProbPath
 def test_flux_cfmloss_runs():
     path = AffineProbPath(scheduler=CondOTScheduler())
     loss = ConditionalCFMLoss(path)
-    def vf(x, obs_ids, cond, cond_ids, t, conditioned=True):
-        return x + 1
+    def vf(obs, obs_ids, cond, cond_ids, t, conditioned=True):
+        return obs + 1
     x0 = jnp.ones((2, 2))
     x1 = jnp.ones((2, 2))
     t = jnp.ones((2,))
