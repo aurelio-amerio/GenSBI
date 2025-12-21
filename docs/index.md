@@ -24,7 +24,7 @@ We advise to take a look at the [Getting Started](getting_started.md) page for a
 
 You can also explore the [Examples](examples.md) page for practical demonstrations of GenSBI's capabilities.
 
-You can find the API documentation in the [API Documentation](api/gensbi/index.md) section.
+You can find the API documentation in the [API Documentation](api/gensbi/index) section.
 
 ## Examples
 
@@ -57,7 +57,7 @@ Uses the Simformer model for posterior density estimation on the SLCP benchmark.
 ```{toctree}
 :maxdepth: 1
 
-Getting Started <getting_started>
+Getting Started <getting_started/index>
 Examples <examples>
 References <references>
 API Documentation <api/gensbi/index>

@@ -1,74 +1,5 @@
 """
 Pipeline for training and using a Conditional model for simulation-based inference.
-
-Examples:
-    .. code-block:: python
-    
-        import grain
-        import numpy as np
-        import jax
-        from jax import numpy as jnp
-        from gensbi.recipes import ConditionalPipeline
-
-        # Define your training and validation datasets.\
-        key = jax.random.PRNGKey(0)
-        train_data = jax.random.normal(key, (1024, 5)) # your training dataset
-        val_data = jax.random.normal(key, (128, 5)) # your validation dataset
-
-        batch_size = 32
-
-        def split_obs_cond(data):
-            return data[:, :2, ...], data[:, 2:, ...]  # assuming first 2 are obs, last 3 are cond
-
-        train_dataset_grain = (
-            grain.MapDataset.source(np.array(train_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            .map(split_obs_cond)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        val_dataset_grain = (
-            grain.MapDataset.source(np.array(val_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size) 
-            .map(split_obs_cond)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-        
-        # Define your model 
-        model = ...  # your nnx.Module model here, e.g., a simple MLP, or the Flux1 model
-        # if you define a custom model, it should take as input the following arguments:
-        #    t: Array,
-        #    obs: Array,
-        #    obs_ids: Array,
-        #    cond: Array,
-        #    cond_ids: Array, 
-        
-        # the obs should have shape (batch_size, dim_obs, c), 
-        # the cond should have shape (batch_size, dim_cond, c),
-        # obs_ids and cond_ids should match obs and cond respectively,
-        # and the output will be of the same shape as obs
-
-        dim_obs = 2  # Dimension of the parameter space
-        dim_cond = 3      # Dimension of the observation space
-        pipeline = ConditionalPipeline(model, train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
-
-        # Train the model
-        rngs = jax.random.PRNGKey(0)
-        pipeline.train(rngs)
-
-        # Sample from the posterior
-        x_o = jnp.array([0.5, -0.2, 0.1])  # Example
-        samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-    
-    .. note::
-    
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 """
 
 import jax
@@ -103,31 +34,52 @@ import yaml
 from gensbi.recipes.pipeline import AbstractPipeline
 
 
-class LatentModelWrapper(nnx.Module):
-    def __init__(self, model, vae_obs=None, vae_cond=None):
-        self.sbi_model = model
-        self.vae_obs = vae_obs
-        self.vae_cond = vae_cond
-
-    def __call__(self, t, obs, obs_ids, cond, cond_ids, **model_extras):
-        # if self.vae_obs is not None:
-        #     # encode obs
-        #     obs = self.vae_obs.encode(obs)
-        # if self.vae_cond is not None:
-        #     # encode cond
-        #     cond = self.vae_cond.encode(cond)
-
-        # # call the sbi model
-        # res = self.sbi_model(t, obs, obs_ids, cond, cond_ids, **model_extras)
-
-        # if self.vae_obs is not None:
-        #     # decode latent observations
-        #     res = self.vae_obs.decode(res)
-        # return res
-        return self.sbi_model(t, obs, obs_ids, cond, cond_ids, **model_extras)
-
-
 class ConditionalFlowPipeline(AbstractPipeline):
+    """
+    Flow pipeline for training and using a Conditional model for simulation-based inference.
+
+    Parameters
+    ----------
+    model: nnx.Module
+        The model to be trained.
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    dim_cond : int
+        Dimension of the observation space.
+    ch_obs : int, optional
+        Number of channels in the observation data. Default is 1.
+    ch_cond : int, optional
+        Number of channels in the conditional data. Default is 1.
+    params : ConditionalParams, optional
+        Parameters for the Conditional model. If None, default parameters are used.
+    vae_obs : nnx.Module, optional
+        VAE module for the observation input. If None, no encoding is applied.
+    vae_cond : nnx.Module, optional
+        VAE module for the conditional input. If None, no encoding is applied.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+        
+    Examples
+    --------
+    Minimal example on how to instantiate and use the ConditionalFlowPipeline:
+
+    .. literalinclude:: /examples/conditional_flow_pipeline.py
+        :language: python
+        :linenos:
+        
+    .. image:: /examples/conditional_flow_pipeline_marginals.png
+        :width: 600
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
+        in a ``if __name__ == "__main__":`` guard. 
+        See https://docs.python.org/3/library/multiprocessing.html
+
+    """
     def __init__(
         self,
         model,
@@ -142,38 +94,6 @@ class ConditionalFlowPipeline(AbstractPipeline):
         vae_cond=None,
         training_config=None,
     ):
-        """
-        Flow pipeline for training and using a Conditional model for simulation-based inference.
-
-        Parameters
-        ----------
-        model: nnx.Module
-            The model to be trained.
-        train_dataset : grain dataset or iterator over batches
-            Training dataset.
-        val_dataset : grain dataset or iterator over batches
-            Validation dataset.
-        dim_obs : int
-            Dimension of the parameter space.
-        dim_cond : int
-            Dimension of the observation space.
-        ch_obs : int, optional
-            Number of channels in the observation data. Default is 1.
-        ch_cond : int, optional
-            Number of channels in the conditional data. Default is 1.
-        params : ConditionalParams, optional
-            Parameters for the Conditional model. If None, default parameters are used.
-        vae_obs : nnx.Module, optional
-            VAE module for the observation input. If None, no encoding is applied.
-        vae_cond : nnx.Module, optional
-            VAE module for the conditional input. If None, no encoding is applied.
-
-        training_config : dict, optional
-            Configuration for training. If None, default configuration is used.
-
-        """
-
-        # latent_model = LatentModelWrapper(model, vae_obs=vae_obs, vae_cond=vae_cond)
 
         # if latent diffusion is enabled, make sure to adjust the dimensionality accordingly of the transformer model
 
@@ -265,7 +185,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """
 
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains('sbi_model'))
-        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         opt = optax.chain(
             optax.adaptive_grad_clip(10.0),
@@ -282,7 +202,8 @@ class ConditionalFlowPipeline(AbstractPipeline):
         if self.training_config["multistep"] > 1:
             opt = optax.MultiSteps(opt, self.training_config["multistep"])
 
-        optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+        # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+        optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
         return optimizer
 
     # need to select the right weights to apply the updates
@@ -296,14 +217,17 @@ class ConditionalFlowPipeline(AbstractPipeline):
             JIT-compiled training step function.
         """
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains('sbi_model'))
-        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit  # something bad happens here
         def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
-            diff_state = nnx.DiffState(
-                0, sbi_model_params
-            )  # filter head params of the first argument
-            loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
+            # diff_state = nnx.DiffState(
+            #     0, sbi_model_params
+            # )  # filter head params of the first argument
+            # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
+            #     model, batch, rng
+            # )
+            loss, grads = nnx.value_and_grad(loss_fn)(
                 model, batch, rng
             )
             optimizer.update(model, grads, value=loss)
@@ -447,6 +371,45 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
 
 class ConditionalDiffusionPipeline(AbstractPipeline):
+    """
+    Diffusion pipeline for training and using a Conditional model for simulation-based inference.
+
+    Parameters
+    ----------
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    dim_cond : int
+        Dimension of the observation space.
+    params : ConditionalParams, optional
+        Parameters for the Conditional model. If None, default parameters are used.
+    vae_obs : nnx.Module, optional
+        VAE module for the observation input. If None, no encoding is applied.
+    vae_cond : nnx.Module, optional
+        VAE module for the conditional input. If None, no encoding is applied.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+
+    Examples
+    --------
+    Minimal example on how to instantiate and use the ConditionalDiffusionPipeline:
+
+    .. literalinclude:: /examples/conditional_diffusion_pipeline.py
+        :language: python
+        :linenos:
+        
+    .. image:: /examples/conditional_diffusion_pipeline_marginals.png
+        :width: 600
+
+    .. note::
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
+        in a ``if __name__ == "__main__":`` guard. 
+        See https://docs.python.org/3/library/multiprocessing.html
+
+    """
     def __init__(
         self,
         model,
@@ -461,29 +424,6 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         vae_cond=None,
         training_config=None,
     ):
-        """
-        Diffusion pipeline for training and using a Conditional model for simulation-based inference.
-
-        Parameters
-        ----------
-        train_dataset : grain dataset or iterator over batches
-            Training dataset.
-        val_dataset : grain dataset or iterator over batches
-            Validation dataset.
-        dim_obs : int
-            Dimension of the parameter space.
-        dim_cond : int
-            Dimension of the observation space.
-        params : ConditionalParams, optional
-            Parameters for the Conditional model. If None, default parameters are used.
-        vae_obs : nnx.Module, optional
-            VAE module for the observation input. If None, no encoding is applied.
-        vae_cond : nnx.Module, optional
-            VAE module for the conditional input. If None, no encoding is applied.
-        training_config : dict, optional
-            Configuration for training. If None, default configuration is used.
-
-        """
 
         super().__init__(
             model=model,
@@ -563,7 +503,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
                 cond = self.vae_cond.encode(cond, rng_vae_cond)
 
             x_1 = obs
-            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
+            # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],))
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],1,1))
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             obs_batch = (x_1, sigma)
@@ -584,7 +525,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             The optimizer instance for the model.
         """
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("sbi_model"))
-        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         opt = optax.chain(
             optax.adaptive_grad_clip(10.0),
@@ -601,7 +542,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         if self.training_config["multistep"] > 1:
             opt = optax.MultiSteps(opt, self.training_config["multistep"])
 
-        optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+        # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+        optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
         return optimizer
 
     def get_train_step_fn(self, loss_fn):
@@ -614,12 +556,15 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             JIT-compiled training step function.
         """
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("sbi_model"))
-        sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit
         def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
-            diff_state = nnx.DiffState(0, sbi_model_params)
-            loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
+            # diff_state = nnx.DiffState(0, sbi_model_params)
+            # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
+            #     model, batch, rng
+            # )
+            loss, grads = nnx.value_and_grad(loss_fn)(
                 model, batch, rng
             )
             optimizer.update(model, grads, value=loss)
