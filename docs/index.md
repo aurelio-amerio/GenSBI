@@ -58,6 +58,21 @@ Uses the Simformer model for posterior density estimation on the SLCP benchmark.
 This project utilized large language models, specifically Google Gemini and GitHub Copilot, to assist with code suggestions, documentation drafting, and grammar corrections. All AI-generated content has been manually reviewed and verified by human authors to ensure accuracy and adherence to scientific standards.
 ```
 
+## Citing GenSBI
+
+If you use this library, please consider citing this work and the original methodology papers, see [references](/references).
+
+```bibtex
+@misc{GenSBI,
+  author       = {Amerio, Aurelio},
+  title        = "{GenSBI: Generative models for Simulation-Based Inference}",
+  year         = {2025}, 
+  publisher    = {GitHub},
+  journal      = {GitHub repository},
+  howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
+}
+```
+
 ## Table of Contents
 ```{toctree}
 :maxdepth: 1
