@@ -25,7 +25,7 @@ help:
 deploy:	html
 	python deploy.py
 
-preview:
+preview: html
 	python -m http.server 8000 -d _build/html
 
 download:

@@ -50,7 +50,12 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 - `gaussian_linear_flow_flux1joint.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/gaussian_linear/flow_flux1joint/gaussian_linear_flow_flux1joint.ipynb) <br>
 Uses the Flux1Joint model for posterior density estimation on the Gaussian Linear benchmark.
 - `slcp_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb) <br>
-Uses the Simformer model for posterior density estimation on the SLCP benchmark.    
+Uses the Simformer model for posterior density estimation on the SLCP benchmark. 
+
+```{note}
+**AI Usage Disclosure** <br>
+This project utilized large language models, specifically Google Gemini and GitHub Copilot, to assist with code suggestions, documentation drafting, and grammar corrections. All AI-generated content has been manually reviewed and verified by human authors to ensure accuracy and adherence to scientific standards.
+```
 
 ## Table of Contents
 ```{toctree}
