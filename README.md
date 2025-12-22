@@ -85,7 +85,7 @@ The following tasks are planned for future development:
 
 ## Citing GenSBI
 
-If you use this library, please consider citing this work and the original methodology papers, see [references](/references).
+If you use this library, please consider citing this work and the original methodology papers, see [references](https://aurelio-amerio.github.io/GenSBI/references.html).
 
 ```bibtex
 @misc{GenSBI,
