@@ -4,6 +4,7 @@ from jax import jit, vmap
 from flax import nnx
 from typing import Callable, Optional
 from jaxtyping import Array, PyTree
+from jax.typing import DTypeLike
 
 
 # layer = nnx.MultiHeadAttention(
@@ -19,16 +20,18 @@ class AttentionBlock(nnx.Module):
         features: int,
         skip_connection: bool,
         rngs: nnx.Rngs,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.skip_connection = skip_connection
 
-        self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
+        self.layer_norm = nnx.LayerNorm(din, rngs=rngs, param_dtype=param_dtype)
         self.attn = nnx.MultiHeadAttention(
             in_features=din,
             num_heads=num_heads,
             qkv_features=features,
             decode=False,
             rngs=rngs,
+            param_dtype=param_dtype,
         )
 
     def __call__(self, x: jnp.ndarray, mask: jnp.ndarray | None) -> jnp.ndarray:
@@ -51,26 +54,40 @@ class DenseBlock(nnx.Module):
         act: Callable,
         skip_connection: bool,
         rngs: nnx.Rngs,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.skip_connection = skip_connection
         n_features = din
-        self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
+        self.layer_norm = nnx.LayerNorm(din, rngs=rngs, param_dtype=param_dtype)
         hidden_blocks = []
         hidden_blocks.append(
-            nnx.Linear(n_features, widening_factor * n_features, rngs=rngs)
+            nnx.Linear(
+                n_features,
+                widening_factor * n_features,
+                rngs=rngs,
+                param_dtype=param_dtype,
+            )
         )
 
         n_features *= widening_factor
 
         for i in range(1, num_hidden_layers):
-            hidden_blocks.append(nnx.Linear(n_features, n_features, rngs=rngs))
+            hidden_blocks.append(
+                nnx.Linear(
+                    n_features, n_features, rngs=rngs, param_dtype=param_dtype
+                )
+            )
 
-        hidden_blocks.append(nnx.Linear(n_features, din, rngs=rngs))
+        hidden_blocks.append(
+            nnx.Linear(n_features, din, rngs=rngs, param_dtype=param_dtype)
+        )
 
         self.hidden_blocks = nnx.List(hidden_blocks)
 
         self.act = act
-        self.context_block = nnx.Linear(dcontext, din, rngs=rngs)
+        self.context_block = nnx.Linear(
+            dcontext, din, rngs=rngs, param_dtype=param_dtype
+        )
         return
 
     def __call__(self, x, context):
@@ -114,6 +131,7 @@ class Transformer(nnx.Module):
         skip_connection_mlp: bool = True,
         *,  # Enforce keyword arguments
         rngs: nnx.Rngs,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.din = din
         self.dcontext = dcontext
@@ -126,11 +144,12 @@ class Transformer(nnx.Module):
         self.skip_connection_attn = skip_connection_attn
         self.skip_connection_mlp = skip_connection_mlp
         self.rngs = rngs
+        self.param_dtype = param_dtype
 
         # now we define attention and dense blocks
         attention_blocks = []
         dense_blocks = []
-        self.layer_norm = nnx.LayerNorm(din, rngs=rngs)
+        self.layer_norm = nnx.LayerNorm(din, rngs=rngs, param_dtype=param_dtype)
 
         for _ in range(num_layers):
             attention_blocks.append(
@@ -140,6 +159,7 @@ class Transformer(nnx.Module):
                     features=features,
                     skip_connection=skip_connection_attn,
                     rngs=rngs,
+                    param_dtype=param_dtype,
                 )
             )
             dense_blocks.append(
@@ -151,6 +171,7 @@ class Transformer(nnx.Module):
                     act=self.act,
                     skip_connection=skip_connection_mlp,
                     rngs=rngs,
+                    param_dtype=param_dtype,
                 )
             )
 

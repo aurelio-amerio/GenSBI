@@ -116,3 +116,39 @@ def test_flux_wrapper():
     out = vf(t, obs, args=extra_args)
 
     assert out.shape == (3, 2, 1), f"Vector field output shape is incorrect, got {out.shape}"
+
+
+def test_flux_param_dtype_propagation():
+    params = Flux1Params(
+        in_channels=1,
+        vec_in_dim=None,
+        context_in_dim=1,
+        mlp_ratio=4,
+        num_heads=4,
+        depth=1,
+        depth_single_blocks=2,
+        axes_dim=[4],
+        obs_dim=2,
+        cond_dim=2,
+        qkv_bias=True,
+        guidance_embed=False,
+        rngs=get_rngs(),
+        param_dtype=jnp.bfloat16,
+    )
+
+    model = Flux1(params)
+
+    assert model.obs_in.kernel[...].dtype == jnp.bfloat16
+    assert model.cond_in.kernel[...].dtype == jnp.bfloat16
+    assert model.time_in.in_layer.kernel[...].dtype == jnp.bfloat16
+    assert model.time_in.out_layer.kernel[...].dtype == jnp.bfloat16
+
+    assert model.condition_embedding[...].dtype == jnp.bfloat16
+    assert model.condition_null[...].dtype == jnp.bfloat16
+
+    # Representative transformer weights
+    assert (
+        model.double_blocks.layers[0].obs_attn.qkv.kernel[...].dtype
+        == jnp.bfloat16
+    )
+    assert model.final_layer.linear.kernel[...].dtype == jnp.bfloat16

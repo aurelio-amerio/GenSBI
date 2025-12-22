@@ -25,6 +25,7 @@ def get_params():
         widening_factor=2,
         qkv_features=4,
         num_hidden_layers=1,
+        param_dtype=jnp.bfloat16,
     )
 
 
@@ -69,3 +70,35 @@ def test_simformer_wrapper():
     out = vf(t, obs, args=extra_args)
 
     assert out.shape == (12, 2, 1), f"3 - Vector field output shape is incorrect, got {out.shape}"
+
+
+def test_simformer_param_dtype_propagation():
+    params = SimformerParams(
+        rngs=get_rngs(),
+        in_channels=1,
+        dim_value=2,
+        dim_id=2,
+        dim_condition=2,
+        dim_joint=4,
+        fourier_features=8,
+        num_heads=2,
+        num_layers=2,
+        widening_factor=2,
+        qkv_features=4,
+        num_hidden_layers=1,
+        param_dtype=jnp.bfloat16,
+    )
+    model = Simformer(params)
+
+    assert model.condition_embedding[...].dtype == jnp.bfloat16
+    assert model.embedding_time.B[...].dtype == jnp.bfloat16
+    assert model.embedding_net_value.p_skip[...].dtype == jnp.bfloat16
+    assert model.embedding_net_id.embedding[...].dtype == jnp.bfloat16
+    assert model.output_fn.kernel[...].dtype == jnp.bfloat16
+
+    # Transformer internals (one representative parameter is enough)
+    assert model.transformer.layer_norm.scale[...].dtype == jnp.bfloat16
+    assert (
+        model.transformer.attention_blocks[0].attn.query.kernel[...].dtype
+        == jnp.bfloat16
+    )
