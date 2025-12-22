@@ -25,6 +25,9 @@ help:
 deploy:	html
 	python deploy.py
 
+preview: html
+	python -m http.server 8000 -d _build/html
+
 download:
 	@echo "Downloading example notebooks to notebooks ..."
 	@mkdir -p notebooks

@@ -7,9 +7,9 @@ GenSBI is in early development, please report any issues you may encounter.
 ```{toctree}
 :maxdepth: 1
 
-quick_guide
+quick_start
 installation
 /notebooks/my_first_model
-model_parameters
-training_tips
+model_cards
+training
 ```
