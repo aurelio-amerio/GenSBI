@@ -94,3 +94,7 @@ If you use this library, please consider citing this work and the original metho
 - **Flux1 model from BlackForest Lab**: [https://github.com/black-forest-labs/flux](https://github.com/black-forest-labs/flux)
 - **Simulation-Based Inference Benchmark**: [https://github.com/sbi-benchmark/sbibm](https://github.com/sbi-benchmark/sbibm)
 
+> [!NOTE]
+> **AI Usage Disclosure**
+> This project utilized large language models, specifically Google Gemini and GitHub Copilot, to assist with code suggestions, documentation drafting, and grammar corrections. All AI-generated content has been manually reviewed and verified by human authors to ensure accuracy and adherence to scientific standards.
+
