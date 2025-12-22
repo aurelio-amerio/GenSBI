@@ -16,7 +16,7 @@ class MLPEmbedder(nnx.Module):
     ):
         assert hidden_dim % in_dim == 0, "hidden_dim must be multiple of in_dim"
         self.repeats = hidden_dim // in_dim
-        self.p_skip = nnx.Param(0.01 * jnp.ones((1, 1, hidden_dim)))
+        self.p_skip = nnx.Param(0.01 * jnp.ones((1, 1, hidden_dim), dtype=param_dtype))
         self.in_layer = nnx.Linear(
             in_features=in_dim,
             out_features=hidden_dim,
@@ -88,7 +88,12 @@ class SinusoidalEmbedding(nnx.Module):
 
 class GaussianFourierEmbedding(nnx.Module):
     def __init__(
-        self, output_dim: int = 128, learnable: bool = False, *, rngs: nnx.Rngs
+        self,
+        output_dim: int = 128,
+        learnable: bool = False,
+        *,
+        rngs: nnx.Rngs,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         """Gaussian Fourier embedding module. Mostly used to embed time.
 
@@ -97,9 +102,11 @@ class GaussianFourierEmbedding(nnx.Module):
         """
         self.output_dim = output_dim
         half_dim = self.output_dim // 2 + 1
-        self.B = nnx.Param(jax.random.normal(rngs.params(), [half_dim, 1]))
+        self.B = nnx.Param(
+            jax.random.normal(rngs.params(), [half_dim, 1], dtype=param_dtype)
+        )
         if not learnable:
-            self.B = jax.lax.stop_gradient(jnp.array(self.B))
+            self.B = jax.lax.stop_gradient(jnp.asarray(self.B, dtype=param_dtype))
 
         return
 

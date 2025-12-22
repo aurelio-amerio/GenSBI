@@ -34,6 +34,7 @@ class SimformerParams:
         widening_factor (int): Widening factor for the transformer.
         qkv_features (int): Number of features for QKV layers.
         num_hidden_layers (int): Number of hidden layers in the transformer.
+        param_dtype (DTypeLike): Data type for model parameters.
 
     """
 
@@ -49,7 +50,7 @@ class SimformerParams:
     fourier_features: int = 128
     widening_factor: int = 3
     qkv_features: int | None = None
-    # param_dtype: DTypeLike = jnp.float32
+    param_dtype: DTypeLike = jnp.float32
 
     def __post_init__(self):
         if self.qkv_features is None:
@@ -75,19 +76,29 @@ class Simformer(nnx.Module):
         self.dim_condition = params.dim_condition
 
         self.embedding_net_value = MLPEmbedder(
-            in_dim=self.in_channels, hidden_dim=params.dim_value, rngs=params.rngs
+            in_dim=self.in_channels,
+            hidden_dim=params.dim_value,
+            rngs=params.rngs,
+            param_dtype=params.param_dtype,
         )
         # self.embedding_net_value = lambda obs: jnp.repeat(obs, dim_value, axis=-1)
 
         fourier_features = params.fourier_features
         self.embedding_time = GaussianFourierEmbedding(
-            fourier_features, rngs=params.rngs, learnable=True
+            fourier_features,
+            rngs=params.rngs,
+            learnable=True,
+            param_dtype=params.param_dtype,
         )
         self.embedding_net_id = nnx.Embed(
-            num_embeddings=params.dim_joint, features=params.dim_id, rngs=params.rngs
+            num_embeddings=params.dim_joint,
+            features=params.dim_id,
+            rngs=params.rngs,
+            param_dtype=params.param_dtype,
         )
         self.condition_embedding = nnx.Param(
-            0.01 * jnp.ones((1, 1, params.dim_condition))
+            0.01
+            * jnp.ones((1, 1, params.dim_condition), dtype=params.param_dtype)
         )
 
         self.total_tokens = params.dim_value + params.dim_id + params.dim_condition
@@ -104,9 +115,15 @@ class Simformer(nnx.Module):
             skip_connection_attn=True,
             skip_connection_mlp=True,
             rngs=params.rngs,
+            param_dtype=params.param_dtype,
         )
 
-        self.output_fn = nnx.Linear(self.total_tokens, self.in_channels, rngs=params.rngs)
+        self.output_fn = nnx.Linear(
+            self.total_tokens,
+            self.in_channels,
+            rngs=params.rngs,
+            param_dtype=params.param_dtype,
+        )
         return
 
     def __call__(
@@ -132,8 +149,8 @@ class Simformer(nnx.Module):
             Array: Model output.
         """
 
-        obs = jnp.asarray(obs)
-        t = jnp.atleast_1d(t)
+        obs = jnp.asarray(obs, dtype=self.params.param_dtype)
+        t = jnp.asarray(jnp.atleast_1d(t), dtype=self.params.param_dtype)
 
         assert (
             obs.ndim == 3

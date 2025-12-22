@@ -70,3 +70,32 @@ def test_flux1joint_wrapper():
 	out = vf(t, obs, args=extra_args)
 
 	assert out.shape == (12, 2, 1), f"3 - Vector field output shape is incorrect, got {out.shape}"
+
+
+def test_flux1joint_param_dtype_propagation():
+	params = Flux1JointParams(
+		in_channels=1,
+		vec_in_dim=None,
+		mlp_ratio=3.0,
+		num_heads=2,
+		depth_single_blocks=2,
+		axes_dim=[4],
+		condition_dim=[2],
+		qkv_bias=True,
+		rngs=get_rngs(),
+		joint_dim=4,
+		theta=16,
+		guidance_embed=False,
+		param_dtype=jnp.bfloat16,
+	)
+
+	model = Flux1Joint(params)
+
+	assert model.obs_in.kernel[...].dtype == jnp.bfloat16
+	assert model.time_in.in_layer.kernel[...].dtype == jnp.bfloat16
+	assert model.time_in.out_layer.kernel[...].dtype == jnp.bfloat16
+	assert model.condition_embedding[...].dtype == jnp.bfloat16
+
+	# Representative block + head weights
+	assert model.single_blocks.layers[0].linear1.kernel[...].dtype == jnp.bfloat16
+	assert model.final_layer.linear.kernel[...].dtype == jnp.bfloat16
