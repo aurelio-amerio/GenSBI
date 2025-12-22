@@ -1,4 +1,4 @@
-# 5-minute guide
+# 15-minute quick start
 
 Welcome to GenSBI! This page is a quick guide to get you started with installation and basic usage.
 
@@ -42,8 +42,19 @@ in a ``if __name__ == "__main__":`` guard.
 See https://docs.python.org/3/library/multiprocessing.html
 ```
 
-See the [Examples](/examples) page for practical demonstrations on common SBI benchmarks.
+See the full example notebook [my_first_model](/notebooks/my_first_model) for a more detailed walkthrough, and the [Examples](/examples) page for practical demonstrations on common SBI benchmarks.
 
 ## Citing GenSBI
 
 If you use this library, please consider citing this work and the original methodology papers, see [references](/references).
+
+```bibtex
+@misc{GenSBI,
+  author       = {Amerio, Aurelio},
+  title        = "{GenSBI: Generative models for Simulation-Based Inference}",
+  year         = {2025}, 
+  publisher    = {GitHub},
+  journal      = {GitHub repository},
+  howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
+}
+```
