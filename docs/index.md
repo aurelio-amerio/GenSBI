@@ -20,12 +20,11 @@ To get started with GenSBI, install the package using pip:
 pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
 ```
 
-We advise to take a look at the [Getting Started](getting_started.md) page for additional installation instructions and basic usage. 
+We advise to take a look at the [Getting Started](/getting_started/index) page for additional installation instructions and basic usage. 
 
-You can also explore the [Examples](examples.md) page for practical demonstrations of GenSBI's capabilities.
+You can also explore the [Examples](/examples) page for practical demonstrations of GenSBI's capabilities.
 
-You can find the API documentation in the [API Documentation](api/gensbi/index) section.
-
+You can find the API documentation in the [API Documentation](/api/gensbi/index) section.
 ## Examples
 
 <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
@@ -51,7 +50,28 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 - `gaussian_linear_flow_flux1joint.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/gaussian_linear/flow_flux1joint/gaussian_linear_flow_flux1joint.ipynb) <br>
 Uses the Flux1Joint model for posterior density estimation on the Gaussian Linear benchmark.
 - `slcp_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb) <br>
-Uses the Simformer model for posterior density estimation on the SLCP benchmark.    
+Uses the Simformer model for posterior density estimation on the SLCP benchmark. 
+
+```{admonition} AI Usage Disclosure
+:class: note
+
+This project utilized large language models, specifically Google Gemini and GitHub Copilot, to assist with code suggestions, documentation drafting, and grammar corrections. All AI-generated content has been manually reviewed and verified by human authors to ensure accuracy and adherence to scientific standards.
+```
+
+## Citing GenSBI
+
+If you use this library, please consider citing this work and the original methodology papers, see [references](/references).
+
+```bibtex
+@misc{GenSBI,
+  author       = {Amerio, Aurelio},
+  title        = "{GenSBI: Generative models for Simulation-Based Inference}",
+  year         = {2025}, 
+  publisher    = {GitHub},
+  journal      = {GitHub repository},
+  howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
+}
+```
 
 ## Table of Contents
 ```{toctree}
