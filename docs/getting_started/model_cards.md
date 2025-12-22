@@ -1,63 +1,16 @@
-# Model Parameters
+# Model Cards
 
-This page documents the main models provided in GenSBI and their configurable parameters.
+This page documents the neural network architectures provided in GenSBI. These models serve as the core generative engines for approximating posterior distributions in Simulation-Based Inference (SBI).
 
-- `Flux1` is the default and most powerful model to be used for most applications that involve solving inverse problems with high-dimensional data and complex posteriors. It is more memory efficient than `Simformer` and scales better to higher-dimensional data, while still being able to model complex posterior distributions.
-- `Simformer` is a simpler transformer model that is easier to use for low-dimensional data and quick prototyping, which is also capable of modeling the joint distribution of all variables. If you have limited amounts of data and compute resources, and your problem is not too high-dimensional (less than ~10 dimensions) with a simple posterior, consider using `Simformer` instead of `Flux1`.
-- `Flux1Joint` is a variant of `Flux1` that is specifically designed to model the joint distribution of all variables, similar to `Simformer`, but with the efficiency and scalability of `Flux1`. It performs better than `Simformer` on higher-dimensional data and complex posteriors, but performs worse for very low-dimensional data with simple posteriors (less than 4 dimensions). If your problem is likelihood dominated, and explicitly learning how to reconstruct all variables is important, consider using `Flux1Joint` instead of `Flux1`. 
+Selecting the appropriate model is crucial for balancing computational efficiency with the ability to capture complex, high-dimensional dependencies. The models below are designed to cover a wide range of use cases, from rapid prototyping on low-dimensional problems to solving large-scale inverse problems.
 
----
-
-## Simformer Model Parameters
-Simformer is a transformer-based model designed to learn the joint distribution of all variables in the data, conditioned on observed subsets. It is particularly useful for low-dimensional problems and quick prototyping.
-
-**How to use:**
-
-```python
-from gensbi.models.simformer import SimformerParams
-
-params = SimformerParams(
-    rngs=...,
-    in_channels=...,
-    dim_value=...,
-    dim_id=...,
-    dim_condition=...,
-    dim_joint=...,
-    num_heads=...,
-    num_layers=...,
-    num_hidden_layers=...,
-    fourier_features=...,
-    widening_factor=...,
-    qkv_features=...,
-)
-```
-
-**Parameter Explanations:**
-
-* **rngs**: Random number generators for model initialization, e.g. `nnx.Rngs(0)`.
-* **in_channels**: Number of input channels (features) to the model. If your input data has multiple channels, set this accordingly, else set to 1.
-* **dim_value**: Dimension of the value embeddings. This is the number of features used to embed the input data, the more complex the data, the higher this should be. A good starting point is around `40`.  
-* **dim_id**: Dimension of the ID embeddings. This is the number of features used to embed the token id, that is the unique identifier for each token in the sequence (feature). If your data has many features, consider increasing this value, a good starting point is around `10`.
-* **dim_condition**: Dimension of the condition embeddings. This is the number of features used to embed the conditioning mask, that is to say on which features the model is conditioned. A good starting point is around `10`.
-* **dim_joint**: The dimension of the joint distribution to be modeled. This is the number of variables that the model will learn to represent jointly. For example, if you are modeling a 3D distribution conditioned on 2 variables, set this to `5`.
-* **num_heads**: Number of attention heads in the transformer. A good starting point is `4`, and should be adjusted based on the complexity of the data and model size.
-* **num_layers**: Number of transformer layers. A good starting point is `4`, and can be increased for more complex data or if the posterior distribution is expected to be complex and multimodal. 
-* **num_hidden_layers**: Number of hidden layers in the transformer. This is the number of `Dense` layers per each transformer block. Default: `1`. It is rearely necessary to change this.
-* **fourier_features**: Number of Fourier features for time embedding. Default: `128`. Increasing this number up to ~256 may help if the posterior distribution is expected to be multimodal.
-* **widening_factor**: Widening factor for the transformer. Default: `3`. If the model is underfitting, consider increasing this value to `4`. 
-* **qkv_features**: Number of features for QKV layers. Default: `None` (computed if not set). Used to bottleneck the attention mechanism to use a fixed number of features. If bottlenecking is desired, a good initial choice may be `10 * num_heads`. 
-
-### Notes
-- Currently, the Simformer model runs on `float32` precision only.
-- The Simformer model is a transformer where the number of tokens is given by the number of features in the data. Each feature is treated as a token, and the model learns to represent the joint distribution of these features conditioned on some observed subset. 
-- Each token is embedded to a higher-dimensional space using the `dim_value`, `dim_id`, and `dim_condition` parameters, allowing the model to capture complex relationships between features. The total number of features per token is given by `dim_tot = dim_value + dim_id + dim_condition`. As such, it is necessary to ensure that `dim_tot` is divisible by `num_heads` for the attention mechanism to work properly (else and error will be raised during model initialization).
-- When choosing the model architechture, it is convenient to first increase the depth of the model (i.e. `num_layers`), and then increase the width (i.e. `dim_value` and `dim_id`) if necessary, and lastly adjust the number of attention heads. 
-- If the model you would like to use has more than 8 layers, >12 heads and `dim_tot`>256, or if you would like to perform inference on more than ~10 features, consider using the **Flux1** or **Flux1Joint** models instead, as they are more memory efficient.
-
----
+- **Flux1**: The robust default choice for most applications. It excels at solving inverse problems involving high-dimensional data and complex posterior distributions. Unlike `Simformer`, `Flux1` embeds only the data explicitly and relies on Rotary Positional Embeddings (RoPE) for variable identification. This approach is significantly more memory-efficient and scales better to higher dimensions.
+- **Simformer**: A lightweight transformer model optimized for low-dimensional data and rapid prototyping. It explicitly models the joint distribution of all variables by embedding values, variable IDs, and condition masks separately. This explicit embedding strategy is highly effective for low-dimensional data (fewer than ~10 dimensions) as it compresses the data less than RoPE, but it is less computationally efficient for high-dimensional problems.
+- **Flux1Joint**: Combines the joint-distribution modeling capabilities of `Simformer` with the scalable architecture of `Flux1`. It adopts the `Flux1` embedding strategy (explicit data embedding + RoPE for IDs), making it ideal for high-dimensional problems where explicitly learning the joint reconstruction of variables is crucial. While it outperforms `Simformer` on complex, high-dimensional tasks, `Simformer` is often preferable for very low-dimensional problems (less than 4 dimensions) due to its superior explicit ID embedding.
 
 ## Flux1 Model Parameters
 
+Flux1 is a scalable architecture using double-stream blocks, capable of handling high-dimensional inputs efficiently.
 
 **How to use:**
 
@@ -85,26 +38,79 @@ params = Flux1Params(
 
 **Parameter Explanations:**
 
-* **in_channels**: Number of input channels (features) to the model.
-* **vec_in_dim**: Dimension of the vector input, if applicable, default: `None`. Currently not used, and has to be set to `None`.
-* **context_in_dim**: Dimension of the context input.
-* **mlp_ratio**: Ratio for the MLP layers.
-* **num_heads**: Number of attention heads.
-* **depth**: Number of double stream blocks.
-* **depth_single_blocks**: Number of single stream blocks. Should be approximately double the number of double stream blocks.
-* **axes_dim**: List of dimensions for axes used in positional encoding. For 1D data, e.g. unstructured data, use a single value list, e.g. `[10]`. For higher dimensional data, it will depend on the specific positional encoding adopted, and should match the number of axes used. 
-* **qkv_bias**: Whether to use bias in QKV layers. Default: `True`.
-* **rngs**: Random number generators for initialization. For example `nnx.Rngs(0)`.
-* **obs_dim**: Observation dimension, that is the number of variables the model needs to perform inference on.
-* **cond_dim**: Condition dimension, that is the number of variables the model is conditioned on.
-* **theta**: Rotary Positional Embedding (RoPE) theta parameter. A good starting point is `10 * dim_joint`, and should be tuned based on the specific data and problem. 
-* **guidance_embed**: Whether to use guidance embedding. Default: `False`. Guidance embedding is currently not implemented for SBI.
-* **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`. This is useful to reduce memory usage and speed up training on compatible hardware. If you experience issues with `bfloat16`, consider switching to `jnp.float32`.
+- **in_channels**: Number of input channels in the data (e.g., `1` for scalar/vector fields, `3` for images). This is distinct from the number of features or tokens.
+- **vec_in_dim**: Dimension of the vector input (e.g., time embeddings). **Must be set to `None`** as it is currently unused.
+- **context_in_dim**: Dimension of the context (conditioning) input (similar to in_channels)
+- **mlp_ratio**: The expansion ratio for the MLP layers within transformer blocks (typically `4.0`).
+- **num_heads**: Number of attention heads.
+- **depth**: Number of Double Stream blocks (processes information and context separately).
+- **depth_single_blocks**: Number of Single Stream blocks (processes information and context jointly). A common heuristic is to set this to roughly double the `depth`.
+- **axes_dim**: A sequence of integers defining the positional encoding grid. For unstructured 1D data (e.g., parameter vectors), use a single-element list like `[obs_dim]`.
+- **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
+- **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
+- **obs_dim**: The number of variables (tokens) the model performs inference on.
+- **cond_dim**: The number of variables the model is conditioned on.
+- **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). A recommended starting point is `10 * obs_dim`. The default code value is `10_000`.
+- **guidance_embed**: Whether to use guidance embeddings. Default: `False` (not currently implemented for SBI).
+- **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`. Use this to reduce memory usage. Switch to `jnp.float32` if you encounter numerical stability issues.
 
----
+### Notes on Flux1
+
+- **Architecture Configuration**: It is strongly recommended to use double the number of Single Stream blocks (`depth_single_blocks`) compared to the number of Double Stream blocks (`depth`).
+- **Tuning Strategy**: A typical depth range for the model is between 8 and 20. For the attention mechanism, starting with 6-8 heads and approximately 10 features per head is recommended; these can be increased based on data complexity.
+- **High-Dimensional Data**: If your condition dimension is large (>100) or observation dimension is moderately high (>20), it is highly recommended to employ an embedding network to derive summary statistics for the data. See the latent diffusion example (WIP).
+
+## Simformer Model Parameters
+
+Simformer is a transformer-based model designed to learn the joint distribution of all variables in the data, conditioned on observed subsets. It treats features as tokens, allowing it to capture complex dependencies in low-dimensional spaces.
+
+**How to use:**
+
+```python
+from gensbi.models.simformer import SimformerParams
+
+params = SimformerParams(
+    rngs=...,
+    in_channels=...,
+    dim_value=...,
+    dim_id=...,
+    dim_condition=...,
+    dim_joint=...,
+    num_heads=...,
+    num_layers=...,
+    num_hidden_layers=...,
+    fourier_features=...,
+    widening_factor=...,
+    qkv_features=...,
+)
+```
+
+**Parameter Explanations:**
+
+- **rngs**: Random number generators for model initialization (e.g., `nnx.Rngs(0)`).
+- **in_channels**: Number of input channels in the data (e.g., `1` for scalar/vector fields). This defines the depth of the input tensor, not the number of features or tokens.
+- **dim_value**: The dimension of the value embeddings. This determines the size of the feature representation inside the model. Higher values allow modeling more complex data; a good starting point is `40`.
+- **dim_id**: The dimension of the ID embeddings. This embeds the unique identifier for each variable (token). For datasets with many variables, consider increasing this; a good starting point is `10`.
+- **dim_condition**: The dimension of the condition embeddings. This represents the conditioning mask (i.e., which variables are observed vs. unobserved). A good starting point is `10`.
+- **dim_joint**: The total number of variables to be modeled jointly (the sequence length). For example, modeling a 3D distribution conditioned on 2 observed variables would require a `dim_joint` of 5.
+- **num_heads**: Number of attention heads. A standard starting point is `4`. Adjust based on data complexity and model size constraints.
+- **num_layers**: Number of transformer layers. A default of `4` works well for many problems. Increase this for complex, multimodal posterior distributions.
+- **num_hidden_layers**: Number of dense hidden layers within each transformer block. Default: `1`. It is rarely necessary to change this.
+- **fourier_features**: Number of Fourier features used for time embeddings. Default: `128`. Increasing this to ~256 may help resolve multimodal posteriors.
+- **widening_factor**: The expansion factor for the internal feed-forward layers. Default: `3`. If the model is underfitting, try increasing to `4`.
+- **qkv_features**: Dimension of the Query/Key/Value projection. Default: `None` (automatically computed). Setting this allows you to bottleneck the attention mechanism. A manual setting might be `10 * num_heads`.
+
+### Notes on Simformer
+
+- **Precision**: Currently, the Simformer model runs on `float32` precision only.
+- **Architecture**: The model treats every variable in the data as a distinct token. It learns the joint distribution of these tokens conditioned on an observed subset.
+- **Embedding Dimensions**: The total embedding size for a token is `dim_tot = dim_value + dim_id + dim_condition`. This sum **must** be divisible by `num_heads` to ensure correct attention splitting; otherwise, initialization will fail.
+- **Tuning Strategy**: Start by increasing `num_layers` (depth). If performance is still lacking, increase `dim_value` and `dim_id` (width), and finally adjust `num_heads`.
+- **Limitations**: If your problem requires more than 8 layers, >12 heads, `dim_tot > 256`, or inference on >10 variables, `Flux1` or `Flux1Joint` are recommended for better memory efficiency.
 
 ## Flux1Joint Model Parameters
 
+Flux1Joint utilizes a pure Single Stream architecture (similar to Simformer but using Flux layers) to model the joint distribution of variables efficiently.
 
 **How to use:**
 
@@ -130,25 +136,33 @@ params = Flux1JointParams(
 
 **Parameter Explanations:**
 
-* **in_channels**: Number of input channels (features) to the model.
-* **vec_in_dim**: Dimension of the vector input, if applicable.
-* **mlp_ratio**: Ratio for the MLP layers.
-* **num_heads**: Number of attention heads.
-* **depth_single_blocks**: Number of single stream blocks.
-* **axes_dim**: List of dimensions for axes used in positional encoding.
-* **condition_dim**: List of dimensions for the condition used in positional encoding.
-* **qkv_bias**: Whether to use bias in QKV layers.
-* **rngs**: Random number generators for initialization.
-* **joint_dim**: Joint dimension (number of variables modeled jointly).
-* **theta**: Scaling factor for positional encoding. Default: `10_000`.
-* **guidance_embed**: Whether to use guidance embedding. Default: `False`.
-* **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`.
+- **in_channels**: Number of input channels in the data (e.g., `1` for scalar/vector fields). This is distinct from the number of features or tokens.
+- **vec_in_dim**: Dimension of the vector input, typically used for timestep embeddings.
+- **mlp_ratio**: The expansion ratio for the MLP layers within the transformer blocks (typically `4.0`).
+- **num_heads**: Number of attention heads. Ensure `in_channels` is divisible by this number.
+- **depth_single_blocks**: The total number of transformer layers. Since `Flux1Joint` relies entirely on Single Stream blocks to mix joint information, this defines the total depth of the network.
+- **axes_dim**: A sequence of integers defining the positional encoding grid for the **joint variables** (the target variables being modeled). For unstructured data, this is typically `[joint_dim]`.
+- **condition_dim**: A sequence of integers defining the positional encoding grid for the **conditioning variables**.
+- **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
+- **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
+- **joint_dim**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.
+- **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). Default: `10_000`.
+- **guidance_embed**: Whether to use guidance embeddings. Default: `False`.
+- **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`.
 
----
+### Notes on Flux1Joint
+
+- **When to use**: If your problem is likelihood dominated, and explicitly learning how to reconstruct all variables is important, consider using `Flux1Joint` instead of `Flux1`.
+- **Performance Comparison**: `Flux1Joint` typically outperforms `Simformer` on higher-dimensional data and complex posteriors. However, it may perform worse for very low-dimensional data with simple posteriors (less than 4 dimensions).
+- **Tuning Strategy**: A typical depth range for the model is between 8 and 20. For the attention mechanism, starting with 6-8 heads and approximately 10 features per head is recommended; these can be increased based on data complexity.
+- **High-Dimensional Data**: If your condition dimension is large (>100) or observation dimension is moderately high (>20), it is highly recommended to employ an embedding network to derive summary statistics for the data. See the latent diffusion example (WIP).
 
 ## Notes
 
-- Default values may differ depending on the implementation or use case.
-- For more details, see the source code in `src/gensbi/models/simformer/`, `src/gensbi/models/flux1/`, and `src/gensbi/models/flux1joint/`.
+- **Default Values**: Specific default values may vary based on the exact version of the library. Always check the function signatures if unsure.
+- **Source Code**: For deeper implementation details, refer to:
+  - `src/gensbi/models/simformer/`
+  - `src/gensbi/models/flux1/`
+  - `src/gensbi/models/flux1joint/`
 
 If you have further questions, please refer to the API documentation or open an issue on the repository.

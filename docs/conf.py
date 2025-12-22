@@ -48,6 +48,8 @@ myst_enable_extensions = ["colon_fence", "linkify", "substitution"]
 myst_heading_anchors = 2
 myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
 
+nbsphinx_execute = 'never'
+
 # -- Internationalization ----------------------------------------------------
 language = "en"
 
