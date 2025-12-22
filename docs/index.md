@@ -20,12 +20,11 @@ To get started with GenSBI, install the package using pip:
 pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
 ```
 
-We advise to take a look at the [Getting Started](getting_started.md) page for additional installation instructions and basic usage. 
+We advise to take a look at the [Getting Started](/getting_started/index) page for additional installation instructions and basic usage. 
 
-You can also explore the [Examples](examples.md) page for practical demonstrations of GenSBI's capabilities.
+You can also explore the [Examples](/examples) page for practical demonstrations of GenSBI's capabilities.
 
-You can find the API documentation in the [API Documentation](api/gensbi/index) section.
-
+You can find the API documentation in the [API Documentation](/api/gensbi/index) section.
 ## Examples
 
 <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
