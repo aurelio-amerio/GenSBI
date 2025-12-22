@@ -31,7 +31,7 @@ pipeline = Flux1FlowPipeline(
 pipeline.train(rngs=nnx.Rngs(0))
 ```
 
-For a full example, see the [5-minute guide](/getting_started/quick_guide) or the [full notebook example](/notebooks/my_first_model).
+For a full example, see the [5-minute guide](/getting_started/quick_start) or the [full notebook example](/notebooks/my_first_model).
 
 ## Pipeline Overview
 
