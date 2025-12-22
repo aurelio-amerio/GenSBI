@@ -83,9 +83,20 @@ The following tasks are planned for future development:
 ## Known Issues
 - `bfloat16` support is currently limited and may lead to unexpected behavior.
 
-## Citation
+## Citing GenSBI
 
-If you use this library, please consider citing this work and the original methodology papers.
+If you use this library, please consider citing this work and the original methodology papers, see [references](/references).
+
+```bibtex
+@misc{GenSBI,
+  author       = {Amerio, Aurelio},
+  title        = "{GenSBI: Generative models for Simulation-Based Inference}",
+  year         = {2025}, 
+  publisher    = {GitHub},
+  journal      = {GitHub repository},
+  howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
+}
+```
 
 ### Reference implementations:
 - **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching](https://github.com/facebookresearch/flow_matching)
