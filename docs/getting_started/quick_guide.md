@@ -13,7 +13,7 @@ pip install git+https://github.com/aurelio-amerio/GenSBI.git
 If a GPU is available, it is advisable to install the cuda version of the package:
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
+pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
 ```
 
 ## Requirements
@@ -24,7 +24,7 @@ pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
 - (See `pyproject.toml` for full requirements)
 
 ## Basic Usage
-The most basic usage of GenSBI involves defining a simulation-based inference pipeline using one of the provided recipes. Here is a minimal example of setting up a flow-based inference pipeline using Simformer:
+The most basic usage of GenSBI involves defining a simulation-based inference pipeline using one of the provided recipes. Here is a minimal example of setting up a flow-based inference pipeline using `Flux1`:
 
 
 ```{literalinclude} /examples/conditional_flow_pipeline.py
@@ -46,4 +46,4 @@ See the [Examples](/examples) page for practical demonstrations on common SBI be
 
 ## Citing GenSBI
 
-If you use this library, please consider citing this work and the original methodology papers.
+If you use this library, please consider citing this work and the original methodology papers, see [references](/references).

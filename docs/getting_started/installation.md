@@ -23,13 +23,19 @@ pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
 Although not mandatory, it is recommended to install also the optional validation package, which provides utilities for evaluating inference performance:
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI-validation.git --extra-index-url https://download.pytorch.org/whl/cpu
+pip install "GenSBI[validation] @ git+https://github.com/aurelio-amerio/GenSBI.git" --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 If you want to run the examples, install the GenSBI-examples repository:
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI-examples.git
+pip install "GenSBI[examples] @ git+https://github.com/aurelio-amerio/GenSBI.git" 
+```
+
+To install all the optional dependencies at once, run:
+
+```bash
+pip install "GenSBI[cuda12,examples,validation] @ git+https://github.com/aurelio-amerio/GenSBI.git" --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 ## Requirements
