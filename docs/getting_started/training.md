@@ -31,7 +31,7 @@ pipeline = Flux1FlowPipeline(
 pipeline.train(rngs=nnx.Rngs(0))
 ```
 
-For a full example, see the [5-minute guide](https://www.google.com/search?q=/getting_started/quick_guide) or the [full notebook example](https://www.google.com/search?q=/notebooks/my_first_model).
+For a full example, see the [5-minute guide](/getting_started/quick_guide) or the [full notebook example](/notebooks/my_first_model).
 
 ## Pipeline Overview
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     main()
 ```
 
-To see a complete runnable script that puts all of this together, check out the [first_model.py example](https://www.google.com/search?q=https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/getting_started/first_model.py).
+To see a complete runnable script that puts all of this together, check out the [first_model.py example](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/getting_started/first_model.py).
 
 ## Configuration & Hyperparameters
 
