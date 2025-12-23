@@ -425,7 +425,7 @@ class AbstractVAEPipeline:
         batch_val = next(self.val_dataset_iter)
         min_val = val_step(self.model, batch_val, rngs.val_step(), 1.0)
 
-        val_error_ratio = 1.1
+        val_error_ratio = 0.1
         counter = 0
         cmax = 10
 
@@ -473,7 +473,11 @@ class AbstractVAEPipeline:
                 batch_val = next(self.val_dataset_iter)
                 l_val = val_step(self.model, batch_val, rngs.val_step(), kl_weight)
 
-                ratio = l_val / l_train
+                if l_val < l_train: # TODO figure out something more clever to do, since the loss may be negative here
+                    ratio = 0.
+                else:
+                    ratio = (l_train - l_val) / (l_train + 1e-8)
+                    
                 if ratio > val_error_ratio:
                     counter += 1
                 else:
