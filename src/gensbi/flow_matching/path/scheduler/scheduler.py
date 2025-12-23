@@ -100,9 +100,23 @@ class ConvexScheduler(Scheduler):
 
 
 class CondOTScheduler(ConvexScheduler):
-    """CondOT Scheduler."""
+    """
+    Conditional Optimal Transport (CondOT) Scheduler.
+    
+    This scheduler provides a linear interpolation path with alpha_t = t and sigma_t = 1 - t,
+    which is optimal for conditional optimal transport flow matching.
+    """
 
     def __call__(self, t: Array) -> SchedulerOutput:
+        """
+        Compute scheduler outputs for given times.
+        
+        Args:
+            t: Times in [0,1], shape (...).
+            
+        Returns:
+            Scheduler output containing alpha_t, sigma_t, and their derivatives.
+        """
         return SchedulerOutput(
             alpha_t=t,
             sigma_t=1 - t,
@@ -111,13 +125,38 @@ class CondOTScheduler(ConvexScheduler):
         )
 
     def kappa_inverse(self, kappa: Array) -> Array:
+        """
+        Compute t from kappa.
+        
+        Args:
+            kappa: Kappa values, shape (...).
+            
+        Returns:
+            Time values, shape (...).
+        """
         return kappa
 
 
 class PolynomialConvexScheduler(ConvexScheduler):
-    """Polynomial Scheduler."""
+    """
+    Polynomial Convex Scheduler.
+    
+    This scheduler uses polynomial interpolation with alpha_t = t^n and sigma_t = 1 - t^n.
+    
+    Args:
+        n: The polynomial degree, must be positive.
+    """
 
     def __init__(self, n: Union[float, int]) -> None:
+        """
+        Initialize the polynomial convex scheduler.
+        
+        Args:
+            n: Polynomial degree, must be a positive float or int.
+            
+        Raises:
+            AssertionError: If n is not a float/int or if n is not positive.
+        """
         assert isinstance(
             n, (float, int)
         ), f"`n` must be a float or int. Got {type(n)=}."
@@ -125,6 +164,15 @@ class PolynomialConvexScheduler(ConvexScheduler):
         self.n = n
 
     def __call__(self, t: Array) -> SchedulerOutput:
+        """
+        Compute scheduler outputs for given times.
+        
+        Args:
+            t: Times in [0,1], shape (...).
+            
+        Returns:
+            Scheduler output containing alpha_t, sigma_t, and their derivatives.
+        """
         return SchedulerOutput(
             alpha_t=t**self.n,
             sigma_t=1 - t**self.n,
@@ -133,18 +181,52 @@ class PolynomialConvexScheduler(ConvexScheduler):
         )
 
     def kappa_inverse(self, kappa: Array) -> Array:
+        """
+        Compute t from kappa.
+        
+        Args:
+            kappa: Kappa values, shape (...).
+            
+        Returns:
+            Time values, shape (...).
+        """
         return jnp.power(kappa, 1.0 / self.n)
 
 
 class VPScheduler(Scheduler):
-    """Variance Preserving Scheduler."""
+    """
+    Variance Preserving (VP) Scheduler.
+    
+    This scheduler follows the variance-preserving SDE formulation commonly used in
+    diffusion models, with configurable beta_min and beta_max parameters.
+    
+    Args:
+        beta_min: Minimum beta value. Defaults to 0.1.
+        beta_max: Maximum beta value. Defaults to 20.0.
+    """
 
     def __init__(self, beta_min: float = 0.1, beta_max: float = 20.0) -> None:
+        """
+        Initialize the VP scheduler.
+        
+        Args:
+            beta_min: Minimum beta value.
+            beta_max: Maximum beta value.
+        """
         self.beta_min = beta_min
         self.beta_max = beta_max
         super().__init__()
 
     def __call__(self, t: Array) -> SchedulerOutput:
+        """
+        Compute scheduler outputs for given times.
+        
+        Args:
+            t: Times in [0,1], shape (...).
+            
+        Returns:
+            Scheduler output containing alpha_t, sigma_t, and their derivatives.
+        """
         b = self.beta_min
         B = self.beta_max
         T = 0.5 * (1 - t) ** 2 * (B - b) + (1 - t) * b
@@ -158,6 +240,15 @@ class VPScheduler(Scheduler):
         )
 
     def snr_inverse(self, snr: Array) -> Array:
+        """
+        Compute t from signal-to-noise ratio.
+        
+        Args:
+            snr: The signal-to-noise ratio, shape (...).
+            
+        Returns:
+            Time values, shape (...).
+        """
         T = -jnp.log(snr**2 / (snr**2 + 1))
         b = self.beta_min
         B = self.beta_max
@@ -166,9 +257,22 @@ class VPScheduler(Scheduler):
 
 
 class LinearVPScheduler(Scheduler):
-    """Linear Variance Preserving Scheduler."""
+    """
+    Linear Variance Preserving Scheduler.
+    
+    A linear variance-preserving scheduler where alpha_t = t and sigma_t = sqrt(1 - t^2).
+    """
 
     def __call__(self, t: Array) -> SchedulerOutput:
+        """
+        Compute scheduler outputs for given times.
+        
+        Args:
+            t: Times in [0,1], shape (...).
+            
+        Returns:
+            Scheduler output containing alpha_t, sigma_t, and their derivatives.
+        """
         return SchedulerOutput(
             alpha_t=t,
             sigma_t=(1 - t**2) ** 0.5,
@@ -177,13 +281,36 @@ class LinearVPScheduler(Scheduler):
         )
 
     def snr_inverse(self, snr: Array) -> Array:
+        """
+        Compute t from signal-to-noise ratio.
+        
+        Args:
+            snr: The signal-to-noise ratio, shape (...).
+            
+        Returns:
+            Time values, shape (...).
+        """
         return jnp.sqrt(snr**2 / (1 + snr**2))
 
 
 class CosineScheduler(Scheduler):
-    """Cosine Scheduler."""
+    """
+    Cosine Scheduler.
+    
+    A cosine-based scheduler where alpha_t = sin(pi/2 * t) and sigma_t = cos(pi/2 * t).
+    This provides a smooth interpolation between distributions.
+    """
 
     def __call__(self, t: Array) -> SchedulerOutput:
+        """
+        Compute scheduler outputs for given times.
+        
+        Args:
+            t: Times in [0,1], shape (...).
+            
+        Returns:
+            Scheduler output containing alpha_t, sigma_t, and their derivatives.
+        """
         return SchedulerOutput(
             alpha_t=jnp.sin(jnp.pi / 2 * t),
             sigma_t=jnp.cos(jnp.pi / 2 * t),
@@ -192,4 +319,13 @@ class CosineScheduler(Scheduler):
         )
 
     def snr_inverse(self, snr: Array) -> Array:
+        """
+        Compute t from signal-to-noise ratio.
+        
+        Args:
+            snr: The signal-to-noise ratio, shape (...).
+            
+        Returns:
+            Time values, shape (...).
+        """
         return 2.0 * jnp.arctan(snr) / jnp.pi

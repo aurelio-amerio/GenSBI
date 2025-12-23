@@ -1,3 +1,9 @@
+"""
+Path sample data structures for diffusion models.
+
+This module defines data structures for representing samples along the diffusion
+probability path, including EDM (Elucidating Diffusion Models) path samples.
+"""
 from dataclasses import dataclass, field
 from jax import Array
 from typing import Tuple
