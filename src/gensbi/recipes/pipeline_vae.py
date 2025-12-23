@@ -476,7 +476,7 @@ class AbstractVAEPipeline:
                 if l_val < l_train: # TODO figure out something more clever to do, since the loss may be negative here
                     ratio = 0.
                 else:
-                    ratio = (l_train - l_val) / (l_train + 1e-8)
+                    ratio = jnp.abs((l_train - l_val) / (l_train + 1e-8))
                     
                 if ratio > val_error_ratio:
                     counter += 1
@@ -485,7 +485,7 @@ class AbstractVAEPipeline:
 
                 pbar.set_postfix(
                     loss=f"{l_train:.4f}",
-                    ratio=f"{ratio:.4f}",
+                    diff_ratio=f"{ratio:.4f}",
                     counter=counter,
                     val_loss=f"{l_val:.4f}",
                 )
