@@ -12,4 +12,6 @@ installation
 /notebooks/my_first_model
 model_cards
 training
+inference
+validation
 ```

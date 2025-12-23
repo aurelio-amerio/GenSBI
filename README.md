@@ -20,6 +20,50 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 - **Powerful Transformer Models**: Includes implementations of recent, high-performing models like **Flux1**, **Flux1Join**, and **Simformer** for handling complex, high-dimensional data.
 - **Modular and Extensible**: A clean, well-structured codebase that is easy to understand, modify, and extend for your own research.
 
+## Installation
+
+```bash
+pip install git+https://github.com/aurelio-amerio/GenSBI.git
+```
+
+For GPU support and other options, see the [Installation Guide](https://aurelio-amerio.github.io/GenSBI/getting_started/installation.html).
+
+## Quick Start
+
+To get started immediately, you can use the high-level API to train a model.
+
+> [!TIP]
+> Check out the **[my_first_model.ipynb](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/my_first_model.ipynb)** notebook for a complete, step-by-step introductory tutorial.
+
+```python
+from flax import nnx
+from gensbi.recipes import Flux1FlowPipeline
+from gensbi.models import Flux1Params
+
+train_dataset = ... # define a training dataset (infinite iterator)
+val_dataset = ...   # define a validation dataset (infinite iterator)
+obs_dim = ...       # dimension of the parameters (theta)
+cond_dim = ...      # dimension of the simulator observations (x)
+params = Flux1Params(...) # the parameters for your model
+
+# Instantiate the pipeline
+pipeline = Flux1FlowPipeline(
+    train_dataset,
+    val_dataset,
+    obs_dim,
+    cond_dim,
+    params=params,
+)
+
+# Train the model
+# Note: GenSBI uses Flax NNX, so we pass a random key generator
+pipeline.train(rngs=nnx.Rngs(0))
+
+# After training, get a sampler for posterior sampling
+key = jax.random.PRNGKey(42)
+samples = pipeline.sample(key, x_observed, num_samples=10_000)
+```
+
 ## Examples
 <table align="center" style="width:95%;">
   <tr>
@@ -38,6 +82,11 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 Examples for this library are available separately in the [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository.
 
 Some key examples include:
+
+**Getting Started:**
+
+- `my_first_model.ipynb` [!Open In Colab](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/my_first_model.ipynb) <br>
+  A beginner-friendly notebook introducing the core concepts of GenSBI on a simple problem.
 
 **Unconditional Density Estimation:**
 
@@ -60,28 +109,6 @@ Uses the Simformer model for posterior density estimation on the SLCP benchmark.
 
 > [!NOTE]
 > A full list of the currently available examples is available at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
-
-## TODO
-
-The following tasks are planned for future development:
-
-- [x] Implement OT flow matching techniques.
-- [x] Implement diffusion models (EDM and score matching).
-- [x] Implement Transformer-based models for conditional posterior estimation (Flux1 and Simformer).
-- [x] Unify the API for flow matching and diffusion models.
-- [x] Implement wrappers to make training of flow matching and diffusion models similar.
-- [x] Write tests for core functionalities.
-- [ ] Consider implementing classifier free guidance for conditional models.
-- [ ] Add more examples and benchmarks.
-- [ ] Improve documentation and tutorials.
-- [ ] Provide SOTA pre-trained models and checkpoints for some SBI benchmark cases
-- [x] Implement VAE training pipeline
-- [x] Implement wrapper to run posterior calibration checks using the `sbi` library (maybe add this as an additional package to avoid torch dependency?)
-- [x] implement get sampler for every pipeline
-- [ ] Diffusion models are underconfident, the EDM sde works while the VE and VP legacy sdes are not working properly yet
-
-## Known Issues
-- `bfloat16` support is currently limited and may lead to unexpected behavior.
 
 ## Citing GenSBI
 
@@ -108,4 +135,3 @@ If you use this library, please consider citing this work and the original metho
 > [!NOTE]
 > **AI Usage Disclosure** <br>
 > This project utilized large language models, specifically Google Gemini and GitHub Copilot, to assist with code suggestions, documentation drafting, and grammar corrections. All AI-generated content has been manually reviewed and verified by human authors to ensure accuracy and adherence to scientific standards.
-
