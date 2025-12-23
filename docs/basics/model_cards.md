@@ -72,7 +72,7 @@ params = Flux1Params(
 - **num_heads**: Number of attention heads.
 - **depth**: Number of Double Stream blocks (processes information and context separately).
 - **depth_single_blocks**: Number of Single Stream blocks (processes information and context jointly). A common heuristic is to set this to roughly double the `depth`.
-- **axes_dim**: A sequence of integers defining the positional encoding grid. For unstructured 1D data (e.g., parameter vectors), use a single-element list like `[obs_dim]`.
+- **axes_dim**: A sequence of integers defining the number of features per attention head, per axis. For 1D data, this is a single-element list defining the per-head dimension. The total number of transformer features is `sum(axes_dim) * num_heads`. For unstructured 1D data, a typical value is `[16]` or `[32]`.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **obs_dim**: The number of variables (tokens) the model performs inference on.
@@ -168,8 +168,8 @@ params = Flux1JointParams(
 - **mlp_ratio**: The expansion ratio for the MLP layers within the transformer blocks (typically `4.0`).
 - **num_heads**: Number of attention heads. Ensure `in_channels` is divisible by this number.
 - **depth_single_blocks**: The total number of transformer layers. Since `Flux1Joint` relies entirely on Single Stream blocks to mix joint information, this defines the total depth of the network.
-- **axes_dim**: A sequence of integers defining the positional encoding grid for the **joint variables** (the target variables being modeled). For unstructured data, this is typically `[joint_dim]`.
-- **condition_dim**: A sequence of integers defining the positional encoding grid for the **conditioning variables**.
+- **axes_dim**: A sequence of integers defining the number of features per attention head for the **joint variables** (the target variables being modeled). For 1D unstructured data, this is typically a single-element list like `[16]` or `[32]`.
+- **condition_dim**: A sequence of integers defining the positional encoding for the **conditioning variables**.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **joint_dim**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.
