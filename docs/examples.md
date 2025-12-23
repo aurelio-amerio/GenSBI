@@ -103,7 +103,7 @@ Most examples include a "Open in Colab" badge. Click it to run the notebook in G
    cd GenSBI-examples
    ```
 
-2. Install dependencies:
+2. Install dependencies (see the [Installation Guide](/documentation/installation) for details):
    ```bash
    pip install jupyter
    pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"

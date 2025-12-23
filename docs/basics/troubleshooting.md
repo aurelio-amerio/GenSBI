@@ -65,7 +65,7 @@ This page addresses common issues and frequently asked questions when using GenS
 **Problem**: Loss stays flat or doesn't improve during training.
 
 **Solution**:
-1. **Increase batch size**: Flow matching and diffusion models need large batch sizes (1024+) to cover the time interval well. Use gradient accumulation (`multistep`) if GPU memory is limited.
+1. **Increase batch size**: Flow matching and diffusion models benefit from large batch sizes (ideally 1024+) to cover the time interval well. If your GPU memory is limited, use gradient accumulation (`multistep`) to achieve a large effective batch size (e.g., physical batch of 128 × multistep of 8 = 1024 effective batch size).
 
 2. **Check learning rate**: Default is `1e-3`. Try reducing to `1e-4` or increasing to `5e-4`.
 

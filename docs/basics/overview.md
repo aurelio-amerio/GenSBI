@@ -132,7 +132,7 @@ GenSBI supports two approaches for generative modeling:
 - **Concept**: Learn to gradually denoise data that has been corrupted with noise.
 - **Training**: Predict the noise or score at different noise levels.
 - **Sampling**: Iteratively denoise starting from pure noise.
-- **Note**: Currently, diffusion models in GenSBI are less reliable than flow matching models.
+- **Note**: As of the current version, flow matching models tend to be more stable and easier to train than diffusion models. This may change in future releases.
 
 **Flow Matching is the recommended default in GenSBI.**
 
