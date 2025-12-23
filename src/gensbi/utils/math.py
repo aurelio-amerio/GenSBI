@@ -1,16 +1,41 @@
+"""
+Mathematical utility functions for GenSBI.
+
+This module provides mathematical operations and transformations used throughout
+the library, including dimension expansion and divergence computation for vector fields.
+"""
 import jax
 import jax.numpy as jnp
 from jax import Array
 from typing import Callable, Optional
 from einops import rearrange, einsum
 
+
 def _expand_dims(x: Array) -> Array:
+    """
+    Expand dimensions of an array to have at least 3 dimensions.
+    
+    Args:
+        x: Input array to expand.
+        
+    Returns:
+        Array with at least 3 dimensions.
+    """
     if x.ndim < 3:
         x = rearrange(x, "... -> 1 ... 1" if x.ndim == 1 else "... -> ... 1")
     return x
 
 
 def _expand_time(t: Array) -> Array:
+    """
+    Expand time array to have at least 2 dimensions.
+    
+    Args:
+        t: Time array to expand.
+        
+    Returns:
+        Time array with at least 2 dimensions.
+    """
     t = jnp.atleast_1d(t)
     if t.ndim < 2:
         t = t[..., None]
@@ -29,15 +54,18 @@ def divergence(
     t: Array,
     x: Array,
     args: Optional[Array] = None,
-):
+) -> Array:
     """
-    Compute the divergence of the vector field vf at point x and time t.
+    Compute the divergence of a vector field at specified points and times.
+    
     Args:
-        vf (Callable): The vector field function.
-        x (Array): The point at which to compute the divergence.
-        t (Array): The time at which to compute the divergence.
+        vf: The vector field function.
+        t: The time at which to compute the divergence.
+        x: The point at which to compute the divergence.
+        args: Optional additional arguments for the vector field function.
+        
     Returns:
-        Array: The divergence of the vector field at point x and time t.
+        The divergence of the vector field at point x and time t.
     """
     x = _expand_dims(x)
     t = _expand_time(t)

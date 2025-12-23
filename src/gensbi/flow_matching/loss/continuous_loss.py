@@ -1,3 +1,9 @@
+"""
+Continuous flow matching loss functions.
+
+This module implements loss functions for training continuous flow matching models,
+computing the squared difference between predicted and target velocities.
+"""
 import jax.numpy as jnp
 from flax import nnx
 from typing import Callable, Tuple, Any
@@ -34,7 +40,17 @@ class ContinuousFMLoss(nnx.Module):
 
     """
 
-    def __init__(self, path, reduction: str = "mean"):
+    def __init__(self, path, reduction: str = "mean") -> None:
+        """
+        Initialize the continuous flow matching loss.
+        
+        Args:
+            path: Probability path for x-prediction training.
+            reduction: Reduction method for the loss. Options: 'none', 'mean', 'sum'. Defaults to 'mean'.
+            
+        Raises:
+            ValueError: If reduction is not one of 'None', 'mean', or 'sum'.
+        """
         self.path = path
         if reduction not in ["None", "mean", "sum"]:
             raise ValueError(f"{reduction} is not a valid value for reduction")
