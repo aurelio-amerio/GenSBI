@@ -17,9 +17,9 @@ x_observed = ...
 key = jax.random.PRNGKey(42)
 
 samples = pipeline.sample(
-    key, 
-    condition=x_observed, 
-    num_samples=10_000
+    rng=key, 
+    x_o=x_observed, 
+    nsamples=10_000
 )
 
 # samples shape: (10_000, obs_dim, obs_channels)
@@ -47,8 +47,8 @@ The `sample` method internally calls `get_sampler` to obtain a JIT-compiled samp
 
 ```python
 sampler_fn = pipeline.get_sampler(x_observed)
-samples1 = sampler_fn(jax.random.PRNGKey(1), num_samples=5000)
-samples2 = sampler_fn(jax.random.PRNGKey(2), num_samples=5000)
+samples1 = sampler_fn(jax.random.PRNGKey(1), nsamples=5000)
+samples2 = sampler_fn(jax.random.PRNGKey(2), nsamples=5000)
 ```
 
 <!-- ### Batching over Observations

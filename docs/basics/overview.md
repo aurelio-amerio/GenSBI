@@ -54,7 +54,7 @@ model = Flux1(params)
 
 ### 2. Model Wrappers
 
-**Model Wrappers** add the logic for handling time steps, noise, and conditioning to the base neural network. They bridge the gap between the model architecture and the training algorithm (flow matching or diffusion).
+**Model Wrappers** provide a standard interface for models to be used by ODE/SDE solvers during sampling. They standardize how models are called and provide methods for computing the vector field and divergence needed for numerical integration.
 
 Three types of wrappers exist:
 
@@ -62,31 +62,30 @@ Three types of wrappers exist:
 - **Conditional**: For conditional inference (standard SBI: estimate θ given x)
 - **Joint**: For joint inference (estimate multiple variables simultaneously)
 
-The wrapper handles:
-- Time embedding (converting time `t ∈ [0, 1]` to a format the model can use)
-- Noise/signal combination at different time steps
-- Conditioning information formatting
+The wrapper provides:
+- Standardized calling interface for solvers
+- `get_vector_field()` method for ODE integration
+- `get_divergence()` method when needed for likelihood computation
 
-**Example:**
-```python
-from gensbi.models.wrappers import ConditionalWrapper
+**Note**: Wrappers are only used during sampling/inference. During training, the unwrapped model is called directly.
 
-wrapped_model = ConditionalWrapper(model)
-# Now the model can be called with time, data, and conditions
-output = wrapped_model(time, noisy_data, condition_data)
-```
+### 3. Recipes and Pipelines
 
-### 3. Recipes (Pipelines)
+**Recipes** define complete end-to-end procedures for a specific task (e.g., SBI, VAE training). **Pipelines** are specific implementations of these recipes using particular generative modeling approaches (e.g., flow matching or diffusion).
 
-**Recipes** (also called **Pipelines**) are high-level interfaces that combine everything needed for training and inference. They handle:
+Currently, GenSBI provides two main recipes:
+- **SBI Recipe**: For simulation-based inference
+- **VAE Recipe**: For training variational autoencoders
+
+**Pipelines** handle all aspects of training and inference:
 
 - Data loading and batching
 - Training loop (optimizer, learning rate scheduling, early stopping)
 - Validation and checkpointing
 - Exponential Moving Average (EMA) of weights
-- Sampling from the trained model
+- Model wrapping for sampling
 
-**Key Pipelines:**
+**Key SBI Pipelines:**
 - `Flux1FlowPipeline`: Flow matching with Flux1 model
 - `SimformerFlowPipeline`: Flow matching with Simformer model
 - `Flux1JointFlowPipeline`: Flow matching with Flux1Joint model
@@ -107,8 +106,8 @@ pipeline = Flux1FlowPipeline(
 # Train
 pipeline.train(rngs=nnx.Rngs(0))
 
-# Sample
-samples = pipeline.sample(key, condition=x_observed, num_samples=10_000)
+# Sample (note: x_o is the observed data, not 'condition')
+samples = pipeline.sample(rng=key, x_o=x_observed, nsamples=10_000)
 ```
 
 ### 4. Flow Matching vs. Diffusion
@@ -117,7 +116,9 @@ GenSBI supports two approaches for generative modeling:
 
 #### Flow Matching (Recommended)
 - **Concept**: Learn a velocity field that transports samples from a simple distribution (Gaussian noise) to the target distribution (posterior).
-- **Training**: Minimize the difference between predicted and true velocity at random time points.
+- **Training**: The model learns to predict velocity at random time points. The model directly defines a vector field as a function of (obs, cond, t).
+- **Sampling**: Solve an ODE from t=0 to t=1 using the learned velocity field.
+- **Advantages**: Straighter paths in latent space, faster sampling, easier to train.
 - **Sampling**: Solve an ODE from t=0 to t=1.
 - **Advantages**: Straighter paths in latent space, faster sampling, easier to train.
 
@@ -138,7 +139,7 @@ Here's what happens during training:
 2. **Loss Computation**:
    - Sample random time steps `t ∈ [0, 1]`
    - Create noisy versions of the data based on `t`
-   - The wrapped model predicts the velocity/noise
+   - The model (unwrapped) predicts the velocity/noise as a function of (obs, cond, t)
    - Compare prediction to ground truth
 
 3. **Optimization**:
@@ -154,11 +155,13 @@ Here's what happens during training:
 During inference:
 
 1. **ODE Solving** (Flow Matching):
+   - Wrap the model to provide standard interface for the solver
    - Start with Gaussian noise
-   - Use the learned velocity field to solve an ODE
+   - Use the wrapped model's `get_vector_field()` method with an ODE solver
    - Result: samples from the posterior distribution
 
 2. **Iterative Denoising** (Diffusion):
+   - Wrap the model for the SDE sampler
    - Start with pure noise
    - Iteratively denoise using the learned denoiser
    - Result: samples from the posterior distribution

@@ -9,11 +9,11 @@ This page addresses common issues and frequently asked questions when using GenS
 **Problem**: JAX is not detecting your GPU, or you're getting CUDA-related errors.
 
 **Solution**:
-1. Ensure you installed the correct JAX version for your CUDA version:
+1. Ensure you installed the correct JAX version for your CUDA version. **CUDA 12 is recommended**:
    ```bash
    pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
    ```
-   Replace `cuda12` with `cuda11` if you have CUDA 11.x.
+   Note: CUDA 11 is not officially supported. CUDA 13 support will be available in an upcoming release.
 
 2. Verify JAX can see your GPU:
    ```python
@@ -204,7 +204,7 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 
 **Answer**:
 **Starting points:**
-- **Flux1**: `depth=8-12`, `depth_single_blocks=16-24`, `num_heads=6-8`
+- **Flux1**: `depth=4-8`, `depth_single_blocks=8-16`, `num_heads=6-8`
 - **Simformer**: `num_layers=4-6`, `num_heads=4-6`, `dim_value=40`
 
 **Tuning strategy:**
