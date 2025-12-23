@@ -1,3 +1,9 @@
+"""
+EDM (Elucidating Diffusion Models) probability path implementation.
+
+This module implements the probability path for EDM-based diffusion models,
+supporting various noise schedules (EDM, EDM-VP, EDM-VE).
+"""
 from abc import ABC, abstractmethod
 import jax
 from jax import Array
@@ -10,28 +16,40 @@ from gensbi.diffusion.path.path_sample import EDMPathSample
 
 
 class EDMPath(ProbPath):
+    """
+    EDM (Elucidating Diffusion Models) probability path.
+    
+    This class implements the probability path for EDM-based diffusion models,
+    supporting different noise schedules (EDM, EDM-VP, EDM-VE).
+    
+    Args:
+        scheduler: The scheduler object for noise generation, must be one of 'EDM', 'EDM-VP', or 'EDM-VE'.
+        
+    Example:
+        .. code-block:: python
+
+            from gensbi.diffusion.path import EDMPath
+            from gensbi.diffusion.path.scheduler import EDMScheduler
+            import jax, jax.numpy as jnp
+            scheduler = EDMScheduler()
+            path = EDMPath(scheduler)
+            key = jax.random.PRNGKey(0)
+            x_1 = jax.random.normal(key, (32, 2))
+            sigma = jnp.ones((32, 1))
+            sample = path.sample(key, x_1, sigma)
+            print(sample.x_t.shape)
+            # (32, 2)
+    """
+    
     def __init__(self, scheduler) -> None:
-        r"""
+        """
         Initialize the EDMPath with a scheduler.
 
         Args:
             scheduler: The scheduler object.
-
-        Example:
-            .. code-block:: python
-
-                from gensbi.diffusion.path import EDMPath
-                from gensbi.diffusion.path.scheduler import EDMScheduler
-                import jax, jax.numpy as jnp
-                scheduler = EDMScheduler()
-                path = EDMPath(scheduler)
-                key = jax.random.PRNGKey(0)
-                x_1 = jax.random.normal(key, (32, 2))
-                sigma = jnp.ones((32, 1))
-                sample = path.sample(key, x_1, sigma)
-                print(sample.x_t.shape)
-                # (32, 2)
-
+            
+        Raises:
+            AssertionError: If scheduler name is not one of 'EDM', 'EDM-VP', or 'EDM-VE'.
         """
         self.scheduler = scheduler
         assert self.scheduler.name in [
