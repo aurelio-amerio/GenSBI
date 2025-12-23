@@ -6,26 +6,19 @@ This page explains the core concepts and architecture of GenSBI to help you unde
 
 GenSBI is organized around three main abstractions:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                        Pipeline                         │
-│  (High-level orchestration: training, validation, etc.) │
-│                                                         │
-│  ┌───────────────────────────────────────────────┐   │
-│  │                    Model                       │   │
-│  │  (Neural network architecture: Flux1, etc.)   │   │
-│  │                                                │   │
-│  │  ┌──────────────────────────────────────┐    │   │
-│  │  │          Model Wrapper                │    │   │
-│  │  │  (Adds time/noise handling logic)     │    │   │
-│  │  └──────────────────────────────────────┘    │   │
-│  └───────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌───────────────────────────────────────────────┐   │
-│  │              Flow/Diffusion                    │   │
-│  │  (Loss function, ODE solver, paths)            │   │
-│  └───────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+```{mermaid}
+graph TB
+    subgraph Pipeline["Pipeline<br/>(High-level orchestration: training, validation, etc.)"]
+        subgraph Model["Model<br/>(Neural network architecture: Flux1, etc.)"]
+            Wrapper["Model Wrapper<br/>(Adds time/noise handling logic)"]
+        end
+        FlowDiff["Flow/Diffusion<br/>(Loss function, ODE solver, paths)"]
+    end
+    
+    style Pipeline fill:#e1f5ff,stroke:#333,stroke-width:2px
+    style Model fill:#fff4e6,stroke:#333,stroke-width:2px
+    style Wrapper fill:#f0f0f0,stroke:#333,stroke-width:1px
+    style FlowDiff fill:#fff4e6,stroke:#333,stroke-width:2px
 ```
 
 ## Core Concepts

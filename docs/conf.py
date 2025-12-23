@@ -30,6 +30,7 @@ extensions = [
     "sphinxext.rediraffe",
     "sphinx_design",
     "sphinx_copybutton",
+    "sphinxcontrib.mermaid",
     "autoapi.extension",
     # For extension examples and demos
     "myst_parser",
@@ -47,6 +48,15 @@ extensions = [
 myst_enable_extensions = ["colon_fence", "linkify", "substitution","dollarmath"]
 myst_heading_anchors = 2
 myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
+
+# -- Mermaid options ---------------------------------------------------------
+mermaid_version = "latest"
+mermaid_init_js = """
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral'
+});
+"""
 
 nbsphinx_execute = 'never'
 
