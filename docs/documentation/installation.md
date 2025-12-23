@@ -17,7 +17,7 @@ pip install git+https://github.com/aurelio-amerio/GenSBI.git
 If a GPU is available, it is advisable to install the cuda version of the package:
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
+pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
 ```
 
 Although not mandatory, it is recommended to install also the optional validation package, which provides utilities for evaluating inference performance:

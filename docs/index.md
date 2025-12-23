@@ -17,7 +17,7 @@ GenSBI is a work in progress, and we are actively developing new features and im
 To get started with GenSBI, install the package using pip:
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI.git[cuda12]
+pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
 ```
 
 We advise to take a look at the [Getting Started](/getting_started/index) page for additional installation instructions and basic usage. 
@@ -73,14 +73,13 @@ If you use this library, please consider citing this work and the original metho
 }
 ```
 
-## Table of Contents
 ```{toctree}
+:hidden:
 :maxdepth: 1
 
-Getting Started <getting_started/index>
-Examples <examples>
-References <references>
-API Documentation <api/gensbi/index>
+Get Started! </documentation/index>
+Examples </examples>
+References </references>
 ```
 
 
