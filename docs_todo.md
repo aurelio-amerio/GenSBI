@@ -60,3 +60,33 @@ This file collects actionable suggestions to improve the accessibility and usabi
 ---
 
 Would you like a concrete example for any of these (e.g., a sample quick start, API doc, or FAQ entry)?
+
+---
+
+## ✅ Documentation Improvements Completed (2025-12-23)
+
+All major documentation items from the TODO list have been implemented:
+
+### Added Files:
+1. **`docs/basics/troubleshooting.md`** - Comprehensive troubleshooting guide covering installation, training, inference, validation, and common FAQs
+2. **`docs/basics/overview.md`** - Conceptual overview explaining GenSBI architecture (models, wrappers, pipelines)
+
+### Enhanced Files:
+3. **`CONTRIBUTING.md`** - Added detailed codebase overview for developers
+4. **`docs/examples.md`** - Enhanced with better descriptions, structure, and learning objectives
+5. **`docs/index.md`** - Improved navigation with clear sections and better organization
+6. **`docs/documentation/index.md`** - Added navigation hub with all key sections
+7. **`docs/basics/model_cards.md`** - Added comparison table and "When to Use Each Model" guidance
+8. **`docs/basics/index.md`** - Updated to include new sections
+
+### Status Summary:
+- ✅ Quick Start & Installation
+- ✅ API Reference
+- ✅ Model & Pipeline Overview
+- ✅ Tutorials & Examples
+- ✅ Validation & Best Practices
+- ✅ Model Cards Enhancement
+- ✅ Codebase Navigation
+- ✅ Troubleshooting Section
+- ✅ Search & Navigation
+- 🔄 Docstrings (ongoing improvement)
