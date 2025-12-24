@@ -78,7 +78,7 @@ This page addresses common issues and frequently asked questions when using GenS
 **Problem**: Loss becomes NaN or explodes during training.
 
 **Solution**:
-1. **Check data normalization**: Extreme values can cause instability. Consider normalizing your data to a reasonable range (e.g., [-5, 5] or [0, 1]).
+1. **Check data normalization**: Extreme values can cause instability. Consider normalizing your data to a reasonable range (e.g., [-1, 1] or [0, 1]). Ideally, normalize both data and parameters to have zero mean and unit variance for best results.
 
 2. **Reduce learning rate**: Try `max_lr=1e-4` or lower.
 
@@ -220,9 +220,15 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 **Question**: What format should my training data be in?
 
 **Answer**:
-GenSBI expects an infinite iterator that yields tuples `(obs, cond)` where:
+The data format depends on whether you're using a conditional or joint estimator:
+
+**Conditional methods (e.g., Flux1)**: Expect tuples `(obs, cond)` where:
 - `obs`: parameters to infer, shape `(batch, obs_dim, obs_channels)`
 - `cond`: conditioning data (observations), shape `(batch, cond_dim, cond_channels)`
+
+**Joint estimators (e.g., Flux1Joint, Simformer)**: Expect a single "joint" sample of shape `(batch, joint_dim, channels)`.
+
+**Important**: Joint estimators only work well when both obs and cond share the same data structure. If your observations are fundamental parameters but your conditioning data is a time series or 2D image, use a conditional density estimator instead, as it will perform better by preserving the structure of the data rather than treating everything as a joint distribution.
 
 For scalar data, `channels = 1`.
 

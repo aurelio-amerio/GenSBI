@@ -23,7 +23,7 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 
 ### 🔧 Reference
 - **[API Documentation](/api/gensbi/index)** - Detailed API reference
-- **[Contributing Guide](/CONTRIBUTING)** - Contribute to GenSBI development
+- **[Contributing Guide](/basics/contributing)** - Contribute to GenSBI development
 - **[References](/references)** - Citation information and related papers
 
 ## Documentation Structure

@@ -64,7 +64,7 @@ Three types of wrappers exist:
 
 The wrapper provides:
 - Standardized calling interface for solvers
-- `get_vector_field()` method for ODE integration
+- `get_vector_field()` method for ODE/SDE solution (used for Flow and Diffusion models)
 - `get_divergence()` method when needed for likelihood computation
 
 **Note**: Wrappers are only used during sampling/inference. During training, the unwrapped model is called directly.
@@ -106,7 +106,8 @@ pipeline = Flux1FlowPipeline(
 # Train
 pipeline.train(rngs=nnx.Rngs(0))
 
-# Sample (note: x_o is the observed data, not 'condition')
+# Sample from posterior p(theta|x_o)
+# x_o is the observed measurement data used to condition the density estimation
 samples = pipeline.sample(rng=key, x_o=x_observed, nsamples=10_000)
 ```
 
@@ -139,7 +140,7 @@ Here's what happens during training:
 2. **Loss Computation**:
    - Sample random time steps `t ∈ [0, 1]`
    - Create noisy versions of the data based on `t`
-   - The model (unwrapped) predicts the velocity/noise as a function of (obs, cond, t)
+   - The model predicts the velocity/noise as a function of (obs, cond, t)
    - Compare prediction to ground truth
 
 3. **Optimization**:
@@ -162,7 +163,7 @@ During inference:
 
 2. **Iterative Denoising** (Diffusion):
    - Wrap the model for the SDE sampler
-   - Start with pure noise
+   - Start with pure noise (sampled according to the SDE prior distribution)
    - Iteratively denoise using the learned denoiser
    - Result: samples from the posterior distribution
 
@@ -205,7 +206,7 @@ GenSBI follows these design principles:
 
 4. **JAX-Native**: Built on JAX and Flax NNX for performance, automatic differentiation, and hardware acceleration.
 
-5. **SBI-Focused**: Designed specifically for simulation-based inference, not general-purpose generative modeling.
+5. **Density Estimation Focus**: Designed for conditional and unconditional density estimation with applications in simulation-based inference (neural posterior estimation, neural likelihood estimation, neural prior estimation) and general conditional density estimation tasks.
 
 ## What's a "Recipe"?
 

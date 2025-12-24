@@ -9,4 +9,5 @@ training
 inference
 validation
 troubleshooting
+contributing
 ```
