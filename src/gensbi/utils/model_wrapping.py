@@ -1,3 +1,10 @@
+"""
+Model wrapping utilities for GenSBI.
+
+This module provides wrapper classes for models used in flow matching and diffusion,
+facilitating integration with ODE solvers and providing utilities for computing
+vector fields and divergences.
+"""
 from abc import ABC
 from flax import nnx
 from jax import Array
@@ -12,14 +19,23 @@ from .math import divergence, _expand_dims, _expand_time
 
 class ModelWrapper(nnx.Module):
     """
-    This class is used to wrap around another model. We define a call method which returns the model output.
-    Furthermore, we define a vector_field method which computes the vector field of the model,
-    and a divergence method which computes the divergence of the model, in a form useful for diffrax.
-    This is useful for ODE solvers that require the vector field and divergence of the model.
-
+    Wrapper class for models to provide ODE solver integration.
+    
+    This class wraps around another model and provides methods for computing
+    the vector field and divergence, which are useful for ODE solvers that
+    require these quantities.
+    
+    Args:
+        model: The model to wrap.
     """
 
-    def __init__(self, model: nnx.Module):
+    def __init__(self, model: nnx.Module) -> None:
+        """
+        Initialize the model wrapper.
+        
+        Args:
+            model: The model to wrap.
+        """
         self.model = model
 
     def __call__(self, t: Array, obs: Array, *args, **kwargs) -> Array:
