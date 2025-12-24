@@ -4,22 +4,12 @@ This page explains the core concepts and architecture of GenSBI to help you unde
 
 ## High-Level Architecture
 
-GenSBI is organized around three main abstractions:
+GenSBI is organized around three main abstractions: 
+- Models (i.e. the neural networks like Flux1, Simformer, etc.)
+- Model Wrappers (which wraps a model to provide a standard interface for ODE/SDE solvers during sampling)
+- Pipelines (which orchestrate training, validation, and sampling)
 
-```{mermaid}
-graph TB
-    subgraph Pipeline["Pipeline<br/>(High-level orchestration: training, validation, etc.)"]
-        subgraph Model["Model<br/>(Neural network architecture: Flux1, etc.)"]
-            Wrapper["Model Wrapper<br/>(Adds time/noise handling logic)"]
-        end
-        FlowDiff["Flow/Diffusion<br/>(Loss function, ODE solver, paths)"]
-    end
-    
-    style Pipeline fill:#e1f5ff,stroke:#333,stroke-width:2px
-    style Model fill:#fff4e6,stroke:#333,stroke-width:2px
-    style Wrapper fill:#f0f0f0,stroke:#333,stroke-width:1px
-    style FlowDiff fill:#fff4e6,stroke:#333,stroke-width:2px
-```
+Changing or customizing any of these components allows you to adapt GenSBI to your specific inference problems.
 
 ## Core Concepts
 
