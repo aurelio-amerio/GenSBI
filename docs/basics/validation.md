@@ -261,7 +261,7 @@ For more details, see:
 - `sbi` how-to: https://sbi.readthedocs.io/en/latest/how_to_guide/13_diagnostics_lc2st.html
 - `sbi` advanced tutorial: https://sbi.readthedocs.io/en/latest/advanced_tutorials/13_diagnostics_lc2st.html
 
-For a complete GenSBI example workflow, refer to the [`my_first_model.ipynb`](https://aurelio-amerio.github.io/GenSBI/notebooks/my_first_model.html) notebook.
+For a complete GenSBI example workflow, refer to the [`my_first_model.ipynb`](/notebooks/my_first_model) notebook.
 
 ## References and further reading
 
