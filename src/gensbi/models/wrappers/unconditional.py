@@ -1,3 +1,9 @@
+"""
+Unconditional model wrapper for GenSBI.
+
+This module provides a wrapper class for unconditional models used in flow matching,
+handling proper input expansion and calling conventions.
+"""
 from jax import Array
 from typing import Optional
 

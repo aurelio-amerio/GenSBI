@@ -1,3 +1,9 @@
+"""
+Schedule transformation utilities for flow matching.
+
+This module provides functionality to transform the time scheduling of a velocity model
+from one scheduler to another, allowing for post-training schedule modifications.
+"""
 from jax import Array
 
 from gensbi.flow_matching.path.scheduler.scheduler import Scheduler
