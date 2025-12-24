@@ -1,14 +1,13 @@
 """
-EDM (Elucidating Diffusion Models) schedulers and noise schedules.
+EDM schedulers and noise schedules.
 
 This module implements various noise schedulers for diffusion models based on the
 EDM framework, including variance-preserving (VP), variance-exploding (VE), and
 EDM-specific schedules. These schedulers define the noise schedule and preconditioning
 functions used during training and sampling.
 
-References:
-    Karras et al. "Elucidating the Design Space of Diffusion-Based Generative Models."
-    arXiv:2206.00364 (2022).
+Based on the paper "Elucidating the Design Space of Diffusion-Based Generative Models"
+by Karras et al., 2022. https://arxiv.org/abs/2206.00364
 """
 import abc
 import jax
