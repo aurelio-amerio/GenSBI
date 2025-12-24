@@ -33,7 +33,7 @@ For GPU support and other options, see the [Installation Guide](https://aurelio-
 To get started immediately, you can use the high-level API to train a model.
 
 > [!TIP]
-> Check out the **[my_first_model.ipynb](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/my_first_model.ipynb)** notebook for a complete, step-by-step introductory tutorial.
+> Check out the **[my_first_model.ipynb](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/getting_started/my_first_model.ipynb)** notebook for a complete, step-by-step introductory tutorial.
 
 ```python
 from flax import nnx
