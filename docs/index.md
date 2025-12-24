@@ -64,7 +64,7 @@ Detailed API documentation for all classes and functions:
 
 Want to contribute? Check out the guides:
 
-- **[Contributing Guide](/CONTRIBUTING)** - How to contribute to GenSBI
+- **[Contributing Guide](/basics/contributing)** - How to contribute to GenSBI
 - **[GitHub Repository](https://github.com/aurelio-amerio/GenSBI)** - Source code and issues
 
 ## Examples
