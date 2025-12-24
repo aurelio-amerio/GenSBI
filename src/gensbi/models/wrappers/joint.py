@@ -1,3 +1,9 @@
+"""
+Joint model wrapper for GenSBI.
+
+This module provides a wrapper class for joint models used in flow matching,
+supporting both conditioned and unconditioned inference modes.
+"""
 from jax import Array
 from typing import Optional
 

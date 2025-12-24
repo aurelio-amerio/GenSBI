@@ -1,3 +1,10 @@
+"""
+Plotting utilities for GenSBI.
+
+This module provides visualization functions for generative models, including
+trajectory plots, marginal distributions, and 2D contour plots. Supports both
+seaborn and corner-based plotting styles.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -12,6 +19,15 @@ sns.set_style("darkgrid")
 
 
 def plot_trajectories(traj):
+    """
+    Plot trajectories showing the flow from source to target distribution.
+    
+    Args:
+        traj: Trajectory data of shape (time_steps, n_samples, n_dims).
+        
+    Returns:
+        Tuple of (figure, axes) objects.
+    """
     traj = np.array(traj)
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.scatter(traj[0, :, 0], traj[0, :, 1], color="red", s=1, alpha=1)
