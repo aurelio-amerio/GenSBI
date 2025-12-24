@@ -1,4 +1,9 @@
+"""
+Conditional model wrapper for GenSBI.
 
+This module provides a wrapper class for conditional models used in flow matching,
+handling proper input expansion and calling conventions for conditional inference.
+"""
 
 from jax import Array
 

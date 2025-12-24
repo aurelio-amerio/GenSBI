@@ -1,3 +1,9 @@
+"""
+Common components for autoencoder architectures.
+
+This module provides shared components used by 1D and 2D autoencoder implementations,
+including parameter dataclasses, Gaussian latent space modules, and loss functions.
+"""
 from dataclasses import dataclass
 
 from flax import nnx
@@ -74,7 +80,14 @@ class DiagonalGaussian(nnx.Module):
         self,
         sample: bool = True,
         chunk_dim: int = -1,
-    ):
+    ) -> None:
+        """
+        Initialize the Diagonal Gaussian module.
+        
+        Args:
+            sample: Whether to sample from the distribution. Defaults to True.
+            chunk_dim: Axis along which to split mean and logvar. Defaults to -1.
+        """
         self.sample = sample
         self.chunk_dim = chunk_dim
 
@@ -112,18 +125,19 @@ class DiagonalGaussian(nnx.Module):
 
 
 def vae_loss_fn(
-    model: nnx.Module, x: jax.Array, key: jax.random.PRNGKey, kl_weight=0.1
+    model: nnx.Module, x: jax.Array, key: jax.random.PRNGKey, kl_weight: float = 0.1
 ) -> jax.Array:
     """
     Compute the VAE loss as the sum of reconstruction and KL divergence losses.
 
     Args:
-            model (nnx.Module): The VAE model.
-            x (Array): Input data.
-            key (Array): PRNG key for stochastic operations.
+        model: The VAE model.
+        x: Input data.
+        key: PRNG key for stochastic operations.
+        kl_weight: Weight for the KL divergence term. Defaults to 0.1.
 
     Returns:
-            jax.Array: Scalar loss value.
+        Scalar loss value combining reconstruction and KL losses.
     """
     logits = model(x, key)
     losses = nnx.state(model, Loss)

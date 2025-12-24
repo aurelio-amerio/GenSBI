@@ -1,3 +1,9 @@
+"""
+Utility functions for flow matching.
+
+This module provides helper functions for tensor manipulation and array operations
+commonly used in flow matching algorithms, including dimension expansion and broadcasting.
+"""
 from typing import Optional, Callable
 
 import jax

@@ -1,3 +1,10 @@
+"""
+Model architectures for GenSBI.
+
+This package provides transformer-based models for simulation-based inference,
+including Flux1, Simformer, and autoencoder architectures, along with their
+associated loss functions and wrappers.
+"""
 from .flux1 import Flux1Params, Flux1
 from .simformer import (
     Simformer,
