@@ -37,7 +37,7 @@ If you are using a Flow Matching model (e.g., `Flux1FlowPipeline`), the sampling
 The numerical integration requires discretizing the time interval $[0, 1]$. You can often control the number of steps to balance inference speed and sample quality.
 
 ```{tip}
-By default, the pipeline uses a robust solver configuration (e.g., `dt=0.01` or an adaptive solver). Reducing the number of steps will speed up inference but may reduce the accuracy of the posterior density.
+By default, the pipeline uses a robust solver configuration (e.g., `step_size=0.01` or an adaptive solver). Reducing the number of steps by increasing the `step_size` will speed up inference but may reduce the accuracy of the posterior density.
 ```
 
 ## Efficient Sampling

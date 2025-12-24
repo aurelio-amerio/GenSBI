@@ -26,19 +26,19 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 - **[Contributing Guide](/basics/contributing)** - Contribute to GenSBI development
 - **[References](/references)** - Citation information and related papers
 
-## Documentation Structure
-
-```{toctree}
-:maxdepth: 2
-
-Installation <installation>
-Quick Start </getting_started/index>
-Basics </basics/index>
-API Documentation </api/gensbi/index>
-```
 
 ## Additional Resources
 
 - **GitHub Repository**: [github.com/aurelio-amerio/GenSBI](https://github.com/aurelio-amerio/GenSBI)
 - **Report Issues**: [GitHub Issues](https://github.com/aurelio-amerio/GenSBI/issues)
 - **Examples**: [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples)
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+
+Installation <installation>
+Quick Start </getting_started/index>
+Basics </basics/index>
+API Documentation </api/gensbi/index>
+```
