@@ -4,6 +4,33 @@ This page documents the neural network architectures provided in GenSBI. These m
 
 Selecting the appropriate model is crucial for balancing computational efficiency with the ability to capture complex, high-dimensional dependencies. The models below are designed to cover a wide range of use cases, from rapid prototyping on low-dimensional problems to solving large-scale inverse problems.
 
+## Quick Model Comparison
+
+| Model | Best For | Dimensions | Memory | Strengths | Limitations |
+|-------|----------|------------|--------|-----------|-------------|
+| **Flux1** | Most applications | High (>10) | Excellent | Scalable, memory-efficient, RoPE embeddings | Not optimal for very low-dim |
+| **Simformer** | Rapid prototyping | Low (<10) | Good | Explicit embeddings, simple, fast for low-dim | Poor scaling to high-dim |
+| **Flux1Joint** | Joint modeling | Medium-High | Good | Explicit joint learning, scalable | Slightly more complex than Flux1 |
+
+### When to Use Each Model
+
+- **Flux1** (Default): Use for most problems, especially when:
+  - You have >10 parameters or >100 observations
+  - Memory efficiency is important
+  - You need scalability to high dimensions
+
+- **Simformer**: Use when:
+  - You have <10 total dimensions
+  - You want rapid prototyping on simple problems
+  - You prefer explicit variable ID embeddings
+
+- **Flux1Joint**: Use when:
+  - You need explicit joint modeling of all variables
+  - Your problem is likelihood-dominated
+  - You have medium to high dimensional problems (4-100 dimensions)
+
+## Model Descriptions
+
 - **Flux1**: The robust default choice for most applications. It excels at solving inverse problems involving high-dimensional data and complex posterior distributions. Unlike `Simformer`, `Flux1` embeds only the data explicitly and relies on Rotary Positional Embeddings (RoPE) for variable identification. This approach is significantly more memory-efficient and scales better to higher dimensions.
 - **Simformer**: A lightweight transformer model optimized for low-dimensional data and rapid prototyping. It explicitly models the joint distribution of all variables by embedding values, variable IDs, and condition masks separately. This explicit embedding strategy is highly effective for low-dimensional data (fewer than ~10 dimensions) as it compresses the data less than RoPE, but it is less computationally efficient for high-dimensional problems.
 - **Flux1Joint**: Combines the joint-distribution modeling capabilities of `Simformer` with the scalable architecture of `Flux1`. It adopts the `Flux1` embedding strategy (explicit data embedding + RoPE for IDs), making it ideal for high-dimensional problems where explicitly learning the joint reconstruction of variables is crucial. While it outperforms `Simformer` on complex, high-dimensional tasks, `Simformer` is often preferable for very low-dimensional problems (less than 4 dimensions) due to its superior explicit ID embedding.
@@ -45,7 +72,7 @@ params = Flux1Params(
 - **num_heads**: Number of attention heads.
 - **depth**: Number of Double Stream blocks (processes information and context separately).
 - **depth_single_blocks**: Number of Single Stream blocks (processes information and context jointly). A common heuristic is to set this to roughly double the `depth`.
-- **axes_dim**: A sequence of integers defining the positional encoding grid. For unstructured 1D data (e.g., parameter vectors), use a single-element list like `[obs_dim]`.
+- **axes_dim**: A sequence of integers defining the number of features per attention head, per axis. For 1D data, this is a single-element list defining the per-head dimension. The total number of transformer features is `sum(axes_dim) * num_heads`. For unstructured 1D data, a typical value is around `[10]` or greater.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **obs_dim**: The number of variables (tokens) the model performs inference on.
@@ -141,8 +168,8 @@ params = Flux1JointParams(
 - **mlp_ratio**: The expansion ratio for the MLP layers within the transformer blocks (typically `4.0`).
 - **num_heads**: Number of attention heads. Ensure `in_channels` is divisible by this number.
 - **depth_single_blocks**: The total number of transformer layers. Since `Flux1Joint` relies entirely on Single Stream blocks to mix joint information, this defines the total depth of the network.
-- **axes_dim**: A sequence of integers defining the positional encoding grid for the **joint variables** (the target variables being modeled). For unstructured data, this is typically `[joint_dim]`.
-- **condition_dim**: A sequence of integers defining the positional encoding grid for the **conditioning variables**.
+- **axes_dim**: A sequence of integers defining the number of features per attention head for the **joint variables** (the target variables being modeled). For 1D unstructured data, a typical value is around `[10]` or greater.
+- **condition_dim**: A list with the number of features to be used to encode the condition mask in each token. Should match in dimension with `axes_dim`.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **joint_dim**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.

@@ -78,6 +78,18 @@ class ModelEMA(nnx.Optimizer):
 @nnx.jit
 def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
     ema_optimizer.update(ema_model, model)
+    
+# def _get_batch_sampler(
+#     sampler_fn: Callable,
+#     ncond: int,
+# ):
+#     @jax.jit
+#     def sampler(key) -> Array:
+#         return sampler_fn(key, ncond)
+
+#     # Vectorize sampler_fn over batch dimension
+#     batched_sampler = jax.vmap(sampler)
+#     return batched_sampler
 
 
 class AbstractPipeline(abc.ABC):
@@ -562,6 +574,41 @@ class AbstractPipeline(abc.ABC):
         self._wrap_model()
 
         return loss_array, val_loss_array
+    
+    @abc.abstractmethod
+    def get_sampler(
+        self,
+        rng,
+        x_o,
+        step_size=0.01,
+        use_ema=True,
+        time_grid=None,
+        **model_extras,
+    ):
+        """
+        Get a sampler function for generating samples from the trained model.
+
+        Parameters
+        ----------
+        rng : jax.random.PRNGKey
+            Random number generator key.
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        step_size : float, optional
+            Step size for the sampler.
+        use_ema : bool, optional
+            Whether to use the EMA model for sampling.
+        time_grid : array-like, optional
+            Time grid for the sampler (if applicable).
+        model_extras : dict, optional
+            Additional model-specific parameters.   
+            
+        Returns
+        -------
+        sampler : Callable: key, nsamples -> samples
+            A function that generates samples when called with a random key and number of samples.
+        """
+        ...  # pragma: no cover
 
     @abc.abstractmethod
     def sample(self, rng, x_o, nsamples=10_000, step_size=0.01):
@@ -585,3 +632,23 @@ class AbstractPipeline(abc.ABC):
             Generated samples.
         """
         ...  # pragma: no cover
+        
+        
+    # def sample_batched(
+    #     self,
+    #     rng,
+    #     cond: Array,
+    #     nsamples,
+    #     **kwargs, # does nothing, for compatibility
+    # ):
+    #     sampler = self.get_sampler(cond, **kwargs)
+    #     batched_sampler = _get_batch_sampler(
+    #         sampler,
+    #         ncond=cond.shape[0],
+    #     )
+
+    #     keys = jax.random.split(rng, nsamples)
+    #     res = batched_sampler(
+    #         keys,
+    #     )
+    #     return res
