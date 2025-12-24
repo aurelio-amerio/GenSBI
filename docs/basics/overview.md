@@ -4,11 +4,18 @@ This page explains the core concepts and architecture of GenSBI to help you unde
 
 ## High-Level Architecture
 
-GenSBI is organized around three main abstractions: 
-- Models (i.e. the neural networks like Flux1, Simformer, etc.)
-- Model Wrappers (which wraps a model to provide a standard interface for ODE/SDE solvers during sampling)
-- Pipelines (which orchestrate training, validation, and sampling)
+GenSBI is built upon three core abstractions:
 
+- Models: Neural architectures such as Flux1 and Simformer.
+- Sampling Algorithms: Primarily Flow Matching and Diffusion. Each abstraction defines its own ODE/SDE formulations and implements the corresponding solvers.
+- Pipelines: Workflows that orchestrate the end-to-end process of training, validation, and sampling.
+
+```{image} ../_static/pipeline_graph.png
+:alt: GenSBI pipeline
+:align: center
+:width: 400px
+```
+<br>
 Changing or customizing any of these components allows you to adapt GenSBI to your specific inference problems.
 
 ## Core Concepts
