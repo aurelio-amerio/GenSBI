@@ -1,8 +1,11 @@
 """
-EDM (Elucidating Diffusion Models) probability path implementation.
+EDM probability path implementation.
 
 This module implements the probability path for EDM-based diffusion models,
 supporting various noise schedules (EDM, EDM-VP, EDM-VE).
+
+Based on the paper "Elucidating the Design Space of Diffusion-Based Generative Models"
+by Karras et al., 2022. https://arxiv.org/abs/2206.00364
 """
 from abc import ABC, abstractmethod
 import jax
@@ -17,7 +20,7 @@ from gensbi.diffusion.path.path_sample import EDMPathSample
 
 class EDMPath(ProbPath):
     """
-    EDM (Elucidating Diffusion Models) probability path.
+    EDM probability path.
     
     This class implements the probability path for EDM-based diffusion models,
     supporting different noise schedules (EDM, EDM-VP, EDM-VE).
