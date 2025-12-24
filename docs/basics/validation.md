@@ -10,8 +10,9 @@ This page focuses on three complementary diagnostics:
 - **Targeted At Random Parameters (TARP)**: a *global* calibration/accuracy test based on expected coverage probabilities.
 - **Local Classifier 2-Sample Test (L-C2ST)**: a *local* hypothesis test to assess posterior correctness for a *specific* observation.
 
-> [!NOTE]
+```{note}
 > These diagnostics test different properties. In practice, they are most useful when combined with posterior predictive checks (PPCs): SBC/TARP can catch systematic miscalibration, while PPCs often reveal model misspecification.
+```
 
 ## Prerequisites
 
@@ -89,8 +90,9 @@ These diagnostics trade compute for statistical power. The values below are comm
 
 If you are memory constrained, prefer fewer posterior samples or enable batched sampling where supported.
 
-> [!NOTE]
-> These numbers match the typical settings used in the `my_first_model` notebook: SBC uses 200 pairs and 1,000 posterior samples per pair; TARP uses 200 pairs and (optionally) up to 10,000 posterior samples per pair; L-C2ST uses 10,000 calibration pairs and 10,000 posterior samples for evaluation at $x_o$.
+```{note}
+hese numbers match the typical settings used in the `my_first_model` notebook: SBC uses 200 pairs and 1,000 posterior samples per pair; TARP uses 200 pairs and (optionally) up to 10,000 posterior samples per pair; L-C2ST uses 10,000 calibration pairs and 10,000 posterior samples for evaluation at $x_o$.
+```
 
 ## Simulation-Based Calibration (SBC)
 
@@ -109,8 +111,9 @@ Conceptually, for each simulated pair $(\theta_i, x_i)$ you:
 
 In `sbi`, `check_sbc()` additionally provides quantitative tests (e.g. a KS test on ranks) and a “data averaged posterior” (DAP) sanity check.
 
-> [!NOTE]
-> SBC is a **necessary** condition for correctness, but not sufficient: a posterior can be uninformative and still pass SBC. Treat SBC as a calibration alarm bell, and complement it with PPCs.
+```{note}
+SBC is a **necessary** condition for correctness, but not sufficient: a posterior can be uninformative and still pass SBC. Treat SBC as a calibration alarm bell, and complement it with PPCs.
+```
 
 ```python
 from sbi.diagnostics import run_sbc, check_sbc
@@ -161,8 +164,9 @@ TARP estimates the expected coverage probability of the posterior.
 
 At a high level, TARP compares (for many simulated pairs) the empirical fraction of posterior samples falling “closer” to a reference point than the true parameter, across a grid of nominal coverage levels $\alpha$. The output is a curve of **expected coverage probability (ECP)** versus $\alpha$.
 
-> [!NOTE]
-> TARP comes with strong theoretical guarantees in the original work, but its full diagnostic power depends on how reference points are chosen. In practice, it is typically interpreted similarly to SBC and combined with PPCs.
+```{note}
+TARP comes with strong theoretical guarantees in the original work, but its full diagnostic power depends on how reference points are chosen. In practice, it is typically interpreted similarly to SBC and combined with PPCs.
+```
 
 ```python
 from sbi.diagnostics import run_tarp, check_tarp
