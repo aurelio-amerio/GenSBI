@@ -14,25 +14,69 @@ GenSBI is a work in progress, and we are actively developing new features and im
 
 ## Getting Started
 
-To get started with GenSBI, install the package using pip:
+```{admonition} New to GenSBI?
+:class: tip
+
+Start here:
+1. [Installation](/documentation/installation) - Get GenSBI installed
+2. [Quick Start Guide](/getting_started/quick_start) - 5-minute introduction
+3. [My First Model Tutorial](/notebooks/my_first_model) - Complete step-by-step walkthrough
+```
+
+To install GenSBI with GPU support:
 
 ```bash
 pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
 ```
 
-We advise to take a look at the [Getting Started](/getting_started/index) page for additional installation instructions and basic usage. 
+For more installation options, see the [Installation Guide](/documentation/installation).
 
-You can also explore the [Examples](/examples) page for practical demonstrations of GenSBI's capabilities.
+## Key Documentation Sections
 
-You can find the API documentation in the [API Documentation](/api/gensbi/index) section.
+### 📚 Basics
+
+Learn the core concepts and how to use GenSBI effectively:
+
+- **[Conceptual Overview](/basics/overview)** - Understand how GenSBI is structured
+- **[Model Cards](/basics/model_cards)** - Choose the right model for your problem
+- **[Training Guide](/basics/training)** - Learn how to train models effectively
+- **[Inference Guide](/basics/inference)** - Sample from posterior distributions
+- **[Validation Guide](/basics/validation)** - Validate your results with SBC, TARP, and L-C2ST
+- **[Troubleshooting](/basics/troubleshooting)** - Solve common issues
+
+### 📖 Examples
+
+See GenSBI in action with complete working examples:
+
+- **[My First Model](/notebooks/my_first_model)** - Recommended starting tutorial
+- **[SBI Benchmarks](/examples)** - Two Moons, Gaussian Linear, SLCP, and more
+- **[All Examples](/examples)** - Full list of notebooks and scripts
+
+All examples are available in the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples).
+
+### 🔧 API Reference
+
+Detailed API documentation for all classes and functions:
+
+- **[API Documentation](/api/gensbi/index)** - Auto-generated API reference
+
+### 👥 Contributing
+
+Want to contribute? Check out the guides:
+
+- **[Contributing Guide](/basics/contributing)** - How to contribute to GenSBI
+- **[GitHub Repository](https://github.com/aurelio-amerio/GenSBI)** - Source code and issues
+
 ## Examples
 
 <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
 <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
 
-Examples for this library are available separately in the [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository.
-
 Some key examples include:
+
+**Getting Started:**
+
+- [My First Model](/notebooks/my_first_model) - Complete beginner tutorial
 
 **Unconditional Density Estimation:**
 
@@ -51,6 +95,8 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 Uses the Flux1Joint model for posterior density estimation on the Gaussian Linear benchmark.
 - `slcp_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb) <br>
 Uses the Simformer model for posterior density estimation on the SLCP benchmark. 
+
+See the [Examples](/examples) page for the complete list and detailed descriptions.
 
 ```{admonition} AI Usage Disclosure
 :class: note
