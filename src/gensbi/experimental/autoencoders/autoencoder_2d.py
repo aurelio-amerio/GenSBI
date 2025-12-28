@@ -8,7 +8,7 @@ from flax import nnx
 from jax.typing import DTypeLike, ArrayLike
 
 
-from gensbi.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
+from gensbi.experimental.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
 from flax.nnx import swish
 
 

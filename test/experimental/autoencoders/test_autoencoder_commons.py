@@ -7,7 +7,7 @@ import jax
 from flax import nnx
 import pytest
 
-from gensbi.models.autoencoders.commons import DiagonalGaussian
+from gensbi.experimental.autoencoders.commons import DiagonalGaussian
 
 def test_DiagonalGaussian():
     batch_size = 12

@@ -42,7 +42,7 @@ from tqdm import tqdm
 
 import os
 
-from gensbi.models.autoencoders import (
+from gensbi.experimental.autoencoders import (
     AutoEncoderParams,
     vae_loss_fn,
     AutoEncoder1D,

@@ -7,8 +7,8 @@ from flax import nnx
 import pytest
 import jax 
 
-from gensbi.models.autoencoders.autoencoder_1d import AutoEncoder1D
-from gensbi.models.autoencoders import AutoEncoderParams, vae_loss_fn
+from gensbi.experimental.autoencoders.autoencoder_1d import AutoEncoder1D
+from gensbi.experimental.autoencoders import AutoEncoderParams, vae_loss_fn
 
 def test_autoencoder_1d():
     

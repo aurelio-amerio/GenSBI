@@ -19,9 +19,9 @@ import numpy as np
 import grain
 
 
-from gensbi.models.autoencoders import AutoEncoderParams
+from gensbi.experimental import AutoEncoderParams
 
-from gensbi.recipes import VAE1DPipeline, VAE2DPipeline
+from gensbi.experimental import VAE1DPipeline, VAE2DPipeline
 
 
 df_train_1D = jax.random.normal(jax.random.PRNGKey(0), (1000, 128, 2))
