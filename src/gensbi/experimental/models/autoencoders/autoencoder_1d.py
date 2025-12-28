@@ -7,16 +7,14 @@ from einops import rearrange
 from flax import nnx
 from jax.typing import DTypeLike, ArrayLike
 
-
-from gensbi.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
+from gensbi.experimental.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
 from flax.nnx import swish
 
 
 
-
-class AttnBlock2D(nnx.Module):
+class AttnBlock1D(nnx.Module):
     """
-    2D Self-attention block for image or grid data.
+    1D Self-attention block for sequence data.
 
     Args:
         in_channels (int): Number of input channels.
@@ -42,38 +40,38 @@ class AttnBlock2D(nnx.Module):
         self.q = nnx.Conv(
             in_features=in_channels,
             out_features=in_channels,
-            kernel_size=(1, 1),
+            kernel_size=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
         self.k = nnx.Conv(
             in_features=in_channels,
             out_features=in_channels,
-            kernel_size=(1, 1),
+            kernel_size=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
         self.v = nnx.Conv(
             in_features=in_channels,
             out_features=in_channels,
-            kernel_size=(1, 1),
+            kernel_size=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
         self.proj_out = nnx.Conv(
             in_features=in_channels,
             out_features=in_channels,
-            kernel_size=(1, 1),
+            kernel_size=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
 
     def attention(self, h_: Array) -> Array:
         """
-        Compute self-attention for 2D input.
+        Compute self-attention for 1D input.
 
         Args:
-            h_ (Array): Input tensor of shape (batch, height, width, channels).
+            h_ (Array): Input tensor of shape (batch, length, channels).
 
         Returns:
             Array: Output tensor after attention.
@@ -83,15 +81,16 @@ class AttnBlock2D(nnx.Module):
         k = self.k(h_)
         v = self.v(h_)
 
-        b, h, w, c = q.shape
-        q = rearrange(q, "b h w c-> b (h w) 1 c")
-        k = rearrange(k, "b h w c-> b (h w) 1 c")
-        v = rearrange(v, "b h w c-> b (h w) 1 c")
+        b, n, c = q.shape
+        q = rearrange(q, "b n c -> b n 1 c")
+        k = rearrange(k, "b n c -> b n 1 c")
+        v = rearrange(v, "b n c -> b n 1 c")
 
         # Calculate Attention
         h_ = jax.nn.dot_product_attention(q, k, v)
 
-        return rearrange(h_, "b (h w) 1 c -> b h w c", h=h, w=w, c=c, b=b)
+        h_ = rearrange(h_, "b n 1 c -> b n c", n=n, c=c, b=b)
+        return h_
 
     def __call__(self, x: Array) -> Array:
         """
@@ -106,9 +105,9 @@ class AttnBlock2D(nnx.Module):
         return x + self.proj_out(self.attention(x))
 
 
-class ResnetBlock2D(nnx.Module):
+class ResnetBlock1D(nnx.Module):
     """
-    2D Residual block with optional channel up/downsampling.
+    1D Residual block with optional channel up/downsampling.
 
     Args:
         in_channels (int): Number of input channels.
@@ -136,9 +135,9 @@ class ResnetBlock2D(nnx.Module):
         self.conv1 = nnx.Conv(
             in_features=in_channels,
             out_features=out_channels,
-            kernel_size=(3, 3),
-            strides=(1, 1),
-            padding=(1, 1),
+            kernel_size=(3,),
+            strides=(1,),
+            padding=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
@@ -152,9 +151,9 @@ class ResnetBlock2D(nnx.Module):
         self.conv2 = nnx.Conv(
             in_features=out_channels,
             out_features=out_channels,
-            kernel_size=(3, 3),
-            strides=(1, 1),
-            padding=(1, 1),
+            kernel_size=(3,),
+            strides=(1,),
+            padding=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
@@ -162,9 +161,9 @@ class ResnetBlock2D(nnx.Module):
             self.nin_shortcut = nnx.Conv(
                 in_features=in_channels,
                 out_features=out_channels,
-                kernel_size=(1, 1),
-                strides=(1, 1),
-                padding=(0, 0),
+                kernel_size=(1,),
+                strides=(1,),
+                padding=(0,),
                 rngs=rngs,
                 param_dtype=param_dtype,
             )
@@ -194,9 +193,9 @@ class ResnetBlock2D(nnx.Module):
         return x + h
 
 
-class Downsample2D(nnx.Module):
+class Downsample1D(nnx.Module):
     """
-    2D Downsampling block using strided convolution.
+    1D Downsampling block using strided convolution.
 
     Args:
         in_channels (int): Number of input channels.
@@ -212,9 +211,9 @@ class Downsample2D(nnx.Module):
         self.conv = nnx.Conv(
             in_features=in_channels,
             out_features=in_channels,
-            kernel_size=(3, 3),
-            strides=(2, 2),
-            padding=(0, 0),
+            kernel_size=(3,),
+            strides=(2,),
+            padding=(0,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
@@ -224,21 +223,21 @@ class Downsample2D(nnx.Module):
         Downsample the input tensor by a factor of 2.
 
         Args:
-            x (Array): Input tensor of shape (batch, height, width, channels).
+            x (Array): Input tensor of shape (batch, length, channels).
 
         Returns:
             Array: Downsampled tensor.
         """
-        # no padding for height and channel, padding for height and width
-        pad_width = ((0, 0), (0, 1), (0, 1), (0, 0))
+        # Pad feature dimension (axis 1)
+        pad_width = ((0, 0), (0, 1), (0, 0))
         x = jnp.pad(array=x, pad_width=pad_width, mode="constant", constant_values=0)
         x = self.conv(x)
         return x
 
 
-class Upsample2D(nnx.Module):
+class Upsample1D(nnx.Module):
     """
-    2D Upsampling block using nearest-neighbor interpolation and convolution.
+    1D Upsampling block using nearest-neighbor interpolation and convolution.
 
     Args:
         in_channels (int): Number of input channels.
@@ -254,9 +253,9 @@ class Upsample2D(nnx.Module):
         self.conv = nnx.Conv(
             in_features=in_channels,
             out_features=in_channels,
-            kernel_size=(3, 3),
-            strides=(1, 1),
-            padding=(1, 1),
+            kernel_size=(3,),
+            strides=(1,),
+            padding=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
@@ -266,17 +265,16 @@ class Upsample2D(nnx.Module):
         Upsample the input tensor by a factor of 2.
 
         Args:
-            x (Array): Input tensor of shape (batch, height, width, channels).
+            x (Array): Input tensor of shape (batch, length, channels).
 
         Returns:
             Array: Upsampled tensor.
         """
-        # Assuming `x` is a 4D tensor with shape (batch, height, width, channels)
+        # Assuming `x` is a 3D tensor with shape (batch, n, c)
         scale_factor = 2.0
-        b, h, w, c = x.shape
-        new_height = int(h * scale_factor)
-        new_width = int(w * scale_factor)
-        new_shape = (b, new_height, new_width, c)
+        b, n, c = x.shape
+        new_n = int(n * scale_factor)
+        new_shape = (b, new_n, c)
 
         # Resize using nearest-neighbor interpolation
         x = jax.image.resize(x, new_shape, method="nearest")
@@ -284,12 +282,12 @@ class Upsample2D(nnx.Module):
         return x
 
 
-class Encoder2D(nnx.Module):
+class Encoder1D(nnx.Module):
     """
-    2D Encoder for autoencoder architectures.
+    1D Encoder for autoencoder architectures.
 
     Args:
-        resolution (int): Input image height/width.
+        resolution (int): Input sequence length.
         in_channels (int): Number of input channels.
         ch (int): Base number of channels.
         ch_mult (list[int]): Channel multipliers for each resolution.
@@ -319,9 +317,9 @@ class Encoder2D(nnx.Module):
         self.conv_in = nnx.Conv(
             in_features=in_channels,
             out_features=self.ch,
-            kernel_size=(3, 3),
-            strides=(1, 1),
-            padding=(1, 1),
+            kernel_size=(3,),
+            strides=(1,),
+            padding=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
@@ -338,7 +336,7 @@ class Encoder2D(nnx.Module):
             block_out = ch * ch_mult[i_level]
             for _ in range(self.num_res_blocks):
                 block.layers.append(
-                    ResnetBlock2D(
+                    ResnetBlock1D(
                         in_channels=block_in,
                         out_channels=block_out,
                         rngs=rngs,
@@ -350,7 +348,7 @@ class Encoder2D(nnx.Module):
             down.block = block
             down.attn = attn
             if i_level != self.num_resolutions - 1:
-                down.Downsample2D = Downsample2D(
+                down.Downsample1D = Downsample1D(
                     in_channels=block_in,
                     rngs=rngs,
                     param_dtype=param_dtype,
@@ -360,18 +358,18 @@ class Encoder2D(nnx.Module):
 
         # middle
         self.mid = nnx.Module()
-        self.mid.block_1 = ResnetBlock2D(
+        self.mid.block_1 = ResnetBlock1D(
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
             param_dtype=param_dtype,
         )
-        self.mid.attn_1 = AttnBlock2D(
+        self.mid.attn_1 = AttnBlock1D(
             in_channels=block_in,
             rngs=rngs,
             param_dtype=param_dtype,
         )
-        self.mid.block_2 = ResnetBlock2D(
+        self.mid.block_2 = ResnetBlock1D(
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
@@ -389,9 +387,9 @@ class Encoder2D(nnx.Module):
         self.conv_out = nnx.Conv(
             in_features=block_in,
             out_features=2 * z_channels,
-            kernel_size=(3, 3),
-            strides=(1, 1),
-            padding=(1, 1),
+            kernel_size=(3,),
+            strides=(1,),
+            padding=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
@@ -401,7 +399,7 @@ class Encoder2D(nnx.Module):
         Forward pass for the encoder.
 
         Args:
-            x (Array): Input tensor of shape (batch, height, width, channels).
+            x (Array): Input tensor of shape (batch, length, channels).
 
         Returns:
             Array: Encoded latent representation.
@@ -415,7 +413,7 @@ class Encoder2D(nnx.Module):
                     h = self.down.layers[i_level].attn.layers[i_block](h)
                 hs.append(h)
             if i_level != self.num_resolutions - 1:
-                hs.append(self.down.layers[i_level].Downsample2D(hs[-1]))
+                hs.append(self.down.layers[i_level].Downsample1D(hs[-1]))
 
         # middle
         h = hs[-1]
@@ -429,9 +427,9 @@ class Encoder2D(nnx.Module):
         return h
 
 
-class Decoder2D(nnx.Module):
+class Decoder1D(nnx.Module):
     """
-    2D Decoder for autoencoder architectures.
+    1D Decoder for autoencoder architectures.
 
     Args:
         ch (int): Base number of channels.
@@ -439,7 +437,7 @@ class Decoder2D(nnx.Module):
         ch_mult (list[int]): Channel multipliers for each resolution.
         num_res_blocks (int): Number of residual blocks per resolution.
         in_channels (int): Number of input channels.
-        resolution (int): Output image height/width.
+        resolution (int): Output sequence length.
         z_channels (int): Number of latent channels.
         rngs (nnx.Rngs): Random number generators for parameter initialization.
         param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
@@ -466,33 +464,33 @@ class Decoder2D(nnx.Module):
         # compute in_ch_mult, block_in and curr_res at lowest res
         block_in = ch * ch_mult[self.num_resolutions - 1]
         curr_res = resolution // 2 ** (self.num_resolutions - 1)
-        self.z_shape = (1, curr_res, curr_res, z_channels) #(1, z_channels, curr_res, curr_res)
+        self.z_shape = (1, curr_res, z_channels) #(1, z_channels, curr_res)
 
         # z to block_in
         self.conv_in = nnx.Conv(
             in_features=z_channels,
             out_features=block_in,
-            kernel_size=(3, 3),
-            strides=(1, 1),
-            padding=(1, 1),
+            kernel_size=(3,),
+            strides=(1,),
+            padding=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
 
         # middle
         self.mid = nnx.Module()
-        self.mid.block_1 = ResnetBlock2D(
+        self.mid.block_1 = ResnetBlock1D(
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
             param_dtype=param_dtype,
         )
-        self.mid.attn_1 = AttnBlock2D(
+        self.mid.attn_1 = AttnBlock1D(
             in_channels=block_in,
             rngs=rngs,
             param_dtype=param_dtype,
         )
-        self.mid.block_2 = ResnetBlock2D(
+        self.mid.block_2 = ResnetBlock1D(
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
@@ -507,7 +505,7 @@ class Decoder2D(nnx.Module):
             block_out = ch * ch_mult[i_level]
             for _ in range(self.num_res_blocks + 1):
                 block.layers.append(
-                    ResnetBlock2D(
+                    ResnetBlock1D(
                         in_channels=block_in,
                         out_channels=block_out,
                         rngs=rngs,
@@ -519,7 +517,7 @@ class Decoder2D(nnx.Module):
             up.block = block
             up.attn = attn
             if i_level != 0:
-                up.Upsample2D = Upsample2D(
+                up.Upsample1D = Upsample1D(
                     in_channels=block_in,
                     rngs=rngs,
                     param_dtype=param_dtype,
@@ -538,9 +536,9 @@ class Decoder2D(nnx.Module):
         self.conv_out = nnx.Conv(
             in_features=block_in,
             out_features=out_ch,
-            kernel_size=(3, 3),
-            strides=(1, 1),
-            padding=(1, 1),
+            kernel_size=(3,),
+            strides=(1,),
+            padding=(1,),
             rngs=rngs,
             param_dtype=param_dtype,
         )
@@ -550,7 +548,7 @@ class Decoder2D(nnx.Module):
         Forward pass for the decoder.
 
         Args:
-            z (Array): Latent tensor of shape (batch, latent_height, latent_width, latent_channels).
+            z (Array): Latent tensor of shape (batch, latent_length, latent_channels).
 
         Returns:
             Array: Reconstructed output tensor.
@@ -570,7 +568,7 @@ class Decoder2D(nnx.Module):
                 if len(self.up.layers[i_level].attn.layers) > 0:
                     h = self.up.layers[i_level].attn.layers[i_block](h)
             if i_level != 0:
-                h = self.up.layers[i_level].Upsample2D(h)
+                h = self.up.layers[i_level].Upsample1D(h)
 
         # end
         h = self.norm_out(h)
@@ -580,9 +578,9 @@ class Decoder2D(nnx.Module):
 
 
 
-class AutoEncoder2D(nnx.Module):
+class AutoEncoder1D(nnx.Module):
     """
-    2D Autoencoder model with Gaussian latent space.
+    1D Autoencoder model with Gaussian latent space.
 
     Args:
         params (AutoEncoderParams): Configuration parameters for the autoencoder.
@@ -592,7 +590,7 @@ class AutoEncoder2D(nnx.Module):
         params: AutoEncoderParams,
     ):
         self.rngs = params.rngs
-        self.Encoder2D = Encoder2D(
+        self.Encoder1D = Encoder1D(
             resolution=params.resolution,
             in_channels=params.in_channels,
             ch=params.ch,
@@ -602,7 +600,7 @@ class AutoEncoder2D(nnx.Module):
             rngs=self.rngs,
             param_dtype=params.param_dtype,
         )
-        self.Decoder2D = Decoder2D(
+        self.Decoder1D = Decoder1D(
             resolution=params.resolution,
             in_channels=params.in_channels,
             ch=params.ch,
@@ -614,9 +612,12 @@ class AutoEncoder2D(nnx.Module):
             param_dtype=params.param_dtype,
         )
         self.reg = DiagonalGaussian()
-
+        
         self.scale_factor = nnx.Param(params.scale_factor)
         self.shift_factor = nnx.Param(params.shift_factor)
+        
+        
+        self.latent_shape = (1, params.resolution // (2 ** (len(params.ch_mult) - 1)), params.z_channels)
 
     def encode(self, x: Array, key=None) -> Array:
         """
@@ -631,7 +632,7 @@ class AutoEncoder2D(nnx.Module):
         """
         if key is None:
             key = self.rngs.encode()
-        z = self.reg(self.Encoder2D(x), key)
+        z = self.reg(self.Encoder1D(x), key)
         z = self.scale_factor * (z - self.shift_factor)
 
         return z
@@ -648,7 +649,7 @@ class AutoEncoder2D(nnx.Module):
         """
 
         z = z / self.scale_factor + self.shift_factor
-        z = self.Decoder2D(z)
+        z = self.Decoder1D(z)
 
         return z
 
@@ -662,6 +663,4 @@ class AutoEncoder2D(nnx.Module):
         Returns:
             Array: Reconstructed output.
         """
-
-        return self.decode(self.encode(x, key=key))
-    
+        return self.decode(self.encode(x, key))

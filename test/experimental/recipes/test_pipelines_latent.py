@@ -21,7 +21,8 @@ from gensbi.recipes import (
     Flux1DiffusionPipeline,
 )
 
-from gensbi.models import Flux1, Flux1Params, AutoEncoder1D, AutoEncoderParams
+from gensbi.models import Flux1, Flux1Params
+from gensbi.experimental.models import AutoEncoder1D, AutoEncoderParams
 
 
 nsamples = 1000
