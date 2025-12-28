@@ -16,9 +16,6 @@ import grain
 import numpy as np
 
 
-import grain
-
-
 from gensbi.experimental import AutoEncoderParams
 
 from gensbi.experimental import VAE1DPipeline, VAE2DPipeline

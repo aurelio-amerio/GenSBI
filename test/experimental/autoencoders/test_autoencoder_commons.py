@@ -25,4 +25,3 @@ def test_DiagonalGaussian():
     res = diag_gauss(latent)
     
     assert res.shape == (batch_size, z_channels//2)
-    return

@@ -36,7 +36,5 @@ def test_autoencoder_1d():
     key = jax.random.PRNGKey(0)
     loss = vae_loss_fn(model, data, key)
     assert loss >= 0, f"Loss should be non-negative, got {loss}"
-    return
-    
-    
+
     
