@@ -30,15 +30,15 @@ import itertools
 
 
 nsamples = 1000
-rng = jax.random.PRNGKey(0)
+key = jax.random.PRNGKey(0)
 
 dim_obs = 2
 dim_cond = 7
 dim_joint = dim_obs + dim_cond
 
 
-theta = jax.random.normal(rng, (nsamples, dim_obs, 2))
-x = jax.random.normal(rng, (nsamples, dim_cond, 2))
+theta = jax.random.normal(key, (nsamples, dim_obs, 2))
+x = jax.random.normal(key, (nsamples, dim_cond, 2))
 
 data = jnp.concatenate([theta, x], axis=1)
 

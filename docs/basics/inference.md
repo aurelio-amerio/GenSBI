@@ -17,7 +17,7 @@ x_observed = ...
 key = jax.random.PRNGKey(42)
 
 samples = pipeline.sample(
-    rng=key, 
+    key=key, 
     x_o=x_observed, 
     nsamples=10_000
 )

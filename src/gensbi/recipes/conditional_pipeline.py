@@ -206,15 +206,15 @@ class ConditionalFlowPipeline(AbstractPipeline):
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit  # something bad happens here
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
             # diff_state = nnx.DiffState(
             #     0, sbi_model_params
             # )  # filter head params of the first argument
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, rng
+            #     model, batch, key
             # )
             loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, rng
+                model, batch, key
             )
             optimizer.update(model, grads, value=loss)
             return loss
@@ -278,7 +278,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     def sample(
         self,
-        rng,
+        key,
         x_o,
         nsamples=10_000,
         step_size=0.01,
@@ -295,7 +295,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             **model_extras,
         )
         
-        samples = sampler_(rng, nsamples)
+        samples = sampler_(key, nsamples)
 
         return samples
 
@@ -524,13 +524,13 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
             # diff_state = nnx.DiffState(0, sbi_model_params)
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, rng
+            #     model, batch, key
             # )
             loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, rng
+                model, batch, key
             )
             optimizer.update(model, grads, value=loss)
             return loss
@@ -586,7 +586,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
 
     def sample(
         self,
-        rng,
+        key,
         x_o,
         nsamples=10_000,
         nsteps=18,
@@ -603,4 +603,4 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             return_intermediates=return_intermediates,
             **model_extras,
         )
-        return sampler(rng, nsamples)
+        return sampler(key, nsamples)

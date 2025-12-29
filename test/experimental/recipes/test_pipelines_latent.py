@@ -26,7 +26,7 @@ from gensbi.experimental.models import AutoEncoder1D, AutoEncoderParams
 
 
 nsamples = 1000
-rng = jax.random.PRNGKey(0)
+key = jax.random.PRNGKey(0)
 
 dim_obs = 32
 dim_cond = 64
@@ -37,8 +37,8 @@ dim_joint = dim_obs + dim_cond
 channels = 3
 
 
-theta = jax.random.normal(rng, (nsamples, dim_obs, channels))
-x = jax.random.normal(rng, (nsamples, dim_cond, channels))
+theta = jax.random.normal(key, (nsamples, dim_obs, channels))
+x = jax.random.normal(key, (nsamples, dim_cond, channels))
 data = jnp.concatenate([theta, x], axis=1)
 
 

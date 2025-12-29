@@ -105,7 +105,7 @@ pipeline.train(rngs=nnx.Rngs(0))
 
 # Sample from posterior p(theta|x_o)
 # x_o is the observed measurement data used to condition the density estimation
-samples = pipeline.sample(rng=key, x_o=x_observed, nsamples=10_000)
+samples = pipeline.sample(key=key, x_o=x_observed, nsamples=10_000)
 ```
 
 ### 4. Flow Matching vs. Diffusion
