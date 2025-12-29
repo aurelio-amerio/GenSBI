@@ -38,6 +38,7 @@ class ConditionalWrapper(ModelWrapper):
         cond_ids: Array,
         conditioned: bool | Array = True,
         guidance: Array | None = None,
+        **kwargs,
     ) -> Array:
         """
         Call the wrapped model with expanded inputs.
@@ -68,4 +69,5 @@ class ConditionalWrapper(ModelWrapper):
             cond_ids=cond_ids,
             conditioned=conditioned,
             guidance=guidance,
+            **kwargs,
         )
