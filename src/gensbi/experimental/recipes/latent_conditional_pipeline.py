@@ -34,7 +34,7 @@ import yaml
 from gensbi.recipes.pipeline import AbstractPipeline
 
 
-class ConditionalFlowPipeline(AbstractPipeline):
+class ConditionalLatentFlowPipeline(AbstractPipeline):
     """
     Flow pipeline for training and using a Conditional model for simulation-based inference.
 
@@ -56,6 +56,10 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Number of channels in the conditional data. Default is 1.
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
+    vae_obs : nnx.Module, optional
+        VAE module for the observation input. If None, no encoding is applied.
+    vae_cond : nnx.Module, optional
+        VAE module for the conditional input. If None, no encoding is applied.
     training_config : dict, optional
         Configuration for training. If None, default configuration is used.
         
@@ -86,6 +90,8 @@ class ConditionalFlowPipeline(AbstractPipeline):
         ch_obs=1,
         ch_cond=1,
         params=None,
+        vae_obs=None,
+        vae_cond=None,
         training_config=None,
     ):
 
@@ -102,6 +108,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
             params=params,
             training_config=training_config,
         )
+
+        self.vae_obs = vae_obs
+        self.vae_cond = vae_cond
 
         self.cond_ids = _expand_dims(self.cond_ids)
         self.obs_ids = _expand_dims(self.obs_ids)
@@ -143,7 +152,12 @@ class ConditionalFlowPipeline(AbstractPipeline):
             # obs = batch[:, : self.dim_obs, ...]
             # cond = batch[:, self.dim_obs :, ...]
             obs, cond = batch
-            rng_x0, rng_t = jax.random.split(key, 2)
+            rng_x0, rng_t, rng_vae_obs, rng_vae_cond = jax.random.split(key, 4)
+
+            if self.vae_obs is not None:
+                obs = self.vae_obs.encode(obs, rng_vae_obs)
+            if self.vae_cond is not None:
+                cond = self.vae_cond.encode(cond, rng_vae_cond)
 
             batch_size = obs.shape[0]
 
@@ -228,6 +242,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     def get_sampler(
         self,
+        rng,
         x_o,
         step_size=0.01,
         use_ema=True,
@@ -250,7 +265,10 @@ class ConditionalFlowPipeline(AbstractPipeline):
         cond = _expand_dims(x_o)
         
         solver = ODESolver(velocity_model=vf_wrapped)
-
+        
+        if self.vae_cond is not None:
+            cond = self.vae_cond.encode(cond, rng)
+            
         model_extras = {
             "cond": cond,
             "obs_ids": self.obs_ids,
@@ -271,6 +289,8 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
             samples = sampler_(x_init)
 
+            if self.vae_obs is not None:
+                samples = self.vae_obs.decode(samples)
 
             return samples
         
@@ -286,8 +306,11 @@ class ConditionalFlowPipeline(AbstractPipeline):
         time_grid=None,
         **model_extras,
     ):
+        
+        key_init, key_vae_cond = jax.random.split(rng, 2)
 
         sampler_ = self.get_sampler(
+            key_vae_cond,
             x_o,
             step_size=step_size,
             use_ema=use_ema,
@@ -295,7 +318,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             **model_extras,
         )
         
-        samples = sampler_(rng, nsamples)
+        samples = sampler_(key_init, nsamples)
 
         return samples
 
@@ -347,7 +370,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return exact_log_p
 
 
-class ConditionalDiffusionPipeline(AbstractPipeline):
+class ConditionalLatentDiffusionPipeline(AbstractPipeline):
     """
     Diffusion pipeline for training and using a Conditional model for simulation-based inference.
 
@@ -363,6 +386,10 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         Dimension of the observation space.
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
+    vae_obs : nnx.Module, optional
+        VAE module for the observation input. If None, no encoding is applied.
+    vae_cond : nnx.Module, optional
+        VAE module for the conditional input. If None, no encoding is applied.
     training_config : dict, optional
         Configuration for training. If None, default configuration is used.
 
@@ -393,6 +420,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         ch_obs=1,
         ch_cond=1,
         params=None,
+        vae_obs=None,
+        vae_cond=None,
         training_config=None,
     ):
 
@@ -408,6 +437,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
+        self.vae_obs = vae_obs
+        self.vae_cond = vae_cond
 
         self.cond_ids = _expand_dims(self.cond_ids)
         self.obs_ids = _expand_dims(self.obs_ids)
@@ -464,8 +495,12 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
 
             obs, cond = batch
 
-            rng_x0, rng_sigma = jax.random.split(key, 2)
+            rng_x0, rng_sigma, rng_vae_obs, rng_vae_cond = jax.random.split(key, 4)
 
+            if self.vae_obs is not None:
+                obs = self.vae_obs.encode(obs, rng_vae_obs)
+            if self.vae_cond is not None:
+                cond = self.vae_cond.encode(cond, rng_vae_cond)
 
             x_1 = obs
             # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],))
@@ -544,6 +579,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
     
     def get_sampler(
         self,
+        key,
         x_o,
         nsteps=18,
         use_ema=True,
@@ -556,6 +592,9 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             model = self.model_wrapped
 
         cond = _expand_dims(x_o)
+
+        if self.vae_cond is not None:
+            cond = self.vae_cond.encode(cond, key)
 
         solver = SDESolver(score_model=model, path=self.path)
 
@@ -576,7 +615,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             key1, key2 = jax.random.split(key, 2)
             x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
             samples = sampler_(key2, x_init)
-
+            if self.vae_obs is not None:
+                samples = self.vae_obs.decode(samples)
             return samples
  
 
@@ -595,12 +635,13 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         **model_extras,
     ):
         
-
+        rng_vae, rng_samples = jax.random.split(rng, 2)
         sampler = self.get_sampler(
+            rng_vae,
             x_o,
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
             **model_extras,
         )
-        return sampler(rng, nsamples)
+        return sampler(rng_samples, nsamples)
