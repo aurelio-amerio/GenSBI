@@ -357,6 +357,16 @@ def test_model_pipeline(pipeline_cls, params):
         assert jnp.allclose(
             sample, sample_restored
         ), "Restored model samples do not match"
+        
+        # test batched sampling
+        cond = jnp.zeros((3, dim_cond, 2))
+        sample = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            cond,
+            nsamples=4,
+            chunk_size=2,
+        )
+        assert sample.shape == (4, 3, dim_obs, 2), f"Expected shape (4, 3, {dim_obs}, 2), got {sample.shape}"
 
 
 

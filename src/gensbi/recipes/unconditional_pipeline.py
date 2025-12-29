@@ -203,6 +203,15 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         )
         samples = sampler(key, nsamples)
         return samples
+    
+    def sample_batched(
+        self,
+        *args,
+        **kwargs,
+    ):
+        raise NotImplementedError(
+            "Batched sampling not implemented for UnconditionalFlowPipeline."
+        )
 
     def compute_unnorm_logprob(
         self, x_1, step_size=0.01, use_ema=True, time_grid=None, **model_extras
@@ -467,3 +476,12 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         samples = sampler(key, nsamples)
 
         return samples
+    
+    def sample_batched(
+        self,
+        *args,
+        **kwargs,
+    ):
+        raise NotImplementedError(
+            "Batched sampling not implemented for UnconditionalDiffusionPipeline."
+        )
