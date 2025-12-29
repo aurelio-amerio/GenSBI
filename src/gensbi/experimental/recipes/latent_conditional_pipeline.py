@@ -220,15 +220,15 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit  # something bad happens here
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
             # diff_state = nnx.DiffState(
             #     0, sbi_model_params
             # )  # filter head params of the first argument
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, rng
+            #     model, batch, key
             # )
             loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, rng
+                model, batch, key
             )
             optimizer.update(model, grads, value=loss)
             return loss
@@ -242,7 +242,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
 
     def get_sampler(
         self,
-        rng,
+        key,
         x_o,
         step_size=0.01,
         use_ema=True,
@@ -267,7 +267,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         solver = ODESolver(velocity_model=vf_wrapped)
         
         if self.vae_cond is not None:
-            cond = self.vae_cond.encode(cond, rng)
+            cond = self.vae_cond.encode(cond, key)
             
         model_extras = {
             "cond": cond,
@@ -298,7 +298,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
 
     def sample(
         self,
-        rng,
+        key,
         x_o,
         nsamples=10_000,
         step_size=0.01,
@@ -307,7 +307,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         **model_extras,
     ):
         
-        key_init, key_vae_cond = jax.random.split(rng, 2)
+        key_init, key_vae_cond = jax.random.split(key, 2)
 
         sampler_ = self.get_sampler(
             key_vae_cond,
@@ -559,13 +559,13 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
             # diff_state = nnx.DiffState(0, sbi_model_params)
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, rng
+            #     model, batch, key
             # )
             loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, rng
+                model, batch, key
             )
             optimizer.update(model, grads, value=loss)
             return loss
@@ -626,7 +626,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
 
     def sample(
         self,
-        rng,
+        key,
         x_o,
         nsamples=10_000,
         nsteps=18,
@@ -635,7 +635,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
         **model_extras,
     ):
         
-        rng_vae, rng_samples = jax.random.split(rng, 2)
+        rng_vae, rng_samples = jax.random.split(key, 2)
         sampler = self.get_sampler(
             rng_vae,
             x_o,

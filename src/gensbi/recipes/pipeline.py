@@ -380,8 +380,8 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
-            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, rng)
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -398,8 +398,8 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def val_step(model, batch, rng: jax.random.PRNGKey):
-            loss = loss_fn(model, batch, rng)
+        def val_step(model, batch, key: jax.random.PRNGKey):
+            loss = loss_fn(model, batch, key)
             return loss
 
         return val_step
@@ -616,7 +616,7 @@ class AbstractPipeline(abc.ABC):
     @abc.abstractmethod
     def get_sampler(
         self,
-        rng,
+        key,
         x_o,
         step_size=0.01,
         use_ema=True,
@@ -628,7 +628,7 @@ class AbstractPipeline(abc.ABC):
 
         Parameters
         ----------
-        rng : jax.random.PRNGKey
+        key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
             Conditioning variable (e.g., observed data).
@@ -649,13 +649,13 @@ class AbstractPipeline(abc.ABC):
         ...  # pragma: no cover
 
     @abc.abstractmethod
-    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01):
+    def sample(self, key, x_o, nsamples=10_000, step_size=0.01):
         """
         Generate samples from the trained model.
 
         Parameters
         ----------
-        rng : jax.random.PRNGKey
+        key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
             Conditioning variable (e.g., observed data).
@@ -673,7 +673,7 @@ class AbstractPipeline(abc.ABC):
 
     def sample_batched(
         self,
-        rng,
+        key,
         x_o: Array,
         nsamples: int,
         *args,
@@ -686,7 +686,7 @@ class AbstractPipeline(abc.ABC):
         
         Parameters
         ----------
-        rng : jax.random.PRNGKey
+        key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
             Conditioning variable (e.g., observed data).
@@ -715,7 +715,7 @@ class AbstractPipeline(abc.ABC):
             show_progress_bars=show_progress_bars,
         )
 
-        keys = jax.random.split(rng, nsamples)
+        keys = jax.random.split(key, nsamples)
 
         res = batched_sampler(keys)
 
