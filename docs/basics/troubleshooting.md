@@ -51,14 +51,57 @@ This page addresses common issues and frequently asked questions when using GenS
    - For scalar features: `(batch, num_features, 1)`
    - Example: 3 parameters → shape `(batch_size, 3, 1)`
 
-2. **Verify obs_dim and cond_dim**: These should match the number of features (not including channels).
+2. **Verify dim_obs and dim_cond**: These should match the number of features (not including channels).
    ```python
    # If theta has shape (batch, 3, 1) and x has shape (batch, 5, 1)
-   obs_dim = 3   # Number of parameters
-   cond_dim = 5  # Number of observations
+   dim_obs = 3   # Number of parameters
+   dim_cond = 5  # Number of observations
    ```
 
-3. **Check axes_dim**: For 1D unstructured data, use `axes_dim=[obs_dim]`.
+3. **Check what is a token/dimension and what is a channel: for 1D unstructured data, set channel=1**.
+
+#### Meaning of `dim_obs` / `dim_cond` and `ch_obs` / `ch_cond`
+
+Shape bugs often come from mixing up **how many observables you have** with **how many values each observable carries**.
+
+GenSBI represents both “parameters to infer” ($\theta$) and “conditioning data” ($x$) as 3D tensors:
+
+- Parameters (a.k.a. *obs* in the pipeline API): `theta` has shape `(batch, dim_obs, ch_obs)`.
+- Conditioning data (a.k.a. *cond*): `x` has shape `(batch, dim_cond, ch_cond)`.
+
+Different parts of the library/docs may use different names for the same concepts:
+
+- `dim_obs`: number of *parameter tokens* (how many parameters you infer).
+- `dim_cond`: number of *conditioning tokens* (how many observables are measured / provided to the model).
+- `ch_obs`: number of channels per parameter token.
+- `ch_cond`: number of channels per conditioning token.
+
+**Rule of thumb**:
+
+- `*_dim` answers: “How many distinct observables/tokens do I have?”
+- `*_channels` / `ch_*` answers: “How many values/features does each observable/token carry?”
+
+Most SBI problems use **one channel for parameters** (`ch_obs = 1`), because you typically want **one token per parameter**.
+
+Conditioning data often has **more than one channel** (`ch_cond >= 1`), because each measured “token” may carry multiple features.
+
+##### Concrete example: 2 GW parameters, 2 detectors, frequency grid
+
+Suppose your simulator parameters are two scalars $\theta = (\theta_1, \theta_2)$, and your observation is a frequency-domain strain measured by **two detectors** on the same frequency grid with `n_lambda` frequency bins.
+
+- Parameters tensor (`theta`):
+   - `dim_obs = 2` (two parameters)
+   - `ch_obs = 1` (each parameter is a scalar)
+   - shape: `(batch, 2, 1)`
+
+- Conditioning tensor (`x`):
+   - `dim_cond = n_lambda` (one token per frequency bin)
+   - `ch_cond = 2` (two detector strain values per frequency)
+   - shape: `(batch, n_lambda, 2)`
+
+In other words: the *frequency grid lives in* `dim_cond`, while the *detector index lives in* `ch_cond`.
+
+If later you decide to store more features per frequency bin (e.g., real/imag parts, or multiple summary statistics per detector), you typically increase `ch_cond` while keeping `dim_cond = n_lambda`.
 
 ### Training Loss Not Decreasing
 
@@ -142,7 +185,7 @@ This page addresses common issues and frequently asked questions when using GenS
 
 2. **Increase sampling steps**: If using a custom ODE solver, increase the number of integration steps.
 
-3. **Check conditioning**: Verify that `x_observed` has the correct shape `(1, cond_dim, 1)` and values.
+3. **Check conditioning**: Verify that `x_observed` has the correct shape `(1, dim_cond, ch_cond)` and values.
 
 4. **Run validation diagnostics**: Use SBC, TARP, or L-C2ST to check if your model is well-calibrated. See the [Validation Guide](/basics/validation).
 
@@ -223,10 +266,10 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 The data format depends on whether you're using a conditional or joint estimator:
 
 **Conditional methods (e.g., Flux1)**: Expect tuples `(obs, cond)` where:
-- `obs`: parameters to infer, shape `(batch, obs_dim, obs_channels)`
-- `cond`: conditioning data (observations), shape `(batch, cond_dim, cond_channels)`
+- `obs`: parameters to infer, shape `(batch, dim_obs, ch_obs)`
+- `cond`: conditioning data (observations), shape `(batch, dim_cond, ch_cond)`
 
-**Joint estimators (e.g., Flux1Joint, Simformer)**: Expect a single "joint" sample of shape `(batch, joint_dim, channels)`.
+**Joint estimators (e.g., Flux1Joint, Simformer)**: Expect a single "joint" sample of shape `(batch, dim_joint, channels)`.
 
 **Important**: Joint estimators only work well when both obs and cond share the same data structure. If your observations are fundamental parameters but your conditioning data is a time series or 2D image, use a conditional density estimator instead, as it will perform better by preserving the structure of the data rather than treating everything as a joint distribution.
 
@@ -235,8 +278,8 @@ For scalar data, `channels = 1`.
 Example:
 ```python
 def split_obs_cond(data):
-    # data shape: (batch, obs_dim + cond_dim, 1)
-    return data[:, :obs_dim], data[:, obs_dim:]
+    # data shape: (batch, dim_obs + dim_cond, 1)
+    return data[:, :dim_obs], data[:, dim_obs:]
 
 train_dataset = (
     grain.MapDataset.source(data)

@@ -285,8 +285,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_obs,
-            cond_dim=dim_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
             **params_dict,
         )
 
@@ -333,8 +333,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             depth_single_blocks=16,
             axes_dim=[6],
             qkv_bias=True,
-            obs_dim=self.dim_obs,
-            cond_dim=self.dim_cond,
+            dim_obs=self.dim_obs,
+            dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
@@ -452,8 +452,8 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_obs,
-            cond_dim=dim_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
             **params_dict,
         )
 
@@ -500,8 +500,8 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             depth_single_blocks=16,
             axes_dim=[6],
             qkv_bias=True,
-            obs_dim=self.dim_obs,
-            cond_dim=self.dim_cond,
+            dim_obs=self.dim_obs,
+            dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,

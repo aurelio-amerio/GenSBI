@@ -40,13 +40,23 @@ params = Flux1Params(
     num_heads=8,
     depth=12,
     depth_single_blocks=24,
-    axes_dim=[obs_dim],
+    axes_dim=[10],
     rngs=nnx.Rngs(0),
-    obs_dim=3,
-    cond_dim=5,
+    dim_obs=3,
+    dim_cond=5,
 )
 
 model = Flux1(params)
+```
+
+```{note}
+GenSBI represents both parameters ($\theta$) and observations ($x$) with the tensor convention `(batch, dim, channels)`.
+
+- `dim_obs`: number of parameter tokens (how many parameters you infer).
+- `dim_cond`: number of conditioning tokens (how many observables you provide to the model).
+- `ch_obs` and `ch_cond`: number of values carried by each token.
+
+Most SBI problems use `ch_obs = 1` (one scalar per parameter token), while `ch_cond` can be > 1 (e.g., multiple detectors or multiple features per measurement). See [Troubleshooting: Shape Mismatch Errors](/basics/troubleshooting#shape-mismatch-errors) for a concrete example.
 ```
 
 ### 2. Model Wrappers
@@ -95,8 +105,8 @@ from gensbi.recipes import Flux1FlowPipeline
 pipeline = Flux1FlowPipeline(
     train_dataset=train_iter,
     val_dataset=val_iter,
-    obs_dim=3,
-    cond_dim=5,
+    dim_obs=3,
+    dim_cond=5,
     params=flux1_params,
 )
 
@@ -210,7 +220,7 @@ GenSBI follows these design principles:
 The term **recipe** comes from the idea of providing a pre-packaged, tested combination of components that work well together—like a cooking recipe. Instead of manually combining a model, wrapper, loss, optimizer, and training loop, a recipe gives you a one-line solution:
 
 ```python
-pipeline = Flux1FlowPipeline(train_data, val_data, obs_dim, cond_dim, params)
+pipeline = Flux1FlowPipeline(train_data, val_data, dim_obs, dim_cond, params)
 pipeline.train(rngs)
 samples = pipeline.sample(key, x_observed)
 ```

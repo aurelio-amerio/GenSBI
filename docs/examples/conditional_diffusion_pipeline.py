@@ -26,9 +26,9 @@ theta_prior = dist.Uniform(
     low=jnp.array([-2.0, -2.0, -2.0]), high=jnp.array([2.0, 2.0, 2.0])
 )
 
-obs_dim = 3
-cond_dim = 3
-joint_dim = obs_dim + cond_dim
+dim_obs = 3
+dim_cond = 3
+dim_joint = dim_obs + dim_cond
 
 
 # %%
@@ -52,7 +52,7 @@ train_data = simulator(jax.random.PRNGKey(0), 10_000)
 val_data = simulator(jax.random.PRNGKey(1), 2000)
 # %%
 def split_obs_cond(data):
-    return data[:, :obs_dim], data[:, obs_dim:]  # assuming first dim_obs are obs, last dim_cond are cond
+    return data[:, :dim_obs], data[:, dim_obs:]  # assuming first dim_obs are obs, last dim_cond are cond
 
 
 # %%
@@ -92,9 +92,9 @@ params = Flux1Params(
         10,
     ],
     qkv_bias=True,
-    obs_dim=obs_dim,
-    cond_dim=cond_dim,
-    theta=10*joint_dim,
+    dim_obs=dim_obs,
+    dim_cond=dim_cond,
+    theta=10*dim_joint,
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
@@ -107,8 +107,8 @@ pipeline = ConditionalDiffusionPipeline(
     model,
     train_dataset_grain,
     val_dataset_grain,
-    obs_dim,
-    cond_dim,
+    dim_obs,
+    dim_cond,
 )
 
 # %% Train the model
@@ -120,8 +120,8 @@ pipeline.train(
 # %% Sample from the posterior
 
 new_sample = simulator(jax.random.PRNGKey(20), 1)
-true_theta = new_sample[:, :obs_dim, :]  # extract observation from the joint sample
-x_o = new_sample[:, obs_dim:, :]  # extract condition from the joint sample
+true_theta = new_sample[:, :dim_obs, :]  # extract observation from the joint sample
+x_o = new_sample[:, dim_obs:, :]  # extract condition from the joint sample
 
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # %% Plot the samples

@@ -21,13 +21,23 @@ from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 class SimformerParams:
     """Parameters for the Simformer model.
 
+    GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+    For Simformer (joint modeling), the input `obs` is a single sequence with:
+
+    - `dim_joint`: number of tokens in the sequence (how many variables / measured points).
+    - `in_channels`: number of channels/features per token.
+
+    Conditioning is controlled via `condition_mask` at call time (mask is over **tokens**,
+    not channels): tokens with mask=1 are treated as conditioned.
+
     Args:
         rngs (nnx.Rngs): Random number generators for initialization.
-        in_channels (int): Number of input channels.
+        in_channels (int): Number of channels/features per token.
         dim_value (int): Dimension of the value embeddings.
         dim_id (int): Dimension of the ID embeddings.
         dim_condition (int): Dimension of the condition embeddings.
-        dim_joint (int): Total dimension of the joint embeddings.
+        dim_joint (int): Number of tokens in the joint sequence.
         fourier_features (int): Number of Fourier features for time embedding.
         num_heads (int): Number of attention heads.
         num_layers (int): Number of transformer layers.
@@ -243,17 +253,17 @@ class Simformer(nnx.Module):
 #             Array: Conditioned output.
 #         """
         
-#         obs_dim = obs.shape[1]
-#         cond_dim = cond.shape[1]
+#         dim_obs = obs.shape[1]
+#         dim_cond = cond.shape[1]
 #         # repeat cond on the first dimension to match obs
 #         cond = jnp.broadcast_to(
 #             cond, (obs.shape[0], *cond.shape[1:])
 #         )
 
-#         condition_mask_dim = obs_dim + cond_dim
+#         condition_mask_dim = dim_obs + dim_cond
 
 #         condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
-#         condition_mask = condition_mask.at[obs_dim:].set(True)
+#         condition_mask = condition_mask.at[dim_obs:].set(True)
 
 #         x = jnp.concatenate([obs, cond], axis=1)
 #         node_ids = jnp.concatenate([obs_ids, cond_ids], axis=1)
@@ -266,7 +276,7 @@ class Simformer(nnx.Module):
 #             edge_mask=edge_mask,
 #         )
 #         # now return only the values on which we are not conditioning
-#         res = res[:, :obs_dim]
+#         res = res[:, :dim_obs]
 #         return res
 
 #     def unconditioned(
