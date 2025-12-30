@@ -112,8 +112,8 @@ params_flux = Flux1Params(
     axes_dim=[
         2,
     ],
-    obs_dim=dim_obs_latent,
-    cond_dim=dim_cond_latent,
+    dim_obs=dim_obs_latent,
+    dim_cond=dim_cond_latent,
     qkv_bias=True,
     guidance_embed=False,
     rngs=nnx.Rngs(0),

@@ -55,8 +55,8 @@ params = Flux1Params(
     axes_dim=...,
     qkv_bias=...,
     rngs=...,
-    obs_dim=...,
-    cond_dim=...,
+    dim_obs=...,
+    dim_cond=...,
     theta=...,
     guidance_embed=...,
     param_dtype=...,
@@ -75,9 +75,9 @@ params = Flux1Params(
 - **axes_dim**: A sequence of integers defining the number of features per attention head, per axis. For 1D data, this is a single-element list defining the per-head dimension. The total number of transformer features is `sum(axes_dim) * num_heads`. For unstructured 1D data, a typical value is around `[10]` or greater.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
-- **obs_dim**: The number of variables (tokens) the model performs inference on.
-- **cond_dim**: The number of variables the model is conditioned on.
-- **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). A recommended starting point is `10 * obs_dim`. The default code value is `10_000`.
+- **dim_obs**: The number of variables (tokens) the model performs inference on.
+- **dim_cond**: The number of variables the model is conditioned on.
+- **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). A recommended starting point is `10 * dim_obs`. The default code value is `10_000`.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False` (not currently implemented for SBI).
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`. Use this to reduce memory usage. Switch to `jnp.float32` if you encounter numerical stability issues.
 
@@ -154,7 +154,7 @@ params = Flux1JointParams(
     condition_dim=...,
     qkv_bias=...,
     rngs=...,
-    joint_dim=...,
+    dim_joint=...,
     theta=...,
     guidance_embed=...,
     param_dtype=...,
@@ -172,7 +172,7 @@ params = Flux1JointParams(
 - **condition_dim**: A list with the number of features to be used to encode the condition mask in each token. Should match in dimension with `axes_dim`.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
-- **joint_dim**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.
+- **dim_joint**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.
 - **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). Default: `10_000`.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False`.
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`.

@@ -28,10 +28,27 @@ from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 class Flux1Params:
     """Parameters for the Flux1 model.
 
+        GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+        - `dim_*` counts **tokens** (how many distinct observables/variables you have).
+        - `channels` counts **features per token** (how many values each observable carries).
+
+        For conditional SBI with Flux1:
+
+        - Parameters to infer (often denoted $\theta$) have shape `(batch, dim_obs, in_channels)`.
+            In most SBI problems `in_channels = 1` (one scalar per parameter token).
+        - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
+            `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
+
+        Example: 2 parameters, frequency grid with 2 detectors
+
+        - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
+        - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
+
     Args:
-        in_channels (int): Number of input channels.
+        in_channels (int): Number of channels per observation/parameter token.
         vec_in_dim (Union[int, None]): Dimension of the vector input, if applicable.
-        context_in_dim (int): Dimension of the context input.
+        context_in_dim (int): Number of channels per conditioning token.
         mlp_ratio (float): Ratio for the MLP layers.
         num_heads (int): Number of attention heads.
         depth (int): Number of double stream blocks.
@@ -39,8 +56,8 @@ class Flux1Params:
         axes_dim (list[int]): Dimensions of the axes for positional encoding.
         qkv_bias (bool): Whether to use bias in QKV layers.
         rngs (nnx.Rngs): Random number generators for initialization.
-        obs_dim (int): Observation dimension.
-        cond_dim (int): Condition dimension.
+        dim_obs (int): Number of observation/parameter tokens.
+        dim_cond (int): Number of conditioning tokens.
         theta (int): Scaling factor for positional encoding.
         param_dtype (DTypeLike): Data type for model parameters.
 
@@ -56,8 +73,8 @@ class Flux1Params:
     axes_dim: list[int]
     qkv_bias: bool
     rngs: nnx.Rngs
-    obs_dim: int  # observation dimension
-    cond_dim: int  # condition dimension
+    dim_obs: int  # observation dimension
+    dim_cond: int  # condition dimension
     theta: int = 10_000
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
@@ -130,7 +147,7 @@ class Flux1(nnx.Module):
         self.condition_null = nnx.Param(
             jax.random.normal(
                 params.rngs.cond(),
-                (1, params.cond_dim, self.hidden_size),
+                (1, params.dim_cond, self.hidden_size),
                 dtype=params.param_dtype,
             )
         )

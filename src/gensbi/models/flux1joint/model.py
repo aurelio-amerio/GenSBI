@@ -28,19 +28,28 @@ from typing import Union, Callable, Optional
 class Flux1JointParams:
     """Parameters for the Flux1Joint model.
 
+    GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+    For joint density estimation, the model consumes a *single* sequence `obs` that
+    mixes all variables you want to model jointly. In this case:
+
+    - `dim_joint` is the number of tokens in that joint sequence.
+    - `in_channels` is the number of channels/features per token.
+
+    In many SBI-style problems you will still use `in_channels = 1` (one scalar per token),
+    but for some datasets a token may carry multiple features.
+
     Args:
-        in_channels (int): Number of input channels.
+        in_channels (int): Number of channels/features per token.
         vec_in_dim (Union[int, None]): Dimension of the vector input, if applicable.
-        context_in_dim (int): Dimension of the context input.
         mlp_ratio (float): Ratio for the MLP layers.
         num_heads (int): Number of attention heads.
-        depth (int): Number of double stream blocks.
         depth_single_blocks (int): Number of single stream blocks.
         axes_dim (list[int]): Dimensions of the axes for positional encoding.
+        condition_dim (list[int]): Dimensions of the (learned) condition embedding for RoPE.
         qkv_bias (bool): Whether to use bias in QKV layers.
         rngs (nnx.Rngs): Random number generators for initialization.
-        obs_dim (int): Observation dimension.
-        cond_dim (int): Condition dimension.
+        dim_joint (int): Number of tokens in the joint sequence.
         theta (int): Scaling factor for positional encoding.
         guidance_embed (bool): Whether to use guidance embedding.
         param_dtype (DTypeLike): Data type for model parameters.
@@ -56,7 +65,7 @@ class Flux1JointParams:
     condition_dim: list[int]
     qkv_bias: bool
     rngs: nnx.Rngs
-    joint_dim: int  # joint dimension
+    dim_joint: int  # joint dimension
     theta: int = 10_000
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16

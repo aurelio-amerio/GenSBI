@@ -56,12 +56,12 @@ class JointWrapper(ModelWrapper):
         Returns:
             Array: Conditioned output (only for unconditioned variables).
         """
-        obs_dim = obs.shape[1]
-        cond_dim = cond.shape[1]
+        dim_obs = obs.shape[1]
+        dim_cond = cond.shape[1]
         cond = jnp.broadcast_to(cond, (obs.shape[0], *cond.shape[1:]))
-        condition_mask_dim = obs_dim + cond_dim
+        condition_mask_dim = dim_obs + dim_cond
         condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
-        condition_mask = condition_mask.at[obs_dim:].set(True)
+        condition_mask = condition_mask.at[dim_obs:].set(True)
         condition_mask = condition_mask.reshape(1, condition_mask_dim, 1)
         x = jnp.concatenate([obs, cond], axis=1)
         node_ids = jnp.concatenate([obs_ids, cond_ids], axis=1)
@@ -72,7 +72,7 @@ class JointWrapper(ModelWrapper):
             condition_mask=condition_mask,
             **kwargs,
         )
-        res = res[:, :obs_dim]
+        res = res[:, :dim_obs]
         return res
 
     def unconditioned(

@@ -13,16 +13,16 @@ from gensbi.models import Flux1Params
 
 train_dataset = ... # define a training dataset (infinite iterator)
 val_dataset = ...   # define a validation dataset (infinite iterator)
-obs_dim = ...       # dimension of the parameters (theta)
-cond_dim = ...      # dimension of the simulator observations (x)
+dim_obs = ...       # dimension of the parameters (theta)
+dim_cond = ...      # dimension of the simulator observations (x)
 params = Flux1Params(...) # the parameters for your model
 
 # Instantiate the pipeline
 pipeline = Flux1FlowPipeline(
     train_dataset,
     val_dataset,
-    obs_dim,
-    cond_dim,
+    dim_obs,
+    dim_cond,
     params=params,
 )
 
@@ -32,6 +32,17 @@ pipeline.train(rngs=nnx.Rngs(0))
 ```
 
 For a full example, see the [5-minute guide](/getting_started/quick_start) or the [full notebook example](/notebooks/my_first_model).
+
+```{note}
+GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+- `dim_obs` (a.k.a. `dim_obs`) is the number of parameters to infer (tokens in $\theta$).
+- `dim_cond` (a.k.a. `dim_cond`) is the number of conditioning observables (tokens in $x$).
+- `ch_obs` and `ch_cond` are the number of values carried by each token.
+
+Most SBI problems use `ch_obs = 1` (one scalar per parameter), while `ch_cond` is often > 1 (e.g., multiple detectors or multiple features per measurement).
+See [Troubleshooting: Shape Mismatch Errors](/basics/troubleshooting#shape-mismatch-errors) for a concrete example.
+```
 
 ## Pipeline Overview
 
@@ -110,8 +121,8 @@ In your main execution block, generate your dataset and configure the `grain` lo
 ```python
 def main():
     # --- 1. Define Dimensions ---
-    obs_dim = 3   # Dimension of simulator input (theta)
-    cond_dim = 3  # Dimension of simulator output (x)
+    dim_obs = 3   # Dimension of simulator input (theta)
+    dim_cond = 3  # Dimension of simulator output (x)
     
     # --- 2. Generate Data ---
     # In a real scenario, you might load this from disk
@@ -120,9 +131,9 @@ def main():
 
     # Helper to split the joint data back into (obs, cond) for the pipeline
     def split_obs_cond(data):
-        # Assuming first 'obs_dim' columns are observations (theta)
+        # Assuming first 'dim_obs' columns are observations (theta)
         # and remaining columns are conditions (x)
-        return data[:, :obs_dim], data[:, obs_dim:]
+        return data[:, :dim_obs], data[:, dim_obs:]
 
     batch_size = 1024
     

@@ -23,7 +23,7 @@ def get_params():
 		condition_dim=[2],
 		qkv_bias=True,
 		rngs=nnx.Rngs(0),
-		joint_dim=4,
+		dim_joint=4,
 		theta=16,
 		guidance_embed=False,
 		param_dtype=jnp.float32
@@ -83,7 +83,7 @@ def test_flux1joint_param_dtype_propagation():
 		condition_dim=[2],
 		qkv_bias=True,
 		rngs=get_rngs(),
-		joint_dim=4,
+		dim_joint=4,
 		theta=16,
 		guidance_embed=False,
 		param_dtype=jnp.bfloat16,

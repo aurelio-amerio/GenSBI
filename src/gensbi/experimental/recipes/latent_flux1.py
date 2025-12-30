@@ -257,10 +257,10 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
         else:
             if vae_obs is not None:
                 assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
-                assert params.obs_dim == dim_obs, f"obs_dim in params ({params.obs_dim}) does not match the VAE latent dimension ({dim_obs})."
+                assert params.dim_obs == dim_obs, f"dim_obs in params ({params.dim_obs}) does not match the VAE latent dimension ({dim_obs})."
             if vae_cond is not None:
                 assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
-                assert params.cond_dim == dim_cond, f"cond_dim in params ({params.cond_dim}) does not match the VAE latent dimension ({dim_cond})."
+                assert params.dim_cond == dim_cond, f"dim_cond in params ({params.dim_cond}) does not match the VAE latent dimension ({dim_cond})."
             
         
         model = self._make_model(params)
@@ -313,8 +313,8 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_obs,
-            cond_dim=dim_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
             **params_dict,
         )
 
@@ -361,8 +361,8 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
             depth_single_blocks=16,
             axes_dim=[6],
             qkv_bias=True,
-            obs_dim=self.dim_obs,
-            cond_dim=self.dim_cond,
+            dim_obs=self.dim_obs,
+            dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
@@ -448,10 +448,10 @@ class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
         else:
             if vae_obs is not None:
                 assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
-                assert params.obs_dim == dim_obs, f"obs_dim in params ({params.obs_dim}) does not match the VAE latent dimension ({dim_obs})."
+                assert params.dim_obs == dim_obs, f"dim_obs in params ({params.dim_obs}) does not match the VAE latent dimension ({dim_obs})."
             if vae_cond is not None:
                 assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
-                assert params.cond_dim == dim_cond, f"cond_dim in params ({params.cond_dim}) does not match the VAE latent dimension ({dim_cond})."
+                assert params.dim_cond == dim_cond, f"dim_cond in params ({params.dim_cond}) does not match the VAE latent dimension ({dim_cond})."
             
         
         model = self._make_model(params)
@@ -507,8 +507,8 @@ class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_obs,
-            cond_dim=dim_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
             **params_dict,
         )
 
@@ -555,8 +555,8 @@ class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
             depth_single_blocks=16,
             axes_dim=[6],
             qkv_bias=True,
-            obs_dim=self.dim_obs,
-            cond_dim=self.dim_cond,
+            dim_obs=self.dim_obs,
+            dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,

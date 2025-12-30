@@ -53,13 +53,13 @@ import torch
 # 1. Generate data using your simulator
 # This should be separate from your training data
 key = jax.random.PRNGKey(1234)
-test_data = simulator(key, 1000) # Shape: (1000, joint_dim, 1)
+test_data = simulator(key, 1000) # Shape: (1000, dim_joint, 1)
 
 # 2. Split into parameters (theta) and observations (x)
 # Adjust indices based on your data structure
-obs_dim = 3 
-thetas = test_data[:, :obs_dim, :] 
-xs = test_data[:, obs_dim:, :]
+dim_obs = 3 
+thetas = test_data[:, :dim_obs, :] 
+xs = test_data[:, dim_obs:, :]
 
 # 3. Flatten and convert to Torch tensors
 # The wrapper provides a helper _ravel method, or you can use reshape
@@ -245,7 +245,7 @@ _ = lc2st.train_on_observed_data()
 
 # 3. Evaluate for a specific observation x_o
 # Note: x_o must have a batch dimension: x_o.shape == (1, observation_dim)
-x_o = x_cal[:1]  # or your real observed data, shaped as (1, obs_dim)
+x_o = x_cal[:1]  # or your real observed data, shaped as (1, dim_obs)
 theta_o = posterior.sample((10_000,), x=x_o)
 
 conf_alpha = 0.05

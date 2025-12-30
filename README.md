@@ -42,16 +42,16 @@ from gensbi.models import Flux1Params
 
 train_dataset = ... # define a training dataset (infinite iterator)
 val_dataset = ...   # define a validation dataset (infinite iterator)
-obs_dim = ...       # dimension of the parameters (theta)
-cond_dim = ...      # dimension of the simulator observations (x)
+dim_obs = ...       # dimension of the parameters (theta)
+dim_cond = ...      # dimension of the simulator observations (x)
 params = Flux1Params(...) # the parameters for your model
 
 # Instantiate the pipeline
 pipeline = Flux1FlowPipeline(
     train_dataset,
     val_dataset,
-    obs_dim,
-    cond_dim,
+    dim_obs,
+    dim_cond,
     params=params,
 )
 

@@ -369,7 +369,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
 
         params = Flux1JointParams(
             rngs=nnx.Rngs(0),
-            joint_dim=dim_joint,
+            dim_joint=dim_joint,
             **params_dict,
         )
 
@@ -416,7 +416,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             condition_dim=[4],
             qkv_bias=True,
             rngs=nnx.Rngs(0),
-            joint_dim=self.dim_joint,
+            dim_joint=self.dim_joint,
             theta=self.dim_joint * 4,
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
@@ -522,7 +522,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
 
         params = Flux1JointParams(
             rngs=nnx.Rngs(0),
-            joint_dim=dim_joint,
+            dim_joint=dim_joint,
             **params_dict,
         )
 
@@ -568,7 +568,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             condition_dim=[4],
             qkv_bias=True,
             rngs=nnx.Rngs(0),
-            joint_dim=self.dim_joint,
+            dim_joint=self.dim_joint,
             theta=self.dim_joint * 4,
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
