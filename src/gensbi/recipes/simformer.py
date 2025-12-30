@@ -175,6 +175,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         params=None,
         training_config=None,
         edge_mask=None,
+        condition_mask_kind="structured",
     ):
         """
         Flow pipeline for training and using a Simformer model for simulation-based inference.
@@ -197,6 +198,8 @@ class SimformerFlowPipeline(JointFlowPipeline):
             Configuration for training. If None, default configuration is used.
         edge_mask : jnp.ndarray, optional
             Edge mask for the Simformer model. If None, no mask is applied.
+        condition_mask_kind : str, optional
+            Kind of condition mask to use. One of ["structured", "posterior"].
 
         """
         self.dim_joint = dim_obs + dim_cond
@@ -218,6 +221,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
             ch_obs = ch_obs,
             params=params,
             training_config=training_config,
+            condition_mask_kind=condition_mask_kind,
         )
 
         self.ema_model = nnx.clone(self.model)
@@ -362,6 +366,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         params=None,
         training_config=None,
         edge_mask=None,
+        condition_mask_kind="structured",
     ):
         """
         Diffusion pipeline for training and using a Simformer model for simulation-based inference.
@@ -382,6 +387,8 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
             Configuration for training. If None, default configuration is used.
         edge_mask : jnp.ndarray, optional
             Edge mask for the Simformer model. If None, no mask is applied.
+        condition_mask_kind : str, optional
+            Kind of condition mask to use. One of ["structured", "posterior"].
 
         """
 
@@ -404,6 +411,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
             ch_obs = ch_obs,
             params=params,
             training_config=training_config,
+            condition_mask_kind=condition_mask_kind,
         )
 
         self.ema_model = nnx.clone(self.model)
