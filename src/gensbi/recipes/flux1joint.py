@@ -271,6 +271,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
         ch_obs: int = 1,
         params=None,
         training_config=None,
+        condition_mask_kind="structured",
     ):
         """
         Flow pipeline for training and using a Simformer model for simulation-based inference.
@@ -291,6 +292,8 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+        condition_mask_kind : str, optional
+            Kind of condition mask to use. One of ["structured", "posterior"].
 
         """
         self.dim_joint = dim_obs + dim_cond
@@ -312,6 +315,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             ch_obs = ch_obs,
             params=params,
             training_config=training_config,
+            condition_mask_kind=condition_mask_kind,
         )
 
         self.ema_model = nnx.clone(self.model)
@@ -434,6 +438,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
         ch_obs: int = 1,
         params=None,
         training_config=None,
+        condition_mask_kind="structured",
     ):
         """
         Diffusion pipeline for training and using a Simformer model for simulation-based inference.
@@ -454,6 +459,8 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             Parameters for the Simformer model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+        condition_mask_kind : str, optional
+            Kind of condition mask to use. One of ["structured", "posterior"]. Default is "structured".
 
         """
         self.dim_joint = dim_obs + dim_cond
@@ -474,6 +481,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             ch_obs = ch_obs,
             params=params,
             training_config=training_config,
+            condition_mask_kind=condition_mask_kind,
         )
 
         self.ema_model = nnx.clone(self.model)
