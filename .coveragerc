@@ -1,0 +1,35 @@
+# Coverage configuration for GenSBI
+#
+# Goal:
+# - Run tests for everything (including experimental),
+# - but do NOT count experimental code toward the coverage percentage.
+#
+# Notes on paths:
+# - The project uses a `src/` layout, so files in a checkout live under `src/gensbi/...`.
+# - If the package is installed, coverage may see paths like `.../site-packages/gensbi/...`.
+# - The wildcard patterns below handle both.
+
+[run]
+branch = True
+
+# Measure coverage for the installed/imported package name.
+# This works whether tests run from a checkout or from an installed wheel.
+source =
+    gensbi
+
+# Exclude tests and the experimental subpackage from coverage accounting.
+omit =
+    */test/*
+    */test/**
+    */gensbi/experimental/*
+    */gensbi/experimental/**
+
+[report]
+show_missing = True
+skip_covered = True
+
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    raise AssertionError

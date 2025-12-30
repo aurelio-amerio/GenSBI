@@ -16,9 +16,9 @@ import pytest
 
 import tempfile
 
-from gensbi.recipes import (
-    Flux1FlowPipeline,
-    Flux1DiffusionPipeline,
+from gensbi.experimental.recipes import (
+    Flux1LatentFlowPipeline,
+    Flux1LatentDiffusionPipeline,
 )
 
 from gensbi.models import Flux1, Flux1Params
@@ -127,8 +127,8 @@ params_flux = Flux1Params(
 @pytest.mark.parametrize(
     "pipeline_cls, params",
     [
-        (Flux1FlowPipeline, params_flux),
-        # (Flux1DiffusionPipeline, params_flux),
+        (Flux1LatentFlowPipeline, params_flux),
+        (Flux1LatentDiffusionPipeline, params_flux),
     ],
 )
 def test_model_pipeline(pipeline_cls, params):
