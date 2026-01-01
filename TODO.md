@@ -19,4 +19,6 @@ The following tasks are planned for future development:
 - [ ] Include example for batched sampling in the first tutorial 
 - [ ] Include SBC checks in the benchmark notebooks and training script
 - [ ] Fix the GW example
-- [ ] Deploy to PyPI
+- [ ] Add tests for the examples and validation library
+- [ ] Deploy everything to PyPI 
+- [ ] Figure out what is the best way to include the GenSBI dependency into the sub packages without causing circular dependencies
