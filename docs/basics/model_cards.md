@@ -8,9 +8,9 @@ Selecting the appropriate model is crucial for balancing computational efficienc
 
 | Model | Best For | Dimensions | Memory | Strengths | Limitations |
 |-------|----------|------------|--------|-----------|-------------|
-| **Flux1** | Most applications | High (>10) | Excellent | Scalable, memory-efficient, RoPE embeddings | Not optimal for very low-dim |
+| **Flux1** | Most applications | High (>10) | Excellent | Scalable, memory-efficient, RoPE embeddings | Only for conditional models |
 | **Simformer** | Rapid prototyping | Low (<10) | Good | Explicit embeddings, simple, fast for low-dim | Poor scaling to high-dim |
-| **Flux1Joint** | Joint modeling | Medium-High | Good | Explicit joint learning, scalable | Slightly more complex than Flux1 |
+| **Flux1Joint** | Joint modeling | Medium-High | Good | Explicit joint learning, scalable | Slightly less complex than Flux1 (no double stream layers)|
 
 ### When to Use Each Model
 

@@ -78,6 +78,7 @@ class Simformer(nnx.Module):
     def __init__(
         self,
         params: SimformerParams,
+        embedding_net_value: Optional[nnx.Module] = None,
     ):
         self.params = params
         self.in_channels = params.in_channels
@@ -85,12 +86,15 @@ class Simformer(nnx.Module):
         self.dim_id = params.dim_id
         self.dim_condition = params.dim_condition
 
-        self.embedding_net_value = MLPEmbedder(
-            in_dim=self.in_channels,
-            hidden_dim=params.dim_value,
-            rngs=params.rngs,
-            param_dtype=params.param_dtype,
-        )
+        if embedding_net_value is not None:
+            self.embedding_net_value = embedding_net_value
+        else:
+            self.embedding_net_value = MLPEmbedder(
+                in_dim=self.in_channels,
+                hidden_dim=params.dim_value,
+                rngs=params.rngs,
+                param_dtype=params.param_dtype,
+            )
         # self.embedding_net_value = lambda obs: jnp.repeat(obs, dim_value, axis=-1)
 
         fourier_features = params.fourier_features
@@ -107,8 +111,7 @@ class Simformer(nnx.Module):
             param_dtype=params.param_dtype,
         )
         self.condition_embedding = nnx.Param(
-            0.01
-            * jnp.ones((1, 1, params.dim_condition), dtype=params.param_dtype)
+            0.01 * jnp.ones((1, 1, params.dim_condition), dtype=params.param_dtype)
         )
 
         self.total_tokens = params.dim_value + params.dim_id + params.dim_condition
@@ -174,7 +177,7 @@ class Simformer(nnx.Module):
         t = t.reshape(-1, 1, 1)
 
         batch_size, seq_len, _ = obs.shape
-        condition_mask = condition_mask.astype(jnp.bool_)#.reshape(-1, seq_len, 1)
+        condition_mask = condition_mask.astype(jnp.bool_)  # .reshape(-1, seq_len, 1)
         # condition_mask = jnp.broadcast_to(condition_mask, (batch_size, seq_len, 1))
 
         if node_ids.ndim == 1:
@@ -230,12 +233,12 @@ class Simformer(nnx.Module):
 #         super().__init__(model)
 
 #     def conditioned(
-#         self, 
-#         obs: Array, 
-#         obs_ids: Array, 
-#         cond: Array, 
-#         cond_ids: Array, 
-#         t: Array, 
+#         self,
+#         obs: Array,
+#         obs_ids: Array,
+#         cond: Array,
+#         cond_ids: Array,
+#         t: Array,
 #         edge_mask: Optional[Array] = None
 #     ) -> Array:
 #         """
@@ -252,7 +255,7 @@ class Simformer(nnx.Module):
 #         Returns:
 #             Array: Conditioned output.
 #         """
-        
+
 #         dim_obs = obs.shape[1]
 #         dim_cond = cond.shape[1]
 #         # repeat cond on the first dimension to match obs
@@ -280,10 +283,10 @@ class Simformer(nnx.Module):
 #         return res
 
 #     def unconditioned(
-#         self, 
-#         obs: Array, 
-#         obs_ids: Array, 
-#         t: Array, 
+#         self,
+#         obs: Array,
+#         obs_ids: Array,
+#         t: Array,
 #         edge_mask: Optional[Array] = None
 #     ) -> Array:
 #         """
@@ -314,13 +317,13 @@ class Simformer(nnx.Module):
 #         return res
 
 #     def __call__(
-#         self, 
-#         t: Array, 
-#         obs: Array, 
-#         obs_ids: Array, 
-#         cond: Array, 
-#         cond_ids: Array, 
-#         conditioned: bool = True, 
+#         self,
+#         t: Array,
+#         obs: Array,
+#         obs_ids: Array,
+#         cond: Array,
+#         cond_ids: Array,
+#         conditioned: bool = True,
 #         edge_mask: Optional[Array] = None
 #     ) -> Array:
 #         """
@@ -341,10 +344,10 @@ class Simformer(nnx.Module):
 #         t = _expand_time(t)
 #         obs = _expand_dims(obs)
 #         cond = _expand_dims(cond)
-        
+
 #         obs_ids = _expand_dims(obs_ids)
 #         cond_ids = _expand_dims(cond_ids)
-        
+
 #         if conditioned:
 #             return self.conditioned(
 #                 obs, obs_ids, cond, cond_ids, t, edge_mask=edge_mask

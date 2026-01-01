@@ -16,3 +16,7 @@ The following tasks are planned for future development:
 - [x] Implement wrapper to run posterior calibration checks using the `sbi` library (maybe add this as an additional package to avoid torch dependency?)
 - [x] implement get sampler for every pipeline
 - [ ] Diffusion models are underconfident, the EDM sde works while the VE and VP legacy sdes are not working properly yet
+- [ ] Include example for batched sampling in the first tutorial 
+- [ ] Include SBC checks in the benchmark notebooks and training script
+- [ ] Fix the GW example
+- [ ] Deploy to PyPI
