@@ -14,7 +14,9 @@ class MLPEmbedder(nnx.Module):
         rngs: nnx.Rngs,
         param_dtype: DTypeLike = jnp.float32,
     ):
-        assert hidden_dim % in_dim == 0, "hidden_dim must be multiple of in_dim"
+        assert hidden_dim % in_dim == 0, "hidden_dim must be multiple of in_dim, got {} and {}".format(
+            hidden_dim, in_dim
+        )
         self.repeats = hidden_dim // in_dim
         self.p_skip = nnx.Param(0.01 * jnp.ones((1, 1, hidden_dim), dtype=param_dtype))
         self.in_layer = nnx.Linear(
