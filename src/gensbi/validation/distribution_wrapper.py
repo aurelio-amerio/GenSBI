@@ -7,25 +7,42 @@ from einops import rearrange
 from typing import Callable, Optional
 from gensbi.recipes.pipeline import AbstractPipeline
 
+
 class PosteriorWrapper:
-    def __init__(self, pipeline: AbstractPipeline, *args, rngs: nnx.Rngs, theta_shape = None, x_shape = None, **kwargs):
-        """ 
-        Wrap a GenSBI pipeline into a distribution compatible with sbi.
-        """
+    """
+    Wrap a GenSBI pipeline into a distribution compatible with `sbi`.
+
+    Args:
+        pipeline: An instance of a Pipeline from GenSBI.
+        rngs: A nnx.Rngs instance for random number generation.
+        theta_shape: Optional shape of the parameters (theta) to be sampled.
+        x_shape: Optional shape of the observations (x) to condition on.
+        *args, **kwargs: Additional arguments to be passed to the pipeline during sampling.
+    """
+
+    def __init__(
+        self,
+        pipeline: AbstractPipeline,
+        *args,
+        rngs: nnx.Rngs,
+        theta_shape=None,
+        x_shape=None,
+        **kwargs,
+    ):
 
         self.pipeline = pipeline
         self.args = args
         self.kwargs = kwargs
         self.default_x = None
         self.rngs = rngs
-        
+
         if theta_shape is not None:
             self.dim_theta = theta_shape[0]
             self.ch_theta = theta_shape[1]
         else:
             self.ch_theta = self.pipeline.ch_obs
             self.dim_theta = self.pipeline.dim_obs
-            
+
         if x_shape is not None:
             self.dim_x = x_shape[0]
             self.ch_x = x_shape[1]
@@ -48,7 +65,6 @@ class PosteriorWrapper:
     def _process_x(self, x):
         assert x.ndim in (2, 3), "x must be of shape (batch, dim) or (batch, dim, ch)"
 
-
         if x.ndim == 3:
             assert (
                 x.shape[2] == self.ch_x
@@ -67,8 +83,15 @@ class PosteriorWrapper:
         self,
         sample_shape,
         x: Optional[torch.Tensor] = None,
-        **kwargs, # does nothing, for compatibility
+        **kwargs,  # does nothing, for compatibility
     ):
+        """
+        Sample from the posterior distribution conditioned on x.
+
+        Args:
+            sample_shape: Shape of the samples to be drawn.
+            x: Optional tensor of observations to condition on. If None, uses the default_x.
+        """
         key = self.rngs.sample()
         if x is None:
             cond = self.default_x.numpy()
@@ -89,19 +112,29 @@ class PosteriorWrapper:
         sample_shape,
         x: Optional[torch.Tensor] = None,
         chunk_size: Optional[int] = 50,
-        show_progress_bars = True,
-        **kwargs, # does nothing, for compatibility
+        show_progress_bars=True,
+        **kwargs,  # does nothing, for compatibility
     ):
+        """
+        Sample from the posterior distribution conditioned on x.
+
+        Args:
+            sample_shape: Shape of the samples to be drawn.
+            x: Optional tensor of observations to condition on. If None, uses the default_x.
+            chunk_size: Size of the chunks to use for batched sampling.
+            show_progress_bars: Whether to show progress bars during sampling.
+
+        """
         if x is None:
             cond = self.default_x.numpy()
         else:
             cond = x.numpy()
-            
+
         if cond.ndim == 2:
             cond = self._unravel_xs(cond)
-            
+
         chunk_size = self.kwargs.pop("chunk_size", chunk_size)
-        
+
         key = self.rngs.sample()
         res = self.pipeline.sample_batched(
             key,
@@ -109,7 +142,7 @@ class PosteriorWrapper:
             sample_shape[0],
             chunk_size=chunk_size,
             show_progress_bars=show_progress_bars,
-            **self.kwargs,  
+            **self.kwargs,
         )
 
         res = rearrange(res, "... f c -> ... (f c)")
