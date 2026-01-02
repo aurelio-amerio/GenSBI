@@ -21,4 +21,4 @@ The following tasks are planned for future development:
 - [ ] Fix the GW example
 - [ ] Add tests for the examples and validation library
 - [ ] Deploy everything to PyPI 
-- [ ] Figure out what is the best way to include the GenSBI dependency into the sub packages without causing circular dependencies
+- [ ] Figure out what is the best way to include the GenSBI dependency into the sub packages without causing circular dependencieds
