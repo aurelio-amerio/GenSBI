@@ -17,10 +17,7 @@ from gensbi.models.flux1.layers import (
     MLPEmbedder,
     SingleStreamBlock,
     timestep_embedding,
-    Identity,
-    ZeroModule,
-    NoneModule,
-    GlobalEmbedding
+    Identity
 )
 
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
@@ -62,7 +59,6 @@ class Flux1Params:
         dim_obs (int): Number of observation/parameter tokens.
         dim_cond (int): Number of conditioning tokens.
         theta (int): Scaling factor for positional encoding.
-        use_rope: tuple (bool, bool): Whether to use ROPE for (obs, cond).
         param_dtype (DTypeLike): Data type for model parameters.
 
     """
@@ -80,7 +76,6 @@ class Flux1Params:
     dim_obs: int  # observation dimension
     dim_cond: int  # condition dimension
     theta: int = 10_000
-    use_rope: tuple = (True, True)
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
@@ -111,39 +106,9 @@ class Flux1(nnx.Module):
                 f"Got {params.axes_dim} but expected positional dim {pe_dim}"
             )
         self.num_heads = params.num_heads
-        
-        self.use_rope_obs, self.use_rope_cond = params.use_rope
-        
-        if self.use_rope_obs or self.use_rope_cond:
-            self.pe_embedder = EmbedND(
-                dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
-            )
-        else:
-            self.pe_embedder = NoneModule()
-            
-        if self.use_rope_obs:
-            self.obs_ids_rope = Identity()
-            self.obs_ids_embedder = ZeroModule(dtype=jnp.int32)
-        else:
-            self.obs_ids_rope = ZeroModule(dtype=jnp.int32)
-            self.obs_ids_embedder = GlobalEmbedding(
-                    num_embeddings=params.dim_obs,
-                    features=self.hidden_size,
-                    rngs=params.rngs,
-                    param_dtype=params.param_dtype)
-            
-        if self.use_rope_cond:
-            self.cond_ids_rope = Identity()
-            self.cond_ids_embedder = ZeroModule(dtype=jnp.int32)
-        else:
-            self.cond_ids_rope = ZeroModule(dtype=jnp.int32)
-            self.cond_ids_embedder = GlobalEmbedding(
-                    num_embeddings=params.dim_cond,
-                    features=self.hidden_size,
-                    rngs=params.rngs,
-                param_dtype=params.param_dtype)
-        
-        
+        self.pe_embedder = EmbedND(
+            dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
+        )
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
             out_features=self.hidden_size,
@@ -276,21 +241,9 @@ class Flux1(nnx.Module):
             conditioned[..., None, None], cond_processed, cond_null
         )  # we replace the condition with a null vector if not conditioned
 
-        # now we take care of the embedding. The logic is automatically handled by the modules defined in the init
-        
-        # first we embed the obs and cond ids, if rope is used for obs or cond, the ZeroModule will return zeros
-        if not self.use_rope_obs:
-            obs = obs + self.obs_ids_embedder(obs_ids) 
-        if not self.use_rope_cond:
-            cond = cond + self.cond_ids_embedder(cond_ids)
-        
-        # now we compute the positional encodings, 
-        obs_ids_rope = self.obs_ids_rope(obs_ids) # if rope is not used for obs, the ZeroModule will return zeros, else identity
-        cond_ids_rope = self.cond_ids_rope(cond_ids) # if rope is not used for cond, the ZeroModule will return zeros, else identity
-        ids = jnp.concatenate((cond_ids_rope, obs_ids_rope), axis=1)
-        pe = self.pe_embedder(ids) # if rope is not used for both obs and cond, the NoneModule will return None
-        
-        # call the layers
+        ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
+
+        pe = self.pe_embedder(ids)
 
         for block in self.double_blocks.layers:
             obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)

@@ -275,9 +275,19 @@ class AbstractPipeline(abc.ABC):
         optimizer : nnx.Optimizer
             The optimizer instance for the model.
         """
+        warmup_steps = self.training_config["warmup_steps"] * self.training_config["multistep"]
+        max_lr = self.training_config["max_lr"]
+        schedule = optax.join_schedules(
+            schedules=[
+                optax.linear_schedule(init_value=0, end_value=max_lr, transition_steps=warmup_steps),
+                optax.constant_schedule(value=max_lr)
+            ],
+            boundaries=[warmup_steps]
+        )
+        
         opt = optax.chain(
             optax.adaptive_grad_clip(10.0),
-            optax.adamw(self.training_config["max_lr"]),
+            optax.adamw(schedule),
             reduce_on_plateau(
                 patience=self.training_config["patience"],
                 cooldown=self.training_config["cooldown"],
@@ -321,6 +331,7 @@ class AbstractPipeline(abc.ABC):
         training_config["factor"] = 0.5
         training_config["accumulation_size"] = 100
         training_config["rtol"] = 1e-4
+        training_config["warmup_steps"] = 500
         training_config["max_lr"] = 1e-3
         training_config["min_lr"] = 1e-8
         training_config["val_every"] = 100
@@ -554,6 +565,9 @@ class AbstractPipeline(abc.ABC):
 
         pbar = tqdm(range(nsteps))
         l_train = None
+        ratio = 0 # initialize ratio
+        l_val = min_val # initialize l_val 
+
 
         for j in pbar:
             if counter > cmax and early_stopping:
@@ -575,6 +589,15 @@ class AbstractPipeline(abc.ABC):
                 l_train = loss
             else:
                 l_train = 0.9 * l_train + 0.1 * loss
+               
+            # fixme remove maybe    
+            if j > 0 and j % 10 == 0:
+                pbar.set_postfix(
+                    loss=f"{l_train:.4f}",
+                    ratio=f"{ratio:.4f}",
+                    counter=counter,
+                    val_loss=f"{l_val:.4f}",
+                )
 
             if j > 0 and j % val_every == 0:
                 batch_val = next(self.val_dataset_iter)
@@ -600,8 +623,8 @@ class AbstractPipeline(abc.ABC):
                     best_state = nnx.state(self.model)
                     best_state_ema = nnx.state(self.ema_model)
 
-                l_val = 0
-                l_train = 0
+                # l_val = 0 # not needed
+                # l_train = 0 # wrong to reset, since we are using accumulated moving average
 
         self.model.eval()
         self.ema_model.eval()
