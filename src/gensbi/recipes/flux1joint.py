@@ -163,6 +163,8 @@ def parse_training_config(config_path: str):
     MAX_LR = opt_params.get("max_lr", 1e-3)
     MIN_LR = opt_params.get("min_lr", 0.0)
     MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
+    
+    warmup_steps = opt_params.get("warmup_steps", 500)
 
     ema_decay = opt_params.get("ema_decay", 0.999)
 
@@ -182,6 +184,7 @@ def parse_training_config(config_path: str):
     training_config["early_stopping"] = early_stopping
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
+    training_config["warmup_steps"] = warmup_steps
 
     return training_config
 

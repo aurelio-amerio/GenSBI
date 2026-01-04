@@ -10,57 +10,9 @@ import jax
 
 from .math import attention, rope
 
-
 class Identity(nnx.Module):
     def __call__(self, x: Array) -> Array:
         return x
-
-
-class ZeroModule(nnx.Module):
-    def __init__(self, dtype):
-        self.dtype = dtype
-
-    def __call__(self, x: Array) -> Array:
-        return jnp.zeros(x.shape, dtype=self.dtype)
-
-
-class NoneModule(nnx.Module):
-    def __call__(self, x: Array) -> Array:
-        return None
-
-
-class GlobalEmbedding(nnx.Module):
-    def __init__(
-        self, num_embeddings, features, *args, rngs, param_dtype=jnp.bfloat16, **kwargs
-    ):
-        self.embed = nnx.Embed(
-            num_embeddings,
-            features,
-            *args,
-            rngs=rngs,
-            param_dtype=param_dtype,
-            **kwargs,
-        )
-        # self.norm = nnx.LayerNorm(
-        #     num_features=features,
-        #     use_scale=True,
-        #     use_bias=False,
-        #     epsilon=1e-6,
-        #     rngs=rngs,
-        #     param_dtype=param_dtype,
-        #     scale_init=jax.nn.initializers.constant(1e-3),
-        # )
-        self.gamma = nnx.Param(jnp.array(1e-3, dtype=param_dtype))  # scales the output of the embedding, to avoid large initial values
-
-    def __call__(self, x, *args, **kwargs):
-        assert (
-            x.ndim == 3
-        ), "Input to GlobalEmbedding must be of shape (batch, dim, channels)"
-        # x = self.embed(x[..., 0], *args, **kwargs)
-        # x = self.norm(x)
-        x = self.embed(x[..., 0], *args, **kwargs)*self.gamma
-        return x
-
 
 class EmbedND(nnx.Module):
     def __init__(self, dim: int, theta: int, axes_dim: list[int]):
