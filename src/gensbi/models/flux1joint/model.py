@@ -12,6 +12,8 @@ from typing import Optional
 
 from dataclasses import dataclass
 
+import warnings
+
 from gensbi.models.flux1.layers import (
     EmbedND,
     LastLayer,
@@ -22,6 +24,8 @@ from gensbi.models.flux1.layers import (
 )
 
 from typing import Union, Callable, Optional
+
+from gensbi.models.embedding import FeatureEmbedder
 
 
 @dataclass
@@ -51,6 +55,7 @@ class Flux1JointParams:
         rngs (nnx.Rngs): Random number generators for initialization.
         dim_joint (int): Number of tokens in the joint sequence.
         theta (int): Scaling factor for positional encoding.
+        id_embedding_kind (str): Kind of embedding for token ids ('absolute', 'pos1d', 'pos2d', 'rope').
         guidance_embed (bool): Whether to use guidance embedding.
         param_dtype (DTypeLike): Data type for model parameters.
 
@@ -66,11 +71,19 @@ class Flux1JointParams:
     qkv_bias: bool
     rngs: nnx.Rngs
     dim_joint: int  # joint dimension
-    theta: int = 10_000
+    theta: int = 500
+    id_embedding_kind: str = "absolute"
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
+        availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
+        assert self.id_embedding_kind in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind} for obs."
+        
+        if self.id_embedding_kind == "rope":
+            # raise a warning tha using rope for joint modeling is not recommended
+            warnings.warn("Using RoPE embedding for joint density estimation is not recommended. Consider using 'absolute' embeddings instead.", UserWarning)
+        
         self.input_token_dim = np.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32))*self.num_heads
         self.condition_token_dim = np.sum(jnp.asarray(self.condition_dim, dtype=jnp.int32))*self.num_heads
         self.hidden_size = int(self.input_token_dim + self.condition_token_dim)
@@ -98,13 +111,29 @@ class Flux1Joint(nnx.Module):
                 f"Got axes_dim:{params.axes_dim} + condition_dim:{params.condition_dim} but expected positional dim {pe_dim}"
             )
         self.num_heads = params.num_heads
-
+        
         assert np.array(params.axes_dim).ndim == np.array(params.condition_dim).ndim, "axes_dim and condition_dim must have the same dimension, got {} and {}".format(params.axes_dim, params.condition_dim)
-
+        
         axes_dim = [a + b for a, b in zip(params.axes_dim, params.condition_dim)]
-        self.pe_embedder = EmbedND(
-            dim=pe_dim, theta=params.theta, axes_dim=axes_dim
-        )
+        
+        if "rope" in params.id_embedding_kind:
+            self.use_rope = True
+            self.pe_embedder = EmbedND(
+                dim=pe_dim, theta=params.theta, axes_dim=axes_dim
+            )
+            self.ids_embedder = None
+        else:
+            self.use_rope = False
+            self.pe_embedder = None
+            self.ids_embedder = FeatureEmbedder(
+                num_embeddings=params.dim_joint,
+                hidden_size=self.hidden_size,
+                kind=params.id_embedding_kind,
+                param_dtype=params.param_dtype,
+                rngs=params.rngs,
+            )
+
+
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
             out_features=self.params.input_token_dim,
@@ -176,7 +205,16 @@ class Flux1Joint(nnx.Module):
         if condition_mask.shape[0] == 1:
             condition_mask = jnp.repeat(condition_mask, repeats=batch_size, axis=0)
         condition_embedding = self.condition_embedding * condition_mask
+        
         obs = jnp.concatenate([obs, condition_embedding], axis=-1)
+        
+        if self.use_rope:
+            pe = self.pe_embedder(node_ids)
+        else:
+            # we add the positional embeddings
+            obs = obs * jnp.sqrt(self.hidden_size) + self.ids_embedder(node_ids)
+            pe = None
+        
         vec = self.time_in(timestep_embedding(t, 256))
         if self.params.guidance_embed:
             if guidance is None:
@@ -184,7 +222,7 @@ class Flux1Joint(nnx.Module):
                     "Didn't get guidance strength for guidance distilled model."
                 )
             vec = vec + self.vector_in(guidance)
-        pe = self.pe_embedder(node_ids)
+
         for block in self.single_blocks.layers:
             obs = block(obs, vec=vec, pe=pe)
         obs = self.final_layer(obs, vec)
