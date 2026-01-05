@@ -11,9 +11,12 @@ class UnconditionalCFMLoss(ContinuousFMLoss):
     """
     UnconditionalCFMLoss is a class that computes the continuous flow matching loss for the Unconditional model.
 
-    Args:
+    Parameters
+
+    ----------
         path: Probability path for training.
-        reduction (str): Reduction method ('none', 'mean', 'sum').
+        reduction : str
+            Reduction method ('none', 'mean', 'sum').
     """
 
     def __init__(self, path, reduction: str = "mean"):
@@ -30,13 +33,19 @@ class UnconditionalCFMLoss(ContinuousFMLoss):
         Evaluate the continuous flow matching loss.
 
         Args:
-            vf (Callable): Vector field model.
-            batch (Tuple[Array, Array, Array]): Input data (x_0, x_1, t).
-            args (Optional[dict]): Additional arguments.
+            vf : Callable
+                Vector field model.
+            batch : Tuple[Array, Array, Array]
+                Input data (x_0, x_1, t).
+            args : Optional[dict]
+                Additional arguments.
             **kwargs: Additional keyword arguments.
 
-        Returns:
-            Array: Computed loss.
+        Returns
+
+        -------
+            Array
+                Computed loss.
         """
         _, x_1, _ = batch
         path_sample = self.path.sample(*batch)
@@ -49,45 +58,60 @@ class UnconditionalCFMLoss(ContinuousFMLoss):
         model_output = vf(path_sample.t, x_t, *args, **kwargs)
 
         loss = model_output - path_sample.dx_t
-        if condition_mask is not None:
+        if condition_mask is not None
             loss = jnp.where(condition_mask, 0.0, loss)
 
-        return self.reduction(jnp.square(loss))  # type: ignore
+        return self.reduction(jnp.square(loss))  # type
+            ignore
 
 
-class UnconditionalDiffLoss(nnx.Module):
+class UnconditionalDiffLoss(nnx.Module)
     """
     UnconditionalDiffLoss is a class that computes the diffusion score matching loss for the Unconditional model.
 
-    Args:
-        path: Probability path for training.
+    Parameters
+
+    ----------
+        path
+            Probability path for training.
     """
 
-    def __init__(self, path):
+    def __init__(self, path)
         self.path = path
 
         self.loss_fn = self.path.get_loss_fn()
 
     def __call__(
         self,
-        key: jax.random.PRNGKey,
-        model: Callable,
-        batch: Tuple[Array, Array, Array],
+        key
+            jax.random.PRNGKey,
+        model
+            Callable,
+        batch
+            Tuple[Array, Array, Array],
         **kwargs,
-    ) -> Array:
+    ) -> Array
         """
         Evaluate the continuous flow matching loss.
 
         Args:
-            key (jax.random.PRNGKey): Random key for stochastic operations.
-            model (Callable): F model.
-            batch (Tuple[Array, Array, Array]): Input data (x_1, sigma).
-            args (Optional[dict]): Additional arguments.
-            condition_mask (Optional[Array]): Mask for conditioning.
+            key : jax.random.PRNGKey
+                Random key for stochastic operations.
+            model : Callable
+                F model.
+            batch : Tuple[Array, Array, Array]
+                Input data (x_1, sigma).
+            args : Optional[dict]
+                Additional arguments.
+            condition_mask : Optional[Array]
+                Mask for conditioning.
             **kwargs: Additional keyword arguments.
 
-        Returns:
-            Array: Computed loss.
+        Returns
+
+        -------
+            Array
+                Computed loss.
         """
         x_1, sigma = batch
 
@@ -99,4 +123,5 @@ class UnconditionalDiffLoss(nnx.Module):
 
         loss = self.loss_fn(model, batch, loss_mask=condition_mask, model_extras=kwargs)
 
-        return loss  # type: ignore
+        return loss  # type
+            ignore
