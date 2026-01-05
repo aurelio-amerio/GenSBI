@@ -143,7 +143,6 @@ class SinusoidalPosEmbed1D(nnx.Module):
         Fast 1D Sinusoidal Embedding (Hugging Face Style).
         Pre-computes the matrix to avoid re-calculating sines/cosines.
         """
-        super().__init__()
 
         if hidden_size % 2 != 0:
             raise ValueError(f"Hidden size ({hidden_size}) must be divisible by 2.")
@@ -168,11 +167,11 @@ class SinusoidalPosEmbed1D(nnx.Module):
         emb_sin = jnp.sin(out)
         emb_cos = jnp.cos(out)
         pe = jnp.concatenate(
-            [emb_sin, emb_cos], axis=1, dtype=param_dtype
+            [emb_sin, emb_cos], axis=1
         )  # (MaxLen, D)
 
         # Register as a constant (frozen state)
-        self.pe = PEMatrix(pe)
+        self.pe = PEMatrix(jnp.asarray(pe, dtype=param_dtype))
 
     def __call__(self, ids):
         """
@@ -184,7 +183,7 @@ class SinusoidalPosEmbed1D(nnx.Module):
         seq_len = ids.shape[1]
         # Slice the pre-computed matrix
         # This is extremely fast (just a memory pointer offset)
-        return self.pe.value[None, :seq_len, :]
+        return self.pe[None, :seq_len, :]
 
 
 class SinusoidalPosEmbed2D(nnx.Module):
@@ -198,7 +197,6 @@ class SinusoidalPosEmbed2D(nnx.Module):
         """
         Fast 2D Sinusoidal Embedding (Hugging Face / MAE Style).
         """
-        super().__init__()
 
         if hidden_size % 2 != 0:
             raise ValueError(f"Hidden size ({hidden_size}) must be divisible by 2.")
@@ -217,8 +215,7 @@ class SinusoidalPosEmbed2D(nnx.Module):
             out = jnp.einsum("m,d->md", pos, omega)
 
             return jnp.concatenate(
-                [jnp.sin(out), jnp.cos(out)], axis=1, dtype=param_dtype
-            )  # (Length, D)
+                [jnp.sin(out), jnp.cos(out)], axis=1)  # (Length, D)
 
         # --- Pre-computation ---
         # 1. Height Embeddings (Y-axis)
@@ -228,8 +225,8 @@ class SinusoidalPosEmbed2D(nnx.Module):
         pe_w = _get_1d_block(max_w, dim_each)  # (MaxW, D/2)
 
         # Register constants
-        self.pe_h = PEMatrix(pe_h)
-        self.pe_w = PEMatrix(pe_w)
+        self.pe_h = PEMatrix(jnp.asarray(pe_h, dtype=param_dtype))
+        self.pe_w = PEMatrix(jnp.asarray(pe_w, dtype=param_dtype))
 
     def __call__(self, ids):
         """
@@ -237,8 +234,8 @@ class SinusoidalPosEmbed2D(nnx.Module):
         """
         h, w = ids.shape[1], ids.shape[2]
         # 1. Slice
-        row_embed = self.pe_h.value[:h, None, :]  # (h, 1, D/2)
-        col_embed = self.pe_w.value[None, :w, :]  # (1, w, D/2)
+        row_embed = self.pe_h[:h, None, :]  # (h, 1, D/2)
+        col_embed = self.pe_w[None, :w, :]  # (1, w, D/2)
 
         # 2. Broadcast to Grid
         # Repeat row vector 'w' times across columns
