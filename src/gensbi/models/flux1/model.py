@@ -22,10 +22,6 @@ from gensbi.models.flux1.layers import (
 
 from gensbi.models.embedding import FeatureEmbedder
 
-from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
-
-
-# TODO enforce rope usage, remove unused code
 @dataclass
 class Flux1Params:
     """Parameters for the Flux1 model.
