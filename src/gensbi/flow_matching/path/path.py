@@ -37,13 +37,19 @@ class ProbPath(ABC):
         Given :math:`(X_0,X_1) \sim \pi(X_0,X_1)`.
         Returns :math:`X_0, X_1, X_t \sim p_t(X_t|X_0,X_1)`, and a conditional target :math:`Y`, all objects are under ``PathSample``.
 
-        Args:
-            x_0 (Array): Source data point, shape (batch_size, ...).
-            x_1 (Array): Target data point, shape (batch_size, ...).
-            t (Array): Times in [0,1], shape (batch_size,).
+        Parameters
+        ----------
+        x_0 : Array
+            Source data point, shape (batch_size, ...).
+        x_1 : Array
+            Target data point, shape (batch_size, ...).
+        t : Array
+            Times in [0,1], shape (batch_size,).
 
-        Returns:
-            PathSample: A conditional sample.
+        Returns
+        -------
+        PathSample
+            A conditional sample.
         """
         ...  # pragma: no cover
 
@@ -51,13 +57,19 @@ class ProbPath(ABC):
         """
         Checks that the shapes of x_0, x_1, and t are compatible for sampling.
 
-        Args:
-            x_0 (Array): Source data point.
-            x_1 (Array): Target data point.
-            t (Array): Time vector.
+        Parameters
+        ----------
+        x_0 : Array
+            Source data point.
+        x_1 : Array
+            Target data point.
+        t : Array
+            Time vector.
 
-        Raises:
-            AssertionError: If the shapes are not compatible.
+        Raises
+        ------
+        AssertionError
+            If the shapes are not compatible.
         """
         assert (
             t.ndim == 1
