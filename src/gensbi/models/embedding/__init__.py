@@ -5,6 +5,8 @@ from .embedding import (
     GaussianFourierEmbedding,
     SinusoidalPosEmbed1D,
     SinusoidalPosEmbed2D,
+    Embed,
+    FeatureEmbedder,
 )
 
 __all__ = [
@@ -14,4 +16,6 @@ __all__ = [
     "GaussianFourierEmbedding",
     "SinusoidalPosEmbed1D",
     "SinusoidalPosEmbed2D",
+    "Embed",
+    "FeatureEmbedder",
 ]
