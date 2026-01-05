@@ -7,6 +7,20 @@ from jax import Array
 
 
 class MLPEmbedder(nnx.Module):
+    """
+    MLP-based embedder with skip connections.
+
+    Parameters
+    ----------
+    in_dim : int
+        Input dimension.
+    hidden_dim : int
+        Hidden dimension, must be a multiple of in_dim.
+    rngs : nnx.Rngs
+        Random number generators for initialization.
+    param_dtype : DTypeLike, optional
+        Data type for parameters. Defaults to jnp.float32.
+    """
     def __init__(
         self,
         in_dim: int,
@@ -38,6 +52,19 @@ class MLPEmbedder(nnx.Module):
         )
 
     def __call__(self, x: Array) -> Array:
+        """
+        Forward pass of the MLP embedder.
+
+        Parameters
+        ----------
+        x : Array
+            Input array.
+
+        Returns
+        -------
+        Array
+            Embedded output with skip connections.
+        """
         x = jnp.atleast_1d(x)
         out = self.out_layer(self.silu(self.in_layer(x)))
         x_repeated = jnp.repeat(x, self.repeats, axis=-1)
@@ -46,11 +73,26 @@ class MLPEmbedder(nnx.Module):
 
 
 class SimpleTimeEmbedding(nnx.Module):
+    """Simple time embedding module using cosine and sine transformations."""
+    
     def __init__(self):
-        """Simple time embedding module. Mostly used to embed time."""
+        """Initialize simple time embedding module."""
         return
 
     def __call__(self, t):
+        """
+        Compute time embedding.
+
+        Parameters
+        ----------
+        t : Array
+            Time values.
+
+        Returns
+        -------
+        Array
+            Time embeddings.
+        """
         t = jnp.atleast_1d(t)
         if t.ndim == 1:
             t = jnp.expand_dims(t, axis=1)
@@ -70,13 +112,28 @@ class SinusoidalTimeEmbedding(nnx.Module):
     def __init__(self, output_dim: int = 128):
         """Sinusoidal embedding module. Mostly used to embed time.
 
-        Args:
-            output_dim (int, optional): Output dimesion. Defaults to 128.
+        Parameters
+        ----------
+        output_dim : int, optional
+            Output dimension. Defaults to 128.
         """
         self.output_dim = output_dim
         return
 
     def __call__(self, t):
+        """
+        Compute sinusoidal time embedding.
+
+        Parameters
+        ----------
+        t : Array
+            Time values.
+
+        Returns
+        -------
+        Array
+            Sinusoidal time embeddings.
+        """
         t = jnp.atleast_1d(t)
         if t.ndim == 1:
             t = jnp.expand_dims(t, axis=1)
@@ -101,8 +158,16 @@ class GaussianFourierEmbedding(nnx.Module):
     ):
         """Gaussian Fourier embedding module. Mostly used to embed time.
 
-        Args:
-            output_dim (int, optional): Output dimesion. Defaults to 128.
+        Parameters
+        ----------
+        output_dim : int, optional
+            Output dimension. Defaults to 128.
+        learnable : bool, optional
+            Whether parameters are learnable. Defaults to False.
+        rngs : nnx.Rngs
+            Random number generators for initialization.
+        param_dtype : DTypeLike, optional
+            Data type for parameters. Defaults to jnp.float32.
         """
         self.output_dim = output_dim
         half_dim = self.output_dim // 2 + 1
@@ -115,6 +180,19 @@ class GaussianFourierEmbedding(nnx.Module):
         return
 
     def __call__(self, t):
+        """
+        Compute Gaussian Fourier time embedding.
+
+        Parameters
+        ----------
+        t : Array
+            Time values.
+
+        Returns
+        -------
+        Array
+            Gaussian Fourier time embeddings.
+        """
         t = jnp.atleast_1d(t)
         if t.ndim == 1:
             t = jnp.expand_dims(t, axis=1)
@@ -129,6 +207,7 @@ class GaussianFourierEmbedding(nnx.Module):
 
 
 class PEMatrix(nnx.Variable):
+    """Variable type for storing pre-computed position embedding matrices."""
     pass
 
 
@@ -142,6 +221,15 @@ class SinusoidalPosEmbed1D(nnx.Module):
         """
         Fast 1D Sinusoidal Embedding (Hugging Face Style).
         Pre-computes the matrix to avoid re-calculating sines/cosines.
+
+        Parameters
+        ----------
+        hidden_size : int
+            Hidden size, must be divisible by 2.
+        max_len : int, optional
+            Maximum sequence length. Defaults to 5000.
+        param_dtype : DTypeLike, optional
+            Data type for parameters. Defaults to jnp.float32.
         """
 
         if hidden_size % 2 != 0:
@@ -175,10 +263,17 @@ class SinusoidalPosEmbed1D(nnx.Module):
 
     def __call__(self, ids):
         """
-        Args:
-            seq_len: The length of the current sequence.
-        Returns:
-            (1, seq_len, hidden_size) - Broadcastable batch dimension included.
+        Forward pass of the 1D sinusoidal position embedder.
+
+        Parameters
+        ----------
+        ids : Array
+            Input IDs with shape (batch, seq_len).
+
+        Returns
+        -------
+        Array
+            Position embeddings of shape (1, seq_len, hidden_size).
         """
         seq_len = ids.shape[1]
         # Slice the pre-computed matrix
@@ -196,6 +291,17 @@ class SinusoidalPosEmbed2D(nnx.Module):
     ):
         """
         Fast 2D Sinusoidal Embedding (Hugging Face / MAE Style).
+
+        Parameters
+        ----------
+        hidden_size : int
+            Hidden size, must be divisible by 2.
+        max_h : int, optional
+            Maximum height. Defaults to 128.
+        max_w : int, optional
+            Maximum width. Defaults to 128.
+        param_dtype : DTypeLike, optional
+            Data type for parameters. Defaults to jnp.float32.
         """
 
         if hidden_size % 2 != 0:
@@ -230,7 +336,17 @@ class SinusoidalPosEmbed2D(nnx.Module):
 
     def __call__(self, ids):
         """
-        Returns: (1, h*w, hidden_size)
+        Compute 2D sinusoidal position embeddings.
+
+        Parameters
+        ----------
+        ids : Array
+            Input IDs with shape (batch, h, w).
+
+        Returns
+        -------
+        Array
+            2D position embeddings of shape (batch, h*w, hidden_size).
         """
         h, w = ids.shape[1], ids.shape[2]
         # 1. Slice
@@ -252,10 +368,33 @@ class SinusoidalPosEmbed2D(nnx.Module):
 
 
 class Embed(nnx.Module):
+    """
+    Wrapper around nnx.Embed that handles 3D input by removing the last dimension.
+    
+    Parameters
+    ----------
+    *args
+        Positional arguments passed to nnx.Embed.
+    **kwargs
+        Keyword arguments passed to nnx.Embed.
+    """
     def __init__(self, *args, **kwargs):
         self.embed = nnx.Embed(*args, **kwargs)
 
     def __call__(self, ids):
+        """
+        Apply embedding to input IDs.
+
+        Parameters
+        ----------
+        ids : Array
+            Input IDs with shape (batch, seq_len, 1).
+
+        Returns
+        -------
+        Array
+            Embedded output.
+        """
         assert ids.ndim == 3, f"ids must have 3 dimensions, got {ids.ndim}"
         return self.embed(ids[..., 0])  # remove last dimension
 
@@ -264,6 +403,21 @@ class FeatureEmbedder(nnx.Module):
     """
     General Feature Embedder supporting learned, 1D sinusoidal, and 2D sinusoidal embeddings.
     1D sinusoidal embeddings are suitable for sequences, while 2D sinusoidal embeddings are ideal for grid-like data (e.g., images).
+
+    Parameters
+    ----------
+    num_embeddings : int
+        Number of embeddings.
+    hidden_size : int
+        Hidden size/embedding dimension.
+    kind : str, optional
+        Type of embedding: 'absolute', 'pos1d', or 'pos2d'. Defaults to 'absolute'.
+    param_dtype : DTypeLike, optional
+        Data type for parameters. Defaults to jnp.float32.
+    rngs : nnx.Rngs, optional
+        Random number generators for initialization.
+    **kwargs
+        Additional keyword arguments specific to the embedding type.
     """
 
     def __init__(
@@ -312,4 +466,17 @@ class FeatureEmbedder(nnx.Module):
         return
 
     def __call__(self, ids):
+        """
+        Apply feature embedding to input IDs.
+
+        Parameters
+        ----------
+        ids : Array
+            Input IDs.
+
+        Returns
+        -------
+        Array
+            Embedded features.
+        """
         return self.embedder(ids)
