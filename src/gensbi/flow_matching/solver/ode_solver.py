@@ -63,7 +63,9 @@ class ODESolver(Solver):
     ) -> Callable:
         r"""Obtain a sampler to solve the ODE with the velocity field.
 
-        Args:
+        Parameters
+
+        ----------
             x_init : Tensor
                 initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
             step_size : Optional[float]

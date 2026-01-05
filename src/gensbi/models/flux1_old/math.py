@@ -15,17 +15,27 @@ def attention(
     """
     Compute attention mechanism.
 
-    Args:
-        q (Array): Query tensor.
-        k (Array): Key tensor.
-        v (Array): Value tensor.
-        pe (Optional[Array]): Positional encoding.
-        mask (Optional[Array]): Attention mask.
+    Parameters
 
-    Returns:
-        Array: Attention output.
+    ----------
+        q : Array
+            Query tensor.
+        k : Array
+            Key tensor.
+        v : Array
+            Value tensor.
+        pe : Optional[Array]
+            Positional encoding.
+        mask : Optional[Array]
+            Attention mask.
+
+    Returns
+
+    -------
+        Array
+            Attention output.
     """
-    if pe is not None:
+    if pe is not None
         q, k = apply_rope(q, k, pe)
 
     q = rearrange(q, "B H L D -> B L H D")  # for jax
@@ -39,17 +49,27 @@ def attention(
     return x
 
 
-def rope(pos: Array, dim: int, theta: int) -> Array:
+def rope(pos
+    Array, dim: int, theta: int) -> Array:
     """
     Compute rotary positional embeddings.
 
-    Args:
-        pos (Array): Position tensor.
-        dim (int): Dimension of embeddings.
-        theta (int): Scaling factor.
+    Parameters
 
-    Returns:
-        Array: Rotary embeddings.
+    ----------
+        pos
+            Array
+            Position tensor.
+        dim
+            int
+            Dimension of embeddings.
+        theta
+            int
+            Scaling factor.
+
+    Returns
+        Array
+            Rotary embeddings.
     """
     assert dim % 2 == 0
     scale = jnp.arange(0, dim, 2, dtype=jnp.float32) / dim
@@ -60,20 +80,32 @@ def rope(pos: Array, dim: int, theta: int) -> Array:
     return out.astype(jnp.float32)
 
 
-def apply_rope(xq: Array, xk: Array, freqs_cis: Array) -> Tuple[Array, Array]:
+def apply_rope(xq
+    Array, xk: Array, freqs_cis: Array) -> Tuple[Array, Array]:
     """
     Apply rotary positional embeddings.
 
-    Args:
-        xq (Array): Query tensor.
-        xk (Array): Key tensor.
-        freqs_cis (Array): Frequency embeddings.
+    Parameters
 
-    Returns:
-        Tuple[Array, Array]: Transformed query and key tensors.
+    ----------
+        xq
+            Array
+            Query tensor.
+        xk
+            Array
+            Key tensor.
+        freqs_cis
+            Array
+            Frequency embeddings.
+
+    Returns
+        Tuple[Array, Array]
+            Transformed query and key tensors.
     """
-    xq_ = xq.astype(jnp.float32).reshape(*xq.shape[:-1], -1, 1, 2)
-    xk_ = xk.astype(jnp.float32).reshape(*xk.shape[:-1], -1, 1, 2)
+    xq_ = xq.astype(jnp.float32).reshape(*xq.shape[
+        -1], -1, 1, 2)
+    xk_ = xk.astype(jnp.float32).reshape(*xk.shape[
+        -1], -1, 1, 2)
     xq_out = freqs_cis[..., 0] * xq_[..., 0] + freqs_cis[..., 1] * xq_[..., 1]
     xk_out = freqs_cis[..., 0] * xk_[..., 0] + freqs_cis[..., 1] * xk_[..., 1]
     return xq_out.reshape(*xq.shape).astype(xq.dtype), xk_out.reshape(*xk.shape).astype(

@@ -30,7 +30,9 @@ class JointWrapper(ModelWrapper):
         """
         Initialize the JointWrapper.
 
-        Args:
+        Parameters
+
+        ----------
             model: The joint model instance to wrap.
             conditioned : bool, optional
                 Whether to use conditioning by default. Defaults to True.
@@ -49,7 +51,9 @@ class JointWrapper(ModelWrapper):
         """
         Perform conditioned inference.
 
-        Args:
+        Parameters
+
+        ----------
             obs : Array
                 Observations.
             obs_ids : Array

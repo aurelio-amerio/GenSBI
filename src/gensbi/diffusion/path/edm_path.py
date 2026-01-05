@@ -50,7 +50,9 @@ class EDMPath(ProbPath):
         """
         Initialize the EDMPath with a scheduler.
 
-        Args:
+        Parameters
+
+        ----------
             scheduler: The scheduler object.
             
         Raises
@@ -72,7 +74,9 @@ class EDMPath(ProbPath):
         r"""
         Sample from the EDM probability path.
 
-        Args:
+        Parameters
+
+        ----------
             key : Array
                 JAX random key.
             x_1 : Array

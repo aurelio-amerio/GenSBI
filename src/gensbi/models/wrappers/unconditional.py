@@ -29,7 +29,9 @@ class UnconditionalWrapper(ModelWrapper):
         """
         Initialize the UnconditionalWrapper.
 
-        Args:
+        Parameters
+
+        ----------
             model: The unconditional model instance to wrap.
         """
         super().__init__(model)
@@ -44,7 +46,9 @@ class UnconditionalWrapper(ModelWrapper):
         """
         Call the wrapped model with expanded inputs.
 
-        Args:
+        Parameters
+
+        ----------
             t : Array
                 Time steps.
             obs : Array

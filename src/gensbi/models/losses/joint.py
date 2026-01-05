@@ -33,7 +33,9 @@ class JointCFMLoss(ContinuousFMLoss):
         """
         Evaluate the continuous flow matching loss.
 
-        Args:
+        Parameters
+
+        ----------
             vf : Callable
                 Vector field model.
             batch : Tuple[Array, Array, Array]
@@ -103,7 +105,9 @@ class JointDiffLoss(nnx.Module)
         """
         Evaluate the continuous flow matching loss.
 
-        Args:
+        Parameters
+
+        ----------
             key : jax.random.PRNGKey
                 Random key for stochastic operations.
             model : Callable

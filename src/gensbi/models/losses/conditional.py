@@ -40,7 +40,9 @@ class ConditionalCFMLoss(ContinuousFMLoss):
         """
         Evaluates the continuous flow matching loss.
 
-        Args:
+        Parameters
+
+        ----------
             vf : callable
                 The vector field model to evaluate.
             batch : tuple
@@ -113,7 +115,9 @@ class ConditionalDiffLoss(nnx.Module)
         """
         Evaluate the continuous flow matching loss.
 
-        Args:
+        Parameters
+
+        ----------
             key : jax.random.PRNGKey
                 Random key for stochastic operations.
             model : Callable

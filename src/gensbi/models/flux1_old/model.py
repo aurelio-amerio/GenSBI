@@ -45,21 +45,37 @@ class Flux1Params:
         - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
         - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
 
-    Args:
-        in_channels (int): Number of channels per observation/parameter token.
-        vec_in_dim (Union[int, None]): Dimension of the vector input, if applicable.
-        context_in_dim (int): Number of channels per conditioning token.
-        mlp_ratio (float): Ratio for the MLP layers.
-        num_heads (int): Number of attention heads.
-        depth (int): Number of double stream blocks.
-        depth_single_blocks (int): Number of single stream blocks.
-        axes_dim (list[int]): Dimensions of the axes for positional encoding.
-        qkv_bias (bool): Whether to use bias in QKV layers.
-        rngs (nnx.Rngs): Random number generators for initialization.
-        dim_obs (int): Number of observation/parameter tokens.
-        dim_cond (int): Number of conditioning tokens.
-        theta (int): Scaling factor for positional encoding.
-        param_dtype (DTypeLike): Data type for model parameters.
+    Parameters
+
+    ----------
+        in_channels : int
+            Number of channels per observation/parameter token.
+        vec_in_dim : Union[int, None]
+            Dimension of the vector input, if applicable.
+        context_in_dim : int
+            Number of channels per conditioning token.
+        mlp_ratio : float
+            Ratio for the MLP layers.
+        num_heads : int
+            Number of attention heads.
+        depth : int
+            Number of double stream blocks.
+        depth_single_blocks : int
+            Number of single stream blocks.
+        axes_dim : list[int]
+            Dimensions of the axes for positional encoding.
+        qkv_bias : bool
+            Whether to use bias in QKV layers.
+        rngs : nnx.Rngs
+            Random number generators for initialization.
+        dim_obs : int
+            Number of observation/parameter tokens.
+        dim_cond : int
+            Number of conditioning tokens.
+        theta : int
+            Scaling factor for positional encoding.
+        param_dtype : DTypeLike
+            Data type for model parameters.
 
     """
 

@@ -21,7 +21,9 @@ class ProbPath(ABC):
         r"""
         Sample from the prior distribution.
 
-        Args:
+        Parameters
+
+        ----------
             key : Array
                 JAX random key.
             shape : Any

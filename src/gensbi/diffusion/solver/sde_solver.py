@@ -64,7 +64,9 @@ class SDESolver(Solver):
         """
         Returns a sampler function for the SDE.
 
-        Args:
+        Parameters
+
+        ----------
             condition_mask : Optional[Array]
                 Mask for conditioning.
             condition_value : Optional[Array]
