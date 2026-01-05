@@ -5,7 +5,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 import jax.numpy as jnp
 from flax import nnx
 
-from gensbi.models.simformer.embedding import MLPEmbedder, GaussianFourierEmbedding, SimpleTimeEmbedding, SinusoidalEmbedding
+from gensbi.models.embedding.embedding import MLPEmbedder, GaussianFourierEmbedding, SimpleTimeEmbedding, SinusoidalTimeEmbedding
 
 def get_rngs():
     return nnx.Rngs(0)
@@ -31,7 +31,7 @@ def test_simple_time_embedding_output_shape():
     assert out.shape == (7, 4)
 
 def test_sinusoidal_embedding_output_shape():
-    emb = SinusoidalEmbedding(output_dim=16)
+    emb = SinusoidalTimeEmbedding(output_dim=16)
     t = jnp.ones((10, 1))
     out = emb(t)
     assert out.shape == (10, 16)

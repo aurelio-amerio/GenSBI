@@ -12,7 +12,7 @@ from typing import Optional
 from dataclasses import dataclass
 
 from .transformer import Transformer
-from .embedding import GaussianFourierEmbedding, MLPEmbedder
+from gensbi.models.embedding import GaussianFourierEmbedding, MLPEmbedder
 
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 

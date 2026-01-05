@@ -13,9 +13,9 @@ This package provides the Flux1 transformer-based model and related loss functio
 # If you use this package, please consider citing the original jflux library and the FLUX.1 Kontext paper.
 
 
-from .model import Flux1, Flux1Params
+from .model import Flux1Embed, Flux1EmbedParams
 
 __all__ = [
-    "Flux1",
-    "Flux1Params",
+    "Flux1Embed",
+    "Flux1EmbedParams",
 ]

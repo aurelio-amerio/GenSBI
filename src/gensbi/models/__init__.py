@@ -6,6 +6,7 @@ including Flux1, Simformer, and autoencoder architectures, along with their
 associated loss functions and wrappers.
 """
 from .flux1 import Flux1Params, Flux1
+from .flux1embed import Flux1EmbedParams, Flux1Embed
 from .simformer import (
     Simformer,
     SimformerParams,
