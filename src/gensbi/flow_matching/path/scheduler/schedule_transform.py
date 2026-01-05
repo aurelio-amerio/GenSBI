@@ -75,7 +75,9 @@ class ScheduleTransformedModel(ModelWrapper):
         """
         Initialize the ScheduleTransformedModel.
 
-        Args:
+        Parameters
+
+        ----------
             velocity_model : nnx.Module
                 The original velocity model.
             original_scheduler : Scheduler
@@ -97,7 +99,9 @@ class ScheduleTransformedModel(ModelWrapper):
         This method implements a post-training velocity scheduler change for
         affine conditional flows.
 
-        Args:
+        Parameters
+
+        ----------
             x : Array
                 :math:`x_t`, the input array.
             t : Array

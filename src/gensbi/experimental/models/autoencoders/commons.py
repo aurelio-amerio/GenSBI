@@ -22,27 +22,27 @@ class AutoEncoderParams:
     Configuration parameters for the AutoEncoder models.
 
     Attributes:
-        resolution (int):
+        resolution : int
             The input feature dimension (length for 1D, height/width for 2D).
-        in_channels (int):
+        in_channels : int
             Number of input channels (e.g., 1 for scalar features, >1 for multi-channel).
-        ch (int):
+        ch : int
             Base number of channels for the first convolutional layer.
-        out_ch (int):
+        out_ch : int
             Number of output channels produced by the decoder (matches input channels for reconstruction).
-        ch_mult (list[int]):
+        ch_mult : list[int]
             Multipliers for the number of channels at each resolution level (controls model width/depth).
-        num_res_blocks (int):
+        num_res_blocks : int
             Number of residual blocks per resolution level.
-        z_channels (int):
+        z_channels : int
             Number of latent channels in the bottleneck (size of encoded representation).
-        scale_factor (float):
+        scale_factor : float
             Scaling factor applied to the latent representation (for normalization or data scaling).
-        shift_factor (float):
+        shift_factor : float
             Shift factor applied to the latent representation (for normalization or data centering).
-        rngs (nnx.Rngs):
+        rngs : nnx.Rngs
             Random number generators for parameter initialization and stochastic layers.
-        param_dtype (DTypeLike):
+        param_dtype : DTypeLike
             Data type for model parameters (e.g., jnp.float32, jnp.bfloat16).
     """
 
@@ -88,7 +88,9 @@ class DiagonalGaussian(nnx.Module):
         """
         Initialize the Diagonal Gaussian module.
         
-        Args:
+        Parameters
+        
+        ----------
             sample: Whether to sample from the distribution. Defaults to True.
             chunk_dim: Axis along which to split mean and logvar. Defaults to -1.
         """
@@ -103,7 +105,9 @@ class DiagonalGaussian(nnx.Module):
         """
         Split input into mean and log-variance, compute KL loss, and sample if required.
 
-        Args:
+        Parameters
+
+        ----------
             z : Array
                 Input tensor containing concatenated mean and logvar.
             key : Array, optional

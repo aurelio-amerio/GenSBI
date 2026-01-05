@@ -638,7 +638,9 @@ class VEScheduler(BaseSDE)
     """
     Variance Exploding (VE) SDE scheduler as described in the EDM paper.
 
-    Args:
+    Parameters
+
+    ----------
         sigma_min : float
             Minimum sigma value.
         sigma_max : float

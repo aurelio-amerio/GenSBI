@@ -48,7 +48,9 @@ class ContinuousFMLoss(nnx.Module):
         """
         Initialize the continuous flow matching loss.
         
-        Args:
+        Parameters
+        
+        ----------
             path: Probability path for x-prediction training.
             reduction: Reduction method for the loss. Options: 'none', 'mean', 'sum'. Defaults to 'mean'.
             
@@ -83,7 +85,9 @@ class ContinuousFMLoss(nnx.Module):
         """
         Evaluates the continuous flow matching loss.
 
-        Args:
+        Parameters
+
+        ----------
             vf : callable
                 The vector field model to evaluate.
             batch : tuple

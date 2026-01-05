@@ -19,10 +19,14 @@ class SchedulerOutput:
     r"""Represents a sample of a conditional-flow generated probability path.
 
     Attributes:
-        alpha_t (Array): :math:`\alpha_t`, shape (...).
-        sigma_t (Array): :math:`\sigma_t`, shape (...).
-        d_alpha_t (Array): :math:`\frac{\partial}{\partial t}\alpha_t`, shape (...).
-        d_sigma_t (Array): :math:`\frac{\partial}{\partial t}\sigma_t`, shape (...).
+        alpha_t : Array
+            :math:`\alpha_t`, shape (...).
+        sigma_t : Array
+            :math:`\sigma_t`, shape (...).
+        d_alpha_t : Array
+            :math:`\frac{\partial}{\partial t}\alpha_t`, shape (...).
+        d_sigma_t : Array
+            :math:`\frac{\partial}{\partial t}\sigma_t`, shape (...).
     """
 
     alpha_t: Array = field(metadata={"help": "alpha_t"})
@@ -297,10 +301,14 @@ class VPScheduler(Scheduler):
         """
         Compute t from signal-to-noise ratio.
         
-        Args:
+        Parameters
+        
+        ----------
             snr: The signal-to-noise ratio, shape (...).
             
-        Returns:
+        Returns
+            
+        -------
             Time values, shape (...).
         """
         T = -jnp.log(snr**2 / (snr**2 + 1))
@@ -321,10 +329,14 @@ class LinearVPScheduler(Scheduler):
         """
         Compute scheduler outputs for given times.
         
-        Args:
+        Parameters
+        
+        ----------
             t: Times in [0,1], shape (...).
             
-        Returns:
+        Returns
+            
+        -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
         """
         return SchedulerOutput(

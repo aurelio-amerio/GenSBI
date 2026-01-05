@@ -36,14 +36,18 @@ def timestep_embedding(
     """
     Generate timestep embeddings.
 
-    Args:
+    Parameters
+
+    ----------
         t: a 1-D Tensor of N indices, one per batch element.
             These may be fractional.
         dim: the dimension of the output.
         max_period: controls the minimum frequency of the embeddings.
         time_factor: Tensor of positional embeddings.
 
-    Returns:
+    Returns
+
+    -------
         timestep embeddings.
     """
     t = jnp.atleast_1d(t)
@@ -59,28 +63,34 @@ def timestep_embedding(
         -math.log(max_period) * jnp.arange(start=0, stop=half, dtype=jnp.float32) / half
     ).astype(dtype=t.dtype)
 
-    args = t[:, None].astype(jnp.float32) * freqs[None]
+    args = t[
+        , None].astype(jnp.float32) * freqs[None]
     embedding = jnp.concatenate([jnp.cos(args), jnp.sin(args)], axis=-1)
 
-    if dim % 2:
+    if dim % 2
         embedding = jnp.concatenate(
-            [embedding, jnp.zeros_like(embedding[:, :1])], axis=-1
+            [embedding, jnp.zeros_like(embedding[
+                , :1])], axis=-1
         )
 
-    if jnp.issubdtype(t.dtype, jnp.floating):
+    if jnp.issubdtype(t.dtype, jnp.floating)
         embedding = embedding.astype(t.dtype)
 
     return embedding
 
 
-class MLPEmbedder(nnx.Module):
+class MLPEmbedder(nnx.Module)
     def __init__(
         self,
-        in_dim: int,
-        hidden_dim: int,
-        rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
-    ):
+        in_dim
+            int,
+        hidden_dim
+            int,
+        rngs
+            nnx.Rngs,
+        param_dtype
+            DTypeLike = jnp.bfloat16,
+    )
         self.in_layer = nnx.Linear(
             in_features=in_dim,
             out_features=hidden_dim,
@@ -97,37 +107,48 @@ class MLPEmbedder(nnx.Module):
             param_dtype=param_dtype,
         )
 
-    def __call__(self, x: Array) -> Array:
+    def __call__(self, x
+        Array) -> Array:
         return self.out_layer(self.silu(self.in_layer(x)))
 
 
-class QKNorm(nnx.Module):
+class QKNorm(nnx.Module)
     def __init__(
         self,
-        dim: int,
-        rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
-    ):
+        dim
+            int,
+        rngs
+            nnx.Rngs,
+        param_dtype
+            DTypeLike = jnp.bfloat16,
+    )
         self.query_norm = nnx.RMSNorm(dim, rngs=rngs, param_dtype=param_dtype)
         self.key_norm = nnx.RMSNorm(dim, rngs=rngs, param_dtype=param_dtype)
 
-    def __call__(self, q: Array, k: Array, v: Array) -> tuple[Array, Array]:
+    def __call__(self, q
+        Array, k: Array, v: Array) -> tuple[Array, Array]:
         q = self.query_norm(q)
         k = self.key_norm(k)
         return q, k
 
 
-class SelfAttention(nnx.Module):
+class SelfAttention(nnx.Module)
     def __init__(
         self,
-        dim: int,
-        rngs: nnx.Rngs,
-        qkv_features: int | None = None,
-        param_dtype: DTypeLike = jnp.bfloat16,
-        num_heads: int = 8,
-        qkv_bias: bool = False,
-    ):
-        if qkv_features is None:
+        dim
+            int,
+        rngs
+            nnx.Rngs,
+        qkv_features
+            int | None = None,
+        param_dtype
+            DTypeLike = jnp.bfloat16,
+        num_heads
+            int = 8,
+        qkv_bias
+            bool = False,
+    )
+        if qkv_features is None
             qkv_features = dim
 
         self.num_heads = num_heads
@@ -149,7 +170,8 @@ class SelfAttention(nnx.Module):
             param_dtype=param_dtype,
         )
 
-    def __call__(self, x: Array, pe: Array, mask: Array | None = None) -> Array:
+    def __call__(self, x
+        Array, pe: Array, mask: Array | None = None) -> Array:
         qkv = self.qkv(x)
         q, k, v = rearrange(qkv, "B L (K H D) -> K B H L D", K=3, H=self.num_heads)
         q, k = self.norm(q, k, v)
@@ -159,21 +181,28 @@ class SelfAttention(nnx.Module):
 
 
 @dataclass
-class ModulationOut:
-    shift: Array
-    scale: Array
-    gate: Array
+class ModulationOut
+    shift
+        Array
+    scale
+        Array
+    gate
+        Array
 
 
 # includes AdaLN-zero initialization
-class Modulation(nnx.Module):
+class Modulation(nnx.Module)
     def __init__(
         self,
-        dim: int,
-        double: bool,
-        rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
-    ):
+        dim
+            int,
+        double
+            bool,
+        rngs
+            nnx.Rngs,
+        param_dtype
+            DTypeLike = jnp.bfloat16,
+    )
         self.is_double = double
         self.multiplier = 6 if double else 3
         self.lin = nnx.Linear(
@@ -186,26 +215,37 @@ class Modulation(nnx.Module):
             bias_init=jax.nn.initializers.zeros,  # this ensures that the initial modulation is neutral
         )
 
-    def __call__(self, vec: Array) -> tuple[ModulationOut, ModulationOut | None]:
-        out = jnp.split(self.lin(nnx.silu(vec))[:, None, :], self.multiplier, axis=-1)
+    def __call__(self, vec
+        Array) -> tuple[ModulationOut, ModulationOut | None]:
+        out = jnp.split(self.lin(nnx.silu(vec))[
+            , None, :], self.multiplier, axis=-1)
 
         return (
-            ModulationOut(*out[:3]),
-            ModulationOut(*out[3:]) if self.is_double else None,
+            ModulationOut(*out[
+                3]),
+            ModulationOut(*out[3
+                ]) if self.is_double else None,
         )
 
 
-class DoubleStreamBlock(nnx.Module):
+class DoubleStreamBlock(nnx.Module)
     def __init__(
         self,
-        hidden_size: int,
-        num_heads: int,
-        mlp_ratio: float,
-        rngs: nnx.Rngs,
-        qkv_features: int | None = None,
-        param_dtype: DTypeLike = jnp.bfloat16,
-        qkv_bias: bool = False,
-    ):
+        hidden_size
+            int,
+        num_heads
+            int,
+        mlp_ratio
+            float,
+        rngs
+            nnx.Rngs,
+        qkv_features
+            int | None = None,
+        param_dtype
+            DTypeLike = jnp.bfloat16,
+        qkv_bias
+            bool = False,
+    )
         mlp_hidden_dim = int(hidden_size * mlp_ratio)
         self.num_heads = num_heads
         self.hidden_size = hidden_size
@@ -304,12 +344,17 @@ class DoubleStreamBlock(nnx.Module):
 
     def __call__(
         self,
-        obs: Array,
-        cond: Array,
-        vec: Array,
-        pe: Array | None = None,
-        mask: Array | None = None,
-    ) -> tuple[Array, Array]:
+        obs
+            Array,
+        cond
+            Array,
+        vec
+            Array,
+        pe
+            Array | None = None,
+        mask
+            Array | None = None,
+    ) -> tuple[Array, Array]
         obs_mod1, obs_mod2 = self.obs_mod(vec)
         cond_mod1, cond_mod2 = self.cond_mod(vec)
 
@@ -337,7 +382,8 @@ class DoubleStreamBlock(nnx.Module):
         v = jnp.concatenate((cond_v, obs_v), axis=2)
 
         attn = attention(q, k, v, pe=pe, mask=mask)
-        cond_attn, obs_attn = attn[:, : cond.shape[1]], attn[:, cond.shape[1] :]
+        cond_attn, obs_attn = attn[
+            , : cond.shape[1]], attn[:, cond.shape[1] :]
 
         # calculate the obs bloks
         obs = obs + obs_mod1.gate * self.obs_attn.proj(obs_attn)
@@ -353,26 +399,34 @@ class DoubleStreamBlock(nnx.Module):
         return obs, cond
 
 
-class SingleStreamBlock(nnx.Module):
+class SingleStreamBlock(nnx.Module)
     """
     A DiT block with parallel linear layers as described in
-    `arXiv:2302.05442 <https://arxiv.org/abs/2302.05442>`_ and adapted modulation interface.
+    `arXiv
+        2302.05442 <https://arxiv.org/abs/2302.05442>`_ and adapted modulation interface.
     """
 
     def __init__(
         self,
-        hidden_size: int,
-        num_heads: int,
-        rngs: nnx.Rngs,
-        qkv_features: int | None = None,
-        param_dtype: DTypeLike = jnp.bfloat16,
-        mlp_ratio: float = 4.0,
-        qk_scale: float | None = None,
-    ):
+        hidden_size
+            int,
+        num_heads
+            int,
+        rngs
+            nnx.Rngs,
+        qkv_features
+            int | None = None,
+        param_dtype
+            DTypeLike = jnp.bfloat16,
+        mlp_ratio
+            float = 4.0,
+        qk_scale
+            float | None = None,
+    )
         self.hidden_dim = hidden_size
-        if qkv_features is None:
+        if qkv_features is None
             self.qkv_features = hidden_size
-        else:
+        else
             self.qkv_features = qkv_features
         self.num_heads = num_heads
         head_dim = qkv_features // num_heads
@@ -412,8 +466,9 @@ class SingleStreamBlock(nnx.Module):
         )
 
     def __call__(
-        self, x: Array, vec: Array, pe: Array | None = None, mask: Array | None = None
-    ) -> Array:
+        self, x
+            Array, vec: Array, pe: Array | None = None, mask: Array | None = None
+    ) -> Array
         mod, _ = self.modulation(vec)
         x_mod = (1 + mod.scale) * self.pre_norm(x) + mod.shift
         qkv, mlp = jnp.split(self.linear1(x_mod), [3 * self.qkv_features], axis=-1)
@@ -428,15 +483,20 @@ class SingleStreamBlock(nnx.Module):
         return x + mod.gate * output
 
 
-class LastLayer(nnx.Module):
+class LastLayer(nnx.Module)
     def __init__(
         self,
-        hidden_size: int,
-        patch_size: int,
-        out_channels: int,
-        rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
-    ):
+        hidden_size
+            int,
+        patch_size
+            int,
+        out_channels
+            int,
+        rngs
+            nnx.Rngs,
+        param_dtype
+            DTypeLike = jnp.bfloat16,
+    )
         self.norm_final = nnx.LayerNorm(
             num_features=hidden_size,
             use_scale=False,
@@ -463,12 +523,14 @@ class LastLayer(nnx.Module):
             ),
         )
 
-    def __call__(self, x: Array, vec: Array) -> Array:
+    def __call__(self, x
+        Array, vec: Array) -> Array:
         shift, scale = jnp.split(
             self.adaLN_modulation(vec),
             2,
             axis=1,
         )
-        x = (1 + scale[:, None, :]) * self.norm_final(x) + shift[:, None, :]
+        x = (1 + scale[
+            , None, :]) * self.norm_final(x) + shift[:, None, :]
         x = self.linear(x)
         return x

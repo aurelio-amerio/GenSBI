@@ -90,7 +90,9 @@ class PosteriorWrapper:
         """
         Sample from the posterior distribution conditioned on x.
 
-        Args:
+        Parameters
+
+        ----------
             sample_shape: Shape of the samples to be drawn.
             x: Optional tensor of observations to condition on. If None, uses the default_x.
         """
@@ -120,7 +122,9 @@ class PosteriorWrapper:
         """
         Sample from the posterior distribution conditioned on x.
 
-        Args:
+        Parameters
+
+        ----------
             sample_shape: Shape of the samples to be drawn.
             x: Optional tensor of observations to condition on. If None, uses the default_x.
             chunk_size: Size of the chunks to use for batched sampling.

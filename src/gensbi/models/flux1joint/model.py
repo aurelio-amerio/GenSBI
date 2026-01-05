@@ -43,21 +43,37 @@ class Flux1JointParams:
     In many SBI-style problems you will still use `in_channels = 1` (one scalar per token),
     but for some datasets a token may carry multiple features.
 
-    Args:
-        in_channels (int): Number of channels/features per token.
-        vec_in_dim (Union[int, None]): Dimension of the vector input, if applicable.
-        mlp_ratio (float): Ratio for the MLP layers.
-        num_heads (int): Number of attention heads.
-        depth_single_blocks (int): Number of single stream blocks.
-        axes_dim (list[int]): Dimensions of the axes for positional encoding.
-        condition_dim (list[int]): Dimensions of the (learned) condition embedding for RoPE.
-        qkv_bias (bool): Whether to use bias in QKV layers.
-        rngs (nnx.Rngs): Random number generators for initialization.
-        dim_joint (int): Number of tokens in the joint sequence.
-        theta (int): Scaling factor for positional encoding.
-        id_embedding_kind (str): Kind of embedding for token ids ('absolute', 'pos1d', 'pos2d', 'rope').
-        guidance_embed (bool): Whether to use guidance embedding.
-        param_dtype (DTypeLike): Data type for model parameters.
+    Parameters
+
+    ----------
+        in_channels : int
+            Number of channels/features per token.
+        vec_in_dim : Union[int, None]
+            Dimension of the vector input, if applicable.
+        mlp_ratio : float
+            Ratio for the MLP layers.
+        num_heads : int
+            Number of attention heads.
+        depth_single_blocks : int
+            Number of single stream blocks.
+        axes_dim : list[int]
+            Dimensions of the axes for positional encoding.
+        condition_dim : list[int]
+            Dimensions of the (learned) condition embedding for RoPE.
+        qkv_bias : bool
+            Whether to use bias in QKV layers.
+        rngs : nnx.Rngs
+            Random number generators for initialization.
+        dim_joint : int
+            Number of tokens in the joint sequence.
+        theta : int
+            Scaling factor for positional encoding.
+        id_embedding_kind : str
+            Kind of embedding for token ids ('absolute', 'pos1d', 'pos2d', 'rope').
+        guidance_embed : bool
+            Whether to use guidance embedding.
+        param_dtype : DTypeLike
+            Data type for model parameters.
 
     """
 
@@ -94,8 +110,11 @@ class Flux1Joint(nnx.Module):
     """
     Flux1Joint model for joint density estimation.
 
-    Args:
-        params (Flux1JointParams): Parameters for the Flux1Joint model.
+    Parameters
+
+    ----------
+        params : Flux1JointParams
+            Parameters for the Flux1Joint model.
     """
 
     def __init__(self, params: Flux1JointParams):

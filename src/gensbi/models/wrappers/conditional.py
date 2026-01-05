@@ -26,7 +26,9 @@ class ConditionalWrapper(ModelWrapper):
         """
         Initialize the ConditionalWrapper.
 
-        Args:
+        Parameters
+
+        ----------
             model: The conditional model instance to wrap.
         """
         super().__init__(model)
@@ -45,7 +47,9 @@ class ConditionalWrapper(ModelWrapper):
         """
         Call the wrapped model with expanded inputs.
 
-        Args:
+        Parameters
+
+        ----------
             t : Array
                 Time steps.
             obs : Array
