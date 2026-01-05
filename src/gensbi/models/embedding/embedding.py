@@ -14,7 +14,9 @@ class MLPEmbedder(nnx.Module):
         rngs: nnx.Rngs,
         param_dtype: DTypeLike = jnp.float32,
     ):
-        assert hidden_dim % in_dim == 0, "hidden_dim must be multiple of in_dim, got {} and {}".format(
+        assert (
+            hidden_dim % in_dim == 0
+        ), "hidden_dim must be multiple of in_dim, got {} and {}".format(
             hidden_dim, in_dim
         )
         self.repeats = hidden_dim // in_dim
@@ -124,23 +126,28 @@ class GaussianFourierEmbedding(nnx.Module):
         term2 = jnp.sin(arg)
         out = jnp.concatenate([term1, term2], axis=-1)
         return out[..., : self.output_dim]
-    
-    
+
+
 class PEMatrix(nnx.Variable):
     pass
 
-    
+
 class SinusoidalPosEmbed1D(nnx.Module):
-    def __init__(self, hidden_size: int, max_len: int = 5000, param_dtype: DTypeLike = jnp.float32):
+    def __init__(
+        self,
+        hidden_size: int,
+        max_len: int = 5000,
+        param_dtype: DTypeLike = jnp.float32,
+    ):
         """
         Fast 1D Sinusoidal Embedding (Hugging Face Style).
         Pre-computes the matrix to avoid re-calculating sines/cosines.
         """
         super().__init__()
-        
+
         if hidden_size % 2 != 0:
             raise ValueError(f"Hidden size ({hidden_size}) must be divisible by 2.")
-        
+
         self.hidden_size = hidden_size
 
         # --- Hugging Face Logic ---
@@ -153,40 +160,49 @@ class SinusoidalPosEmbed1D(nnx.Module):
 
         # Positions: 0, 1, 2, ... max_len
         pos = jnp.arange(max_len, dtype=jnp.float32)  # (MaxLen,)
-        
+
         # Outer Product: pos * omega
         out = jnp.einsum("m,d->md", pos, omega)  # (MaxLen, D/2)
 
         # Block Concatenation: [Sin Block | Cos Block]
         emb_sin = jnp.sin(out)
         emb_cos = jnp.cos(out)
-        pe = jnp.concatenate([emb_sin, emb_cos], axis=1, dtype=param_dtype) # (MaxLen, D)
+        pe = jnp.concatenate(
+            [emb_sin, emb_cos], axis=1, dtype=param_dtype
+        )  # (MaxLen, D)
 
         # Register as a constant (frozen state)
         self.pe = PEMatrix(pe)
 
-    def __call__(self, seq_len: int):
+    def __call__(self, ids):
         """
         Args:
             seq_len: The length of the current sequence.
         Returns:
             (1, seq_len, hidden_size) - Broadcastable batch dimension included.
         """
+        seq_len = ids.shape[1]
         # Slice the pre-computed matrix
         # This is extremely fast (just a memory pointer offset)
         return self.pe.value[None, :seq_len, :]
-    
-    
+
+
 class SinusoidalPosEmbed2D(nnx.Module):
-    def __init__(self, hidden_size: int, max_h: int = 128, max_w: int = 128, param_dtype: DTypeLike = jnp.float32):
+    def __init__(
+        self,
+        hidden_size: int,
+        max_h: int = 128,
+        max_w: int = 128,
+        param_dtype: DTypeLike = jnp.float32,
+    ):
         """
         Fast 2D Sinusoidal Embedding (Hugging Face / MAE Style).
         """
         super().__init__()
-        
+
         if hidden_size % 2 != 0:
             raise ValueError(f"Hidden size ({hidden_size}) must be divisible by 2.")
-        
+
         self.hidden_size = hidden_size
         dim_each = hidden_size // 2  # Half features for H, half for W
 
@@ -196,39 +212,107 @@ class SinusoidalPosEmbed2D(nnx.Module):
             omega = jnp.arange(dim_half, dtype=jnp.float32)
             omega /= dim_half
             omega = 1.0 / 10000**omega
-            
+
             pos = jnp.arange(length, dtype=jnp.float32)
             out = jnp.einsum("m,d->md", pos, omega)
-            
-            return jnp.concatenate([jnp.sin(out), jnp.cos(out)], axis=1, dtype=param_dtype)  # (Length, D)
+
+            return jnp.concatenate(
+                [jnp.sin(out), jnp.cos(out)], axis=1, dtype=param_dtype
+            )  # (Length, D)
 
         # --- Pre-computation ---
         # 1. Height Embeddings (Y-axis)
-        pe_h = _get_1d_block(max_h, dim_each) # (MaxH, D/2)
-        
+        pe_h = _get_1d_block(max_h, dim_each)  # (MaxH, D/2)
+
         # 2. Width Embeddings (X-axis)
-        pe_w = _get_1d_block(max_w, dim_each) # (MaxW, D/2)
-        
+        pe_w = _get_1d_block(max_w, dim_each)  # (MaxW, D/2)
+
         # Register constants
         self.pe_h = PEMatrix(pe_h)
         self.pe_w = PEMatrix(pe_w)
 
-    def __call__(self, h: int, w: int):
+    def __call__(self, ids):
         """
         Returns: (1, h*w, hidden_size)
         """
+        h, w = ids.shape[1], ids.shape[2]
         # 1. Slice
-        row_embed = self.pe_h.value[:h, None, :] # (h, 1, D/2)
-        col_embed = self.pe_w.value[None, :w, :] # (1, w, D/2)
-        
+        row_embed = self.pe_h.value[:h, None, :]  # (h, 1, D/2)
+        col_embed = self.pe_w.value[None, :w, :]  # (1, w, D/2)
+
         # 2. Broadcast to Grid
         # Repeat row vector 'w' times across columns
-        row_embed = jnp.repeat(row_embed, w, axis=1) # (h, w, D/2)
+        row_embed = jnp.repeat(row_embed, w, axis=1)  # (h, w, D/2)
         # Repeat col vector 'h' times across rows
-        col_embed = jnp.repeat(col_embed, h, axis=0) # (h, w, D/2)
-        
+        col_embed = jnp.repeat(col_embed, h, axis=0)  # (h, w, D/2)
+
         # 3. Concatenate
-        pe_2d = jnp.concatenate([row_embed, col_embed], axis=-1) # (h, w, D)
-        
+        pe_2d = jnp.concatenate([row_embed, col_embed], axis=-1)  # (h, w, D)
+
         # 4. Flatten
-        return pe_2d.reshape(1, h * w, self.hidden_size)
+        res = pe_2d.reshape(1, h * w, self.hidden_size)
+        return jnp.broadcast_to(res, (ids.shape[0], h * w, self.hidden_size))
+
+
+class Embed(nnx.Module):
+    def __init__(self, *args, **kwargs):
+        self.embed = nnx.Embed(*args, **kwargs)
+
+    def __call__(self, ids):
+        assert ids.ndim == 3, f"ids must have 3 dimensions, got {ids.ndim}"
+        return self.embed(ids[..., 0])  # remove last dimension
+
+
+class FeatureEmbedder(nnx.Module):
+    """
+    General Feature Embedder supporting learned, 1D sinusoidal, and 2D sinusoidal embeddings.
+    1D sinusoidal embeddings are suitable for sequences, while 2D sinusoidal embeddings are ideal for grid-like data (e.g., images).
+    """
+
+    def __init__(
+        self,
+        num_embeddings: int,
+        hidden_size: int,
+        *,
+        kind="absolute",
+        param_dtype=jnp.float32,
+        rngs: nnx.Rngs = None,
+        **kwargs,
+    ):
+        if kind == "absolute":
+            self.embedder = Embed(
+                num_embeddings=num_embeddings,
+                features=hidden_size,
+                rngs=rngs,
+                param_dtype=param_dtype,
+                **kwargs,
+            )
+        elif kind == "pos1d":
+            max_len = kwargs.pop("max_len", 5000)
+            max_len = jnp.maximum(num_embeddings, max_len)
+            self.embedder = SinusoidalPosEmbed1D(
+                hidden_size=hidden_size,
+                param_dtype=param_dtype,
+                max_len=max_len,
+                **kwargs,
+            )
+        elif kind == "pos2d":
+            max_h = kwargs.pop("max_h", 256)
+            max_w = kwargs.pop("max_w", 256)
+            max_h = jnp.maximum(num_embeddings, max_h)
+            max_w = jnp.maximum(num_embeddings, max_w)
+            self.embedder = SinusoidalPosEmbed2D(
+                hidden_size=hidden_size,
+                max_h=max_h,
+                max_w=max_w,
+                param_dtype=param_dtype,
+                **kwargs,
+            )
+        else:
+            raise ValueError(
+                f"Unknown embedding kind {kind}, expected 'learned', 'pos1d' or 'pos2d'"
+            )
+        return
+
+    def __call__(self, ids):
+        return self.embedder(ids)

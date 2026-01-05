@@ -20,7 +20,7 @@ from gensbi.models.flux1.layers import (
     Identity,
 )
 
-from gensbi.models.embedding import SinusoidalPosEmbed1D
+from gensbi.models.embedding import FeatureEmbedder
 
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
@@ -78,6 +78,10 @@ class Flux1EmbedParams:
     rngs: nnx.Rngs
     dim_obs: int  # observation dimension
     dim_cond: int  # condition dimension
+    id_embedding_kind: tuple[str, str] = (
+        "absolute",
+        "absolute",
+    )  # "absolute", "pos1d", or "pos2d" - for obs and cond respectively
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
@@ -106,17 +110,17 @@ class Flux1Embed(nnx.Module):
                 f"Got {params.axes_dim} but expected positional dim {pe_dim}"
             )
         self.num_heads = params.num_heads
-
-        self.obs_ids_embedder = nnx.Embed(
-            num_embeddings=params.dim_obs,
-            features=self.hidden_size,
-            rngs=params.rngs,
-            param_dtype=params.param_dtype,
-        )
-
-        self.cond_ids_embedder = SinusoidalPosEmbed1D(
-            hidden_size=self.hidden_size, param_dtype=params.param_dtype
-        )
+        
+        self.obs_ids_embedder = FeatureEmbedder(num_embeddings=params.dim_obs,
+                                                hidden_size=self.hidden_size,
+                                                kind=params.id_embedding_kind[0],
+                                                param_dtype=params.param_dtype,
+                                                rngs=params.rngs)
+        self.cond_ids_embedder = FeatureEmbedder(num_embeddings=params.dim_cond,
+                                                 hidden_size=self.hidden_size,
+                                                 kind=params.id_embedding_kind[1],
+                                                 param_dtype=params.param_dtype,
+                                                 rngs=params.rngs)
 
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
@@ -253,13 +257,15 @@ class Flux1Embed(nnx.Module):
         )  # we replace the condition with a null vector if not conditioned
 
         # we add the positional embeddings
-        obs = obs*jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids[...,0])
-        
+        obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
+
         # make sure the cond_ids are compatible with the embedding
-        assert cond_ids.shape[1] == self.params.dim_cond, f"cond_ids shape {cond_ids.shape} not compatible with dim_cond {self.params.dim_cond}"
+        assert (
+            cond_ids.shape[1] == self.params.dim_cond
+        ), f"cond_ids shape {cond_ids.shape} not compatible with dim_cond {self.params.dim_cond}"
         # assert jnp.all(jnp.diff(cond_ids[0,:,0]) >= 0), "cond_ids must be sorted in ascending order"
 
-        cond = cond*jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(self.params.dim_cond)
+        cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
 
         # call the layers
 
@@ -275,4 +281,3 @@ class Flux1Embed(nnx.Module):
 
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
         return obs
-
