@@ -93,8 +93,8 @@ class Flux1JointParams:
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
-        assert self.id_embedding_kind in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind} for obs."
+        available_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
+        assert self.id_embedding_kind in available_embeddings, f"Unknown id embedding kind {self.id_embedding_kind} for obs."
         
         if self.id_embedding_kind == "rope":
             # raise a warning tha using rope for joint modeling is not recommended
