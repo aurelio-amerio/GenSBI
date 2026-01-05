@@ -17,15 +17,17 @@ from gensbi.models.flux1.layers import (
     MLPEmbedder,
     SingleStreamBlock,
     timestep_embedding,
-    Identity
+    Identity,
 )
+
+from gensbi.models.embedding import SinusoidalPosEmbed1D
 
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 
 # TODO enforce rope usage, remove unused code
 @dataclass
-class Flux1Params:
+class Flux1EmbedParams:
     """Parameters for the Flux1 model.
 
         GenSBI uses the tensor convention `(batch, dim, channels)`.
@@ -59,6 +61,7 @@ class Flux1Params:
         dim_obs (int): Number of observation/parameter tokens.
         dim_cond (int): Number of conditioning tokens.
         theta (int): Scaling factor for positional encoding.
+        use_rope: tuple (bool, bool): Whether to use ROPE for (obs, cond).
         param_dtype (DTypeLike): Data type for model parameters.
 
     """
@@ -75,25 +78,22 @@ class Flux1Params:
     rngs: nnx.Rngs
     dim_obs: int  # observation dimension
     dim_cond: int  # condition dimension
-    theta: int = 10_000
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
         self.hidden_size = int(
-            jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32))
-            * self.num_heads
+            jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
         )
         self.qkv_features = self.hidden_size
 
 
-
-class Flux1(nnx.Module):
+class Flux1Embed(nnx.Module):
     """
     Transformer model for flow matching on sequences.
     """
 
-    def __init__(self, params: Flux1Params):
+    def __init__(self, params: Flux1EmbedParams):
         self.params = params
         self.in_channels = params.in_channels
         self.out_channels = params.in_channels
@@ -106,9 +106,18 @@ class Flux1(nnx.Module):
                 f"Got {params.axes_dim} but expected positional dim {pe_dim}"
             )
         self.num_heads = params.num_heads
-        self.pe_embedder = EmbedND(
-            dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
+
+        self.obs_ids_embedder = nnx.Embed(
+            num_embeddings=params.dim_obs,
+            features=self.hidden_size,
+            rngs=params.rngs,
+            param_dtype=params.param_dtype,
         )
+
+        self.cond_ids_embedder = SinusoidalPosEmbed1D(
+            hidden_size=self.hidden_size, param_dtype=params.param_dtype
+        )
+
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
             out_features=self.hidden_size,
@@ -236,54 +245,34 @@ class Flux1(nnx.Module):
             vec = vec + self.vector_in(guidance)
 
         cond_processed = self.cond_in(cond)  # (B, F, H)
-        cond_null = jnp.repeat(self.condition_null, repeats=obs.shape[0], axis=0) # (B, F, H)
+        cond_null = jnp.repeat(
+            self.condition_null, repeats=obs.shape[0], axis=0
+        )  # (B, F, H)
         cond = jnp.where(
             conditioned[..., None, None], cond_processed, cond_null
         )  # we replace the condition with a null vector if not conditioned
 
-        ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
+        # we add the positional embeddings
+        obs = obs*jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids[...,0])
+        
+        # make sure the cond_ids are compatible with the embedding
+        assert cond_ids.shape[1] == self.params.dim_cond, f"cond_ids shape {cond_ids.shape} not compatible with dim_cond {self.params.dim_cond}"
+        # assert jnp.all(jnp.diff(cond_ids[0,:,0]) >= 0), "cond_ids must be sorted in ascending order"
 
-        pe = self.pe_embedder(ids)
+        cond = cond*jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(self.params.dim_cond)
 
+        # call the layers
+
+        # we don't use rope
         for block in self.double_blocks.layers:
-            obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)
+            obs, cond = block(obs=obs, cond=cond, vec=vec, pe=None)
 
         obs = jnp.concatenate((cond, obs), axis=1)
+        # we don't use rope
         for block in self.single_blocks.layers:
-            obs = block(obs, vec=vec, pe=pe)
+            obs = block(obs, vec=vec, pe=None)
         obs = obs[:, cond.shape[1] :, ...]
 
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
         return obs
 
-
-# class ConditionalWrapper(ModelWrapper):
-#     def __init__(self, model):
-#         super().__init__(model)
-
-#     def __call__(
-#         self,
-#         t: Array,
-#         obs: Array,
-#         obs_ids: Array,
-#         cond: Array,
-#         cond_ids: Array,
-#         conditioned: bool | Array = True,
-#         guidance: Array | None = None,
-#     ) -> Array:
-
-#         obs = _expand_dims(obs)
-#         # t = self._expand_time(t)
-#         cond = _expand_dims(cond)
-#         obs_ids = _expand_dims(obs_ids)
-#         cond_ids = _expand_dims(cond_ids)
-
-#         return self.model(
-#             obs=obs,
-#             t=t,
-#             cond=cond,
-#             obs_ids=obs_ids,
-#             cond_ids=cond_ids,
-#             conditioned=conditioned,
-#             guidance=guidance,
-#         )
