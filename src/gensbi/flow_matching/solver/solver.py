@@ -15,10 +15,15 @@ class Solver(ABC):
         """
         Sample from the solver given initial conditions.
         
-        Args:
+        Parameters
+        
+        ----------
             x_0: Initial conditions for the solver.
             
-        Returns:
+        Returns
+            
+        -------
             Sampled output from the solver.
         """
-        ...  # pragma: no cover
+        ...  # pragma
+            no cover

@@ -55,10 +55,15 @@ class ScheduleTransformedModel(ModelWrapper):
                 step_size=1/1000
                 )[1]
 
-    Args:
-        velocity_model (ModelWrapper): The original velocity model to be transformed.
-        original_scheduler (Scheduler): The scheduler used by the original model. Must implement the snr_inverse function.
-        new_scheduler (Scheduler): The new scheduler to be applied to the model.
+    Parameters
+
+    ----------
+        velocity_model : ModelWrapper
+            The original velocity model to be transformed.
+        original_scheduler : Scheduler
+            The scheduler used by the original model. Must implement the snr_inverse function.
+        new_scheduler : Scheduler
+            The new scheduler to be applied to the model.
     """
 
     def __init__(
@@ -71,9 +76,12 @@ class ScheduleTransformedModel(ModelWrapper):
         Initialize the ScheduleTransformedModel.
 
         Args:
-            velocity_model (nnx.Module): The original velocity model.
-            original_scheduler (Scheduler): The scheduler used by the original model.
-            new_scheduler (Scheduler): The new scheduler to be applied.
+            velocity_model : nnx.Module
+                The original velocity model.
+            original_scheduler : Scheduler
+                The scheduler used by the original model.
+            new_scheduler : Scheduler
+                The new scheduler to be applied.
         """
         super().__init__(model=velocity_model)
         self.original_scheduler = original_scheduler
@@ -90,12 +98,17 @@ class ScheduleTransformedModel(ModelWrapper):
         affine conditional flows.
 
         Args:
-            x (Array): :math:`x_t`, the input array.
-            t (Array): The time array (denoted as :math:`r` above).
+            x : Array
+                :math:`x_t`, the input array.
+            t : Array
+                The time array (denoted as :math:`r` above).
             **extras: Additional arguments for the model.
 
-        Returns:
-            Array: The transformed velocity.
+        Returns
+
+        -------
+            Array
+                The transformed velocity.
         """
         r = t
 
@@ -126,7 +139,8 @@ class ScheduleTransformedModel(ModelWrapper):
 
         ds_r = (sigma_t * d_sigma_r - sigma_r * d_sigma_t * dt_r) / (sigma_t * sigma_t)
 
-        u_t = self.model(x=x / s_r, t=t, **extras)  # type: ignore
+        u_t = self.model(x=x / s_r, t=t, **extras)  # type
+            ignore
         u_r = ds_r * x / s_r + dt_r * s_r * u_t
 
         return u_r

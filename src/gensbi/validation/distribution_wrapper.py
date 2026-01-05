@@ -12,7 +12,9 @@ class PosteriorWrapper:
     """
     Wrap a GenSBI pipeline into a distribution compatible with `sbi`.
 
-    Args:
+    Parameters
+
+    ----------
         pipeline: An instance of a Pipeline from GenSBI.
         rngs: A nnx.Rngs instance for random number generation.
         theta_shape: Optional shape of the parameters (theta) to be sampled.
