@@ -25,16 +25,20 @@ class ModelWrapper(nnx.Module):
     the vector field and divergence, which are useful for ODE solvers that
     require these quantities.
     
-    Args:
-        model: The model to wrap.
+    Parameters
+    ----------
+    model : nnx.Module
+        The model to wrap.
     """
 
     def __init__(self, model: nnx.Module) -> None:
         """
         Initialize the model wrapper.
         
-        Args:
-            model: The model to wrap.
+        Parameters
+        ----------
+        model : nnx.Module
+            The model to wrap.
         """
         self.model = model
 
@@ -52,13 +56,19 @@ class ModelWrapper(nnx.Module):
         | given obs, t
         | returns the model output for input obs at time t, with extra information `extra`.
 
-        Args:
-            obs (Array): input data to the model (batch_size, ...).
-            t (Array): time (batch_size).
-            **extras: additional information forwarded to the model, e.g., text condition.
+        Parameters
+        ----------
+        obs : Array
+            Input data to the model (batch_size, ...).
+        t : Array
+            Time (batch_size).
+        **extras
+            Additional information forwarded to the model, e.g., text condition.
 
-        Returns:
-            Array: model output.
+        Returns
+        -------
+        Array
+            Model output.
         """
         obs = _expand_dims(obs)
         # t = self._expand_time(t)
@@ -68,13 +78,19 @@ class ModelWrapper(nnx.Module):
     def get_vector_field(self, **kwargs) -> Callable:
         r"""Compute the vector field of the model, properly squeezed for the ODE term.
 
-        Args:
-            x (Array): input data to the model (batch_size, ...).
-            t (Array): time (batch_size).
-            args: additional information forwarded to the model, e.g., text condition.
+        Parameters
+        ----------
+        x : Array
+            Input data to the model (batch_size, ...).
+        t : Array
+            Time (batch_size).
+        args
+            Additional information forwarded to the model, e.g., text condition.
 
-        Returns:
-            Array: vector field of the model.
+        Returns
+        -------
+        Callable
+            Vector field of the model.
         """
 
         def vf(t, x, args):
@@ -93,13 +109,19 @@ class ModelWrapper(nnx.Module):
     def get_divergence(self, **kwargs) -> Callable:
         r"""Compute the divergence of the model.
 
-        Args:
-            t (Array): time (batch_size).
-            x (Array): input data to the model (batch_size, ...).
-            args: additional information forwarded to the model, e.g., text condition.
+        Parameters
+        ----------
+        t : Array
+            Time (batch_size).
+        x : Array
+            Input data to the model (batch_size, ...).
+        args
+            Additional information forwarded to the model, e.g., text condition.
 
-        Returns:
-            Array: divergence of the model.
+        Returns
+        -------
+        Callable
+            Divergence of the model.
         """
         vf = self.get_vector_field(**kwargs)
 
