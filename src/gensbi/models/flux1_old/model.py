@@ -17,10 +17,8 @@ from gensbi.models.flux1.layers import (
     MLPEmbedder,
     SingleStreamBlock,
     timestep_embedding,
-    Identity,
+    Identity
 )
-
-from gensbi.models.embedding import FeatureEmbedder
 
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
@@ -61,8 +59,6 @@ class Flux1Params:
         dim_obs (int): Number of observation/parameter tokens.
         dim_cond (int): Number of conditioning tokens.
         theta (int): Scaling factor for positional encoding.
-        id_embedding_kind (tuple[str, str]): Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d" or "rope".
-        guidance_embed (bool): Whether to use guidance embedding.
         param_dtype (DTypeLike): Data type for model parameters.
 
     """
@@ -79,27 +75,17 @@ class Flux1Params:
     rngs: nnx.Rngs
     dim_obs: int  # observation dimension
     dim_cond: int  # condition dimension
-    theta: int = 500
-    id_embedding_kind: tuple[str, str] = (
-        "absolute",
-        "absolute",
-    )  # "absolute", "pos1d", "pos2d" or "rope" - for obs and cond respectively
+    theta: int = 10_000
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
-        assert self.id_embedding_kind[0] in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind[0]} for obs."
-        assert self.id_embedding_kind[1] in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind[1]} for cond."
-        # Enforce that if either is 'rope', both must be 'rope'
-        if "rope" in self.id_embedding_kind:
-            assert self.id_embedding_kind[0] == self.id_embedding_kind[1] == "rope", (
-                "If using RoPE, both obs and cond must use RoPE embedding."
-            )
         self.hidden_size = int(
-            jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
+            jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32))
+            * self.num_heads
         )
         self.qkv_features = self.hidden_size
+
 
 
 class Flux1(nnx.Module):
@@ -120,32 +106,9 @@ class Flux1(nnx.Module):
                 f"Got {params.axes_dim} but expected positional dim {pe_dim}"
             )
         self.num_heads = params.num_heads
-
-        if "rope" in params.id_embedding_kind:
-            self.use_rope = True
-            self.pe_embedder = EmbedND(
-                dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
-            )
-            self.obs_ids_embedder = None
-            self.cond_ids_embedder = None
-        else:
-            self.use_rope = False
-            self.pe_embedder = None
-            self.obs_ids_embedder = FeatureEmbedder(
-                num_embeddings=params.dim_obs,
-                hidden_size=self.hidden_size,
-                kind=params.id_embedding_kind[0],
-                param_dtype=params.param_dtype,
-                rngs=params.rngs,
-            )
-            self.cond_ids_embedder = FeatureEmbedder(
-                num_embeddings=params.dim_cond,
-                hidden_size=self.hidden_size,
-                kind=params.id_embedding_kind[1],
-                param_dtype=params.param_dtype,
-                rngs=params.rngs,
-            )
-
+        self.pe_embedder = EmbedND(
+            dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
+        )
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
             out_features=self.hidden_size,
@@ -273,21 +236,14 @@ class Flux1(nnx.Module):
             vec = vec + self.vector_in(guidance)
 
         cond_processed = self.cond_in(cond)  # (B, F, H)
-        cond_null = jnp.repeat(
-            self.condition_null, repeats=obs.shape[0], axis=0
-        )  # (B, F, H)
+        cond_null = jnp.repeat(self.condition_null, repeats=obs.shape[0], axis=0) # (B, F, H)
         cond = jnp.where(
             conditioned[..., None, None], cond_processed, cond_null
         )  # we replace the condition with a null vector if not conditioned
 
-        if self.use_rope:
-            ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
-            pe = self.pe_embedder(ids)
-        else:
-            # we add the positional embeddings
-            obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
-            cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
-            pe = None
+        ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
+
+        pe = self.pe_embedder(ids)
 
         for block in self.double_blocks.layers:
             obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)
@@ -299,3 +255,35 @@ class Flux1(nnx.Module):
 
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
         return obs
+
+
+# class ConditionalWrapper(ModelWrapper):
+#     def __init__(self, model):
+#         super().__init__(model)
+
+#     def __call__(
+#         self,
+#         t: Array,
+#         obs: Array,
+#         obs_ids: Array,
+#         cond: Array,
+#         cond_ids: Array,
+#         conditioned: bool | Array = True,
+#         guidance: Array | None = None,
+#     ) -> Array:
+
+#         obs = _expand_dims(obs)
+#         # t = self._expand_time(t)
+#         cond = _expand_dims(cond)
+#         obs_ids = _expand_dims(obs_ids)
+#         cond_ids = _expand_dims(cond_ids)
+
+#         return self.model(
+#             obs=obs,
+#             t=t,
+#             cond=cond,
+#             obs_ids=obs_ids,
+#             cond_ids=cond_ids,
+#             conditioned=conditioned,
+#             guidance=guidance,
+#         )
