@@ -31,21 +31,7 @@ from tqdm import tqdm
 import os
 
 
-# ANSI Escape Codes
-RED = "\033[91m"
-YELLOW = "\033[93m"
-GREEN = "\033[92m"
-RESET = "\033[0m"
-
-def get_colored_value(val, thresholds=(1.1, 1.2)):
-    """Returns the value wrapped in color codes based on thresholds."""
-    if val < thresholds[0]:
-        color = RED
-    elif val < thresholds[1]:
-        color = YELLOW
-    else:
-        color = GREEN
-    return f"{color}{val:.2f}{RESET}"
+from gensbi.utils.misc import get_colored_value
 
 
 class ModelEMA(nnx.Optimizer):
@@ -362,7 +348,7 @@ class AbstractPipeline(abc.ABC):
             init_value=1e-7,  # Start tiny
             peak_value=max_lr,  # Peak
             warmup_steps=warmup_steps,
-            decay_steps=num_steps-warmup_steps,
+            decay_steps=num_steps - warmup_steps,
             end_value=min_lr,  # 1% of Peak
         )
 
@@ -675,25 +661,19 @@ class AbstractPipeline(abc.ABC):
             # update the parameters ema
             if j % self.training_config["multistep"] == 0:
                 ema_step(self.ema_model, self.model, ema_optimizer)
+                
+            
+            decay = 0.99
 
             if j == 0:
                 l_train = loss
             else:
-                l_train = 0.99 * l_train + 0.01 * loss
-
-            # fixme remove maybe
-            if j > 0 and j % 10 == 0:
-                pbar.set_postfix(
-                    loss=f"{l_train:.4f}",
-                    ratio=f"{ratio:.4f}",
-                    counter=counter,
-                    val_loss=f"{l_val:.4f}",
-                )
+                l_train = decay * l_train + (1 - decay) * loss
 
             if j > 0 and j % val_every == 0:
                 # batch_val = next(self.val_dataset_iter)
                 # l_val = val_step(self.model, batch_val, rngs.val_step())
-                l_val = val_step(self.model, batch_val, rng_val)
+                l_val = val_step(self.model, batch_val, rng_val) # we use a fixed val batch and rng for validation, to avoid noise
 
                 ratio = l_val / min_val
                 if ratio > val_error_ratio:
@@ -701,12 +681,6 @@ class AbstractPipeline(abc.ABC):
                 else:
                     counter = 0
 
-                pbar.set_postfix(
-                    loss=f"{l_train:.4f}",
-                    ratio=get_colored_value(ratio, thresholds=(1.1, 1.2)),
-                    counter=counter,
-                    val_loss=f"{l_val:.4f}",
-                )
                 loss_array.append(l_train)
                 val_loss_array.append(l_val)
 
@@ -715,8 +689,14 @@ class AbstractPipeline(abc.ABC):
                     best_state = nnx.state(self.model)
                     best_state_ema = nnx.state(self.ema_model)
 
-                # l_val = 0 # not needed
-                # l_train = 0 # wrong to reset, since we are using accumulated moving average
+            # print stats
+            if j > 0 and j % 10 == 0:
+                pbar.set_postfix(
+                    loss=f"{l_train:.4f}",
+                    ratio=get_colored_value(ratio, thresholds=(1.1, 1.3)),
+                    counter=counter,
+                    val_loss=f"{l_val:.4f}",
+                )
 
         self.model.eval()
         self.ema_model.eval()
