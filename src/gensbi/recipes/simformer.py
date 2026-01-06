@@ -143,6 +143,8 @@ def parse_training_config(config_path: str):
     MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
 
     ema_decay = opt_params.get("ema_decay", 0.999)
+    
+    warmup_steps = opt_params.get("warmup_steps", 500)
 
     training_config = {}
     # overwrite the defaults with the config file values
@@ -160,6 +162,9 @@ def parse_training_config(config_path: str):
     training_config["early_stopping"] = early_stopping
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
+    training_config["warmup_steps"] = warmup_steps
+    
+    
 
     return training_config
 

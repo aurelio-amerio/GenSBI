@@ -3,7 +3,7 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 Examples:
     .. code-block:: python
-    
+
         import grain
         import numpy as np
         import jax
@@ -30,7 +30,7 @@ Examples:
             .shuffle(42)
             .repeat()
             .to_iter_dataset()
-            .batch(batch_size) 
+            .batch(batch_size)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
 
@@ -48,7 +48,7 @@ Examples:
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
 
     .. note::
-    
+
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
@@ -56,22 +56,12 @@ Examples:
 import jax
 import jax.numpy as jnp
 from flax import nnx
-import optax
-from optax.contrib import reduce_on_plateau
-from numpyro import distributions as dist
-from tqdm.auto import tqdm
-from functools import partial
-import orbax.checkpoint as ocp
 
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
 
-from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
-from gensbi.diffusion.solver import SDESolver
-
-from gensbi.models import Flux1, Flux1Params, ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
+from gensbi.models import (
+    Flux1,
+    Flux1Params,
+)
 
 from einops import repeat
 
@@ -81,7 +71,11 @@ import os
 
 import yaml
 
-from gensbi.recipes.conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline
+from gensbi.recipes.conditional_pipeline import (
+    ConditionalFlowPipeline,
+    ConditionalDiffusionPipeline,
+)
+
 
 def parse_flux1_params(config_path: str):
     """
@@ -156,6 +150,8 @@ def parse_training_config(config_path: str):
     MAX_LR = opt_params.get("max_lr", 1e-3)
     MIN_LR = opt_params.get("min_lr", 0.0)
     MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
+    
+    warmup_steps = opt_params.get("warmup_steps", 500)
 
     ema_decay = opt_params.get("ema_decay", 0.999)
 
@@ -175,6 +171,7 @@ def parse_training_config(config_path: str):
     training_config["early_stopping"] = early_stopping
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
+    training_config["warmup_steps"] = warmup_steps
 
     return training_config
 
@@ -214,33 +211,38 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             Configuration for training. If None, default configuration is used.
 
         """
-    
 
         if params is not None:
             ch_obs = params.in_channels
 
-        
         if params is not None:
             ch_cond = params.context_in_dim
-            
 
-        
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
-        
+
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
-        
-
 
         params = self._get_default_params()
 
         model = self._make_model(params)
-        
+
         super().__init__(
-            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, training_config=training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            training_config=training_config,
+            use_rope=True,
         )
         self.ema_model = nnx.clone(self.model)
+    
+        
 
     # TODO: check how to implement the in channels and cond channels properly, we may need to modify something here
     @classmethod
@@ -304,8 +306,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            ch_cond = params.context_in_dim,
+            ch_obs=params.in_channels,
+            ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
         )
@@ -331,7 +333,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
-            axes_dim=[6],
+            axes_dim=[6,1],
             qkv_bias=True,
             dim_obs=self.dim_obs,
             dim_cond=self.dim_cond,
@@ -340,7 +342,6 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             param_dtype=jnp.float32,
         )
         return params
-
 
 
 class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
@@ -382,31 +383,45 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         if params is not None:
             ch_obs = params.in_channels
 
-            
         if params is not None:
             ch_cond = params.context_in_dim
-            
-    
-        
+
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
-        
+
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
-        
 
         if params is None:
             params = self._get_default_params()
 
-        
         model = self._make_model(params)
-        
+
         super().__init__(
-            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, training_config=training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            training_config=training_config,
+            use_rope=True,
         )
         self.ema_model = nnx.clone(self.model)
+        
+        # Flux1 uses different ids for obs and cond
+        obs_ids = jnp.zeros((1,dim_obs,2), dtype=jnp.int32) 
+        obs_ids = obs_ids.at[...,0].set(jnp.arange(dim_obs))
+        
+        cond_ids = jnp.zeros((1,dim_cond,2), dtype=jnp.int32) 
+        cond_ids = cond_ids.at[...,0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[...,1].set(1)  # set second channel to 1 for conditioning tokens
+        
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
 
-    
     # TODO: need to update this too
     @classmethod
     def init_pipeline_from_config(
@@ -471,8 +486,8 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            ch_cond = params.context_in_dim,
+            ch_obs=params.in_channels,
+            ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
         )
@@ -498,7 +513,7 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
-            axes_dim=[6],
+            axes_dim=[6,1],
             qkv_bias=True,
             dim_obs=self.dim_obs,
             dim_cond=self.dim_cond,

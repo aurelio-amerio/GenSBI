@@ -1,4 +1,3 @@
-# %%
 import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
@@ -112,13 +111,14 @@ params = Flux1Params(
     depth=1,
     depth_single_blocks=2,
     axes_dim=[
-        2,
+        2,2
     ],
     dim_obs=dim_obs,
     dim_cond=dim_cond,
     qkv_bias=True,
     guidance_embed=False,
     rngs=nnx.Rngs(0),
+    id_embedding_kind=("pos1d", "pos1d"),
     param_dtype=jnp.float32,
 )
 

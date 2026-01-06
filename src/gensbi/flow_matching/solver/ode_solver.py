@@ -19,8 +19,10 @@ class ODESolver(Solver):
 
     This class utilizes a velocity field model to solve ODEs over a given time grid using numerical ode solvers.
 
-    Args:
-        velocity_model (Union[ModelWrapper, Callable]): a velocity field model receiving :math:`(x,t)` and returning :math:`u_t(x)`
+    Parameters
+    ----------
+        velocity_model : Union[ModelWrapper, Callable]
+            a velocity field model receiving :math:`(x,t)` and returning :math:`u_t(x)`
 
     Example:
         .. code-block:: python
@@ -60,18 +62,27 @@ class ODESolver(Solver):
     ) -> Callable:
         r"""Obtain a sampler to solve the ODE with the velocity field.
 
-        Args:
-            x_init (Tensor): initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
-            step_size (Optional[float]): The step size. Must be None for adaptive step solvers.
-            method (str): A method supported by torchdiffeq. Defaults to "Euler". Other commonly used solvers are "Dopri5", "midpoint" and "heun3". For a complete list, see torchdiffeq.
-            atol (float): Absolute tolerance, used for adaptive step solvers.
-            rtol (float): Relative tolerance, used for adaptive step solvers.
-            time_grid (Tensor): The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to torch.tensor([0.0, 1.0]).
-            return_intermediates (bool, optional): If True then return intermediate time steps according to time_grid. Defaults to False.
-            **model_extras: Additional input for the model.
+        Parameters
+        ----------
+            step_size : Optional[float]
+                The step size. Must be None for adaptive step solvers.
+            method : Union[str, AbstractERK]
+                A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+            atol : float
+                Absolute tolerance, used for adaptive step solvers.
+            rtol : float
+                Relative tolerance, used for adaptive step solvers.
+            time_grid : Array
+                The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
+            return_intermediates : bool, optional
+                If True then return intermediate time steps according to time_grid. Defaults to False.
+            model_extras : dict
+                Additional input for the model.
 
-        Returns:
-            Callable: A function that takes initial conditions and returns the solution at final time or intermediate times.
+        Returns
+        -------
+            Callable
+                A function that takes initial conditions and returns the solution at final time or intermediate times.
         """
 
         term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))
@@ -123,18 +134,29 @@ class ODESolver(Solver):
     ) -> Union[Array, Sequence[Array]]:
         r"""Sample from the ODE defined by the velocity field.
 
-        Args:
-            x_init (Array): initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
-            step_size (Optional[float]): The step size. Must be None for adaptive step solvers.
-            method (str): A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler". For a complete list, see diffrax.
-            atol (float): Absolute tolerance, used for adaptive step solvers.
-            rtol (float): Relative tolerance, used for adaptive step solvers.
-            time_grid (Array): The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
-            return_intermediates (bool, optional): If True then return intermediate time steps according to time_grid. Defaults to False.
-            **model_extras: Additional input for the model.
+        Parameters
+        ----------
+            x_init : Array
+                Initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
+            step_size : Optional[float]
+                The step size. Must be None for adaptive step solvers.
+            method : Union[str, AbstractERK]
+                A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+            atol : float
+                Absolute tolerance, used for adaptive step solvers.
+            rtol : float
+                Relative tolerance, used for adaptive step solvers.
+            time_grid : Array
+                The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
+            return_intermediates : bool, optional
+                If True then return intermediate time steps according to time_grid. Defaults to False.
+            model_extras : dict
+                Additional input for the model.
 
-        Returns:
-            Union[Array, Sequence[Array]]: The final state or the states at all intermediate time steps.
+        Returns
+        -------
+            Union[Array, Sequence[Array]]
+                The final state or the states at all intermediate time steps.
         """
 
         sampler = self.get_sampler(
@@ -167,19 +189,30 @@ class ODESolver(Solver):
     ) -> Callable:
         r"""Solve for log likelihood given a target sample at :math:`t=0`.
 
-        Args:
-            x_1 (Array): target sample (e.g., samples :math:`X_1 \sim p_1`).
-            log_p0 (Callable[[Array], Array]): Log probability function of source distribution.
-            step_size (Optional[float]): Step size for fixed-step solvers.
-            method (str): Integration method to use.
-            atol (float): Absolute tolerance for adaptive solvers.
-            rtol (float): Relative tolerance for adaptive solvers.
-            time_grid (Array): Must start at 1.0 and end at 0.0.
-            return_intermediates (bool): Whether to return intermediate steps.
-            exact_divergence (bool): Use exact divergence vs Hutchinson estimator.
+        Parameters
+        ----------
+            x_1 : Array
+                target sample (e.g., samples :math:`X_1 \sim p_1`).
+            log_p0 : Callable[[Array], Array]
+                Log probability function of source distribution.
+            step_size : Optional[float]
+                Step size for fixed-step solvers.
+            method : str
+                Integration method to use.
+            atol : float
+                Absolute tolerance for adaptive solvers.
+            rtol : float
+                Relative tolerance for adaptive solvers.
+            time_grid : Array
+                Must start at 1.0 and end at 0.0.
+            return_intermediates : bool
+                Whether to return intermediate steps.
+            exact_divergence : bool
+                Use exact divergence vs Hutchinson estimator.
             **model_extras: Additional model inputs.
 
-        Returns:
+        Returns
+        -------
             Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: Samples and log likelihood values.
         """
         assert (

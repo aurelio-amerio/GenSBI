@@ -17,14 +17,16 @@ class ConditionalWrapper(ModelWrapper):
     """
     Wrapper for conditional models to handle input expansion and calling convention.
 
-    Args:
+    Parameters
+    ----------
         model: The conditional model instance to wrap.
     """
     def __init__(self, model):
         """
         Initialize the ConditionalWrapper.
 
-        Args:
+        Parameters
+        ----------
             model: The conditional model instance to wrap.
         """
         super().__init__(model)
@@ -43,17 +45,27 @@ class ConditionalWrapper(ModelWrapper):
         """
         Call the wrapped model with expanded inputs.
 
-        Args:
-            t (Array): Time steps.
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            cond (Array): Conditioning values.
-            cond_ids (Array): Conditioning identifiers.
-            conditioned (bool | Array, optional): Whether to use conditioning. Defaults to True.
-            guidance (Array | None, optional): Optional guidance input.
+        Parameters
+        ----------
+            t : Array
+                Time steps.
+            obs : Array
+                Observations.
+            obs_ids : Array
+                Observation identifiers.
+            cond : Array
+                Conditioning values.
+            cond_ids : Array
+                Conditioning identifiers.
+            conditioned : bool | Array, optional
+                Whether to use conditioning. Defaults to True.
+            guidance : Array | None, optional
+                Optional guidance input.
 
-        Returns:
-            Array: Model output.
+        Returns
+        -------
+            Array
+                Model output.
         """
         obs = _expand_dims(obs)
         t = _expand_time(t)
