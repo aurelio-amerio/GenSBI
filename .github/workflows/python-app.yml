@@ -47,25 +47,27 @@ jobs:
           # Generate test results badge
           genbadge tests --input-file reports/junit/junit.xml --output-file reports/badges/tests.svg
 
-      - name: Copy badges to img/badges
-        run: |
-          mkdir -p img/badges
-          cp reports/badges/*.svg img/badges/
-
-      - name: Commit and push badges to main
-        uses: stefanzweifel/git-auto-commit-action@v6
-
-        with:
-          commit_message: "Update badges [skip ci]"
-          branch: main
-          file_pattern: img/badges/*.svg
-
       - name: Build documentation
         run: |
           cd docs
           make html
 
+      - name: Copy badges to img/badges
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p img/badges
+          cp reports/badges/*.svg img/badges/
+
+      - name: Commit and push badges to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "Update badges [skip ci]"
+          branch: main
+          file_pattern: img/badges/*.svg
+
       - name: Deploy docs to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
