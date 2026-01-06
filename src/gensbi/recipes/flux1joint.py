@@ -102,9 +102,7 @@ def parse_flux1joint_params(config_path: str):
         condition_dim=model_params.get("condition_dim", [4]),
         qkv_bias=model_params.get("qkv_bias", True),
         theta=model_params.get("theta", -1),
-        id_embedding_kind=model_params.get(
-            "id_embedding_kind", ("absolute", "absolute")
-        ),
+        id_embedding_kind=model_params.get("id_embedding_kind", "absolute"),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
 
