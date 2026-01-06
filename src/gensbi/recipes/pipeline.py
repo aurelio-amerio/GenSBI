@@ -89,7 +89,7 @@ def _get_batch_sampler(
 ):
     """
     Create a batch sampler that processes samples in chunks.
-    
+
     Parameters
     ----------
     sampler_fn : Callable
@@ -100,12 +100,13 @@ def _get_batch_sampler(
         Size of each chunk.
     show_progress_bars : bool, optional
         Whether to show progress bars.
-        
+
     Returns
     -------
     Callable
         Batch sampler function.
     """
+
     # JIT the chunk processor
     @jax.jit
     def process_chunk(key_batch):
@@ -288,6 +289,43 @@ class AbstractPipeline(abc.ABC):
         ema_optimizer = ModelEMA(self.ema_model, ema_tx)
         return ema_optimizer
 
+    # def _get_optimizer(self):
+    #     """
+    #     Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+
+    #     Returns
+    #     -------
+    #     optimizer : nnx.Optimizer
+    #         The optimizer instance for the model.
+    #     """
+    #     warmup_steps = self.training_config["warmup_steps"] * self.training_config["multistep"]
+    #     max_lr = self.training_config["max_lr"]
+    #     schedule = optax.join_schedules(
+    #         schedules=[
+    #             optax.linear_schedule(init_value=0, end_value=max_lr, transition_steps=warmup_steps),
+    #             optax.constant_schedule(value=max_lr)
+    #         ],
+    #         boundaries=[warmup_steps]
+    #     )
+
+    #     opt = optax.chain(
+    #         optax.adaptive_grad_clip(10.0),
+    #         optax.adamw(schedule),
+    #         reduce_on_plateau(
+    #             patience=self.training_config["patience"],
+    #             cooldown=self.training_config["cooldown"],
+    #             factor=self.training_config["factor"],
+    #             rtol=self.training_config["rtol"],
+    #             accumulation_size=self.training_config["accumulation_size"],
+    #             min_scale=self.training_config["min_scale"],
+    #         ),
+    #     )
+    #     if self.training_config["multistep"] > 1:
+    #         opt = optax.MultiSteps(opt, self.training_config["multistep"])
+
+    #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
+    #     return optimizer
+
     def _get_optimizer(self):
         """
         Construct the optimizer for training, including learning rate scheduling and gradient clipping.
@@ -297,27 +335,23 @@ class AbstractPipeline(abc.ABC):
         optimizer : nnx.Optimizer
             The optimizer instance for the model.
         """
-        warmup_steps = self.training_config["warmup_steps"] * self.training_config["multistep"]
-        max_lr = self.training_config["max_lr"]
-        schedule = optax.join_schedules(
-            schedules=[
-                optax.linear_schedule(init_value=0, end_value=max_lr, transition_steps=warmup_steps),
-                optax.constant_schedule(value=max_lr)
-            ],
-            boundaries=[warmup_steps]
+        warmup_steps = (
+            self.training_config["warmup_steps"] * self.training_config["multistep"]
         )
-        
+        num_steps = self.training_config["num_steps"]
+        max_lr = self.training_config["max_lr"]
+        min_lr = self.training_config["min_lr"]
+        schedule = optax.warmup_cosine_decay_schedule(
+            init_value=1e-7,  # Start tiny
+            peak_value=max_lr,  # Peak
+            warmup_steps=warmup_steps,
+            decay_steps=num_steps-warmup_steps,
+            end_value=min_lr,  # 1% of Peak
+        )
+
         opt = optax.chain(
             optax.adaptive_grad_clip(10.0),
             optax.adamw(schedule),
-            reduce_on_plateau(
-                patience=self.training_config["patience"],
-                cooldown=self.training_config["cooldown"],
-                factor=self.training_config["factor"],
-                rtol=self.training_config["rtol"],
-                accumulation_size=self.training_config["accumulation_size"],
-                min_scale=self.training_config["min_scale"],
-            ),
         )
         if self.training_config["multistep"] > 1:
             opt = optax.MultiSteps(opt, self.training_config["multistep"])
@@ -353,9 +387,9 @@ class AbstractPipeline(abc.ABC):
         training_config["factor"] = 0.5
         training_config["accumulation_size"] = 100
         training_config["rtol"] = 1e-4
-        training_config["warmup_steps"] = 500
-        training_config["max_lr"] = 1e-3
-        training_config["min_lr"] = 1e-8
+        training_config["warmup_steps"] = 1000
+        training_config["max_lr"] = 1e-4
+        training_config["min_lr"] = 1e-6
         training_config["val_every"] = 100
         training_config["early_stopping"] = True
         training_config["experiment_id"] = 1
@@ -442,7 +476,7 @@ class AbstractPipeline(abc.ABC):
     def save_model(self, experiment_id=None):
         """
         Save model and EMA model checkpoints.
-        
+
         Parameters
         ----------
         experiment_id : str, optional
@@ -499,7 +533,7 @@ class AbstractPipeline(abc.ABC):
     def restore_model(self, experiment_id=None):
         """
         Restore model and EMA model from checkpoints.
-        
+
         Parameters
         ----------
         experiment_id : str, optional
@@ -583,10 +617,11 @@ class AbstractPipeline(abc.ABC):
         train_step = self.get_train_step_fn(loss_fn)
         val_step = self.get_val_step_fn(loss_fn)
 
+        rng_val = rngs.val_step()
         batch_val = next(self.val_dataset_iter)
-        min_val = val_step(self.model, batch_val, rngs.val_step())
+        min_val = val_step(self.model, batch_val, rng_val)
 
-        val_error_ratio = 1.1
+        val_error_ratio = 1.3  # 1.1
         counter = 0
         cmax = 10
 
@@ -605,9 +640,8 @@ class AbstractPipeline(abc.ABC):
 
         pbar = tqdm(range(nsteps))
         l_train = None
-        ratio = 0 # initialize ratio
-        l_val = min_val # initialize l_val 
-
+        ratio = 0  # initialize ratio
+        l_val = min_val  # initialize l_val
 
         for j in pbar:
             if counter > cmax and early_stopping:
@@ -628,9 +662,9 @@ class AbstractPipeline(abc.ABC):
             if j == 0:
                 l_train = loss
             else:
-                l_train = 0.9 * l_train + 0.1 * loss
-               
-            # fixme remove maybe    
+                l_train = 0.99 * l_train + 0.01 * loss
+
+            # fixme remove maybe
             if j > 0 and j % 10 == 0:
                 pbar.set_postfix(
                     loss=f"{l_train:.4f}",
@@ -640,10 +674,11 @@ class AbstractPipeline(abc.ABC):
                 )
 
             if j > 0 and j % val_every == 0:
-                batch_val = next(self.val_dataset_iter)
-                l_val = val_step(self.model, batch_val, rngs.val_step())
+                # batch_val = next(self.val_dataset_iter)
+                # l_val = val_step(self.model, batch_val, rngs.val_step())
+                l_val = val_step(self.model, batch_val, rng_val)
 
-                ratio = l_val / l_train
+                ratio = l_val / min_val
                 if ratio > val_error_ratio:
                     counter += 1
                 else:
@@ -746,7 +781,7 @@ class AbstractPipeline(abc.ABC):
     ):
         """
         Generate samples from the trained model in batches.
-        
+
         Parameters
         ----------
         key : jax.random.PRNGKey
@@ -763,7 +798,7 @@ class AbstractPipeline(abc.ABC):
             Additional positional arguments for the sampler.
         kwargs : dict
             Additional keyword arguments for the sampler.
-        
+
         """
 
         cond = x_o
