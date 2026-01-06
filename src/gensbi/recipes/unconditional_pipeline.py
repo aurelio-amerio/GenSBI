@@ -180,15 +180,15 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             time_grid=time_grid,
         )
 
-        def sampler(rng, nsamples):
-            x_init = jax.random.normal(rng, (nsamples, self.dim_obs, self.ch_obs))
+        def sampler(key, nsamples):
+            x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
             return sampler_(x_init)
 
         return sampler
 
     def sample(
         self,
-        rng,
+        key,
         nsamples=10_000,
         step_size=0.01,
         use_ema=True,
@@ -201,8 +201,17 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             time_grid=time_grid,
             **model_extras,
         )
-        samples = sampler(rng, nsamples)
+        samples = sampler(key, nsamples)
         return samples
+    
+    def sample_batched(
+        self,
+        *args,
+        **kwargs,
+    ):
+        raise NotImplementedError(
+            "Batched sampling not implemented for UnconditionalFlowPipeline."
+        )
 
     def compute_unnorm_logprob(
         self, x_1, step_size=0.01, use_ema=True, time_grid=None, **model_extras
@@ -441,8 +450,8 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             model_extras=model_extras,
         )
 
-        def sampler(rng, nsamples):
-            key1, key2 = jax.random.split(rng, 2)
+        def sampler(key, nsamples):
+            key1, key2 = jax.random.split(key, 2)
             x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
             samples = sampler_(key2, x_init)
             return samples
@@ -451,7 +460,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
 
     def sample(
         self,
-        rng,
+        key,
         nsamples=10_000,
         nsteps=18,
         use_ema=True,
@@ -464,6 +473,15 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             return_intermediates=return_intermediates,
             **model_extras,
         )
-        samples = sampler(rng, nsamples)
+        samples = sampler(key, nsamples)
 
         return samples
+    
+    def sample_batched(
+        self,
+        *args,
+        **kwargs,
+    ):
+        raise NotImplementedError(
+            "Batched sampling not implemented for UnconditionalDiffusionPipeline."
+        )

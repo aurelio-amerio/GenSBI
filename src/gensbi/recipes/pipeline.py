@@ -77,19 +77,75 @@ class ModelEMA(nnx.Optimizer):
 
 @nnx.jit
 def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
+    """Update EMA model with current model parameters."""
     ema_optimizer.update(ema_model, model)
-    
-# def _get_batch_sampler(
-#     sampler_fn: Callable,
-#     ncond: int,
-# ):
-#     @jax.jit
-#     def sampler(key) -> Array:
-#         return sampler_fn(key, ncond)
 
-#     # Vectorize sampler_fn over batch dimension
-#     batched_sampler = jax.vmap(sampler)
-#     return batched_sampler
+
+def _get_batch_sampler(
+    sampler_fn: Callable,
+    ncond: int,
+    chunk_size: int,
+    show_progress_bars: bool = True,
+):
+    """
+    Create a batch sampler that processes samples in chunks.
+    
+    Parameters
+    ----------
+    sampler_fn : Callable
+        Sampling function.
+    ncond : int
+        Number of conditions.
+    chunk_size : int
+        Size of each chunk.
+    show_progress_bars : bool, optional
+        Whether to show progress bars.
+        
+    Returns
+    -------
+    Callable
+        Batch sampler function.
+    """
+    # JIT the chunk processor
+    @jax.jit
+    def process_chunk(key_batch):
+        """Process a batch of keys."""
+        return jax.vmap(lambda k: sampler_fn(k, ncond))(key_batch)
+
+    def sampler(keys):
+        """Sample in batches with optional progress bar."""
+        n_samples = keys.shape[0]
+        results = []
+
+        # Calculate total chunks for tqdm
+        # We use ceil division to handle remainders
+        n_chunks = (n_samples + chunk_size - 1) // chunk_size
+
+        # Using a tqdm loop
+
+        if show_progress_bars:
+            loop = tqdm(
+                range(0, n_samples, chunk_size),
+                total=n_chunks,
+                desc="Sampling",
+            )
+        else:
+            loop = range(0, n_samples, chunk_size)
+
+        for i in loop:
+            batch_keys = keys[i : i + chunk_size]
+
+            chunk_out = process_chunk(batch_keys)
+
+            # CRITICAL: Wait for GPU to finish this chunk before updating bar
+            # This makes the progress bar accurate.
+            chunk_out.block_until_ready()
+
+            results.append(chunk_out)
+
+        return jnp.concatenate(results, axis=0)
+
+    return sampler
 
 
 class AbstractPipeline(abc.ABC):
@@ -129,9 +185,9 @@ class AbstractPipeline(abc.ABC):
         val_dataset,
         dim_obs: int,
         dim_cond: int,
-        ch_obs = 1,
-        ch_cond = None,
-        params = None,
+        ch_obs=1,
+        ch_cond=None,
+        params=None,
         training_config=None,
     ):
         self.train_dataset = train_dataset
@@ -143,7 +199,7 @@ class AbstractPipeline(abc.ABC):
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
         self.dim_joint = dim_obs + dim_cond
-        
+
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
 
@@ -164,7 +220,6 @@ class AbstractPipeline(abc.ABC):
         )
 
         os.makedirs(self.training_config["checkpoint_dir"], exist_ok=True)
-
 
         self.model = model
         self.model_wrapped = None  # to be set in subclass
@@ -242,9 +297,19 @@ class AbstractPipeline(abc.ABC):
         optimizer : nnx.Optimizer
             The optimizer instance for the model.
         """
+        warmup_steps = self.training_config["warmup_steps"] * self.training_config["multistep"]
+        max_lr = self.training_config["max_lr"]
+        schedule = optax.join_schedules(
+            schedules=[
+                optax.linear_schedule(init_value=0, end_value=max_lr, transition_steps=warmup_steps),
+                optax.constant_schedule(value=max_lr)
+            ],
+            boundaries=[warmup_steps]
+        )
+        
         opt = optax.chain(
             optax.adaptive_grad_clip(10.0),
-            optax.adamw(self.training_config["max_lr"]),
+            optax.adamw(schedule),
             reduce_on_plateau(
                 patience=self.training_config["patience"],
                 cooldown=self.training_config["cooldown"],
@@ -288,6 +353,7 @@ class AbstractPipeline(abc.ABC):
         training_config["factor"] = 0.5
         training_config["accumulation_size"] = 100
         training_config["rtol"] = 1e-4
+        training_config["warmup_steps"] = 500
         training_config["max_lr"] = 1e-3
         training_config["min_lr"] = 1e-8
         training_config["val_every"] = 100
@@ -329,7 +395,6 @@ class AbstractPipeline(abc.ABC):
     #     self.model_wrapped = None  # to be set in subclass
     #     return
 
-
     @abc.abstractmethod
     def get_loss_fn(self):
         """
@@ -348,8 +413,9 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
-            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, rng)
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
+            """Perform single training step with gradient update."""
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -366,13 +432,22 @@ class AbstractPipeline(abc.ABC):
         """
 
         @nnx.jit
-        def val_step(model, batch, rng: jax.random.PRNGKey):
-            loss = loss_fn(model, batch, rng)
+        def val_step(model, batch, key: jax.random.PRNGKey):
+            """Compute validation loss for a batch."""
+            loss = loss_fn(model, batch, key)
             return loss
 
         return val_step
 
     def save_model(self, experiment_id=None):
+        """
+        Save model and EMA model checkpoints.
+        
+        Parameters
+        ----------
+        experiment_id : str, optional
+            Experiment identifier. If None, uses training_config value.
+        """
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
 
@@ -412,14 +487,24 @@ class AbstractPipeline(abc.ABC):
         )
 
         checkpoint_manager_ema.save(
-            experiment_id, args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)))
-        
+            experiment_id,
+            args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)),
+        )
+
         checkpoint_manager_ema.close()
 
         print("Saved model to checkpoint")
         return
-    
+
     def restore_model(self, experiment_id=None):
+        """
+        Restore model and EMA model from checkpoints.
+        
+        Parameters
+        ----------
+        experiment_id : str, optional
+            Experiment identifier. If None, uses training_config value.
+        """
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
 
@@ -431,7 +516,9 @@ class AbstractPipeline(abc.ABC):
         ) as read_mgr:
             restored = read_mgr.restore(
                 experiment_id,
-                args=ocp.args.Composite(state=ocp.args.StandardRestore(item=model_state)),
+                args=ocp.args.Composite(
+                    state=ocp.args.StandardRestore(item=model_state)
+                ),
             )
         self.model = nnx.merge(graphdef, restored["state"])
 
@@ -450,6 +537,9 @@ class AbstractPipeline(abc.ABC):
             )
         self.ema_model = nnx.merge(graphdef, restored_ema["state"])
 
+        self.model.eval()
+        self.ema_model.eval()
+
         # wrap models
         self._wrap_model()
 
@@ -462,7 +552,6 @@ class AbstractPipeline(abc.ABC):
         Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
         """
         ...  # pragma: no cover
-
 
     def train(
         self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True
@@ -505,6 +594,7 @@ class AbstractPipeline(abc.ABC):
         val_loss_array = []
 
         self.model.train()
+        self.ema_model.train()
 
         if nsteps is None:
             nsteps = self.training_config["num_steps"]
@@ -515,6 +605,9 @@ class AbstractPipeline(abc.ABC):
 
         pbar = tqdm(range(nsteps))
         l_train = None
+        ratio = 0 # initialize ratio
+        l_val = min_val # initialize l_val 
+
 
         for j in pbar:
             if counter > cmax and early_stopping:
@@ -527,9 +620,7 @@ class AbstractPipeline(abc.ABC):
 
             batch = next(self.train_dataset_iter)
 
-            loss = train_step(
-                self.model, optimizer, batch, rngs.train_step()
-            )
+            loss = train_step(self.model, optimizer, batch, rngs.train_step())
             # update the parameters ema
             if j % self.training_config["multistep"] == 0:
                 ema_step(self.ema_model, self.model, ema_optimizer)
@@ -538,6 +629,15 @@ class AbstractPipeline(abc.ABC):
                 l_train = loss
             else:
                 l_train = 0.9 * l_train + 0.1 * loss
+               
+            # fixme remove maybe    
+            if j > 0 and j % 10 == 0:
+                pbar.set_postfix(
+                    loss=f"{l_train:.4f}",
+                    ratio=f"{ratio:.4f}",
+                    counter=counter,
+                    val_loss=f"{l_val:.4f}",
+                )
 
             if j > 0 and j % val_every == 0:
                 batch_val = next(self.val_dataset_iter)
@@ -563,10 +663,11 @@ class AbstractPipeline(abc.ABC):
                     best_state = nnx.state(self.model)
                     best_state_ema = nnx.state(self.ema_model)
 
-                l_val = 0
-                l_train = 0
+                # l_val = 0 # not needed
+                # l_train = 0 # wrong to reset, since we are using accumulated moving average
 
         self.model.eval()
+        self.ema_model.eval()
 
         if save_model:
             self.save_model(experiment_id)
@@ -574,11 +675,11 @@ class AbstractPipeline(abc.ABC):
         self._wrap_model()
 
         return loss_array, val_loss_array
-    
+
     @abc.abstractmethod
     def get_sampler(
         self,
-        rng,
+        key,
         x_o,
         step_size=0.01,
         use_ema=True,
@@ -590,7 +691,7 @@ class AbstractPipeline(abc.ABC):
 
         Parameters
         ----------
-        rng : jax.random.PRNGKey
+        key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
             Conditioning variable (e.g., observed data).
@@ -601,8 +702,8 @@ class AbstractPipeline(abc.ABC):
         time_grid : array-like, optional
             Time grid for the sampler (if applicable).
         model_extras : dict, optional
-            Additional model-specific parameters.   
-            
+            Additional model-specific parameters.
+
         Returns
         -------
         sampler : Callable: key, nsamples -> samples
@@ -611,13 +712,13 @@ class AbstractPipeline(abc.ABC):
         ...  # pragma: no cover
 
     @abc.abstractmethod
-    def sample(self, rng, x_o, nsamples=10_000, step_size=0.01):
+    def sample(self, key, x_o, nsamples=10_000, step_size=0.01):
         """
         Generate samples from the trained model.
 
         Parameters
         ----------
-        rng : jax.random.PRNGKey
+        key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
             Conditioning variable (e.g., observed data).
@@ -632,23 +733,53 @@ class AbstractPipeline(abc.ABC):
             Generated samples.
         """
         ...  # pragma: no cover
-        
-        
-    # def sample_batched(
-    #     self,
-    #     rng,
-    #     cond: Array,
-    #     nsamples,
-    #     **kwargs, # does nothing, for compatibility
-    # ):
-    #     sampler = self.get_sampler(cond, **kwargs)
-    #     batched_sampler = _get_batch_sampler(
-    #         sampler,
-    #         ncond=cond.shape[0],
-    #     )
 
-    #     keys = jax.random.split(rng, nsamples)
-    #     res = batched_sampler(
-    #         keys,
-    #     )
-    #     return res
+    def sample_batched(
+        self,
+        key,
+        x_o: Array,
+        nsamples: int,
+        *args,
+        chunk_size: Optional[int] = 50,
+        show_progress_bars=True,
+        **kwargs,
+    ):
+        """
+        Generate samples from the trained model in batches.
+        
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random number generator key.
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        nsamples : int
+            Number of samples to generate.
+        chunk_size : int, optional
+            Size of each batch for sampling. Default is 50.
+        show_progress_bars : bool, optional
+            Whether to display progress bars during sampling. Default is True.
+        args : tuple
+            Additional positional arguments for the sampler.
+        kwargs : dict
+            Additional keyword arguments for the sampler.
+        
+        """
+
+        cond = x_o
+
+        # TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder
+        # Possibly fixed by passing the kwargs, which should include the encoder_key
+        sampler = self.get_sampler(cond, *args, **kwargs)
+        batched_sampler = _get_batch_sampler(
+            sampler,
+            ncond=cond.shape[0],
+            chunk_size=chunk_size,
+            show_progress_bars=show_progress_bars,
+        )
+
+        keys = jax.random.split(key, nsamples)
+
+        res = batched_sampler(keys)
+
+        return res

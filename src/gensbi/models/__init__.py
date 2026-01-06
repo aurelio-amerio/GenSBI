@@ -6,6 +6,7 @@ including Flux1, Simformer, and autoencoder architectures, along with their
 associated loss functions and wrappers.
 """
 from .flux1 import Flux1Params, Flux1
+
 from .simformer import (
     Simformer,
     SimformerParams,
@@ -16,7 +17,6 @@ from .flux1joint import (
     Flux1JointParams,
 )   
 
-from .autoencoders import AutoEncoder1D, AutoEncoder2D, AutoEncoderParams, vae_loss_fn
 
 from .losses import JointCFMLoss, JointDiffLoss, ConditionalCFMLoss, ConditionalDiffLoss, UnconditionalCFMLoss, UnconditionalDiffLoss   
 
@@ -31,12 +31,7 @@ __all__ = [
 
     "Flux1Joint",
     "Flux1JointParams",
-    
-    "AutoEncoder1D",
-    "AutoEncoder2D",
-    "AutoEncoderParams",
-    "vae_loss_fn",
-    
+
     "JointCFMLoss",
     "JointDiffLoss",
     "ConditionalCFMLoss",

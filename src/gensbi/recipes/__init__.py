@@ -10,7 +10,6 @@ from .joint_pipeline import JointDiffusionPipeline, JointFlowPipeline
 from .conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline
 from .unconditional_pipeline import UnconditionalFlowPipeline, UnconditionalDiffusionPipeline
 
-from .pipeline_vae import VAE1DPipeline, VAE2DPipeline
 
 __all__ = [
     "SimformerFlowPipeline",

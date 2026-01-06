@@ -30,7 +30,8 @@ class EDMPathSample:
         r"""
         Returns the batch as a tuple (x_1, x_t, sigma).
 
-        Returns:
+        Returns
+        -------
             Tuple[Array, Array, Array]: The target sample, the noisy sample, and the noise scale.
         """
         return self.x_1, self.x_t, self.sigma

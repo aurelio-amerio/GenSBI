@@ -7,7 +7,7 @@ from einops import rearrange
 from flax import nnx
 from jax.typing import DTypeLike, ArrayLike
 
-from gensbi.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
+from gensbi.experimental.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
 from flax.nnx import swish
 
 
@@ -16,10 +16,14 @@ class AttnBlock1D(nnx.Module):
     """
     1D Self-attention block for sequence data.
 
-    Args:
-        in_channels (int): Number of input channels.
-        rngs (nnx.Rngs): Random number generators for parameter initialization.
-        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    Parameters
+    ----------
+        in_channels : int
+            Number of input channels.
+        rngs : nnx.Rngs
+            Random number generators for parameter initialization.
+        param_dtype : DTypeLike
+            Data type for parameters (default: jnp.bfloat16).
     """
     def __init__(
         self,
@@ -70,11 +74,15 @@ class AttnBlock1D(nnx.Module):
         """
         Compute self-attention for 1D input.
 
-        Args:
-            h_ (Array): Input tensor of shape (batch, length, channels).
+        Parameters
+        ----------
+            h_ : Array
+                Input tensor of shape (batch, length, channels).
 
-        Returns:
-            Array: Output tensor after attention.
+        Returns
+        -------
+            Array
+                Output tensor after attention.
         """
         h_ = self.norm(h_)
         q = self.q(h_)
@@ -96,11 +104,15 @@ class AttnBlock1D(nnx.Module):
         """
         Forward pass for the attention block.
 
-        Args:
-            x (Array): Input tensor.
+        Parameters
+        ----------
+            x : Array
+                Input tensor.
 
-        Returns:
-            Array: Output tensor after residual attention.
+        Returns
+        -------
+            Array
+                Output tensor after residual attention.
         """
         return x + self.proj_out(self.attention(x))
 
@@ -109,11 +121,16 @@ class ResnetBlock1D(nnx.Module):
     """
     1D Residual block with optional channel up/downsampling.
 
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        rngs (nnx.Rngs): Random number generators for parameter initialization.
-        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    Parameters
+    ----------
+        in_channels : int
+            Number of input channels.
+        out_channels : int
+            Number of output channels.
+        rngs : nnx.Rngs
+            Random number generators for parameter initialization.
+        param_dtype : DTypeLike
+            Data type for parameters (default: jnp.bfloat16).
     """
     def __init__(
         self,
@@ -172,11 +189,15 @@ class ResnetBlock1D(nnx.Module):
         """
         Forward pass for the residual block.
 
-        Args:
-            x (Array): Input tensor.
+        Parameters
+        ----------
+            x : Array
+                Input tensor.
 
-        Returns:
-            Array: Output tensor after residual connection.
+        Returns
+        -------
+            Array
+                Output tensor after residual connection.
         """
         h = x
         h = self.norm1(h)
@@ -197,10 +218,14 @@ class Downsample1D(nnx.Module):
     """
     1D Downsampling block using strided convolution.
 
-    Args:
-        in_channels (int): Number of input channels.
-        rngs (nnx.Rngs): Random number generators for parameter initialization.
-        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    Parameters
+    ----------
+        in_channels : int
+            Number of input channels.
+        rngs : nnx.Rngs
+            Random number generators for parameter initialization.
+        param_dtype : DTypeLike
+            Data type for parameters (default: jnp.bfloat16).
     """
     def __init__(
         self,
@@ -222,11 +247,15 @@ class Downsample1D(nnx.Module):
         """
         Downsample the input tensor by a factor of 2.
 
-        Args:
-            x (Array): Input tensor of shape (batch, length, channels).
+        Parameters
+        ----------
+            x : Array
+                Input tensor of shape (batch, length, channels).
 
-        Returns:
-            Array: Downsampled tensor.
+        Returns
+        -------
+            Array
+                Downsampled tensor.
         """
         # Pad feature dimension (axis 1)
         pad_width = ((0, 0), (0, 1), (0, 0))
@@ -239,10 +268,14 @@ class Upsample1D(nnx.Module):
     """
     1D Upsampling block using nearest-neighbor interpolation and convolution.
 
-    Args:
-        in_channels (int): Number of input channels.
-        rngs (nnx.Rngs): Random number generators for parameter initialization.
-        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    Parameters
+    ----------
+        in_channels : int
+            Number of input channels.
+        rngs : nnx.Rngs
+            Random number generators for parameter initialization.
+        param_dtype : DTypeLike
+            Data type for parameters (default: jnp.bfloat16).
     """
     def __init__(
         self,
@@ -264,11 +297,15 @@ class Upsample1D(nnx.Module):
         """
         Upsample the input tensor by a factor of 2.
 
-        Args:
-            x (Array): Input tensor of shape (batch, length, channels).
+        Parameters
+        ----------
+            x : Array
+                Input tensor of shape (batch, length, channels).
 
-        Returns:
-            Array: Upsampled tensor.
+        Returns
+        -------
+            Array
+                Upsampled tensor.
         """
         # Assuming `x` is a 3D tensor with shape (batch, n, c)
         scale_factor = 2.0
@@ -286,15 +323,24 @@ class Encoder1D(nnx.Module):
     """
     1D Encoder for autoencoder architectures.
 
-    Args:
-        resolution (int): Input sequence length.
-        in_channels (int): Number of input channels.
-        ch (int): Base number of channels.
-        ch_mult (list[int]): Channel multipliers for each resolution.
-        num_res_blocks (int): Number of residual blocks per resolution.
-        z_channels (int): Number of latent channels.
-        rngs (nnx.Rngs): Random number generators for parameter initialization.
-        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    Parameters
+    ----------
+        resolution : int
+            Input sequence length.
+        in_channels : int
+            Number of input channels.
+        ch : int
+            Base number of channels.
+        ch_mult : list[int]
+            Channel multipliers for each resolution.
+        num_res_blocks : int
+            Number of residual blocks per resolution.
+        z_channels : int
+            Number of latent channels.
+        rngs : nnx.Rngs
+            Random number generators for parameter initialization.
+        param_dtype : DTypeLike
+            Data type for parameters (default: jnp.bfloat16).
     """
     def __init__(
         self,
@@ -398,11 +444,15 @@ class Encoder1D(nnx.Module):
         """
         Forward pass for the encoder.
 
-        Args:
-            x (Array): Input tensor of shape (batch, length, channels).
+        Parameters
+        ----------
+            x : Array
+                Input tensor of shape (batch, length, channels).
 
-        Returns:
-            Array: Encoded latent representation.
+        Returns
+        -------
+            Array
+                Encoded latent representation.
         """
         # downsampling
         hs = [self.conv_in(x)]
@@ -431,16 +481,26 @@ class Decoder1D(nnx.Module):
     """
     1D Decoder for autoencoder architectures.
 
-    Args:
-        ch (int): Base number of channels.
-        out_ch (int): Number of output channels.
-        ch_mult (list[int]): Channel multipliers for each resolution.
-        num_res_blocks (int): Number of residual blocks per resolution.
-        in_channels (int): Number of input channels.
-        resolution (int): Output sequence length.
-        z_channels (int): Number of latent channels.
-        rngs (nnx.Rngs): Random number generators for parameter initialization.
-        param_dtype (DTypeLike): Data type for parameters (default: jnp.bfloat16).
+    Parameters
+    ----------
+        ch : int
+            Base number of channels.
+        out_ch : int
+            Number of output channels.
+        ch_mult : list[int]
+            Channel multipliers for each resolution.
+        num_res_blocks : int
+            Number of residual blocks per resolution.
+        in_channels : int
+            Number of input channels.
+        resolution : int
+            Output sequence length.
+        z_channels : int
+            Number of latent channels.
+        rngs : nnx.Rngs
+            Random number generators for parameter initialization.
+        param_dtype : DTypeLike
+            Data type for parameters (default: jnp.bfloat16).
     """
     def __init__(
         self,
@@ -547,11 +607,15 @@ class Decoder1D(nnx.Module):
         """
         Forward pass for the decoder.
 
-        Args:
-            z (Array): Latent tensor of shape (batch, latent_length, latent_channels).
+        Parameters
+        ----------
+            z : Array
+                Latent tensor of shape (batch, latent_length, latent_channels).
 
-        Returns:
-            Array: Reconstructed output tensor.
+        Returns
+        -------
+            Array
+                Reconstructed output tensor.
         """
         # z to block_in
         h = self.conv_in(z)
@@ -582,8 +646,10 @@ class AutoEncoder1D(nnx.Module):
     """
     1D Autoencoder model with Gaussian latent space.
 
-    Args:
-        params (AutoEncoderParams): Configuration parameters for the autoencoder.
+    Parameters
+    ----------
+        params : AutoEncoderParams
+            Configuration parameters for the autoencoder.
     """
     def __init__(
         self,
@@ -623,12 +689,17 @@ class AutoEncoder1D(nnx.Module):
         """
         Encode input data into the latent space.
 
-        Args:
-            x (Array): Input tensor.
-            key (Array): PRNG key for sampling the latent variable.
+        Parameters
+        ----------
+            x : Array
+                Input tensor.
+            key : Array
+                PRNG key for sampling the latent variable.
 
-        Returns:
-            Array: Latent representation.
+        Returns
+        -------
+            Array
+                Latent representation.
         """
         if key is None:
             key = self.rngs.encode()
@@ -641,11 +712,15 @@ class AutoEncoder1D(nnx.Module):
         """
         Decode latent representation back to data space.
 
-        Args:
-            z (Array): Latent tensor.
+        Parameters
+        ----------
+            z : Array
+                Latent tensor.
 
-        Returns:
-            Array: Reconstructed output.
+        Returns
+        -------
+            Array
+                Reconstructed output.
         """
 
         z = z / self.scale_factor + self.shift_factor
@@ -657,10 +732,14 @@ class AutoEncoder1D(nnx.Module):
         """
         Forward pass: encode and then decode the input.
 
-        Args:
-            x (Array): Input tensor.
+        Parameters
+        ----------
+            x : Array
+                Input tensor.
 
-        Returns:
-            Array: Reconstructed output.
+        Returns
+        -------
+            Array
+                Reconstructed output.
         """
         return self.decode(self.encode(x, key))

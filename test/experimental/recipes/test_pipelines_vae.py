@@ -19,9 +19,9 @@ import numpy as np
 import grain
 
 
-from gensbi.models.autoencoders import AutoEncoderParams
+from gensbi.experimental.models.autoencoders import AutoEncoderParams
 
-from gensbi.recipes import VAE1DPipeline, VAE2DPipeline
+from gensbi.experimental.recipes import VAE1DPipeline, VAE2DPipeline
 
 
 df_train_1D = jax.random.normal(jax.random.PRNGKey(0), (1000, 128, 2))
@@ -109,7 +109,7 @@ ae_params_2D = AutoEncoderParams(
         (VAE2DPipeline, ae_params_2D, train_dataset_2D, val_dataset_2D),
     ],
 )
-def test_pipeline_vae(pipeline_cls, params, train_dataset, val_dataset):
+def test_vae_pipeline(pipeline_cls, params, train_dataset, val_dataset):
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:

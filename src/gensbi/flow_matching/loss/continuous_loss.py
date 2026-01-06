@@ -14,9 +14,12 @@ class ContinuousFMLoss(nnx.Module):
     """
     ContinuousFMLoss is a class that computes the continuous flow matching loss.
 
-    Args:
-        path (MixtureDiscreteProbPath): Probability path (x-prediction training).
-        reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
+    Parameters
+    ----------
+        path : MixtureDiscreteProbPath
+            Probability path (x-prediction training).
+        reduction : str, optional
+            Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
 
     Example:
         .. code-block:: python
@@ -44,12 +47,15 @@ class ContinuousFMLoss(nnx.Module):
         """
         Initialize the continuous flow matching loss.
         
-        Args:
+        Parameters
+        ----------
             path: Probability path for x-prediction training.
             reduction: Reduction method for the loss. Options: 'none', 'mean', 'sum'. Defaults to 'mean'.
             
-        Raises:
-            ValueError: If reduction is not one of 'None', 'mean', or 'sum'.
+        Raises
+        ------
+            ValueError
+                If reduction is not one of 'None', 'mean', or 'sum'.
         """
         self.path = path
         if reduction not in ["None", "mean", "sum"]:
@@ -72,15 +78,22 @@ class ContinuousFMLoss(nnx.Module):
         """
         Evaluates the continuous flow matching loss.
 
-        Args:
-            vf (callable): The vector field model to evaluate.
-            batch (tuple): A tuple containing the input data (x_0, x_1, t).
-            args (optional): Additional arguments for the function.
-            condition_mask (optional): A mask to apply to the input data.
+        Parameters
+        ----------
+            vf : callable
+                The vector field model to evaluate.
+            batch : tuple
+                A tuple containing the input data (x_0, x_1, t).
+            args : optional
+                Additional arguments for the function.
+            condition_mask : optional
+                A mask to apply to the input data.
             **kwargs: Additional keyword arguments for the function.
 
-        Returns:
-            Array: The computed loss.
+        Returns
+        -------
+            Array
+                The computed loss.
         """
 
         path_sample = self.path.sample(*batch)

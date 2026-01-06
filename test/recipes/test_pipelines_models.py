@@ -30,15 +30,15 @@ import itertools
 
 
 nsamples = 1000
-rng = jax.random.PRNGKey(0)
+key = jax.random.PRNGKey(0)
 
 dim_obs = 2
 dim_cond = 7
 dim_joint = dim_obs + dim_cond
 
 
-theta = jax.random.normal(rng, (nsamples, dim_obs, 2))
-x = jax.random.normal(rng, (nsamples, dim_cond, 2))
+theta = jax.random.normal(key, (nsamples, dim_obs, 2))
+x = jax.random.normal(key, (nsamples, dim_cond, 2))
 
 data = jnp.concatenate([theta, x], axis=1)
 
@@ -108,8 +108,9 @@ params_flux1joint = Flux1JointParams(
     condition_dim=[2],
     qkv_bias=True,
     rngs=nnx.Rngs(0),
-    joint_dim=4,
+    dim_joint=4,
     theta=16,
+    id_embedding_kind="pos1d",
     guidance_embed=False,
     param_dtype=jnp.float32,
 )
@@ -126,9 +127,10 @@ params_flux = Flux1Params(
         2,
     ],
     qkv_bias=True,
-    obs_dim=dim_obs,
-    cond_dim=dim_cond,
+    dim_obs=dim_obs,
+    dim_cond=dim_cond,
     theta=20,
+    id_embedding_kind=("pos1d", "pos1d"),
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
@@ -357,6 +359,16 @@ def test_model_pipeline(pipeline_cls, params):
         assert jnp.allclose(
             sample, sample_restored
         ), "Restored model samples do not match"
+        
+        # test batched sampling
+        cond = jnp.zeros((3, dim_cond, 2))
+        sample = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            cond,
+            nsamples=4,
+            chunk_size=2,
+        )
+        assert sample.shape == (4, 3, dim_obs, 2), f"Expected shape (4, 3, {dim_obs}, 2), got {sample.shape}"
 
 
 

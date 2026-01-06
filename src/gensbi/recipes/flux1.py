@@ -3,7 +3,7 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 Examples:
     .. code-block:: python
-    
+
         import grain
         import numpy as np
         import jax
@@ -30,7 +30,7 @@ Examples:
             .shuffle(42)
             .repeat()
             .to_iter_dataset()
-            .batch(batch_size) 
+            .batch(batch_size)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
 
@@ -48,7 +48,7 @@ Examples:
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
 
     .. note::
-    
+
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
@@ -56,32 +56,20 @@ Examples:
 import jax
 import jax.numpy as jnp
 from flax import nnx
-import optax
-from optax.contrib import reduce_on_plateau
-from numpyro import distributions as dist
-from tqdm.auto import tqdm
-from functools import partial
-import orbax.checkpoint as ocp
 
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
 
-from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
-from gensbi.diffusion.solver import SDESolver
-
-from gensbi.models import Flux1, Flux1Params, ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
-
-from einops import repeat
-
-from gensbi.utils.model_wrapping import _expand_dims
-
-import os
+from gensbi.models import (
+    Flux1,
+    Flux1Params,
+)
 
 import yaml
 
-from gensbi.recipes.conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline
+from gensbi.recipes.conditional_pipeline import (
+    ConditionalFlowPipeline,
+    ConditionalDiffusionPipeline,
+)
+
 
 def parse_flux1_params(config_path: str):
     """
@@ -111,9 +99,12 @@ def parse_flux1_params(config_path: str):
         num_heads=model_params.get("num_heads", 6),
         depth=model_params.get("depth", 8),
         depth_single_blocks=model_params.get("depth_single_blocks", 16),
-        axes_dim=model_params.get("axes_dim", [6]),
+        axes_dim=model_params.get("axes_dim", [6, 0]),
         qkv_bias=model_params.get("qkv_bias", True),
         theta=model_params.get("theta", -1),
+        id_embedding_kind=model_params.get(
+            "id_embedding_kind", ("absolute", "absolute")
+        ),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
 
@@ -157,6 +148,8 @@ def parse_training_config(config_path: str):
     MIN_LR = opt_params.get("min_lr", 0.0)
     MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
 
+    warmup_steps = opt_params.get("warmup_steps", 500)
+
     ema_decay = opt_params.get("ema_decay", 0.999)
 
     training_config = {}
@@ -175,6 +168,7 @@ def parse_training_config(config_path: str):
     training_config["early_stopping"] = early_stopping
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
+    training_config["warmup_steps"] = warmup_steps
 
     return training_config
 
@@ -189,8 +183,6 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         ch_obs=1,
         ch_cond=1,
         params=None,
-        vae_obs=None,
-        vae_cond=None,
         training_config=None,
     ):
         """
@@ -212,61 +204,37 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             Number of channels in the conditional data. Default is 1.
         params : Flux1Params, optional
             Parameters for the Flux1 model. If None, default parameters are used.
-        vae_obs : nnx.Module, optional
-            VAE module for the observation input. If None, no encoding is applied.
-        vae_cond : nnx.Module, optional
-            VAE module for the conditional input. If None, no encoding is applied.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
-        
-        # if vae are provided, adjust dim_cond and dim_obs accordingly
-        if vae_obs is not None:
-            obs_latent_shape = vae_obs.latent_shape
-            dim_obs = obs_latent_shape[1]
-            ch_obs = obs_latent_shape[2]
-        else:
-            if params is not None:
-                ch_obs = params.in_channels
 
-            
-        if vae_cond is not None:
-            cond_latent_shape = vae_cond.latent_shape
-            dim_cond = cond_latent_shape[1]
-            ch_cond = cond_latent_shape[2]
-        else:
-            if params is not None:
-                ch_cond = params.context_in_dim
-            
-        
-        # FIXME: we need to set these values manually instead of init to allow _get_default_params to work properly
-        # think of a better way to do it, avoiding circular dependencies
-        self.vae_obs = vae_obs
-        self.vae_cond = vae_cond
-        
+        if params is not None:
+            ch_obs = params.in_channels
+
+        if params is not None:
+            ch_cond = params.context_in_dim
+
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
-        
+
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
-        
 
-        if params is None:
-            params = self._get_default_params()
-        else:
-            if vae_obs is not None:
-                assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
-                assert params.obs_dim == dim_obs, f"obs_dim in params ({params.obs_dim}) does not match the VAE latent dimension ({dim_obs})."
-            if vae_cond is not None:
-                assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
-                assert params.cond_dim == dim_cond, f"cond_dim in params ({params.cond_dim}) does not match the VAE latent dimension ({dim_cond})."
-            
-        
+        params = self._get_default_params()
+
         model = self._make_model(params)
-        
+
         super().__init__(
-            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, vae_obs=vae_obs, vae_cond=vae_cond, training_config=training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            training_config=training_config,
         )
         self.ema_model = nnx.clone(self.model)
 
@@ -313,8 +281,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_obs,
-            cond_dim=dim_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
             **params_dict,
         )
 
@@ -332,8 +300,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            ch_cond = params.context_in_dim,
+            ch_obs=params.in_channels,
+            ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
         )
@@ -359,16 +327,16 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
-            axes_dim=[6],
+            axes_dim=[6, 1],
             qkv_bias=True,
-            obs_dim=self.dim_obs,
-            cond_dim=self.dim_cond,
+            dim_obs=self.dim_obs,
+            dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
+            id_embedding_kind=("absolute", "absolute"),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
         return params
-
 
 
 class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
@@ -381,8 +349,6 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         ch_obs=1,
         ch_cond=1,
         params=None,
-        vae_obs=None,
-        vae_cond=None,
         training_config=None,
     ):
         """
@@ -404,64 +370,54 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             Number of channels in the conditional data. Default is 1.
         params : Flux1Params, optional
             Parameters for the Flux1 model. If None, default parameters are used.
-        vae_obs : nnx.Module, optional
-            VAE module for the observation input. If None, no encoding is applied.
-        vae_cond : nnx.Module, optional
-            VAE module for the conditional input. If None, no encoding is applied.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
         """
-        # if vae are provided, adjust dim_cond and dim_obs accordingly
-        if vae_obs is not None:
-            obs_latent_shape = vae_obs.latent_shape
-            dim_obs = obs_latent_shape[1]
-            ch_obs = obs_latent_shape[2]
-        else:
-            if params is not None:
-                ch_obs = params.in_channels
 
-            
-        if vae_cond is not None:
-            cond_latent_shape = vae_cond.latent_shape
-            dim_cond = cond_latent_shape[1]
-            ch_cond = cond_latent_shape[2]
-        else:
-            if params is not None:
-                ch_cond = params.context_in_dim
-            
-        
-        # FIXME: we need to set these values manually instead of init to allow _get_default_params to work properly
-        # think of a better way to do it, avoiding circular dependencies
-        self.vae_obs = vae_obs
-        self.vae_cond = vae_cond
-        
+        if params is not None:
+            ch_obs = params.in_channels
+
+        if params is not None:
+            ch_cond = params.context_in_dim
+
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
-        
+
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
-        
 
         if params is None:
             params = self._get_default_params()
-        else:
-            if vae_obs is not None:
-                assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
-                assert params.obs_dim == dim_obs, f"obs_dim in params ({params.obs_dim}) does not match the VAE latent dimension ({dim_obs})."
-            if vae_cond is not None:
-                assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
-                assert params.cond_dim == dim_cond, f"cond_dim in params ({params.cond_dim}) does not match the VAE latent dimension ({dim_cond})."
-            
-        
+
         model = self._make_model(params)
-        
+
         super().__init__(
-            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, vae_obs=vae_obs, vae_cond=vae_cond, training_config=training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            training_config=training_config,
         )
         self.ema_model = nnx.clone(self.model)
 
-    
+        # Flux1 uses different ids for obs and cond
+        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+
+        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[..., 1].set(
+            1
+        )  # set second channel to 1 for conditioning tokens
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
+
     # TODO: need to update this too
     @classmethod
     def init_pipeline_from_config(
@@ -507,8 +463,8 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
-            obs_dim=dim_obs,
-            cond_dim=dim_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
             **params_dict,
         )
 
@@ -526,8 +482,8 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            ch_cond = params.context_in_dim,
+            ch_obs=params.in_channels,
+            ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
         )
@@ -553,11 +509,12 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
-            axes_dim=[6],
+            axes_dim=[6, 1],
             qkv_bias=True,
-            obs_dim=self.dim_obs,
-            cond_dim=self.dim_cond,
+            dim_obs=self.dim_obs,
+            dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
+            id_embedding_kind=("absolute", "absolute"),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )

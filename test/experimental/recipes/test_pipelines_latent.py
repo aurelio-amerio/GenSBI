@@ -16,16 +16,17 @@ import pytest
 
 import tempfile
 
-from gensbi.recipes import (
-    Flux1FlowPipeline,
-    Flux1DiffusionPipeline,
+from gensbi.experimental.recipes import (
+    Flux1LatentFlowPipeline,
+    Flux1LatentDiffusionPipeline,
 )
 
-from gensbi.models import Flux1, Flux1Params, AutoEncoder1D, AutoEncoderParams
+from gensbi.models import Flux1, Flux1Params
+from gensbi.experimental.models import AutoEncoder1D, AutoEncoderParams
 
 
 nsamples = 1000
-rng = jax.random.PRNGKey(0)
+key = jax.random.PRNGKey(0)
 
 dim_obs = 32
 dim_cond = 64
@@ -36,8 +37,8 @@ dim_joint = dim_obs + dim_cond
 channels = 3
 
 
-theta = jax.random.normal(rng, (nsamples, dim_obs, channels))
-x = jax.random.normal(rng, (nsamples, dim_cond, channels))
+theta = jax.random.normal(key, (nsamples, dim_obs, channels))
+x = jax.random.normal(key, (nsamples, dim_cond, channels))
 data = jnp.concatenate([theta, x], axis=1)
 
 
@@ -111,8 +112,8 @@ params_flux = Flux1Params(
     axes_dim=[
         2,
     ],
-    obs_dim=dim_obs_latent,
-    cond_dim=dim_cond_latent,
+    dim_obs=dim_obs_latent,
+    dim_cond=dim_cond_latent,
     qkv_bias=True,
     guidance_embed=False,
     rngs=nnx.Rngs(0),
@@ -126,8 +127,8 @@ params_flux = Flux1Params(
 @pytest.mark.parametrize(
     "pipeline_cls, params",
     [
-        (Flux1FlowPipeline, params_flux),
-        # (Flux1DiffusionPipeline, params_flux),
+        (Flux1LatentFlowPipeline, params_flux),
+        (Flux1LatentDiffusionPipeline, params_flux),
     ],
 )
 def test_model_pipeline(pipeline_cls, params):
