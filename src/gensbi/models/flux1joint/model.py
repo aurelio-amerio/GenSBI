@@ -54,7 +54,7 @@ class Flux1JointParams:
         axes_dim : list[int]
             Dimensions of the axes for positional encoding.
         condition_dim : list[int]
-            Dimensions of the (learned) condition embedding for RoPE.
+            Number of features used to encode the condition mask, which determines the features on which we are conditioning.
         qkv_bias : bool
             Whether to use bias in QKV layers.
         rngs : nnx.Rngs

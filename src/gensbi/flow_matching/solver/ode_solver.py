@@ -64,21 +64,20 @@ class ODESolver(Solver):
 
         Parameters
         ----------
-            x_init : Tensor
-                initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
             step_size : Optional[float]
                 The step size. Must be None for adaptive step solvers.
-            method : str
-                A method supported by torchdiffeq. Defaults to "Euler". Other commonly used solvers are "Dopri5", "midpoint" and "heun3". For a complete list, see torchdiffeq.
+            method : Union[str, AbstractERK]
+                A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
             atol : float
                 Absolute tolerance, used for adaptive step solvers.
             rtol : float
                 Relative tolerance, used for adaptive step solvers.
-            time_grid : Tensor
-                The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to torch.tensor([0.0, 1.0]).
+            time_grid : Array
+                The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
             return_intermediates : bool, optional
                 If True then return intermediate time steps according to time_grid. Defaults to False.
-            **model_extras: Additional input for the model.
+            model_extras : dict
+                Additional input for the model.
 
         Returns
         -------
@@ -138,24 +137,26 @@ class ODESolver(Solver):
         Parameters
         ----------
             x_init : Array
-                initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
+                Initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
             step_size : Optional[float]
                 The step size. Must be None for adaptive step solvers.
-            method : str
-                A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler". For a complete list, see diffrax.
+            method : Union[str, AbstractERK]
+                A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
             atol : float
                 Absolute tolerance, used for adaptive step solvers.
             rtol : float
                 Relative tolerance, used for adaptive step solvers.
             time_grid : Array
-                The process is solved in the interval [min(time_grid, max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
+                The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
             return_intermediates : bool, optional
                 If True then return intermediate time steps according to time_grid. Defaults to False.
-            **model_extras: Additional input for the model.
+            model_extras : dict
+                Additional input for the model.
 
         Returns
         -------
-            Union[Array, Sequence[Array]]: The final state or the states at all intermediate time steps.
+            Union[Array, Sequence[Array]]
+                The final state or the states at all intermediate time steps.
         """
 
         sampler = self.get_sampler(
