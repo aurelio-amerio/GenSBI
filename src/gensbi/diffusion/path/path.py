@@ -9,7 +9,8 @@ class ProbPath(ABC):
         r"""
         Initialize the probability path.
 
-        Args:
+        Parameters
+        ----------
             scheduler: Scheduler object.
         """
         self.scheduler = scheduler
@@ -19,12 +20,17 @@ class ProbPath(ABC):
         r"""
         Sample from the prior distribution.
 
-        Args:
-            key (Array): JAX random key.
-            shape (Any): Shape of the samples to generate, should be (nsamples, ndim).
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            shape : Any
+                Shape of the samples to generate, should be (nsamples, ndim).
 
-        Returns:
-            Array: Samples from the prior distribution, shape (nsamples, ndim).
+        Returns
+        -------
+            Array
+                Samples from the prior distribution, shape (nsamples, ndim).
         """
         return self.scheduler.sample_prior(key, shape)
 
@@ -33,8 +39,10 @@ class ProbPath(ABC):
         r"""
         Returns the name of the scheduler.
 
-        Returns:
-            str: Scheduler name.
+        Returns
+        -------
+            str
+                Scheduler name.
         """
         return self.scheduler.name
 
@@ -43,7 +51,9 @@ class ProbPath(ABC):
         r"""
         Abstract method to sample from the probability path.
 
-        Returns:
-            PathSample: Sample from the path.
+        Returns
+        -------
+            PathSample
+                Sample from the path.
         """
         ...  # pragma: no cover

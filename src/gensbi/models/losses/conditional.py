@@ -12,9 +12,11 @@ class ConditionalCFMLoss(ContinuousFMLoss):
     """
     ConditionalCFMLoss is a class that computes the continuous flow matching loss for the Conditional model.
 
-    Args:
+    Parameters
+    ----------
         path: Probability path (x-prediction training).
-        reduction (str, optional): Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
+        reduction : str, optional
+            Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
     """
 
     def __init__(self, path, reduction="mean", cfg_scale=None):
@@ -37,14 +39,21 @@ class ConditionalCFMLoss(ContinuousFMLoss):
         """
         Evaluates the continuous flow matching loss.
 
-        Args:
-            vf (callable): The vector field model to evaluate.
-            batch (tuple): A tuple containing the input data (x_0, x_1, t).
-            cond (jnp.ndarray): The conditioning data.
-            obs_ids (jnp.ndarray): The observation IDs.
-            cond_ids (jnp.ndarray): The conditioning IDs.
+        Parameters
+        ----------
+            vf : callable
+                The vector field model to evaluate.
+            batch : tuple
+                A tuple containing the input data (x_0, x_1, t).
+            cond : jnp.ndarray
+                The conditioning data.
+            obs_ids : jnp.ndarray
+                The observation IDs.
+            cond_ids : jnp.ndarray
+                The conditioning IDs.
 
-        Returns:
+        Returns
+        -------
             jnp.ndarray: The computed loss.
         """
 
@@ -74,7 +83,8 @@ class ConditionalDiffLoss(nnx.Module):
     """
     ConditionalDiffLoss is a class that computes the diffusion score matching loss for the Conditional model.
 
-    Args:
+    Parameters
+    ----------
         path: Probability path for training.
     """
 
@@ -95,16 +105,25 @@ class ConditionalDiffLoss(nnx.Module):
         """
         Evaluate the continuous flow matching loss.
 
-        Args:
-            key (jax.random.PRNGKey): Random key for stochastic operations.
-            model (Callable): F model.
-            batch (Tuple[Array, Array, Array]): Input data (x_1, sigma).
-            cond (jnp.ndarray): The conditioning data.
-            obs_ids (jnp.ndarray): The observation IDs.
-            cond_ids (jnp.ndarray): The conditioning IDs.
+        Parameters
+        ----------
+            key : jax.random.PRNGKey
+                Random key for stochastic operations.
+            model : Callable
+                F model.
+            batch : Tuple[Array, Array, Array]
+                Input data (x_1, sigma).
+            cond : jnp.ndarray
+                The conditioning data.
+            obs_ids : jnp.ndarray
+                The observation IDs.
+            cond_ids : jnp.ndarray
+                The conditioning IDs.
 
-        Returns:
-            Array: Computed loss.
+        Returns
+        -------
+            Array
+                Computed loss.
         """
         x_1, sigma = batch
 

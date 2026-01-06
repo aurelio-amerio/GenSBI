@@ -15,15 +15,23 @@ def attention(
     """
     Compute attention mechanism.
 
-    Args:
-        q (Array): Query tensor.
-        k (Array): Key tensor.
-        v (Array): Value tensor.
-        pe (Optional[Array]): Positional encoding.
-        mask (Optional[Array]): Attention mask.
+    Parameters
+    ----------
+        q : Array
+            Query tensor.
+        k : Array
+            Key tensor.
+        v : Array
+            Value tensor.
+        pe : Optional[Array]
+            Positional encoding.
+        mask : Optional[Array]
+            Attention mask.
 
-    Returns:
-        Array: Attention output.
+    Returns
+    -------
+        Array
+            Attention output.
     """
     if pe is not None:
         q, k = apply_rope(q, k, pe)
@@ -43,13 +51,19 @@ def rope(pos: Array, dim: int, theta: int) -> Array:
     """
     Compute rotary positional embeddings.
 
-    Args:
-        pos (Array): Position tensor.
-        dim (int): Dimension of embeddings.
-        theta (int): Scaling factor.
+    Parameters
+    ----------
+        pos : Array
+            Position tensor.
+        dim : int
+            Dimension of embeddings.
+        theta : int
+            Scaling factor.
 
-    Returns:
-        Array: Rotary embeddings.
+    Returns
+    -------
+        Array
+            Rotary embeddings.
     """
     assert dim % 2 == 0
     scale = jnp.arange(0, dim, 2, dtype=jnp.float32) / dim
@@ -64,12 +78,17 @@ def apply_rope(xq: Array, xk: Array, freqs_cis: Array) -> Tuple[Array, Array]:
     """
     Apply rotary positional embeddings.
 
-    Args:
-        xq (Array): Query tensor.
-        xk (Array): Key tensor.
-        freqs_cis (Array): Frequency embeddings.
+    Parameters
+    ----------
+        xq : Array
+            Query tensor.
+        xk : Array
+            Key tensor.
+        freqs_cis : Array
+            Frequency embeddings.
 
-    Returns:
+    Returns
+    -------
         Tuple[Array, Array]: Transformed query and key tensors.
     """
     xq_ = xq.astype(jnp.float32).reshape(*xq.shape[:-1], -1, 1, 2)

@@ -55,10 +55,14 @@ class ScheduleTransformedModel(ModelWrapper):
                 step_size=1/1000
                 )[1]
 
-    Args:
-        velocity_model (ModelWrapper): The original velocity model to be transformed.
-        original_scheduler (Scheduler): The scheduler used by the original model. Must implement the snr_inverse function.
-        new_scheduler (Scheduler): The new scheduler to be applied to the model.
+    Parameters
+    ----------
+        velocity_model : ModelWrapper
+            The original velocity model to be transformed.
+        original_scheduler : Scheduler
+            The scheduler used by the original model. Must implement the snr_inverse function.
+        new_scheduler : Scheduler
+            The new scheduler to be applied to the model.
     """
 
     def __init__(
@@ -70,10 +74,14 @@ class ScheduleTransformedModel(ModelWrapper):
         """
         Initialize the ScheduleTransformedModel.
 
-        Args:
-            velocity_model (nnx.Module): The original velocity model.
-            original_scheduler (Scheduler): The scheduler used by the original model.
-            new_scheduler (Scheduler): The new scheduler to be applied.
+        Parameters
+        ----------
+            velocity_model : nnx.Module
+                The original velocity model.
+            original_scheduler : Scheduler
+                The scheduler used by the original model.
+            new_scheduler : Scheduler
+                The new scheduler to be applied.
         """
         super().__init__(model=velocity_model)
         self.original_scheduler = original_scheduler
@@ -89,13 +97,18 @@ class ScheduleTransformedModel(ModelWrapper):
         This method implements a post-training velocity scheduler change for
         affine conditional flows.
 
-        Args:
-            x (Array): :math:`x_t`, the input array.
-            t (Array): The time array (denoted as :math:`r` above).
+        Parameters
+        ----------
+            x : Array
+                :math:`x_t`, the input array.
+            t : Array
+                The time array (denoted as :math:`r` above).
             **extras: Additional arguments for the model.
 
-        Returns:
-            Array: The transformed velocity.
+        Returns
+        -------
+            Array
+                The transformed velocity.
         """
         r = t
 

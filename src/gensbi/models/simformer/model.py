@@ -31,20 +31,34 @@ class SimformerParams:
     Conditioning is controlled via `condition_mask` at call time (mask is over **tokens**,
     not channels): tokens with mask=1 are treated as conditioned.
 
-    Args:
-        rngs (nnx.Rngs): Random number generators for initialization.
-        in_channels (int): Number of channels/features per token.
-        dim_value (int): Dimension of the value embeddings.
-        dim_id (int): Dimension of the ID embeddings.
-        dim_condition (int): Dimension of the condition embeddings.
-        dim_joint (int): Number of tokens in the joint sequence.
-        fourier_features (int): Number of Fourier features for time embedding.
-        num_heads (int): Number of attention heads.
-        num_layers (int): Number of transformer layers.
-        widening_factor (int): Widening factor for the transformer.
-        qkv_features (int): Number of features for QKV layers.
-        num_hidden_layers (int): Number of hidden layers in the transformer.
-        param_dtype (DTypeLike): Data type for model parameters.
+    Parameters
+    ----------
+        rngs : nnx.Rngs
+            Random number generators for initialization.
+        in_channels : int
+            Number of channels/features per token.
+        dim_value : int
+            Dimension of the value embeddings.
+        dim_id : int
+            Dimension of the ID embeddings.
+        dim_condition : int
+            Dimension of the condition embeddings.
+        dim_joint : int
+            Number of tokens in the joint sequence.
+        fourier_features : int
+            Number of Fourier features for time embedding.
+        num_heads : int
+            Number of attention heads.
+        num_layers : int
+            Number of transformer layers.
+        widening_factor : int
+            Widening factor for the transformer.
+        qkv_features : int
+            Number of features for QKV layers.
+        num_hidden_layers : int
+            Number of hidden layers in the transformer.
+        param_dtype : DTypeLike
+            Data type for model parameters.
 
     """
 
@@ -71,8 +85,10 @@ class Simformer(nnx.Module):
     """
     Simformer model for joint density estimation.
 
-    Args:
-        params (SimformerParams): Parameters for the Simformer model.
+    Parameters
+    ----------
+        params : SimformerParams
+            Parameters for the Simformer model.
     """
 
     def __init__(
@@ -150,16 +166,25 @@ class Simformer(nnx.Module):
         """
         Forward pass of the Simformer model.
 
-        Args:
-            t (Array): Time steps.
-            obs (Array): Input data.
-            args (Optional[dict]): Additional arguments.
-            node_ids (Array): Node identifiers.
-            condition_mask (Array): Mask for conditioning.
-            edge_mask (Optional[Array]): Mask for edges.
+        Parameters
+        ----------
+            t : Array
+                Time steps.
+            obs : Array
+                Input data.
+            args : Optional[dict]
+                Additional arguments.
+            node_ids : Array
+                Node identifiers.
+            condition_mask : Array
+                Mask for conditioning.
+            edge_mask : Optional[Array]
+                Mask for edges.
 
-        Returns:
-            Array: Model output.
+        Returns
+        -------
+            Array
+                Model output.
         """
 
         obs = jnp.asarray(obs, dtype=self.params.param_dtype)
