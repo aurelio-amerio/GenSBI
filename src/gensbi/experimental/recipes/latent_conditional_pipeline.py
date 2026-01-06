@@ -62,7 +62,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         VAE module for the conditional input. If None, no encoding is applied.
     training_config : dict, optional
         Configuration for training. If None, default configuration is used.
-        
+
     Examples
     --------
     Minimal example on how to instantiate and use the ConditionalFlowPipeline:
@@ -70,16 +70,17 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
     .. literalinclude:: /examples/conditional_flow_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/conditional_flow_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -112,8 +113,19 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         self.vae_obs = vae_obs
         self.vae_cond = vae_cond
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
+        # Flux1 uses different ids for obs and cond
+
+        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+
+        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[..., 1].set(
+            1
+        )  # set second channel to 1 for conditioning tokens
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -227,9 +239,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
             #     model, batch, key
             # )
-            loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, key
-            )
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -261,14 +271,14 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         else:
             assert jnp.all(time_grid[:-1] <= time_grid[1:])
             return_intermediates = True
-        
+
         cond = _expand_dims(x_o)
-        
+
         solver = ODESolver(velocity_model=vf_wrapped)
-        
+
         if self.vae_cond is not None:
             cond = self.vae_cond.encode(cond, key)
-            
+
         model_extras = {
             "cond": cond,
             "obs_ids": self.obs_ids,
@@ -283,7 +293,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
             model_extras=model_extras,
             time_grid=time_grid,
         )
-        
+
         def sampler(key, nsamples):
             x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
 
@@ -293,7 +303,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
                 samples = self.vae_obs.decode(samples)
 
             return samples
-        
+
         return sampler
 
     def sample(
@@ -306,7 +316,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         time_grid=None,
         **model_extras,
     ):
-        
+
         key_init, key_vae_cond = jax.random.split(key, 2)
 
         sampler_ = self.get_sampler(
@@ -317,7 +327,7 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
             time_grid=time_grid,
             **model_extras,
         )
-        
+
         samples = sampler_(key_init, nsamples)
 
         return samples
@@ -400,16 +410,17 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
     .. literalinclude:: /examples/conditional_diffusion_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/conditional_diffusion_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -440,8 +451,19 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
         self.vae_obs = vae_obs
         self.vae_cond = vae_cond
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
+        # Flux1 uses different ids for obs and cond
+
+        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+
+        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[..., 1].set(
+            1
+        )  # set second channel to 1 for conditioning tokens
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
 
         self.path = EDMPath(
             scheduler=EDMScheduler(
@@ -504,7 +526,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
 
             x_1 = obs
             # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],))
-            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],1,1))
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             obs_batch = (x_1, sigma)
@@ -564,9 +586,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
             #     model, batch, key
             # )
-            loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, key
-            )
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -576,7 +596,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
         self.model_wrapped = ConditionalWrapper(self.model)
         self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
         return
-    
+
     def get_sampler(
         self,
         key,
@@ -610,7 +630,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
             return_intermediates=return_intermediates,
             model_extras=model_extras,
         )
-        
+
         def sampler(key, nsamples):
             key1, key2 = jax.random.split(key, 2)
             x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
@@ -618,11 +638,8 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
             if self.vae_obs is not None:
                 samples = self.vae_obs.decode(samples)
             return samples
- 
-
 
         return sampler
-
 
     def sample(
         self,
@@ -634,7 +651,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
         return_intermediates=False,
         **model_extras,
     ):
-        
+
         rng_vae, rng_samples = jax.random.split(key, 2)
         sampler = self.get_sampler(
             rng_vae,

@@ -58,7 +58,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Parameters for the Conditional model. If None, default parameters are used.
     training_config : dict, optional
         Configuration for training. If None, default configuration is used.
-        
+
     Examples
     --------
     Minimal example on how to instantiate and use the ConditionalFlowPipeline:
@@ -66,16 +66,17 @@ class ConditionalFlowPipeline(AbstractPipeline):
     .. literalinclude:: /examples/conditional_flow_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/conditional_flow_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -87,7 +88,6 @@ class ConditionalFlowPipeline(AbstractPipeline):
         ch_cond=1,
         params=None,
         training_config=None,
-        use_rope=False
     ):
 
         # if latent diffusion is enabled, make sure to adjust the dimensionality accordingly of the transformer model
@@ -104,20 +104,18 @@ class ConditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        if use_rope:
-            # Flux1 uses different ids for obs and cond
-            obs_ids = jnp.zeros((1,dim_obs,2), dtype=jnp.int32) 
-            obs_ids = obs_ids.at[...,0].set(jnp.arange(dim_obs))
-            
-            cond_ids = jnp.zeros((1,dim_cond,2), dtype=jnp.int32) 
-            cond_ids = cond_ids.at[...,0].set(jnp.arange(dim_cond))
-            cond_ids = cond_ids.at[...,1].set(1)  # set second channel to 1 for conditioning tokens
-            
-            self.obs_ids = obs_ids
-            self.cond_ids = cond_ids
-        else:
-            self.cond_ids = _expand_dims(self.cond_ids)
-            self.obs_ids = _expand_dims(self.obs_ids)
+        # Flux1 uses different ids for obs and cond
+        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+
+        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[..., 1].set(
+            1
+        )  # set second channel to 1 for conditioning tokens
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -226,9 +224,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
             #     model, batch, key
             # )
-            loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, key
-            )
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -259,9 +255,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         else:
             assert jnp.all(time_grid[:-1] <= time_grid[1:])
             return_intermediates = True
-        
+
         cond = _expand_dims(x_o)
-        
+
         solver = ODESolver(velocity_model=vf_wrapped)
 
         model_extras = {
@@ -278,15 +274,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
             model_extras=model_extras,
             time_grid=time_grid,
         )
-        
+
         def sampler(key, nsamples):
             x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
 
             samples = sampler_(x_init)
 
-
             return samples
-        
+
         return sampler
 
     def sample(
@@ -307,7 +302,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             time_grid=time_grid,
             **model_extras,
         )
-        
+
         samples = sampler_(key, nsamples)
 
         return samples
@@ -386,16 +381,17 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
     .. literalinclude:: /examples/conditional_diffusion_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/conditional_diffusion_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -407,7 +403,6 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         ch_cond=1,
         params=None,
         training_config=None,
-        use_rope=False
     ):
 
         super().__init__(
@@ -422,21 +417,18 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
+        # Flux1 uses different ids for obs and cond
+        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
 
-        if use_rope:
-            # Flux1 uses different ids for obs and cond
-            obs_ids = jnp.zeros((1,dim_obs,2), dtype=jnp.int32) 
-            obs_ids = obs_ids.at[...,0].set(jnp.arange(dim_obs))
-            
-            cond_ids = jnp.zeros((1,dim_cond,2), dtype=jnp.int32) 
-            cond_ids = cond_ids.at[...,0].set(jnp.arange(dim_cond))
-            cond_ids = cond_ids.at[...,1].set(1)  # set second channel to 1 for conditioning tokens
-            
-            self.obs_ids = obs_ids
-            self.cond_ids = cond_ids
-        else:
-            self.cond_ids = _expand_dims(self.cond_ids)
-            self.obs_ids = _expand_dims(self.obs_ids)
+        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[..., 1].set(
+            1
+        )  # set second channel to 1 for conditioning tokens
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
 
         self.path = EDMPath(
             scheduler=EDMScheduler(
@@ -492,10 +484,9 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
 
             rng_x0, rng_sigma = jax.random.split(key, 2)
 
-
             x_1 = obs
             # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],))
-            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],1,1))
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             obs_batch = (x_1, sigma)
@@ -555,9 +546,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
             #     model, batch, key
             # )
-            loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, key
-            )
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -567,7 +556,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         self.model_wrapped = ConditionalWrapper(self.model)
         self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
         return
-    
+
     def get_sampler(
         self,
         x_o,
@@ -597,18 +586,15 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             return_intermediates=return_intermediates,
             model_extras=model_extras,
         )
-        
+
         def sampler(key, nsamples):
             key1, key2 = jax.random.split(key, 2)
             x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
             samples = sampler_(key2, x_init)
 
             return samples
- 
-
 
         return sampler
-
 
     def sample(
         self,
@@ -620,7 +606,6 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         return_intermediates=False,
         **model_extras,
     ):
-        
 
         sampler = self.get_sampler(
             x_o,
