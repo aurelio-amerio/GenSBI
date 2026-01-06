@@ -3,7 +3,7 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 Examples:
     .. code-block:: python
-    
+
         import grain
         import numpy as np
         import jax
@@ -30,7 +30,7 @@ Examples:
             .shuffle(42)
             .repeat()
             .to_iter_dataset()
-            .batch(batch_size) 
+            .batch(batch_size)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
 
@@ -48,7 +48,7 @@ Examples:
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
 
     .. note::
-    
+
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
@@ -56,29 +56,10 @@ Examples:
 import jax
 import jax.numpy as jnp
 from flax import nnx
-import optax
-from optax.contrib import reduce_on_plateau
-from numpyro import distributions as dist
-from tqdm.auto import tqdm
-from functools import partial
-import orbax.checkpoint as ocp
-
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
-
-from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
-from gensbi.diffusion.solver import SDESolver
-
-from einops import repeat
 
 from gensbi.models import (
     Flux1Joint,
     Flux1JointParams,
-    JointCFMLoss,
-    JointWrapper,
-    JointDiffLoss,
 )
 
 import numpyro.distributions as dist
@@ -121,6 +102,9 @@ def parse_flux1joint_params(config_path: str):
         condition_dim=model_params.get("condition_dim", [4]),
         qkv_bias=model_params.get("qkv_bias", True),
         theta=model_params.get("theta", -1),
+        id_embedding_kind=model_params.get(
+            "id_embedding_kind", ("absolute", "absolute")
+        ),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
 
@@ -163,7 +147,7 @@ def parse_training_config(config_path: str):
     MAX_LR = opt_params.get("max_lr", 1e-3)
     MIN_LR = opt_params.get("min_lr", 0.0)
     MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
-    
+
     warmup_steps = opt_params.get("warmup_steps", 500)
 
     ema_decay = opt_params.get("ema_decay", 0.999)
@@ -187,81 +171,6 @@ def parse_training_config(config_path: str):
     training_config["warmup_steps"] = warmup_steps
 
     return training_config
-
-
-# def sample_structured_conditional_mask(
-#     key,
-#     num_samples,
-#     theta_dim,
-#     x_dim,
-#     p_joint=0.2,
-#     p_posterior=0.2,
-#     p_likelihood=0.2,
-#     p_rnd1=0.2,
-#     p_rnd2=0.2,
-#     rnd1_prob=0.3,
-#     rnd2_prob=0.7,
-# ):
-#     """
-#     Sample structured conditional masks for the Simformer model.
-
-#     Parameters
-#     ----------
-#     key : jax.random.PRNGKey
-#         Random key for sampling.
-#     num_samples : int
-#         Number of samples to generate.
-#     theta_dim : int
-#         Dimension of the parameter space.
-#     x_dim : int
-#         Dimension of the observation space.
-#     p_joint : float
-#         Probability of selecting the joint mask.
-#     p_posterior : float
-#         Probability of selecting the posterior mask.
-#     p_likelihood : float
-#         Probability of selecting the likelihood mask.
-#     p_rnd1 : float
-#         Probability of selecting the first random mask.
-#     p_rnd2 : float
-#         Probability of selecting the second random mask.
-#     rnd1_prob : float
-#         Probability of a True value in the first random mask.
-#     rnd2_prob : float
-#         Probability of a True value in the second random mask.
-
-#     Returns
-#     -------
-#     condition_mask : jnp.ndarray
-#         Array of shape (num_samples, theta_dim + x_dim) with boolean masks.
-
-#     """
-#     # Joint, posterior, likelihood, random1_mask, random2_mask
-#     key1, key2, key3 = jax.random.split(key, 3)
-#     joint_mask = jnp.array([False] * (theta_dim + x_dim), dtype=jnp.bool_)
-#     posterior_mask = jnp.array([False] * theta_dim + [True] * x_dim, dtype=jnp.bool_)
-#     likelihood_mask = jnp.array([True] * theta_dim + [False] * x_dim, dtype=jnp.bool_)
-#     random1_mask = jax.random.bernoulli(
-#         key2, rnd1_prob, shape=(theta_dim + x_dim,)
-#     ).astype(jnp.bool_)
-#     random2_mask = jax.random.bernoulli(
-#         key3, rnd2_prob, shape=(theta_dim + x_dim,)
-#     ).astype(jnp.bool_)
-#     mask_options = jnp.stack(
-#         [joint_mask, posterior_mask, likelihood_mask, random1_mask, random2_mask],
-#         axis=0,
-#     )  # (5, theta_dim + x_dim)
-#     idx = jax.random.choice(
-#         key1,
-#         5,
-#         shape=(num_samples,),
-#         p=jnp.array([p_joint, p_posterior, p_likelihood, p_rnd1, p_rnd2]),
-#     )
-#     condition_mask = mask_options[idx]
-#     all_ones_mask = jnp.all(condition_mask, axis=-1)
-#     # If all are ones, then set to false
-#     condition_mask = jnp.where(all_ones_mask[..., None], False, condition_mask)
-#     return condition_mask[..., None]
 
 
 class Flux1JointFlowPipeline(JointFlowPipeline):
@@ -300,37 +209,27 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
 
         """
         self.dim_joint = dim_obs + dim_cond
-        
+
         self.ch_obs = ch_obs
 
         if params is None:
             params = self._get_default_params()
-        
+
         model = self._make_model(params)
-        
-        
+
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
-            ch_obs = ch_obs,
+            ch_obs=ch_obs,
             params=params,
             training_config=training_config,
             condition_mask_kind=condition_mask_kind,
         )
 
         self.ema_model = nnx.clone(self.model)
-        
-        # super().__init__(
-        #     None, train_dataset, val_dataset, dim_obs, dim_cond, params, training_config
-        # )
-        # if params is None:
-        #     self.params = self._get_default_params()
-        
-        # self.model = self._make_model(self.params)
-        # self.ema_model = nnx.clone(self.model)
 
     @classmethod
     def init_pipeline_from_config(
@@ -394,9 +293,9 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            params = params,
-            training_config = training_config,
+            ch_obs=params.in_channels,
+            params=params,
+            training_config=training_config,
         )
 
         return pipeline
@@ -425,6 +324,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             rngs=nnx.Rngs(0),
             dim_joint=self.dim_joint,
             theta=self.dim_joint * 4,
+            id_embedding_kind="absolute",
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
         )
@@ -467,21 +367,21 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
 
         """
         self.dim_joint = dim_obs + dim_cond
-        
+
         self.ch_obs = ch_obs
 
         if params is None:
             params = self._get_default_params()
-        
+
         model = self._make_model(params)
-        
+
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
-            ch_obs = ch_obs,
+            ch_obs=ch_obs,
             params=params,
             training_config=training_config,
             condition_mask_kind=condition_mask_kind,
@@ -551,9 +451,9 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            params = params,
-            training_config = training_config,
+            ch_obs=params.in_channels,
+            params=params,
+            training_config=training_config,
         )
 
         return pipeline
@@ -580,7 +480,8 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             qkv_bias=True,
             rngs=nnx.Rngs(0),
             dim_joint=self.dim_joint,
-            theta=self.dim_joint * 4,
+            theta=self.dim_joint * 10,
+            id_embedding_kind="absolute",
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
         )

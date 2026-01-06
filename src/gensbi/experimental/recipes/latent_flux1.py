@@ -3,7 +3,7 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 Examples:
     .. code-block:: python
-    
+
         import grain
         import numpy as np
         import jax
@@ -30,7 +30,7 @@ Examples:
             .shuffle(42)
             .repeat()
             .to_iter_dataset()
-            .batch(batch_size) 
+            .batch(batch_size)
             # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
         )
 
@@ -48,7 +48,7 @@ Examples:
         samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
 
     .. note::
-    
+
         If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
 
 """
@@ -71,7 +71,13 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
 
-from gensbi.models import Flux1, Flux1Params, ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
+from gensbi.models import (
+    Flux1,
+    Flux1Params,
+    ConditionalCFMLoss,
+    ConditionalWrapper,
+    ConditionalDiffLoss,
+)
 
 from einops import repeat
 
@@ -81,7 +87,11 @@ import os
 
 import yaml
 
-from gensbi.experimental.recipes.latent_conditional_pipeline import ConditionalLatentFlowPipeline, ConditionalLatentDiffusionPipeline
+from gensbi.experimental.recipes.latent_conditional_pipeline import (
+    ConditionalLatentFlowPipeline,
+    ConditionalLatentDiffusionPipeline,
+)
+
 
 def parse_flux1_params(config_path: str):
     """
@@ -111,10 +121,13 @@ def parse_flux1_params(config_path: str):
         num_heads=model_params.get("num_heads", 6),
         depth=model_params.get("depth", 8),
         depth_single_blocks=model_params.get("depth_single_blocks", 16),
-        axes_dim=model_params.get("axes_dim", [6]),
+        axes_dim=model_params.get("axes_dim", [6, 0]),
         qkv_bias=model_params.get("qkv_bias", True),
         theta=model_params.get("theta", -1),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
+        id_embedding_kind=model_params.get(
+            "id_embedding_kind", ("absolute", "absolute")
+        ),
     )
 
     return params_dict
@@ -158,6 +171,7 @@ def parse_training_config(config_path: str):
     MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
 
     ema_decay = opt_params.get("ema_decay", 0.999)
+    warmup_steps = opt_params.get("warmup_steps", 500)
 
     training_config = {}
     # overwrite the defaults with the config file values
@@ -175,6 +189,7 @@ def parse_training_config(config_path: str):
     training_config["early_stopping"] = early_stopping
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
+    training_config["warmup_steps"] = warmup_steps
 
     return training_config
 
@@ -220,7 +235,7 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
             Configuration for training. If None, default configuration is used.
 
         """
-        
+
         # if vae are provided, adjust dim_cond and dim_obs accordingly
         if vae_obs is not None:
             obs_latent_shape = vae_obs.latent_shape
@@ -230,7 +245,6 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
             if params is not None:
                 ch_obs = params.in_channels
 
-            
         if vae_cond is not None:
             cond_latent_shape = vae_cond.latent_shape
             dim_cond = cond_latent_shape[1]
@@ -238,35 +252,50 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
         else:
             if params is not None:
                 ch_cond = params.context_in_dim
-            
-        
+
         # FIXME: we need to set these values manually instead of init to allow _get_default_params to work properly
         # think of a better way to do it, avoiding circular dependencies
         self.vae_obs = vae_obs
         self.vae_cond = vae_cond
-        
+
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
-        
+
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
-        
 
         if params is None:
             params = self._get_default_params()
         else:
             if vae_obs is not None:
-                assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
-                assert params.dim_obs == dim_obs, f"dim_obs in params ({params.dim_obs}) does not match the VAE latent dimension ({dim_obs})."
+                assert (
+                    params.in_channels == self.ch_obs
+                ), f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
+                assert (
+                    params.dim_obs == dim_obs
+                ), f"dim_obs in params ({params.dim_obs}) does not match the VAE latent dimension ({dim_obs})."
             if vae_cond is not None:
-                assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
-                assert params.dim_cond == dim_cond, f"dim_cond in params ({params.dim_cond}) does not match the VAE latent dimension ({dim_cond})."
-            
-        
+                assert (
+                    params.context_in_dim == self.ch_cond
+                ), f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
+                assert (
+                    params.dim_cond == dim_cond
+                ), f"dim_cond in params ({params.dim_cond}) does not match the VAE latent dimension ({dim_cond})."
+
         model = self._make_model(params)
-        
+
         super().__init__(
-            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, vae_obs=vae_obs, vae_cond=vae_cond, training_config=training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            vae_obs=vae_obs,
+            vae_cond=vae_cond,
+            training_config=training_config,
         )
         self.ema_model = nnx.clone(self.model)
 
@@ -298,7 +327,9 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
         method = strategy.get("method")
         model_type = strategy.get("model")
 
-        assert method == "flow", f"Method {method} not supported in Flux1LatentFlowPipeline."
+        assert (
+            method == "flow"
+        ), f"Method {method} not supported in Flux1LatentFlowPipeline."
         assert (
             model_type == "flux"
         ), f"Model type {model_type} not supported in Flux1LatentFlowPipeline."
@@ -332,8 +363,8 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            ch_cond = params.context_in_dim,
+            ch_obs=params.in_channels,
+            ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
         )
@@ -359,16 +390,16 @@ class Flux1LatentFlowPipeline(ConditionalLatentFlowPipeline):
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
-            axes_dim=[6],
+            axes_dim=[6,0],
             qkv_bias=True,
             dim_obs=self.dim_obs,
             dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
+            id_embedding_kind=("absolute", "absolute"),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
         return params
-
 
 
 class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
@@ -421,7 +452,6 @@ class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
             if params is not None:
                 ch_obs = params.in_channels
 
-            
         if vae_cond is not None:
             cond_latent_shape = vae_cond.latent_shape
             dim_cond = cond_latent_shape[1]
@@ -429,39 +459,53 @@ class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
         else:
             if params is not None:
                 ch_cond = params.context_in_dim
-            
-        
+
         # FIXME: we need to set these values manually instead of init to allow _get_default_params to work properly
         # think of a better way to do it, avoiding circular dependencies
         self.vae_obs = vae_obs
         self.vae_cond = vae_cond
-        
+
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
-        
+
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
-        
 
         if params is None:
             params = self._get_default_params()
         else:
             if vae_obs is not None:
-                assert params.in_channels == self.ch_obs, f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
-                assert params.dim_obs == dim_obs, f"dim_obs in params ({params.dim_obs}) does not match the VAE latent dimension ({dim_obs})."
+                assert (
+                    params.in_channels == self.ch_obs
+                ), f"in_channels in params ({params.in_channels}) does not match VAE latent shape ({self.ch_obs})."
+                assert (
+                    params.dim_obs == dim_obs
+                ), f"dim_obs in params ({params.dim_obs}) does not match the VAE latent dimension ({dim_obs})."
             if vae_cond is not None:
-                assert params.context_in_dim == self.ch_cond, f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
-                assert params.dim_cond == dim_cond, f"dim_cond in params ({params.dim_cond}) does not match the VAE latent dimension ({dim_cond})."
-            
-        
+                assert (
+                    params.context_in_dim == self.ch_cond
+                ), f"context_in_dim in params ({params.context_in_dim}) does not match VAE latent shape ({self.ch_cond})."
+                assert (
+                    params.dim_cond == dim_cond
+                ), f"dim_cond in params ({params.dim_cond}) does not match the VAE latent dimension ({dim_cond})."
+
         model = self._make_model(params)
-        
+
         super().__init__(
-            model=model, train_dataset=train_dataset, val_dataset=val_dataset, dim_obs=dim_obs, dim_cond=dim_cond, ch_obs=ch_obs, ch_cond=ch_cond, params=params, vae_obs=vae_obs, vae_cond=vae_cond, training_config=training_config
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            vae_obs=vae_obs,
+            vae_cond=vae_cond,
+            training_config=training_config,
         )
         self.ema_model = nnx.clone(self.model)
 
-    
     # TODO: need to update this too
     @classmethod
     def init_pipeline_from_config(
@@ -526,8 +570,8 @@ class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
             val_dataset,
             dim_obs,
             dim_cond,
-            ch_obs = params.in_channels,
-            ch_cond = params.context_in_dim,
+            ch_obs=params.in_channels,
+            ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
         )
@@ -553,11 +597,12 @@ class Flux1LatentDiffusionPipeline(ConditionalLatentDiffusionPipeline):
             num_heads=6,
             depth=8,
             depth_single_blocks=16,
-            axes_dim=[6],
+            axes_dim=[6,0],
             qkv_bias=True,
             dim_obs=self.dim_obs,
             dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
+            id_embedding_kind=("absolute", "absolute"),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
