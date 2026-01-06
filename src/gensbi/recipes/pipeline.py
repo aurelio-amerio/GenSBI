@@ -77,7 +77,6 @@ class ModelEMA(nnx.Optimizer):
 
 @nnx.jit
 def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
-    """Update EMA model with current model parameters."""
     ema_optimizer.update(ema_model, model)
 
 
@@ -87,33 +86,12 @@ def _get_batch_sampler(
     chunk_size: int,
     show_progress_bars: bool = True,
 ):
-    """
-    Create a batch sampler that processes samples in chunks.
-    
-    Parameters
-    ----------
-    sampler_fn : Callable
-        Sampling function.
-    ncond : int
-        Number of conditions.
-    chunk_size : int
-        Size of each chunk.
-    show_progress_bars : bool, optional
-        Whether to show progress bars.
-        
-    Returns
-    -------
-    Callable
-        Batch sampler function.
-    """
     # JIT the chunk processor
     @jax.jit
     def process_chunk(key_batch):
-        """Process a batch of keys."""
         return jax.vmap(lambda k: sampler_fn(k, ncond))(key_batch)
 
     def sampler(keys):
-        """Sample in batches with optional progress bar."""
         n_samples = keys.shape[0]
         results = []
 
@@ -414,7 +392,6 @@ class AbstractPipeline(abc.ABC):
 
         @nnx.jit
         def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
-            """Perform single training step with gradient update."""
             loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
@@ -433,21 +410,12 @@ class AbstractPipeline(abc.ABC):
 
         @nnx.jit
         def val_step(model, batch, key: jax.random.PRNGKey):
-            """Compute validation loss for a batch."""
             loss = loss_fn(model, batch, key)
             return loss
 
         return val_step
 
     def save_model(self, experiment_id=None):
-        """
-        Save model and EMA model checkpoints.
-        
-        Parameters
-        ----------
-        experiment_id : str, optional
-            Experiment identifier. If None, uses training_config value.
-        """
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
 
@@ -497,14 +465,6 @@ class AbstractPipeline(abc.ABC):
         return
 
     def restore_model(self, experiment_id=None):
-        """
-        Restore model and EMA model from checkpoints.
-        
-        Parameters
-        ----------
-        experiment_id : str, optional
-            Experiment identifier. If None, uses training_config value.
-        """
         if experiment_id is None:
             experiment_id = self.training_config["experiment_id"]
 

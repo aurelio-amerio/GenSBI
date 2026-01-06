@@ -10,7 +10,6 @@ class ProbPath(ABC):
         Initialize the probability path.
 
         Parameters
-
         ----------
             scheduler: Scheduler object.
         """
@@ -22,7 +21,6 @@ class ProbPath(ABC):
         Sample from the prior distribution.
 
         Parameters
-
         ----------
             key : Array
                 JAX random key.
@@ -30,7 +28,6 @@ class ProbPath(ABC):
                 Shape of the samples to generate, should be (nsamples, ndim).
 
         Returns
-
         -------
             Array
                 Samples from the prior distribution, shape (nsamples, ndim).
@@ -38,25 +35,25 @@ class ProbPath(ABC):
         return self.scheduler.sample_prior(key, shape)
 
     @property
-    def name(self) -> str
+    def name(self) -> str:
         r"""
         Returns the name of the scheduler.
 
         Returns
+        -------
             str
                 Scheduler name.
         """
         return self.scheduler.name
 
     @abstractmethod
-    def sample(self, *args
-        Any, **kwargs: Any) -> "EDMPathSample":
+    def sample(self, *args: Any, **kwargs: Any) -> "EDMPathSample":
         r"""
         Abstract method to sample from the probability path.
 
         Returns
+        -------
             PathSample
                 Sample from the path.
         """
-        ...  # pragma
-            no cover
+        ...  # pragma: no cover

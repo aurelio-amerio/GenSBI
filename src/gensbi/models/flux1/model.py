@@ -22,6 +22,10 @@ from gensbi.models.flux1.layers import (
 
 from gensbi.models.embedding import FeatureEmbedder
 
+from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
+
+
+# TODO enforce rope usage, remove unused code
 @dataclass
 class Flux1Params:
     """Parameters for the Flux1 model.
@@ -44,7 +48,6 @@ class Flux1Params:
         - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
 
     Parameters
-
     ----------
         in_channels : int
             Number of channels per observation/parameter token.

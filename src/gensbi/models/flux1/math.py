@@ -16,7 +16,6 @@ def attention(
     Compute attention mechanism.
 
     Parameters
-
     ----------
         q : Array
             Query tensor.
@@ -30,12 +29,11 @@ def attention(
             Attention mask.
 
     Returns
-
     -------
         Array
             Attention output.
     """
-    if pe is not None
+    if pe is not None:
         q, k = apply_rope(q, k, pe)
 
     q = rearrange(q, "B H L D -> B L H D")  # for jax
@@ -49,25 +47,21 @@ def attention(
     return x
 
 
-def rope(pos
-    Array, dim: int, theta: int) -> Array:
+def rope(pos: Array, dim: int, theta: int) -> Array:
     """
     Compute rotary positional embeddings.
 
     Parameters
-
     ----------
-        pos
-            Array
+        pos : Array
             Position tensor.
-        dim
-            int
+        dim : int
             Dimension of embeddings.
-        theta
-            int
+        theta : int
             Scaling factor.
 
     Returns
+    -------
         Array
             Rotary embeddings.
     """
@@ -80,32 +74,25 @@ def rope(pos
     return out.astype(jnp.float32)
 
 
-def apply_rope(xq
-    Array, xk: Array, freqs_cis: Array) -> Tuple[Array, Array]:
+def apply_rope(xq: Array, xk: Array, freqs_cis: Array) -> Tuple[Array, Array]:
     """
     Apply rotary positional embeddings.
 
     Parameters
-
     ----------
-        xq
-            Array
+        xq : Array
             Query tensor.
-        xk
-            Array
+        xk : Array
             Key tensor.
-        freqs_cis
-            Array
+        freqs_cis : Array
             Frequency embeddings.
 
     Returns
-        Tuple[Array, Array]
-            Transformed query and key tensors.
+    -------
+        Tuple[Array, Array]: Transformed query and key tensors.
     """
-    xq_ = xq.astype(jnp.float32).reshape(*xq.shape[
-        -1], -1, 1, 2)
-    xk_ = xk.astype(jnp.float32).reshape(*xk.shape[
-        -1], -1, 1, 2)
+    xq_ = xq.astype(jnp.float32).reshape(*xq.shape[:-1], -1, 1, 2)
+    xk_ = xk.astype(jnp.float32).reshape(*xk.shape[:-1], -1, 1, 2)
     xq_out = freqs_cis[..., 0] * xq_[..., 0] + freqs_cis[..., 1] * xq_[..., 1]
     xk_out = freqs_cis[..., 0] * xk_[..., 0] + freqs_cis[..., 1] * xk_[..., 1]
     return xq_out.reshape(*xq.shape).astype(xq.dtype), xk_out.reshape(*xk.shape).astype(

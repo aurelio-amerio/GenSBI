@@ -20,7 +20,6 @@ class JointWrapper(ModelWrapper):
     Wrapper for joint models to handle both conditioned and unconditioned inference.
 
     Parameters
-
     ----------
         model: The joint model instance to wrap.
         conditioned : bool, optional
@@ -31,7 +30,6 @@ class JointWrapper(ModelWrapper):
         Initialize the JointWrapper.
 
         Parameters
-
         ----------
             model: The joint model instance to wrap.
             conditioned : bool, optional
@@ -52,7 +50,6 @@ class JointWrapper(ModelWrapper):
         Perform conditioned inference.
 
         Parameters
-
         ----------
             obs : Array
                 Observations.
@@ -67,19 +64,16 @@ class JointWrapper(ModelWrapper):
             **kwargs: Additional keyword arguments passed to the model.
 
         Returns
-
         -------
             Array
                 Conditioned output (only for unconditioned variables).
         """
         dim_obs = obs.shape[1]
         dim_cond = cond.shape[1]
-        cond = jnp.broadcast_to(cond, (obs.shape[0], *cond.shape[1
-            ]))
+        cond = jnp.broadcast_to(cond, (obs.shape[0], *cond.shape[1:]))
         condition_mask_dim = dim_obs + dim_cond
         condition_mask = jnp.zeros((condition_mask_dim,), dtype=jnp.bool_)
-        condition_mask = condition_mask.at[dim_obs
-            ].set(True)
+        condition_mask = condition_mask.at[dim_obs:].set(True)
         condition_mask = condition_mask.reshape(1, condition_mask_dim, 1)
         x = jnp.concatenate([obs, cond], axis=1)
         node_ids = jnp.concatenate([obs_ids, cond_ids], axis=1)
@@ -90,39 +84,31 @@ class JointWrapper(ModelWrapper):
             condition_mask=condition_mask,
             **kwargs,
         )
-        res = res[
-            , :dim_obs]
+        res = res[:, :dim_obs]
         return res
 
     def unconditioned(
         self,
-        obs
-            Array,
-        obs_ids
-            Array,
-        t
-            Array,
+        obs: Array,
+        obs_ids: Array,
+        t: Array,
         **kwargs,
-    ) -> Array
+    ) -> Array:
         """
         Perform unconditioned inference.
 
         Parameters
-
         ----------
-            obs
-                Array
+            obs : Array
                 Observations.
-            obs_ids
-                Array
+            obs_ids : Array
                 Observation identifiers.
-            t
-                Array
+            t : Array
                 Time steps.
-            **kwargs
-                Additional keyword arguments passed to the model.
+            **kwargs: Additional keyword arguments passed to the model.
 
         Returns
+        -------
             Array
                 Unconditioned output.
         """
@@ -139,48 +125,35 @@ class JointWrapper(ModelWrapper):
 
     def __call__(
         self,
-        t
-            Array,
-        obs
-            Array,
-        obs_ids
-            Array,
-        cond
-            Array,
-        cond_ids
-            Array,
-        conditioned
-            bool = True,
+        t: Array,
+        obs: Array,
+        obs_ids: Array,
+        cond: Array,
+        cond_ids: Array,
+        conditioned: bool = True,
         **kwargs,
-    ) -> Array
+    ) -> Array:
         """
         Call the wrapped model for either conditioned or unconditioned inference.
 
         Parameters
-
         ----------
-            t
-                Array
+            t : Array
                 Time steps.
-            obs
-                Array
+            obs : Array
                 Observations.
-            obs_ids
-                Array
+            obs_ids : Array
                 Observation identifiers.
-            cond
-                Array
+            cond : Array
                 Conditioning values.
-            cond_ids
-                Array
+            cond_ids : Array
                 Conditioning identifiers.
-            conditioned
-                bool, optional
+            conditioned : bool, optional
                 Whether to use conditioning. If None, uses the default set at initialization.
-            **kwargs
-                Additional keyword arguments passed to the model.
+            **kwargs: Additional keyword arguments passed to the model.
 
         Returns
+        -------
             Array
                 Model output.
         """
@@ -188,7 +161,7 @@ class JointWrapper(ModelWrapper):
         obs = _expand_dims(obs)
         cond = _expand_dims(cond)
 
-        if conditioned
+        if conditioned:
             return self.conditioned(obs, obs_ids, cond, cond_ids, t, **kwargs)
-        else
+        else:
             return self.unconditioned(obs, obs_ids, t, **kwargs)

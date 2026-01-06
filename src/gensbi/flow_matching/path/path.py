@@ -39,17 +39,17 @@ class ProbPath(ABC):
 
         Parameters
         ----------
-        x_0 : Array
-            Source data point, shape (batch_size, ...).
-        x_1 : Array
-            Target data point, shape (batch_size, ...).
-        t : Array
-            Times in [0,1], shape (batch_size,).
+            x_0 : Array
+                Source data point, shape (batch_size, ...).
+            x_1 : Array
+                Target data point, shape (batch_size, ...).
+            t : Array
+                Times in [0,1], shape (batch_size,).
 
         Returns
         -------
-        PathSample
-            A conditional sample.
+            PathSample
+                A conditional sample.
         """
         ...  # pragma: no cover
 
@@ -59,17 +59,17 @@ class ProbPath(ABC):
 
         Parameters
         ----------
-        x_0 : Array
-            Source data point.
-        x_1 : Array
-            Target data point.
-        t : Array
-            Time vector.
+            x_0 : Array
+                Source data point.
+            x_1 : Array
+                Target data point.
+            t : Array
+                Time vector.
 
         Raises
         ------
-        AssertionError
-            If the shapes are not compatible.
+            AssertionError
+                If the shapes are not compatible.
         """
         assert (
             t.ndim == 1

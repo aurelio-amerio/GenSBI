@@ -22,18 +22,18 @@ def unsqueeze_to_match(source: Array, target: Array, how: str = "suffix") -> Arr
 
     Parameters
     ----------
-    source : Array
-        The source array to be unsqueezed.
-    target : Array
-        The target array to match the dimensionality of.
-    how : str, optional
-        Whether to unsqueeze the source array at the beginning
-        ("prefix") or end ("suffix"). Defaults to "suffix".
+        source : Array
+            The source array to be unsqueezed.
+        target : Array
+            The target array to match the dimensionality of.
+        how : str, optional
+            Whether to unsqueeze the source array at the beginning
+            ("prefix") or end ("suffix"). Defaults to "suffix".
 
     Returns
     -------
-    Array
-        The unsqueezed source array.
+        Array
+            The unsqueezed source array.
     """
     assert (
         how == "prefix" or how == "suffix"
@@ -56,15 +56,15 @@ def expand_tensor_like(input_array: Array, expand_to: Array) -> Array:
 
     Parameters
     ----------
-    input_array : Array
-        1D vector of shape (batch_size,).
-    expand_to : Array
-        Target array of shape (batch_size, ...).
+        input_array : Array
+            (batch_size,).
+        expand_to : Array
+            (batch_size, ...).
 
     Returns
     -------
-    Array
-        Expanded array of shape (batch_size, ...).
+        Array
+            (batch_size, ...).
     """
     assert len(input_array.shape) == 1, "Input array must be a 1d vector."
     assert (

@@ -27,8 +27,7 @@ class ModelWrapper(nnx.Module):
     
     Parameters
     ----------
-    model : nnx.Module
-        The model to wrap.
+        model: The model to wrap.
     """
 
     def __init__(self, model: nnx.Module) -> None:
@@ -37,8 +36,7 @@ class ModelWrapper(nnx.Module):
         
         Parameters
         ----------
-        model : nnx.Module
-            The model to wrap.
+            model: The model to wrap.
         """
         self.model = model
 
@@ -58,17 +56,16 @@ class ModelWrapper(nnx.Module):
 
         Parameters
         ----------
-        obs : Array
-            Input data to the model (batch_size, ...).
-        t : Array
-            Time (batch_size).
-        **extras
-            Additional information forwarded to the model, e.g., text condition.
+            obs : Array
+                input data to the model (batch_size, ...).
+            t : Array
+                time (batch_size).
+            **extras: additional information forwarded to the model, e.g., text condition.
 
         Returns
         -------
-        Array
-            Model output.
+            Array
+                model output.
         """
         obs = _expand_dims(obs)
         # t = self._expand_time(t)
@@ -80,17 +77,16 @@ class ModelWrapper(nnx.Module):
 
         Parameters
         ----------
-        x : Array
-            Input data to the model (batch_size, ...).
-        t : Array
-            Time (batch_size).
-        args
-            Additional information forwarded to the model, e.g., text condition.
+            x : Array
+                input data to the model (batch_size, ...).
+            t : Array
+                time (batch_size).
+            args: additional information forwarded to the model, e.g., text condition.
 
         Returns
         -------
-        Callable
-            Vector field of the model.
+            Array
+                vector field of the model.
         """
 
         def vf(t, x, args):
@@ -111,17 +107,16 @@ class ModelWrapper(nnx.Module):
 
         Parameters
         ----------
-        t : Array
-            Time (batch_size).
-        x : Array
-            Input data to the model (batch_size, ...).
-        args
-            Additional information forwarded to the model, e.g., text condition.
+            t : Array
+                time (batch_size).
+            x : Array
+                input data to the model (batch_size, ...).
+            args: additional information forwarded to the model, e.g., text condition.
 
         Returns
         -------
-        Callable
-            Divergence of the model.
+            Array
+                divergence of the model.
         """
         vf = self.get_vector_field(**kwargs)
 

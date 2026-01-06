@@ -112,16 +112,8 @@ class ConditionalLatentFlowPipeline(AbstractPipeline):
         self.vae_obs = vae_obs
         self.vae_cond = vae_cond
 
-        # Flux1 uses different ids for obs and cond
-        obs_ids = jnp.zeros((1,dim_obs,2), dtype=jnp.int32) 
-        obs_ids = obs_ids.at[...,0].set(jnp.arange(dim_obs))
-        
-        cond_ids = jnp.zeros((1,dim_cond,2), dtype=jnp.int32) 
-        cond_ids = cond_ids.at[...,0].set(jnp.arange(dim_cond))
-        cond_ids = cond_ids.at[...,1].set(1)  # set second channel to 1 for conditioning tokens
-        
-        self.obs_ids = obs_ids
-        self.cond_ids = cond_ids
+        self.cond_ids = _expand_dims(self.cond_ids)
+        self.obs_ids = _expand_dims(self.obs_ids)
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -448,16 +440,8 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
         self.vae_obs = vae_obs
         self.vae_cond = vae_cond
 
-        # Flux1 uses different ids for obs and cond
-        obs_ids = jnp.zeros((1,dim_obs,2), dtype=jnp.int32) 
-        obs_ids = obs_ids.at[...,0].set(jnp.arange(dim_obs))
-        
-        cond_ids = jnp.zeros((1,dim_cond,2), dtype=jnp.int32) 
-        cond_ids = cond_ids.at[...,0].set(jnp.arange(dim_cond))
-        cond_ids = cond_ids.at[...,1].set(1)  # set second channel to 1 for conditioning tokens
-        
-        self.obs_ids = obs_ids
-        self.cond_ids = cond_ids
+        self.cond_ids = _expand_dims(self.cond_ids)
+        self.obs_ids = _expand_dims(self.obs_ids)
 
         self.path = EDMPath(
             scheduler=EDMScheduler(

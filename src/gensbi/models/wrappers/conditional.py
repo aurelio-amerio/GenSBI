@@ -18,7 +18,6 @@ class ConditionalWrapper(ModelWrapper):
     Wrapper for conditional models to handle input expansion and calling convention.
 
     Parameters
-
     ----------
         model: The conditional model instance to wrap.
     """
@@ -27,7 +26,6 @@ class ConditionalWrapper(ModelWrapper):
         Initialize the ConditionalWrapper.
 
         Parameters
-
         ----------
             model: The conditional model instance to wrap.
         """
@@ -48,7 +46,6 @@ class ConditionalWrapper(ModelWrapper):
         Call the wrapped model with expanded inputs.
 
         Parameters
-
         ----------
             t : Array
                 Time steps.
@@ -66,7 +63,6 @@ class ConditionalWrapper(ModelWrapper):
                 Optional guidance input.
 
         Returns
-
         -------
             Array
                 Model output.
