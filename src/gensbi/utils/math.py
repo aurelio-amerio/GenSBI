@@ -17,12 +17,10 @@ def _expand_dims(x: Array) -> Array:
     
     Parameters
     ----------
-    x : Array
-        Input array to expand.
+        x: Input array to expand.
         
     Returns
     -------
-    Array
         Array with at least 3 dimensions.
     """
     if x.ndim < 3:
@@ -36,12 +34,10 @@ def _expand_time(t: Array) -> Array:
     
     Parameters
     ----------
-    t : Array
-        Time array to expand.
+        t: Time array to expand.
         
     Returns
     -------
-    Array
         Time array with at least 2 dimensions.
     """
     t = jnp.atleast_1d(t)
@@ -68,18 +64,13 @@ def divergence(
     
     Parameters
     ----------
-    vf : Callable
-        The vector field function.
-    t : Array
-        The time at which to compute the divergence.
-    x : Array
-        The point at which to compute the divergence.
-    args : Optional[Array], optional
-        Optional additional arguments for the vector field function.
+        vf: The vector field function.
+        t: The time at which to compute the divergence.
+        x: The point at which to compute the divergence.
+        args: Optional additional arguments for the vector field function.
         
     Returns
     -------
-    Array
         The divergence of the vector field at point x and time t.
     """
     x = _expand_dims(x)

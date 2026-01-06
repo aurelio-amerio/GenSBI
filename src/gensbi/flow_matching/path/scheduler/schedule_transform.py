@@ -56,7 +56,6 @@ class ScheduleTransformedModel(ModelWrapper):
                 )[1]
 
     Parameters
-
     ----------
         velocity_model : ModelWrapper
             The original velocity model to be transformed.
@@ -76,7 +75,6 @@ class ScheduleTransformedModel(ModelWrapper):
         Initialize the ScheduleTransformedModel.
 
         Parameters
-
         ----------
             velocity_model : nnx.Module
                 The original velocity model.
@@ -100,7 +98,6 @@ class ScheduleTransformedModel(ModelWrapper):
         affine conditional flows.
 
         Parameters
-
         ----------
             x : Array
                 :math:`x_t`, the input array.
@@ -109,7 +106,6 @@ class ScheduleTransformedModel(ModelWrapper):
             **extras: Additional arguments for the model.
 
         Returns
-
         -------
             Array
                 The transformed velocity.
@@ -143,8 +139,7 @@ class ScheduleTransformedModel(ModelWrapper):
 
         ds_r = (sigma_t * d_sigma_r - sigma_r * d_sigma_t * dt_r) / (sigma_t * sigma_t)
 
-        u_t = self.model(x=x / s_r, t=t, **extras)  # type
-            ignore
+        u_t = self.model(x=x / s_r, t=t, **extras)  # type: ignore
         u_r = ds_r * x / s_r + dt_r * s_r * u_t
 
         return u_r

@@ -16,14 +16,11 @@ class Solver(ABC):
         Sample from the solver given initial conditions.
         
         Parameters
-        
         ----------
             x_0: Initial conditions for the solver.
             
         Returns
-            
         -------
             Sampled output from the solver.
         """
-        ...  # pragma
-            no cover
+        ...  # pragma: no cover

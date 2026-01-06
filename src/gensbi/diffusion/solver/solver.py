@@ -17,15 +17,12 @@ class Solver(ABC):
         Sample from the diffusion solver given target conditions.
         
         Parameters
-        
         ----------
             key: JAX random key for stochastic operations.
             x_1: Target conditions for the solver.
             
         Returns
-            
         -------
             Sampled output from the solver.
         """
-        ...  # pragma
-            no cover
+        ...  # pragma: no cover

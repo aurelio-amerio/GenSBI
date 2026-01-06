@@ -22,27 +22,27 @@ class AutoEncoderParams:
     Configuration parameters for the AutoEncoder models.
 
     Attributes:
-        resolution : int
+        resolution (int):
             The input feature dimension (length for 1D, height/width for 2D).
-        in_channels : int
+        in_channels (int):
             Number of input channels (e.g., 1 for scalar features, >1 for multi-channel).
-        ch : int
+        ch (int):
             Base number of channels for the first convolutional layer.
-        out_ch : int
+        out_ch (int):
             Number of output channels produced by the decoder (matches input channels for reconstruction).
-        ch_mult : list[int]
+        ch_mult (list[int]):
             Multipliers for the number of channels at each resolution level (controls model width/depth).
-        num_res_blocks : int
+        num_res_blocks (int):
             Number of residual blocks per resolution level.
-        z_channels : int
+        z_channels (int):
             Number of latent channels in the bottleneck (size of encoded representation).
-        scale_factor : float
+        scale_factor (float):
             Scaling factor applied to the latent representation (for normalization or data scaling).
-        shift_factor : float
+        shift_factor (float):
             Shift factor applied to the latent representation (for normalization or data centering).
-        rngs : nnx.Rngs
+        rngs (nnx.Rngs):
             Random number generators for parameter initialization and stochastic layers.
-        param_dtype : DTypeLike
+        param_dtype (DTypeLike):
             Data type for model parameters (e.g., jnp.float32, jnp.bfloat16).
     """
 
@@ -72,7 +72,6 @@ class DiagonalGaussian(nnx.Module):
     Diagonal Gaussian distribution module for VAE latent space.
 
     Parameters
-
     ----------
         sample : bool
             Whether to sample from the distribution (default: True).
@@ -89,7 +88,6 @@ class DiagonalGaussian(nnx.Module):
         Initialize the Diagonal Gaussian module.
         
         Parameters
-        
         ----------
             sample: Whether to sample from the distribution. Defaults to True.
             chunk_dim: Axis along which to split mean and logvar. Defaults to -1.
@@ -106,7 +104,6 @@ class DiagonalGaussian(nnx.Module):
         Split input into mean and log-variance, compute KL loss, and sample if required.
 
         Parameters
-
         ----------
             z : Array
                 Input tensor containing concatenated mean and logvar.
@@ -114,7 +111,6 @@ class DiagonalGaussian(nnx.Module):
                 PRNG key for sampling. Required if sampling is enabled.
 
         Returns
-
         -------
             Array
                 Sampled latent or mean, depending on self.sample.
@@ -122,41 +118,36 @@ class DiagonalGaussian(nnx.Module):
         mean, logvar = jnp.split(z, 2, axis=self.chunk_dim)
         std = jnp.exp(0.5 * logvar)
 
-        if self.update_KL
+        if self.update_KL:
             self.kl_loss = Loss(
                 jnp.mean(
                     0.5 * jnp.mean(-jnp.log(std**2) - 1.0 + std**2 + mean**2, axis=-1)
                 )
             )
 
-        if self.sample
+        if self.sample:
             return mean + std * jax.random.normal(
                 key=key, shape=mean.shape, dtype=z.dtype
             )
-        else
+        else:
             return mean
 
 
 def vae_loss_fn(
-    model
-        nnx.Module, x: jax.Array, key: jax.random.PRNGKey, kl_weight: float = 0.1
-) -> jax.Array
+    model: nnx.Module, x: jax.Array, key: jax.random.PRNGKey, kl_weight: float = 0.1
+) -> jax.Array:
     """
     Compute the VAE loss as the sum of reconstruction and KL divergence losses.
 
     Parameters
-
     ----------
-        model
-            The VAE model.
-        x
-            Input data.
-        key
-            PRNG key for stochastic operations.
-        kl_weight
-            Weight for the KL divergence term. Defaults to 0.1.
+        model: The VAE model.
+        x: Input data.
+        key: PRNG key for stochastic operations.
+        kl_weight: Weight for the KL divergence term. Defaults to 0.1.
 
     Returns
+    -------
         Scalar loss value combining reconstruction and KL losses.
     """
     logits = model(x, key)

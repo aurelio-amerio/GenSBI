@@ -16,7 +16,6 @@ class SDESolver(Solver):
         Initialize the SDE solver.
 
         Parameters
-
         ----------
             score_model : Callable
                 The score model function.
@@ -65,7 +64,6 @@ class SDESolver(Solver):
         Returns a sampler function for the SDE.
 
         Parameters
-
         ----------
             condition_mask : Optional[Array]
                 Mask for conditioning.
@@ -85,33 +83,27 @@ class SDESolver(Solver):
                 Additional solver parameters.
 
         Returns
-
         -------
             Callable
                 Sampler function.
         """
-        if self.path.name == "EDM"
+        if self.path.name == "EDM":
             sampler_ = edm_sampler
-        else
+        else:
             sampler_ = edm_ablation_sampler
 
-        if cfg_scale is not None
+        if cfg_scale is not None:
             raise NotImplementedError(
                 "CFG scale is not implemented for EDM samplers yet."
             )
 
-        S_churn = solver_params.get("S_churn", 0)  # type
-            ignore
-        S_min = solver_params.get("S_min", 0)  # type
-            ignore
-        S_max = solver_params.get("S_max", float("inf"))  # type
-            ignore
-        S_noise = solver_params.get("S_noise", 1)  # type
-            ignore
+        S_churn = solver_params.get("S_churn", 0)  # type: ignore
+        S_min = solver_params.get("S_min", 0)  # type: ignore
+        S_max = solver_params.get("S_max", float("inf"))  # type: ignore
+        S_noise = solver_params.get("S_noise", 1)  # type: ignore
 
         @jit
-        def sample(key
-            Array, x_init: Array) -> Array:
+        def sample(key: Array, x_init: Array) -> Array:
             return sampler_(
                 self.path.scheduler,
                 self.score_model,
@@ -133,65 +125,45 @@ class SDESolver(Solver):
 
     def sample(
         self,
-        key
-            Array,
-        x_init
-            Array,
-        condition_mask
-            Optional[Array] = None,
-        condition_value
-            Optional[Array] = None,
-        cfg_scale
-            Optional[float] = None,
-        nsteps
-            int = 18,
-        method
-            str = "Heun",
-        return_intermediates
-            bool = False,
-        model_extras
-            dict = {},
-        solver_params
-            Optional[dict] = {},
-    ) -> Array
+        key: Array,
+        x_init: Array,
+        condition_mask: Optional[Array] = None,
+        condition_value: Optional[Array] = None,
+        cfg_scale: Optional[float] = None,
+        nsteps: int = 18,
+        method: str = "Heun",
+        return_intermediates: bool = False,
+        model_extras: dict = {},
+        solver_params: Optional[dict] = {},
+    ) -> Array:
         """
         Sample from the SDE using the sampler.
 
         Parameters
-
         ----------
-            key
-                Array
+            key : Array
                 JAX random key.
-            x_init
-                Array
+            x_init : Array
                 Initial value.
-            condition_mask
-                Optional[Array]
+            condition_mask : Optional[Array]
                 Mask for conditioning.
-            condition_value
-                Optional[Array]
+            condition_value : Optional[Array]
                 Value for conditioning.
-            cfg_scale
-                Optional[float]
+            cfg_scale : Optional[float]
                 Classifier-free guidance scale (not implemented).
-            nsteps
-                int
+            nsteps : int
                 Number of steps.
-            method
-                str
+            method : str
                 Integration method.
-            return_intermediates
-                bool
+            return_intermediates : bool
                 Whether to return intermediate steps.
-            model_extras
-                dict
+            model_extras : dict
                 Additional model arguments.
-            solver_params
-                Optional[dict]
+            solver_params : Optional[dict]
                 Additional solver parameters.
 
         Returns
+        -------
             Array
                 Sampled output.
         """

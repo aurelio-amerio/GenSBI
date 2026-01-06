@@ -39,8 +39,8 @@ class AffineProbPath(ProbPath):
 
     Parameters
     ----------
-    scheduler : Scheduler
-        An instance of a scheduler that provides the parameters :math:`\alpha_t`, :math:`\sigma_t`, and their derivatives over time.
+        scheduler : Scheduler
+            An instance of a scheduler that provides the parameters :math:`\alpha_t`, :math:`\sigma_t`, and their derivatives over time.
     """
 
     def __init__(self, scheduler: Scheduler) -> None:
@@ -49,8 +49,8 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        scheduler : Scheduler
-            Scheduler providing affine parameters.
+            scheduler : Scheduler
+                Scheduler providing affine parameters.
         """
         self.scheduler = scheduler
 
@@ -63,17 +63,17 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        x_0 : Array
-            Source data point, shape (batch_size, ...).
-        x_1 : Array
-            Target data point, shape (batch_size, ...).
-        t : Array
-            Times in [0,1], shape (batch_size,).
+            x_0 : Array
+                Source data point, shape (batch_size, ...).
+            x_1 : Array
+                Target data point, shape (batch_size, ...).
+            t : Array
+                Times in [0,1], shape (batch_size,).
 
         Returns
         -------
-        PathSample
-            A conditional sample at :math:`X_t \sim p_t`.
+            PathSample
+                A conditional sample at :math:`X_t \sim p_t`.
         """
         self.assert_sample_shape(x_0=x_0, x_1=x_1, t=t)
 
@@ -104,17 +104,17 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        x_1 : Array
-            Target data point.
-        x_t : Array
-            Path sample at time t.
-        t : Array
-            Time in [0,1].
+            x_1 : Array
+                Target data point.
+            x_t : Array
+                Path sample at time t.
+            t : Array
+                Time in [0,1].
 
         Returns
         -------
-        Array
-            Velocity.
+            Array
+                Velocity.
         """
         scheduler_output = self.scheduler(t)
 
@@ -134,17 +134,17 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        epsilon : Array
-            Noise in the path sample.
-        x_t : Array
-            Path sample at time t.
-        t : Array
-            Time in [0,1].
+            epsilon : Array
+                Noise in the path sample.
+            x_t : Array
+                Path sample at time t.
+            t : Array
+                Time in [0,1].
 
         Returns
         -------
-        Array
-            Velocity.
+            Array
+                Velocity.
         """
         scheduler_output = self.scheduler(t)
 
@@ -164,17 +164,17 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        velocity : Array
-            Velocity at the path sample.
-        x_t : Array
-            Path sample at time t.
-        t : Array
-            Time in [0,1].
+            velocity : Array
+                Velocity at the path sample.
+            x_t : Array
+                Path sample at time t.
+            t : Array
+                Time in [0,1].
 
         Returns
         -------
-        Array
-            Target data point.
+            Array
+                Target data point.
         """
         scheduler_output = self.scheduler(t)
 
@@ -194,17 +194,17 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        epsilon : Array
-            Noise in the path sample.
-        x_t : Array
-            Path sample at time t.
-        t : Array
-            Time in [0,1].
+            epsilon : Array
+                Noise in the path sample.
+            x_t : Array
+                Path sample at time t.
+            t : Array
+                Time in [0,1].
 
         Returns
         -------
-        Array
-            Target data point.
+            Array
+                Target data point.
         """
         scheduler_output = self.scheduler(t)
 
@@ -222,17 +222,17 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        velocity : Array
-            Velocity at the path sample.
-        x_t : Array
-            Path sample at time t.
-        t : Array
-            Time in [0,1].
+            velocity : Array
+                Velocity at the path sample.
+            x_t : Array
+                Path sample at time t.
+            t : Array
+                Time in [0,1].
 
         Returns
         -------
-        Array
-            Noise in the path sample.
+            Array
+                Noise in the path sample.
         """
         scheduler_output = self.scheduler(t)
 
@@ -252,17 +252,17 @@ class AffineProbPath(ProbPath):
 
         Parameters
         ----------
-        x_1 : Array
-            Target data point.
-        x_t : Array
-            Path sample at time t.
-        t : Array
-            Time in [0,1].
+            x_1 : Array
+                Target data point.
+            x_t : Array
+                Path sample at time t.
+            t : Array
+                Time in [0,1].
 
         Returns
         -------
-        Array
-            Noise in the path sample.
+            Array
+                Noise in the path sample.
         """
         scheduler_output = self.scheduler(t)
 

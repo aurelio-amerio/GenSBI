@@ -15,7 +15,6 @@ class ContinuousFMLoss(nnx.Module):
     ContinuousFMLoss is a class that computes the continuous flow matching loss.
 
     Parameters
-
     ----------
         path : MixtureDiscreteProbPath
             Probability path (x-prediction training).
@@ -49,44 +48,37 @@ class ContinuousFMLoss(nnx.Module):
         Initialize the continuous flow matching loss.
         
         Parameters
-        
         ----------
             path: Probability path for x-prediction training.
             reduction: Reduction method for the loss. Options: 'none', 'mean', 'sum'. Defaults to 'mean'.
             
         Raises
-            
         ------
             ValueError
                 If reduction is not one of 'None', 'mean', or 'sum'.
         """
         self.path = path
-        if reduction not in ["None", "mean", "sum"]
+        if reduction not in ["None", "mean", "sum"]:
             raise ValueError(f"{reduction} is not a valid value for reduction")
 
-        if reduction == "mean"
+        if reduction == "mean":
             self.reduction = jnp.mean
-        elif reduction == "sum"
+        elif reduction == "sum":
             self.reduction = jnp.sum
-        else
-            self.reduction = lambda x
-                x
+        else:
+            self.reduction = lambda x: x
 
     def __call__(
         self,
-        vf
-            Callable,
-        batch
-            Tuple[Array, Array, Array],
-        args
-            Any = None,
+        vf: Callable,
+        batch: Tuple[Array, Array, Array],
+        args: Any = None,
         **kwargs,
-    ) -> Array
+    ) -> Array:
         """
         Evaluates the continuous flow matching loss.
 
         Parameters
-
         ----------
             vf : callable
                 The vector field model to evaluate.
@@ -99,7 +91,6 @@ class ContinuousFMLoss(nnx.Module):
             **kwargs: Additional keyword arguments for the function.
 
         Returns
-
         -------
             Array
                 The computed loss.

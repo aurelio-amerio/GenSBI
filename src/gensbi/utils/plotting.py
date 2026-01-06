@@ -24,12 +24,10 @@ def plot_trajectories(traj):
     
     Parameters
     ----------
-    traj : array-like
-        Trajectory data of shape (time_steps, n_samples, n_dims).
+        traj: Trajectory data of shape (time_steps, n_samples, n_dims).
         
     Returns
     -------
-    tuple
         Tuple of (figure, axes) objects.
     """
     traj = np.array(traj)
@@ -66,26 +64,6 @@ transparent_cmap = LinearSegmentedColormap.from_list("transparent_red", colors, 
 
 
 def _parse_range(range_arg, ndim):
-    """
-    Parse range argument into a list of tuples.
-    
-    Parameters
-    ----------
-    range_arg : None, tuple, or list
-        Range specification.
-    ndim : int
-        Number of dimensions.
-        
-    Returns
-    -------
-    list
-        List of range tuples, one per dimension.
-        
-    Raises
-    ------
-    ValueError
-        If range_arg format is invalid.
-    """
     if range_arg is None:
         res = [None] * ndim
     elif (
@@ -362,33 +340,6 @@ def _plot_marginals_seaborn(
     histplot_kwargs={},
     true_param=None,
 ):
-    """
-    Plot marginal distributions using seaborn.
-    
-    Parameters
-    ----------
-    data : array-like
-        Data to plot, shape (n_samples, n_dim).
-    plot_levels : bool, optional
-        Whether to plot KDE contour levels.
-    labels : list, optional
-        Axis labels for each parameter.
-    gridsize : int, optional
-        Number of bins for hexbin/histogram.
-    range : tuple or list, optional
-        Axis limits for each parameter.
-    hexbin_kwargs : dict, optional
-        Additional keyword arguments for hexbin plots.
-    histplot_kwargs : dict, optional
-        Additional keyword arguments for histogram plots.
-    true_param : array-like, optional
-        Ground truth parameter values.
-        
-    Returns
-    -------
-    tuple
-        Figure and axes objects.
-    """
     data = np.array(data)
     if true_param is not None:
         true_param = np.array(true_param)
@@ -527,29 +478,6 @@ def _plot_marginals_corner(
     true_param=None,
     **kwargs,
 ):
-    """
-    Plot marginal distributions using corner.py.
-    
-    Parameters
-    ----------
-    data : array-like
-        Data to plot, shape (n_samples, n_dim).
-    labels : list, optional
-        Axis labels for each parameter.
-    gridsize : int, optional
-        Number of bins for histograms.
-    range : list, optional
-        Axis limits for each parameter.
-    true_param : array-like, optional
-        Ground truth parameter values.
-    **kwargs
-        Additional arguments passed to corner.corner().
-        
-    Returns
-    -------
-    tuple
-        Figure and axes objects.
-    """
     data = np.array(data)
     ndim = data.shape[1]
     if range is not None:
@@ -672,7 +600,7 @@ cmap_lcontour = sns.cubehelix_palette(
 
 def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545], display_labels=False):
     """
-    Plot 2D contour levels on a given axis.
+    Plot 2D levels on a given axis.
 
     Parameters
     ----------
@@ -682,16 +610,10 @@ def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545], display_labels=False):
         Y values.
     Z : array-like
         Z values corresponding to (x, y).
-    ax : matplotlib.axes.Axes
+    ax : matplotlib Axes
         The axes to plot on.
-    levels : list of float, optional
-        The contour levels to plot as confidence levels.
-    display_labels : bool, optional
-        Whether to display percentage labels on contours.
-        
-    Returns
-    -------
-    None
+    levels : list of float
+        The contour levels to plot.
     """
 
     # --- 1. Prepare the data ---
@@ -763,24 +685,18 @@ def plot_2d_dist_contour(
     Parameters
     ----------
     x : array-like
-        X coordinate values.
+        X values.
     y : array-like
-        Y coordinate values.
+        Y values.
     Z : array-like
-        Z values (density/probability) corresponding to (x, y).
-    true_param : array-like, optional
-        Ground truth parameter values [x, y] to mark on plot.
-    levels : list of float, optional
-        Contour confidence levels to plot. If None, contours will not be plotted.
-    cmap : matplotlib colormap, optional
-        Colormap for filled contours.
-    display_labels : bool, optional
-        Whether to display percentage labels on contours.
+        Z values corresponding to (x, y).
+    levels : list or None, optional
+        Contour levels to plot. If None, contours will not be plotted.
 
     Returns
     -------
-    tuple
-        Tuple of (fig, ax) matplotlib Figure and Axes objects.
+    fig, ax : matplotlib Figure and Axes objects
+        The figure and axes containing the plot.
     """
 
     fig, ax = plt.subplots(figsize=(8, 6))

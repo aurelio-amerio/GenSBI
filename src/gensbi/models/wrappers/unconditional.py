@@ -21,7 +21,6 @@ class UnconditionalWrapper(ModelWrapper):
     Wrapper for unconditional models to handle input expansion and calling convention.
 
     Parameters
-
     ----------
         model: The unconditional model instance to wrap.
     """
@@ -30,7 +29,6 @@ class UnconditionalWrapper(ModelWrapper):
         Initialize the UnconditionalWrapper.
 
         Parameters
-
         ----------
             model: The unconditional model instance to wrap.
         """
@@ -47,7 +45,6 @@ class UnconditionalWrapper(ModelWrapper):
         Call the wrapped model with expanded inputs.
 
         Parameters
-
         ----------
             t : Array
                 Time steps.
@@ -58,7 +55,6 @@ class UnconditionalWrapper(ModelWrapper):
             **kwargs: Additional keyword arguments passed to the model.
 
         Returns
-
         -------
             Array
                 Model output.

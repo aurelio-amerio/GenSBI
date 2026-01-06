@@ -13,7 +13,6 @@ class PosteriorWrapper:
     Wrap a GenSBI pipeline into a distribution compatible with `sbi`.
 
     Parameters
-
     ----------
         pipeline: An instance of a Pipeline from GenSBI.
         rngs: A nnx.Rngs instance for random number generation.
@@ -91,7 +90,6 @@ class PosteriorWrapper:
         Sample from the posterior distribution conditioned on x.
 
         Parameters
-
         ----------
             sample_shape: Shape of the samples to be drawn.
             x: Optional tensor of observations to condition on. If None, uses the default_x.
@@ -123,7 +121,6 @@ class PosteriorWrapper:
         Sample from the posterior distribution conditioned on x.
 
         Parameters
-
         ----------
             sample_shape: Shape of the samples to be drawn.
             x: Optional tensor of observations to condition on. If None, uses the default_x.

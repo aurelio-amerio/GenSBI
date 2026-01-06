@@ -48,7 +48,6 @@ class Flux1EmbedParams:
         - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
 
     Parameters
-
     ----------
         in_channels : int
             Number of channels per observation/parameter token.
