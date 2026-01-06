@@ -19,17 +19,21 @@ class JointWrapper(ModelWrapper):
     """
     Wrapper for joint models to handle both conditioned and unconditioned inference.
 
-    Args:
+    Parameters
+    ----------
         model: The joint model instance to wrap.
-        conditioned (bool, optional): Whether to use conditioning by default. Defaults to True.
+        conditioned : bool, optional
+            Whether to use conditioning by default. Defaults to True.
     """
     def __init__(self, model):
         """
         Initialize the JointWrapper.
 
-        Args:
+        Parameters
+        ----------
             model: The joint model instance to wrap.
-            conditioned (bool, optional): Whether to use conditioning by default. Defaults to True.
+            conditioned : bool, optional
+                Whether to use conditioning by default. Defaults to True.
         """
         super().__init__(model)
 
@@ -45,16 +49,24 @@ class JointWrapper(ModelWrapper):
         """
         Perform conditioned inference.
 
-        Args:
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            cond (Array): Conditioning values.
-            cond_ids (Array): Conditioning identifiers.
-            t (Array): Time steps.
+        Parameters
+        ----------
+            obs : Array
+                Observations.
+            obs_ids : Array
+                Observation identifiers.
+            cond : Array
+                Conditioning values.
+            cond_ids : Array
+                Conditioning identifiers.
+            t : Array
+                Time steps.
             **kwargs: Additional keyword arguments passed to the model.
 
-        Returns:
-            Array: Conditioned output (only for unconditioned variables).
+        Returns
+        -------
+            Array
+                Conditioned output (only for unconditioned variables).
         """
         dim_obs = obs.shape[1]
         dim_cond = cond.shape[1]
@@ -85,14 +97,20 @@ class JointWrapper(ModelWrapper):
         """
         Perform unconditioned inference.
 
-        Args:
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            t (Array): Time steps.
+        Parameters
+        ----------
+            obs : Array
+                Observations.
+            obs_ids : Array
+                Observation identifiers.
+            t : Array
+                Time steps.
             **kwargs: Additional keyword arguments passed to the model.
 
-        Returns:
-            Array: Unconditioned output.
+        Returns
+        -------
+            Array
+                Unconditioned output.
         """
         condition_mask = jnp.zeros(obs.shape, dtype=jnp.bool_)
         node_ids = obs_ids
@@ -118,17 +136,26 @@ class JointWrapper(ModelWrapper):
         """
         Call the wrapped model for either conditioned or unconditioned inference.
 
-        Args:
-            t (Array): Time steps.
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
-            cond (Array): Conditioning values.
-            cond_ids (Array): Conditioning identifiers.
-            conditioned (bool, optional): Whether to use conditioning. If None, uses the default set at initialization.
+        Parameters
+        ----------
+            t : Array
+                Time steps.
+            obs : Array
+                Observations.
+            obs_ids : Array
+                Observation identifiers.
+            cond : Array
+                Conditioning values.
+            cond_ids : Array
+                Conditioning identifiers.
+            conditioned : bool, optional
+                Whether to use conditioning. If None, uses the default set at initialization.
             **kwargs: Additional keyword arguments passed to the model.
 
-        Returns:
-            Array: Model output.
+        Returns
+        -------
+            Array
+                Model output.
         """
         t = _expand_time(t)
         obs = _expand_dims(obs)

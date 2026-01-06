@@ -36,14 +36,16 @@ def timestep_embedding(
     """
     Generate timestep embeddings.
 
-    Args:
+    Parameters
+    ----------
         t: a 1-D Tensor of N indices, one per batch element.
             These may be fractional.
         dim: the dimension of the output.
         max_period: controls the minimum frequency of the embeddings.
         time_factor: Tensor of positional embeddings.
 
-    Returns:
+    Returns
+    -------
         timestep embeddings.
     """
     t = jnp.atleast_1d(t)

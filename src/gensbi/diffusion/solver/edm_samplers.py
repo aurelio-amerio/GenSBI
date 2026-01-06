@@ -27,24 +27,40 @@ def edm_sampler(
     """
     EDM sampler for diffusion models.
 
-    Args:
+    Parameters
+    ----------
         sde: SDE scheduler object.
-        model (Callable): Model function.
-        x_1 (Array): Initial value.
-        key (Array): JAX random key.
-        condition_mask (Optional[Array]): Mask for conditioning.
-        condition_value (Optional[Array]): Value for conditioning.
-        return_intermediates (bool): Whether to return intermediate steps.
-        n_steps (int): Number of steps.
-        S_churn (float): Churn parameter.
-        S_min (float): Minimum S value.
-        S_max (float): Maximum S value.
-        S_noise (float): Noise scale.
-        method (str): Integration method ("Euler" or "Heun").
-        model_kwargs (dict): Additional model arguments.
+        model : Callable
+            Model function.
+        x_1 : Array
+            Initial value.
+        key : Array
+            JAX random key.
+        condition_mask : Optional[Array]
+            Mask for conditioning.
+        condition_value : Optional[Array]
+            Value for conditioning.
+        return_intermediates : bool
+            Whether to return intermediate steps.
+        n_steps : int
+            Number of steps.
+        S_churn : float
+            Churn parameter.
+        S_min : float
+            Minimum S value.
+        S_max : float
+            Maximum S value.
+        S_noise : float
+            Noise scale.
+        method : str
+            Integration method ("Euler" or "Heun").
+        model_kwargs : dict
+            Additional model arguments.
 
-    Returns:
-        Array: Sampled output.
+    Returns
+    -------
+        Array
+            Sampled output.
     """
     assert method in ["Euler", "Heun"], f"Unknown method: {method}"
     if condition_mask is not None:

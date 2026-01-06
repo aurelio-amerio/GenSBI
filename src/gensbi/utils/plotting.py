@@ -22,10 +22,12 @@ def plot_trajectories(traj):
     """
     Plot trajectories showing the flow from source to target distribution.
     
-    Args:
+    Parameters
+    ----------
         traj: Trajectory data of shape (time_steps, n_samples, n_dims).
         
-    Returns:
+    Returns
+    -------
         Tuple of (figure, axes) objects.
     """
     traj = np.array(traj)
