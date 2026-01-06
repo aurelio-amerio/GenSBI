@@ -30,22 +30,22 @@ from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 class Flux1Params:
     """Parameters for the Flux1 model.
 
-        GenSBI uses the tensor convention `(batch, dim, channels)`.
+    GenSBI uses the tensor convention `(batch, dim, channels)`.
 
-        - `dim_*` counts **tokens** (how many distinct observables/variables you have).
-        - `channels` counts **features per token** (how many values each observable carries).
+    - `dim_*` counts **tokens** (how many distinct observables/variables you have).
+    - `channels` counts **features per token** (how many values each observable carries).
 
-        For conditional SBI with Flux1:
+    For conditional SBI with Flux1:
 
-        - Parameters to infer (often denoted $\theta$) have shape `(batch, dim_obs, in_channels)`.
-            In most SBI problems `in_channels = 1` (one scalar per parameter token).
-        - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
-            `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
+    - Parameters to infer (often denoted $\theta$) have shape `(batch, dim_obs, in_channels)`.
+        In most SBI problems `in_channels = 1` (one scalar per parameter token).
+    - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
+        `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
 
-        Example: 2 parameters, frequency grid with 2 detectors
+    Example: 2 parameters, frequency grid with 2 detectors
 
-        - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
-        - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
+    - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
+    - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
 
     Parameters
     ----------
