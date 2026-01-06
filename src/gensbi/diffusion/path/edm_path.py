@@ -25,7 +25,8 @@ class EDMPath(ProbPath):
     This class implements the probability path for EDM-based diffusion models,
     supporting different noise schedules (EDM, EDM-VP, EDM-VE).
     
-    Args:
+    Parameters
+    ----------
         scheduler: The scheduler object for noise generation, must be one of 'EDM', 'EDM-VP', or 'EDM-VE'.
         
     Example:
@@ -48,11 +49,14 @@ class EDMPath(ProbPath):
         """
         Initialize the EDMPath with a scheduler.
 
-        Args:
+        Parameters
+        ----------
             scheduler: The scheduler object.
             
-        Raises:
-            AssertionError: If scheduler name is not one of 'EDM', 'EDM-VP', or 'EDM-VE'.
+        Raises
+        ------
+            AssertionError
+                If scheduler name is not one of 'EDM', 'EDM-VP', or 'EDM-VE'.
         """
         self.scheduler = scheduler
         assert self.scheduler.name in [
@@ -66,13 +70,19 @@ class EDMPath(ProbPath):
         r"""
         Sample from the EDM probability path.
 
-        Args:
-            key (Array): JAX random key.
-            x_1 (Array): Target data point, shape (batch_size, ...).
-            sigma (Array): Noise scale, shape (batch_size, ...).
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            x_1 : Array
+                Target data point, shape (batch_size, ...).
+            sigma : Array
+                Noise scale, shape (batch_size, ...).
 
-        Returns:
-            PathSample: A sample from the EDM path.
+        Returns
+        -------
+            PathSample
+                A sample from the EDM path.
         """
         noise = self.scheduler.sample_noise(key, x_1.shape, sigma)
         x_t = x_1 + noise
@@ -86,12 +96,17 @@ class EDMPath(ProbPath):
         r"""
         Sample the noise scale sigma from the scheduler.
 
-        Args:
-            key (Array): JAX random key.
-            batch_size (int): Number of samples to generate.
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            batch_size : int
+                Number of samples to generate.
 
-        Returns:
-            Array: Samples of sigma, shape (batch_size, ...).
+        Returns
+        -------
+            Array
+                Samples of sigma, shape (batch_size, ...).
         """
         return self.scheduler.sample_sigma(key, batch_size)
 
@@ -99,7 +114,9 @@ class EDMPath(ProbPath):
         r"""
         Returns the loss function for the EDM path.
 
-        Returns:
-            Callable: The loss function as provided by the scheduler.
+        Returns
+        -------
+            Callable
+                The loss function as provided by the scheduler.
         """
         return self.scheduler.get_loss_fn()

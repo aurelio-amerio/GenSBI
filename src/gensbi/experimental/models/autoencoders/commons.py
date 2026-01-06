@@ -71,9 +71,12 @@ class DiagonalGaussian(nnx.Module):
     """
     Diagonal Gaussian distribution module for VAE latent space.
 
-    Args:
-        sample (bool): Whether to sample from the distribution (default: True).
-        chunk_dim (int): Axis along which to split mean and logvar (default: -1).
+    Parameters
+    ----------
+        sample : bool
+            Whether to sample from the distribution (default: True).
+        chunk_dim : int
+            Axis along which to split mean and logvar (default: -1).
     """
 
     def __init__(
@@ -84,7 +87,8 @@ class DiagonalGaussian(nnx.Module):
         """
         Initialize the Diagonal Gaussian module.
         
-        Args:
+        Parameters
+        ----------
             sample: Whether to sample from the distribution. Defaults to True.
             chunk_dim: Axis along which to split mean and logvar. Defaults to -1.
         """
@@ -99,12 +103,17 @@ class DiagonalGaussian(nnx.Module):
         """
         Split input into mean and log-variance, compute KL loss, and sample if required.
 
-        Args:
-            z (Array): Input tensor containing concatenated mean and logvar.
-            key (Array, optional): PRNG key for sampling. Required if sampling is enabled.
+        Parameters
+        ----------
+            z : Array
+                Input tensor containing concatenated mean and logvar.
+            key : Array, optional
+                PRNG key for sampling. Required if sampling is enabled.
 
-        Returns:
-            Array: Sampled latent or mean, depending on self.sample.
+        Returns
+        -------
+            Array
+                Sampled latent or mean, depending on self.sample.
         """
         mean, logvar = jnp.split(z, 2, axis=self.chunk_dim)
         std = jnp.exp(0.5 * logvar)
@@ -130,13 +139,15 @@ def vae_loss_fn(
     """
     Compute the VAE loss as the sum of reconstruction and KL divergence losses.
 
-    Args:
+    Parameters
+    ----------
         model: The VAE model.
         x: Input data.
         key: PRNG key for stochastic operations.
         kl_weight: Weight for the KL divergence term. Defaults to 0.1.
 
-    Returns:
+    Returns
+    -------
         Scalar loss value combining reconstruction and KL losses.
     """
     logits = model(x, key)

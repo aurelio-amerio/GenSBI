@@ -11,9 +11,11 @@ class JointCFMLoss(ContinuousFMLoss):
     """
     JointCFMLoss is a class that computes the continuous flow matching loss for the Joint model.
 
-    Args:
+    Parameters
+    ----------
         path: Probability path for training.
-        reduction (str): Reduction method ('none', 'mean', 'sum').
+        reduction : str
+            Reduction method ('none', 'mean', 'sum').
     """
 
     def __init__(self, path, reduction: str = "mean"):
@@ -30,15 +32,22 @@ class JointCFMLoss(ContinuousFMLoss):
         """
         Evaluate the continuous flow matching loss.
 
-        Args:
-            vf (Callable): Vector field model.
-            batch (Tuple[Array, Array, Array]): Input data (x_0, x_1, t).
-            args (Optional[dict]): Additional arguments.
-            condition_mask (Optional[Array]): Mask for conditioning.
+        Parameters
+        ----------
+            vf : Callable
+                Vector field model.
+            batch : Tuple[Array, Array, Array]
+                Input data (x_0, x_1, t).
+            args : Optional[dict]
+                Additional arguments.
+            condition_mask : Optional[Array]
+                Mask for conditioning.
             **kwargs: Additional keyword arguments.
 
-        Returns:
-            Array: Computed loss.
+        Returns
+        -------
+            Array
+                Computed loss.
         """
         _, x_1, _ = batch
         path_sample = self.path.sample(*batch)
@@ -65,7 +74,8 @@ class JointDiffLoss(nnx.Module):
     """
     JointDiffLoss is a class that computes the diffusion score matching loss for the Joint model.
 
-    Args:
+    Parameters
+    ----------
         path: Probability path for training.
     """
 
@@ -85,16 +95,24 @@ class JointDiffLoss(nnx.Module):
         """
         Evaluate the continuous flow matching loss.
 
-        Args:
-            key (jax.random.PRNGKey): Random key for stochastic operations.
-            model (Callable): F model.
-            batch (Tuple[Array, Array, Array]): Input data (x_1, sigma).
-            args (Optional[dict]): Additional arguments.
-            condition_mask (Optional[Array]): Mask for conditioning.
+        Parameters
+        ----------
+            key : jax.random.PRNGKey
+                Random key for stochastic operations.
+            model : Callable
+                F model.
+            batch : Tuple[Array, Array, Array]
+                Input data (x_1, sigma).
+            args : Optional[dict]
+                Additional arguments.
+            condition_mask : Optional[Array]
+                Mask for conditioning.
             **kwargs: Additional keyword arguments.
 
-        Returns:
-            Array: Computed loss.
+        Returns
+        -------
+            Array
+                Computed loss.
         """
         x_1, sigma = batch
 

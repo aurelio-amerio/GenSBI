@@ -10,19 +10,19 @@ The `AbstractPipeline` provides a unified `sample` method for both Flow Matching
 import jax
 
 # 1. Prepare your observation
-# Ensure it has the shape (1, cond_dim, cond_channels)
+# Ensure it has the shape (1, dim_cond, ch_cond)
 x_observed = ... 
 
 # 2. Generate samples
 key = jax.random.PRNGKey(42)
 
 samples = pipeline.sample(
-    rng=key, 
+    key=key, 
     x_o=x_observed, 
     nsamples=10_000
 )
 
-# samples shape: (10_000, obs_dim, obs_channels)
+# samples shape: (10_000, dim_obs, ch_obs)
 ```
 
 ## Understanding Flow Matching Inference

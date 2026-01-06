@@ -39,11 +39,15 @@ class BaseSDE(abc.ABC):
         """
         Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.
 
-        Args:
-            u (Array): Uniform random variable in [0, 1].
+        Parameters
+        ----------
+            u : Array
+                Uniform random variable in [0, 1].
 
-        Returns:
-            Array: Time in the schedule.
+        Returns
+        -------
+            Array
+                Time in the schedule.
         """
         ...  # pragma: no cover
 
@@ -51,12 +55,17 @@ class BaseSDE(abc.ABC):
         """
         Compute the time steps for a given index array and total number of steps.
 
-        Args:
-            i (Array): Step indices.
-            N (int): Total number of steps.
+        Parameters
+        ----------
+            i : Array
+                Step indices.
+            N : int
+                Total number of steps.
 
-        Returns:
-            Array: Time steps.
+        Returns
+        -------
+            Array
+                Time steps.
         """
         u = i / (N - 1)
         return self.time_schedule(u)
@@ -66,11 +75,15 @@ class BaseSDE(abc.ABC):
         """
         Returns the noise scale (schedule) at time t.
 
-        Args:
-            t (Array): Time.
+        Parameters
+        ----------
+            t : Array
+                Time.
 
-        Returns:
-            Array: Noise scale.
+        Returns
+        -------
+            Array
+                Noise scale.
         """
         ...  # pragma: no cover
 
@@ -79,11 +92,15 @@ class BaseSDE(abc.ABC):
         """
         Inverse of the noise scale function.
 
-        Args:
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            sigma : Array
+                Noise scale.
 
-        Returns:
-            Array: Time corresponding to the given sigma.
+        Returns
+        -------
+            Array
+                Time corresponding to the given sigma.
         """
         ...  # pragma: no cover
 
@@ -92,11 +109,15 @@ class BaseSDE(abc.ABC):
         """
         Derivative of the noise scale with respect to time.
 
-        Args:
-            t (Array): Time.
+        Parameters
+        ----------
+            t : Array
+                Time.
 
-        Returns:
-            Array: Derivative of sigma.
+        Returns
+        -------
+            Array
+                Derivative of sigma.
         """
         ...  # pragma: no cover
 
@@ -105,11 +126,15 @@ class BaseSDE(abc.ABC):
         """
         Scaling function as in EDM paper.
 
-        Args:
-            t (Array): Time.
+        Parameters
+        ----------
+            t : Array
+                Time.
 
-        Returns:
-            Array: Scaling value.
+        Returns
+        -------
+            Array
+                Scaling value.
         """
         ...  # pragma: no cover
 
@@ -118,11 +143,15 @@ class BaseSDE(abc.ABC):
         """
         Derivative of the scaling function.
 
-        Args:
-            t (Array): Time.
+        Parameters
+        ----------
+            t : Array
+                Time.
 
-        Returns:
-            Array: Derivative of scaling.
+        Returns
+        -------
+            Array
+                Derivative of scaling.
         """
         ...  # pragma: no cover
 
@@ -131,11 +160,15 @@ class BaseSDE(abc.ABC):
         """
         Preconditioning skip connection coefficient.
 
-        Args:
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            sigma : Array
+                Noise scale.
 
-        Returns:
-            Array: Skip coefficient.
+        Returns
+        -------
+            Array
+                Skip coefficient.
         """
         ...  # pragma: no cover
 
@@ -144,11 +177,15 @@ class BaseSDE(abc.ABC):
         """
         Preconditioning output coefficient.
 
-        Args:
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            sigma : Array
+                Noise scale.
 
-        Returns:
-            Array: Output coefficient.
+        Returns
+        -------
+            Array
+                Output coefficient.
         """
         ...  # pragma: no cover
 
@@ -157,11 +194,15 @@ class BaseSDE(abc.ABC):
         """
         Preconditioning input coefficient.
 
-        Args:
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            sigma : Array
+                Noise scale.
 
-        Returns:
-            Array: Input coefficient.
+        Returns
+        -------
+            Array
+                Input coefficient.
         """
         ...  # pragma: no cover
 
@@ -170,11 +211,15 @@ class BaseSDE(abc.ABC):
         """
         Preconditioning noise coefficient.
 
-        Args:
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            sigma : Array
+                Noise scale.
 
-        Returns:
-            Array: Noise coefficient.
+        Returns
+        -------
+            Array
+                Noise coefficient.
         """
         ...  # pragma: no cover
 
@@ -183,12 +228,17 @@ class BaseSDE(abc.ABC):
         """
         Sample sigma from the prior noise distribution.
 
-        Args:
-            key (Array): JAX random key.
-            shape (Any): Shape of the output.
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            shape : Any
+                Shape of the output.
 
-        Returns:
-            Array: Sampled sigma.
+        Returns
+        -------
+            Array
+                Sampled sigma.
         """
         ...  # pragma: no cover
 
@@ -196,13 +246,19 @@ class BaseSDE(abc.ABC):
         """
         Sample noise from the prior noise distribution with noise scale sigma(t).
 
-        Args:
-            key (Array): JAX random key.
-            shape (Any): Shape of the output.
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            shape : Any
+                Shape of the output.
+            sigma : Array
+                Noise scale.
 
-        Returns:
-            Array: Sampled noise.
+        Returns
+        -------
+            Array
+                Sampled noise.
         """
         n = jax.random.normal(key, shape) * sigma
         return n
@@ -211,12 +267,17 @@ class BaseSDE(abc.ABC):
         """
         Sample x from the prior distribution.
 
-        Args:
-            key (Array): JAX random key.
-            shape (Any): Shape of the output.
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            shape : Any
+                Shape of the output.
 
-        Returns:
-            Array: Sampled prior.
+        Returns
+        -------
+            Array
+                Sampled prior.
         """
         return jax.random.normal(key, shape)
 
@@ -225,11 +286,15 @@ class BaseSDE(abc.ABC):
         """
         Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.
 
-        Args:
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            sigma : Array
+                Noise scale.
 
-        Returns:
-            Array: Loss weight.
+        Returns
+        -------
+            Array
+                Loss weight.
         """
         ...  # pragma: no cover
 
@@ -239,12 +304,17 @@ class BaseSDE(abc.ABC):
 
         Computes the drift term :math:`f(x, t) = x \frac{ds}{dt} / s(t)` as used in the SDE formulation.
 
-        Args:
-            x (Array): Input data.
-            t (Array): Time.
+        Parameters
+        ----------
+            x : Array
+                Input data.
+            t : Array
+                Time.
 
-        Returns:
-            Array: Drift term.
+        Returns
+        -------
+            Array
+                Drift term.
         """
         t = self.time_schedule(t)
         return x * self.s_deriv(t) / self.s(t)
@@ -255,12 +325,17 @@ class BaseSDE(abc.ABC):
 
         Computes the diffusion term :math:`g(x, t) = s(t) \sqrt{2 \frac{d\sigma}{dt} \sigma(t)}` as used in the SDE formulation.
 
-        Args:
-            x (Array): Input data.
-            t (Array): Time.
+        Parameters
+        ----------
+            x : Array
+                Input data.
+            t : Array
+                Time.
 
-        Returns:
-            Array: Diffusion term.
+        Returns
+        -------
+            Array
+                Diffusion term.
         """
         t = self.time_schedule(t)
         return self.s(t) * jnp.sqrt(2 * self.sigma_deriv(t) * self.sigma(t))
@@ -277,15 +352,21 @@ class BaseSDE(abc.ABC):
         .. math::
             D_\theta(x; \sigma) = c_\text{skip}(\sigma) x + c_\text{out}(\sigma) F_\theta (c_\text{in}(\sigma) x; c_\text{noise}(\sigma))
 
-        Args:
-            F (Callable): Model function.
-            x (Array): Input data.
-            sigma (Array): Noise scale.
+        Parameters
+        ----------
+            F : Callable
+                Model function.
+            x : Array
+                Input data.
+            sigma : Array
+                Noise scale.
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
 
-        Returns:
-            Array: Denoised output.
+        Returns
+        -------
+            Array
+                Denoised output.
         """
         return self.c_skip(sigma) * x + self.c_out(sigma) * F(
             obs=self.c_in(sigma) * x, t=self.c_noise(sigma), *args, **kwargs
@@ -329,11 +410,14 @@ class BaseSDE(abc.ABC):
                 - \frac{1}{c_\text{out}(\sigma)} (x_1 - c_\text{skip}(\sigma) x_t)
             \right]^2
 
-        Args:
+        Parameters
+        ----------
             None directly; returns a function that computes the loss.
 
-        Returns:
-            Callable: Loss function.
+        Returns
+        -------
+            Callable
+                Loss function.
         """
 
         def loss_fn(
@@ -372,12 +456,18 @@ class VPScheduler(BaseSDE):
     """
     Variance Preserving (VP) SDE scheduler as described in the EDM paper.
 
-    Args:
-        beta_min (float): Minimum beta value.
-        beta_max (float): Maximum beta value.
-        e_s (float): Starting epsilon value for time schedule.
-        e_t (float): Ending epsilon value for time schedule.
-        M (int): Scaling factor for noise preconditioning.
+    Parameters
+    ----------
+        beta_min : float
+            Minimum beta value.
+        beta_max : float
+            Maximum beta value.
+        e_s : float
+            Starting epsilon value for time schedule.
+        e_t : float
+            Ending epsilon value for time schedule.
+        M : int
+            Scaling factor for noise preconditioning.
 
 
     References:
@@ -464,9 +554,12 @@ class VEScheduler(BaseSDE):
     """
     Variance Exploding (VE) SDE scheduler as described in the EDM paper.
 
-    Args:
-        sigma_min (float): Minimum sigma value.
-        sigma_max (float): Maximum sigma value.
+    Parameters
+    ----------
+        sigma_min : float
+            Minimum sigma value.
+        sigma_max : float
+            Maximum sigma value.
     """
 
     def __init__(self, sigma_min=1e-3, sigma_max=15.0):

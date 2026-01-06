@@ -37,11 +37,15 @@ class Scheduler(ABC):
     @abstractmethod
     def __call__(self, t: Array) -> SchedulerOutput:
         r"""
-        Args:
-            t (Array): times in [0,1], shape (...).
+        Parameters
+        ----------
+            t : Array
+                times in [0,1], shape (...).
 
-        Returns:
-            SchedulerOutput: :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
+        Returns
+        -------
+            SchedulerOutput
+                :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
         """
         ...  # pragma: no cover
 
@@ -50,11 +54,15 @@ class Scheduler(ABC):
         r"""
         Computes :math:`t` from the signal-to-noise ratio :math:`\frac{\alpha_t}{\sigma_t}`.
 
-        Args:
-            snr (Array): The signal-to-noise, shape (...)
+        Parameters
+        ----------
+            snr : Array
+                The signal-to-noise, shape (...)
 
-        Returns:
-            Array: t, shape (...)
+        Returns
+        -------
+            Array
+                t, shape (...)
         """
         ...  # pragma: no cover
 
@@ -64,11 +72,15 @@ class ConvexScheduler(Scheduler):
     def __call__(self, t: Array) -> SchedulerOutput:
         """Scheduler for convex paths.
 
-        Args:
-            t (Array): times in [0,1], shape (...).
+        Parameters
+        ----------
+            t : Array
+                times in [0,1], shape (...).
 
-        Returns:
-            SchedulerOutput: :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
+        Returns
+        -------
+            SchedulerOutput
+                :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
         """
         ...  # pragma: no cover
 
@@ -77,11 +89,15 @@ class ConvexScheduler(Scheduler):
         """
         Computes :math:`t` from :math:`\kappa_t`.
 
-        Args:
-            kappa (Array): :math:`\kappa`, shape (...)
+        Parameters
+        ----------
+            kappa : Array
+                :math:`\kappa`, shape (...)
 
-        Returns:
-            Array: t, shape (...)
+        Returns
+        -------
+            Array
+                t, shape (...)
         """
         ...  # pragma: no cover
 
@@ -89,11 +105,15 @@ class ConvexScheduler(Scheduler):
         r"""
         Computes :math:`t` from the signal-to-noise ratio :math:`\frac{\alpha_t}{\sigma_t}`.
 
-        Args:
-            snr (Array): The signal-to-noise, shape (...)
+        Parameters
+        ----------
+            snr : Array
+                The signal-to-noise, shape (...)
 
-        Returns:
-            Array: t, shape (...)
+        Returns
+        -------
+            Array
+                t, shape (...)
         """
         kappa_t = snr / (1.0 + snr)
         return self.kappa_inverse(kappa=kappa_t)
@@ -111,10 +131,12 @@ class CondOTScheduler(ConvexScheduler):
         """
         Compute scheduler outputs for given times.
         
-        Args:
+        Parameters
+        ----------
             t: Times in [0,1], shape (...).
             
-        Returns:
+        Returns
+        -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
         """
         return SchedulerOutput(
@@ -128,10 +150,12 @@ class CondOTScheduler(ConvexScheduler):
         """
         Compute t from kappa.
         
-        Args:
+        Parameters
+        ----------
             kappa: Kappa values, shape (...).
             
-        Returns:
+        Returns
+        -------
             Time values, shape (...).
         """
         return kappa
@@ -143,7 +167,8 @@ class PolynomialConvexScheduler(ConvexScheduler):
     
     This scheduler uses polynomial interpolation with alpha_t = t^n and sigma_t = 1 - t^n.
     
-    Args:
+    Parameters
+    ----------
         n: The polynomial degree, must be positive.
     """
 
@@ -151,11 +176,14 @@ class PolynomialConvexScheduler(ConvexScheduler):
         """
         Initialize the polynomial convex scheduler.
         
-        Args:
+        Parameters
+        ----------
             n: Polynomial degree, must be a positive float or int.
             
-        Raises:
-            AssertionError: If n is not a float/int or if n is not positive.
+        Raises
+        ------
+            AssertionError
+                If n is not a float/int or if n is not positive.
         """
         assert isinstance(
             n, (float, int)
@@ -167,10 +195,12 @@ class PolynomialConvexScheduler(ConvexScheduler):
         """
         Compute scheduler outputs for given times.
         
-        Args:
+        Parameters
+        ----------
             t: Times in [0,1], shape (...).
             
-        Returns:
+        Returns
+        -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
         """
         return SchedulerOutput(
@@ -184,10 +214,12 @@ class PolynomialConvexScheduler(ConvexScheduler):
         """
         Compute t from kappa.
         
-        Args:
+        Parameters
+        ----------
             kappa: Kappa values, shape (...).
             
-        Returns:
+        Returns
+        -------
             Time values, shape (...).
         """
         return jnp.power(kappa, 1.0 / self.n)
@@ -200,7 +232,8 @@ class VPScheduler(Scheduler):
     This scheduler follows the variance-preserving SDE formulation commonly used in
     diffusion models, with configurable beta_min and beta_max parameters.
     
-    Args:
+    Parameters
+    ----------
         beta_min: Minimum beta value. Defaults to 0.1.
         beta_max: Maximum beta value. Defaults to 20.0.
     """
@@ -209,7 +242,8 @@ class VPScheduler(Scheduler):
         """
         Initialize the VP scheduler.
         
-        Args:
+        Parameters
+        ----------
             beta_min: Minimum beta value.
             beta_max: Maximum beta value.
         """
@@ -221,10 +255,12 @@ class VPScheduler(Scheduler):
         """
         Compute scheduler outputs for given times.
         
-        Args:
+        Parameters
+        ----------
             t: Times in [0,1], shape (...).
             
-        Returns:
+        Returns
+        -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
         """
         b = self.beta_min
@@ -243,10 +279,12 @@ class VPScheduler(Scheduler):
         """
         Compute t from signal-to-noise ratio.
         
-        Args:
+        Parameters
+        ----------
             snr: The signal-to-noise ratio, shape (...).
             
-        Returns:
+        Returns
+        -------
             Time values, shape (...).
         """
         T = -jnp.log(snr**2 / (snr**2 + 1))
@@ -267,10 +305,12 @@ class LinearVPScheduler(Scheduler):
         """
         Compute scheduler outputs for given times.
         
-        Args:
+        Parameters
+        ----------
             t: Times in [0,1], shape (...).
             
-        Returns:
+        Returns
+        -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
         """
         return SchedulerOutput(
@@ -284,10 +324,12 @@ class LinearVPScheduler(Scheduler):
         """
         Compute t from signal-to-noise ratio.
         
-        Args:
+        Parameters
+        ----------
             snr: The signal-to-noise ratio, shape (...).
             
-        Returns:
+        Returns
+        -------
             Time values, shape (...).
         """
         return jnp.sqrt(snr**2 / (1 + snr**2))
@@ -305,10 +347,12 @@ class CosineScheduler(Scheduler):
         """
         Compute scheduler outputs for given times.
         
-        Args:
+        Parameters
+        ----------
             t: Times in [0,1], shape (...).
             
-        Returns:
+        Returns
+        -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
         """
         return SchedulerOutput(
@@ -322,10 +366,12 @@ class CosineScheduler(Scheduler):
         """
         Compute t from signal-to-noise ratio.
         
-        Args:
+        Parameters
+        ----------
             snr: The signal-to-noise ratio, shape (...).
             
-        Returns:
+        Returns
+        -------
             Time values, shape (...).
         """
         return 2.0 * jnp.arctan(snr) / jnp.pi

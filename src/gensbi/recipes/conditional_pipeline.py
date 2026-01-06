@@ -56,13 +56,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Number of channels in the conditional data. Default is 1.
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
-    vae_obs : nnx.Module, optional
-        VAE module for the observation input. If None, no encoding is applied.
-    vae_cond : nnx.Module, optional
-        VAE module for the conditional input. If None, no encoding is applied.
     training_config : dict, optional
         Configuration for training. If None, default configuration is used.
-        
+
     Examples
     --------
     Minimal example on how to instantiate and use the ConditionalFlowPipeline:
@@ -70,16 +66,17 @@ class ConditionalFlowPipeline(AbstractPipeline):
     .. literalinclude:: /examples/conditional_flow_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/conditional_flow_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -90,8 +87,6 @@ class ConditionalFlowPipeline(AbstractPipeline):
         ch_obs=1,
         ch_cond=1,
         params=None,
-        vae_obs=None,
-        vae_cond=None,
         training_config=None,
     ):
 
@@ -109,11 +104,18 @@ class ConditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.vae_obs = vae_obs
-        self.vae_cond = vae_cond
+        # Flux1 uses different ids for obs and cond
+        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
+        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[..., 1].set(
+            1
+        )  # set second channel to 1 for conditioning tokens
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -152,12 +154,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             # obs = batch[:, : self.dim_obs, ...]
             # cond = batch[:, self.dim_obs :, ...]
             obs, cond = batch
-            rng_x0, rng_t, rng_vae_obs, rng_vae_cond = jax.random.split(key, 4)
-
-            if self.vae_obs is not None:
-                obs = self.vae_obs.encode(obs, rng_vae_obs)
-            if self.vae_cond is not None:
-                cond = self.vae_cond.encode(cond, rng_vae_cond)
+            rng_x0, rng_t = jax.random.split(key, 2)
 
             batch_size = obs.shape[0]
 
@@ -220,16 +217,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit  # something bad happens here
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
             # diff_state = nnx.DiffState(
             #     0, sbi_model_params
             # )  # filter head params of the first argument
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, rng
+            #     model, batch, key
             # )
-            loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, rng
-            )
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -242,7 +237,6 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     def get_sampler(
         self,
-        rng,
         x_o,
         step_size=0.01,
         use_ema=True,
@@ -261,14 +255,11 @@ class ConditionalFlowPipeline(AbstractPipeline):
         else:
             assert jnp.all(time_grid[:-1] <= time_grid[1:])
             return_intermediates = True
-        
+
         cond = _expand_dims(x_o)
-        
+
         solver = ODESolver(velocity_model=vf_wrapped)
-        
-        if self.vae_cond is not None:
-            cond = self.vae_cond.encode(cond, rng)
-            
+
         model_extras = {
             "cond": cond,
             "obs_ids": self.obs_ids,
@@ -283,22 +274,19 @@ class ConditionalFlowPipeline(AbstractPipeline):
             model_extras=model_extras,
             time_grid=time_grid,
         )
-        
+
         def sampler(key, nsamples):
             x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
 
             samples = sampler_(x_init)
 
-            if self.vae_obs is not None:
-                samples = self.vae_obs.decode(samples)
-
             return samples
-        
+
         return sampler
 
     def sample(
         self,
-        rng,
+        key,
         x_o,
         nsamples=10_000,
         step_size=0.01,
@@ -306,19 +294,16 @@ class ConditionalFlowPipeline(AbstractPipeline):
         time_grid=None,
         **model_extras,
     ):
-        
-        key_init, key_vae_cond = jax.random.split(rng, 2)
 
         sampler_ = self.get_sampler(
-            key_vae_cond,
             x_o,
             step_size=step_size,
             use_ema=use_ema,
             time_grid=time_grid,
             **model_extras,
         )
-        
-        samples = sampler_(key_init, nsamples)
+
+        samples = sampler_(key, nsamples)
 
         return samples
 
@@ -386,10 +371,6 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         Dimension of the observation space.
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
-    vae_obs : nnx.Module, optional
-        VAE module for the observation input. If None, no encoding is applied.
-    vae_cond : nnx.Module, optional
-        VAE module for the conditional input. If None, no encoding is applied.
     training_config : dict, optional
         Configuration for training. If None, default configuration is used.
 
@@ -400,16 +381,17 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
     .. literalinclude:: /examples/conditional_diffusion_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/conditional_diffusion_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -420,8 +402,6 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         ch_obs=1,
         ch_cond=1,
         params=None,
-        vae_obs=None,
-        vae_cond=None,
         training_config=None,
     ):
 
@@ -437,11 +417,18 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.vae_obs = vae_obs
-        self.vae_cond = vae_cond
+        # Flux1 uses different ids for obs and cond
+        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
+        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        cond_ids = cond_ids.at[..., 1].set(
+            1
+        )  # set second channel to 1 for conditioning tokens
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
 
         self.path = EDMPath(
             scheduler=EDMScheduler(
@@ -495,16 +482,11 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
 
             obs, cond = batch
 
-            rng_x0, rng_sigma, rng_vae_obs, rng_vae_cond = jax.random.split(key, 4)
-
-            if self.vae_obs is not None:
-                obs = self.vae_obs.encode(obs, rng_vae_obs)
-            if self.vae_cond is not None:
-                cond = self.vae_cond.encode(cond, rng_vae_cond)
+            rng_x0, rng_sigma = jax.random.split(key, 2)
 
             x_1 = obs
             # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],))
-            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0],1,1))
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             obs_batch = (x_1, sigma)
@@ -559,14 +541,12 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
         @nnx.jit
-        def train_step(model, optimizer, batch, rng: jax.random.PRNGKey):
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
             # diff_state = nnx.DiffState(0, sbi_model_params)
             # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, rng
+            #     model, batch, key
             # )
-            loss, grads = nnx.value_and_grad(loss_fn)(
-                model, batch, rng
-            )
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
             optimizer.update(model, grads, value=loss)
             return loss
 
@@ -576,10 +556,9 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         self.model_wrapped = ConditionalWrapper(self.model)
         self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
         return
-    
+
     def get_sampler(
         self,
-        key,
         x_o,
         nsteps=18,
         use_ema=True,
@@ -592,9 +571,6 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             model = self.model_wrapped
 
         cond = _expand_dims(x_o)
-
-        if self.vae_cond is not None:
-            cond = self.vae_cond.encode(cond, key)
 
         solver = SDESolver(score_model=model, path=self.path)
 
@@ -610,23 +586,19 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             return_intermediates=return_intermediates,
             model_extras=model_extras,
         )
-        
+
         def sampler(key, nsamples):
             key1, key2 = jax.random.split(key, 2)
             x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
             samples = sampler_(key2, x_init)
-            if self.vae_obs is not None:
-                samples = self.vae_obs.decode(samples)
-            return samples
- 
 
+            return samples
 
         return sampler
 
-
     def sample(
         self,
-        rng,
+        key,
         x_o,
         nsamples=10_000,
         nsteps=18,
@@ -634,14 +606,12 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         return_intermediates=False,
         **model_extras,
     ):
-        
-        rng_vae, rng_samples = jax.random.split(rng, 2)
+
         sampler = self.get_sampler(
-            rng_vae,
             x_o,
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
             **model_extras,
         )
-        return sampler(rng_samples, nsamples)
+        return sampler(key, nsamples)

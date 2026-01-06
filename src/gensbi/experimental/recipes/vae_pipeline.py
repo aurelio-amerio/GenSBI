@@ -34,7 +34,7 @@ from functools import partial
 
 import optax
 from optax.contrib import reduce_on_plateau
-from optax.schedules import linear_schedule
+from optax.schedules import linear_schedule, constant_schedule
 
 import orbax.checkpoint as ocp
 
@@ -42,7 +42,7 @@ from tqdm import tqdm
 
 import os
 
-from gensbi.models.autoencoders import (
+from gensbi.experimental.models.autoencoders import (
     AutoEncoderParams,
     vae_loss_fn,
     AutoEncoder1D,
@@ -172,7 +172,8 @@ class AbstractVAEPipeline:
         schedule : Callable
             KL weight schedule function.
         """
-        schedule = linear_schedule(0.1, 1, nsteps)
+        # schedule = linear_schedule(0.1, 1, nsteps)
+        schedule = constant_schedule(0.1)
         return schedule
 
     def _get_optimizer(self):

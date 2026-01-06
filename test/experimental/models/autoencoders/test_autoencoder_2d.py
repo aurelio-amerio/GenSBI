@@ -7,8 +7,8 @@ from flax import nnx
 import pytest
 import jax 
 
-from gensbi.models.autoencoders.autoencoder_2d import AutoEncoder2D
-from gensbi.models.autoencoders import AutoEncoderParams, vae_loss_fn
+from gensbi.experimental.models.autoencoders.autoencoder_2d import AutoEncoder2D
+from gensbi.experimental.models.autoencoders import AutoEncoderParams, vae_loss_fn
 
 def test_autoencoder_2d():
     resolution = 16

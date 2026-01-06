@@ -26,9 +26,9 @@ theta_prior = dist.Uniform(
     low=jnp.array([-2.0, -2.0, -2.0]), high=jnp.array([2.0, 2.0, 2.0])
 )
 
-obs_dim = 3
-cond_dim = 3
-joint_dim = obs_dim + cond_dim
+dim_obs = 3
+dim_cond = 3
+dim_joint = dim_obs + dim_cond
 
 
 # %%
@@ -82,7 +82,7 @@ params = SimformerParams(
     dim_value=20,
     dim_id=10,
     dim_condition=10,
-    dim_joint=joint_dim,
+    dim_joint=dim_joint,
     fourier_features=128,
     num_heads=4,
     num_layers=6,
@@ -99,8 +99,8 @@ pipeline = JointFlowPipeline(
     model,
     train_dataset_grain,
     val_dataset_grain,
-    obs_dim,
-    cond_dim,
+    dim_obs,
+    dim_cond,
     condition_mask_kind="posterior",
 )
 
@@ -113,8 +113,8 @@ pipeline.train(
 # %% Sample from the posterior
 
 new_sample = simulator(jax.random.PRNGKey(20), 1)
-true_theta = new_sample[:, :obs_dim, :]  # extract observation from the joint sample
-x_o = new_sample[:, obs_dim:, :]  # extract condition from the joint sample
+true_theta = new_sample[:, :dim_obs, :]  # extract observation from the joint sample
+x_o = new_sample[:, dim_obs:, :]  # extract condition from the joint sample
 
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # %% Plot the samples

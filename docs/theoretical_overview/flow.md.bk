@@ -1,0 +1,37 @@
+
+# Flow Matching: A Short Overview
+Based on the article *Flow Matching Guide and Code* ([Lipman et al., 2024](https://arxiv.org/pdf/2412.06264))
+
+**Flow Matching (FM)** is a simulation-free framework for training Continuous Normalizing Flows (CNFs) to model generative processes. Unlike traditional methods that require expensive ODE simulations during training, FM uses a simple regression objective to learn a velocity field that "pushes" a simple source distribution (like Gaussian noise) onto a complex target distribution (like images).
+
+## Neural Density Estimation
+
+FM enables neural density estimation by learning a time-dependent vector field $v_t(x)$. This field defines a deterministic transformation from a known source density $p_0$ to the unknown target density $p_1$. Once trained, generating a new sample involves sampling $x_0 \sim p_0$ and solving an ODE over time $t \in [0, 1]$ to obtain $x_1 \sim p_1$.
+
+## Key Formulas
+
+**1. The Flow ODE** A flow $\psi_t$ is defined by an Ordinary Differential Equation (ODE) driven by the velocity field $v_t$:
+
+$$\frac{d}{dt}\psi_t(x) = v_t(\psi_t(x)), \quad \psi_0(x) = x$$
+
+where $\psi_1(x)$ represents the generated sample.
+
+**2. Push-Forward Density** The probability density evolves according to the push-forward equation. If $x \sim p_0$, then the density of the transformed variable $y = \psi_t(x)$ at time $t$ is:
+
+$$p_t(y) = [\psi_t \sharp p_0](y) = p_0(\psi_t^{-1}(y)) \left| \det \partial_y \psi_t^{-1}(y) \right|$$
+
+**3. Optimal Transport Conditional Path** To simplify training, FM conditions the probability path on a specific data sample $x_1$. The **Optimal Transport (Linear)** path interpolates between a source sample $x_0$ and a target sample $x_1$ via a straight line. This minimizes the kinetic energy of the transformation:
+
+$$\psi_t(x_0 | x_1) = t x_1 + (1 - t) x_0$$
+
+The corresponding conditional velocity field for this path is:
+
+$$u_t(x | x_1) = x_1 - x_0$$
+
+**4. The Conditional Flow Matching (CFM) Loss** The neural network $v_t^\theta$ is trained to regress the target conditional velocity field. By conditioning on data samples $x_1 \sim q$ and source samples $x_0 \sim p$, the intractable marginal loss becomes tractable:
+
+$$\mathcal{L}_{CFM}(\theta) = \mathbb{E}_{t \sim \mathcal{U}[0,1], x_1 \sim q, x_0 \sim p} \left[ \left\| v_t^\theta(\psi_t(x_0 | x_1)) - (x_1 - x_0) \right\|^2 \right]$$
+
+## Application to Simulation-Based Inference (SBI)
+
+Flow Matching offers a robust mechanism for Simulation-Based Inference, where the goal is to estimate the posterior distribution of simulator parameters $\theta$ given observed data $x$. In this context, the flow model is trained conditionally. In practice, we learn a vector field $v_t(\theta, x)$, where the target variable is the parameter $\theta$ and the condition is the observation $x$. Once the vector field is learned, we can use it to efficiently sample parameters from the posterior $\theta \sim p(\theta|x)$ by solving the ODE starting from the base distribution. 
