@@ -27,25 +27,25 @@ from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 # TODO enforce rope usage, remove unused code
 @dataclass
-class Flux1Params:
+class Flux1EmbedParams:
     """Parameters for the Flux1 model.
 
-    GenSBI uses the tensor convention `(batch, dim, channels)`.
+        GenSBI uses the tensor convention `(batch, dim, channels)`.
 
-    - `dim_*` counts **tokens** (how many distinct observables/variables you have).
-    - `channels` counts **features per token** (how many values each observable carries).
+        - `dim_*` counts **tokens** (how many distinct observables/variables you have).
+        - `channels` counts **features per token** (how many values each observable carries).
 
-    For conditional SBI with Flux1:
+        For conditional SBI with Flux1:
 
-    - Parameters to infer (often denoted $\theta$) have shape `(batch, dim_obs, in_channels)`.
-        In most SBI problems `in_channels = 1` (one scalar per parameter token).
-    - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
-        `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
+        - Parameters to infer (often denoted $\theta$) have shape `(batch, dim_obs, in_channels)`.
+            In most SBI problems `in_channels = 1` (one scalar per parameter token).
+        - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
+            `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
 
-    Example: 2 parameters, frequency grid with 2 detectors
+        Example: 2 parameters, frequency grid with 2 detectors
 
-    - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
-    - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
+        - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
+        - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
 
     Parameters
     ----------
@@ -75,10 +75,7 @@ class Flux1Params:
             Number of conditioning tokens.
         theta : int
             Scaling factor for positional encoding.
-        id_embedding_kind : tuple[str, str]
-            Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d" or "rope".
-        guidance_embed : bool
-            Whether to use guidance embedding.
+        use_rope: tuple (bool, bool): Whether to use ROPE for (obs, cond).
         param_dtype : DTypeLike
             Data type for model parameters.
 
@@ -96,35 +93,26 @@ class Flux1Params:
     rngs: nnx.Rngs
     dim_obs: int  # observation dimension
     dim_cond: int  # condition dimension
-    theta: int = 500
     id_embedding_kind: tuple[str, str] = (
         "absolute",
         "absolute",
-    )  # "absolute", "pos1d", "pos2d" or "rope" - for obs and cond respectively
+    )  # "absolute", "pos1d", or "pos2d" - for obs and cond respectively
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
-        assert self.id_embedding_kind[0] in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind[0]} for obs."
-        assert self.id_embedding_kind[1] in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind[1]} for cond."
-        # Enforce that if either is 'rope', both must be 'rope'
-        if "rope" in self.id_embedding_kind:
-            assert self.id_embedding_kind[0] == self.id_embedding_kind[1] == "rope", (
-                "If using RoPE, both obs and cond must use RoPE embedding."
-            )
         self.hidden_size = int(
             jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
         )
         self.qkv_features = self.hidden_size
 
 
-class Flux1(nnx.Module):
+class Flux1Embed(nnx.Module):
     """
     Transformer model for flow matching on sequences.
     """
 
-    def __init__(self, params: Flux1Params):
+    def __init__(self, params: Flux1EmbedParams):
         self.params = params
         self.in_channels = params.in_channels
         self.out_channels = params.in_channels
@@ -137,31 +125,17 @@ class Flux1(nnx.Module):
                 f"Got {params.axes_dim} but expected positional dim {pe_dim}"
             )
         self.num_heads = params.num_heads
-
-        if "rope" in params.id_embedding_kind:
-            self.use_rope = True
-            self.pe_embedder = EmbedND(
-                dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
-            )
-            self.obs_ids_embedder = None
-            self.cond_ids_embedder = None
-        else:
-            self.use_rope = False
-            self.pe_embedder = None
-            self.obs_ids_embedder = FeatureEmbedder(
-                num_embeddings=params.dim_obs,
-                hidden_size=self.hidden_size,
-                kind=params.id_embedding_kind[0],
-                param_dtype=params.param_dtype,
-                rngs=params.rngs,
-            )
-            self.cond_ids_embedder = FeatureEmbedder(
-                num_embeddings=params.dim_cond,
-                hidden_size=self.hidden_size,
-                kind=params.id_embedding_kind[1],
-                param_dtype=params.param_dtype,
-                rngs=params.rngs,
-            )
+        
+        self.obs_ids_embedder = FeatureEmbedder(num_embeddings=params.dim_obs,
+                                                hidden_size=self.hidden_size,
+                                                kind=params.id_embedding_kind[0],
+                                                param_dtype=params.param_dtype,
+                                                rngs=params.rngs)
+        self.cond_ids_embedder = FeatureEmbedder(num_embeddings=params.dim_cond,
+                                                 hidden_size=self.hidden_size,
+                                                 kind=params.id_embedding_kind[1],
+                                                 param_dtype=params.param_dtype,
+                                                 rngs=params.rngs)
 
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
@@ -297,21 +271,27 @@ class Flux1(nnx.Module):
             conditioned[..., None, None], cond_processed, cond_null
         )  # we replace the condition with a null vector if not conditioned
 
-        if self.use_rope:
-            ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
-            pe = self.pe_embedder(ids)
-        else:
-            # we add the positional embeddings
-            obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
-            cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
-            pe = None
+        # we add the positional embeddings
+        obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
 
+        # make sure the cond_ids are compatible with the embedding
+        assert (
+            cond_ids.shape[1] == self.params.dim_cond
+        ), f"cond_ids shape {cond_ids.shape} not compatible with dim_cond {self.params.dim_cond}"
+        # assert jnp.all(jnp.diff(cond_ids[0,:,0]) >= 0), "cond_ids must be sorted in ascending order"
+
+        cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
+
+        # call the layers
+
+        # we don't use rope
         for block in self.double_blocks.layers:
-            obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)
+            obs, cond = block(obs=obs, cond=cond, vec=vec, pe=None)
 
         obs = jnp.concatenate((cond, obs), axis=1)
+        # we don't use rope
         for block in self.single_blocks.layers:
-            obs = block(obs, vec=vec, pe=pe)
+            obs = block(obs, vec=vec, pe=None)
         obs = obs[:, cond.shape[1] :, ...]
 
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)

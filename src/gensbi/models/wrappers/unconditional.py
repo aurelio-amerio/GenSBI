@@ -20,14 +20,16 @@ class UnconditionalWrapper(ModelWrapper):
     """
     Wrapper for unconditional models to handle input expansion and calling convention.
 
-    Args:
+    Parameters
+    ----------
         model: The unconditional model instance to wrap.
     """
     def __init__(self, model):
         """
         Initialize the UnconditionalWrapper.
 
-        Args:
+        Parameters
+        ----------
             model: The unconditional model instance to wrap.
         """
         super().__init__(model)
@@ -42,14 +44,20 @@ class UnconditionalWrapper(ModelWrapper):
         """
         Call the wrapped model with expanded inputs.
 
-        Args:
-            t (Array): Time steps.
-            obs (Array): Observations.
-            obs_ids (Array): Observation identifiers.
+        Parameters
+        ----------
+            t : Array
+                Time steps.
+            obs : Array
+                Observations.
+            obs_ids : Array
+                Observation identifiers.
             **kwargs: Additional keyword arguments passed to the model.
 
-        Returns:
-            Array: Model output.
+        Returns
+        -------
+            Array
+                Model output.
         """
 
         t = _expand_time(t)

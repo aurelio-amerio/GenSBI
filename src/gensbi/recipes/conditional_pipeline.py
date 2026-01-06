@@ -87,6 +87,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         ch_cond=1,
         params=None,
         training_config=None,
+        use_rope=False
     ):
 
         # if latent diffusion is enabled, make sure to adjust the dimensionality accordingly of the transformer model
@@ -103,8 +104,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
+        if use_rope:
+            # Flux1 uses different ids for obs and cond
+            obs_ids = jnp.zeros((1,dim_obs,2), dtype=jnp.int32) 
+            obs_ids = obs_ids.at[...,0].set(jnp.arange(dim_obs))
+            
+            cond_ids = jnp.zeros((1,dim_cond,2), dtype=jnp.int32) 
+            cond_ids = cond_ids.at[...,0].set(jnp.arange(dim_cond))
+            cond_ids = cond_ids.at[...,1].set(1)  # set second channel to 1 for conditioning tokens
+            
+            self.obs_ids = obs_ids
+            self.cond_ids = cond_ids
+        else:
+            self.cond_ids = _expand_dims(self.cond_ids)
+            self.obs_ids = _expand_dims(self.obs_ids)
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -394,6 +407,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         ch_cond=1,
         params=None,
         training_config=None,
+        use_rope=False
     ):
 
         super().__init__(
@@ -409,8 +423,20 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         )
 
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
+        if use_rope:
+            # Flux1 uses different ids for obs and cond
+            obs_ids = jnp.zeros((1,dim_obs,2), dtype=jnp.int32) 
+            obs_ids = obs_ids.at[...,0].set(jnp.arange(dim_obs))
+            
+            cond_ids = jnp.zeros((1,dim_cond,2), dtype=jnp.int32) 
+            cond_ids = cond_ids.at[...,0].set(jnp.arange(dim_cond))
+            cond_ids = cond_ids.at[...,1].set(1)  # set second channel to 1 for conditioning tokens
+            
+            self.obs_ids = obs_ids
+            self.cond_ids = cond_ids
+        else:
+            self.cond_ids = _expand_dims(self.cond_ids)
+            self.obs_ids = _expand_dims(self.obs_ids)
 
         self.path = EDMPath(
             scheduler=EDMScheduler(

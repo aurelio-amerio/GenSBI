@@ -15,9 +15,12 @@ class SDESolver(Solver):
         """
         Initialize the SDE solver.
 
-        Args:
-            score_model (Callable): The score model function.
-            path (EDMPath): The EDMPath object.
+        Parameters
+        ----------
+            score_model : Callable
+                The score model function.
+            path : EDMPath
+                The EDMPath object.
 
         Example:
             .. code-block:: python
@@ -60,18 +63,29 @@ class SDESolver(Solver):
         """
         Returns a sampler function for the SDE.
 
-        Args:
-            condition_mask (Optional[Array]): Mask for conditioning.
-            condition_value (Optional[Array]): Value for conditioning.
-            cfg_scale (Optional[float]): Classifier-free guidance scale (not implemented).
-            nsteps (int): Number of steps.
-            method (str): Integration method.
-            return_intermediates (bool): Whether to return intermediate steps.
-            model_extras (dict): Additional model arguments.
-            solver_params (Optional[dict]): Additional solver parameters.
+        Parameters
+        ----------
+            condition_mask : Optional[Array]
+                Mask for conditioning.
+            condition_value : Optional[Array]
+                Value for conditioning.
+            cfg_scale : Optional[float]
+                Classifier-free guidance scale (not implemented).
+            nsteps : int
+                Number of steps.
+            method : str
+                Integration method.
+            return_intermediates : bool
+                Whether to return intermediate steps.
+            model_extras : dict
+                Additional model arguments.
+            solver_params : Optional[dict]
+                Additional solver parameters.
 
-        Returns:
-            Callable: Sampler function.
+        Returns
+        -------
+            Callable
+                Sampler function.
         """
         if self.path.name == "EDM":
             sampler_ = edm_sampler
@@ -125,20 +139,33 @@ class SDESolver(Solver):
         """
         Sample from the SDE using the sampler.
 
-        Args:
-            key (Array): JAX random key.
-            x_init (Array): Initial value.
-            condition_mask (Optional[Array]): Mask for conditioning.
-            condition_value (Optional[Array]): Value for conditioning.
-            cfg_scale (Optional[float]): Classifier-free guidance scale (not implemented).
-            nsteps (int): Number of steps.
-            method (str): Integration method.
-            return_intermediates (bool): Whether to return intermediate steps.
-            model_extras (dict): Additional model arguments.
-            solver_params (Optional[dict]): Additional solver parameters.
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            x_init : Array
+                Initial value.
+            condition_mask : Optional[Array]
+                Mask for conditioning.
+            condition_value : Optional[Array]
+                Value for conditioning.
+            cfg_scale : Optional[float]
+                Classifier-free guidance scale (not implemented).
+            nsteps : int
+                Number of steps.
+            method : str
+                Integration method.
+            return_intermediates : bool
+                Whether to return intermediate steps.
+            model_extras : dict
+                Additional model arguments.
+            solver_params : Optional[dict]
+                Additional solver parameters.
 
-        Returns:
-            Array: Sampled output.
+        Returns
+        -------
+            Array
+                Sampled output.
         """
         sample = self.get_sampler(
             condition_mask=condition_mask,

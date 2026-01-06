@@ -110,6 +110,7 @@ params_flux1joint = Flux1JointParams(
     rngs=nnx.Rngs(0),
     dim_joint=4,
     theta=16,
+    id_embedding_kind="pos1d",
     guidance_embed=False,
     param_dtype=jnp.float32,
 )
@@ -129,6 +130,7 @@ params_flux = Flux1Params(
     dim_obs=dim_obs,
     dim_cond=dim_cond,
     theta=20,
+    id_embedding_kind=("pos1d", "pos1d"),
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
