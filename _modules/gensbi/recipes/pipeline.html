@@ -1,0 +1,1783 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gensbi.recipes.pipeline &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script src="../../../_static/thebelab-helper.js"></script>
+    <script src="../../../_static/jupyterlite_sphinx.js?v=96e329c5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral'
+});
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/recipes/pipeline';</script>
+    <link rel="icon" href="../../../_static/logo_small.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />   
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo_small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../_static/logo_small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../gensbi.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.recipes.pipeline</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                   <h1>Source code for gensbi.recipes.pipeline</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Pipeline module for GenSBI.</span>
+
+<span class="sd">This module provides an abstract pipeline class for training and evaluating conditional generative models</span>
+<span class="sd">(such as conditional flow matching or diffusion models) in the GenSBI framework. It handles model creation,</span>
+<span class="sd">training loop, optimizer setup, checkpointing, and evaluation utilities.</span>
+
+<span class="sd">For practical implementations, subclasses should implement specific model architectures, loss functions, and sampling methods.</span>
+<span class="sd">See `JointPipeline` and `ConditionalPipeline` for concrete examples.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpyro</span><span class="w"> </span><span class="kn">import</span> <span class="n">distributions</span> <span class="k">as</span> <span class="n">dist</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">optax.contrib</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce_on_plateau</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">orbax.checkpoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ocp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_colored_value</span>
+
+
+<div class="viewcode-block" id="ModelEMA">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.ModelEMA">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelEMA</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Exponential Moving Average (EMA) optimizer for maintaining a smoothed version of model parameters.</span>
+
+<span class="sd">    This optimizer keeps an exponential moving average of the model parameters, which can help stabilize training</span>
+<span class="sd">    and improve evaluation performance. The EMA parameters are updated at each training step.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : nnx.Module</span>
+<span class="sd">        The model whose parameters will be tracked.</span>
+<span class="sd">    tx : optax.GradientTransformation</span>
+<span class="sd">        The Optax transformation defining the EMA update rule.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+        <span class="n">tx</span><span class="p">:</span> <span class="n">optax</span><span class="o">.</span><span class="n">GradientTransformation</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tx</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="p">[</span><span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">BatchStat</span><span class="p">])</span>
+
+<div class="viewcode-block" id="ModelEMA.update">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.ModelEMA.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">model_orginal</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the EMA parameters using the current model parameters.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : nnx.Module</span>
+<span class="sd">            The model with EMA parameters to be updated.</span>
+<span class="sd">        model_orginal : nnx.Module</span>
+<span class="sd">            The original model with current parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model_orginal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wrt</span><span class="p">)</span>
+        <span class="n">ema_params</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wrt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">ema_state</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">EmaState</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="n">ema</span><span class="o">=</span><span class="n">ema_params</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">new_ema_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">ema_state</span><span class="p">)</span>
+
+        <span class="n">nnx</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">new_ema_state</span><span class="o">.</span><span class="n">ema</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="nd">@nnx</span><span class="o">.</span><span class="n">jit</span>
+<div class="viewcode-block" id="ema_step">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.ema_step">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ema_step</span><span class="p">(</span><span class="n">ema_model</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">ema_optimizer</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update EMA model with current model parameters.&quot;&quot;&quot;</span>
+    <span class="n">ema_optimizer</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ema_model</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="_get_batch_sampler">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._get_batch_sampler">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_batch_sampler</span><span class="p">(</span>
+    <span class="n">sampler_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">ncond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">show_progress_bars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a batch sampler that processes samples in chunks.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sampler_fn : Callable</span>
+<span class="sd">        Sampling function.</span>
+<span class="sd">    ncond : int</span>
+<span class="sd">        Number of conditions.</span>
+<span class="sd">    chunk_size : int</span>
+<span class="sd">        Size of each chunk.</span>
+<span class="sd">    show_progress_bars : bool, optional</span>
+<span class="sd">        Whether to show progress bars.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Callable</span>
+<span class="sd">        Batch sampler function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># JIT the chunk processor</span>
+    <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process_chunk</span><span class="p">(</span><span class="n">key_batch</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a batch of keys.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">sampler_fn</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ncond</span><span class="p">))(</span><span class="n">key_batch</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample in batches with optional progress bar.&quot;&quot;&quot;</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Calculate total chunks for tqdm</span>
+        <span class="c1"># We use ceil division to handle remainders</span>
+        <span class="n">n_chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_samples</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+
+        <span class="c1"># Using a tqdm loop</span>
+
+        <span class="k">if</span> <span class="n">show_progress_bars</span><span class="p">:</span>
+            <span class="n">loop</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span>
+                <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">),</span>
+                <span class="n">total</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
+                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loop</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">loop</span><span class="p">:</span>
+            <span class="n">batch_keys</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">chunk_size</span><span class="p">]</span>
+
+            <span class="n">chunk_out</span> <span class="o">=</span> <span class="n">process_chunk</span><span class="p">(</span><span class="n">batch_keys</span><span class="p">)</span>
+
+            <span class="c1"># CRITICAL: Wait for GPU to finish this chunk before updating bar</span>
+            <span class="c1"># This makes the progress bar accurate.</span>
+            <span class="n">chunk_out</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk_out</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">sampler</span></div>
+
+
+
+<div class="viewcode-block" id="AbstractPipeline">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AbstractPipeline</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract base class for GenSBI training pipelines.</span>
+
+<span class="sd">    This class provides a template for implementing training and evaluation pipelines for conditional generative models.</span>
+<span class="sd">    Subclasses should implement model creation, default parameter setup, loss function, sampling, and evaluation methods.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    train_dataset : iterable</span>
+<span class="sd">        Training dataset, should yield batches of data.</span>
+<span class="sd">    val_dataset : iterable</span>
+<span class="sd">        Validation dataset, should yield batches of data.</span>
+<span class="sd">    dim_obs : int</span>
+<span class="sd">        Dimensionality of the parameter (theta) space.</span>
+<span class="sd">    dim_cond : int</span>
+<span class="sd">        Dimensionality of the observation (x) space.</span>
+<span class="sd">    model : nnx.Module, optional</span>
+<span class="sd">        The model to be trained. If None, the model is created using `_make_model`.</span>
+<span class="sd">    params : dict, optional</span>
+<span class="sd">        Model parameters. If None, uses defaults from `_get_default_params`.</span>
+<span class="sd">    ch_obs : int, optional</span>
+<span class="sd">        Number of channels in the observation data. Default is 1.</span>
+<span class="sd">    ch_cond : int, optional</span>
+<span class="sd">        Number of channels in the conditional data (if applicable). Default is None.</span>
+<span class="sd">    training_config : dict, optional</span>
+<span class="sd">        Training configuration. If None, uses defaults from `_get_default_training_config`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ch_obs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">ch_cond</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<div class="viewcode-block" id="AbstractPipeline.train_dataset">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.train_dataset">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span> <span class="o">=</span> <span class="n">train_dataset</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.val_dataset">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.val_dataset">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset</span> <span class="o">=</span> <span class="n">val_dataset</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.train_dataset_iter">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.train_dataset_iter">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_dataset_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.val_dataset_iter">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.val_dataset_iter">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dataset</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.dim_obs">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.dim_obs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span> <span class="o">=</span> <span class="n">dim_obs</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.dim_cond">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.dim_cond">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_cond</span> <span class="o">=</span> <span class="n">dim_cond</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.dim_joint">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.dim_joint">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.ch_obs">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.ch_obs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span> <span class="o">=</span> <span class="n">ch_obs</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.ch_cond">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.ch_cond">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch_cond</span> <span class="o">=</span> <span class="n">ch_cond</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.node_ids">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.node_ids">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.obs_ids">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.obs_ids">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">)</span>  <span class="c1"># observation ids</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.cond_ids">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.cond_ids">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">)</span>  <span class="c1"># conditional ids</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.params">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.params">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.training_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.training_config">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span></div>
+
+        <span class="k">if</span> <span class="n">training_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_training_config</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="p">)</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">],</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AbstractPipeline.model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.model">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.model_wrapped">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.model_wrapped">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># to be set in subclass</span></div>
+
+
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<div class="viewcode-block" id="AbstractPipeline.ema_model_wrapped">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.ema_model_wrapped">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># to be set in subclass</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.p0_dist_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.p0_dist_model">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p0_dist_model</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># to be set in subclass</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.loss_fn">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.loss_fn">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># to be set in subclass</span></div>
+
+<div class="viewcode-block" id="AbstractPipeline.path">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.path">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># to be set in subclass</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="AbstractPipeline.init_pipeline_from_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.init_pipeline_from_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the pipeline from a configuration file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        train_dataset : iterable</span>
+<span class="sd">            Training dataset.</span>
+<span class="sd">        val_dataset : iterable</span>
+<span class="sd">            Validation dataset.</span>
+<span class="sd">        dim_obs : int</span>
+<span class="sd">            Dimensionality of the parameter (theta) space.</span>
+<span class="sd">        dim_cond : int</span>
+<span class="sd">            Dimensionality of the observation (x) space.</span>
+<span class="sd">        config_path : str</span>
+<span class="sd">            Path to the configuration file.</span>
+<span class="sd">        checkpoint_dir : str</span>
+<span class="sd">            Directory for saving checkpoints.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pipeline : AbstractPipeline</span>
+<span class="sd">            An instance of the pipeline initialized from the configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="AbstractPipeline._make_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._make_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create and return the model to be trained.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._get_ema_optimizer">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_ema_optimizer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_ema_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the EMA optimizer for maintaining an exponential moving average of model parameters.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ema_optimizer : ModelEMA</span>
+<span class="sd">            The EMA optimizer instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ema_tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">ema</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">])</span>
+        <span class="n">ema_optimizer</span> <span class="o">=</span> <span class="n">ModelEMA</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">,</span> <span class="n">ema_tx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ema_optimizer</span></div>
+
+
+    <span class="c1"># def _get_optimizer(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     Construct the optimizer for training, including learning rate scheduling and gradient clipping.</span>
+
+    <span class="c1">#     Returns</span>
+    <span class="c1">#     -------</span>
+    <span class="c1">#     optimizer : nnx.Optimizer</span>
+    <span class="c1">#         The optimizer instance for the model.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     warmup_steps = self.training_config[&quot;warmup_steps&quot;] * self.training_config[&quot;multistep&quot;]</span>
+    <span class="c1">#     max_lr = self.training_config[&quot;max_lr&quot;]</span>
+    <span class="c1">#     schedule = optax.join_schedules(</span>
+    <span class="c1">#         schedules=[</span>
+    <span class="c1">#             optax.linear_schedule(init_value=0, end_value=max_lr, transition_steps=warmup_steps),</span>
+    <span class="c1">#             optax.constant_schedule(value=max_lr)</span>
+    <span class="c1">#         ],</span>
+    <span class="c1">#         boundaries=[warmup_steps]</span>
+    <span class="c1">#     )</span>
+
+    <span class="c1">#     opt = optax.chain(</span>
+    <span class="c1">#         optax.adaptive_grad_clip(10.0),</span>
+    <span class="c1">#         optax.adamw(schedule),</span>
+    <span class="c1">#         reduce_on_plateau(</span>
+    <span class="c1">#             patience=self.training_config[&quot;patience&quot;],</span>
+    <span class="c1">#             cooldown=self.training_config[&quot;cooldown&quot;],</span>
+    <span class="c1">#             factor=self.training_config[&quot;factor&quot;],</span>
+    <span class="c1">#             rtol=self.training_config[&quot;rtol&quot;],</span>
+    <span class="c1">#             accumulation_size=self.training_config[&quot;accumulation_size&quot;],</span>
+    <span class="c1">#             min_scale=self.training_config[&quot;min_scale&quot;],</span>
+    <span class="c1">#         ),</span>
+    <span class="c1">#     )</span>
+    <span class="c1">#     if self.training_config[&quot;multistep&quot;] &gt; 1:</span>
+    <span class="c1">#         opt = optax.MultiSteps(opt, self.training_config[&quot;multistep&quot;])</span>
+
+    <span class="c1">#     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)</span>
+    <span class="c1">#     return optimizer</span>
+
+<div class="viewcode-block" id="AbstractPipeline._get_optimizer">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_optimizer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the optimizer for training, including learning rate scheduling and gradient clipping.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        optimizer : nnx.Optimizer</span>
+<span class="sd">            The optimizer instance for the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warmup_steps</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">num_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span>
+        <span class="n">max_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span>
+        <span class="n">min_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span>
+        <span class="n">schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">warmup_cosine_decay_schedule</span><span class="p">(</span>
+            <span class="n">init_value</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">,</span>  <span class="c1"># Start tiny</span>
+            <span class="n">peak_value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">,</span>  <span class="c1"># Peak</span>
+            <span class="n">warmup_steps</span><span class="o">=</span><span class="n">warmup_steps</span><span class="p">,</span>
+            <span class="n">decay_steps</span><span class="o">=</span><span class="n">num_steps</span> <span class="o">-</span> <span class="n">warmup_steps</span><span class="p">,</span>
+            <span class="n">end_value</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span>  <span class="c1"># 1% of Peak</span>
+        <span class="p">)</span>
+
+        <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
+            <span class="n">optax</span><span class="o">.</span><span class="n">adaptive_grad_clip</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span>
+            <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="n">schedule</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">MultiSteps</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">])</span>
+
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">optimizer</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="AbstractPipeline._get_default_params">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_default_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dictionary of default model parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="AbstractPipeline._get_default_training_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_default_training_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_training_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dictionary of default training configuration parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        training_config : dict</span>
+<span class="sd">            Default training configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">training_config</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30_000</span>
+
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.999</span>
+
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;patience&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;cooldown&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;accumulation_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-4</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-4</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-6</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">training_config</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.update_training_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.update_training_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_training_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_config</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the training configuration with new parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        new_config : dict</span>
+<span class="sd">            New training configuration parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="p">)</span>
+        <span class="k">return</span></div>
+
+
+    <span class="c1"># def update_params(self, new_params):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     Update the model parameters and re-initialize the model.</span>
+
+    <span class="c1">#     Parameters</span>
+    <span class="c1">#     ----------</span>
+    <span class="c1">#     new_params : dict</span>
+    <span class="c1">#         New model parameters.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     self.params = new_params</span>
+    <span class="c1">#     self.model = self._make_model(self.params)</span>
+    <span class="c1">#     self.model_wrapped = None  # to be set in subclass</span>
+    <span class="c1">#     return</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="AbstractPipeline.get_loss_fn">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.get_loss_fn">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_loss_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the loss function for training/validation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.get_train_step_fn">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.get_train_step_fn">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_train_step_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the training step function, which performs a single optimization step.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        train_step : Callable</span>
+<span class="sd">            JIT-compiled training step function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nd">@nnx</span><span class="o">.</span><span class="n">jit</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">train_step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Perform single training step with gradient update.&quot;&quot;&quot;</span>
+            <span class="n">loss</span><span class="p">,</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">loss</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">loss</span>
+
+        <span class="k">return</span> <span class="n">train_step</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.get_val_step_fn">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.get_val_step_fn">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_val_step_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the validation step function, which performs a single optimization step.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        val_step : Callable</span>
+<span class="sd">            JIT-compiled validation step function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nd">@nnx</span><span class="o">.</span><span class="n">jit</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">val_step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Compute validation loss for a batch.&quot;&quot;&quot;</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">loss</span>
+
+        <span class="k">return</span> <span class="n">val_step</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.save_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.save_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save model and EMA model checkpoints.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        experiment_id : str, optional</span>
+<span class="sd">            Experiment identifier. If None, uses training_config value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">experiment_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">experiment_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span>
+
+        <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span>
+        <span class="n">checkpoint_dir_ema</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">],</span> <span class="s2">&quot;ema&quot;</span><span class="p">)</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">checkpoint_dir_ema</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Save the model</span>
+        <span class="n">checkpoint_manager</span> <span class="o">=</span> <span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManager</span><span class="p">(</span>
+            <span class="n">checkpoint_dir</span><span class="p">,</span>
+            <span class="n">options</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManagerOptions</span><span class="p">(</span>
+                <span class="n">max_to_keep</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">keep_checkpoints_without_metrics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">create</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">checkpoint_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+            <span class="n">experiment_id</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">Composite</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">StandardSave</span><span class="p">(</span><span class="n">state</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="n">checkpoint_manager</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="c1"># now we create the ema model and save it</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">ema_state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
+
+        <span class="c1"># save the ema model</span>
+        <span class="n">checkpoint_manager_ema</span> <span class="o">=</span> <span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManager</span><span class="p">(</span>
+            <span class="n">checkpoint_dir_ema</span><span class="p">,</span>
+            <span class="n">options</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManagerOptions</span><span class="p">(</span>
+                <span class="n">max_to_keep</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">keep_checkpoints_without_metrics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">create</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">checkpoint_manager_ema</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+            <span class="n">experiment_id</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">Composite</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">StandardSave</span><span class="p">(</span><span class="n">ema_state</span><span class="p">)),</span>
+        <span class="p">)</span>
+
+        <span class="n">checkpoint_manager_ema</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saved model to checkpoint&quot;</span><span class="p">)</span>
+        <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.restore_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.restore_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">restore_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore model and EMA model from checkpoints.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        experiment_id : str, optional</span>
+<span class="sd">            Experiment identifier. If None, uses training_config value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">experiment_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">experiment_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span>
+
+        <span class="n">graphdef</span><span class="p">,</span> <span class="n">model_state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManager</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">],</span>
+            <span class="n">options</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManagerOptions</span><span class="p">(</span><span class="n">read_only</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">read_mgr</span><span class="p">:</span>
+            <span class="n">restored</span> <span class="o">=</span> <span class="n">read_mgr</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span>
+                <span class="n">experiment_id</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">Composite</span><span class="p">(</span>
+                    <span class="n">state</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">StandardRestore</span><span class="p">(</span><span class="n">item</span><span class="o">=</span><span class="n">model_state</span><span class="p">)</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graphdef</span><span class="p">,</span> <span class="n">restored</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">])</span>
+
+        <span class="c1"># restore the ema model</span>
+        <span class="n">graphdef</span><span class="p">,</span> <span class="n">model_state_ema</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManager</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">],</span> <span class="s2">&quot;ema&quot;</span><span class="p">),</span>
+            <span class="n">options</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">CheckpointManagerOptions</span><span class="p">(</span><span class="n">read_only</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">read_mgr_ema</span><span class="p">:</span>
+            <span class="n">restored_ema</span> <span class="o">=</span> <span class="n">read_mgr_ema</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span>
+                <span class="n">experiment_id</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">Composite</span><span class="p">(</span>
+                    <span class="n">state</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">StandardRestore</span><span class="p">(</span><span class="n">item</span><span class="o">=</span><span class="n">model_state_ema</span><span class="p">)</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graphdef</span><span class="p">,</span> <span class="n">restored_ema</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+        <span class="c1"># wrap models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Restored model from checkpoint&quot;</span><span class="p">)</span>
+        <span class="k">return</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="AbstractPipeline._wrap_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._wrap_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.train">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.train">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">save_model</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the training loop for the model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rngs : nnx.Rngs</span>
+<span class="sd">            Random number generators for training/validation steps.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        loss_array : list</span>
+<span class="sd">            List of training losses.</span>
+<span class="sd">        val_loss_array : list</span>
+<span class="sd">            List of validation losses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_optimizer</span><span class="p">()</span>
+        <span class="n">ema_optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ema_optimizer</span><span class="p">()</span>
+
+        <span class="n">best_state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">best_state_ema</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
+
+        <span class="n">loss_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_loss_fn</span><span class="p">()</span>
+
+        <span class="n">train_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_train_step_fn</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)</span>
+        <span class="n">val_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_val_step_fn</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)</span>
+
+        <span class="n">rng_val</span> <span class="o">=</span> <span class="n">rngs</span><span class="o">.</span><span class="n">val_step</span><span class="p">()</span>
+        <span class="n">batch_val</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_iter</span><span class="p">)</span>
+        <span class="n">min_val</span> <span class="o">=</span> <span class="n">val_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span><span class="p">)</span>
+
+        <span class="n">val_error_ratio</span> <span class="o">=</span> <span class="mf">1.3</span>  <span class="c1"># 1.1</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">cmax</span> <span class="o">=</span> <span class="mi">10</span>
+
+        <span class="n">loss_array</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">val_loss_array</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">nsteps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">nsteps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span>
+        <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span>
+        <span class="n">val_every</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span>
+
+        <span class="n">experiment_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span>
+
+        <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nsteps</span><span class="p">))</span>
+        <span class="n">l_train</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">ratio</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># initialize ratio</span>
+        <span class="n">l_val</span> <span class="o">=</span> <span class="n">min_val</span>  <span class="c1"># initialize l_val</span>
+
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">counter</span> <span class="o">&gt;</span> <span class="n">cmax</span> <span class="ow">and</span> <span class="n">early_stopping</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Early stopping&quot;</span><span class="p">)</span>
+                <span class="n">graphdef</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">graphdef</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graphdef</span><span class="p">,</span> <span class="n">best_state</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graphdef</span><span class="p">,</span> <span class="n">best_state_ema</span><span class="p">)</span>
+
+                <span class="k">break</span>
+
+            <span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset_iter</span><span class="p">)</span>
+
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">rngs</span><span class="o">.</span><span class="n">train_step</span><span class="p">())</span>
+            <span class="c1"># update the parameters ema</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ema_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">ema_optimizer</span><span class="p">)</span>
+                
+            
+            <span class="n">decay</span> <span class="o">=</span> <span class="mf">0.99</span>
+
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">l_train</span> <span class="o">=</span> <span class="n">loss</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">l_train</span> <span class="o">=</span> <span class="n">decay</span> <span class="o">*</span> <span class="n">l_train</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay</span><span class="p">)</span> <span class="o">*</span> <span class="n">loss</span>
+
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="n">val_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># batch_val = next(self.val_dataset_iter)</span>
+                <span class="c1"># l_val = val_step(self.model, batch_val, rngs.val_step())</span>
+                <span class="n">l_val</span> <span class="o">=</span> <span class="n">val_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span><span class="p">)</span> <span class="c1"># we use a fixed val batch and rng for validation, to avoid noise</span>
+
+                <span class="n">ratio</span> <span class="o">=</span> <span class="n">l_val</span> <span class="o">/</span> <span class="n">min_val</span>
+                <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="n">val_error_ratio</span><span class="p">:</span>
+                    <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="n">loss_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l_train</span><span class="p">)</span>
+                <span class="n">val_loss_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l_val</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">l_val</span> <span class="o">&lt;</span> <span class="n">min_val</span><span class="p">:</span>
+                    <span class="n">min_val</span> <span class="o">=</span> <span class="n">l_val</span>
+                    <span class="n">best_state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+                    <span class="n">best_state_ema</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
+
+            <span class="c1"># print stats</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
+                    <span class="n">loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">l_train</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">ratio</span><span class="o">=</span><span class="n">get_colored_value</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">thresholds</span><span class="o">=</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">)),</span>
+                    <span class="n">counter</span><span class="o">=</span><span class="n">counter</span><span class="p">,</span>
+                    <span class="n">val_loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">l_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">save_model</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">loss_array</span><span class="p">,</span> <span class="n">val_loss_array</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="AbstractPipeline.get_sampler">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.get_sampler">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a sampler function for generating samples from the trained model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random number generator key.</span>
+<span class="sd">        x_o : array-like</span>
+<span class="sd">            Conditioning variable (e.g., observed data).</span>
+<span class="sd">        step_size : float, optional</span>
+<span class="sd">            Step size for the sampler.</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            Whether to use the EMA model for sampling.</span>
+<span class="sd">        time_grid : array-like, optional</span>
+<span class="sd">            Time grid for the sampler (if applicable).</span>
+<span class="sd">        model_extras : dict, optional</span>
+<span class="sd">            Additional model-specific parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sampler : Callable: key, nsamples -&gt; samples</span>
+<span class="sd">            A function that generates samples when called with a random key and number of samples.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="AbstractPipeline.sample">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate samples from the trained model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random number generator key.</span>
+<span class="sd">        x_o : array-like</span>
+<span class="sd">            Conditioning variable (e.g., observed data).</span>
+<span class="sd">        nsamples : int, optional</span>
+<span class="sd">            Number of samples to generate.</span>
+<span class="sd">        step_size : float, optional</span>
+<span class="sd">            Step size for the sampler.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : array-like</span>
+<span class="sd">            Generated samples.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline.sample_batched">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.sample_batched">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">nsamples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate samples from the trained model in batches.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random number generator key.</span>
+<span class="sd">        x_o : array-like</span>
+<span class="sd">            Conditioning variable (e.g., observed data).</span>
+<span class="sd">        nsamples : int</span>
+<span class="sd">            Number of samples to generate.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Size of each batch for sampling. Default is 50.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Whether to display progress bars during sampling. Default is True.</span>
+<span class="sd">        args : tuple</span>
+<span class="sd">            Additional positional arguments for the sampler.</span>
+<span class="sd">        kwargs : dict</span>
+<span class="sd">            Additional keyword arguments for the sampler.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">x_o</span>
+
+        <span class="c1"># TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder</span>
+        <span class="c1"># Possibly fixed by passing the kwargs, which should include the encoder_key</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">batched_sampler</span> <span class="o">=</span> <span class="n">_get_batch_sampler</span><span class="p">(</span>
+            <span class="n">sampler</span><span class="p">,</span>
+            <span class="n">ncond</span><span class="o">=</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="n">batched_sampler</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">res</span></div>
+</div>
+
+</pre></div>
+<div class="section ablog__blog_comments">
+   
+</div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

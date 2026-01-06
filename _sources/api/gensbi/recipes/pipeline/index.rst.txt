@@ -1,0 +1,784 @@
+gensbi.recipes.pipeline
+=======================
+
+.. py:module:: gensbi.recipes.pipeline
+
+.. autoapi-nested-parse::
+
+   Pipeline module for GenSBI.
+
+   This module provides an abstract pipeline class for training and evaluating conditional generative models
+   (such as conditional flow matching or diffusion models) in the GenSBI framework. It handles model creation,
+   training loop, optimizer setup, checkpointing, and evaluation utilities.
+
+   For practical implementations, subclasses should implement specific model architectures, loss functions, and sampling methods.
+   See `JointPipeline` and `ConditionalPipeline` for concrete examples.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.recipes.pipeline.AbstractPipeline
+   gensbi.recipes.pipeline.ModelEMA
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.recipes.pipeline._get_batch_sampler
+   gensbi.recipes.pipeline.ema_step
+
+
+Module Contents
+---------------
+
+.. py:class:: AbstractPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=None, params=None, training_config=None)
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Abstract base class for GenSBI training pipelines.
+
+   This class provides a template for implementing training and evaluation pipelines for conditional generative models.
+   Subclasses should implement model creation, default parameter setup, loss function, sampling, and evaluation methods.
+
+   :param train_dataset: Training dataset, should yield batches of data.
+   :type train_dataset: iterable
+   :param val_dataset: Validation dataset, should yield batches of data.
+   :type val_dataset: iterable
+   :param dim_obs: Dimensionality of the parameter (theta) space.
+   :type dim_obs: int
+   :param dim_cond: Dimensionality of the observation (x) space.
+   :type dim_cond: int
+   :param model: The model to be trained. If None, the model is created using `_make_model`.
+   :type model: nnx.Module, optional
+   :param params: Model parameters. If None, uses defaults from `_get_default_params`.
+   :type params: dict, optional
+   :param ch_obs: Number of channels in the observation data. Default is 1.
+   :type ch_obs: int, optional
+   :param ch_cond: Number of channels in the conditional data (if applicable). Default is None.
+   :type ch_cond: int, optional
+   :param training_config: Training configuration. If None, uses defaults from `_get_default_training_config`.
+   :type training_config: dict, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _get_default_params(rngs)
+      :abstractmethod:
+
+
+      
+      Return a dictionary of default model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _get_default_training_config()
+      :classmethod:
+
+
+      
+      Return a dictionary of default training configuration parameters.
+
+      :returns: **training_config** -- Default training configuration.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _get_ema_optimizer()
+
+      
+      Construct the EMA optimizer for maintaining an exponential moving average of model parameters.
+      :returns: **ema_optimizer** -- The EMA optimizer instance.
+      :rtype: ModelEMA
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _get_optimizer()
+
+      
+      Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+
+      :returns: **optimizer** -- The optimizer instance for the model.
+      :rtype: nnx.Optimizer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _make_model(params)
+      :abstractmethod:
+
+
+      
+      Create and return the model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _wrap_model()
+      :abstractmethod:
+
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_loss_fn()
+      :abstractmethod:
+
+
+      
+      Return the loss function for training/validation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(key, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+      :abstractmethod:
+
+
+      
+      Get a sampler function for generating samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+      :param use_ema: Whether to use the EMA model for sampling.
+      :type use_ema: bool, optional
+      :param time_grid: Time grid for the sampler (if applicable).
+      :type time_grid: array-like, optional
+      :param model_extras: Additional model-specific parameters.
+      :type model_extras: dict, optional
+
+      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
+      :rtype: Callable: key, nsamples -> samples
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_train_step_fn(loss_fn)
+
+      
+      Return the training step function, which performs a single optimization step.
+
+      :returns: **train_step** -- JIT-compiled training step function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_val_step_fn(loss_fn)
+
+      
+      Return the validation step function, which performs a single optimization step.
+
+      :returns: **val_step** -- JIT-compiled validation step function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config(train_dataset, val_dataset, dim_obs, dim_cond, config_path, checkpoint_dir)
+      :abstractmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param train_dataset: Training dataset.
+      :type train_dataset: iterable
+      :param val_dataset: Validation dataset.
+      :type val_dataset: iterable
+      :param dim_obs: Dimensionality of the parameter (theta) space.
+      :type dim_obs: int
+      :param dim_cond: Dimensionality of the observation (x) space.
+      :type dim_cond: int
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+      :param checkpoint_dir: Directory for saving checkpoints.
+      :type checkpoint_dir: str
+
+      :returns: **pipeline** -- An instance of the pipeline initialized from the configuration.
+      :rtype: AbstractPipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: restore_model(experiment_id=None)
+
+      
+      Restore model and EMA model from checkpoints.
+
+      :param experiment_id: Experiment identifier. If None, uses training_config value.
+      :type experiment_id: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01)
+      :abstractmethod:
+
+
+      
+      Generate samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to generate.
+      :type nsamples: int, optional
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+
+      :returns: **samples** -- Generated samples.
+      :rtype: array-like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_batched(key, x_o, nsamples, *args, chunk_size = 50, show_progress_bars=True, **kwargs)
+
+      
+      Generate samples from the trained model in batches.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to generate.
+      :type nsamples: int
+      :param chunk_size: Size of each batch for sampling. Default is 50.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Whether to display progress bars during sampling. Default is True.
+      :type show_progress_bars: bool, optional
+      :param args: Additional positional arguments for the sampler.
+      :type args: tuple
+      :param kwargs: Additional keyword arguments for the sampler.
+      :type kwargs: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: save_model(experiment_id=None)
+
+      
+      Save model and EMA model checkpoints.
+
+      :param experiment_id: Experiment identifier. If None, uses training_config value.
+      :type experiment_id: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: train(rngs, nsteps = None, save_model=True)
+
+      
+      Run the training loop for the model.
+
+      :param rngs: Random number generators for training/validation steps.
+      :type rngs: nnx.Rngs
+
+      :returns: * **loss_array** (*list*) -- List of training losses.
+                * **val_loss_array** (*list*) -- List of validation losses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: update_training_config(new_config)
+
+      
+      Update the training configuration with new parameters.
+
+      :param new_config: New training configuration parameters.
+      :type new_config: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch_cond
+      :value: None
+
+
+
+   .. py:attribute:: ch_obs
+      :value: 1
+
+
+
+   .. py:attribute:: cond_ids
+
+
+   .. py:attribute:: dim_cond
+
+
+   .. py:attribute:: dim_joint
+
+
+   .. py:attribute:: dim_obs
+
+
+   .. py:attribute:: ema_model_wrapped
+      :value: None
+
+
+
+   .. py:attribute:: loss_fn
+      :value: None
+
+
+
+   .. py:attribute:: model
+
+
+   .. py:attribute:: model_wrapped
+      :value: None
+
+
+
+   .. py:attribute:: node_ids
+
+
+   .. py:attribute:: obs_ids
+
+
+   .. py:attribute:: p0_dist_model
+      :value: None
+
+
+
+   .. py:attribute:: params
+      :value: None
+
+
+
+   .. py:attribute:: path
+      :value: None
+
+
+
+   .. py:attribute:: train_dataset
+
+
+   .. py:attribute:: train_dataset_iter
+
+
+   .. py:attribute:: training_config
+      :value: None
+
+
+
+   .. py:attribute:: val_dataset
+
+
+   .. py:attribute:: val_dataset_iter
+
+
+.. py:class:: ModelEMA(model, tx)
+
+   Bases: :py:obj:`flax.nnx.Optimizer`
+
+
+   
+   Exponential Moving Average (EMA) optimizer for maintaining a smoothed version of model parameters.
+
+   This optimizer keeps an exponential moving average of the model parameters, which can help stabilize training
+   and improve evaluation performance. The EMA parameters are updated at each training step.
+
+   :param model: The model whose parameters will be tracked.
+   :type model: nnx.Module
+   :param tx: The Optax transformation defining the EMA update rule.
+   :type tx: optax.GradientTransformation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: update(model, model_orginal)
+
+      
+      Update the EMA parameters using the current model parameters.
+      :param model: The model with EMA parameters to be updated.
+      :type model: nnx.Module
+      :param model_orginal: The original model with current parameters.
+      :type model_orginal: nnx.Module
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:function:: _get_batch_sampler(sampler_fn, ncond, chunk_size, show_progress_bars = True)
+
+   
+   Create a batch sampler that processes samples in chunks.
+
+   :param sampler_fn: Sampling function.
+   :type sampler_fn: Callable
+   :param ncond: Number of conditions.
+   :type ncond: int
+   :param chunk_size: Size of each chunk.
+   :type chunk_size: int
+   :param show_progress_bars: Whether to show progress bars.
+   :type show_progress_bars: bool, optional
+
+   :returns: Batch sampler function.
+   :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: ema_step(ema_model, model, ema_optimizer)
+
+   
+   Update EMA model with current model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

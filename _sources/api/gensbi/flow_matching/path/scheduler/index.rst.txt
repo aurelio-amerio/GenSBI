@@ -1,0 +1,886 @@
+gensbi.flow_matching.path.scheduler
+===================================
+
+.. py:module:: gensbi.flow_matching.path.scheduler
+
+.. autoapi-nested-parse::
+
+   
+   Schedulers for flow matching paths.
+
+   This module provides various schedulers that define the time-dependent parameters
+   for probability paths in flow matching, including conditional optimal transport,
+   variance-preserving, and cosine schedules.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/flow_matching/path/scheduler/schedule_transform/index
+   /api/gensbi/flow_matching/path/scheduler/scheduler/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.flow_matching.path.scheduler.CondOTScheduler
+   gensbi.flow_matching.path.scheduler.ConvexScheduler
+   gensbi.flow_matching.path.scheduler.CosineScheduler
+   gensbi.flow_matching.path.scheduler.LinearVPScheduler
+   gensbi.flow_matching.path.scheduler.PolynomialConvexScheduler
+   gensbi.flow_matching.path.scheduler.ScheduleTransformedModel
+   gensbi.flow_matching.path.scheduler.Scheduler
+   gensbi.flow_matching.path.scheduler.SchedulerOutput
+   gensbi.flow_matching.path.scheduler.VPScheduler
+
+
+Package Contents
+----------------
+
+.. py:class:: CondOTScheduler
+
+   Bases: :py:obj:`ConvexScheduler`
+
+
+   
+   Conditional Optimal Transport (CondOT) Scheduler.
+
+   This scheduler provides a linear interpolation path with alpha_t = t and sigma_t = 1 - t,
+   which is optimal for conditional optimal transport flow matching.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute scheduler outputs for given times.
+
+      :param t:
+      :type t: Times in [0,1], shape (...).
+
+      :rtype: Scheduler output containing alpha_t, sigma_t, and their derivatives.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: kappa_inverse(kappa)
+
+      
+      Compute t from kappa.
+
+      :param kappa:
+      :type kappa: Kappa values, shape (...).
+
+      :rtype: Time values, shape (...).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: ConvexScheduler
+
+   Bases: :py:obj:`Scheduler`
+
+
+   
+   Base Scheduler class.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+      :abstractmethod:
+
+
+      
+      Scheduler for convex paths.
+
+
+      :Parameters:
+
+          **t** : Array
+              times in [0,1], shape (...).
+
+
+
+      :Returns:
+
+          SchedulerOutput
+              :math:`lpha_t,\sigma_t,
+
+          rac{\partial}{\partial t}lpha_t,
+              ..
+
+          rac{\partial}{\partial t}\sigma_t`
+              ..
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: kappa_inverse(kappa)
+      :abstractmethod:
+
+
+      
+      Computes :math:`t` from :math:`\kappa_t`.
+
+      :param kappa: :math:`\kappa`, shape (...)
+      :type kappa: Array
+
+      :returns: t, shape (...)
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: snr_inverse(snr)
+
+      
+      Computes :math:`t` from the signal-to-noise ratio :math:`\frac{\alpha_t}{\sigma_t}`.
+
+      :param snr: The signal-to-noise, shape (...)
+      :type snr: Array
+
+      :returns: t, shape (...)
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: CosineScheduler
+
+   Bases: :py:obj:`Scheduler`
+
+
+   
+   Cosine Scheduler.
+
+   A cosine-based scheduler where alpha_t = sin(pi/2 * t) and sigma_t = cos(pi/2 * t).
+   This provides a smooth interpolation between distributions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute scheduler outputs for given times.
+
+      :param t:
+      :type t: Times in [0,1], shape (...).
+
+      :rtype: Scheduler output containing alpha_t, sigma_t, and their derivatives.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: snr_inverse(snr)
+
+      
+      Compute t from signal-to-noise ratio.
+
+      :param snr:
+      :type snr: The signal-to-noise ratio, shape (...).
+
+      :rtype: Time values, shape (...).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: LinearVPScheduler
+
+   Bases: :py:obj:`Scheduler`
+
+
+   
+   Linear Variance Preserving Scheduler.
+
+   A linear variance-preserving scheduler where alpha_t = t and sigma_t = sqrt(1 - t^2).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute scheduler outputs for given times.
+
+      :param t:
+      :type t: Times in [0,1], shape (...).
+
+      :rtype: Scheduler output containing alpha_t, sigma_t, and their derivatives.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: snr_inverse(snr)
+
+      
+      Compute t from signal-to-noise ratio.
+
+      :param snr:
+      :type snr: The signal-to-noise ratio, shape (...).
+
+      :rtype: Time values, shape (...).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: PolynomialConvexScheduler(n)
+
+   Bases: :py:obj:`ConvexScheduler`
+
+
+   
+   Polynomial Convex Scheduler.
+
+   This scheduler uses polynomial interpolation with alpha_t = t^n and sigma_t = 1 - t^n.
+
+   :param n:
+   :type n: The polynomial degree, must be positive.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute scheduler outputs for given times.
+
+      :param t:
+      :type t: Times in [0,1], shape (...).
+
+      :rtype: Scheduler output containing alpha_t, sigma_t, and their derivatives.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: kappa_inverse(kappa)
+
+      
+      Compute t from kappa.
+
+      :param kappa:
+      :type kappa: Kappa values, shape (...).
+
+      :rtype: Time values, shape (...).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: n
+
+
+.. py:class:: ScheduleTransformedModel(velocity_model, original_scheduler, new_scheduler)
+
+   Bases: :py:obj:`gensbi.utils.model_wrapping.ModelWrapper`
+
+
+   
+   Change of scheduler for a velocity model.
+
+   This class wraps a given velocity model and transforms its scheduling
+   to a new scheduler function. It modifies the time
+   dynamics of the model according to the new scheduler while maintaining
+   the original model's behavior.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       import jax
+       import jax.numpy as jnp
+       from flow_matching.path.scheduler import CondOTScheduler, CosineScheduler, ScheduleTransformedModel
+       from flow_matching.solver import ODESolver
+
+       # Initialize the model and schedulers
+       model = ...
+
+       original_scheduler = CondOTScheduler()
+       new_scheduler = CosineScheduler()
+
+       # Create the transformed model
+       transformed_model = ScheduleTransformedModel(
+           velocity_model=model,
+           original_scheduler=original_scheduler,
+           new_scheduler=new_scheduler
+       )
+
+       # Set up the solver
+       solver = ODESolver(velocity_model=transformed_model)
+
+       key = jax.random.PRNGKey(0)
+       x_0 = jax.random.normal(key, shape=(10, 2))  # Example initial condition
+
+       x_1 = solver.sample(
+           time_steps=jnp.array([0.0, 1.0]),
+           x_init=x_0,
+           step_size=1/1000
+           )[1]
+
+   :param velocity_model: The original velocity model to be transformed.
+   :type velocity_model: ModelWrapper
+   :param original_scheduler: The scheduler used by the original model. Must implement the snr_inverse function.
+   :type original_scheduler: Scheduler
+   :param new_scheduler: The new scheduler to be applied to the model.
+   :type new_scheduler: Scheduler
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, t, **extras)
+
+      
+      Compute the transformed marginal velocity field for a new scheduler.
+      This method implements a post-training velocity scheduler change for
+      affine conditional flows.
+
+      :param x: :math:`x_t`, the input array.
+      :type x: Array
+      :param t: The time array (denoted as :math:`r` above).
+      :type t: Array
+      :param \*\*extras:
+      :type \*\*extras: Additional arguments for the model.
+
+      :returns: The transformed velocity.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: new_scheduler
+
+
+   .. py:attribute:: original_scheduler
+
+
+.. py:class:: Scheduler
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Base Scheduler class.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+      :abstractmethod:
+
+
+      
+      :param t: times in [0,1], shape (...).
+      :type t: Array
+
+      :returns: :math:`\alpha_t,\sigma_t,\frac{\partial}{\partial t}\alpha_t,\frac{\partial}{\partial t}\sigma_t`
+      :rtype: SchedulerOutput
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: snr_inverse(snr)
+      :abstractmethod:
+
+
+      
+      Computes :math:`t` from the signal-to-noise ratio :math:`\frac{\alpha_t}{\sigma_t}`.
+
+      :param snr: The signal-to-noise, shape (...)
+      :type snr: Array
+
+      :returns: t, shape (...)
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: SchedulerOutput
+
+   
+   Represents a sample of a conditional-flow generated probability path.
+
+   .. attribute:: alpha_t
+
+      :math:`\alpha_t`, shape (...).
+
+      :type: Array
+
+   .. attribute:: sigma_t
+
+      :math:`\sigma_t`, shape (...).
+
+      :type: Array
+
+   .. attribute:: d_alpha_t
+
+      :math:`\frac{\partial}{\partial t}\alpha_t`, shape (...).
+
+      :type: Array
+
+   .. attribute:: d_sigma_t
+
+      :math:`\frac{\partial}{\partial t}\sigma_t`, shape (...).
+
+      :type: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: alpha_t
+      :type:  jax.Array
+
+
+   .. py:attribute:: d_alpha_t
+      :type:  jax.Array
+
+
+   .. py:attribute:: d_sigma_t
+      :type:  jax.Array
+
+
+   .. py:attribute:: sigma_t
+      :type:  jax.Array
+
+
+.. py:class:: VPScheduler(beta_min = 0.1, beta_max = 20.0)
+
+   Bases: :py:obj:`Scheduler`
+
+
+   
+   Variance Preserving (VP) Scheduler.
+
+   This scheduler follows the variance-preserving SDE formulation commonly used in
+   diffusion models, with configurable beta_min and beta_max parameters.
+
+   :param beta_min:
+   :type beta_min: Minimum beta value. Defaults to 0.1.
+   :param beta_max:
+   :type beta_max: Maximum beta value. Defaults to 20.0.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute scheduler outputs for given times.
+
+      :param t:
+      :type t: Times in [0,1], shape (...).
+
+      :rtype: Scheduler output containing alpha_t, sigma_t, and their derivatives.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: snr_inverse(snr)
+
+      
+      Compute t from signal-to-noise ratio.
+
+      :param snr:
+      :type snr: The signal-to-noise ratio, shape (...).
+
+      :rtype: Time values, shape (...).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: beta_max
+      :value: 20.0
+
+
+
+   .. py:attribute:: beta_min
+      :value: 0.1
+
+
+

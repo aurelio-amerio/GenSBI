@@ -1,0 +1,195 @@
+gensbi.diffusion.path
+=====================
+
+.. py:module:: gensbi.diffusion.path
+
+.. autoapi-nested-parse::
+
+   
+   Probability paths for diffusion models.
+
+   This module provides probability path implementations for diffusion models,
+   including the EDM path from the paper "Elucidating the Design Space of
+   Diffusion-Based Generative Models" (Karras et al., 2022).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/diffusion/path/edm_path/index
+   /api/gensbi/diffusion/path/path/index
+   /api/gensbi/diffusion/path/path_sample/index
+   /api/gensbi/diffusion/path/scheduler/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diffusion.path.EDMPath
+
+
+Package Contents
+----------------
+
+.. py:class:: EDMPath(scheduler)
+
+   Bases: :py:obj:`gensbi.diffusion.path.path.ProbPath`
+
+
+   
+   EDM probability path.
+
+   This class implements the probability path for EDM-based diffusion models,
+   supporting different noise schedules (EDM, EDM-VP, EDM-VE).
+
+   :param scheduler:
+   :type scheduler: The scheduler object for noise generation, must be one of 'EDM', 'EDM-VP', or 'EDM-VE'.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gensbi.diffusion.path import EDMPath
+       from gensbi.diffusion.path.scheduler import EDMScheduler
+       import jax, jax.numpy as jnp
+       scheduler = EDMScheduler()
+       path = EDMPath(scheduler)
+       key = jax.random.PRNGKey(0)
+       x_1 = jax.random.normal(key, (32, 2))
+       sigma = jnp.ones((32, 1))
+       sample = path.sample(key, x_1, sigma)
+       print(sample.x_t.shape)
+       # (32, 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_loss_fn()
+
+      
+      Returns the loss function for the EDM path.
+
+      :returns: The loss function as provided by the scheduler.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_1, sigma)
+
+      
+      Sample from the EDM probability path.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param x_1: Target data point, shape (batch_size, ...).
+      :type x_1: Array
+      :param sigma: Noise scale, shape (batch_size, ...).
+      :type sigma: Array
+
+      :returns: A sample from the EDM path.
+      :rtype: PathSample
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_sigma(key, batch_size)
+
+      
+      Sample the noise scale sigma from the scheduler.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param batch_size: Number of samples to generate.
+      :type batch_size: int
+
+      :returns: Samples of sigma, shape (batch_size, ...).
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: scheduler
+
+

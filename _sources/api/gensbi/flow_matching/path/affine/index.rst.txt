@@ -1,0 +1,364 @@
+gensbi.flow_matching.path.affine
+================================
+
+.. py:module:: gensbi.flow_matching.path.affine
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.flow_matching.path.affine.AffineProbPath
+   gensbi.flow_matching.path.affine.CondOTProbPath
+
+
+Module Contents
+---------------
+
+.. py:class:: AffineProbPath(scheduler)
+
+   Bases: :py:obj:`gensbi.flow_matching.path.path.ProbPath`
+
+
+   
+   The ``AffineProbPath`` class represents a specific type of probability path where the transformation between distributions is affine.
+   An affine transformation can be represented as:
+
+   .. math::
+
+       X_t = \alpha_t X_1 + \sigma_t X_0,
+
+   where :math:`X_t` is the transformed data point at time `t`. :math:`X_0` and :math:`X_1` are the source and target data points, respectively. :math:`\alpha_t` and :math:`\sigma_t` are the parameters of the affine transformation at time `t`.
+
+   The scheduler is responsible for providing the time-dependent parameters :math:`\alpha_t` and :math:`\sigma_t`, as well as their derivatives, which define the affine transformation at any given time `t`.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gensbi.flow_matching.path.scheduler import CondOTScheduler
+       from gensbi.flow_matching.path import AffineProbPath
+       import jax, jax.numpy as jnp
+       scheduler = CondOTScheduler()
+       path = AffineProbPath(scheduler)
+       key = jax.random.PRNGKey(0)
+       # x_1 should come from your dataset (e.g., a batch of real data)
+       x_1 = jax.random.normal(key, (128, 2))  # replace with your data batch
+       # x_0 is typically sampled from a prior, e.g., standard normal noise
+       x_0 = jax.random.normal(key, (128, 2))
+       t = jax.random.uniform(key, (128,))  # random times in [0, 1]
+       sample = path.sample(x_0, x_1, t)
+       print(sample.x_t.shape)
+       # (128, 2)
+
+   :param scheduler: An instance of a scheduler that provides the parameters :math:`\alpha_t`, :math:`\sigma_t`, and their derivatives over time.
+   :type scheduler: Scheduler
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: epsilon_to_target(epsilon, x_t, t)
+
+      
+      Convert from epsilon representation to x_1 representation.
+
+      :param epsilon: Noise in the path sample.
+      :type epsilon: Array
+      :param x_t: Path sample at time t.
+      :type x_t: Array
+      :param t: Time in [0,1].
+      :type t: Array
+
+      :returns: Target data point.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: epsilon_to_velocity(epsilon, x_t, t)
+
+      
+      Convert from epsilon representation to velocity.
+
+      :param epsilon: Noise in the path sample.
+      :type epsilon: Array
+      :param x_t: Path sample at time t.
+      :type x_t: Array
+      :param t: Time in [0,1].
+      :type t: Array
+
+      :returns: Velocity.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(x_0, x_1, t)
+
+      
+      Sample from the affine probability path.
+
+      Given :math:`(X_0,X_1) \sim \pi(X_0,X_1)` and a scheduler :math:`(\alpha_t,\sigma_t)`.
+      Returns :math:`X_0, X_1, X_t = \alpha_t X_1 + \sigma_t X_0`, and the conditional velocity at :math:`X_t, \dot{X}_t = \dot{\alpha}_t X_1 + \dot{\sigma}_t X_0`.
+
+      :param x_0: Source data point, shape (batch_size, ...).
+      :type x_0: Array
+      :param x_1: Target data point, shape (batch_size, ...).
+      :type x_1: Array
+      :param t: Times in [0,1], shape (batch_size,).
+      :type t: Array
+
+      :returns: A conditional sample at :math:`X_t \sim p_t`.
+      :rtype: PathSample
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: target_to_epsilon(x_1, x_t, t)
+
+      
+      Convert from x_1 representation to noise.
+
+      :param x_1: Target data point.
+      :type x_1: Array
+      :param x_t: Path sample at time t.
+      :type x_t: Array
+      :param t: Time in [0,1].
+      :type t: Array
+
+      :returns: Noise in the path sample.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: target_to_velocity(x_1, x_t, t)
+
+      
+      Convert from x_1 representation to velocity.
+
+      :param x_1: Target data point.
+      :type x_1: Array
+      :param x_t: Path sample at time t.
+      :type x_t: Array
+      :param t: Time in [0,1].
+      :type t: Array
+
+      :returns: Velocity.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: velocity_to_epsilon(velocity, x_t, t)
+
+      
+      Convert from velocity to noise representation.
+
+      :param velocity: Velocity at the path sample.
+      :type velocity: Array
+      :param x_t: Path sample at time t.
+      :type x_t: Array
+      :param t: Time in [0,1].
+      :type t: Array
+
+      :returns: Noise in the path sample.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: velocity_to_target(velocity, x_t, t)
+
+      
+      Convert from velocity to x_1 representation.
+
+      :param velocity: Velocity at the path sample.
+      :type velocity: Array
+      :param x_t: Path sample at time t.
+      :type x_t: Array
+      :param t: Time in [0,1].
+      :type t: Array
+
+      :returns: Target data point.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: scheduler
+
+
+.. py:class:: CondOTProbPath
+
+   Bases: :py:obj:`AffineProbPath`
+
+
+   
+   The ``CondOTProbPath`` class represents a conditional optimal transport probability path.
+
+   This class is a specialized version of the ``AffineProbPath`` that uses a conditional optimal transport scheduler to determine the parameters of the affine transformation.
+
+   The parameters :math:`\alpha_t` and :math:`\sigma_t` for the conditional optimal transport path are defined as:
+
+   .. math::
+
+       \alpha_t = t \quad \text{and} \quad \sigma_t = 1 - t.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gensbi.flow_matching.path import CondOTProbPath
+       import jax, jax.numpy as jnp
+       path = CondOTProbPath()
+       key = jax.random.PRNGKey(0)
+       # x_1 should come from your dataset (e.g., a batch of real data)
+       x_1 = jax.random.normal(key, (64, 2))  # replace with your data batch
+       # x_0 is typically sampled from a prior, e.g., standard normal noise
+       x_0 = jax.random.normal(key, (64, 2))
+       t = jax.random.uniform(key, (64,))  # random times in [0, 1]
+       sample = path.sample(x_0, x_1, t)
+       print(sample.x_t.shape)
+       # (64, 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: scheduler
+
+

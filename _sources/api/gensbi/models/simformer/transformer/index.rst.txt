@@ -1,0 +1,232 @@
+gensbi.models.simformer.transformer
+===================================
+
+.. py:module:: gensbi.models.simformer.transformer
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.simformer.transformer.AttentionBlock
+   gensbi.models.simformer.transformer.DenseBlock
+   gensbi.models.simformer.transformer.Transformer
+
+
+Module Contents
+---------------
+
+.. py:class:: AttentionBlock(din, num_heads, features, skip_connection, rngs, param_dtype = jnp.float32)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, mask)
+
+
+   .. py:attribute:: attn
+
+
+   .. py:attribute:: layer_norm
+
+
+   .. py:attribute:: skip_connection
+
+
+.. py:class:: DenseBlock(din, dcontext, num_hidden_layers, widening_factor, act, skip_connection, rngs, param_dtype = jnp.float32)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, context)
+
+
+   .. py:attribute:: act
+
+
+   .. py:attribute:: context_block
+
+
+   .. py:attribute:: hidden_blocks
+
+
+   .. py:attribute:: layer_norm
+
+
+   .. py:attribute:: skip_connection
+
+
+.. py:class:: Transformer(din, dcontext, num_heads, num_layers, features, widening_factor = 4, num_hidden_layers = 1, act = jax.nn.gelu, skip_connection_attn = True, skip_connection_mlp = True, *, rngs, param_dtype = jnp.float32)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   A transformer stack.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(inputs, context = None, mask = None)
+
+
+   .. py:attribute:: act
+
+
+   .. py:attribute:: attention_blocks
+
+
+   .. py:attribute:: dcontext
+
+
+   .. py:attribute:: dense_blocks
+
+
+   .. py:attribute:: din
+
+
+   .. py:attribute:: layer_norm
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: num_hidden_layers
+      :value: 1
+
+
+
+   .. py:attribute:: num_layers
+
+
+   .. py:attribute:: param_dtype
+
+
+   .. py:attribute:: rngs
+
+
+   .. py:attribute:: skip_connection_attn
+      :value: True
+
+
+
+   .. py:attribute:: skip_connection_mlp
+      :value: True
+
+
+
+   .. py:attribute:: widening_factor
+      :value: 4
+
+
+

@@ -1,0 +1,307 @@
+gensbi.experimental.models.autoencoders.commons
+===============================================
+
+.. py:module:: gensbi.experimental.models.autoencoders.commons
+
+.. autoapi-nested-parse::
+
+   Common components for autoencoder architectures.
+
+   This module provides shared components used by 1D and 2D autoencoder implementations,
+   including parameter dataclasses, Gaussian latent space modules, and loss functions.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.autoencoders.commons.AutoEncoderParams
+   gensbi.experimental.models.autoencoders.commons.DiagonalGaussian
+   gensbi.experimental.models.autoencoders.commons.Loss
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.autoencoders.commons.vae_loss_fn
+
+
+Module Contents
+---------------
+
+.. py:class:: AutoEncoderParams
+
+   
+   Configuration parameters for the AutoEncoder models.
+
+   .. attribute:: resolution
+
+      The input feature dimension (length for 1D, height/width for 2D).
+
+      :type: int
+
+   .. attribute:: in_channels
+
+      Number of input channels (e.g., 1 for scalar features, >1 for multi-channel).
+
+      :type: int
+
+   .. attribute:: ch
+
+      Base number of channels for the first convolutional layer.
+
+      :type: int
+
+   .. attribute:: out_ch
+
+      Number of output channels produced by the decoder (matches input channels for reconstruction).
+
+      :type: int
+
+   .. attribute:: ch_mult
+
+      Multipliers for the number of channels at each resolution level (controls model width/depth).
+
+      :type: list[int]
+
+   .. attribute:: num_res_blocks
+
+      Number of residual blocks per resolution level.
+
+      :type: int
+
+   .. attribute:: z_channels
+
+      Number of latent channels in the bottleneck (size of encoded representation).
+
+      :type: int
+
+   .. attribute:: scale_factor
+
+      Scaling factor applied to the latent representation (for normalization or data scaling).
+
+      :type: float
+
+   .. attribute:: shift_factor
+
+      Shift factor applied to the latent representation (for normalization or data centering).
+
+      :type: float
+
+   .. attribute:: rngs
+
+      Random number generators for parameter initialization and stochastic layers.
+
+      :type: nnx.Rngs
+
+   .. attribute:: param_dtype
+
+      Data type for model parameters (e.g., jnp.float32, jnp.bfloat16).
+
+      :type: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: ch
+      :type:  int
+
+
+   .. py:attribute:: ch_mult
+      :type:  list[int]
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: num_res_blocks
+      :type:  int
+
+
+   .. py:attribute:: out_ch
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: resolution
+      :type:  int
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: scale_factor
+      :type:  float
+
+
+   .. py:attribute:: shift_factor
+      :type:  float
+
+
+   .. py:attribute:: z_channels
+      :type:  int
+
+
+.. py:class:: DiagonalGaussian(sample = True, chunk_dim = -1)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Diagonal Gaussian distribution module for VAE latent space.
+
+   :param sample: Whether to sample from the distribution (default: True).
+   :type sample: bool
+   :param chunk_dim: Axis along which to split mean and logvar (default: -1).
+   :type chunk_dim: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(z, key=None)
+
+      
+      Split input into mean and log-variance, compute KL loss, and sample if required.
+
+      :param z: Input tensor containing concatenated mean and logvar.
+      :type z: Array
+      :param key: PRNG key for sampling. Required if sampling is enabled.
+      :type key: Array, optional
+
+      :returns: Sampled latent or mean, depending on self.sample.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: chunk_dim
+      :value: -1
+
+
+
+   .. py:attribute:: kl_loss
+
+
+   .. py:attribute:: sample
+      :value: True
+
+
+
+   .. py:attribute:: update_KL
+      :value: False
+
+
+
+.. py:class:: Loss(value, *, is_hijax = None, has_ref = False, is_mutable = True, eager_sharding = None, **metadata)
+
+   Bases: :py:obj:`flax.nnx.Variable`
+
+
+   
+   Placeholder variable for storing loss values in the model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: vae_loss_fn(model, x, key, kl_weight = 0.1)
+
+   
+   Compute the VAE loss as the sum of reconstruction and KL divergence losses.
+
+   :param model:
+   :type model: The VAE model.
+   :param x:
+   :type x: Input data.
+   :param key:
+   :type key: PRNG key for stochastic operations.
+   :param kl_weight:
+   :type kl_weight: Weight for the KL divergence term. Defaults to 0.1.
+
+   :rtype: Scalar loss value combining reconstruction and KL losses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

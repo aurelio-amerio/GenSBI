@@ -1,0 +1,514 @@
+gensbi.recipes.simformer
+========================
+
+.. py:module:: gensbi.recipes.simformer
+
+.. autoapi-nested-parse::
+
+   Pipeline for training and using a Flux1 model for simulation-based inference.
+
+   .. rubric:: Examples
+
+   .. code-block:: python
+
+       import grain
+       import numpy as np
+       import jax
+       from jax import numpy as jnp
+       from gensbi.recipes import SimformerPipeline
+
+       # Define your training and validation datasets.
+       train_data = jax.random.rand((1024, 4)) # your training dataset
+       val_data = jax.random.rand((128, 4)) # your validation dataset
+
+       batch_size = 32
+
+       train_dataset_grain = (
+           grain.MapDataset.source(np.array(train_data)[...,None])
+           .shuffle(42)
+           .repeat()
+           .to_iter_dataset()
+           .batch(batch_size)
+           # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+       )
+
+       val_dataset_grain = (
+           grain.MapDataset.source(np.array(val_data)[...,None])
+           .shuffle(42)
+           .repeat()
+           .to_iter_dataset()
+           .batch(batch_size)
+           # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+       )
+
+       # Define the model
+       dim_obs = 2  # Dimension of the parameter space
+       dim_cond = 2      # Dimension of the observation space
+       pipeline = SimformerPipeline(train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
+
+       # Train the model
+       rngs = jax.random.PRNGKey(0)
+       pipeline.train(rngs)
+
+       # Sample from the posterior
+       x_o = jnp.array([0.5, -0.2])  # Example
+       samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
+
+   .. note::
+
+       If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.recipes.simformer.SimformerDiffusionPipeline
+   gensbi.recipes.simformer.SimformerFlowPipeline
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.recipes.simformer.parse_simformer_params
+   gensbi.recipes.simformer.parse_training_config
+
+
+Module Contents
+---------------
+
+.. py:class:: SimformerDiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
+
+   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointDiffusionPipeline`
+
+
+   
+   Diffusion pipeline for training and using a Joint model for simulation-based inference.
+
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param dim_cond: Dimension of the observation space.
+   :type dim_cond: int
+   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :type ch_obs: int, optional
+   :param params: Parameters for the Joint model. If None, default parameters are used.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :type condition_mask_kind: str, optional
+
+   .. rubric:: Examples
+
+   Minimal example on how to instantiate and use the JointDiffusionPipeline:
+
+   .. literalinclude:: /examples/joint_diffusion_pipeline.py
+       :language: python
+       :linenos:
+
+   .. image:: /examples/joint_diffusion_pipeline_marginals.png
+       :width: 600
+
+   .. note::
+       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+       in a ``if __name__ == "__main__":`` guard.
+       See https://docs.python.org/3/library/multiprocessing.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _get_default_params()
+
+      
+      Return default parameters for the Simformer model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _make_model(params)
+
+      
+      Create and return the Simformer model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config(train_dataset, val_dataset, dim_obs, dim_cond, config_path, checkpoint_dir)
+      :classmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False)
+
+      
+      Generate samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to generate.
+      :type nsamples: int, optional
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+
+      :returns: **samples** -- Generated samples.
+      :rtype: array-like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch_obs
+      :value: 1
+
+
+
+   .. py:attribute:: dim_joint
+
+
+   .. py:attribute:: edge_mask
+      :value: None
+
+
+
+   .. py:attribute:: ema_model
+
+
+.. py:class:: SimformerFlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
+
+   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointFlowPipeline`
+
+
+   
+   Flow pipeline for training and using a Joint model for simulation-based inference.
+
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param dim_cond: Dimension of the observation space.
+   :type dim_cond: int
+   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :type ch_obs: int, optional
+   :param params: Parameters for the Joint model. If None, default parameters are used.
+   :type params: JointParams, optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :type condition_mask_kind: str, optional
+
+   .. rubric:: Examples
+
+   Minimal example on how to instantiate and use the JointFlowPipeline:
+
+   .. literalinclude:: /examples/joint_flow_pipeline.py
+       :language: python
+       :linenos:
+
+   .. image:: /examples/joint_flow_pipeline_marginals.png
+       :width: 600
+
+   .. note::
+       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+       in a ``if __name__ == "__main__":`` guard.
+       See https://docs.python.org/3/library/multiprocessing.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _get_default_params()
+
+      
+      Return default parameters for the Simformer model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _make_model(params)
+
+      
+      Create and return the Simformer model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: compute_unnorm_logprob(x_1, x_o, step_size=0.01, use_ema=True, time_grid=None)
+
+
+   .. py:method:: init_pipeline_from_config(train_dataset, val_dataset, dim_obs, dim_cond, config_path, checkpoint_dir)
+      :classmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None)
+
+      
+      Generate samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to generate.
+      :type nsamples: int, optional
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+
+      :returns: **samples** -- Generated samples.
+      :rtype: array-like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch_obs
+      :value: 1
+
+
+
+   .. py:attribute:: dim_joint
+
+
+   .. py:attribute:: edge_mask
+      :value: None
+
+
+
+   .. py:attribute:: ema_model
+
+
+.. py:function:: parse_simformer_params(config_path)
+
+   
+   Parse a Simformer configuration file.
+
+   :param config_path: Path to the configuration file.
+   :type config_path: str
+
+   :returns: **config** -- Parsed configuration dictionary.
+   :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: parse_training_config(config_path)
+
+   
+   Parse a training configuration file.
+
+   :param config_path: Path to the configuration file.
+   :type config_path: str
+
+   :returns: **config** -- Parsed configuration dictionary.
+   :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

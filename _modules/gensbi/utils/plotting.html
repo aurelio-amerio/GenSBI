@@ -1,0 +1,1610 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gensbi.utils.plotting &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script src="../../../_static/thebelab-helper.js"></script>
+    <script src="../../../_static/jupyterlite_sphinx.js?v=96e329c5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral'
+});
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/utils/plotting';</script>
+    <link rel="icon" href="../../../_static/logo_small.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />   
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo_small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../_static/logo_small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../gensbi.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.utils.plotting</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                   <h1>Source code for gensbi.utils.plotting</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Plotting utilities for GenSBI.</span>
+
+<span class="sd">This module provides visualization functions for generative models, including</span>
+<span class="sd">trajectory plots, marginal distributions, and 2D contour plots. Supports both</span>
+<span class="sd">seaborn and corner-based plotting styles.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.colors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mcolors</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">corner</span><span class="w"> </span><span class="kn">import</span> <span class="n">corner</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s2">&quot;darkgrid&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="plot_trajectories">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_trajectories">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_trajectories</span><span class="p">(</span><span class="n">traj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot trajectories showing the flow from source to target distribution.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        traj: Trajectory data of shape (time_steps, n_samples, n_dims).</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        Tuple of (figure, axes) objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">traj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">traj</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">traj</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">traj</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">traj</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">traj</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">traj</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">traj</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">,</span> <span class="n">adjustable</span><span class="o">=</span><span class="s2">&quot;box&quot;</span><span class="p">)</span>
+    <span class="c1"># set black background</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s2">&quot;#A6AEBF&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span></div>
+
+
+
+<span class="c1"># plot marginals using seaborn&#39;s PairGrid</span>
+
+<div class="viewcode-block" id="base_color">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.base_color">[docs]</a>
+<span class="n">base_color</span> <span class="o">=</span> <span class="s2">&quot;#CD5656&quot;</span>  <span class="c1"># Base color for the hexbin and kdeplot</span></div>
+
+<div class="viewcode-block" id="hist_color">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.hist_color">[docs]</a>
+<span class="n">hist_color</span> <span class="o">=</span> <span class="s2">&quot;#202A44&quot;</span>  <span class="c1"># Color for the histograms</span></div>
+
+<div class="viewcode-block" id="true_val_color">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.true_val_color">[docs]</a>
+<span class="n">true_val_color</span> <span class="o">=</span> <span class="s2">&quot;#687FE5&quot;</span></div>
+
+
+<div class="viewcode-block" id="rgb_base">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.rgb_base">[docs]</a>
+<span class="n">rgb_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mcolors</span><span class="o">.</span><span class="n">to_rgb</span><span class="p">(</span><span class="n">base_color</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="colors">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.colors">[docs]</a>
+<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span>
+        <span class="n">rgb_base</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">rgb_base</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">rgb_base</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="mi">0</span><span class="p">,</span>
+    <span class="p">),</span>  <span class="c1"># At data value 0, color is rgb_base with alpha 0</span>
+    <span class="p">(</span><span class="n">rgb_base</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rgb_base</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">rgb_base</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span>
+<span class="p">]</span>  <span class="c1"># At data value 1, color is rgb_base with alpha 1</span></div>
+
+
+<div class="viewcode-block" id="transparent_cmap">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.transparent_cmap">[docs]</a>
+<span class="n">transparent_cmap</span> <span class="o">=</span> <span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s2">&quot;transparent_red&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="_parse_range">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._parse_range">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_range</span><span class="p">(</span><span class="n">range_arg</span><span class="p">,</span> <span class="n">ndim</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">range_arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">ndim</span>
+    <span class="k">elif</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">range_arg</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">range_arg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">range_arg</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="n">range_arg</span><span class="p">]</span> <span class="o">*</span> <span class="n">ndim</span>
+    <span class="k">elif</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">range_arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span>
+        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">range_arg</span><span class="p">)</span> <span class="o">==</span> <span class="n">ndim</span>
+        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+            <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">r</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">range_arg</span>
+        <span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">range_arg</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Range must be None, a tuple (min, max), or a sequence of such tuples, one per axis&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span></div>
+
+
+
+<span class="c1"># def _plot_marginals_2d(</span>
+<span class="c1">#     data,</span>
+<span class="c1">#     plot_levels=True,</span>
+<span class="c1">#     labels=None,</span>
+<span class="c1">#     gridsize=15,</span>
+<span class="c1">#     hexbin_kwargs={},</span>
+<span class="c1">#     histplot_kwargs={},</span>
+<span class="c1">#     range=None,</span>
+<span class="c1">#     true_param=None,</span>
+<span class="c1">#     **kwargs,</span>
+<span class="c1"># ):</span>
+<span class="c1">#     data = np.array(data)</span>
+<span class="c1">#     if true_param is not None:</span>
+<span class="c1">#         true_param = np.array(true_param)</span>
+<span class="c1">#     ndim = data.shape[1]</span>
+<span class="c1">#     fontsize = 12</span>
+<span class="c1">#     if labels is None:</span>
+<span class="c1">#         labels = [&quot;$\\theta_{{{}}}$&quot;.format(i) for i in np.arange(1, data.shape[1] + 1)]</span>
+<span class="c1">#     dataframe = pd.DataFrame(data, columns=labels)</span>
+
+<span class="c1">#     axis_ranges = _parse_range(range, ndim)</span>
+<span class="c1">#     xlim, ylim = axis_ranges[0], axis_ranges[1]</span>
+
+<span class="c1">#     cmap = hexbin_kwargs.pop(&quot;cmap&quot;, transparent_cmap)</span>
+<span class="c1">#     color = hexbin_kwargs.pop(&quot;color&quot;, [0, 0, 0, 0])</span>
+<span class="c1">#     gridsize = hexbin_kwargs.pop(&quot;gridsize&quot;, gridsize)</span>
+
+<span class="c1">#     # Set extent for hexbin</span>
+<span class="c1">#     extent = None</span>
+<span class="c1">#     if xlim is not None and ylim is not None:</span>
+<span class="c1">#         extent = xlim + ylim</span>
+<span class="c1">#     joint_kws = dict(cmap=cmap, color=color, gridsize=gridsize, **hexbin_kwargs)</span>
+<span class="c1">#     if extent is not None:</span>
+<span class="c1">#         joint_kws[&quot;extent&quot;] = extent</span>
+
+<span class="c1">#     marginal_kws = dict(bins=gridsize, fill=True, color=hist_color, **histplot_kwargs)</span>
+
+<span class="c1">#     g = sns.jointplot(</span>
+<span class="c1">#         data=dataframe,</span>
+<span class="c1">#         x=labels[0],</span>
+<span class="c1">#         y=labels[1],</span>
+<span class="c1">#         xlim=xlim,</span>
+<span class="c1">#         ylim=ylim,</span>
+<span class="c1">#         kind=&quot;hex&quot;,</span>
+<span class="c1">#         height=6,</span>
+<span class="c1">#         gridsize=gridsize,</span>
+<span class="c1">#         marginal_kws=marginal_kws,</span>
+<span class="c1">#         joint_kws=joint_kws,</span>
+<span class="c1">#         **kwargs,</span>
+<span class="c1">#     )</span>
+
+<span class="c1">#     if xlim is not None:</span>
+<span class="c1">#         g.ax_joint.set_xlim(xlim)</span>
+<span class="c1">#         g.ax_marg_x.set_xlim(xlim)</span>
+<span class="c1">#     if ylim is not None:</span>
+<span class="c1">#         g.ax_joint.set_ylim(ylim)</span>
+<span class="c1">#         g.ax_marg_y.set_ylim(ylim)</span>
+
+<span class="c1">#     # Set fontsize for axis labels</span>
+<span class="c1">#     g.ax_joint.set_xlabel(labels[0], fontsize=fontsize)</span>
+<span class="c1">#     g.ax_joint.set_ylabel(labels[1], fontsize=fontsize)</span>
+
+<span class="c1">#     if plot_levels:</span>
+<span class="c1">#         levels = np.sort(1 - np.array([0.6827, 0.9545]))</span>
+<span class="c1">#         g.plot_joint(</span>
+<span class="c1">#             sns.kdeplot,</span>
+<span class="c1">#             color=hist_color,</span>
+<span class="c1">#             zorder=3,</span>
+<span class="c1">#             levels=levels,</span>
+<span class="c1">#             alpha=1,</span>
+<span class="c1">#             linewidths=1,</span>
+<span class="c1">#         )</span>
+
+<span class="c1">#     # Plot true_param if provided</span>
+<span class="c1">#     if true_param is not None:</span>
+<span class="c1">#         g.ax_joint.scatter(</span>
+<span class="c1">#             true_param[0],</span>
+<span class="c1">#             true_param[1],</span>
+<span class="c1">#             color=true_val_color,</span>
+<span class="c1">#             marker=&quot;s&quot;,</span>
+<span class="c1">#             s=100,</span>
+<span class="c1">#             zorder=10,</span>
+<span class="c1">#         )</span>
+<span class="c1">#         g.ax_joint.axvline(</span>
+<span class="c1">#             true_param[0], color=true_val_color, linestyle=&quot;-&quot;, linewidth=1.5, zorder=5</span>
+<span class="c1">#         )</span>
+<span class="c1">#         g.ax_joint.axhline(</span>
+<span class="c1">#             true_param[1], color=true_val_color, linestyle=&quot;-&quot;, linewidth=1.5, zorder=5</span>
+<span class="c1">#         )</span>
+<span class="c1">#     return g</span>
+
+
+<span class="c1"># def _plot_marginals_nd(</span>
+<span class="c1">#     data,</span>
+<span class="c1">#     plot_levels=True,</span>
+<span class="c1">#     labels=None,</span>
+<span class="c1">#     gridsize=15,</span>
+<span class="c1">#     range=None,</span>
+<span class="c1">#     hexbin_kwargs={},</span>
+<span class="c1">#     histplot_kwargs={},</span>
+<span class="c1">#     true_param=None,</span>
+<span class="c1"># ):</span>
+<span class="c1">#     data = np.array(data)</span>
+<span class="c1">#     if true_param is not None:</span>
+<span class="c1">#         true_param = np.array(true_param)</span>
+
+<span class="c1">#     ndim = data.shape[1]</span>
+<span class="c1">#     fontsize = 12</span>
+
+<span class="c1">#     if labels is None:</span>
+<span class="c1">#         labels = [&quot;$\\theta_{{{}}}$&quot;.format(i) for i in np.arange(1, data.shape[1] + 1)]</span>
+<span class="c1">#     axis_ranges = _parse_range(range, ndim)</span>
+<span class="c1">#     cmap = hexbin_kwargs.pop(&quot;cmap&quot;, transparent_cmap)</span>
+<span class="c1">#     color = hexbin_kwargs.pop(&quot;color&quot;, [0, 0, 0, 0])</span>
+<span class="c1">#     bins = histplot_kwargs.pop(&quot;bins&quot;, gridsize)</span>
+<span class="c1">#     fill = histplot_kwargs.pop(&quot;fill&quot;, True)</span>
+<span class="c1">#     color_hist = histplot_kwargs.pop(&quot;color&quot;, hist_color)</span>
+
+<span class="c1">#     fig, axes = plt.subplots(ndim, ndim, figsize=(2.5 * ndim, 2.5 * ndim))</span>
+<span class="c1">#     # Hide upper triangle and set all axes off by default</span>
+<span class="c1">#     for i in np.arange(ndim):</span>
+<span class="c1">#         for j in np.arange(ndim):</span>
+<span class="c1">#             if i &lt; j:</span>
+<span class="c1">#                 axes[i, j].set_visible(False)</span>
+<span class="c1">#             else:</span>
+<span class="c1">#                 axes[i, j].set_visible(True)</span>
+<span class="c1">#             # Hide x/y ticks and labels for non-border plots</span>
+<span class="c1">#             if i != ndim - 1:</span>
+<span class="c1">#                 axes[i, j].set_xticklabels([])</span>
+<span class="c1">#                 axes[i, j].set_xlabel(&quot;&quot;)</span>
+<span class="c1">#             if j != 0 and j != i:</span>
+<span class="c1">#                 axes[i, j].set_yticklabels([])</span>
+<span class="c1">#                 axes[i, j].set_ylabel(&quot;&quot;)</span>
+
+<span class="c1">#     # Lower triangle: hexbin and kde</span>
+<span class="c1">#     for i in np.arange(1, ndim):</span>
+<span class="c1">#         for j in np.arange(i):</span>
+<span class="c1">#             ax = axes[i, j]</span>
+<span class="c1">#             x = data[:, j]</span>
+<span class="c1">#             y = data[:, i]</span>
+<span class="c1">#             extent = None</span>
+<span class="c1">#             if axis_ranges[j] is not None and axis_ranges[i] is not None:</span>
+<span class="c1">#                 extent = axis_ranges[j] + axis_ranges[i]</span>
+<span class="c1">#             ax.hexbin(</span>
+<span class="c1">#                 x,</span>
+<span class="c1">#                 y,</span>
+<span class="c1">#                 gridsize=gridsize,</span>
+<span class="c1">#                 cmap=cmap,</span>
+<span class="c1">#                 extent=extent,</span>
+<span class="c1">#                 color=color,</span>
+<span class="c1">#                 **hexbin_kwargs,</span>
+<span class="c1">#             )</span>
+<span class="c1">#             if axis_ranges[j] is not None:</span>
+<span class="c1">#                 ax.set_xlim(axis_ranges[j])</span>
+<span class="c1">#             if axis_ranges[i] is not None:</span>
+<span class="c1">#                 ax.set_ylim(axis_ranges[i])</span>
+<span class="c1">#             if plot_levels:</span>
+<span class="c1">#                 levels = np.sort(1 - np.array([0.6827, 0.9545]))</span>
+<span class="c1">#                 sns.kdeplot(</span>
+<span class="c1">#                     x=x,</span>
+<span class="c1">#                     y=y,</span>
+<span class="c1">#                     levels=levels,</span>
+<span class="c1">#                     color=hist_color,</span>
+<span class="c1">#                     zorder=3,</span>
+<span class="c1">#                     alpha=1,</span>
+<span class="c1">#                     linewidths=1,</span>
+<span class="c1">#                     ax=ax,</span>
+<span class="c1">#                 )</span>
+<span class="c1">#             # Plot true_param if provided</span>
+<span class="c1">#             if true_param is not None:</span>
+<span class="c1">#                 ax.scatter(</span>
+<span class="c1">#                     true_param[j],</span>
+<span class="c1">#                     true_param[i],</span>
+<span class="c1">#                     color=true_val_color,</span>
+<span class="c1">#                     marker=&quot;s&quot;,</span>
+<span class="c1">#                     s=50,</span>
+<span class="c1">#                     zorder=10,</span>
+<span class="c1">#                     label=&quot;True&quot;,</span>
+<span class="c1">#                 )</span>
+<span class="c1">#                 ax.axvline(</span>
+<span class="c1">#                     true_param[j],</span>
+<span class="c1">#                     color=true_val_color,</span>
+<span class="c1">#                     linestyle=&quot;-&quot;,</span>
+<span class="c1">#                     linewidth=1.5,</span>
+<span class="c1">#                     zorder=5,</span>
+<span class="c1">#                 )</span>
+<span class="c1">#                 ax.axhline(</span>
+<span class="c1">#                     true_param[i],</span>
+<span class="c1">#                     color=true_val_color,</span>
+<span class="c1">#                     linestyle=&quot;-&quot;,</span>
+<span class="c1">#                     linewidth=1.5,</span>
+<span class="c1">#                     zorder=5,</span>
+<span class="c1">#                 )</span>
+<span class="c1">#             # Only set axis labels for border plots</span>
+<span class="c1">#             if i == ndim - 1:</span>
+<span class="c1">#                 ax.set_xlabel(labels[j], fontsize=fontsize)</span>
+<span class="c1">#             if j == 0:</span>
+<span class="c1">#                 ax.set_ylabel(labels[i], fontsize=fontsize)</span>
+
+<span class="c1">#     # Diagonal: histograms</span>
+<span class="c1">#     for i in np.arange(ndim):</span>
+<span class="c1">#         ax = axes[i, i]</span>
+<span class="c1">#         x = data[:, i]</span>
+<span class="c1">#         binrange = axis_ranges[i] if axis_ranges[i] is not None else None</span>
+<span class="c1">#         sns.histplot(</span>
+<span class="c1">#             x,</span>
+<span class="c1">#             bins=bins,</span>
+<span class="c1">#             color=color_hist,</span>
+<span class="c1">#             fill=fill,</span>
+<span class="c1">#             binrange=binrange,</span>
+<span class="c1">#             ax=ax,</span>
+<span class="c1">#             stat=&quot;density&quot;,</span>
+<span class="c1">#             **histplot_kwargs,</span>
+<span class="c1">#         )</span>
+<span class="c1">#         if true_param is not None:</span>
+<span class="c1">#             ax.axvline(</span>
+<span class="c1">#                 true_param[i],</span>
+<span class="c1">#                 color=true_val_color,</span>
+<span class="c1">#                 linestyle=&quot;-&quot;,</span>
+<span class="c1">#                 linewidth=1.5,</span>
+<span class="c1">#                 zorder=5,</span>
+<span class="c1">#             )</span>
+<span class="c1">#         if axis_ranges[i] is not None:</span>
+<span class="c1">#             ax.set_xlim(axis_ranges[i])</span>
+<span class="c1">#         ax.autoscale(enable=True, axis=&quot;y&quot;, tight=False)</span>
+<span class="c1">#         # Only set y label for the top-left diagonal plot (theta_1)</span>
+<span class="c1">#         if i == 0:</span>
+<span class="c1">#             ax.set_ylabel(labels[i], fontsize=fontsize)</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             ax.set_ylabel(&quot;&quot;)</span>
+<span class="c1">#         # Only set x label for bottom-right diagonal plot</span>
+<span class="c1">#         if i == ndim - 1:</span>
+<span class="c1">#             ax.set_xlabel(labels[i], fontsize=14)</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             ax.set_xlabel(&quot;&quot;)</span>
+
+<span class="c1">#     plt.tight_layout()</span>
+<span class="c1">#     return fig, axes</span>
+
+
+<div class="viewcode-block" id="_plot_marginals_seaborn">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_marginals_seaborn">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_marginals_seaborn</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">plot_levels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+    <span class="nb">range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">hexbin_kwargs</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">histplot_kwargs</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">true_param</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_param</span><span class="p">)</span>
+
+    <span class="n">ndim</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">12</span>
+
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;$</span><span class="se">\\</span><span class="s2">theta_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">}}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="n">axis_ranges</span> <span class="o">=</span> <span class="n">_parse_range</span><span class="p">(</span><span class="nb">range</span><span class="p">,</span> <span class="n">ndim</span><span class="p">)</span>
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">hexbin_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cmap&quot;</span><span class="p">,</span> <span class="n">transparent_cmap</span><span class="p">)</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="n">hexbin_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">bins</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;bins&quot;</span><span class="p">,</span> <span class="n">gridsize</span><span class="p">)</span>
+    <span class="n">fill</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fill&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">color_hist</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="n">hist_color</span><span class="p">)</span>
+
+    <span class="n">grid_kw</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">grid_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;width_ratios&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;height_ratios&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">]}</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+        <span class="n">ndim</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">,</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">),</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="n">grid_kw</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Hide upper triangle and set axis properties</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">:</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Lower triangle: hexbin and kde</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ndim</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">j</span><span class="p">],</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+            
+            <span class="n">extent</span> <span class="o">=</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="ow">and</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="n">gridsize</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="o">**</span><span class="n">hexbin_kwargs</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">axis_ranges</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">plot_levels</span><span class="p">:</span>
+                <span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.6827</span><span class="p">,</span> <span class="mf">0.9545</span><span class="p">]))</span>
+                <span class="n">sns</span><span class="o">.</span><span class="n">kdeplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_data</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">hist_color</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">true_param</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">true_param</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">true_val_color</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">true_param</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">true_val_color</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">true_param</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">true_val_color</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+
+    <span class="c1"># diagonal: histograms</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">x_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">binrange</span> <span class="o">=</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
+        
+        <span class="c1"># 1. Determine orientation once</span>
+        <span class="n">is_rotated</span> <span class="o">=</span> <span class="p">(</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        
+        <span class="c1"># 2. Set plot parameters based on orientation</span>
+        <span class="n">hist_params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;bins&#39;</span><span class="p">:</span> <span class="n">bins</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color_hist</span><span class="p">,</span> <span class="s1">&#39;fill&#39;</span><span class="p">:</span> <span class="n">fill</span><span class="p">,</span> 
+            <span class="s1">&#39;binrange&#39;</span><span class="p">:</span> <span class="n">binrange</span><span class="p">,</span> <span class="s1">&#39;stat&#39;</span><span class="p">:</span> <span class="s2">&quot;density&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">histplot_kwargs</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">is_rotated</span><span class="p">:</span>
+            <span class="n">hist_params</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hist_params</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_data</span>
+
+        <span class="c1"># 3. Make a single, clean plot call</span>
+        <span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">hist_params</span><span class="p">)</span>
+
+
+        <span class="c1"># 4. Handle limits and true values based on orientation</span>
+        <span class="k">if</span> <span class="n">is_rotated</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">true_param</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">true_val_color</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">tight</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">true_param</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">true_val_color</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">tight</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># 5. Handle labels with simplified logic</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="c1"># Default: no labels</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span>
+    
+    <span class="k">if</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+
+        <span class="n">y_ticks</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_yticks</span><span class="p">()</span>
+        <span class="n">y_ticks</span> <span class="o">=</span> <span class="n">y_ticks</span><span class="p">[</span><span class="n">y_ticks</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">y_ticks</span><span class="p">)</span>
+
+        <span class="n">x_ticks</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_xticks</span><span class="p">()</span>
+        <span class="n">x_ticks</span> <span class="o">=</span> <span class="n">x_ticks</span><span class="p">[</span><span class="n">x_ticks</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">x_ticks</span><span class="p">)</span>
+
+        <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="mf">0.12</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.12</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="mf">0.06</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.06</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span></div>
+
+
+
+<div class="viewcode-block" id="_plot_marginals_corner">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_marginals_corner">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_marginals_corner</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+    <span class="nb">range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">ndim</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">range</span> <span class="o">=</span> <span class="n">_parse_range</span><span class="p">(</span><span class="nb">range</span><span class="p">,</span> <span class="n">ndim</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">true_param</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_param</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;$</span><span class="se">\\</span><span class="s2">theta_{{</span><span class="si">{}</span><span class="s2">}}$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+    <span class="n">corner</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">truths</span><span class="o">=</span><span class="n">true_param</span><span class="p">,</span>
+        <span class="n">bins</span><span class="o">=</span><span class="n">gridsize</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">base_color</span><span class="p">,</span>  <span class="c1"># points and 1D hist color</span>
+        <span class="n">hist_kwargs</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">hist_color</span><span class="p">,</span>
+            <span class="s2">&quot;edgecolor&quot;</span><span class="p">:</span> <span class="s2">&quot;white&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;lw&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;histtype&quot;</span><span class="p">:</span> <span class="s2">&quot;barstacked&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">truth_color</span><span class="o">=</span><span class="n">true_val_color</span><span class="p">,</span>
+        <span class="n">contour_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;colors&quot;</span><span class="p">:</span> <span class="n">hist_color</span><span class="p">,</span> <span class="s2">&quot;linewidths&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+        <span class="nb">range</span><span class="o">=</span><span class="nb">range</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">(),</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="plot_marginals">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_marginals">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_marginals</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;corner&quot;</span><span class="p">,</span>
+    <span class="n">plot_levels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+    <span class="n">hexbin_kwargs</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">histplot_kwargs</span><span class="o">=</span><span class="p">{},</span>
+    <span class="nb">range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot marginal distributions of multidimensional data using either the &#39;corner&#39; or &#39;seaborn&#39; backend.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : array-like, shape (n_samples, n_dim)</span>
+<span class="sd">        The data to plot. Each row is a sample, each column a parameter.</span>
+<span class="sd">    backend : str, default=&quot;corner&quot;</span>
+<span class="sd">        Which plotting backend to use. Options:</span>
+<span class="sd">        - &#39;corner&#39;: Use the corner.py package for a classic corner plot.</span>
+<span class="sd">        - &#39;seaborn&#39;: Use seaborn&#39;s jointplot (2D) or custom grid (ND) for marginals.</span>
+<span class="sd">        The seaborn backend is slower, but will produce smoother plots with KDE contours.</span>
+<span class="sd">    plot_levels : bool, default=True</span>
+<span class="sd">        If True and using seaborn, plot 1- and 2-sigma KDE contours on off-diagonal plots. When using &#39;corner&#39;, levels are automatically computed.</span>
+<span class="sd">    labels : list of str or None, default=None</span>
+<span class="sd">        Axis labels for each parameter. If None, uses LaTeX-style $\theta_i$.</span>
+<span class="sd">    gridsize : int, default=15</span>
+<span class="sd">        Number of bins for hexbin/histogram (seaborn) or for corner plot.</span>
+<span class="sd">    hexbin_kwargs : dict, default={}</span>
+<span class="sd">        Additional keyword arguments for hexbin plots (seaborn backend only).</span>
+<span class="sd">    histplot_kwargs : dict, default={}</span>
+<span class="sd">        Additional keyword arguments for histogram plots (seaborn backend only).</span>
+<span class="sd">    range : tuple or list of tuples or None, default=None</span>
+<span class="sd">        Axis limits for each parameter, e.g. [(xmin, xmax), (ymin, ymax), ...].</span>
+<span class="sd">    true_param : array-like, shape (n_dim,), default=None</span>
+<span class="sd">        Ground truth parameter values to mark on the plots.</span>
+<span class="sd">    **kwargs :</span>
+<span class="sd">        Additional keyword arguments passed to the underlying plotting functions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig, axes : matplotlib Figure and Axes objects</span>
+<span class="sd">        The figure and axes containing the plot.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If an unknown backend is specified.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - For &#39;corner&#39;, the function uses the corner.py package and supports labels, gridsize, range, and true_param.</span>
+<span class="sd">    - For &#39;seaborn&#39;, 2D data uses jointplot, higher dimensions use a custom grid of hexbin and histogram plots.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">backend</span> <span class="o">==</span> <span class="s2">&quot;corner&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_plot_marginals_corner</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+            <span class="n">gridsize</span><span class="o">=</span><span class="n">gridsize</span><span class="p">,</span>
+            <span class="nb">range</span><span class="o">=</span><span class="nb">range</span><span class="p">,</span>
+            <span class="n">true_param</span><span class="o">=</span><span class="n">true_param</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">backend</span> <span class="o">==</span> <span class="s2">&quot;seaborn&quot;</span><span class="p">:</span>
+
+
+        <span class="k">return</span> <span class="n">_plot_marginals_seaborn</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span>
+                <span class="n">plot_levels</span><span class="o">=</span><span class="n">plot_levels</span><span class="p">,</span>
+                <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+                <span class="n">gridsize</span><span class="o">=</span><span class="n">gridsize</span><span class="p">,</span>
+                <span class="n">hexbin_kwargs</span><span class="o">=</span><span class="n">hexbin_kwargs</span><span class="p">,</span>
+                <span class="n">histplot_kwargs</span><span class="o">=</span><span class="n">histplot_kwargs</span><span class="p">,</span>
+                <span class="nb">range</span><span class="o">=</span><span class="nb">range</span><span class="p">,</span>
+                <span class="n">true_param</span><span class="o">=</span><span class="n">true_param</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown backend: </span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2">. Use &#39;corner&#39; or &#39;seaborn&#39;.&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># code to plot a 2D likelihood</span>
+
+<div class="viewcode-block" id="cmap_lcontour">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.cmap_lcontour">[docs]</a>
+<span class="n">cmap_lcontour</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">cubehelix_palette</span><span class="p">(</span>
+    <span class="n">start</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">rot</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">light</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dark</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">as_cmap</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_2d_levels">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_2d_levels">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_2d_levels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6827</span><span class="p">,</span> <span class="mf">0.9545</span><span class="p">],</span> <span class="n">display_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot 2D levels on a given axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : array-like</span>
+<span class="sd">        X values.</span>
+<span class="sd">    y : array-like</span>
+<span class="sd">        Y values.</span>
+<span class="sd">    Z : array-like</span>
+<span class="sd">        Z values corresponding to (x, y).</span>
+<span class="sd">    ax : matplotlib Axes</span>
+<span class="sd">        The axes to plot on.</span>
+<span class="sd">    levels : list of float</span>
+<span class="sd">        The contour levels to plot.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># --- 1. Prepare the data ---</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># make sure we have numpy arrays</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>  <span class="c1"># make sure we have numpy arrays</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>  <span class="c1"># make sure we have numpy arrays</span>
+
+    <span class="c1"># --- 2. Define Desired Area Levels ---</span>
+    <span class="c1"># These are the fractions of the total volume you want to enclose.</span>
+    <span class="c1"># For a probability distribution, these are often confidence levels.</span>
+    <span class="n">area_levels</span> <span class="o">=</span> <span class="n">levels</span>
+
+    <span class="c1"># --- 3. Calculate Contour Levels (Z-values) from Areas ---</span>
+    <span class="c1"># To find the z-values that enclose a certain area, we follow these steps:</span>
+    <span class="c1"># a. Flatten the 2D Z array into a 1D list of all values.</span>
+    <span class="c1"># b. Sort these values in descending order (from highest to lowest).</span>
+    <span class="n">z_flat_sorted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">ravel</span><span class="p">())[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># c. Calculate the cumulative sum of the sorted values. Each element in</span>
+    <span class="c1">#    this array represents the sum of all preceding (higher) values.</span>
+    <span class="n">z_cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">z_flat_sorted</span><span class="p">)</span>
+
+    <span class="c1"># d. Normalize the cumulative sum by the total sum of all Z values.</span>
+    <span class="c1">#    This converts the cumulative sum into a fraction of the total volume,</span>
+    <span class="c1">#    ranging from 0 to 1.</span>
+    <span class="n">z_cumsum_normalized</span> <span class="o">=</span> <span class="n">z_cumsum</span> <span class="o">/</span> <span class="n">z_cumsum</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># e. Find the z-values that correspond to our desired area fractions.</span>
+    <span class="c1">#    We use np.searchsorted to find the index where the normalized</span>
+    <span class="c1">#    cumulative sum first exceeds our target area level.</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">z_cumsum_normalized</span><span class="p">,</span> <span class="n">area_levels</span><span class="p">)</span>
+    <span class="n">z_levels</span> <span class="o">=</span> <span class="n">z_flat_sorted</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+
+    <span class="c1"># The levels must be sorted in ascending order for matplotlib&#39;s contour functions.</span>
+    <span class="n">z_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">z_levels</span><span class="p">)</span>
+
+    <span class="c1"># --- 4. Plot the Results ---</span>
+
+    <span class="c1"># To create filled contours, we need to define the boundaries of each color.</span>
+    <span class="c1"># We start at 0, use our calculated z_levels, and end at the max value.</span>
+    <span class="c1"># contour_fill_levels = np.concatenate(([Z.min()], z_levels, [Z.max()]))</span>
+
+    <span class="c1"># a. Plot the filled contours (contourf).</span>
+
+    <span class="c1"># b. Plot the contour lines (contour) for clarity.</span>
+    <span class="c1">#    These lines will clearly mark the boundaries of the enclosed areas.</span>
+    <span class="n">cnt</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">z_levels</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">hist_color</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">display_labels</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">{</span><span class="n">z</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="si">}</span><span class="s2">%&quot;</span> <span class="k">for</span> <span class="n">z</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">z_levels</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">area_levels</span><span class="p">))}</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">clabel</span><span class="p">(</span><span class="n">cnt</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">z_levels</span><span class="p">,</span> <span class="n">inline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+
+    <span class="k">return</span></div>
+
+
+
+<div class="viewcode-block" id="plot_2d_dist_contour">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_2d_dist_contour">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_2d_dist_contour</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">,</span>
+    <span class="n">Z</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">levels</span><span class="o">=</span><span class="p">[</span><span class="mf">0.6827</span><span class="p">,</span> <span class="mf">0.9545</span><span class="p">],</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="n">cmap_lcontour</span><span class="p">,</span>
+    <span class="n">display_labels</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a 2D contour plot of a distribution.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : array-like</span>
+<span class="sd">        X values.</span>
+<span class="sd">    y : array-like</span>
+<span class="sd">        Y values.</span>
+<span class="sd">    Z : array-like</span>
+<span class="sd">        Z values corresponding to (x, y).</span>
+<span class="sd">    levels : list or None, optional</span>
+<span class="sd">        Contour levels to plot. If None, contours will not be plotted.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig, ax : matplotlib Figure and Axes objects</span>
+<span class="sd">        The figure and axes containing the plot.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># make sure we have numpy arrays</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>  <span class="c1"># make sure we have numpy arrays</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>  <span class="c1"># make sure we have numpy arrays</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">levels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plot_2d_levels</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">,</span> <span class="n">display_labels</span><span class="o">=</span><span class="n">display_labels</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">true_param</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">true_param</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">base_color</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
+            <span class="n">true_param</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">base_color</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">9</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+            <span class="n">true_param</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">base_color</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">9</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Set aspect ratio to equal for better visualization</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">,</span> <span class="n">adjustable</span><span class="o">=</span><span class="s2">&quot;box&quot;</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span></div>
+
+</pre></div>
+<div class="section ablog__blog_comments">
+   
+</div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

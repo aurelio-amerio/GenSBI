@@ -1,0 +1,212 @@
+gensbi.models.flux1joint.model
+==============================
+
+.. py:module:: gensbi.models.flux1joint.model
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.flux1joint.model.Flux1Joint
+   gensbi.models.flux1joint.model.Flux1JointParams
+
+
+Module Contents
+---------------
+
+.. py:class:: Flux1Joint(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Flux1Joint model for joint density estimation.
+
+   :param params: Parameters for the Flux1Joint model.
+   :type params: Flux1JointParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, node_ids, condition_mask, guidance = None, edge_mask = None)
+
+
+   .. py:attribute:: condition_embedding
+
+
+   .. py:attribute:: final_layer
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: obs_in
+
+
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: params
+
+
+   .. py:attribute:: qkv_features
+
+
+   .. py:attribute:: single_blocks
+
+
+   .. py:attribute:: time_in
+
+
+   .. py:attribute:: vector_in
+
+
+.. py:class:: Flux1JointParams
+
+   
+   Parameters for the Flux1Joint model.
+
+   GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+   For joint density estimation, the model consumes a *single* sequence `obs` that
+   mixes all variables you want to model jointly. In this case:
+
+   - `dim_joint` is the number of tokens in that joint sequence.
+   - `in_channels` is the number of channels/features per token.
+
+   In many SBI-style problems you will still use `in_channels = 1` (one scalar per token),
+   but for some datasets a token may carry multiple features.
+
+   :param in_channels: Number of channels/features per token.
+   :type in_channels: int
+   :param vec_in_dim: Dimension of the vector input, if applicable.
+   :type vec_in_dim: Union[int, None]
+   :param mlp_ratio: Ratio for the MLP layers.
+   :type mlp_ratio: float
+   :param num_heads: Number of attention heads.
+   :type num_heads: int
+   :param depth_single_blocks: Number of single stream blocks.
+   :type depth_single_blocks: int
+   :param axes_dim: Dimensions of the axes for positional encoding.
+   :type axes_dim: list[int]
+   :param condition_dim: Number of features used to encode the condition mask, which determines the features on which we are conditioning.
+   :type condition_dim: list[int]
+   :param qkv_bias: Whether to use bias in QKV layers.
+   :type qkv_bias: bool
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs
+   :param dim_joint: Number of tokens in the joint sequence.
+   :type dim_joint: int
+   :param theta: Scaling factor for positional encoding.
+   :type theta: int
+   :param id_embedding_kind: Kind of embedding for token ids ('absolute', 'pos1d', 'pos2d', 'rope').
+   :type id_embedding_kind: str
+   :param guidance_embed: Whether to use guidance embedding.
+   :type guidance_embed: bool
+   :param param_dtype: Data type for model parameters.
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: axes_dim
+      :type:  list[int]
+
+
+   .. py:attribute:: condition_dim
+      :type:  list[int]
+
+
+   .. py:attribute:: depth_single_blocks
+      :type:  int
+
+
+   .. py:attribute:: dim_joint
+      :type:  int
+
+
+   .. py:attribute:: guidance_embed
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: id_embedding_kind
+      :type:  str
+      :value: 'absolute'
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: mlp_ratio
+      :type:  float
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: qkv_bias
+      :type:  bool
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: theta
+      :type:  int
+      :value: 500
+
+
+
+   .. py:attribute:: vec_in_dim
+      :type:  Union[int, None]
+
+

@@ -1,0 +1,139 @@
+gensbi.flow_matching.path.scheduler.schedule_transform
+======================================================
+
+.. py:module:: gensbi.flow_matching.path.scheduler.schedule_transform
+
+.. autoapi-nested-parse::
+
+   Schedule transformation utilities for flow matching.
+
+   This module provides functionality to transform the time scheduling of a velocity model
+   from one scheduler to another, allowing for post-training schedule modifications.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.flow_matching.path.scheduler.schedule_transform.ScheduleTransformedModel
+
+
+Module Contents
+---------------
+
+.. py:class:: ScheduleTransformedModel(velocity_model, original_scheduler, new_scheduler)
+
+   Bases: :py:obj:`gensbi.utils.model_wrapping.ModelWrapper`
+
+
+   
+   Change of scheduler for a velocity model.
+
+   This class wraps a given velocity model and transforms its scheduling
+   to a new scheduler function. It modifies the time
+   dynamics of the model according to the new scheduler while maintaining
+   the original model's behavior.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       import jax
+       import jax.numpy as jnp
+       from flow_matching.path.scheduler import CondOTScheduler, CosineScheduler, ScheduleTransformedModel
+       from flow_matching.solver import ODESolver
+
+       # Initialize the model and schedulers
+       model = ...
+
+       original_scheduler = CondOTScheduler()
+       new_scheduler = CosineScheduler()
+
+       # Create the transformed model
+       transformed_model = ScheduleTransformedModel(
+           velocity_model=model,
+           original_scheduler=original_scheduler,
+           new_scheduler=new_scheduler
+       )
+
+       # Set up the solver
+       solver = ODESolver(velocity_model=transformed_model)
+
+       key = jax.random.PRNGKey(0)
+       x_0 = jax.random.normal(key, shape=(10, 2))  # Example initial condition
+
+       x_1 = solver.sample(
+           time_steps=jnp.array([0.0, 1.0]),
+           x_init=x_0,
+           step_size=1/1000
+           )[1]
+
+   :param velocity_model: The original velocity model to be transformed.
+   :type velocity_model: ModelWrapper
+   :param original_scheduler: The scheduler used by the original model. Must implement the snr_inverse function.
+   :type original_scheduler: Scheduler
+   :param new_scheduler: The new scheduler to be applied to the model.
+   :type new_scheduler: Scheduler
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, t, **extras)
+
+      
+      Compute the transformed marginal velocity field for a new scheduler.
+      This method implements a post-training velocity scheduler change for
+      affine conditional flows.
+
+      :param x: :math:`x_t`, the input array.
+      :type x: Array
+      :param t: The time array (denoted as :math:`r` above).
+      :type t: Array
+      :param \*\*extras:
+      :type \*\*extras: Additional arguments for the model.
+
+      :returns: The transformed velocity.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: new_scheduler
+
+
+   .. py:attribute:: original_scheduler
+
+

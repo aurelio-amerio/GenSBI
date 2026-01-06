@@ -1,0 +1,129 @@
+gensbi.flow_matching.path.path
+==============================
+
+.. py:module:: gensbi.flow_matching.path.path
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.flow_matching.path.path.ProbPath
+
+
+Module Contents
+---------------
+
+.. py:class:: ProbPath
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Abstract class, representing a probability path.
+
+   A probability path transforms the distribution :math:`p(X_0)` into :math:`p(X_1)` over :math:`t=0\rightarrow 1`.
+
+   The ``ProbPath`` class is designed to support model training in the flow matching framework. It supports two key functionalities: (1) sampling the conditional probability path and (2) conversion between various training objectives.
+   Here is a high-level example
+
+   .. code-block:: python
+
+       # Instantiate a probability path
+       my_path = ProbPath(...)
+
+       # Sets t to a random value in [0,1]
+       key = jax.random.PRNGKey(0)
+       t = jax.random.uniform(key)
+
+       # Samples the conditional path X_t ~ p_t(X_t|X_0,X_1)
+       path_sample = my_path.sample(x_0=x_0, x_1=x_1, t=t)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: assert_sample_shape(x_0, x_1, t)
+
+      
+      Checks that the shapes of x_0, x_1, and t are compatible for sampling.
+
+      :param x_0: Source data point.
+      :type x_0: Array
+      :param x_1: Target data point.
+      :type x_1: Array
+      :param t: Time vector.
+      :type t: Array
+
+      :raises AssertionError: If the shapes are not compatible.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(x_0, x_1, t)
+      :abstractmethod:
+
+
+      
+      Sample from an abstract probability path.
+
+      Given :math:`(X_0,X_1) \sim \pi(X_0,X_1)`.
+      Returns :math:`X_0, X_1, X_t \sim p_t(X_t|X_0,X_1)`, and a conditional target :math:`Y`, all objects are under ``PathSample``.
+
+      :param x_0: Source data point, shape (batch_size, ...).
+      :type x_0: Array
+      :param x_1: Target data point, shape (batch_size, ...).
+      :type x_1: Array
+      :param t: Times in [0,1], shape (batch_size,).
+      :type t: Array
+
+      :returns: A conditional sample.
+      :rtype: PathSample
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

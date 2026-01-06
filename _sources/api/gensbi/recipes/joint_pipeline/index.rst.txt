@@ -1,0 +1,711 @@
+gensbi.recipes.joint_pipeline
+=============================
+
+.. py:module:: gensbi.recipes.joint_pipeline
+
+.. autoapi-nested-parse::
+
+   Pipeline for training and using a Flux1 model for simulation-based inference.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.recipes.joint_pipeline.JointDiffusionPipeline
+   gensbi.recipes.joint_pipeline.JointFlowPipeline
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.recipes.joint_pipeline.sample_condition_mask
+   gensbi.recipes.joint_pipeline.sample_structured_conditional_mask
+
+
+Module Contents
+---------------
+
+.. py:class:: JointDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, params=None, training_config=None, condition_mask_kind='structured')
+
+   Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
+
+
+   
+   Diffusion pipeline for training and using a Joint model for simulation-based inference.
+
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param dim_cond: Dimension of the observation space.
+   :type dim_cond: int
+   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :type ch_obs: int, optional
+   :param params: Parameters for the Joint model. If None, default parameters are used.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :type condition_mask_kind: str, optional
+
+   .. rubric:: Examples
+
+   Minimal example on how to instantiate and use the JointDiffusionPipeline:
+
+   .. literalinclude:: /examples/joint_diffusion_pipeline.py
+       :language: python
+       :linenos:
+
+   .. image:: /examples/joint_diffusion_pipeline_marginals.png
+       :width: 600
+
+   .. note::
+       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+       in a ``if __name__ == "__main__":`` guard.
+       See https://docs.python.org/3/library/multiprocessing.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _get_default_params()
+      :abstractmethod:
+
+
+      
+      Return a dictionary of default model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _get_default_training_config()
+      :classmethod:
+
+
+      
+      Return a dictionary of default training configuration parameters.
+
+      :returns: **training_config** -- Default training configuration.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _make_model()
+      :abstractmethod:
+
+
+      
+      Create and return the model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _wrap_model()
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_loss_fn()
+
+      
+      Return the loss function for training/validation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(x_o, nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+
+      
+      Get a sampler function for generating samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+      :param use_ema: Whether to use the EMA model for sampling.
+      :type use_ema: bool, optional
+      :param time_grid: Time grid for the sampler (if applicable).
+      :type time_grid: array-like, optional
+      :param model_extras: Additional model-specific parameters.
+      :type model_extras: dict, optional
+
+      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
+      :rtype: Callable: key, nsamples -> samples
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config()
+      :classmethod:
+
+      :abstractmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param train_dataset: Training dataset.
+      :type train_dataset: iterable
+      :param val_dataset: Validation dataset.
+      :type val_dataset: iterable
+      :param dim_obs: Dimensionality of the parameter (theta) space.
+      :type dim_obs: int
+      :param dim_cond: Dimensionality of the observation (x) space.
+      :type dim_cond: int
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+      :param checkpoint_dir: Directory for saving checkpoints.
+      :type checkpoint_dir: str
+
+      :returns: **pipeline** -- An instance of the pipeline initialized from the configuration.
+      :rtype: AbstractPipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+
+      
+      Generate samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to generate.
+      :type nsamples: int, optional
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+
+      :returns: **samples** -- Generated samples.
+      :rtype: array-like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cond_ids
+
+
+   .. py:attribute:: condition_mask_kind
+      :value: 'structured'
+
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: node_ids
+
+
+   .. py:attribute:: obs_ids
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: JointFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, params=None, training_config=None, condition_mask_kind='structured')
+
+   Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
+
+
+   
+   Flow pipeline for training and using a Joint model for simulation-based inference.
+
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param dim_cond: Dimension of the observation space.
+   :type dim_cond: int
+   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :type ch_obs: int, optional
+   :param params: Parameters for the Joint model. If None, default parameters are used.
+   :type params: JointParams, optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :type condition_mask_kind: str, optional
+
+   .. rubric:: Examples
+
+   Minimal example on how to instantiate and use the JointFlowPipeline:
+
+   .. literalinclude:: /examples/joint_flow_pipeline.py
+       :language: python
+       :linenos:
+
+   .. image:: /examples/joint_flow_pipeline_marginals.png
+       :width: 600
+
+   .. note::
+       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+       in a ``if __name__ == "__main__":`` guard.
+       See https://docs.python.org/3/library/multiprocessing.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _get_default_params()
+      :abstractmethod:
+
+
+      
+      Return a dictionary of default model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _make_model()
+      :abstractmethod:
+
+
+      
+      Create and return the model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _wrap_model()
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: compute_unnorm_logprob(x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+
+
+   .. py:method:: get_loss_fn()
+
+      
+      Return the loss function for training/validation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+
+      
+      Get a sampler function for generating samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+      :param use_ema: Whether to use the EMA model for sampling.
+      :type use_ema: bool, optional
+      :param time_grid: Time grid for the sampler (if applicable).
+      :type time_grid: array-like, optional
+      :param model_extras: Additional model-specific parameters.
+      :type model_extras: dict, optional
+
+      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
+      :rtype: Callable: key, nsamples -> samples
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config()
+      :classmethod:
+
+      :abstractmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param train_dataset: Training dataset.
+      :type train_dataset: iterable
+      :param val_dataset: Validation dataset.
+      :type val_dataset: iterable
+      :param dim_obs: Dimensionality of the parameter (theta) space.
+      :type dim_obs: int
+      :param dim_cond: Dimensionality of the observation (x) space.
+      :type dim_cond: int
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+      :param checkpoint_dir: Directory for saving checkpoints.
+      :type checkpoint_dir: str
+
+      :returns: **pipeline** -- An instance of the pipeline initialized from the configuration.
+      :rtype: AbstractPipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+
+      
+      Generate samples from the trained model.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to generate.
+      :type nsamples: int, optional
+      :param step_size: Step size for the sampler.
+      :type step_size: float, optional
+
+      :returns: **samples** -- Generated samples.
+      :rtype: array-like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cond_ids
+
+
+   .. py:attribute:: condition_mask_kind
+      :value: 'structured'
+
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: node_ids
+
+
+   .. py:attribute:: obs_ids
+
+
+   .. py:attribute:: p0_joint
+
+
+   .. py:attribute:: p0_obs
+
+
+   .. py:attribute:: path
+
+
+.. py:function:: sample_condition_mask(key, num_samples, theta_dim, x_dim, kind='structured')
+
+.. py:function:: sample_structured_conditional_mask(key, num_samples, theta_dim, x_dim, p_joint=0.2, p_posterior=0.2, p_likelihood=0.2, p_rnd1=0.2, p_rnd2=0.2, rnd1_prob=0.3, rnd2_prob=0.7)
+
+   
+   Sample structured conditional masks for the Joint model.
+
+   :param key: Random key for sampling.
+   :type key: jax.random.PRNGKey
+   :param num_samples: Number of samples to generate.
+   :type num_samples: int
+   :param theta_dim: Dimension of the parameter space.
+   :type theta_dim: int
+   :param x_dim: Dimension of the observation space.
+   :type x_dim: int
+   :param p_joint: Probability of selecting the joint mask.
+   :type p_joint: float
+   :param p_posterior: Probability of selecting the posterior mask.
+   :type p_posterior: float
+   :param p_likelihood: Probability of selecting the likelihood mask.
+   :type p_likelihood: float
+   :param p_rnd1: Probability of selecting the first random mask.
+   :type p_rnd1: float
+   :param p_rnd2: Probability of selecting the second random mask.
+   :type p_rnd2: float
+   :param rnd1_prob: Probability of a True value in the first random mask.
+   :type rnd1_prob: float
+   :param rnd2_prob: Probability of a True value in the second random mask.
+   :type rnd2_prob: float
+
+   :returns: **condition_mask** -- Array of shape (num_samples, theta_dim + x_dim) with boolean masks.
+   :rtype: jnp.ndarray
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

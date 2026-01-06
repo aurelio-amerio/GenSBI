@@ -1,0 +1,1768 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gensbi.experimental.models.autoencoders.autoencoder_1d &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script src="../../../../../_static/thebelab-helper.js"></script>
+    <script src="../../../../../_static/jupyterlite_sphinx.js?v=96e329c5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'neutral'
+});
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/experimental/models/autoencoders/autoencoder_1d';</script>
+    <link rel="icon" href="../../../../../_static/logo_small.png"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />   
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../../_static/logo_small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../../../_static/logo_small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../../gensbi.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.experimental.models.autoencoders.autoencoder_1d</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                   <h1>Source code for gensbi.experimental.models.autoencoders.autoencoder_1d</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="c1"># from chex import Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">rearrange</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span><span class="p">,</span> <span class="n">ArrayLike</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.autoencoders.commons</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoEncoderParams</span><span class="p">,</span> <span class="n">DiagonalGaussian</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax.nnx</span><span class="w"> </span><span class="kn">import</span> <span class="n">swish</span>
+
+
+
+<div class="viewcode-block" id="AttnBlock1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AttnBlock1D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    1D Self-attention block for sequence data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        in_channels : int</span>
+<span class="sd">            Number of input channels.</span>
+<span class="sd">        rngs : nnx.Rngs</span>
+<span class="sd">            Random number generators for parameter initialization.</span>
+<span class="sd">        param_dtype : DTypeLike</span>
+<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="AttnBlock1D.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.in_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span></div>
+
+
+<div class="viewcode-block" id="AttnBlock1D.norm">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.norm">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">GroupNorm</span><span class="p">(</span>
+            <span class="n">num_groups</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">num_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AttnBlock1D.q">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.q">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AttnBlock1D.k">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.k">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AttnBlock1D.v">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.v">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AttnBlock1D.proj_out">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.proj_out">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AttnBlock1D.attention">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.attention">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attention</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h_</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute self-attention for 1D input.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            h_ : Array</span>
+<span class="sd">                Input tensor of shape (batch, length, channels).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Output tensor after attention.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">h_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">h_</span><span class="p">)</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q</span><span class="p">(</span><span class="n">h_</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">(</span><span class="n">h_</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">(</span><span class="n">h_</span><span class="p">)</span>
+
+        <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="s2">&quot;b n c -&gt; b n 1 c&quot;</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s2">&quot;b n c -&gt; b n 1 c&quot;</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">&quot;b n c -&gt; b n 1 c&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Calculate Attention</span>
+        <span class="n">h_</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dot_product_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="n">h_</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">h_</span><span class="p">,</span> <span class="s2">&quot;b n 1 c -&gt; b n c&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">h_</span></div>
+
+
+<div class="viewcode-block" id="AttnBlock1D.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass for the attention block.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            x : Array</span>
+<span class="sd">                Input tensor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Output tensor after residual attention.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">(</span><span class="n">x</span><span class="p">))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ResnetBlock1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResnetBlock1D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    1D Residual block with optional channel up/downsampling.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        in_channels : int</span>
+<span class="sd">            Number of input channels.</span>
+<span class="sd">        out_channels : int</span>
+<span class="sd">            Number of output channels.</span>
+<span class="sd">        rngs : nnx.Rngs</span>
+<span class="sd">            Random number generators for parameter initialization.</span>
+<span class="sd">        param_dtype : DTypeLike</span>
+<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="ResnetBlock1D.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.in_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span></div>
+
+<div class="viewcode-block" id="ResnetBlock1D.out_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.out_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">in_channels</span> <span class="k">if</span> <span class="n">out_channels</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">out_channels</span></div>
+
+
+<div class="viewcode-block" id="ResnetBlock1D.norm1">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.norm1">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">GroupNorm</span><span class="p">(</span>
+            <span class="n">num_groups</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">num_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ResnetBlock1D.conv1">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.conv1">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ResnetBlock1D.norm2">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.norm2">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">GroupNorm</span><span class="p">(</span>
+            <span class="n">num_groups</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">num_features</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+            <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ResnetBlock1D.conv2">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.conv2">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nin_shortcut</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+                <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_features</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+                <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+                <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,),</span>
+                <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="ResnetBlock1D.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass for the residual block.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            x : Array</span>
+<span class="sd">                Input tensor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Output tensor after residual connection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">swish</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">swish</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nin_shortcut</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">h</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Downsample1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Downsample1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Downsample1D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    1D Downsampling block using strided convolution.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        in_channels : int</span>
+<span class="sd">            Number of input channels.</span>
+<span class="sd">        rngs : nnx.Rngs</span>
+<span class="sd">            Random number generators for parameter initialization.</span>
+<span class="sd">        param_dtype : DTypeLike</span>
+<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+    <span class="p">):</span>
+<div class="viewcode-block" id="Downsample1D.conv">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Downsample1D.conv">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Downsample1D.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Downsample1D.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Downsample the input tensor by a factor of 2.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            x : Array</span>
+<span class="sd">                Input tensor of shape (batch, length, channels).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Downsampled tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Pad feature dimension (axis 1)</span>
+        <span class="n">pad_width</span> <span class="o">=</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">array</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">pad_width</span><span class="o">=</span><span class="n">pad_width</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Upsample1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Upsample1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Upsample1D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    1D Upsampling block using nearest-neighbor interpolation and convolution.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        in_channels : int</span>
+<span class="sd">            Number of input channels.</span>
+<span class="sd">        rngs : nnx.Rngs</span>
+<span class="sd">            Random number generators for parameter initialization.</span>
+<span class="sd">        param_dtype : DTypeLike</span>
+<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+    <span class="p">):</span>
+<div class="viewcode-block" id="Upsample1D.conv">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Upsample1D.conv">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Upsample1D.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Upsample1D.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Upsample the input tensor by a factor of 2.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            x : Array</span>
+<span class="sd">                Input tensor of shape (batch, length, channels).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Upsampled tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Assuming `x` is a 3D tensor with shape (batch, n, c)</span>
+        <span class="n">scale_factor</span> <span class="o">=</span> <span class="mf">2.0</span>
+        <span class="n">b</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">new_n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span>
+        <span class="n">new_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">new_n</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+
+        <span class="c1"># Resize using nearest-neighbor interpolation</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">new_shape</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Encoder1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Encoder1D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    1D Encoder for autoencoder architectures.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        resolution : int</span>
+<span class="sd">            Input sequence length.</span>
+<span class="sd">        in_channels : int</span>
+<span class="sd">            Number of input channels.</span>
+<span class="sd">        ch : int</span>
+<span class="sd">            Base number of channels.</span>
+<span class="sd">        ch_mult : list[int]</span>
+<span class="sd">            Channel multipliers for each resolution.</span>
+<span class="sd">        num_res_blocks : int</span>
+<span class="sd">            Number of residual blocks per resolution.</span>
+<span class="sd">        z_channels : int</span>
+<span class="sd">            Number of latent channels.</span>
+<span class="sd">        rngs : nnx.Rngs</span>
+<span class="sd">            Random number generators for parameter initialization.</span>
+<span class="sd">        param_dtype : DTypeLike</span>
+<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">resolution</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ch_mult</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">num_res_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">z_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="Encoder1D.ch">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.ch">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch</span> <span class="o">=</span> <span class="n">ch</span></div>
+
+<div class="viewcode-block" id="Encoder1D.num_resolutions">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.num_resolutions">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch_mult</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Encoder1D.num_res_blocks">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.num_res_blocks">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_res_blocks</span> <span class="o">=</span> <span class="n">num_res_blocks</span></div>
+
+<div class="viewcode-block" id="Encoder1D.resolution">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.resolution">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span></div>
+
+<div class="viewcode-block" id="Encoder1D.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.in_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span></div>
+
+
+        <span class="c1"># downsampling</span>
+<div class="viewcode-block" id="Encoder1D.conv_in">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.conv_in">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ch</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+        <span class="n">curr_res</span> <span class="o">=</span> <span class="n">resolution</span>
+        <span class="n">in_ch_mult</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ch_mult</span><span class="p">)</span>
+<div class="viewcode-block" id="Encoder1D.in_ch_mult">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.in_ch_mult">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_ch_mult</span> <span class="o">=</span> <span class="n">in_ch_mult</span></div>
+
+<div class="viewcode-block" id="Encoder1D.down">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.down">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">down</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span></div>
+
+        <span class="n">block_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch</span>
+        <span class="k">for</span> <span class="n">i_level</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span><span class="p">):</span>
+            <span class="n">block</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span>
+            <span class="n">attn</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span>
+            <span class="n">block_in</span> <span class="o">=</span> <span class="n">ch</span> <span class="o">*</span> <span class="n">in_ch_mult</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span>
+            <span class="n">block_out</span> <span class="o">=</span> <span class="n">ch</span> <span class="o">*</span> <span class="n">ch_mult</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_res_blocks</span><span class="p">):</span>
+                <span class="n">block</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">ResnetBlock1D</span><span class="p">(</span>
+                        <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+                        <span class="n">out_channels</span><span class="o">=</span><span class="n">block_out</span><span class="p">,</span>
+                        <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                        <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">block_in</span> <span class="o">=</span> <span class="n">block_out</span>
+            <span class="n">down</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span>
+            <span class="n">down</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="n">block</span>
+            <span class="n">down</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">attn</span>
+            <span class="k">if</span> <span class="n">i_level</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">down</span><span class="o">.</span><span class="n">Downsample1D</span> <span class="o">=</span> <span class="n">Downsample1D</span><span class="p">(</span>
+                    <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+                    <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                    <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">curr_res</span> <span class="o">=</span> <span class="n">curr_res</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">down</span><span class="p">)</span>
+
+        <span class="c1"># middle</span>
+<div class="viewcode-block" id="Encoder1D.mid">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.mid">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span></div>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_1</span> <span class="o">=</span> <span class="n">ResnetBlock1D</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">attn_1</span> <span class="o">=</span> <span class="n">AttnBlock1D</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_2</span> <span class="o">=</span> <span class="n">ResnetBlock1D</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># end</span>
+<div class="viewcode-block" id="Encoder1D.norm_out">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.norm_out">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">GroupNorm</span><span class="p">(</span>
+            <span class="n">num_groups</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">num_features</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Encoder1D.conv_out">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.conv_out">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">z_channels</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Encoder1D.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass for the encoder.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            x : Array</span>
+<span class="sd">                Input tensor of shape (batch, length, channels).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Encoded latent representation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># downsampling</span>
+        <span class="n">hs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">conv_in</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">i_level</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i_block</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_res_blocks</span><span class="p">):</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_block</span><span class="p">](</span><span class="n">hs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_block</span><span class="p">](</span><span class="n">h</span><span class="p">)</span>
+                <span class="n">hs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i_level</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">hs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">Downsample1D</span><span class="p">(</span><span class="n">hs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="c1"># middle</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">hs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_1</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">attn_1</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_2</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="c1"># end</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_out</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">swish</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_out</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">h</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Decoder1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Decoder1D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    1D Decoder for autoencoder architectures.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        ch : int</span>
+<span class="sd">            Base number of channels.</span>
+<span class="sd">        out_ch : int</span>
+<span class="sd">            Number of output channels.</span>
+<span class="sd">        ch_mult : list[int]</span>
+<span class="sd">            Channel multipliers for each resolution.</span>
+<span class="sd">        num_res_blocks : int</span>
+<span class="sd">            Number of residual blocks per resolution.</span>
+<span class="sd">        in_channels : int</span>
+<span class="sd">            Number of input channels.</span>
+<span class="sd">        resolution : int</span>
+<span class="sd">            Output sequence length.</span>
+<span class="sd">        z_channels : int</span>
+<span class="sd">            Number of latent channels.</span>
+<span class="sd">        rngs : nnx.Rngs</span>
+<span class="sd">            Random number generators for parameter initialization.</span>
+<span class="sd">        param_dtype : DTypeLike</span>
+<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">out_ch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ch_mult</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">num_res_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">resolution</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">z_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+    <span class="p">):</span>
+<div class="viewcode-block" id="Decoder1D.ch">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.ch">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch</span> <span class="o">=</span> <span class="n">ch</span></div>
+
+<div class="viewcode-block" id="Decoder1D.num_resolutions">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.num_resolutions">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch_mult</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Decoder1D.num_res_blocks">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.num_res_blocks">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_res_blocks</span> <span class="o">=</span> <span class="n">num_res_blocks</span></div>
+
+<div class="viewcode-block" id="Decoder1D.resolution">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.resolution">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span></div>
+
+<div class="viewcode-block" id="Decoder1D.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.in_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span></div>
+
+<div class="viewcode-block" id="Decoder1D.ffactor">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.ffactor">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ffactor</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+        <span class="c1"># compute in_ch_mult, block_in and curr_res at lowest res</span>
+        <span class="n">block_in</span> <span class="o">=</span> <span class="n">ch</span> <span class="o">*</span> <span class="n">ch_mult</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">curr_res</span> <span class="o">=</span> <span class="n">resolution</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<div class="viewcode-block" id="Decoder1D.z_shape">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.z_shape">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">curr_res</span><span class="p">,</span> <span class="n">z_channels</span><span class="p">)</span> <span class="c1">#(1, z_channels, curr_res)</span></div>
+
+
+        <span class="c1"># z to block_in</span>
+<div class="viewcode-block" id="Decoder1D.conv_in">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.conv_in">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">z_channels</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+        <span class="c1"># middle</span>
+<div class="viewcode-block" id="Decoder1D.mid">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.mid">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span></div>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_1</span> <span class="o">=</span> <span class="n">ResnetBlock1D</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">attn_1</span> <span class="o">=</span> <span class="n">AttnBlock1D</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_2</span> <span class="o">=</span> <span class="n">ResnetBlock1D</span><span class="p">(</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># upsampling</span>
+<div class="viewcode-block" id="Decoder1D.up">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.up">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span></div>
+
+        <span class="k">for</span> <span class="n">i_level</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span><span class="p">)):</span>
+            <span class="n">block</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span>
+            <span class="n">attn</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span>
+            <span class="n">block_out</span> <span class="o">=</span> <span class="n">ch</span> <span class="o">*</span> <span class="n">ch_mult</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_res_blocks</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">block</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">ResnetBlock1D</span><span class="p">(</span>
+                        <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+                        <span class="n">out_channels</span><span class="o">=</span><span class="n">block_out</span><span class="p">,</span>
+                        <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                        <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">block_in</span> <span class="o">=</span> <span class="n">block_out</span>
+            <span class="n">up</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span>
+            <span class="n">up</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="n">block</span>
+            <span class="n">up</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">attn</span>
+            <span class="k">if</span> <span class="n">i_level</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">up</span><span class="o">.</span><span class="n">Upsample1D</span> <span class="o">=</span> <span class="n">Upsample1D</span><span class="p">(</span>
+                    <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+                    <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                    <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">curr_res</span> <span class="o">=</span> <span class="n">curr_res</span> <span class="o">*</span> <span class="mi">2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">up</span><span class="p">)</span>
+
+        <span class="c1"># end</span>
+<div class="viewcode-block" id="Decoder1D.norm_out">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.norm_out">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">GroupNorm</span><span class="p">(</span>
+            <span class="n">num_groups</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+            <span class="n">num_features</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Decoder1D.conv_out">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.conv_out">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="n">out_ch</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,),</span>
+            <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Decoder1D.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass for the decoder.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            z : Array</span>
+<span class="sd">                Latent tensor of shape (batch, latent_length, latent_channels).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Reconstructed output tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># z to block_in</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_in</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+
+        <span class="c1"># middle</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_1</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">attn_1</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_2</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="c1"># upsampling</span>
+        <span class="k">for</span> <span class="n">i_level</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_resolutions</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">i_block</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_res_blocks</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_block</span><span class="p">](</span><span class="n">h</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">attn</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_block</span><span class="p">](</span><span class="n">h</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i_level</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i_level</span><span class="p">]</span><span class="o">.</span><span class="n">Upsample1D</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="c1"># end</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_out</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">swish</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_out</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">h</span></div>
+</div>
+
+
+
+
+<div class="viewcode-block" id="AutoEncoder1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AutoEncoder1D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    1D Autoencoder model with Gaussian latent space.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        params : AutoEncoderParams</span>
+<span class="sd">            Configuration parameters for the autoencoder.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">AutoEncoderParams</span><span class="p">,</span>
+    <span class="p">):</span>
+<div class="viewcode-block" id="AutoEncoder1D.rngs">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.rngs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">rngs</span></div>
+
+<div class="viewcode-block" id="AutoEncoder1D.Encoder1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.Encoder1D">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Encoder1D</span> <span class="o">=</span> <span class="n">Encoder1D</span><span class="p">(</span>
+            <span class="n">resolution</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">ch</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">ch</span><span class="p">,</span>
+            <span class="n">ch_mult</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">ch_mult</span><span class="p">,</span>
+            <span class="n">num_res_blocks</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_res_blocks</span><span class="p">,</span>
+            <span class="n">z_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">z_channels</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AutoEncoder1D.Decoder1D">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.Decoder1D">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Decoder1D</span> <span class="o">=</span> <span class="n">Decoder1D</span><span class="p">(</span>
+            <span class="n">resolution</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+            <span class="n">in_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">ch</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">ch</span><span class="p">,</span>
+            <span class="n">out_ch</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">out_ch</span><span class="p">,</span>
+            <span class="n">ch_mult</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">ch_mult</span><span class="p">,</span>
+            <span class="n">num_res_blocks</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_res_blocks</span><span class="p">,</span>
+            <span class="n">z_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">z_channels</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AutoEncoder1D.reg">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.reg">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">=</span> <span class="n">DiagonalGaussian</span><span class="p">()</span></div>
+
+        
+<div class="viewcode-block" id="AutoEncoder1D.scale_factor">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.scale_factor">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AutoEncoder1D.shift_factor">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.shift_factor">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shift_factor</span><span class="p">)</span></div>
+
+        
+        
+<div class="viewcode-block" id="AutoEncoder1D.latent_shape">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.latent_shape">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latent_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">resolution</span> <span class="o">//</span> <span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">ch_mult</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">params</span><span class="o">.</span><span class="n">z_channels</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutoEncoder1D.encode">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.encode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Encode input data into the latent space.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            x : Array</span>
+<span class="sd">                Input tensor.</span>
+<span class="sd">            key : Array</span>
+<span class="sd">                PRNG key for sampling the latent variable.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Latent representation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Encoder1D</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">key</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">z</span></div>
+
+
+<div class="viewcode-block" id="AutoEncoder1D.decode">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.decode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decode latent representation back to data space.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            z : Array</span>
+<span class="sd">                Latent tensor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Reconstructed output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Decoder1D</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">z</span></div>
+
+
+<div class="viewcode-block" id="AutoEncoder1D.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass: encode and then decode the input.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            x : Array</span>
+<span class="sd">                Input tensor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Reconstructed output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span></div>
+</div>
+
+</pre></div>
+<div class="section ablog__blog_comments">
+   
+</div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

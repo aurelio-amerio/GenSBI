@@ -1,0 +1,501 @@
+gensbi.experimental.models.autoencoders
+=======================================
+
+.. py:module:: gensbi.experimental.models.autoencoders
+
+.. autoapi-nested-parse::
+
+   
+   Autoencoders submodule.
+
+   This module provides 1D and 2D autoencoder architectures with Gaussian latent spaces,
+   including configuration dataclasses and VAE loss functions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/experimental/models/autoencoders/autoencoder_1d/index
+   /api/gensbi/experimental/models/autoencoders/autoencoder_2d/index
+   /api/gensbi/experimental/models/autoencoders/commons/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.autoencoders.AutoEncoder1D
+   gensbi.experimental.models.autoencoders.AutoEncoder2D
+   gensbi.experimental.models.autoencoders.AutoEncoderParams
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.autoencoders.vae_loss_fn
+
+
+Package Contents
+----------------
+
+.. py:class:: AutoEncoder1D(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   1D Autoencoder model with Gaussian latent space.
+
+   :param params: Configuration parameters for the autoencoder.
+   :type params: AutoEncoderParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, key=None)
+
+      
+      Forward pass: encode and then decode the input.
+
+      :param x: Input tensor.
+      :type x: Array
+
+      :returns: Reconstructed output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: decode(z)
+
+      
+      Decode latent representation back to data space.
+
+      :param z: Latent tensor.
+      :type z: Array
+
+      :returns: Reconstructed output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: encode(x, key=None)
+
+      
+      Encode input data into the latent space.
+
+      :param x: Input tensor.
+      :type x: Array
+      :param key: PRNG key for sampling the latent variable.
+      :type key: Array
+
+      :returns: Latent representation.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: Decoder1D
+
+
+   .. py:attribute:: Encoder1D
+
+
+   .. py:attribute:: latent_shape
+
+
+   .. py:attribute:: reg
+
+
+   .. py:attribute:: rngs
+
+
+   .. py:attribute:: scale_factor
+
+
+   .. py:attribute:: shift_factor
+
+
+.. py:class:: AutoEncoder2D(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Autoencoder model with Gaussian latent space.
+
+   :param params: Configuration parameters for the autoencoder.
+   :type params: AutoEncoderParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, key=None)
+
+      
+      Forward pass: encode and then decode the input.
+
+      :param x: Input tensor.
+      :type x: Array
+
+      :returns: Reconstructed output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: decode(z)
+
+      
+      Decode latent representation back to data space.
+
+      :param z: Latent tensor.
+      :type z: Array
+
+      :returns: Reconstructed output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: encode(x, key=None)
+
+      
+      Encode input data into the latent space.
+
+      :param x: Input tensor.
+      :type x: Array
+      :param key: PRNG key for sampling the latent variable.
+      :type key: Array
+
+      :returns: Latent representation.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: Decoder2D
+
+
+   .. py:attribute:: Encoder2D
+
+
+   .. py:attribute:: reg
+
+
+   .. py:attribute:: rngs
+
+
+   .. py:attribute:: scale_factor
+
+
+   .. py:attribute:: shift_factor
+
+
+.. py:class:: AutoEncoderParams
+
+   
+   Configuration parameters for the AutoEncoder models.
+
+   .. attribute:: resolution
+
+      The input feature dimension (length for 1D, height/width for 2D).
+
+      :type: int
+
+   .. attribute:: in_channels
+
+      Number of input channels (e.g., 1 for scalar features, >1 for multi-channel).
+
+      :type: int
+
+   .. attribute:: ch
+
+      Base number of channels for the first convolutional layer.
+
+      :type: int
+
+   .. attribute:: out_ch
+
+      Number of output channels produced by the decoder (matches input channels for reconstruction).
+
+      :type: int
+
+   .. attribute:: ch_mult
+
+      Multipliers for the number of channels at each resolution level (controls model width/depth).
+
+      :type: list[int]
+
+   .. attribute:: num_res_blocks
+
+      Number of residual blocks per resolution level.
+
+      :type: int
+
+   .. attribute:: z_channels
+
+      Number of latent channels in the bottleneck (size of encoded representation).
+
+      :type: int
+
+   .. attribute:: scale_factor
+
+      Scaling factor applied to the latent representation (for normalization or data scaling).
+
+      :type: float
+
+   .. attribute:: shift_factor
+
+      Shift factor applied to the latent representation (for normalization or data centering).
+
+      :type: float
+
+   .. attribute:: rngs
+
+      Random number generators for parameter initialization and stochastic layers.
+
+      :type: nnx.Rngs
+
+   .. attribute:: param_dtype
+
+      Data type for model parameters (e.g., jnp.float32, jnp.bfloat16).
+
+      :type: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: ch
+      :type:  int
+
+
+   .. py:attribute:: ch_mult
+      :type:  list[int]
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: num_res_blocks
+      :type:  int
+
+
+   .. py:attribute:: out_ch
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: resolution
+      :type:  int
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: scale_factor
+      :type:  float
+
+
+   .. py:attribute:: shift_factor
+      :type:  float
+
+
+   .. py:attribute:: z_channels
+      :type:  int
+
+
+.. py:function:: vae_loss_fn(model, x, key, kl_weight = 0.1)
+
+   
+   Compute the VAE loss as the sum of reconstruction and KL divergence losses.
+
+   :param model:
+   :type model: The VAE model.
+   :param x:
+   :type x: Input data.
+   :param key:
+   :type key: PRNG key for stochastic operations.
+   :param kl_weight:
+   :type kl_weight: Weight for the KL divergence term. Defaults to 0.1.
+
+   :rtype: Scalar loss value combining reconstruction and KL losses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

@@ -1,0 +1,236 @@
+gensbi.diffusion.solver
+=======================
+
+.. py:module:: gensbi.diffusion.solver
+
+.. autoapi-nested-parse::
+
+   
+   Solvers for generative diffusion models.
+
+   This module provides SDE solvers specifically designed for sampling from generative
+   diffusion models, including stochastic differential equation integration methods
+   as detailed in the EDM paper "Elucidating the Design Space of Diffusion-Based
+   Generative Models" (Karras et al., 2022).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/diffusion/solver/edm_samplers/index
+   /api/gensbi/diffusion/solver/sde_solver/index
+   /api/gensbi/diffusion/solver/solver/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diffusion.solver.SDESolver
+   gensbi.diffusion.solver.Solver
+
+
+Package Contents
+----------------
+
+.. py:class:: SDESolver(score_model, path)
+
+   Bases: :py:obj:`gensbi.diffusion.solver.solver.Solver`
+
+
+   
+   Abstract base class for diffusion model solvers.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, model_extras = {}, solver_params = {})
+
+      
+      Returns a sampler function for the SDE.
+
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param condition_value: Value for conditioning.
+      :type condition_value: Optional[Array]
+      :param cfg_scale: Classifier-free guidance scale (not implemented).
+      :type cfg_scale: Optional[float]
+      :param nsteps: Number of steps.
+      :type nsteps: int
+      :param method: Integration method.
+      :type method: str
+      :param return_intermediates: Whether to return intermediate steps.
+      :type return_intermediates: bool
+      :param model_extras: Additional model arguments.
+      :type model_extras: dict
+      :param solver_params: Additional solver parameters.
+      :type solver_params: Optional[dict]
+
+      :returns: Sampler function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_init, condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, model_extras = {}, solver_params = {})
+
+      
+      Sample from the SDE using the sampler.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param x_init: Initial value.
+      :type x_init: Array
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param condition_value: Value for conditioning.
+      :type condition_value: Optional[Array]
+      :param cfg_scale: Classifier-free guidance scale (not implemented).
+      :type cfg_scale: Optional[float]
+      :param nsteps: Number of steps.
+      :type nsteps: int
+      :param method: Integration method.
+      :type method: str
+      :param return_intermediates: Whether to return intermediate steps.
+      :type return_intermediates: bool
+      :param model_extras: Additional model arguments.
+      :type model_extras: dict
+      :param solver_params: Additional solver parameters.
+      :type solver_params: Optional[dict]
+
+      :returns: Sampled output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: path
+
+
+   .. py:attribute:: score_model
+
+
+.. py:class:: Solver
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Abstract base class for diffusion model solvers.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: sample(key, x_1)
+      :abstractmethod:
+
+
+      
+      Sample from the diffusion solver given target conditions.
+
+      :param key:
+      :type key: JAX random key for stochastic operations.
+      :param x_1:
+      :type x_1: Target conditions for the solver.
+
+      :rtype: Sampled output from the solver.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

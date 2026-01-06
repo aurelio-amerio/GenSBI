@@ -1,0 +1,298 @@
+gensbi.flow_matching.solver
+===========================
+
+.. py:module:: gensbi.flow_matching.solver
+
+.. autoapi-nested-parse::
+
+   
+   Solvers for flow matching ODEs.
+
+   This module provides ODE solvers for sampling from flow matching models,
+   including adaptive and fixed-step integration methods.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/flow_matching/solver/ode_solver/index
+   /api/gensbi/flow_matching/solver/solver/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.flow_matching.solver.ODESolver
+   gensbi.flow_matching.solver.Solver
+
+
+Package Contents
+----------------
+
+.. py:class:: ODESolver(velocity_model)
+
+   Bases: :py:obj:`gensbi.flow_matching.solver.solver.Solver`
+
+
+   
+   A class to solve ordinary differential equations (ODEs) using a specified velocity model.
+
+   This class utilizes a velocity field model to solve ODEs over a given time grid using numerical ode solvers.
+
+   :param velocity_model: a velocity field model receiving :math:`(x,t)` and returning :math:`u_t(x)`
+   :type velocity_model: Union[ModelWrapper, Callable]
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gensbi.flow_matching.solver import ODESolver
+       from gensbi.utils.model_wrapping import ModelWrapper
+       import jax, jax.numpy as jnp
+
+       class DummyModel:
+           def __call__(self, obs, t, *args, **kwargs):
+               return jnp.squeeze(obs + t, axis=-1)
+
+       vf_model = DummyModel() # replace with your actual velocity field model, Simformer or Flux1
+
+       model_wrapped = ModelWrapper(vf_model) # you should use the appropriate ModelWrapper for your model, either ConditionalWrapper or JointWrapper, or a custom subclass of ModelWrapper
+       solver = ODESolver(velocity_model=model_wrapped)
+       x_init = jnp.zeros((10, 2))
+       time_grid = jnp.linspace(0, 1, 5)
+       sol = solver.sample(x_init=x_init, step_size=0.05, time_grid=time_grid)
+       print(sol.shape)
+       # (5, 10, 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_sampler(step_size, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
+
+      
+      Obtain a sampler to solve the ODE with the velocity field.
+
+      :param step_size: The step size. Must be None for adaptive step solvers.
+      :type step_size: Optional[float]
+      :param method: A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+      :type method: Union[str, AbstractERK]
+      :param atol: Absolute tolerance, used for adaptive step solvers.
+      :type atol: float
+      :param rtol: Relative tolerance, used for adaptive step solvers.
+      :type rtol: float
+      :param time_grid: The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
+      :type time_grid: Array
+      :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
+      :type return_intermediates: bool, optional
+      :param model_extras: Additional input for the model.
+      :type model_extras: dict
+
+      :returns: A function that takes initial conditions and returns the solution at final time or intermediate times.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_unnormalized_logprob(log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid=[1.0, 0.0], return_intermediates = False, *, model_extras = {})
+
+      
+      Solve for log likelihood given a target sample at :math:`t=0`.
+
+      :param x_1: target sample (e.g., samples :math:`X_1 \sim p_1`).
+      :type x_1: Array
+      :param log_p0: Log probability function of source distribution.
+      :type log_p0: Callable[[Array], Array]
+      :param step_size: Step size for fixed-step solvers.
+      :type step_size: Optional[float]
+      :param method: Integration method to use.
+      :type method: str
+      :param atol: Absolute tolerance for adaptive solvers.
+      :type atol: float
+      :param rtol: Relative tolerance for adaptive solvers.
+      :type rtol: float
+      :param time_grid: Must start at 1.0 and end at 0.0.
+      :type time_grid: Array
+      :param return_intermediates: Whether to return intermediate steps.
+      :type return_intermediates: bool
+      :param exact_divergence: Use exact divergence vs Hutchinson estimator.
+      :type exact_divergence: bool
+      :param \*\*model_extras:
+      :type \*\*model_extras: Additional model inputs.
+
+      :returns: **Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]**
+      :rtype: Samples and log likelihood values.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(x_init, step_size, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
+
+      
+      Sample from the ODE defined by the velocity field.
+
+      :param x_init: Initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
+      :type x_init: Array
+      :param step_size: The step size. Must be None for adaptive step solvers.
+      :type step_size: Optional[float]
+      :param method: A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+      :type method: Union[str, AbstractERK]
+      :param atol: Absolute tolerance, used for adaptive step solvers.
+      :type atol: float
+      :param rtol: Relative tolerance, used for adaptive step solvers.
+      :type rtol: float
+      :param time_grid: The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
+      :type time_grid: Array
+      :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
+      :type return_intermediates: bool, optional
+      :param model_extras: Additional input for the model.
+      :type model_extras: dict
+
+      :returns: The final state or the states at all intermediate time steps.
+      :rtype: Union[Array, Sequence[Array]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: unnormalized_logprob(x_1, log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid=[1.0, 0.0], return_intermediates = False, *, model_extras = {})
+
+
+   .. py:attribute:: velocity_model
+
+
+.. py:class:: Solver
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Abstract base class for flow matching solvers.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: sample(x_0)
+      :abstractmethod:
+
+
+      
+      Sample from the solver given initial conditions.
+
+      :param x_0:
+      :type x_0: Initial conditions for the solver.
+
+      :rtype: Sampled output from the solver.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

@@ -1,0 +1,1408 @@
+gensbi.diffusion.path.scheduler
+===============================
+
+.. py:module:: gensbi.diffusion.path.scheduler
+
+.. autoapi-nested-parse::
+
+   
+   Schedulers for diffusion models.
+
+   This module provides noise schedulers for EDM-based diffusion models,
+   including variance-preserving and variance-exploding schedules.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/diffusion/path/scheduler/edm/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diffusion.path.scheduler.EDMScheduler
+   gensbi.diffusion.path.scheduler.VEScheduler
+   gensbi.diffusion.path.scheduler.VPScheduler
+
+
+Package Contents
+----------------
+
+.. py:class:: EDMScheduler(sigma_min=0.002, sigma_max=80.0, sigma_data=1.0, rho=7, P_mean=-1.2, P_std=1.2)
+
+   Bases: :py:obj:`BaseSDE`
+
+
+   
+   Helper class that provides a standard way to create an ABC using
+   inheritance.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: c_in(sigma)
+
+      
+      Preconditioning input coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Input coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_noise(sigma)
+
+      
+      Preconditioning noise coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Noise coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_out(sigma)
+
+      
+      Preconditioning output coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Output coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_skip(sigma)
+
+      
+      Preconditioning skip connection coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Skip coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: loss_weight(sigma)
+
+      
+      Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Loss weight.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: s(t)
+
+      
+      Scaling function as in EDM paper.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Scaling value.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: s_deriv(t)
+
+      
+      Derivative of the scaling function.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Derivative of scaling.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_sigma(key, shape)
+
+      
+      Sample sigma from the prior noise distribution.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param shape: Shape of the output.
+      :type shape: Any
+
+      :returns: Sampled sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma(t)
+
+      
+      Returns the noise scale (schedule) at time t.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Noise scale.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma_deriv(t)
+
+      
+      Derivative of the noise scale with respect to time.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Derivative of sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma_inv(sigma)
+
+      
+      Inverse of the noise scale function.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Time corresponding to the given sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: time_schedule(u)
+
+      
+      Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.
+
+      :param u: Uniform random variable in [0, 1].
+      :type u: Array
+
+      :returns: Time in the schedule.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: P_mean
+      :value: -1.2
+
+
+
+   .. py:attribute:: P_std
+      :value: 1.2
+
+
+
+   .. py:property:: name
+
+      
+      Returns the name of the SDE scheduler.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: rho
+      :value: 7
+
+
+
+   .. py:attribute:: sigma_data
+      :value: 1.0
+
+
+
+   .. py:attribute:: sigma_max
+      :value: 80.0
+
+
+
+   .. py:attribute:: sigma_min
+      :value: 0.002
+
+
+
+.. py:class:: VEScheduler(sigma_min=0.001, sigma_max=15.0)
+
+   Bases: :py:obj:`BaseSDE`
+
+
+   
+   Variance Exploding (VE) SDE scheduler as described in the EDM paper.
+
+   :param sigma_min: Minimum sigma value.
+   :type sigma_min: float
+   :param sigma_max: Maximum sigma value.
+   :type sigma_max: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: c_in(sigma)
+
+      
+      Preconditioning input coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Input coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_noise(sigma)
+
+      
+      Preconditioning noise coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Noise coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_out(sigma)
+
+      
+      Preconditioning output coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Output coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_skip(sigma)
+
+      
+      Preconditioning skip connection coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Skip coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: loss_weight(sigma)
+
+      
+      Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Loss weight.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: s(t)
+
+      
+      Scaling function as in EDM paper.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Scaling value.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: s_deriv(t)
+
+      
+      Derivative of the scaling function.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Derivative of scaling.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_sigma(key, shape)
+
+      
+      Sample sigma from the prior noise distribution.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param shape: Shape of the output.
+      :type shape: Any
+
+      :returns: Sampled sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma(t)
+
+      
+      Returns the noise scale (schedule) at time t.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Noise scale.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma_deriv(t)
+
+      
+      Derivative of the noise scale with respect to time.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Derivative of sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma_inv(sigma)
+
+      
+      Inverse of the noise scale function.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Time corresponding to the given sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: time_schedule(u)
+
+      
+      Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.
+
+      :param u: Uniform random variable in [0, 1].
+      :type u: Array
+
+      :returns: Time in the schedule.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: name
+
+      
+      Returns the name of the SDE scheduler.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sigma_max
+      :value: 15.0
+
+
+
+   .. py:attribute:: sigma_min
+      :value: 0.001
+
+
+
+.. py:class:: VPScheduler(beta_min=0.1, beta_max=20.0, e_s=0.001, e_t=1e-05, M=1000)
+
+   Bases: :py:obj:`BaseSDE`
+
+
+   
+   Variance Preserving (VP) SDE scheduler as described in the EDM paper.
+
+   :param beta_min: Minimum beta value.
+   :type beta_min: float
+   :param beta_max: Maximum beta value.
+   :type beta_max: float
+   :param e_s: Starting epsilon value for time schedule.
+   :type e_s: float
+   :param e_t: Ending epsilon value for time schedule.
+   :type e_t: float
+   :param M: Scaling factor for noise preconditioning.
+   :type M: int
+
+   .. rubric:: References
+
+   - Karras, Tero, et al. "Elucidating the design space of diffusion-based generative models." `arXiv:2206.00364 <https://arxiv.org/abs/2206.00364>`_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: c_in(sigma)
+
+      
+      Preconditioning input coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Input coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_noise(sigma)
+
+      
+      Preconditioning noise coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Noise coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_out(sigma)
+
+      
+      Preconditioning output coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Output coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_skip(sigma)
+
+      
+      Preconditioning skip connection coefficient.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Skip coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: f(x, t)
+
+      
+      Drift term for the forward diffusion process.
+
+      Computes the drift term :math:`f(x, t) = x \frac{ds}{dt} / s(t)` as used in the SDE formulation.
+
+      :param x: Input data.
+      :type x: Array
+      :param t: Time.
+      :type t: Array
+
+      :returns: Drift term.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: g(x, t)
+
+      
+      Diffusion term for the forward diffusion process.
+
+      Computes the diffusion term :math:`g(x, t) = s(t) \sqrt{2 \frac{d\sigma}{dt} \sigma(t)}` as used in the SDE formulation.
+
+      :param x: Input data.
+      :type x: Array
+      :param t: Time.
+      :type t: Array
+
+      :returns: Diffusion term.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: loss_weight(sigma)
+
+      
+      Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Loss weight.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: s(t)
+
+      
+      Scaling function as in EDM paper.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Scaling value.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: s_deriv(t)
+
+      
+      Derivative of the scaling function.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Derivative of scaling.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_sigma(key, shape)
+
+      
+      Sample sigma from the prior noise distribution.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param shape: Shape of the output.
+      :type shape: Any
+
+      :returns: Sampled sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma(t)
+
+      
+      Returns the noise scale (schedule) at time t.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Noise scale.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma_deriv(t)
+
+      
+      Derivative of the noise scale with respect to time.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Derivative of sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma_inv(sigma)
+
+      
+      Inverse of the noise scale function.
+
+      :param sigma: Noise scale.
+      :type sigma: Array
+
+      :returns: Time corresponding to the given sigma.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: time_schedule(u)
+
+      
+      Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.
+
+      :param u: Uniform random variable in [0, 1].
+      :type u: Array
+
+      :returns: Time in the schedule.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: M
+      :value: 1000
+
+
+
+   .. py:attribute:: beta_d
+      :value: 19.9
+
+
+
+   .. py:attribute:: beta_max
+      :value: 20.0
+
+
+
+   .. py:attribute:: beta_min
+      :value: 0.1
+
+
+
+   .. py:attribute:: e_s
+      :value: 0.001
+
+
+
+   .. py:attribute:: e_t
+      :value: 1e-05
+
+
+
+   .. py:property:: name
+
+      
+      Returns the name of the SDE scheduler.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

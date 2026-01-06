@@ -1,0 +1,688 @@
+gensbi.experimental.models.autoencoders.autoencoder_2d
+======================================================
+
+.. py:module:: gensbi.experimental.models.autoencoders.autoencoder_2d
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.autoencoders.autoencoder_2d.AttnBlock2D
+   gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D
+   gensbi.experimental.models.autoencoders.autoencoder_2d.Decoder2D
+   gensbi.experimental.models.autoencoders.autoencoder_2d.Downsample2D
+   gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D
+   gensbi.experimental.models.autoencoders.autoencoder_2d.ResnetBlock2D
+   gensbi.experimental.models.autoencoders.autoencoder_2d.Upsample2D
+
+
+Module Contents
+---------------
+
+.. py:class:: AttnBlock2D(in_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Self-attention block for image or grid data.
+
+   :param in_channels: Number of input channels.
+   :type in_channels: int
+   :param rngs: Random number generators for parameter initialization.
+   :type rngs: nnx.Rngs
+   :param param_dtype: Data type for parameters (default: jnp.bfloat16).
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+      
+      Forward pass for the attention block.
+
+      :param x: Input tensor.
+      :type x: Array
+
+      :returns: Output tensor after residual attention.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: attention(h_)
+
+      
+      Compute self-attention for 2D input.
+
+      :param h_: Input tensor of shape (batch, height, width, channels).
+      :type h_: Array
+
+      :returns: Output tensor after attention.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: k
+
+
+   .. py:attribute:: norm
+
+
+   .. py:attribute:: proj_out
+
+
+   .. py:attribute:: q
+
+
+   .. py:attribute:: v
+
+
+.. py:class:: AutoEncoder2D(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Autoencoder model with Gaussian latent space.
+
+   :param params: Configuration parameters for the autoencoder.
+   :type params: AutoEncoderParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, key=None)
+
+      
+      Forward pass: encode and then decode the input.
+
+      :param x: Input tensor.
+      :type x: Array
+
+      :returns: Reconstructed output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: decode(z)
+
+      
+      Decode latent representation back to data space.
+
+      :param z: Latent tensor.
+      :type z: Array
+
+      :returns: Reconstructed output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: encode(x, key=None)
+
+      
+      Encode input data into the latent space.
+
+      :param x: Input tensor.
+      :type x: Array
+      :param key: PRNG key for sampling the latent variable.
+      :type key: Array
+
+      :returns: Latent representation.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: Decoder2D
+
+
+   .. py:attribute:: Encoder2D
+
+
+   .. py:attribute:: reg
+
+
+   .. py:attribute:: rngs
+
+
+   .. py:attribute:: scale_factor
+
+
+   .. py:attribute:: shift_factor
+
+
+.. py:class:: Decoder2D(ch, out_ch, ch_mult, num_res_blocks, in_channels, resolution, z_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Decoder for autoencoder architectures.
+
+   :param ch: Base number of channels.
+   :type ch: int
+   :param out_ch: Number of output channels.
+   :type out_ch: int
+   :param ch_mult: Channel multipliers for each resolution.
+   :type ch_mult: list[int]
+   :param num_res_blocks: Number of residual blocks per resolution.
+   :type num_res_blocks: int
+   :param in_channels: Number of input channels.
+   :type in_channels: int
+   :param resolution: Output image height/width.
+   :type resolution: int
+   :param z_channels: Number of latent channels.
+   :type z_channels: int
+   :param rngs: Random number generators for parameter initialization.
+   :type rngs: nnx.Rngs
+   :param param_dtype: Data type for parameters (default: jnp.bfloat16).
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(z)
+
+      
+      Forward pass for the decoder.
+
+      :param z: Latent tensor of shape (batch, latent_height, latent_width, latent_channels).
+      :type z: Array
+
+      :returns: Reconstructed output tensor.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch
+
+
+   .. py:attribute:: conv_in
+
+
+   .. py:attribute:: conv_out
+
+
+   .. py:attribute:: ffactor
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: mid
+
+
+   .. py:attribute:: norm_out
+
+
+   .. py:attribute:: num_res_blocks
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: resolution
+
+
+   .. py:attribute:: up
+
+
+   .. py:attribute:: z_shape
+
+
+.. py:class:: Downsample2D(in_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Downsampling block using strided convolution.
+
+   :param in_channels: Number of input channels.
+   :type in_channels: int
+   :param rngs: Random number generators for parameter initialization.
+   :type rngs: nnx.Rngs
+   :param param_dtype: Data type for parameters (default: jnp.bfloat16).
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+      
+      Downsample the input tensor by a factor of 2.
+
+      :param x: Input tensor of shape (batch, height, width, channels).
+      :type x: Array
+
+      :returns: Downsampled tensor.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: conv
+
+
+.. py:class:: Encoder2D(resolution, in_channels, ch, ch_mult, num_res_blocks, z_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Encoder for autoencoder architectures.
+
+   :param resolution: Input image height/width.
+   :type resolution: int
+   :param in_channels: Number of input channels.
+   :type in_channels: int
+   :param ch: Base number of channels.
+   :type ch: int
+   :param ch_mult: Channel multipliers for each resolution.
+   :type ch_mult: list[int]
+   :param num_res_blocks: Number of residual blocks per resolution.
+   :type num_res_blocks: int
+   :param z_channels: Number of latent channels.
+   :type z_channels: int
+   :param rngs: Random number generators for parameter initialization.
+   :type rngs: nnx.Rngs
+   :param param_dtype: Data type for parameters (default: jnp.bfloat16).
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+      
+      Forward pass for the encoder.
+
+      :param x: Input tensor of shape (batch, height, width, channels).
+      :type x: Array
+
+      :returns: Encoded latent representation.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch
+
+
+   .. py:attribute:: conv_in
+
+
+   .. py:attribute:: conv_out
+
+
+   .. py:attribute:: down
+
+
+   .. py:attribute:: in_ch_mult
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: mid
+
+
+   .. py:attribute:: norm_out
+
+
+   .. py:attribute:: num_res_blocks
+
+
+   .. py:attribute:: num_resolutions
+
+
+   .. py:attribute:: resolution
+
+
+.. py:class:: ResnetBlock2D(in_channels, out_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Residual block with optional channel up/downsampling.
+
+   :param in_channels: Number of input channels.
+   :type in_channels: int
+   :param out_channels: Number of output channels.
+   :type out_channels: int
+   :param rngs: Random number generators for parameter initialization.
+   :type rngs: nnx.Rngs
+   :param param_dtype: Data type for parameters (default: jnp.bfloat16).
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+      
+      Forward pass for the residual block.
+
+      :param x: Input tensor.
+      :type x: Array
+
+      :returns: Output tensor after residual connection.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: conv1
+
+
+   .. py:attribute:: conv2
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: norm1
+
+
+   .. py:attribute:: norm2
+
+
+   .. py:attribute:: out_channels
+
+
+.. py:class:: Upsample2D(in_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D Upsampling block using nearest-neighbor interpolation and convolution.
+
+   :param in_channels: Number of input channels.
+   :type in_channels: int
+   :param rngs: Random number generators for parameter initialization.
+   :type rngs: nnx.Rngs
+   :param param_dtype: Data type for parameters (default: jnp.bfloat16).
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+      
+      Upsample the input tensor by a factor of 2.
+
+      :param x: Input tensor of shape (batch, height, width, channels).
+      :type x: Array
+
+      :returns: Upsampled tensor.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: conv
+
+

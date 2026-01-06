@@ -1,0 +1,481 @@
+gensbi.models.losses
+====================
+
+.. py:module:: gensbi.models.losses
+
+.. autoapi-nested-parse::
+
+   
+   Loss functions for conditional and joint models.
+
+   This module provides loss functions for training conditional, joint, and unconditional
+   models using both flow matching and diffusion approaches.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/models/losses/conditional/index
+   /api/gensbi/models/losses/joint/index
+   /api/gensbi/models/losses/unconditional/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.losses.ConditionalCFMLoss
+   gensbi.models.losses.ConditionalDiffLoss
+   gensbi.models.losses.JointCFMLoss
+   gensbi.models.losses.JointDiffLoss
+   gensbi.models.losses.UnconditionalCFMLoss
+   gensbi.models.losses.UnconditionalDiffLoss
+
+
+Package Contents
+----------------
+
+.. py:class:: ConditionalCFMLoss(path, reduction='mean', cfg_scale=None)
+
+   Bases: :py:obj:`gensbi.flow_matching.loss.ContinuousFMLoss`
+
+
+   
+   ConditionalCFMLoss is a class that computes the continuous flow matching loss for the Conditional model.
+
+   :param path:
+   :type path: Probability path (x-prediction training).
+   :param reduction: Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
+   :type reduction: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vf, batch, cond, obs_ids, cond_ids)
+
+      
+      Evaluates the continuous flow matching loss.
+
+      :param vf: The vector field model to evaluate.
+      :type vf: callable
+      :param batch: A tuple containing the input data (x_0, x_1, t).
+      :type batch: tuple
+      :param cond: The conditioning data.
+      :type cond: jnp.ndarray
+      :param obs_ids: The observation IDs.
+      :type obs_ids: jnp.ndarray
+      :param cond_ids: The conditioning IDs.
+      :type cond_ids: jnp.ndarray
+
+      :returns: **jnp.ndarray**
+      :rtype: The computed loss.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cfg_scale
+      :value: None
+
+
+
+.. py:class:: ConditionalDiffLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   ConditionalDiffLoss is a class that computes the diffusion score matching loss for the Conditional model.
+
+   :param path:
+   :type path: Probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, cond, obs_ids, cond_ids)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: F model.
+      :type model: Callable
+      :param batch: Input data (x_1, sigma).
+      :type batch: Tuple[Array, Array, Array]
+      :param cond: The conditioning data.
+      :type cond: jnp.ndarray
+      :param obs_ids: The observation IDs.
+      :type obs_ids: jnp.ndarray
+      :param cond_ids: The conditioning IDs.
+      :type cond_ids: jnp.ndarray
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: JointCFMLoss(path, reduction = 'mean')
+
+   Bases: :py:obj:`gensbi.flow_matching.loss.ContinuousFMLoss`
+
+
+   
+   JointCFMLoss is a class that computes the continuous flow matching loss for the Joint model.
+
+   :param path:
+   :type path: Probability path for training.
+   :param reduction: Reduction method ('none', 'mean', 'sum').
+   :type reduction: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vf, batch, *args, condition_mask = None, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param vf: Vector field model.
+      :type vf: Callable
+      :param batch: Input data (x_0, x_1, t).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: JointDiffLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   JointDiffLoss is a class that computes the diffusion score matching loss for the Joint model.
+
+   :param path:
+   :type path: Probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, condition_mask = None, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: F model.
+      :type model: Callable
+      :param batch: Input data (x_1, sigma).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: UnconditionalCFMLoss(path, reduction = 'mean')
+
+   Bases: :py:obj:`gensbi.flow_matching.loss.ContinuousFMLoss`
+
+
+   
+   UnconditionalCFMLoss is a class that computes the continuous flow matching loss for the Unconditional model.
+
+   :param path:
+   :type path: Probability path for training.
+   :param reduction: Reduction method ('none', 'mean', 'sum').
+   :type reduction: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vf, batch, *args, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param vf: Vector field model.
+      :type vf: Callable
+      :param batch: Input data (x_0, x_1, t).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: UnconditionalDiffLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   UnconditionalDiffLoss is a class that computes the diffusion score matching loss for the Unconditional model.
+
+   :param path:
+   :type path: Probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: F model.
+      :type model: Callable
+      :param batch: Input data (x_1, sigma).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+

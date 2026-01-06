@@ -1,0 +1,237 @@
+gensbi.models.flux1.model
+=========================
+
+.. py:module:: gensbi.models.flux1.model
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.flux1.model.Flux1
+   gensbi.models.flux1.model.Flux1Params
+
+
+Module Contents
+---------------
+
+.. py:class:: Flux1(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Transformer model for flow matching on sequences.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, obs_ids, cond, cond_ids, conditioned = True, guidance = None)
+
+
+   .. py:attribute:: cond_in
+
+
+   .. py:attribute:: condition_embedding
+
+
+   .. py:attribute:: condition_null
+
+
+   .. py:attribute:: double_blocks
+
+
+   .. py:attribute:: final_layer
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: obs_in
+
+
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: params
+
+
+   .. py:attribute:: qkv_features
+
+
+   .. py:attribute:: single_blocks
+
+
+   .. py:attribute:: time_in
+
+
+   .. py:attribute:: vector_in
+
+
+.. py:class:: Flux1Params
+
+   
+   Parameters for the Flux1 model.
+
+   GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+   - `dim_*` counts **tokens** (how many distinct observables/variables you have).
+   - `channels` counts **features per token** (how many values each observable carries).
+
+   For conditional SBI with Flux1:
+
+   - Parameters to infer (often denoted $      heta$) have shape `(batch, dim_obs, in_channels)`.
+       In most SBI problems `in_channels = 1` (one scalar per parameter token).
+   - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
+       `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
+
+   Example: 2 parameters, frequency grid with 2 detectors
+
+   - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
+   - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
+
+   :param in_channels: Number of channels per observation/parameter token.
+   :type in_channels: int
+   :param vec_in_dim: Dimension of the vector input, if applicable.
+   :type vec_in_dim: Union[int, None]
+   :param context_in_dim: Number of channels per conditioning token.
+   :type context_in_dim: int
+   :param mlp_ratio: Ratio for the MLP layers.
+   :type mlp_ratio: float
+   :param num_heads: Number of attention heads.
+   :type num_heads: int
+   :param depth: Number of double stream blocks.
+   :type depth: int
+   :param depth_single_blocks: Number of single stream blocks.
+   :type depth_single_blocks: int
+   :param axes_dim: Dimensions of the axes for positional encoding.
+   :type axes_dim: list[int]
+   :param qkv_bias: Whether to use bias in QKV layers.
+   :type qkv_bias: bool
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs
+   :param dim_obs: Number of observation/parameter tokens.
+   :type dim_obs: int
+   :param dim_cond: Number of conditioning tokens.
+   :type dim_cond: int
+   :param theta: Scaling factor for positional encoding.
+   :type theta: int
+   :param id_embedding_kind: Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d" or "rope".
+   :type id_embedding_kind: tuple[str, str]
+   :param guidance_embed: Whether to use guidance embedding.
+   :type guidance_embed: bool
+   :param param_dtype: Data type for model parameters.
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: axes_dim
+      :type:  list[int]
+
+
+   .. py:attribute:: context_in_dim
+      :type:  int
+
+
+   .. py:attribute:: depth
+      :type:  int
+
+
+   .. py:attribute:: depth_single_blocks
+      :type:  int
+
+
+   .. py:attribute:: dim_cond
+      :type:  int
+
+
+   .. py:attribute:: dim_obs
+      :type:  int
+
+
+   .. py:attribute:: guidance_embed
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: id_embedding_kind
+      :type:  tuple[str, str]
+      :value: ('absolute', 'absolute')
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: mlp_ratio
+      :type:  float
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: qkv_bias
+      :type:  bool
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: theta
+      :type:  int
+      :value: 500
+
+
+
+   .. py:attribute:: vec_in_dim
+      :type:  Union[int, None]
+
+

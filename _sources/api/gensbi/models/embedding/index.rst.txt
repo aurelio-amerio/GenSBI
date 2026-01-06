@@ -1,0 +1,645 @@
+gensbi.models.embedding
+=======================
+
+.. py:module:: gensbi.models.embedding
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/models/embedding/embedding/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.embedding.Embed
+   gensbi.models.embedding.FeatureEmbedder
+   gensbi.models.embedding.GaussianFourierEmbedding
+   gensbi.models.embedding.MLPEmbedder
+   gensbi.models.embedding.SimpleTimeEmbedding
+   gensbi.models.embedding.SinusoidalPosEmbed1D
+   gensbi.models.embedding.SinusoidalPosEmbed2D
+   gensbi.models.embedding.SinusoidalTimeEmbedding
+
+
+Package Contents
+----------------
+
+.. py:class:: Embed(*args, **kwargs)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Wrapper around nnx.Embed that handles 3D input by removing the last dimension.
+
+   :param \*args: Positional arguments passed to nnx.Embed.
+   :param \*\*kwargs: Keyword arguments passed to nnx.Embed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(ids)
+
+      
+      Apply embedding to input IDs.
+
+      :param ids: Input IDs with shape (batch, seq_len, 1).
+      :type ids: Array
+
+      :returns: Embedded output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: embed
+
+
+.. py:class:: FeatureEmbedder(num_embeddings, hidden_size, *, kind='absolute', param_dtype=jnp.float32, rngs = None, **kwargs)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   General Feature Embedder supporting learned, 1D sinusoidal, and 2D sinusoidal embeddings.
+   1D sinusoidal embeddings are suitable for sequences, while 2D sinusoidal embeddings are ideal for grid-like data (e.g., images).
+
+   :param num_embeddings: Number of embeddings.
+   :type num_embeddings: int
+   :param hidden_size: Hidden size/embedding dimension.
+   :type hidden_size: int
+   :param kind: Type of embedding: 'absolute', 'pos1d', or 'pos2d'. Defaults to 'absolute'.
+   :type kind: str, optional
+   :param param_dtype: Data type for parameters. Defaults to jnp.float32.
+   :type param_dtype: DTypeLike, optional
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs, optional
+   :param \*\*kwargs: Additional keyword arguments specific to the embedding type.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(ids)
+
+      
+      Apply feature embedding to input IDs.
+
+      :param ids: Input IDs.
+      :type ids: Array
+
+      :returns: Embedded features.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: GaussianFourierEmbedding(output_dim = 128, learnable = False, *, rngs, param_dtype = jnp.float32)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute Gaussian Fourier time embedding.
+
+      :param t: Time values.
+      :type t: Array
+
+      :returns: Gaussian Fourier time embeddings.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: B
+
+
+   .. py:attribute:: output_dim
+      :value: 128
+
+
+
+.. py:class:: MLPEmbedder(in_dim, hidden_dim, rngs, param_dtype = jnp.float32)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   MLP-based embedder with skip connections.
+
+   :param in_dim: Input dimension.
+   :type in_dim: int
+   :param hidden_dim: Hidden dimension, must be a multiple of in_dim.
+   :type hidden_dim: int
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs
+   :param param_dtype: Data type for parameters. Defaults to jnp.float32.
+   :type param_dtype: DTypeLike, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+      
+      Forward pass of the MLP embedder.
+
+      :param x: Input array.
+      :type x: Array
+
+      :returns: Embedded output with skip connections.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: in_layer
+
+
+   .. py:attribute:: out_layer
+
+
+   .. py:attribute:: p_skip
+
+
+   .. py:attribute:: repeats
+
+
+   .. py:attribute:: silu
+
+
+.. py:class:: SimpleTimeEmbedding
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Simple time embedding module using cosine and sine transformations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute time embedding.
+
+      :param t: Time values.
+      :type t: Array
+
+      :returns: Time embeddings.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: SinusoidalPosEmbed1D(hidden_size, max_len = 5000, param_dtype = jnp.float32)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(ids)
+
+      
+      Forward pass of the 1D sinusoidal position embedder.
+
+      :param ids: Input IDs with shape (batch, seq_len).
+      :type ids: Array
+
+      :returns: Position embeddings of shape (1, seq_len, hidden_size).
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: pe
+
+
+.. py:class:: SinusoidalPosEmbed2D(hidden_size, max_h = 128, max_w = 128, param_dtype = jnp.float32)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(ids)
+
+      
+      Compute 2D sinusoidal position embeddings.
+
+      :param ids: Input IDs with shape (batch, h, w).
+      :type ids: Array
+
+      :returns: 2D position embeddings of shape (batch, h*w, hidden_size).
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: pe_h
+
+
+   .. py:attribute:: pe_w
+
+
+.. py:class:: SinusoidalTimeEmbedding(output_dim = 128)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t)
+
+      
+      Compute sinusoidal time embedding.
+
+      :param t: Time values.
+      :type t: Array
+
+      :returns: Sinusoidal time embeddings.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: output_dim
+      :value: 128
+
+
+

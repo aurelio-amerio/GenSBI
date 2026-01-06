@@ -1,0 +1,1406 @@
+gensbi.models
+=============
+
+.. py:module:: gensbi.models
+
+.. autoapi-nested-parse::
+
+   
+   Model architectures for GenSBI.
+
+   This package provides transformer-based models for simulation-based inference,
+   including Flux1, Simformer, and autoencoder architectures, along with their
+   associated loss functions and wrappers.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/models/embedding/index
+   /api/gensbi/models/flux1/index
+   /api/gensbi/models/flux1joint/index
+   /api/gensbi/models/losses/index
+   /api/gensbi/models/simformer/index
+   /api/gensbi/models/wrappers/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.ConditionalCFMLoss
+   gensbi.models.ConditionalDiffLoss
+   gensbi.models.ConditionalWrapper
+   gensbi.models.Flux1
+   gensbi.models.Flux1Joint
+   gensbi.models.Flux1JointParams
+   gensbi.models.Flux1Params
+   gensbi.models.JointCFMLoss
+   gensbi.models.JointDiffLoss
+   gensbi.models.JointWrapper
+   gensbi.models.Simformer
+   gensbi.models.SimformerParams
+   gensbi.models.UnconditionalCFMLoss
+   gensbi.models.UnconditionalDiffLoss
+   gensbi.models.UnconditionalWrapper
+
+
+Package Contents
+----------------
+
+.. py:class:: ConditionalCFMLoss(path, reduction='mean', cfg_scale=None)
+
+   Bases: :py:obj:`gensbi.flow_matching.loss.ContinuousFMLoss`
+
+
+   
+   ConditionalCFMLoss is a class that computes the continuous flow matching loss for the Conditional model.
+
+   :param path:
+   :type path: Probability path (x-prediction training).
+   :param reduction: Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
+   :type reduction: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vf, batch, cond, obs_ids, cond_ids)
+
+      
+      Evaluates the continuous flow matching loss.
+
+      :param vf: The vector field model to evaluate.
+      :type vf: callable
+      :param batch: A tuple containing the input data (x_0, x_1, t).
+      :type batch: tuple
+      :param cond: The conditioning data.
+      :type cond: jnp.ndarray
+      :param obs_ids: The observation IDs.
+      :type obs_ids: jnp.ndarray
+      :param cond_ids: The conditioning IDs.
+      :type cond_ids: jnp.ndarray
+
+      :returns: **jnp.ndarray**
+      :rtype: The computed loss.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cfg_scale
+      :value: None
+
+
+
+.. py:class:: ConditionalDiffLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   ConditionalDiffLoss is a class that computes the diffusion score matching loss for the Conditional model.
+
+   :param path:
+   :type path: Probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, cond, obs_ids, cond_ids)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: F model.
+      :type model: Callable
+      :param batch: Input data (x_1, sigma).
+      :type batch: Tuple[Array, Array, Array]
+      :param cond: The conditioning data.
+      :type cond: jnp.ndarray
+      :param obs_ids: The observation IDs.
+      :type obs_ids: jnp.ndarray
+      :param cond_ids: The conditioning IDs.
+      :type cond_ids: jnp.ndarray
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: ConditionalWrapper(model)
+
+   Bases: :py:obj:`gensbi.utils.model_wrapping.ModelWrapper`
+
+
+   
+   Wrapper for conditional models to handle input expansion and calling convention.
+
+   :param model:
+   :type model: The conditional model instance to wrap.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, obs_ids, cond, cond_ids, conditioned = True, guidance = None, **kwargs)
+
+      
+      Call the wrapped model with expanded inputs.
+
+      :param t: Time steps.
+      :type t: Array
+      :param obs: Observations.
+      :type obs: Array
+      :param obs_ids: Observation identifiers.
+      :type obs_ids: Array
+      :param cond: Conditioning values.
+      :type cond: Array
+      :param cond_ids: Conditioning identifiers.
+      :type cond_ids: Array
+      :param conditioned: Whether to use conditioning. Defaults to True.
+      :type conditioned: bool | Array, optional
+      :param guidance: Optional guidance input.
+      :type guidance: Array | None, optional
+
+      :returns: Model output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: Flux1(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Transformer model for flow matching on sequences.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, obs_ids, cond, cond_ids, conditioned = True, guidance = None)
+
+
+   .. py:attribute:: cond_in
+
+
+   .. py:attribute:: condition_embedding
+
+
+   .. py:attribute:: condition_null
+
+
+   .. py:attribute:: double_blocks
+
+
+   .. py:attribute:: final_layer
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: obs_in
+
+
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: params
+
+
+   .. py:attribute:: qkv_features
+
+
+   .. py:attribute:: single_blocks
+
+
+   .. py:attribute:: time_in
+
+
+   .. py:attribute:: vector_in
+
+
+.. py:class:: Flux1Joint(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Flux1Joint model for joint density estimation.
+
+   :param params: Parameters for the Flux1Joint model.
+   :type params: Flux1JointParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, node_ids, condition_mask, guidance = None, edge_mask = None)
+
+
+   .. py:attribute:: condition_embedding
+
+
+   .. py:attribute:: final_layer
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: obs_in
+
+
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: params
+
+
+   .. py:attribute:: qkv_features
+
+
+   .. py:attribute:: single_blocks
+
+
+   .. py:attribute:: time_in
+
+
+   .. py:attribute:: vector_in
+
+
+.. py:class:: Flux1JointParams
+
+   
+   Parameters for the Flux1Joint model.
+
+   GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+   For joint density estimation, the model consumes a *single* sequence `obs` that
+   mixes all variables you want to model jointly. In this case:
+
+   - `dim_joint` is the number of tokens in that joint sequence.
+   - `in_channels` is the number of channels/features per token.
+
+   In many SBI-style problems you will still use `in_channels = 1` (one scalar per token),
+   but for some datasets a token may carry multiple features.
+
+   :param in_channels: Number of channels/features per token.
+   :type in_channels: int
+   :param vec_in_dim: Dimension of the vector input, if applicable.
+   :type vec_in_dim: Union[int, None]
+   :param mlp_ratio: Ratio for the MLP layers.
+   :type mlp_ratio: float
+   :param num_heads: Number of attention heads.
+   :type num_heads: int
+   :param depth_single_blocks: Number of single stream blocks.
+   :type depth_single_blocks: int
+   :param axes_dim: Dimensions of the axes for positional encoding.
+   :type axes_dim: list[int]
+   :param condition_dim: Number of features used to encode the condition mask, which determines the features on which we are conditioning.
+   :type condition_dim: list[int]
+   :param qkv_bias: Whether to use bias in QKV layers.
+   :type qkv_bias: bool
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs
+   :param dim_joint: Number of tokens in the joint sequence.
+   :type dim_joint: int
+   :param theta: Scaling factor for positional encoding.
+   :type theta: int
+   :param id_embedding_kind: Kind of embedding for token ids ('absolute', 'pos1d', 'pos2d', 'rope').
+   :type id_embedding_kind: str
+   :param guidance_embed: Whether to use guidance embedding.
+   :type guidance_embed: bool
+   :param param_dtype: Data type for model parameters.
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: axes_dim
+      :type:  list[int]
+
+
+   .. py:attribute:: condition_dim
+      :type:  list[int]
+
+
+   .. py:attribute:: depth_single_blocks
+      :type:  int
+
+
+   .. py:attribute:: dim_joint
+      :type:  int
+
+
+   .. py:attribute:: guidance_embed
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: id_embedding_kind
+      :type:  str
+      :value: 'absolute'
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: mlp_ratio
+      :type:  float
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: qkv_bias
+      :type:  bool
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: theta
+      :type:  int
+      :value: 500
+
+
+
+   .. py:attribute:: vec_in_dim
+      :type:  Union[int, None]
+
+
+.. py:class:: Flux1Params
+
+   
+   Parameters for the Flux1 model.
+
+   GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+   - `dim_*` counts **tokens** (how many distinct observables/variables you have).
+   - `channels` counts **features per token** (how many values each observable carries).
+
+   For conditional SBI with Flux1:
+
+   - Parameters to infer (often denoted $      heta$) have shape `(batch, dim_obs, in_channels)`.
+       In most SBI problems `in_channels = 1` (one scalar per parameter token).
+   - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
+       `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
+
+   Example: 2 parameters, frequency grid with 2 detectors
+
+   - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
+   - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
+
+   :param in_channels: Number of channels per observation/parameter token.
+   :type in_channels: int
+   :param vec_in_dim: Dimension of the vector input, if applicable.
+   :type vec_in_dim: Union[int, None]
+   :param context_in_dim: Number of channels per conditioning token.
+   :type context_in_dim: int
+   :param mlp_ratio: Ratio for the MLP layers.
+   :type mlp_ratio: float
+   :param num_heads: Number of attention heads.
+   :type num_heads: int
+   :param depth: Number of double stream blocks.
+   :type depth: int
+   :param depth_single_blocks: Number of single stream blocks.
+   :type depth_single_blocks: int
+   :param axes_dim: Dimensions of the axes for positional encoding.
+   :type axes_dim: list[int]
+   :param qkv_bias: Whether to use bias in QKV layers.
+   :type qkv_bias: bool
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs
+   :param dim_obs: Number of observation/parameter tokens.
+   :type dim_obs: int
+   :param dim_cond: Number of conditioning tokens.
+   :type dim_cond: int
+   :param theta: Scaling factor for positional encoding.
+   :type theta: int
+   :param id_embedding_kind: Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d" or "rope".
+   :type id_embedding_kind: tuple[str, str]
+   :param guidance_embed: Whether to use guidance embedding.
+   :type guidance_embed: bool
+   :param param_dtype: Data type for model parameters.
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: axes_dim
+      :type:  list[int]
+
+
+   .. py:attribute:: context_in_dim
+      :type:  int
+
+
+   .. py:attribute:: depth
+      :type:  int
+
+
+   .. py:attribute:: depth_single_blocks
+      :type:  int
+
+
+   .. py:attribute:: dim_cond
+      :type:  int
+
+
+   .. py:attribute:: dim_obs
+      :type:  int
+
+
+   .. py:attribute:: guidance_embed
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: id_embedding_kind
+      :type:  tuple[str, str]
+      :value: ('absolute', 'absolute')
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: mlp_ratio
+      :type:  float
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: qkv_bias
+      :type:  bool
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: theta
+      :type:  int
+      :value: 500
+
+
+
+   .. py:attribute:: vec_in_dim
+      :type:  Union[int, None]
+
+
+.. py:class:: JointCFMLoss(path, reduction = 'mean')
+
+   Bases: :py:obj:`gensbi.flow_matching.loss.ContinuousFMLoss`
+
+
+   
+   JointCFMLoss is a class that computes the continuous flow matching loss for the Joint model.
+
+   :param path:
+   :type path: Probability path for training.
+   :param reduction: Reduction method ('none', 'mean', 'sum').
+   :type reduction: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vf, batch, *args, condition_mask = None, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param vf: Vector field model.
+      :type vf: Callable
+      :param batch: Input data (x_0, x_1, t).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: JointDiffLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   JointDiffLoss is a class that computes the diffusion score matching loss for the Joint model.
+
+   :param path:
+   :type path: Probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, condition_mask = None, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: F model.
+      :type model: Callable
+      :param batch: Input data (x_1, sigma).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: JointWrapper(model)
+
+   Bases: :py:obj:`gensbi.utils.model_wrapping.ModelWrapper`
+
+
+   
+   Wrapper for joint models to handle both conditioned and unconditioned inference.
+
+   :param model:
+   :type model: The joint model instance to wrap.
+   :param conditioned: Whether to use conditioning by default. Defaults to True.
+   :type conditioned: bool, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, obs_ids, cond, cond_ids, conditioned = True, **kwargs)
+
+      
+      Call the wrapped model for either conditioned or unconditioned inference.
+
+      :param t: Time steps.
+      :type t: Array
+      :param obs: Observations.
+      :type obs: Array
+      :param obs_ids: Observation identifiers.
+      :type obs_ids: Array
+      :param cond: Conditioning values.
+      :type cond: Array
+      :param cond_ids: Conditioning identifiers.
+      :type cond_ids: Array
+      :param conditioned: Whether to use conditioning. If None, uses the default set at initialization.
+      :type conditioned: bool, optional
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments passed to the model.
+
+      :returns: Model output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: conditioned(obs, obs_ids, cond, cond_ids, t, **kwargs)
+
+      
+      Perform conditioned inference.
+
+      :param obs: Observations.
+      :type obs: Array
+      :param obs_ids: Observation identifiers.
+      :type obs_ids: Array
+      :param cond: Conditioning values.
+      :type cond: Array
+      :param cond_ids: Conditioning identifiers.
+      :type cond_ids: Array
+      :param t: Time steps.
+      :type t: Array
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments passed to the model.
+
+      :returns: Conditioned output (only for unconditioned variables).
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: unconditioned(obs, obs_ids, t, **kwargs)
+
+      
+      Perform unconditioned inference.
+
+      :param obs: Observations.
+      :type obs: Array
+      :param obs_ids: Observation identifiers.
+      :type obs_ids: Array
+      :param t: Time steps.
+      :type t: Array
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments passed to the model.
+
+      :returns: Unconditioned output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: Simformer(params, embedding_net_value = None)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Simformer model for joint density estimation.
+
+   :param params: Parameters for the Simformer model.
+   :type params: SimformerParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, node_ids, condition_mask, edge_mask = None)
+
+      
+      Forward pass of the Simformer model.
+
+      :param t: Time steps.
+      :type t: Array
+      :param obs: Input data.
+      :type obs: Array
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param node_ids: Node identifiers.
+      :type node_ids: Array
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Array
+      :param edge_mask: Mask for edges.
+      :type edge_mask: Optional[Array]
+
+      :returns: Model output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: condition_embedding
+
+
+   .. py:attribute:: dim_condition
+
+
+   .. py:attribute:: dim_id
+
+
+   .. py:attribute:: dim_value
+
+
+   .. py:attribute:: embedding_net_id
+
+
+   .. py:attribute:: embedding_time
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: output_fn
+
+
+   .. py:attribute:: params
+
+
+   .. py:attribute:: total_tokens
+
+
+   .. py:attribute:: transformer
+
+
+.. py:class:: SimformerParams
+
+   
+   Parameters for the Simformer model.
+
+   GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+   For Simformer (joint modeling), the input `obs` is a single sequence with:
+
+   - `dim_joint`: number of tokens in the sequence (how many variables / measured points).
+   - `in_channels`: number of channels/features per token.
+
+   Conditioning is controlled via `condition_mask` at call time (mask is over **tokens**,
+   not channels): tokens with mask=1 are treated as conditioned.
+
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs
+   :param in_channels: Number of channels/features per token.
+   :type in_channels: int
+   :param dim_value: Dimension of the value embeddings.
+   :type dim_value: int
+   :param dim_id: Dimension of the ID embeddings.
+   :type dim_id: int
+   :param dim_condition: Dimension of the condition embeddings.
+   :type dim_condition: int
+   :param dim_joint: Number of tokens in the joint sequence.
+   :type dim_joint: int
+   :param fourier_features: Number of Fourier features for time embedding.
+   :type fourier_features: int
+   :param num_heads: Number of attention heads.
+   :type num_heads: int
+   :param num_layers: Number of transformer layers.
+   :type num_layers: int
+   :param widening_factor: Widening factor for the transformer.
+   :type widening_factor: int
+   :param qkv_features: Number of features for QKV layers.
+   :type qkv_features: int
+   :param num_hidden_layers: Number of hidden layers in the transformer.
+   :type num_hidden_layers: int
+   :param param_dtype: Data type for model parameters.
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: dim_condition
+      :type:  int
+
+
+   .. py:attribute:: dim_id
+      :type:  int
+
+
+   .. py:attribute:: dim_joint
+      :type:  int
+
+
+   .. py:attribute:: dim_value
+      :type:  int
+
+
+   .. py:attribute:: fourier_features
+      :type:  int
+      :value: 128
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+
+
+   .. py:attribute:: num_hidden_layers
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: num_layers
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: qkv_features
+      :type:  int | None
+      :value: None
+
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: widening_factor
+      :type:  int
+      :value: 3
+
+
+
+.. py:class:: UnconditionalCFMLoss(path, reduction = 'mean')
+
+   Bases: :py:obj:`gensbi.flow_matching.loss.ContinuousFMLoss`
+
+
+   
+   UnconditionalCFMLoss is a class that computes the continuous flow matching loss for the Unconditional model.
+
+   :param path:
+   :type path: Probability path for training.
+   :param reduction: Reduction method ('none', 'mean', 'sum').
+   :type reduction: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vf, batch, *args, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param vf: Vector field model.
+      :type vf: Callable
+      :param batch: Input data (x_0, x_1, t).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: UnconditionalDiffLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   UnconditionalDiffLoss is a class that computes the diffusion score matching loss for the Unconditional model.
+
+   :param path:
+   :type path: Probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, **kwargs)
+
+      
+      Evaluate the continuous flow matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: F model.
+      :type model: Callable
+      :param batch: Input data (x_1, sigma).
+      :type batch: Tuple[Array, Array, Array]
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: UnconditionalWrapper(model)
+
+   Bases: :py:obj:`gensbi.utils.model_wrapping.ModelWrapper`
+
+
+   
+   Wrapper for unconditional models to handle input expansion and calling convention.
+
+   :param model:
+   :type model: The unconditional model instance to wrap.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, obs_ids, **kwargs)
+
+      
+      Call the wrapped model with expanded inputs.
+
+      :param t: Time steps.
+      :type t: Array
+      :param obs: Observations.
+      :type obs: Array
+      :param obs_ids: Observation identifiers.
+      :type obs_ids: Array
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments passed to the model.
+
+      :returns: Model output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

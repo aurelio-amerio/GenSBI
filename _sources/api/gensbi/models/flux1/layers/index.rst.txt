@@ -1,0 +1,683 @@
+gensbi.models.flux1.layers
+==========================
+
+.. py:module:: gensbi.models.flux1.layers
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.flux1.layers.DoubleStreamBlock
+   gensbi.models.flux1.layers.EmbedND
+   gensbi.models.flux1.layers.Identity
+   gensbi.models.flux1.layers.LastLayer
+   gensbi.models.flux1.layers.MLPEmbedder
+   gensbi.models.flux1.layers.Modulation
+   gensbi.models.flux1.layers.ModulationOut
+   gensbi.models.flux1.layers.QKNorm
+   gensbi.models.flux1.layers.SelfAttention
+   gensbi.models.flux1.layers.SingleStreamBlock
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.models.flux1.layers.timestep_embedding
+
+
+Module Contents
+---------------
+
+.. py:class:: DoubleStreamBlock(hidden_size, num_heads, mlp_ratio, rngs, qkv_features = None, param_dtype = jnp.bfloat16, qkv_bias = False)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(obs, cond, vec, pe = None, mask = None)
+
+
+   .. py:attribute:: cond_attn
+
+
+   .. py:attribute:: cond_mlp
+
+
+   .. py:attribute:: cond_mod
+
+
+   .. py:attribute:: cond_norm1
+
+
+   .. py:attribute:: cond_norm2
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: obs_attn
+
+
+   .. py:attribute:: obs_mlp
+
+
+   .. py:attribute:: obs_mod
+
+
+   .. py:attribute:: obs_norm1
+
+
+   .. py:attribute:: obs_norm2
+
+
+   .. py:attribute:: qkv_features
+      :value: None
+
+
+
+.. py:class:: EmbedND(dim, theta, axes_dim)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(ids)
+
+
+   .. py:attribute:: axes_dim
+
+
+   .. py:attribute:: dim
+
+
+   .. py:attribute:: theta
+
+
+.. py:class:: Identity
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+
+.. py:class:: LastLayer(hidden_size, patch_size, out_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, vec)
+
+
+   .. py:attribute:: adaLN_modulation
+
+
+   .. py:attribute:: linear
+
+
+   .. py:attribute:: norm_final
+
+
+.. py:class:: MLPEmbedder(in_dim, hidden_dim, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+
+   .. py:attribute:: in_layer
+
+
+   .. py:attribute:: out_layer
+
+
+   .. py:attribute:: silu
+
+
+.. py:class:: Modulation(dim, double, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vec)
+
+
+   .. py:attribute:: is_double
+
+
+   .. py:attribute:: lin
+
+
+   .. py:attribute:: multiplier
+      :value: 6
+
+
+
+.. py:class:: ModulationOut
+
+   .. py:attribute:: gate
+      :type:  jax.Array
+
+
+   .. py:attribute:: scale
+      :type:  jax.Array
+
+
+   .. py:attribute:: shift
+      :type:  jax.Array
+
+
+.. py:class:: QKNorm(dim, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(q, k, v)
+
+
+   .. py:attribute:: key_norm
+
+
+   .. py:attribute:: query_norm
+
+
+.. py:class:: SelfAttention(dim, rngs, qkv_features = None, param_dtype = jnp.bfloat16, num_heads = 8, qkv_bias = False)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, pe, mask = None)
+
+
+   .. py:attribute:: norm
+
+
+   .. py:attribute:: num_heads
+      :value: 8
+
+
+
+   .. py:attribute:: proj
+
+
+   .. py:attribute:: qkv
+
+
+.. py:class:: SingleStreamBlock(hidden_size, num_heads, rngs, qkv_features = None, param_dtype = jnp.bfloat16, mlp_ratio = 4.0, qk_scale = None)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   A DiT block with parallel linear layers as described in
+   `arXiv:2302.05442 <https://arxiv.org/abs/2302.05442>`_ and adapted modulation interface.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, vec, pe = None, mask = None)
+
+
+   .. py:attribute:: hidden_dim
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: linear1
+
+
+   .. py:attribute:: linear2
+
+
+   .. py:attribute:: mlp_act
+
+
+   .. py:attribute:: mlp_hidden_dim
+
+
+   .. py:attribute:: modulation
+
+
+   .. py:attribute:: norm
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: pre_norm
+
+
+   .. py:attribute:: scale
+
+
+.. py:function:: timestep_embedding(t, dim, max_period=10000, time_factor = 1000.0)
+
+   
+   Generate timestep embeddings.
+
+   :param t: These may be fractional.
+   :type t: a 1-D Tensor of N indices, one per batch element.
+   :param dim:
+   :type dim: the dimension of the output.
+   :param max_period:
+   :type max_period: controls the minimum frequency of the embeddings.
+   :param time_factor:
+   :type time_factor: Tensor of positional embeddings.
+
+   :rtype: timestep embeddings.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

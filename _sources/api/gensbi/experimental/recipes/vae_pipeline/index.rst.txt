@@ -1,0 +1,424 @@
+gensbi.experimental.recipes.vae_pipeline
+========================================
+
+.. py:module:: gensbi.experimental.recipes.vae_pipeline
+
+.. autoapi-nested-parse::
+
+   VAE Pipeline module for GenSBI.
+
+   This module provides an abstract pipeline class and concrete implementations for training and evaluating Variational Autoencoders (VAEs)
+   within the GenSBI framework. It manages model instantiation, training and validation loops, optimizer and EMA setup, checkpointing,
+   and utility functions for saving and restoring models.
+
+   The `AbstractVAEPipeline` class defines the general workflow for VAE-based models, including optimizer configuration, KL annealing,
+   and early stopping. Subclasses such as `VAE1DPipeline` and `VAE2DPipeline` implement pipelines for 1D and 2D autoencoder architectures, respectively.
+
+   Typical usage involves subclassing or instantiating the provided pipelines with appropriate datasets, model parameters, and (optionally) training configurations.
+
+   Key features:
+   - Model and EMA initialization
+   - Training and validation step functions (JIT-compiled)
+   - Learning rate scheduling and gradient clipping
+   - Early stopping and checkpoint management
+   - Support for custom training configurations
+
+   See the `VAE1DPipeline` and `VAE2DPipeline` classes for concrete examples.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline
+   gensbi.experimental.recipes.vae_pipeline.VAE1DPipeline
+   gensbi.experimental.recipes.vae_pipeline.VAE2DPipeline
+
+
+Module Contents
+---------------
+
+.. py:class:: AbstractVAEPipeline(model_cls, train_dataset, val_dataset, params, training_config=None)
+
+   
+   Abstract pipeline for training and evaluating Variational Autoencoders (VAEs) in GenSBI.
+
+   This class manages model creation, optimizer and EMA setup, training and validation loops, checkpointing,
+   and utility functions. It is designed to be subclassed for specific VAE architectures.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _get_default_training_config()
+      :classmethod:
+
+
+      
+      Return a dictionary of default training configuration parameters for VAE training.
+
+      :returns: **training_config** -- Default training configuration.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _get_ema_optimizer()
+
+      
+      Construct the EMA optimizer for maintaining an exponential moving average of model parameters.
+
+      :returns: **ema_optimizer** -- The EMA optimizer instance.
+      :rtype: ModelEMA
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _get_kl_schedule(nsteps)
+
+      
+      Construct a KL annealing schedule for training.
+
+      :param nsteps: Number of training steps.
+      :type nsteps: int
+
+      :returns: **schedule** -- KL weight schedule function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _get_optimizer()
+
+      
+      Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+
+      :returns: **optimizer** -- The optimizer instance for the model.
+      :rtype: nnx.Optimizer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_train_step_fn()
+
+      
+      Return the training step function, which performs a single optimization step.
+
+      :returns: **train_step** -- JIT-compiled training step function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_val_step_fn()
+
+      
+      Return the validation step function, which computes the loss on a validation batch.
+
+      :returns: **val_step** -- JIT-compiled validation step function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: restore_model(experiment_id=None)
+
+      
+      Restore the model and EMA model from checkpoint directories.
+
+      :param experiment_id: Identifier for the experiment/checkpoint. If None, uses the current training config value.
+      :type experiment_id: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: save_model(experiment_id=None)
+
+      
+      Save the current model and EMA model to checkpoint directories.
+
+      :param experiment_id: Identifier for the experiment/checkpoint. If None, uses the current training config value.
+      :type experiment_id: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: train(rngs, nsteps = None, save_model=True)
+
+      
+      Run the training loop for the VAE model.
+
+      :param rngs: Random number generators for training/validation steps.
+      :type rngs: nnx.Rngs
+      :param nsteps: Number of training steps. If None, uses the value from training config.
+      :type nsteps: int, optional
+      :param save_model: Whether to save the model after training.
+      :type save_model: bool, optional
+
+      :returns: * **loss_array** (*list*) -- List of training losses.
+                * **val_loss_array** (*list*) -- List of validation losses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: update_training_config(new_config)
+
+      
+      Update the training configuration with new parameters.
+
+      :param new_config: New training configuration parameters.
+      :type new_config: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ema_model
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: model
+
+
+   .. py:attribute:: params
+
+
+   .. py:attribute:: train_dataset
+
+
+   .. py:attribute:: train_dataset_iter
+
+
+   .. py:attribute:: training_config
+      :value: None
+
+
+
+   .. py:attribute:: val_dataset
+
+
+   .. py:attribute:: val_dataset_iter
+
+
+.. py:class:: VAE1DPipeline(train_dataset, val_dataset, params, training_config=None)
+
+   Bases: :py:obj:`AbstractVAEPipeline`
+
+
+   
+   Pipeline for training and evaluating 1D Variational Autoencoders (VAE1D) in GenSBI.
+
+   Inherits from AbstractVAEPipeline and uses the AutoEncoder1D model class.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:class:: VAE2DPipeline(train_dataset, val_dataset, params, training_config=None)
+
+   Bases: :py:obj:`AbstractVAEPipeline`
+
+
+   
+   Pipeline for training and evaluating 2D Variational Autoencoders (VAE2D) in GenSBI.
+
+   Inherits from AbstractVAEPipeline and uses the AutoEncoder2D model class.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

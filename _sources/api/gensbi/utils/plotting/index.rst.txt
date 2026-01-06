@@ -1,0 +1,223 @@
+gensbi.utils.plotting
+=====================
+
+.. py:module:: gensbi.utils.plotting
+
+.. autoapi-nested-parse::
+
+   Plotting utilities for GenSBI.
+
+   This module provides visualization functions for generative models, including
+   trajectory plots, marginal distributions, and 2D contour plots. Supports both
+   seaborn and corner-based plotting styles.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   gensbi.utils.plotting.base_color
+   gensbi.utils.plotting.cmap_lcontour
+   gensbi.utils.plotting.colors
+   gensbi.utils.plotting.hist_color
+   gensbi.utils.plotting.rgb_base
+   gensbi.utils.plotting.transparent_cmap
+   gensbi.utils.plotting.true_val_color
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.utils.plotting._parse_range
+   gensbi.utils.plotting._plot_marginals_corner
+   gensbi.utils.plotting._plot_marginals_seaborn
+   gensbi.utils.plotting.plot_2d_dist_contour
+   gensbi.utils.plotting.plot_2d_levels
+   gensbi.utils.plotting.plot_marginals
+   gensbi.utils.plotting.plot_trajectories
+
+
+Module Contents
+---------------
+
+.. py:function:: _parse_range(range_arg, ndim)
+
+.. py:function:: _plot_marginals_corner(data, labels=None, gridsize=25, range=None, true_param=None, **kwargs)
+
+.. py:function:: _plot_marginals_seaborn(data, plot_levels=True, labels=None, gridsize=15, range=None, hexbin_kwargs={}, histplot_kwargs={}, true_param=None)
+
+.. py:function:: plot_2d_dist_contour(x, y, Z, true_param=None, levels=[0.6827, 0.9545], cmap=cmap_lcontour, display_labels=False)
+
+   
+   Plot a 2D contour plot of a distribution.
+
+   :param x: X values.
+   :type x: array-like
+   :param y: Y values.
+   :type y: array-like
+   :param Z: Z values corresponding to (x, y).
+   :type Z: array-like
+   :param levels: Contour levels to plot. If None, contours will not be plotted.
+   :type levels: list or None, optional
+
+   :returns: **fig, ax** -- The figure and axes containing the plot.
+   :rtype: matplotlib Figure and Axes objects
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545], display_labels=False)
+
+   
+   Plot 2D levels on a given axis.
+
+   :param x: X values.
+   :type x: array-like
+   :param y: Y values.
+   :type y: array-like
+   :param Z: Z values corresponding to (x, y).
+   :type Z: array-like
+   :param ax: The axes to plot on.
+   :type ax: matplotlib Axes
+   :param levels: The contour levels to plot.
+   :type levels: list of float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_marginals(data, backend='corner', plot_levels=True, labels=None, gridsize=15, hexbin_kwargs={}, histplot_kwargs={}, range=None, true_param=None, **kwargs)
+
+   
+   Plot marginal distributions of multidimensional data using either the 'corner' or 'seaborn' backend.
+
+   :param data: The data to plot. Each row is a sample, each column a parameter.
+   :type data: array-like, shape (n_samples, n_dim)
+   :param backend: Which plotting backend to use. Options:
+                   - 'corner': Use the corner.py package for a classic corner plot.
+                   - 'seaborn': Use seaborn's jointplot (2D) or custom grid (ND) for marginals.
+                   The seaborn backend is slower, but will produce smoother plots with KDE contours.
+   :type backend: str, default="corner"
+   :param plot_levels: If True and using seaborn, plot 1- and 2-sigma KDE contours on off-diagonal plots. When using 'corner', levels are automatically computed.
+   :type plot_levels: bool, default=True
+   :param labels: Axis labels for each parameter. If None, uses LaTeX-style $     heta_i$.
+   :type labels: list of str or None, default=None
+   :param gridsize: Number of bins for hexbin/histogram (seaborn) or for corner plot.
+   :type gridsize: int, default=15
+   :param hexbin_kwargs: Additional keyword arguments for hexbin plots (seaborn backend only).
+   :type hexbin_kwargs: dict, default={}
+   :param histplot_kwargs: Additional keyword arguments for histogram plots (seaborn backend only).
+   :type histplot_kwargs: dict, default={}
+   :param range: Axis limits for each parameter, e.g. [(xmin, xmax), (ymin, ymax), ...].
+   :type range: tuple or list of tuples or None, default=None
+   :param true_param: Ground truth parameter values to mark on the plots.
+   :type true_param: array-like, shape (n_dim,), default=None
+   :param \*\*kwargs: Additional keyword arguments passed to the underlying plotting functions.
+
+   :returns: **fig, axes** -- The figure and axes containing the plot.
+   :rtype: matplotlib Figure and Axes objects
+
+   :raises ValueError: If an unknown backend is specified.
+
+   .. rubric:: Notes
+
+   - For 'corner', the function uses the corner.py package and supports labels, gridsize, range, and true_param.
+   - For 'seaborn', 2D data uses jointplot, higher dimensions use a custom grid of hexbin and histogram plots.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_trajectories(traj)
+
+   
+   Plot trajectories showing the flow from source to target distribution.
+
+   :param traj:
+   :type traj: Trajectory data of shape (time_steps, n_samples, n_dims).
+
+   :rtype: Tuple of (figure, axes) objects.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: base_color
+   :value: '#CD5656'
+
+
+.. py:data:: cmap_lcontour
+
+.. py:data:: colors
+
+.. py:data:: hist_color
+   :value: '#202A44'
+
+
+.. py:data:: rgb_base
+
+.. py:data:: transparent_cmap
+
+.. py:data:: true_val_color
+   :value: '#687FE5'
+
+

@@ -1,0 +1,273 @@
+gensbi.models.simformer
+=======================
+
+.. py:module:: gensbi.models.simformer
+
+.. autoapi-nested-parse::
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/models/simformer/model/index
+   /api/gensbi/models/simformer/transformer/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.simformer.Simformer
+   gensbi.models.simformer.SimformerParams
+
+
+Package Contents
+----------------
+
+.. py:class:: Simformer(params, embedding_net_value = None)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Simformer model for joint density estimation.
+
+   :param params: Parameters for the Simformer model.
+   :type params: SimformerParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, node_ids, condition_mask, edge_mask = None)
+
+      
+      Forward pass of the Simformer model.
+
+      :param t: Time steps.
+      :type t: Array
+      :param obs: Input data.
+      :type obs: Array
+      :param args: Additional arguments.
+      :type args: Optional[dict]
+      :param node_ids: Node identifiers.
+      :type node_ids: Array
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Array
+      :param edge_mask: Mask for edges.
+      :type edge_mask: Optional[Array]
+
+      :returns: Model output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: condition_embedding
+
+
+   .. py:attribute:: dim_condition
+
+
+   .. py:attribute:: dim_id
+
+
+   .. py:attribute:: dim_value
+
+
+   .. py:attribute:: embedding_net_id
+
+
+   .. py:attribute:: embedding_time
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: output_fn
+
+
+   .. py:attribute:: params
+
+
+   .. py:attribute:: total_tokens
+
+
+   .. py:attribute:: transformer
+
+
+.. py:class:: SimformerParams
+
+   
+   Parameters for the Simformer model.
+
+   GenSBI uses the tensor convention `(batch, dim, channels)`.
+
+   For Simformer (joint modeling), the input `obs` is a single sequence with:
+
+   - `dim_joint`: number of tokens in the sequence (how many variables / measured points).
+   - `in_channels`: number of channels/features per token.
+
+   Conditioning is controlled via `condition_mask` at call time (mask is over **tokens**,
+   not channels): tokens with mask=1 are treated as conditioned.
+
+   :param rngs: Random number generators for initialization.
+   :type rngs: nnx.Rngs
+   :param in_channels: Number of channels/features per token.
+   :type in_channels: int
+   :param dim_value: Dimension of the value embeddings.
+   :type dim_value: int
+   :param dim_id: Dimension of the ID embeddings.
+   :type dim_id: int
+   :param dim_condition: Dimension of the condition embeddings.
+   :type dim_condition: int
+   :param dim_joint: Number of tokens in the joint sequence.
+   :type dim_joint: int
+   :param fourier_features: Number of Fourier features for time embedding.
+   :type fourier_features: int
+   :param num_heads: Number of attention heads.
+   :type num_heads: int
+   :param num_layers: Number of transformer layers.
+   :type num_layers: int
+   :param widening_factor: Widening factor for the transformer.
+   :type widening_factor: int
+   :param qkv_features: Number of features for QKV layers.
+   :type qkv_features: int
+   :param num_hidden_layers: Number of hidden layers in the transformer.
+   :type num_hidden_layers: int
+   :param param_dtype: Data type for model parameters.
+   :type param_dtype: DTypeLike
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: dim_condition
+      :type:  int
+
+
+   .. py:attribute:: dim_id
+      :type:  int
+
+
+   .. py:attribute:: dim_joint
+      :type:  int
+
+
+   .. py:attribute:: dim_value
+      :type:  int
+
+
+   .. py:attribute:: fourier_features
+      :type:  int
+      :value: 128
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+
+
+   .. py:attribute:: num_hidden_layers
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: num_layers
+      :type:  int
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: qkv_features
+      :type:  int | None
+      :value: None
+
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: widening_factor
+      :type:  int
+      :value: 3
+
+
+
