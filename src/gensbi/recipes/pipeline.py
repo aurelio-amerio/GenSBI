@@ -31,6 +31,23 @@ from tqdm import tqdm
 import os
 
 
+# ANSI Escape Codes
+RED = "\033[91m"
+YELLOW = "\033[93m"
+GREEN = "\033[92m"
+RESET = "\033[0m"
+
+def get_colored_value(val, thresholds=(1.1, 1.2)):
+    """Returns the value wrapped in color codes based on thresholds."""
+    if val < thresholds[0]:
+        color = RED
+    elif val < thresholds[1]:
+        color = YELLOW
+    else:
+        color = GREEN
+    return f"{color}{val:.2f}{RESET}"
+
+
 class ModelEMA(nnx.Optimizer):
     """
     Exponential Moving Average (EMA) optimizer for maintaining a smoothed version of model parameters.
@@ -686,7 +703,7 @@ class AbstractPipeline(abc.ABC):
 
                 pbar.set_postfix(
                     loss=f"{l_train:.4f}",
-                    ratio=f"{ratio:.4f}",
+                    ratio=get_colored_value(ratio, thresholds=(1.1, 1.2)),
                     counter=counter,
                     val_loss=f"{l_val:.4f}",
                 )
