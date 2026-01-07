@@ -24,12 +24,12 @@ def get_colored_value(val, thresholds=(1.1, 1.2)):
             The colored string representation of the value.
     """
     if val < thresholds[0]:
-        color = RED
+        color = GREEN
     elif val < thresholds[1]:
         color = YELLOW
     else:
-        color = GREEN
-    return f"{color}{val:.2f}{RESET}"
+        color = RED
+    return f"{color}{val:.4f}{RESET}"
 
 
 def scale_lr(batch_size, base_lr=1e-4, reference_batch_size=256):
