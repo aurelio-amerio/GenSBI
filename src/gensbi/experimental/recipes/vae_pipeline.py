@@ -33,8 +33,10 @@ import abc
 from functools import partial
 
 import optax
-from optax.contrib import reduce_on_plateau
+
 from optax.schedules import linear_schedule, constant_schedule
+
+import yaml
 
 import orbax.checkpoint as ocp
 
@@ -50,6 +52,110 @@ from gensbi.experimental.models.autoencoders import (
 )
 from gensbi.recipes.pipeline import ema_step, ModelEMA
 
+def parse_training_config(config_path: str):
+    """
+    Parse a training configuration file.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    config : dict
+        Parsed configuration dictionary.
+
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    # Training parameters
+    train_params = config.get("training", {})
+    multistep = train_params.get("multistep", 1)
+    experiment_id = train_params.get("experiment_id", 1)
+    early_stopping = train_params.get("early_stopping", True)
+    nsteps = train_params.get("nsteps", 30000) * multistep
+    val_every = train_params.get("val_every", 100) * multistep
+
+    # Optimizer parameters
+    opt_params = config.get("optimizer", {})
+
+    MAX_LR = opt_params.get("max_lr", 1e-3)
+    MIN_LR = opt_params.get("min_lr", 0.0)
+    MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
+
+    warmup_steps = opt_params.get("warmup_steps", 500)
+
+    ema_decay = opt_params.get("ema_decay", 0.999)
+
+    decay_transition = opt_params.get("decay_transition", 0.85)
+
+    training_config = {}
+    # overwrite the defaults with the config file values
+    training_config["num_steps"] = nsteps
+    training_config["ema_decay"] = ema_decay
+    training_config["decay_transition"] = decay_transition
+
+    training_config["max_lr"] = MAX_LR
+    training_config["min_lr"] = MIN_LR
+    training_config["min_scale"] = MIN_SCALE
+    training_config["val_every"] = val_every
+    training_config["early_stopping"] = early_stopping
+    training_config["experiment_id"] = experiment_id
+    training_config["multistep"] = multistep
+    training_config["warmup_steps"] = warmup_steps
+
+    return training_config
+
+# AutoEncoderParams:
+
+#     resolution: int
+#     in_channels: int
+#     ch: int
+#     out_ch: int
+#     ch_mult: list[int]
+#     num_res_blocks: int
+#     z_channels: int
+#     scale_factor: float
+#     shift_factor: float
+#     rngs: nnx.Rngs
+#     param_dtype: DTypeLike
+
+def parse_autoencoder_params(config_path: str):
+    """
+    Parse a VAE configuration file.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the configuration file.
+
+    Returns
+    -------
+    config : dict
+        Parsed configuration dictionary.
+
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    model_params = config.get("vae_model", {})
+
+    params_dict = dict(
+        resolution=model_params.get("resolution"),
+        in_channels=model_params.get("in_channels"),
+        ch=model_params.get("ch"),
+        out_ch=model_params.get("out_ch"),
+        ch_mult=model_params.get("ch_mult"),
+        num_res_blocks=model_params.get("num_res_blocks"),
+        z_channels=model_params.get("z_channels"),
+        scale_factor=model_params.get("scale_factor", 1.0),
+        shift_factor=model_params.get("shift_factor", 0.0),
+        param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
+    )
+
+    return params_dict
 
 
 class AbstractVAEPipeline:
@@ -109,41 +215,52 @@ class AbstractVAEPipeline:
         self.ema_model = nnx.clone(self.model)
 
         self.loss_fn = vae_loss_fn
+        
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        dim_cond: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
 
-    # @abc.abstractmethod
-    # def init_pipeline_from_config(
-    #     cls,
-    #     train_dataset,
-    #     val_dataset,
-    #     dim_obs: int,
-    #     dim_cond: int,
-    #     config_path: str,
-    #     checkpoint_dir: str,
-    # ):
-    #     """
-    #     Initialize the pipeline from a configuration file.
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
 
-    #     Parameters
-    #     ----------
-    #     train_dataset : iterable
-    #         Training dataset.
-    #     val_dataset : iterable
-    #         Validation dataset.
-    #     dim_obs : int
-    #         Dimensionality of the parameter (theta) space.
-    #     dim_cond : int
-    #         Dimensionality of the observation (x) space.
-    #     config_path : str
-    #         Path to the configuration file.
-    #     checkpoint_dir : str
-    #         Directory for saving checkpoints.
+        """
 
-    #     Returns
-    #     -------
-    #     pipeline : AbstractPipeline
-    #         An instance of the pipeline initialized from the configuration.
-    #     """
-    #     ...  # pragma: no cover
+        params_dict = parse_autoencoder_params(config_path)
+
+
+        params = AutoEncoderParams(
+            rngs=nnx.Rngs(0),
+            **params_dict,
+        )
+
+        # Training parameters
+        training_config = cls._get_default_training_config()
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        training_config_ = parse_training_config(config_path)
+
+        for key, value in training_config_.items():
+            training_config[key] = value  # update with config file values
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            params=params,
+            training_config=training_config,
+        )
+
+        return pipeline
+
 
     def _get_ema_optimizer(self):
         """
@@ -176,6 +293,33 @@ class AbstractVAEPipeline:
         schedule = constant_schedule(0.1)
         return schedule
 
+    # def _get_optimizer(self):
+    #     """
+    #     Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+
+    #     Returns
+    #     -------
+    #     optimizer : nnx.Optimizer
+    #         The optimizer instance for the model.
+    #     """
+    #     opt = optax.chain(
+    #         optax.adaptive_grad_clip(10.0),
+    #         optax.adamw(self.training_config["max_lr"]),
+    #         reduce_on_plateau(
+    #             patience=self.training_config["patience"],
+    #             cooldown=self.training_config["cooldown"],
+    #             factor=self.training_config["factor"],
+    #             rtol=self.training_config["rtol"],
+    #             accumulation_size=self.training_config["accumulation_size"],
+    #             min_scale=self.training_config["min_scale"],
+    #         ),
+    #     )
+    #     if self.training_config["multistep"] > 1:
+    #         opt = optax.MultiSteps(opt, self.training_config["multistep"])
+
+    #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
+    #     return optimizer
+    
     def _get_optimizer(self):
         """
         Construct the optimizer for training, including learning rate scheduling and gradient clipping.
@@ -185,17 +329,39 @@ class AbstractVAEPipeline:
         optimizer : nnx.Optimizer
             The optimizer instance for the model.
         """
+        warmup_steps = (
+            self.training_config["warmup_steps"] * self.training_config["multistep"]
+        )
+        num_steps = self.training_config["num_steps"]
+        max_lr = self.training_config["max_lr"]
+        min_lr = self.training_config["min_lr"]
+
+        
+        # we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr
+        decay_transition = self.training_config["decay_transition"]
+        
+        warmup_schedule = optax.linear_schedule(
+            init_value=1e-7, end_value=max_lr, transition_steps=warmup_steps)
+        constant_schedule = optax.constant_schedule(value=max_lr)
+        decay_schedule = optax.cosine_decay_schedule(
+            init_value=max_lr, decay_steps=int((1 - decay_transition) * num_steps), alpha=min_lr / max_lr
+        )
+        schedule = optax.join_schedules(
+            schedules=[
+                warmup_schedule,
+                constant_schedule,
+                decay_schedule,
+            ],
+            boundaries=[warmup_steps, int(decay_transition * num_steps)]
+        )
+        
+        # define the weight decay mask to avoid applying weight decay to bias and norm parameters
+        def decay_mask_fn(params):
+            return jax.tree_util.tree_map(lambda x: x.ndim > 1, params)
+
         opt = optax.chain(
             optax.adaptive_grad_clip(10.0),
-            optax.adamw(self.training_config["max_lr"]),
-            reduce_on_plateau(
-                patience=self.training_config["patience"],
-                cooldown=self.training_config["cooldown"],
-                factor=self.training_config["factor"],
-                rtol=self.training_config["rtol"],
-                accumulation_size=self.training_config["accumulation_size"],
-                min_scale=self.training_config["min_scale"],
-            ),
+            optax.adamw(schedule, mask=decay_mask_fn),
         )
         if self.training_config["multistep"] > 1:
             opt = optax.MultiSteps(opt, self.training_config["multistep"])
@@ -215,17 +381,14 @@ class AbstractVAEPipeline:
         """
         training_config = {}
 
-        training_config["num_steps"] = 30_000
+        training_config["num_steps"] = 50_000
 
         training_config["ema_decay"] = 0.999
-
-        training_config["patience"] = 10
-        training_config["cooldown"] = 2
-        training_config["factor"] = 0.5
-        training_config["accumulation_size"] = 100
-        training_config["rtol"] = 1e-4
-        training_config["max_lr"] = 1e-3
-        training_config["min_lr"] = 1e-8
+        training_config["warmup_steps"] = 500
+        training_config["decay_transition"] = 0.70
+        
+        training_config["max_lr"] = 1e-4
+        training_config["min_lr"] = 1e-6
         training_config["val_every"] = 100
         training_config["early_stopping"] = True
         training_config["experiment_id"] = 1
