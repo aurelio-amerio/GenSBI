@@ -897,28 +897,22 @@ window.addEventListener("load", load);
 
     <span class="c1"># Optimizer parameters</span>
     <span class="n">opt_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">,</span> <span class="p">{})</span>
-    <span class="n">PATIENCE</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;patience&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-    <span class="n">COOLDOWN</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cooldown&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">FACTOR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;factor&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
-    <span class="n">ACCUMULATION_SIZE</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;accumulation_size&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="n">multistep</span>
-    <span class="n">RTOL</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rtol&quot;</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">)</span>
+
     <span class="n">MAX_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_lr&quot;</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>
     <span class="n">MIN_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_lr&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
     <span class="n">MIN_SCALE</span> <span class="o">=</span> <span class="n">MIN_LR</span> <span class="o">/</span> <span class="n">MAX_LR</span> <span class="k">if</span> <span class="n">MAX_LR</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
 
     <span class="n">ema_decay</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span>
-    
+    <span class="n">decay_transition</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">)</span>
+
     <span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
 
     <span class="n">training_config</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="c1"># overwrite the defaults with the config file values</span>
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nsteps</span>
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ema_decay</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;patience&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PATIENCE</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;cooldown&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">COOLDOWN</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FACTOR</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;accumulation_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ACCUMULATION_SIZE</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">RTOL</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">decay_transition</span>
+
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LR</span>
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_LR</span>
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_SCALE</span>
@@ -927,8 +921,6 @@ window.addEventListener("load", load);
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">experiment_id</span>
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">multistep</span>
     <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">warmup_steps</span>
-    
-    
 
     <span class="k">return</span> <span class="n">training_config</span></div>
 
@@ -978,7 +970,7 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerFlowPipeline.dim_joint">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span></div>
 
-        
+
 <div class="viewcode-block" id="SimformerFlowPipeline.ch_obs">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerFlowPipeline.ch_obs">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span> <span class="o">=</span> <span class="n">ch_obs</span></div>
@@ -986,17 +978,16 @@ window.addEventListener("load", load);
 
         <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_params</span><span class="p">()</span>
-        
+
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-        
-        
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
-            <span class="n">ch_obs</span> <span class="o">=</span> <span class="n">ch_obs</span><span class="p">,</span>
+            <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
@@ -1198,7 +1189,7 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerDiffusionPipeline.dim_joint">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span></div>
 
-        
+
 <div class="viewcode-block" id="SimformerDiffusionPipeline.ch_obs">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerDiffusionPipeline.ch_obs">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span> <span class="o">=</span> <span class="n">ch_obs</span></div>
@@ -1206,17 +1197,16 @@ window.addEventListener("load", load);
 
         <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_params</span><span class="p">()</span>
-        
+
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-        
-        
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
-            <span class="n">ch_obs</span> <span class="o">=</span> <span class="n">ch_obs</span><span class="p">,</span>
+            <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
@@ -1293,7 +1283,7 @@ window.addEventListener("load", load);
             <span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="p">,</span>
-            <span class="n">ch_obs</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">ch_obs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
         <span class="p">)</span>

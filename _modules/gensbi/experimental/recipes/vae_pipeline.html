@@ -792,8 +792,10 @@ window.addEventListener("load", load);
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">optax.contrib</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce_on_plateau</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">optax.schedules</span><span class="w"> </span><span class="kn">import</span> <span class="n">linear_schedule</span><span class="p">,</span> <span class="n">constant_schedule</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">orbax.checkpoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ocp</span>
 
@@ -808,6 +810,116 @@ window.addEventListener("load", load);
     <span class="n">AutoEncoder2D</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">ema_step</span><span class="p">,</span> <span class="n">ModelEMA</span>
+
+<div class="viewcode-block" id="parse_training_config">
+<a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.parse_training_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_training_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse a training configuration file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config_path : str</span>
+<span class="sd">        Path to the configuration file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    config : dict</span>
+<span class="sd">        Parsed configuration dictionary.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="c1"># Training parameters</span>
+    <span class="n">train_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;training&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">multistep</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;multistep&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">early_stopping</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">nsteps</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nsteps&quot;</span><span class="p">,</span> <span class="mi">30000</span><span class="p">)</span> <span class="o">*</span> <span class="n">multistep</span>
+    <span class="n">val_every</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;val_every&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="n">multistep</span>
+
+    <span class="c1"># Optimizer parameters</span>
+    <span class="n">opt_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="n">MAX_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_lr&quot;</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>
+    <span class="n">MIN_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_lr&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">MIN_SCALE</span> <span class="o">=</span> <span class="n">MIN_LR</span> <span class="o">/</span> <span class="n">MAX_LR</span> <span class="k">if</span> <span class="n">MAX_LR</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+    <span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+
+    <span class="n">ema_decay</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span>
+
+    <span class="n">decay_transition</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">)</span>
+
+    <span class="n">training_config</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># overwrite the defaults with the config file values</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nsteps</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ema_decay</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">decay_transition</span>
+
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LR</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_LR</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_SCALE</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val_every</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">early_stopping</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">experiment_id</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">multistep</span>
+    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">warmup_steps</span>
+
+    <span class="k">return</span> <span class="n">training_config</span></div>
+
+
+<span class="c1"># AutoEncoderParams:</span>
+
+<span class="c1">#     resolution: int</span>
+<span class="c1">#     in_channels: int</span>
+<span class="c1">#     ch: int</span>
+<span class="c1">#     out_ch: int</span>
+<span class="c1">#     ch_mult: list[int]</span>
+<span class="c1">#     num_res_blocks: int</span>
+<span class="c1">#     z_channels: int</span>
+<span class="c1">#     scale_factor: float</span>
+<span class="c1">#     shift_factor: float</span>
+<span class="c1">#     rngs: nnx.Rngs</span>
+<span class="c1">#     param_dtype: DTypeLike</span>
+
+<div class="viewcode-block" id="parse_autoencoder_params">
+<a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.parse_autoencoder_params">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_autoencoder_params</span><span class="p">(</span><span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse a VAE configuration file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config_path : str</span>
+<span class="sd">        Path to the configuration file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    config : dict</span>
+<span class="sd">        Parsed configuration dictionary.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">model_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vae_model&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="n">params_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">resolution</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;resolution&quot;</span><span class="p">),</span>
+        <span class="n">in_channels</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;in_channels&quot;</span><span class="p">),</span>
+        <span class="n">ch</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ch&quot;</span><span class="p">),</span>
+        <span class="n">out_ch</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;out_ch&quot;</span><span class="p">),</span>
+        <span class="n">ch_mult</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ch_mult&quot;</span><span class="p">),</span>
+        <span class="n">num_res_blocks</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_res_blocks&quot;</span><span class="p">),</span>
+        <span class="n">z_channels</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;z_channels&quot;</span><span class="p">),</span>
+        <span class="n">scale_factor</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scale_factor&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+        <span class="n">shift_factor</span><span class="o">=</span><span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;shift_factor&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+        <span class="n">param_dtype</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">jnp</span><span class="p">,</span> <span class="n">model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;param_dtype&quot;</span><span class="p">,</span> <span class="s2">&quot;float32&quot;</span><span class="p">)),</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">params_dict</span></div>
 
 
 
@@ -897,41 +1009,55 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.AbstractVAEPipeline.loss_fn">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">vae_loss_fn</span></div>
 
+        
+<div class="viewcode-block" id="AbstractVAEPipeline.init_pipeline_from_config">
+<a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.AbstractVAEPipeline.init_pipeline_from_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the pipeline from a configuration file.</span>
 
-    <span class="c1"># @abc.abstractmethod</span>
-    <span class="c1"># def init_pipeline_from_config(</span>
-    <span class="c1">#     cls,</span>
-    <span class="c1">#     train_dataset,</span>
-    <span class="c1">#     val_dataset,</span>
-    <span class="c1">#     dim_obs: int,</span>
-    <span class="c1">#     dim_cond: int,</span>
-    <span class="c1">#     config_path: str,</span>
-    <span class="c1">#     checkpoint_dir: str,</span>
-    <span class="c1"># ):</span>
-    <span class="c1">#     &quot;&quot;&quot;</span>
-    <span class="c1">#     Initialize the pipeline from a configuration file.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        config_path : str</span>
+<span class="sd">            Path to the configuration file.</span>
 
-    <span class="c1">#     Parameters</span>
-    <span class="c1">#     ----------</span>
-    <span class="c1">#     train_dataset : iterable</span>
-    <span class="c1">#         Training dataset.</span>
-    <span class="c1">#     val_dataset : iterable</span>
-    <span class="c1">#         Validation dataset.</span>
-    <span class="c1">#     dim_obs : int</span>
-    <span class="c1">#         Dimensionality of the parameter (theta) space.</span>
-    <span class="c1">#     dim_cond : int</span>
-    <span class="c1">#         Dimensionality of the observation (x) space.</span>
-    <span class="c1">#     config_path : str</span>
-    <span class="c1">#         Path to the configuration file.</span>
-    <span class="c1">#     checkpoint_dir : str</span>
-    <span class="c1">#         Directory for saving checkpoints.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="c1">#     Returns</span>
-    <span class="c1">#     -------</span>
-    <span class="c1">#     pipeline : AbstractPipeline</span>
-    <span class="c1">#         An instance of the pipeline initialized from the configuration.</span>
-    <span class="c1">#     &quot;&quot;&quot;</span>
-    <span class="c1">#     ...  # pragma: no cover</span>
+        <span class="n">params_dict</span> <span class="o">=</span> <span class="n">parse_autoencoder_params</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+
+
+        <span class="n">params</span> <span class="o">=</span> <span class="n">AutoEncoderParams</span><span class="p">(</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">params_dict</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Training parameters</span>
+        <span class="n">training_config</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_default_training_config</span><span class="p">()</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
+
+        <span class="n">training_config_</span> <span class="o">=</span> <span class="n">parse_training_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">training_config_</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">training_config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>  <span class="c1"># update with config file values</span>
+
+        <span class="n">pipeline</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">train_dataset</span><span class="p">,</span>
+            <span class="n">val_dataset</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pipeline</span></div>
+
+
 
 <div class="viewcode-block" id="AbstractVAEPipeline._get_ema_optimizer">
 <a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.AbstractVAEPipeline._get_ema_optimizer">[docs]</a>
@@ -970,6 +1096,33 @@ window.addEventListener("load", load);
         <span class="k">return</span> <span class="n">schedule</span></div>
 
 
+    <span class="c1"># def _get_optimizer(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     Construct the optimizer for training, including learning rate scheduling and gradient clipping.</span>
+
+    <span class="c1">#     Returns</span>
+    <span class="c1">#     -------</span>
+    <span class="c1">#     optimizer : nnx.Optimizer</span>
+    <span class="c1">#         The optimizer instance for the model.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     opt = optax.chain(</span>
+    <span class="c1">#         optax.adaptive_grad_clip(10.0),</span>
+    <span class="c1">#         optax.adamw(self.training_config[&quot;max_lr&quot;]),</span>
+    <span class="c1">#         reduce_on_plateau(</span>
+    <span class="c1">#             patience=self.training_config[&quot;patience&quot;],</span>
+    <span class="c1">#             cooldown=self.training_config[&quot;cooldown&quot;],</span>
+    <span class="c1">#             factor=self.training_config[&quot;factor&quot;],</span>
+    <span class="c1">#             rtol=self.training_config[&quot;rtol&quot;],</span>
+    <span class="c1">#             accumulation_size=self.training_config[&quot;accumulation_size&quot;],</span>
+    <span class="c1">#             min_scale=self.training_config[&quot;min_scale&quot;],</span>
+    <span class="c1">#         ),</span>
+    <span class="c1">#     )</span>
+    <span class="c1">#     if self.training_config[&quot;multistep&quot;] &gt; 1:</span>
+    <span class="c1">#         opt = optax.MultiSteps(opt, self.training_config[&quot;multistep&quot;])</span>
+
+    <span class="c1">#     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)</span>
+    <span class="c1">#     return optimizer</span>
+    
 <div class="viewcode-block" id="AbstractVAEPipeline._get_optimizer">
 <a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.AbstractVAEPipeline._get_optimizer">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -981,17 +1134,39 @@ window.addEventListener("load", load);
 <span class="sd">        optimizer : nnx.Optimizer</span>
 <span class="sd">            The optimizer instance for the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warmup_steps</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">num_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span>
+        <span class="n">max_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span>
+        <span class="n">min_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span>
+
+        
+        <span class="c1"># we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr</span>
+        <span class="n">decay_transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span>
+        
+        <span class="n">warmup_schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">linear_schedule</span><span class="p">(</span>
+            <span class="n">init_value</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">,</span> <span class="n">end_value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">,</span> <span class="n">transition_steps</span><span class="o">=</span><span class="n">warmup_steps</span><span class="p">)</span>
+        <span class="n">constant_schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">constant_schedule</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">)</span>
+        <span class="n">decay_schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">cosine_decay_schedule</span><span class="p">(</span>
+            <span class="n">init_value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">,</span> <span class="n">decay_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay_transition</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_steps</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="n">min_lr</span> <span class="o">/</span> <span class="n">max_lr</span>
+        <span class="p">)</span>
+        <span class="n">schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">join_schedules</span><span class="p">(</span>
+            <span class="n">schedules</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">warmup_schedule</span><span class="p">,</span>
+                <span class="n">constant_schedule</span><span class="p">,</span>
+                <span class="n">decay_schedule</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">boundaries</span><span class="o">=</span><span class="p">[</span><span class="n">warmup_steps</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">decay_transition</span> <span class="o">*</span> <span class="n">num_steps</span><span class="p">)]</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># define the weight decay mask to avoid applying weight decay to bias and norm parameters</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">decay_mask_fn</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+
         <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
             <span class="n">optax</span><span class="o">.</span><span class="n">adaptive_grad_clip</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span>
-            <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]),</span>
-            <span class="n">reduce_on_plateau</span><span class="p">(</span>
-                <span class="n">patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;patience&quot;</span><span class="p">],</span>
-                <span class="n">cooldown</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;cooldown&quot;</span><span class="p">],</span>
-                <span class="n">factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;factor&quot;</span><span class="p">],</span>
-                <span class="n">rtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">],</span>
-                <span class="n">accumulation_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;accumulation_size&quot;</span><span class="p">],</span>
-                <span class="n">min_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">],</span>
-            <span class="p">),</span>
+            <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">decay_mask_fn</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">MultiSteps</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">])</span>
@@ -1014,17 +1189,14 @@ window.addEventListener("load", load);
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">training_config</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30_000</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50_000</span>
 
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.999</span>
-
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;patience&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;cooldown&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;accumulation_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-4</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-3</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-8</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">500</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.70</span>
+        
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-4</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-6</span>
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>

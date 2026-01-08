@@ -959,40 +959,37 @@ window.addEventListener("load", load);
 
 
     <span class="c1"># need to change wrt</span>
-<div class="viewcode-block" id="ConditionalFlowPipeline._get_optimizer">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline._get_optimizer">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Construct the optimizer for training, including learning rate scheduling and gradient clipping.</span>
+    <span class="c1"># def _get_optimizer(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     Construct the optimizer for training, including learning rate scheduling and gradient clipping.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        optimizer : nnx.Optimizer</span>
-<span class="sd">            The optimizer instance for the model.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="c1">#     Returns</span>
+    <span class="c1">#     -------</span>
+    <span class="c1">#     optimizer : nnx.Optimizer</span>
+    <span class="c1">#         The optimizer instance for the model.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
 
-        <span class="c1"># sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&#39;sbi_model&#39;))</span>
-        <span class="c1"># sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&quot;model&quot;))</span>
+    <span class="c1">#     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&#39;sbi_model&#39;))</span>
+    <span class="c1">#     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&quot;model&quot;))</span>
 
-        <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
-            <span class="n">optax</span><span class="o">.</span><span class="n">adaptive_grad_clip</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span>
-            <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]),</span>
-            <span class="n">reduce_on_plateau</span><span class="p">(</span>
-                <span class="n">patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;patience&quot;</span><span class="p">],</span>
-                <span class="n">cooldown</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;cooldown&quot;</span><span class="p">],</span>
-                <span class="n">factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;factor&quot;</span><span class="p">],</span>
-                <span class="n">rtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">],</span>
-                <span class="n">accumulation_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;accumulation_size&quot;</span><span class="p">],</span>
-                <span class="n">min_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">],</span>
-            <span class="p">),</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">MultiSteps</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">])</span>
+    <span class="c1">#     opt = optax.chain(</span>
+    <span class="c1">#         optax.adaptive_grad_clip(10.0),</span>
+    <span class="c1">#         optax.adamw(self.training_config[&quot;max_lr&quot;]),</span>
+    <span class="c1">#         reduce_on_plateau(</span>
+    <span class="c1">#             patience=self.training_config[&quot;patience&quot;],</span>
+    <span class="c1">#             cooldown=self.training_config[&quot;cooldown&quot;],</span>
+    <span class="c1">#             factor=self.training_config[&quot;factor&quot;],</span>
+    <span class="c1">#             rtol=self.training_config[&quot;rtol&quot;],</span>
+    <span class="c1">#             accumulation_size=self.training_config[&quot;accumulation_size&quot;],</span>
+    <span class="c1">#             min_scale=self.training_config[&quot;min_scale&quot;],</span>
+    <span class="c1">#         ),</span>
+    <span class="c1">#     )</span>
+    <span class="c1">#     if self.training_config[&quot;multistep&quot;] &gt; 1:</span>
+    <span class="c1">#         opt = optax.MultiSteps(opt, self.training_config[&quot;multistep&quot;])</span>
 
-        <span class="c1"># optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)</span>
-        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">optimizer</span></div>
-
+    <span class="c1">#     # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)</span>
+    <span class="c1">#     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)</span>
+    <span class="c1">#     return optimizer</span>
 
     <span class="c1"># need to select the right weights to apply the updates</span>
 <div class="viewcode-block" id="ConditionalFlowPipeline.get_train_step_fn">
@@ -1333,39 +1330,36 @@ window.addEventListener("load", load);
         <span class="k">return</span> <span class="n">loss_fn</span></div>
 
 
-<div class="viewcode-block" id="ConditionalDiffusionPipeline._get_optimizer">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._get_optimizer">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Construct the optimizer for training, including learning rate scheduling and gradient clipping.</span>
+    <span class="c1"># def _get_optimizer(self):</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     Construct the optimizer for training, including learning rate scheduling and gradient clipping.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        optimizer : nnx.Optimizer</span>
-<span class="sd">            The optimizer instance for the model.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&quot;sbi_model&quot;))</span>
-        <span class="c1"># sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&quot;model&quot;))</span>
+    <span class="c1">#     Returns</span>
+    <span class="c1">#     -------</span>
+    <span class="c1">#     optimizer : nnx.Optimizer</span>
+    <span class="c1">#         The optimizer instance for the model.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&quot;sbi_model&quot;))</span>
+    <span class="c1">#     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains(&quot;model&quot;))</span>
 
-        <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
-            <span class="n">optax</span><span class="o">.</span><span class="n">adaptive_grad_clip</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span>
-            <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]),</span>
-            <span class="n">reduce_on_plateau</span><span class="p">(</span>
-                <span class="n">patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;patience&quot;</span><span class="p">],</span>
-                <span class="n">cooldown</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;cooldown&quot;</span><span class="p">],</span>
-                <span class="n">factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;factor&quot;</span><span class="p">],</span>
-                <span class="n">rtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">],</span>
-                <span class="n">accumulation_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;accumulation_size&quot;</span><span class="p">],</span>
-                <span class="n">min_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">],</span>
-            <span class="p">),</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">opt</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">MultiSteps</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">])</span>
+    <span class="c1">#     opt = optax.chain(</span>
+    <span class="c1">#         optax.adaptive_grad_clip(10.0),</span>
+    <span class="c1">#         optax.adamw(self.training_config[&quot;max_lr&quot;]),</span>
+    <span class="c1">#         reduce_on_plateau(</span>
+    <span class="c1">#             patience=self.training_config[&quot;patience&quot;],</span>
+    <span class="c1">#             cooldown=self.training_config[&quot;cooldown&quot;],</span>
+    <span class="c1">#             factor=self.training_config[&quot;factor&quot;],</span>
+    <span class="c1">#             rtol=self.training_config[&quot;rtol&quot;],</span>
+    <span class="c1">#             accumulation_size=self.training_config[&quot;accumulation_size&quot;],</span>
+    <span class="c1">#             min_scale=self.training_config[&quot;min_scale&quot;],</span>
+    <span class="c1">#         ),</span>
+    <span class="c1">#     )</span>
+    <span class="c1">#     if self.training_config[&quot;multistep&quot;] &gt; 1:</span>
+    <span class="c1">#         opt = optax.MultiSteps(opt, self.training_config[&quot;multistep&quot;])</span>
 
-        <span class="c1"># optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)</span>
-        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">optimizer</span></div>
-
+    <span class="c1">#     # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)</span>
+    <span class="c1">#     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)</span>
+    <span class="c1">#     return optimizer</span>
 
 <div class="viewcode-block" id="ConditionalDiffusionPipeline.get_train_step_fn">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.get_train_step_fn">[docs]</a>
