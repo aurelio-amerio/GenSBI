@@ -344,17 +344,40 @@ class AbstractPipeline(abc.ABC):
         num_steps = self.training_config["num_steps"]
         max_lr = self.training_config["max_lr"]
         min_lr = self.training_config["min_lr"]
-        schedule = optax.warmup_cosine_decay_schedule(
-            init_value=1e-7,  # Start tiny
-            peak_value=max_lr,  # Peak
-            warmup_steps=warmup_steps,
-            decay_steps=num_steps - warmup_steps,
-            end_value=min_lr,  # 1% of Peak
+        # schedule = optax.warmup_cosine_decay_schedule(
+        #     init_value=1e-7,  # Start tiny
+        #     peak_value=max_lr,  # Peak
+        #     warmup_steps=warmup_steps,
+        #     decay_steps=num_steps - warmup_steps,
+        #     end_value=min_lr,  # 1% of Peak
+        # )
+        
+        
+        # we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr
+        decay_transition = 0.90
+        
+        warmup_schedule = optax.linear_schedule(
+            init_value=1e-7, end_value=max_lr, transition_steps=warmup_steps)
+        constant_schedule = optax.constant_schedule(value=max_lr)
+        decay_schedule = optax.cosine_decay_schedule(
+            init_value=max_lr, decay_steps=int((1 - decay_transition) * num_steps), alpha=min_lr / max_lr
         )
+        schedule = optax.join_schedules(
+            schedules=[
+                warmup_schedule,
+                constant_schedule,
+                decay_schedule,
+            ],
+            boundaries=[warmup_steps, int(decay_transition * num_steps)]
+        )
+        
+        # define the weight decay mask to avoid applying weight decay to bias and norm parameters
+        def decay_mask_fn(params):
+            return jax.tree_util.tree_map(lambda x: x.ndim > 1, params)
 
         opt = optax.chain(
             optax.adaptive_grad_clip(10.0),
-            optax.adamw(schedule),
+            optax.adamw(schedule, mask=decay_mask_fn),
         )
         if self.training_config["multistep"] > 1:
             opt = optax.MultiSteps(opt, self.training_config["multistep"])
@@ -385,11 +408,14 @@ class AbstractPipeline(abc.ABC):
 
         training_config["ema_decay"] = 0.999
 
+        # TODO, remove these params, as they are not used anymore
         training_config["patience"] = 10
         training_config["cooldown"] = 2
         training_config["factor"] = 0.5
         training_config["accumulation_size"] = 100
         training_config["rtol"] = 1e-4
+        #######
+        
         training_config["warmup_steps"] = 1000
         training_config["max_lr"] = 1e-4
         training_config["min_lr"] = 1e-6
@@ -726,7 +752,7 @@ class AbstractPipeline(abc.ABC):
         key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
-            Conditioning variable (e.g., observed data).
+            Conditioning variable.
         step_size : float, optional
             Step size for the sampler.
         use_ema : bool, optional
@@ -744,7 +770,7 @@ class AbstractPipeline(abc.ABC):
         ...  # pragma: no cover
 
     @abc.abstractmethod
-    def sample(self, key, x_o, nsamples=10_000, step_size=0.01):
+    def sample(self, key, x_o, nsamples=10_000):
         """
         Generate samples from the trained model.
 
@@ -753,16 +779,14 @@ class AbstractPipeline(abc.ABC):
         key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
-            Conditioning variable (e.g., observed data).
+            Conditioning variable (e.g., observed data). 
         nsamples : int, optional
             Number of samples to generate.
-        step_size : float, optional
-            Step size for the sampler.
 
         Returns
         -------
         samples : array-like
-            Generated samples.
+            Generated samples of size (nsamples, dim_obs, ch_obs).
         """
         ...  # pragma: no cover
 
@@ -796,6 +820,10 @@ class AbstractPipeline(abc.ABC):
         kwargs : dict
             Additional keyword arguments for the sampler.
 
+        Returns
+        -------
+        samples : array-like
+            Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
         """
 
         cond = x_o
@@ -814,4 +842,4 @@ class AbstractPipeline(abc.ABC):
 
         res = batched_sampler(keys)
 
-        return res
+        return res # shape (nsamples, batch_size_cond, dim_obs, ch_obs)
