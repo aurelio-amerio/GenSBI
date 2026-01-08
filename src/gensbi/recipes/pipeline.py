@@ -354,7 +354,7 @@ class AbstractPipeline(abc.ABC):
         
         
         # we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr
-        decay_transition = 0.90
+        decay_transition = self.training_config["decay_transition"]
         
         warmup_schedule = optax.linear_schedule(
             init_value=1e-7, end_value=max_lr, transition_steps=warmup_steps)
@@ -404,18 +404,18 @@ class AbstractPipeline(abc.ABC):
         """
         training_config = {}
 
-        training_config["num_steps"] = 30_000
+        training_config["num_steps"] = 50_000
 
         training_config["ema_decay"] = 0.999
 
         # TODO, remove these params, as they are not used anymore
-        training_config["patience"] = 10
-        training_config["cooldown"] = 2
-        training_config["factor"] = 0.5
-        training_config["accumulation_size"] = 100
-        training_config["rtol"] = 1e-4
+        # training_config["patience"] = 10
+        # training_config["cooldown"] = 2
+        # training_config["factor"] = 0.5
+        # training_config["accumulation_size"] = 100
+        # training_config["rtol"] = 1e-4
         #######
-        
+        training_config["decay_transition"] = 0.70
         training_config["warmup_steps"] = 1000
         training_config["max_lr"] = 1e-4
         training_config["min_lr"] = 1e-6

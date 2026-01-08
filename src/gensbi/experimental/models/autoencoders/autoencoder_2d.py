@@ -681,8 +681,8 @@ class AutoEncoder2D(nnx.Module):
         )
         self.reg = DiagonalGaussian()
 
-        self.scale_factor = nnx.Param(params.scale_factor)
-        self.shift_factor = nnx.Param(params.shift_factor)
+        self.scale_factor = nnx.Param(jnp.array(params.scale_factor))
+        self.shift_factor = nnx.Param(jnp.array(params.shift_factor))
 
     def encode(self, x: Array, key=None) -> Array:
         """

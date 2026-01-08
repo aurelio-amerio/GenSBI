@@ -171,37 +171,37 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return loss_fn
 
     # need to change wrt
-    def _get_optimizer(self):
-        """
-        Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+    # def _get_optimizer(self):
+    #     """
+    #     Construct the optimizer for training, including learning rate scheduling and gradient clipping.
 
-        Returns
-        -------
-        optimizer : nnx.Optimizer
-            The optimizer instance for the model.
-        """
+    #     Returns
+    #     -------
+    #     optimizer : nnx.Optimizer
+    #         The optimizer instance for the model.
+    #     """
 
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains('sbi_model'))
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+    #     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains('sbi_model'))
+    #     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
-        opt = optax.chain(
-            optax.adaptive_grad_clip(10.0),
-            optax.adamw(self.training_config["max_lr"]),
-            reduce_on_plateau(
-                patience=self.training_config["patience"],
-                cooldown=self.training_config["cooldown"],
-                factor=self.training_config["factor"],
-                rtol=self.training_config["rtol"],
-                accumulation_size=self.training_config["accumulation_size"],
-                min_scale=self.training_config["min_scale"],
-            ),
-        )
-        if self.training_config["multistep"] > 1:
-            opt = optax.MultiSteps(opt, self.training_config["multistep"])
+    #     opt = optax.chain(
+    #         optax.adaptive_grad_clip(10.0),
+    #         optax.adamw(self.training_config["max_lr"]),
+    #         reduce_on_plateau(
+    #             patience=self.training_config["patience"],
+    #             cooldown=self.training_config["cooldown"],
+    #             factor=self.training_config["factor"],
+    #             rtol=self.training_config["rtol"],
+    #             accumulation_size=self.training_config["accumulation_size"],
+    #             min_scale=self.training_config["min_scale"],
+    #         ),
+    #     )
+    #     if self.training_config["multistep"] > 1:
+    #         opt = optax.MultiSteps(opt, self.training_config["multistep"])
 
-        # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
-        optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
-        return optimizer
+    #     # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+    #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
+    #     return optimizer
 
     # need to select the right weights to apply the updates
     def get_train_step_fn(self, loss_fn):
@@ -497,36 +497,36 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
 
         return loss_fn
 
-    def _get_optimizer(self):
-        """
-        Construct the optimizer for training, including learning rate scheduling and gradient clipping.
+    # def _get_optimizer(self):
+    #     """
+    #     Construct the optimizer for training, including learning rate scheduling and gradient clipping.
 
-        Returns
-        -------
-        optimizer : nnx.Optimizer
-            The optimizer instance for the model.
-        """
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("sbi_model"))
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
+    #     Returns
+    #     -------
+    #     optimizer : nnx.Optimizer
+    #         The optimizer instance for the model.
+    #     """
+    #     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("sbi_model"))
+    #     # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
 
-        opt = optax.chain(
-            optax.adaptive_grad_clip(10.0),
-            optax.adamw(self.training_config["max_lr"]),
-            reduce_on_plateau(
-                patience=self.training_config["patience"],
-                cooldown=self.training_config["cooldown"],
-                factor=self.training_config["factor"],
-                rtol=self.training_config["rtol"],
-                accumulation_size=self.training_config["accumulation_size"],
-                min_scale=self.training_config["min_scale"],
-            ),
-        )
-        if self.training_config["multistep"] > 1:
-            opt = optax.MultiSteps(opt, self.training_config["multistep"])
+    #     opt = optax.chain(
+    #         optax.adaptive_grad_clip(10.0),
+    #         optax.adamw(self.training_config["max_lr"]),
+    #         reduce_on_plateau(
+    #             patience=self.training_config["patience"],
+    #             cooldown=self.training_config["cooldown"],
+    #             factor=self.training_config["factor"],
+    #             rtol=self.training_config["rtol"],
+    #             accumulation_size=self.training_config["accumulation_size"],
+    #             min_scale=self.training_config["min_scale"],
+    #         ),
+    #     )
+    #     if self.training_config["multistep"] > 1:
+    #         opt = optax.MultiSteps(opt, self.training_config["multistep"])
 
-        # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
-        optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
-        return optimizer
+    #     # optimizer = nnx.Optimizer(self.model, opt, wrt=sbi_model_params)
+    #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
+    #     return optimizer
 
     def get_train_step_fn(self, loss_fn):
         """

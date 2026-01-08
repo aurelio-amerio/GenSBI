@@ -679,8 +679,8 @@ class AutoEncoder1D(nnx.Module):
         )
         self.reg = DiagonalGaussian()
         
-        self.scale_factor = nnx.Param(params.scale_factor)
-        self.shift_factor = nnx.Param(params.shift_factor)
+        self.scale_factor = nnx.Param(jnp.array(params.scale_factor))
+        self.shift_factor = nnx.Param(jnp.array(params.shift_factor))
         
         
         self.latent_shape = (1, params.resolution // (2 ** (len(params.ch_mult) - 1)), params.z_channels)
