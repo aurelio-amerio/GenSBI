@@ -9,9 +9,9 @@ from gensbi.utils.misc import get_colored_value, scale_lr
 
 
 def test_get_colored_value():
-    val_red = 1.0
+    val_red = 1.3
     val_yellow = 1.15
-    val_green = 1.25
+    val_green = 1.05
 
     colored_red = get_colored_value(val_red, thresholds=(1.1, 1.2))
     colored_yellow = get_colored_value(val_yellow, thresholds=(1.1, 1.2))
