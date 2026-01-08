@@ -161,27 +161,23 @@ def parse_training_config(config_path: str):
 
     # Optimizer parameters
     opt_params = config.get("optimizer", {})
-    PATIENCE = opt_params.get("patience", 10)
-    COOLDOWN = opt_params.get("cooldown", 2)
-    FACTOR = opt_params.get("factor", 0.5)
-    ACCUMULATION_SIZE = opt_params.get("accumulation_size", 100) * multistep
-    RTOL = opt_params.get("rtol", 1e-4)
+
     MAX_LR = opt_params.get("max_lr", 1e-3)
     MIN_LR = opt_params.get("min_lr", 0.0)
     MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
 
-    ema_decay = opt_params.get("ema_decay", 0.999)
     warmup_steps = opt_params.get("warmup_steps", 500)
+
+    ema_decay = opt_params.get("ema_decay", 0.999)
+
+    decay_transition = opt_params.get("decay_transition", 0.85)
 
     training_config = {}
     # overwrite the defaults with the config file values
     training_config["num_steps"] = nsteps
     training_config["ema_decay"] = ema_decay
-    training_config["patience"] = PATIENCE
-    training_config["cooldown"] = COOLDOWN
-    training_config["factor"] = FACTOR
-    training_config["accumulation_size"] = ACCUMULATION_SIZE
-    training_config["rtol"] = RTOL
+    training_config["decay_transition"] = decay_transition
+
     training_config["max_lr"] = MAX_LR
     training_config["min_lr"] = MIN_LR
     training_config["min_scale"] = MIN_SCALE
