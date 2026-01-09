@@ -1,6 +1,6 @@
 from flax import nnx
-import numpy as np
-import torch
+
+from jax import Array
 
 from einops import rearrange
 
@@ -83,22 +83,29 @@ class PosteriorWrapper:
     def sample(
         self,
         sample_shape,
-        x: Optional[torch.Tensor] = None,
+        x: Optional[Array] = None,
         **kwargs,  # does nothing, for compatibility
-    ):
+    ) -> Array:
         """
         Sample from the posterior distribution conditioned on x.
 
         Parameters
         ----------
-            sample_shape: Shape of the samples to be drawn.
-            x: Optional tensor of observations to condition on. If None, uses the default_x.
+            sample_shape : Tuple
+                Shape of the samples to be drawn.
+            x : Array
+                Optional tensor of observations to condition on. If None, uses the default_x.
+            
+        Returns
+        -------
+            Array
+                Samples from the posterior distribution of shape (sample_shape, dim_theta * ch_theta).
         """
         key = self.rngs.sample()
         if x is None:
-            cond = self.default_x.numpy()
+            cond = self.default_x
         else:
-            cond = x.numpy()
+            cond = x
 
         if cond.ndim == 2:
             cond = self._unravel_xs(cond)
@@ -107,31 +114,35 @@ class PosteriorWrapper:
             key, cond, sample_shape[0], *self.args, **self.kwargs
         )
         res = self._ravel(res)
-        return torch.from_numpy(np.array(res))
+        return res
 
     def sample_batched(
         self,
         sample_shape,
-        x: Optional[torch.Tensor] = None,
+        x: Optional[Array] = None,
         chunk_size: Optional[int] = 50,
         show_progress_bars=True,
         **kwargs,  # does nothing, for compatibility
-    ):
+    ) -> Array:
         """
         Sample from the posterior distribution conditioned on x.
 
         Parameters
         ----------
-            sample_shape: Shape of the samples to be drawn.
-            x: Optional tensor of observations to condition on. If None, uses the default_x.
-            chunk_size: Size of the chunks to use for batched sampling.
-            show_progress_bars: Whether to show progress bars during sampling.
+            sample_shape : Tuple
+                Shape of the samples to be drawn.
+            x : Array
+                Optional tensor of observations to condition on. If None, uses the default_x.
+            chunk_size : int
+                Size of the chunks to use for batched sampling.
+            show_progress_bars : bool
+                Whether to show progress bars during sampling.
 
         """
         if x is None:
-            cond = self.default_x.numpy()
+            cond = self.default_x
         else:
-            cond = x.numpy()
+            cond = x
 
         if cond.ndim == 2:
             cond = self._unravel_xs(cond)
@@ -149,4 +160,4 @@ class PosteriorWrapper:
         )
 
         res = rearrange(res, "... f c -> ... (f c)")
-        return torch.from_numpy(np.array(res))
+        return res
