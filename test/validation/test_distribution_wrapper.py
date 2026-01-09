@@ -9,7 +9,7 @@ import torch
 
 from flax import nnx
 
-from gensbi.validation import PosteriorWrapper
+from gensbi.diagnostics import PosteriorWrapper
 from gensbi.recipes.pipeline import _get_batch_sampler
 
 class DummyPipeline():
