@@ -25,3 +25,4 @@ The following tasks are planned for future development:
 - [ ] Currently Flux1 is optimized for 1D data, we need to generalize it for 2D data, and spherical data as well
 
 - [ ] Retrain the benchmark models using the latest GenSBI version, especially the getting started example
+- [ ] Implement contour levels like the ones from corner in the sns plot too
