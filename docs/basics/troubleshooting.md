@@ -33,12 +33,7 @@ This page addresses common issues and frequently asked questions when using GenS
    pip install git+https://github.com/aurelio-amerio/GenSBI.git
    ```
 
-2. If using validation features, install the validation extras:
-   ```bash
-   pip install "GenSBI[validation] @ git+https://github.com/aurelio-amerio/GenSBI.git" --extra-index-url https://download.pytorch.org/whl/cpu
-   ```
-
-3. Check your Python version (requires Python 3.11+).
+2. Check your Python version (requires Python 3.11+).
 
 ## Training Issues
 
@@ -208,21 +203,19 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 
 ### SBC/TARP/L-C2ST Errors
 
-**Problem**: Errors when running validation diagnostics from the `sbi` library.
+### SBC/TARP/L-C2ST Errors
+
+**Problem**: Errors when running validation diagnostics from the `gensbi.diagnostics` module.
 
 **Solution**:
-1. **Check tensor shapes**: `sbi` expects 2D tensors `(num_samples, features)`. Flatten your data:
+1. **Check array shapes**: Diagnostics expect flattened 2D arrays `(num_samples, features)`. GenSBI data usually comes in 3D `(batch, features, channels)`.
    ```python
    # GenSBI format: (batch, features, channels)
-   # sbi format: (batch, features)
-   thetas_flat = posterior._ravel(thetas)  # or use .reshape()
+   # Diagnostics format: (batch, features * channels)
+   thetas_flat = thetas.reshape(thetas.shape[0], -1)
    ```
 
-2. **Convert to PyTorch**: `sbi` uses PyTorch tensors:
-   ```python
-   import torch
-   thetas_torch = torch.Tensor(np.array(thetas_flat))
-   ```
+2. **Check data types**: Ensure you are passing Numpy or JAX arrays, not PyTorch tensors.
 
 3. **Use separate validation data**: Don't use training data for validation diagnostics.
 
