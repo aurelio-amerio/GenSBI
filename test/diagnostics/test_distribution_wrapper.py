@@ -92,3 +92,78 @@ def test_distribution_wrapper_sampling():
         2,
         pipeline.dim_obs * pipeline.ch_obs,
     ), f"Unexpected shape: {samples_batched.shape}"
+
+
+def test_posterior_wrapper_init():
+    pipeline = MockPipeline()
+    rngs = nnx.Rngs(0)
+    
+    # Test initialization with explicit shapes
+    wrapper = PosteriorWrapper(
+        pipeline, 
+        rngs=rngs, 
+        theta_shape=(3, 2), 
+        x_shape=(4, 3)
+    )
+    assert wrapper.dim_theta == 3
+    assert wrapper.ch_theta == 2
+    assert wrapper.dim_x == 4
+    assert wrapper.ch_x == 3
+
+    # Test initialization with derived shapes (conditional)
+    wrapper = PosteriorWrapper(pipeline, rngs=rngs)
+    assert wrapper.dim_theta == pipeline.dim_obs
+    assert wrapper.ch_theta == pipeline.ch_obs
+    assert wrapper.dim_x == pipeline.dim_cond
+    assert wrapper.ch_x == pipeline.ch_cond
+
+    # Test initialization with derived shapes (unconditional / no ch_cond)
+    pipeline.ch_cond = None
+    wrapper = PosteriorWrapper(pipeline, rngs=rngs)
+    assert wrapper.ch_x == pipeline.ch_obs # Defaults to ch_theta if cond is None
+
+
+def test_posterior_wrapper_defaults():
+    pipeline = MockPipeline()
+    wrapper = PosteriorWrapper(pipeline, rngs=nnx.Rngs(0))
+    
+    # Test set_default_x
+    default_x = jnp.ones((1, 4, 3))
+    wrapper.set_default_x(default_x)
+    assert wrapper.default_x is not None
+    assert wrapper.default_x.shape == (1, 4*3) # Processed shape
+
+    # Test sapmle with default x
+    samples = wrapper.sample(sample_shape=(4,))
+    assert samples.shape == (4, pipeline.dim_obs * pipeline.ch_obs)
+
+    # Test sample_batched with default x
+    samples_batched = wrapper.sample_batched(sample_shape=(5,))
+    # Note: MockPipeline returns (nsamples, cond.shape[0], ...)
+    # default_x has batch size 1, so result should handle that
+    assert samples_batched.shape == (5, 1, pipeline.dim_obs * pipeline.ch_obs)
+
+
+def test_process_x_validation():
+    pipeline = MockPipeline()
+    wrapper = PosteriorWrapper(pipeline, rngs=nnx.Rngs(0))
+
+    # Test 3D input with wrong channels
+    with pytest.raises(AssertionError, match="Wrong number of channels"):
+        wrapper._process_x(jnp.zeros((1, 4, 99))) # Wrong channels
+    
+    # Test invalid dimensions
+    with pytest.raises(AssertionError, match="x must be of shape"):
+        wrapper._process_x(jnp.zeros((1, 4, 3, 5))) # 4D
+
+
+def test_batched_sample_kwargs():
+    pipeline = MockPipeline()
+    wrapper = PosteriorWrapper(pipeline, rngs=nnx.Rngs(0), chunk_size=10)
+    
+    # Verify chunk_size is passed/overridden
+    # We can't easily check internal call args with just MockPipeline unless we modify it to store args
+    # But we can verify it runs without error
+    wrapper.sample_batched(sample_shape=(5,), x=jnp.zeros((2, 4, 3)), chunk_size=20)
+    # Coverage will confirm lines are hit
+
