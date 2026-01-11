@@ -101,13 +101,13 @@ class Flux1Params:
 
     def __post_init__(self):
         availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
-        assert self.id_embedding_kind[0] in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind[0]} for obs."
-        assert self.id_embedding_kind[1] in availabel_embeddings, f"Unknown id embedding kind {self.id_embedding_kind[1]} for cond."
-        # Enforce that if either is 'rope', both must be 'rope'
-        if "rope" in self.id_embedding_kind:
-            assert self.id_embedding_kind[0] == self.id_embedding_kind[1] == "rope", (
-                "If using RoPE, both obs and cond must use RoPE embedding."
-            )
+        assert (
+            self.id_embedding_kind[0] in availabel_embeddings
+        ), f"Unknown id embedding kind {self.id_embedding_kind[0]} for obs."
+        assert (
+            self.id_embedding_kind[1] in availabel_embeddings
+        ), f"Unknown id embedding kind {self.id_embedding_kind[1]} for cond."
+
         self.hidden_size = int(
             jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
         )
@@ -133,16 +133,25 @@ class Flux1(nnx.Module):
             )
         self.num_heads = params.num_heads
 
-        if "rope" in params.id_embedding_kind:
-            self.use_rope = True
+        self.id_embedding_kind_obs, self.id_embedding_kind_cond = (
+            params.id_embedding_kind
+        )
+
+        if (
+            self.id_embedding_kind_obs == "rope"
+            or self.id_embedding_kind_cond == "rope"
+        ):
             self.pe_embedder = EmbedND(
                 dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
             )
-            self.obs_ids_embedder = None
-            self.cond_ids_embedder = None
         else:
-            self.use_rope = False
             self.pe_embedder = None
+
+        if self.id_embedding_kind_obs == "rope":
+            self.use_rope_obs = True
+            self.obs_ids_embedder = None
+        else:
+            self.use_rope_obs = False
             self.obs_ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_obs,
                 hidden_size=self.hidden_size,
@@ -150,6 +159,12 @@ class Flux1(nnx.Module):
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
+
+        if self.id_embedding_kind_cond == "rope":
+            self.use_rope_cond = True
+            self.cond_ids_embedder = None
+        else:
+            self.use_rope_cond = False
             self.cond_ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_cond,
                 hidden_size=self.hidden_size,
@@ -292,13 +307,24 @@ class Flux1(nnx.Module):
             conditioned[..., None, None], cond_processed, cond_null
         )  # we replace the condition with a null vector if not conditioned
 
-        if self.use_rope:
-            ids = jnp.concatenate((cond_ids, obs_ids), axis=1)
+        # if not using rope for a dimension, perform id embedding and add it to the input
+        if self.obs_ids_embedder is not None:
+            obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
+            obs_ids_rope = jnp.zeros(obs_ids.shape, dtype=obs_ids.dtype)
+        else:
+            obs_ids_rope = obs_ids
+        if self.cond_ids_embedder is not None:
+            cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
+            cond_ids_rope = jnp.zeros(cond_ids.shape, dtype=cond_ids.dtype)
+        else:
+            cond_ids_rope = cond_ids
+            
+
+        if self.use_rope_obs or self.use_rope_cond:
+            # we use rope embeddings
+            ids = jnp.concatenate((cond_ids_rope, obs_ids_rope), axis=1)
             pe = self.pe_embedder(ids)
         else:
-            # we add the positional embeddings
-            obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
-            cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
             pe = None
 
         for block in self.double_blocks.layers:
