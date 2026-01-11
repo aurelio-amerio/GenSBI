@@ -334,21 +334,21 @@ class SimformerFlowPipeline(JointFlowPipeline):
             **model_extras,
         )
 
-    def compute_unnorm_logprob(
-        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
-    ):
-        model_extras = {
-            "edge_mask": self.edge_mask,
-        }
+    # def compute_unnorm_logprob(
+    #     self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
+    # ):
+    #     model_extras = {
+    #         "edge_mask": self.edge_mask,
+    #     }
 
-        return super().compute_unnorm_logprob(
-            x_1,
-            x_o,
-            step_size=step_size,
-            use_ema=use_ema,
-            time_grid=time_grid,
-            **model_extras,
-        )
+    #     return super().compute_unnorm_logprob(
+    #         x_1,
+    #         x_o,
+    #         step_size=step_size,
+    #         use_ema=use_ema,
+    #         time_grid=time_grid,
+    #         **model_extras,
+    #     )
 
 
 class SimformerDiffusionPipeline(JointDiffusionPipeline):

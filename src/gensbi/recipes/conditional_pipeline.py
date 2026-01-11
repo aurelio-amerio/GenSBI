@@ -307,52 +307,52 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         return samples
 
-    def compute_unnorm_logprob(
-        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
-    ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
+    # def compute_unnorm_logprob(
+    #     self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+    # ):
+    #     if use_ema:
+    #         model = self.ema_model_wrapped
+    #     else:
+    #         model = self.model_wrapped
 
-        if time_grid is None:
-            time_grid = jnp.array([1.0, 0.0])
-            return_intermediates = False
-        else:
-            # assert time grid is decreasing
-            assert jnp.all(time_grid[:-1] >= time_grid[1:])
-            return_intermediates = True
+    #     if time_grid is None:
+    #         time_grid = jnp.array([1.0, 0.0])
+    #         return_intermediates = False
+    #     else:
+    #         # assert time grid is decreasing
+    #         assert jnp.all(time_grid[:-1] >= time_grid[1:])
+    #         return_intermediates = True
 
-        solver = ODESolver(velocity_model=model)
+    #     solver = ODESolver(velocity_model=model)
 
-        # x_1 = _expand_dims(x_1)
-        assert (
-            x_1.ndim == 2
-        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
-        cond = _expand_dims(x_o)
+    #     # x_1 = _expand_dims(x_1)
+    #     assert (
+    #         x_1.ndim == 2
+    #     ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
+    #     cond = _expand_dims(x_o)
 
-        model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            **model_extras,
-        }
+    #     model_extras = {
+    #         "cond": cond,
+    #         "obs_ids": self.obs_ids,
+    #         "cond_ids": self.cond_ids,
+    #         **model_extras,
+    #     }
 
-        logp_sampler = solver.get_unnormalized_logprob(
-            time_grid=time_grid,
-            method="Dopri5",
-            step_size=step_size,
-            log_p0=self.p0_obs.log_prob,
-            model_extras=model_extras,
-            return_intermediates=return_intermediates,
-        )
+    #     logp_sampler = solver.get_unnormalized_logprob(
+    #         time_grid=time_grid,
+    #         method="Dopri5",
+    #         step_size=step_size,
+    #         log_p0=self.p0_obs.log_prob,
+    #         model_extras=model_extras,
+    #         return_intermediates=return_intermediates,
+    #     )
 
-        if len(x_1) > 4:
-            # we trigger precompilation first
-            _ = logp_sampler(x_1[:4])
+    #     if len(x_1) > 4:
+    #         # we trigger precompilation first
+    #         _ = logp_sampler(x_1[:4])
 
-        exact_log_p = logp_sampler(x_1)
-        return exact_log_p
+    #     exact_log_p = logp_sampler(x_1)
+    #     return exact_log_p
 
 
 class ConditionalDiffusionPipeline(AbstractPipeline):

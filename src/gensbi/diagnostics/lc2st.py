@@ -224,7 +224,7 @@ class LC2ST:
         if self.num_folds > 1:
             trained_clfs = []
             kf = KFold(n_splits=self.num_folds, shuffle=True, random_state=self.seed)
-            cv_splits = kf.split(theta_p.numpy())
+            cv_splits = kf.split(np.array(theta_p))
             for train_idx, _ in tqdm(
                 cv_splits, desc="Cross-validation", disable=verbosity < 1
             ):
@@ -715,7 +715,7 @@ def plot_lc2st(
         
     quantiles = np.quantile(scores_null, [0, 1 - conf_alpha])
     ax.hist(scores_null, bins=50, density=True, alpha=0.5, label="Null")
-    ax.axvline(scores_data, color="red", label="Observed")
+    ax.axvline(np.mean(scores_data), color="red", label="Observed")
     ax.axvline(quantiles[0], color="black", linestyle="--", label=f"{(1 - conf_alpha) * 100:.0f}% CI")
     ax.axvline(quantiles[1], color="black", linestyle="--")
     ax.set_xlabel("Test statistic")
