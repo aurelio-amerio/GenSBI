@@ -33,7 +33,6 @@ import os
 
 from gensbi.utils.misc import get_colored_value
 
-
 class ModelEMA(nnx.Optimizer):
     """
     Exponential Moving Average (EMA) optimizer for maintaining a smoothed version of model parameters.
@@ -207,9 +206,9 @@ class AbstractPipeline(abc.ABC):
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
 
-        self.node_ids = jnp.arange(self.dim_joint)
-        self.obs_ids = jnp.arange(self.dim_obs)  # observation ids
-        self.cond_ids = jnp.arange(self.dim_obs, self.dim_joint)  # conditional ids
+        # self.node_ids = None # to be set in subclass
+        # self.obs_ids = None # to be set in subclass 
+        # self.cond_ids = None # to be set in subclass
 
         self.params = params
 

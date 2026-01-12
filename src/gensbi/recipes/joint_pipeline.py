@@ -12,6 +12,8 @@ from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
 
+from gensbi.recipes.utils import init_ids_joint
+
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
@@ -218,9 +220,11 @@ class JointFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
+        # self.cond_ids = _expand_dims(self.cond_ids)
+        # self.obs_ids = _expand_dims(self.obs_ids)
+        # self.node_ids = _expand_dims(self.node_ids)
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(self.dim_obs, self.dim_cond)
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -484,9 +488,11 @@ class JointDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
+        # self.cond_ids = _expand_dims(self.cond_ids)
+        # self.obs_ids = _expand_dims(self.obs_ids)
+        # self.node_ids = _expand_dims(self.node_ids)
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(self.dim_obs, self.dim_cond)
 
         self.path = EDMPath(
             scheduler=EDMScheduler(

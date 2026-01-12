@@ -33,6 +33,8 @@ import yaml
 
 from gensbi.recipes.pipeline import AbstractPipeline
 
+from gensbi.recipes.utils import init_ids_1d, init_ids_2d
+
 
 class ConditionalFlowPipeline(AbstractPipeline):
     """
@@ -86,6 +88,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         dim_cond: int,
         ch_obs=1,
         ch_cond=1,
+        id_embedding_strategy=("absolute","absolute"),
         params=None,
         training_config=None,
     ):
@@ -104,15 +107,32 @@ class ConditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        # Flux1 uses different ids for obs and cond
-        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
-        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+        # # Flux1 uses different ids for obs and cond
+        # obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        # obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
 
-        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
-        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
-        cond_ids = cond_ids.at[..., 1].set(
-            1
-        )  # set second channel to 1 for conditioning tokens
+        # cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        # cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        # cond_ids = cond_ids.at[..., 1].set(
+        #     1
+        # )  # set second channel to 1 for conditioning tokens
+
+        embeddings_1d = ["absolute", "pos1d", "rope1d"]
+        embeddings_2d = ["pos2d", "rope2d"]
+
+        if id_embedding_strategy[0] in embeddings_1d:
+            obs_ids = init_ids_1d(dim_obs, semantic_id=0)
+        elif id_embedding_strategy[0] in embeddings_2d:
+            obs_ids = init_ids_2d(dim_obs, semantic_id=0)
+        else:
+            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[0]}")
+
+        if id_embedding_strategy[1] in embeddings_1d:
+            cond_ids = init_ids_1d(dim_cond, semantic_id=1)
+        elif id_embedding_strategy[1] in embeddings_2d:
+            cond_ids = init_ids_2d(dim_cond, semantic_id=1)
+        else:
+            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[1]}")
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids
@@ -401,6 +421,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         dim_cond: int,
         ch_obs=1,
         ch_cond=1,
+        id_embedding_strategy=("absolute", "absolute"),
         params=None,
         training_config=None,
     ):
@@ -417,15 +438,32 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        # Flux1 uses different ids for obs and cond
-        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
-        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+        # # Flux1 uses different ids for obs and cond
+        # obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        # obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
 
-        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
-        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
-        cond_ids = cond_ids.at[..., 1].set(
-            1
-        )  # set second channel to 1 for conditioning tokens
+        # cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        # cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        # cond_ids = cond_ids.at[..., 1].set(
+        #     1
+        # )  # set second channel to 1 for conditioning tokens
+
+        embeddings_1d = ["absolute", "pos1d", "rope1d"]
+        embeddings_2d = ["pos2d", "rope2d"]
+
+        if id_embedding_strategy[0] in embeddings_1d:
+            obs_ids = init_ids_1d(dim_obs, semantic_id=0)
+        elif id_embedding_strategy[0] in embeddings_2d:
+            obs_ids = init_ids_2d(dim_obs, semantic_id=0)
+        else:
+            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[0]}")
+
+        if id_embedding_strategy[1] in embeddings_1d:
+            cond_ids = init_ids_1d(dim_cond, semantic_id=1)
+        elif id_embedding_strategy[1] in embeddings_2d:
+            cond_ids = init_ids_2d(dim_cond, semantic_id=1)
+        else:
+            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[1]}")
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids
