@@ -100,7 +100,7 @@ class Flux1Params:
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
+        availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope", "rope1d", "rope2d"]
         assert (
             self.id_embedding_kind[0] in availabel_embeddings
         ), f"Unknown id embedding kind {self.id_embedding_kind[0]} for obs."
@@ -136,6 +136,12 @@ class Flux1(nnx.Module):
         self.id_embedding_kind_obs, self.id_embedding_kind_cond = (
             params.id_embedding_kind
         )
+
+        # rope1d and rope2d are all equivalent to rope
+        if self.id_embedding_kind_obs in ["rope", "rope1d", "rope2d"]:
+            self.id_embedding_kind_obs = "rope"
+        if self.id_embedding_kind_cond in ["rope", "rope1d", "rope2d"]:
+            self.id_embedding_kind_cond = "rope"
 
         if (
             self.id_embedding_kind_obs == "rope"
