@@ -58,9 +58,7 @@ GenSBI offers different embedding strategies to suit different data structures:
 * **RoPE (Rotary Positional Embeddings)**: Encodes position by rotating the attention keys and queries.
     * **Use when**: The **relative position** is what matters. This means the model should focus on the distance or relational structure between tokens rather than their absolute coordinates. This is powerful for sequences where local patterns are invariant to shifts.
 
-```{warning}
-**Current Pipeline Limitation**: While the models (Flux1, Simformer, Flux1Joint) explicitly support 2D data and 2D embeddings (`pos2d`), the current automatic **pipelines** in GenSBI initialize observation and conditioning IDs assuming a **1D structure**. Support for fully automatic 2D pipelines will be improved in a future release. For now, you may need to manually handle ID initialization for 2D tasks.
-```
+See the [Data, IDs, and Embeddings](data_and_embeddings.md) page for a detailed explanation of tokens, channels, and proper data preprocessing.
 
 ### Strategy Support by Model
 

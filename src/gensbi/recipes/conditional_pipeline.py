@@ -12,6 +12,8 @@ from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
 
+from typing import Union, Tuple
+
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
@@ -48,14 +50,16 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Training dataset.
     val_dataset : grain dataset or iterator over batches
         Validation dataset.
-    dim_obs : int
-        Dimension of the parameter space.
-    dim_cond : int
-        Dimension of the observation space.
+    dim_obs : int or tuple of int
+        Dimension of the parameter space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+    dim_cond : int or tuple of int
+        Dimension of the observation space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
     ch_obs : int, optional
-        Number of channels in the observation data. Default is 1.
+        Number of channels per token in the observation data. Default is 1.
     ch_cond : int, optional
-        Number of channels in the conditional data. Default is 1.
+        Number of channels per token in the conditional data. Default is 1.
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
     training_config : dict, optional
@@ -77,6 +81,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
+    .. note::
+        Sampling in the latent space (latent diffusion/flow) is not currently supported.
+
     """
 
     def __init__(
@@ -84,11 +91,11 @@ class ConditionalFlowPipeline(AbstractPipeline):
         model,
         train_dataset,
         val_dataset,
-        dim_obs: int,
-        dim_cond: int,
+        dim_obs: Union[int, Tuple[int, int]],
+        dim_cond: Union[int, Tuple[int, int]],
         ch_obs=1,
         ch_cond=1,
-        id_embedding_strategy=("absolute","absolute"),
+        id_embedding_strategy=("absolute", "absolute"),
         params=None,
         training_config=None,
     ):
@@ -107,16 +114,6 @@ class ConditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        # # Flux1 uses different ids for obs and cond
-        # obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
-        # obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
-
-        # cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
-        # cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
-        # cond_ids = cond_ids.at[..., 1].set(
-        #     1
-        # )  # set second channel to 1 for conditioning tokens
-
         embeddings_1d = ["absolute", "pos1d", "rope1d"]
         embeddings_2d = ["pos2d", "rope2d"]
 
@@ -125,14 +122,18 @@ class ConditionalFlowPipeline(AbstractPipeline):
         elif id_embedding_strategy[0] in embeddings_2d:
             obs_ids = init_ids_2d(dim_obs, semantic_id=0)
         else:
-            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[0]}")
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
+            )
 
         if id_embedding_strategy[1] in embeddings_1d:
             cond_ids = init_ids_1d(dim_cond, semantic_id=1)
         elif id_embedding_strategy[1] in embeddings_2d:
             cond_ids = init_ids_2d(dim_cond, semantic_id=1)
         else:
-            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[1]}")
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
+            )
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids
@@ -385,10 +386,12 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         Training dataset.
     val_dataset : grain dataset or iterator over batches
         Validation dataset.
-    dim_obs : int
-        Dimension of the parameter space.
-    dim_cond : int
-        Dimension of the observation space.
+    dim_obs : int or tuple of int
+        Dimension of the parameter space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+    dim_cond : int or tuple of int
+        Dimension of the observation space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
     training_config : dict, optional
@@ -410,6 +413,9 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
+    .. note::
+        Sampling in the latent space (latent diffusion/flow) is not currently supported.
+
     """
 
     def __init__(
@@ -417,8 +423,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         model,
         train_dataset,
         val_dataset,
-        dim_obs: int,
-        dim_cond: int,
+        dim_obs: Union[int, Tuple[int, int]],
+        dim_cond: Union[int, Tuple[int, int]],
         ch_obs=1,
         ch_cond=1,
         id_embedding_strategy=("absolute", "absolute"),
@@ -456,14 +462,18 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         elif id_embedding_strategy[0] in embeddings_2d:
             obs_ids = init_ids_2d(dim_obs, semantic_id=0)
         else:
-            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[0]}")
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
+            )
 
         if id_embedding_strategy[1] in embeddings_1d:
             cond_ids = init_ids_1d(dim_cond, semantic_id=1)
         elif id_embedding_strategy[1] in embeddings_2d:
             cond_ids = init_ids_2d(dim_cond, semantic_id=1)
         else:
-            raise ValueError(f"Unknown id embedding strategy: {id_embedding_strategy[1]}")
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
+            )
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids
