@@ -37,10 +37,26 @@ class Flux1Params:
     - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.
         `context_in_dim` can be > 1 (e.g., multiple detectors or multiple features per measured token).
 
-    Example: 2 parameters, frequency grid with 2 detectors
+    **Data Stucture and ID Embeddings**:
 
-    - `dim_obs = 2`, `in_channels = 1`  -> `(batch, 2, 1)`
-    - `dim_cond = n_freq`, `context_in_dim = 2` -> `(batch, n_freq, 2)`
+    Flux1 supports unstructured, 1D, and 2D data (and can be extended to ND) through different ID embedding strategies.
+    The model needs to know *what* each token represents distinct from its value. This is handled by `id_embedding_kind`.
+
+    - `absolute`: Learned embeddings. Use for **unstructured data** (order doesn't matter, e.g. physical parameters).
+        Initialize IDs using `gensbi.recipes.utils.init_ids_1d` (the `semantic_id` will be ignored).
+    - `pos1d` / `rope1d`: 1D positional embeddings. Use for **sequential data** (order matters, e.g. time series, spectra).
+        Initialize IDs using `gensbi.recipes.utils.init_ids_1d`. The `semantic_id` is optional for `pos1d` but recommended for `rope1d`.
+    - `pos2d` / `rope2d`: 2D positional embeddings. Use for **image data** or 2D grids.
+        Initialize IDs using `gensbi.recipes.utils.init_ids_2d`. The `semantic_id` is optional for `pos2d` but recommended for `rope2d`.
+    
+    **Preprocessing for Images/2D Data**:
+
+    - **Patchification**: 2D images must be patchified (flattened into a sequence of tokens) before passing them to the model.
+      Use `gensbi.recipes.utils.patchify_2d` for this purpose.
+    - **Normalization**: To speed up convergence, ensure data is normalized to 0 mean and unit variance.
+
+    .. note::
+        See the documentation and tutorials for more information on id embeddings and data preprocessing. 
 
     Parameters
     ----------
@@ -71,7 +87,7 @@ class Flux1Params:
         theta : int
             Scaling factor for positional encoding.
         id_embedding_kind : tuple[str, str]
-            Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d" or "rope".
+            Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d", "rope1d", "rope2d".
         guidance_embed : bool
             Whether to use guidance embedding.
         param_dtype : DTypeLike
