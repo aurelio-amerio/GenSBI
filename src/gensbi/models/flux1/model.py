@@ -100,7 +100,14 @@ class Flux1Params:
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope", "rope1d", "rope2d"]
+        availabel_embeddings = [
+            "absolute",
+            "pos1d",
+            "pos2d",
+            "rope",
+            "rope1d",
+            "rope2d",
+        ]
         assert (
             self.id_embedding_kind[0] in availabel_embeddings
         ), f"Unknown id embedding kind {self.id_embedding_kind[0]} for obs."
@@ -211,16 +218,16 @@ class Flux1(nnx.Module):
             param_dtype=params.param_dtype,
         )
 
-        self.condition_embedding = nnx.Param(
-            0.01 * jnp.ones((1, self.hidden_size), dtype=params.param_dtype)
-        )
-        self.condition_null = nnx.Param(
-            jax.random.normal(
-                params.rngs.cond(),
-                (1, params.dim_cond, self.hidden_size),
-                dtype=params.param_dtype,
-            )
-        )
+        # self.condition_embedding = nnx.Param(
+        #     0.01 * jnp.ones((1, self.hidden_size), dtype=params.param_dtype)
+        # )
+        # self.condition_null = nnx.Param(
+        #     jax.random.normal(
+        #         params.rngs.cond(),
+        #         (1, params.dim_cond, self.hidden_size),
+        #         dtype=params.param_dtype,
+        #     )
+        # )
 
         self.double_blocks = nnx.Sequential(
             *[
@@ -266,7 +273,7 @@ class Flux1(nnx.Module):
         obs_ids: Array,
         cond: Array,
         cond_ids: Array,
-        conditioned: bool | Array = True,
+        conditioned: bool | Array = True,  # does nothing
         guidance: Array | None = None,
     ) -> Array:
 
@@ -291,12 +298,12 @@ class Flux1(nnx.Module):
         obs = self.obs_in(obs)
         vec = self.time_in(timestep_embedding(t, 256))
 
-        conditioned = jnp.asarray(conditioned, dtype=jnp.bool_)  # type: ignore
-        conditioned_int = jnp.asarray(conditioned, dtype=jnp.int32)[..., None]  # type: ignore
+        # conditioned = jnp.asarray(conditioned, dtype=jnp.bool_)  # type: ignore
+        # conditioned_int = jnp.asarray(conditioned, dtype=jnp.int32)[..., None]  # type: ignore
 
-        condition_embedding = self.condition_embedding * (1 - conditioned_int)
+        # condition_embedding = self.condition_embedding * (1 - conditioned_int)
 
-        vec = vec + condition_embedding  # we add the condition embedding to the vector
+        # vec = vec + condition_embedding  # we add the condition embedding to the vector
 
         if self.params.guidance_embed:
             if guidance is None:
@@ -305,26 +312,33 @@ class Flux1(nnx.Module):
                 )
             vec = vec + self.vector_in(guidance)
 
-        cond_processed = self.cond_in(cond)  # (B, F, H)
-        cond_null = jnp.repeat(
-            self.condition_null, repeats=obs.shape[0], axis=0
-        )  # (B, F, H)
-        cond = jnp.where(
-            conditioned[..., None, None], cond_processed, cond_null
-        )  # we replace the condition with a null vector if not conditioned
+        # cond_processed = self.cond_in(cond)  # (B, F, H)
+        # cond_null = jnp.repeat(
+        #     self.condition_null, repeats=obs.shape[0], axis=0
+        # )  # (B, F, H)
+        # cond = jnp.where(
+        #     conditioned[..., None, None], cond_processed, cond_null
+        # )  # we replace the condition with a null vector if not conditioned
+
+        cond = self.cond_in(cond)
 
         # if not using rope for a dimension, perform id embedding and add it to the input
         if self.obs_ids_embedder is not None:
             obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
-            obs_ids_rope = jnp.zeros(obs_ids.shape, dtype=obs_ids.dtype)
+            obs_ids_rope = jnp.zeros(
+                (obs_ids.shape[0], obs_ids.shape[1], cond_ids.shape[2]),
+                dtype=obs_ids.dtype,
+            )
         else:
             obs_ids_rope = obs_ids
         if self.cond_ids_embedder is not None:
             cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
-            cond_ids_rope = jnp.zeros(cond_ids.shape, dtype=cond_ids.dtype)
+            cond_ids_rope = jnp.zeros(
+                (cond_ids.shape[0], cond_ids.shape[1], obs_ids.shape[2]),
+                dtype=cond_ids.dtype,
+            )
         else:
             cond_ids_rope = cond_ids
-            
 
         if self.use_rope_obs or self.use_rope_cond:
             # we use rope embeddings

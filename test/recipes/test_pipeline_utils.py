@@ -37,14 +37,14 @@ def test_sample_condition_mask():
 def test_init_ids_1d():
     dim = 5
     ids = init_ids_1d(dim)
-    assert ids.shape == (dim, 2)
-    assert ids[:, 0] == jnp.arange(dim) 
-    assert ids[:, 1].sum() == 0
+    assert ids.shape == (1, dim, 1)
+    assert ids[0, :, 0] == jnp.arange(dim) 
+    assert ids[0, :, 1].sum() == 0
 
     ids = init_ids_1d(dim, semantic_id=1)
-    assert ids.shape == (dim, 2)
-    assert ids[:, 0] == jnp.arange(dim) 
-    assert (ids[:, 1] == 1).all()
+    assert ids.shape == (1, dim, 1)
+    assert ids[0, :, 0] == jnp.arange(dim) 
+    assert (ids[0, :, 1] == 1).all()
     return
 
 def test_init_ids_2d():
