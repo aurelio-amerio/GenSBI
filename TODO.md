@@ -11,21 +11,23 @@ The following tasks are planned for future development:
 - [ ] Consider implementing classifier free guidance for conditional models.
 - [ ] Add more examples and benchmarks.
 - [ ] Improve documentation and tutorials.
-- [ ] Provide SOTA pre-trained models and checkpoints for some SBI benchmark cases
+- [x] Provide SOTA pre-trained models and checkpoints for some SBI benchmark cases
 - [x] Implement VAE training pipeline
+- [ ] ... implement better loss functions for 1D and 2D VAEs (e.g. windowed frequency decomposition, and perceptual loss for images)
 - [x] Implement wrapper to run posterior calibration checks using the `sbi` library (maybe add this as an additional package to avoid torch dependency?)
-- [x] implement get sampler for every pipeline
-- [ ] Diffusion models are underconfident, the EDM sde works while the VE and VP legacy sdes are not working properly yet
+- [x] Implement get sampler for every pipeline
+- [ ] Diffusion models are underconfident, the EDM sde works well while the VE and VP legacy sdes are not working properly yet
 - [ ] Include example for batched sampling in the first tutorial 
 - [ ] Include SBC checks in the benchmark notebooks and training script
-- [ ] Fix the GW example
-- [ ] Add tests for the examples and validation library
+- [x] Fix the GW example
+- [ ] Add tests for the examples 
 - [ ] Deploy everything to PyPI 
 - [ ] Figure out what is the best way to include the GenSBI dependency into the sub packages without causing circular dependencieds
-- [ ] Currently Flux1 is optimized for 1D data, we need to generalize it for 2D data, and spherical data as well
-
+- [x] Currently Flux1 is optimized for 1D data, we need to generalize it for 2D data, 
+- [ ] ... and spherical data as well
 - [ ] Retrain the benchmark models using the latest GenSBI version, especially the getting started example
 - [ ] Implement contour levels like the ones from corner in the sns plot too
-- [ ] Write in the documentation some info concernign the ID embedding, and what to use/when 
+- [x] Write in the documentation some info concernign the ID embedding, and what to use/when 
 - [x] Implement RoPE embedding with the 0-out trick
-- [ ] for the Flux1Joint, add the possibility to concatenate the embedding ids, instead of just summing them
+- [ ] For the Flux1Joint, add the possibility to concatenate the embedding ids, instead of just summing them
+- [ ] The theoretical overview is very basic currently, we will need to expand it

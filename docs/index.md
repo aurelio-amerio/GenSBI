@@ -128,6 +128,13 @@ If you use this library, please consider citing this work and the original metho
   howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
 }
 ```
+## Similar packages
+GenSBI is designed to provide a numerically efficient JAX implementation of flow and diffusion models, complementing existing SBI libraries. You might also want to check out:
+
+- **[`sbi`](https://github.com/sbi-dev/sbi)**: A comprehensive Pytorch-based package for simulation-based inference. It implements neural posterior estimation (NPE), neural likelihood estimation (NLE), and neural ratio estimation (NRE) methods. It is an excellent choice for a wide range of SBI tasks and supports amortized as well as sequential inference.
+- **[`swyft`](https://github.com/undark-lab/swyft)**: An official implementation of Truncated Marginal Neural Ratio Estimation (TMNRE). It is designed to be highly efficient for marginal posterior estimation and scales well to complex simulations, leveraging `dask` and `zarr` for handling large datasets.
+- **[`ltu-ili`](https://github.com/maho3/ltu-ili)**: The "Learning the Universe" Implicit Likelihood Inference library. It unifies multiple SBI backends (including `sbi`, `pydelfi`, and `lampe`) under a single interface, making it easy to benchmark different methods. It is particularly focused on applications in astrophysics and cosmology.
+- **[`sbijax`](https://github.com/dirmeier/sbijax)**: A simulation-based inference library built on top of JAX. It implements standard neural simulation-based inference methods (NPE, NLE, NRE) as well as ABC, leveraging JAX's just-in-time compilation and automatic differentiation for high-performance inference. Its API is inspired by the `sbi` package.
 
 ```{toctree}
 :hidden:
