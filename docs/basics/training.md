@@ -49,7 +49,7 @@ See [Troubleshooting: Shape Mismatch Errors](/basics/troubleshooting#shape-misma
 
 ## Pipeline Overview
 
-The default training pipeline (e.g., `Flux1FlowPipeline`, `SimformerFlowPipeline`) is built on the `AbstractPipeline` class. It manages the entire training lifecycle:
+The default training pipeline (e.g., `Flux1FlowPipeline`, `SimformerFlowPipeline`) is built on the `AbstractPipeline` class. It manages the entire training lifecycle. For the default `Flux1` model, use the `Flux1FlowPipeline`. GenSBI also provides `SimformerFlowPipeline` (for low-dim) and `Flux1JointFlowPipeline`. See [Model Cards](/basics/model_cards) for details.
 
 - **State Management**: Uses **Flax NNX** for managing model parameters and optimizer states.
 - **Steps vs. Epochs**: Training runs for a fixed number of steps (`num_steps`), not epochs. This is common in generative modeling where datasets (like simulation outputs) might be effectively infinite.

@@ -37,28 +37,9 @@ Selecting the appropriate model is crucial for balancing computational efficienc
 
 ## ID Embedding Strategies
 
-Transformers process data as sequences of tokens. To solve scientific problems effectively, the model often needs to know *what* a token represents (its identity) distinct from *what value* it holds. This is achieved through ID embeddings.
+Transformers process data as sequences of tokens. To differentiate between unordered parameters (sets) and structured data (grids/sequences), GenSBI uses various ID embedding strategies.
 
-### Why ID Embeddings Matter
-
-In natural language processing, the position of a word matters (e.g., "dog bites man" vs. "man bites dog"). In scientific inference, however, we often deal with:
-1. **Unordered Sets**: A set of parameters $[\theta_1, \theta_2, \theta_3]$ has no inherent order; the model must know which value corresponds to $\theta_2$ regardless of where it appears in the input tensor.
-2. **Structured Grids**: Data coming from a 2D sensor or a time series has a strict structural relationship (spatial or temporal) that must be preserved.
-
-GenSBI distinguishes between **"what"** a feature is (its ID) and **"where"** it is (its position).
-
-### Available Strategies
-
-GenSBI offers different embedding strategies to suit different data structures:
-
-* **Absolute Embeddings**: A unique, learned vector is assigned to each distinct variable/token.
-    * **Use when**: There is **no positional relationship** between features. For example, a set of disparate parameters or independent sensor readings.
-* **Sinusoidal Embeddings (1D/2D)**: Fixed sinusoidal frequencies that encode position indices.
-    * **Use when**: The **absolute position** ("where") of the feature is important. For example, specific pixels in a fixed-grid detector or specific time bins in a light curve.
-* **RoPE (Rotary Positional Embeddings)**: Encodes position by rotating the attention keys and queries.
-    * **Use when**: The **relative position** is what matters. This means the model should focus on the distance or relational structure between tokens rather than their absolute coordinates. This is powerful for sequences where local patterns are invariant to shifts.
-
-See the [Data, IDs, and Embeddings](data_and_embeddings.md) page for a detailed explanation of tokens, channels, and proper data preprocessing.
+**For a detailed guide on ID strategies (Absolute vs. RoPE) and data preprocessing, please see [Data, IDs, and Embeddings](/basics/data_and_embeddings).**
 
 ### Strategy Support by Model
 

@@ -5,7 +5,7 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 ## Quick Navigation
 
 ### 🚀 Getting Started
-- **[Installation](/documentation/installation)** - Install GenSBI and dependencies
+- **[Installation](/getting_started/installation)** - Install GenSBI and dependencies
 - **[Quick Start](/getting_started/quick_start)** - 5-minute guide to your first model
 - **[My First Model Tutorial](/notebooks/my_first_model)** - Complete step-by-step walkthrough
 
@@ -37,7 +37,7 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 :maxdepth: 1
 :hidden:
 
-Installation <installation>
+Installation </getting_started/installation>
 Quick Start </getting_started/index>
 Basics </basics/index>
 Theoretical Overview </theoretical_overview/index>
