@@ -102,7 +102,7 @@ def parse_flux1joint_params(config_path: str):
         condition_dim=model_params.get("condition_dim", [4]),
         qkv_bias=model_params.get("qkv_bias", True),
         theta=model_params.get("theta", -1),
-        id_embedding_kind=model_params.get("id_embedding_kind", "absolute"),
+        id_embedding_strategy=model_params.get("id_embedding_strategy", "absolute"),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
 
@@ -319,7 +319,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             rngs=nnx.Rngs(0),
             dim_joint=self.dim_joint,
             theta=self.dim_joint * 4,
-            id_embedding_kind="absolute",
+            id_embedding_strategy="absolute",
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
         )
@@ -476,7 +476,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             rngs=nnx.Rngs(0),
             dim_joint=self.dim_joint,
             theta=self.dim_joint * 10,
-            id_embedding_kind="absolute",
+            id_embedding_strategy="absolute",
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
         )
