@@ -102,8 +102,8 @@ def parse_flux1_params(config_path: str):
         axes_dim=model_params.get("axes_dim", [6, 0]),
         qkv_bias=model_params.get("qkv_bias", True),
         theta=model_params.get("theta", -1),
-        id_embedding_kind=tuple(
-            model_params.get("id_embedding_kind", ("absolute", "absolute"))
+        id_embedding_strategy=tuple(
+            model_params.get("id_embedding_strategy", ("absolute", "absolute"))
         ),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
@@ -216,7 +216,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
 
-        params = self._get_default_params()
+        if params is None:
+            params = self._get_default_params()
 
         model = self._make_model(params)
 
@@ -230,6 +231,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             ch_cond=ch_cond,
             params=params,
             training_config=training_config,
+            id_embedding_strategy=params.id_embedding_strategy,
         )
         self.ema_model = nnx.clone(self.model)
 
@@ -299,6 +301,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
+            id_embedding_strategy=params.id_embedding_strategy,
         )
 
         return pipeline
@@ -327,7 +330,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             dim_obs=self.dim_obs,
             dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
-            id_embedding_kind=("absolute", "absolute"),
+            id_embedding_strategy=("absolute", "absolute"),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )
@@ -397,21 +400,9 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             ch_cond=ch_cond,
             params=params,
             training_config=training_config,
+            id_embedding_strategy=params.id_embedding_strategy,
         )
         self.ema_model = nnx.clone(self.model)
-
-        # Flux1 uses different ids for obs and cond
-        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
-        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
-
-        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
-        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
-        cond_ids = cond_ids.at[..., 1].set(
-            1
-        )  # set second channel to 1 for conditioning tokens
-
-        self.obs_ids = obs_ids
-        self.cond_ids = cond_ids
 
     # TODO: need to update this too
     @classmethod
@@ -481,6 +472,7 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
+            id_embedding_strategy=params.id_embedding_strategy,
         )
 
         return pipeline
@@ -509,7 +501,7 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             dim_obs=self.dim_obs,
             dim_cond=self.dim_cond,
             theta=10 * (self.dim_obs + self.dim_cond),
-            id_embedding_kind=("absolute", "absolute"),
+            id_embedding_strategy=("absolute", "absolute"),
             rngs=nnx.Rngs(default=42),
             param_dtype=jnp.float32,
         )

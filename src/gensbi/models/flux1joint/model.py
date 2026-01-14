@@ -67,7 +67,7 @@ class Flux1JointParams:
             Number of tokens in the joint sequence.
         theta : int
             Scaling factor for positional encoding.
-        id_embedding_kind : str
+        id_embedding_strategy : str
             Kind of embedding for token ids ('absolute', 'pos1d', 'pos2d', 'rope').
         guidance_embed : bool
             Whether to use guidance embedding.
@@ -87,7 +87,7 @@ class Flux1JointParams:
     rngs: nnx.Rngs
     dim_joint: int  # joint dimension
     theta: int = 500
-    id_embedding_kind: str = "absolute"
+    id_embedding_strategy: str = "absolute"
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
@@ -95,10 +95,10 @@ class Flux1JointParams:
         availabel_embeddings = ["absolute", "pos1d", "pos2d", "rope"]
 
         assert (
-            self.id_embedding_kind in availabel_embeddings
-        ), f"Unknown id embedding kind {self.id_embedding_kind} for obs."
+            self.id_embedding_strategy in availabel_embeddings
+        ), f"Unknown id embedding kind {self.id_embedding_strategy} for obs."
 
-        if self.id_embedding_kind == "rope":
+        if self.id_embedding_strategy == "rope":
 
             # raise a warning tha using rope for joint modeling is not recommended
 
@@ -149,7 +149,7 @@ class Flux1Joint(nnx.Module):
 
         axes_dim = [a + b for a, b in zip(params.axes_dim, params.condition_dim)]
 
-        if "rope" in params.id_embedding_kind:
+        if "rope" in params.id_embedding_strategy:
 
             self.use_rope = True
             self.pe_embedder = EmbedND(
@@ -164,7 +164,7 @@ class Flux1Joint(nnx.Module):
             self.ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_joint,
                 hidden_size=self.hidden_size,
-                kind=params.id_embedding_kind,
+                kind=params.id_embedding_strategy,
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )

@@ -40,7 +40,7 @@ class Flux1Params:
     **Data Stucture and ID Embeddings**:
 
     Flux1 supports unstructured, 1D, and 2D data (and can be extended to ND) through different ID embedding strategies.
-    The model needs to know *what* each token represents distinct from its value. This is handled by `id_embedding_kind`.
+    The model needs to know *what* each token represents distinct from its value. This is handled by `id_embedding_strategy`.
 
     - `absolute`: Learned embeddings. Use for **unstructured data** (order doesn't matter, e.g. physical parameters).
         Initialize IDs using `gensbi.recipes.utils.init_ids_1d` (the `semantic_id` will be ignored).
@@ -48,7 +48,7 @@ class Flux1Params:
         Initialize IDs using `gensbi.recipes.utils.init_ids_1d`. The `semantic_id` is optional for `pos1d` but recommended for `rope1d`.
     - `pos2d` / `rope2d`: 2D positional embeddings. Use for **image data** or 2D grids.
         Initialize IDs using `gensbi.recipes.utils.init_ids_2d`. The `semantic_id` is optional for `pos2d` but recommended for `rope2d`.
-    
+
     **Preprocessing for Images/2D Data**:
 
     - **Patchification**: 2D images must be patchified (flattened into a sequence of tokens) before passing them to the model.
@@ -56,7 +56,7 @@ class Flux1Params:
     - **Normalization**: To speed up convergence, ensure data is normalized to 0 mean and unit variance.
 
     .. note::
-        See the documentation and tutorials for more information on id embeddings and data preprocessing. 
+        See the documentation and tutorials for more information on id embeddings and data preprocessing.
 
     Parameters
     ----------
@@ -86,7 +86,7 @@ class Flux1Params:
             Number of conditioning tokens.
         theta : int
             Scaling factor for positional encoding.
-        id_embedding_kind : tuple[str, str]
+        id_embedding_strategy : tuple[str, str]
             Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d", "rope1d", "rope2d".
         guidance_embed : bool
             Whether to use guidance embedding.
@@ -108,7 +108,7 @@ class Flux1Params:
     dim_obs: int  # observation dimension
     dim_cond: int  # condition dimension
     theta: int = 500
-    id_embedding_kind: tuple[str, str] = (
+    id_embedding_strategy: tuple[str, str] = (
         "absolute",
         "absolute",
     )  # "absolute", "pos1d", "pos2d" or "rope" - for obs and cond respectively
@@ -125,11 +125,11 @@ class Flux1Params:
             "rope2d",
         ]
         assert (
-            self.id_embedding_kind[0] in availabel_embeddings
-        ), f"Unknown id embedding kind {self.id_embedding_kind[0]} for obs."
+            self.id_embedding_strategy[0] in availabel_embeddings
+        ), f"Unknown id embedding kind {self.id_embedding_strategy[0]} for obs."
         assert (
-            self.id_embedding_kind[1] in availabel_embeddings
-        ), f"Unknown id embedding kind {self.id_embedding_kind[1]} for cond."
+            self.id_embedding_strategy[1] in availabel_embeddings
+        ), f"Unknown id embedding kind {self.id_embedding_strategy[1]} for cond."
 
         self.hidden_size = int(
             jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
@@ -156,19 +156,19 @@ class Flux1(nnx.Module):
             )
         self.num_heads = params.num_heads
 
-        self.id_embedding_kind_obs, self.id_embedding_kind_cond = (
-            params.id_embedding_kind
+        self.id_embedding_strategy_obs, self.id_embedding_strategy_cond = (
+            params.id_embedding_strategy
         )
 
         # rope1d and rope2d are all equivalent to rope
-        if self.id_embedding_kind_obs in ["rope", "rope1d", "rope2d"]:
-            self.id_embedding_kind_obs = "rope"
-        if self.id_embedding_kind_cond in ["rope", "rope1d", "rope2d"]:
-            self.id_embedding_kind_cond = "rope"
+        if self.id_embedding_strategy_obs in ["rope", "rope1d", "rope2d"]:
+            self.id_embedding_strategy_obs = "rope"
+        if self.id_embedding_strategy_cond in ["rope", "rope1d", "rope2d"]:
+            self.id_embedding_strategy_cond = "rope"
 
         if (
-            self.id_embedding_kind_obs == "rope"
-            or self.id_embedding_kind_cond == "rope"
+            self.id_embedding_strategy_obs == "rope"
+            or self.id_embedding_strategy_cond == "rope"
         ):
             self.pe_embedder = EmbedND(
                 dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
@@ -176,7 +176,7 @@ class Flux1(nnx.Module):
         else:
             self.pe_embedder = None
 
-        if self.id_embedding_kind_obs == "rope":
+        if self.id_embedding_strategy_obs == "rope":
             self.use_rope_obs = True
             self.obs_ids_embedder = None
         else:
@@ -184,12 +184,12 @@ class Flux1(nnx.Module):
             self.obs_ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_obs,
                 hidden_size=self.hidden_size,
-                kind=params.id_embedding_kind[0],
+                kind=params.id_embedding_strategy[0],
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
 
-        if self.id_embedding_kind_cond == "rope":
+        if self.id_embedding_strategy_cond == "rope":
             self.use_rope_cond = True
             self.cond_ids_embedder = None
         else:
@@ -197,7 +197,7 @@ class Flux1(nnx.Module):
             self.cond_ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_cond,
                 hidden_size=self.hidden_size,
-                kind=params.id_embedding_kind[1],
+                kind=params.id_embedding_strategy[1],
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )

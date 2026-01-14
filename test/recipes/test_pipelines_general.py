@@ -110,15 +110,13 @@ params = Flux1Params(
     num_heads=4,
     depth=1,
     depth_single_blocks=2,
-    axes_dim=[
-        2,2
-    ],
+    axes_dim=[2, 2],
     dim_obs=dim_obs,
     dim_cond=dim_cond,
     qkv_bias=True,
     guidance_embed=False,
     rngs=nnx.Rngs(0),
-    id_embedding_kind=("pos1d", "pos1d"),
+    id_embedding_strategy=("pos1d", "pos1d"),
     param_dtype=jnp.float32,
 )
 
@@ -322,8 +320,8 @@ def test_model_general_conditional(pipeline_cls):
         assert jnp.allclose(
             sample, sample_restored
         ), "Restored model samples do not match"
-        
-        # test batched sampling 
+
+        # test batched sampling
         cond = jnp.zeros((3, dim_cond, 2))
         sample = pipeline.sample_batched(
             jax.random.PRNGKey(1),
@@ -332,7 +330,13 @@ def test_model_general_conditional(pipeline_cls):
             chunk_size=2,
             show_progress_bars=False,
         )
-        assert sample.shape == (4, 3, dim_obs, 2), f"Expected shape (4, 3, {dim_obs}, 2), got {sample.shape}"
+        assert sample.shape == (
+            4,
+            3,
+            dim_obs,
+            2,
+        ), f"Expected shape (4, 3, {dim_obs}, 2), got {sample.shape}"
+
 
 ########
 
@@ -372,7 +376,7 @@ def test_model_general_unconditional(pipeline_cls):
             train_dataset,
             val_dataset,
             dim_joint,
-            ch_obs = 2,
+            ch_obs=2,
             training_config=training_config,
         )
 
@@ -409,7 +413,7 @@ def test_model_general_unconditional(pipeline_cls):
             train_dataset,
             val_dataset,
             dim_joint,
-            ch_obs = 2,
+            ch_obs=2,
             training_config=training_config,
         )
 
@@ -457,7 +461,7 @@ def test_model_general_unconditional(pipeline_cls):
         assert jnp.allclose(
             sample, sample_restored
         ), "Restored model samples do not match"
-        
+
         # test batched sampling, should return NotImplementedError
         cond = jnp.zeros((32, dim_cond, 2))
         with pytest.raises(NotImplementedError):
@@ -466,4 +470,4 @@ def test_model_general_unconditional(pipeline_cls):
                 cond,
                 nsamples=20,
                 chunk_size=8,
-            )   
+            )
