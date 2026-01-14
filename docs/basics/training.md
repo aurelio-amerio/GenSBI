@@ -4,7 +4,9 @@ This guide details how the training pipeline works in `GenSBI`, best practices f
 
 ## Training 101
 
-Training a flow matching model is extremely easy using the default pipeline. Here is a quick example:
+Training a flow matching model is extremely easy using the default pipeline. 
+For detailed parameter initialization arguments, see the [Model Cards](/basics/model_cards).
+The basic training pipeline is as follows:
 
 ```python
 from flax import nnx
@@ -15,7 +17,8 @@ train_dataset = ... # define a training dataset (infinite iterator)
 val_dataset = ...   # define a validation dataset (infinite iterator)
 dim_obs = ...       # dimension of the parameters (theta)
 dim_cond = ...      # dimension of the simulator observations (x)
-params = Flux1Params(...) # the parameters for your model
+
+params = Flux1Params(...) # parameters require specific arguments (see Model Cards)
 
 # Instantiate the pipeline
 pipeline = Flux1FlowPipeline(
@@ -113,6 +116,8 @@ def simulator(key, nsamples):
     # Run simulation
     return _simulator(sample_key, thetas)
 ```
+
+   
 
 ### 3. Setting up the Data Loader
 

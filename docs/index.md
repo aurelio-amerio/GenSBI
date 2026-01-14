@@ -9,8 +9,10 @@
   :class: logo-transparent-bg
 ```
 
-## Work in progress!
-GenSBI is a work in progress, and we are actively developing new features and improvements. Expect the API and examples to evolve over time. We welcome contributions and feedback from the community!
+```{admonition} Beta Release
+:class: warning
+GenSBI is currently in **Beta**. Expect the API to generally be stable, but be aware that active development is ongoing. We welcome contributions and feedback!
+```
 
 ## Getting Started
 
@@ -19,11 +21,19 @@ GenSBI is a work in progress, and we are actively developing new features and im
 
 Start here:
 1. [Installation](/documentation/installation) - Get GenSBI installed
-2. [Quick Start Guide](/getting_started/quick_start) - 5-minute introduction
+2. [Quick Start Guide](/getting_started/quick_start) - 15-minute introduction
 3. [My First Model Tutorial](/notebooks/my_first_model) - Complete step-by-step walkthrough
 ```
 
-To install GenSBI with GPU support:
+### Standard Installation (CPU / Compatible)
+
+```bash
+pip install git+https://github.com/aurelio-amerio/GenSBI.git
+```
+
+### High-Performance Installation (CUDA 12)
+
+If you have a compatible NVIDIA GPU, install with CUDA 12 support for significantly faster training:
 
 ```bash
 pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
@@ -69,8 +79,8 @@ Want to contribute? Check out the guides:
 
 ## Examples
 
-<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
-<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
+<img src="_static/animated_plot_samples_simformer.gif" alt="two-moons posterior sampling" height="400px">
+<img src="_static/animated_plot_posterior_simformer.gif" alt="two-moons posterior sampling" height="400px">
 
 Some key examples include:
 

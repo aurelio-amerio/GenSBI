@@ -64,12 +64,17 @@ See the [Data, IDs, and Embeddings](data_and_embeddings.md) page for a detailed 
 
 | Model | Obs & Cond Separation | Supported Strategies | Default |
 | :--- | :--- | :--- | :--- |
-| **Flux1** | **Separate**<br>Distinct embeddings for parameters (obs) and data (cond). | `absolute`, `pos1d`, `pos2d`, `rope` | `absolute` (Params), `absolute` (Data) |
-| **Flux1Joint** | **Unified**<br>All variables are part of a single joint sequence. | `absolute`, `pos1d`, `pos2d`, `rope` | `absolute` |
+| **Flux1** | **Separate**<br>Distinct embeddings for parameters (obs) and data (cond). | `absolute`, `pos1d`/`rope1d`, `pos2d`/`rope2d` | `absolute` (Params), `absolute` (Data) |
+| **Flux1Joint** | **Unified**<br>All variables are part of a single joint sequence. | `absolute`, `pos1d`/`rope1d`, `pos2d`/`rope2d` | `absolute` |
 | **Simformer** | **Unified**<br>Explicit learned embeddings for all tokens. | `absolute` (learned) | `absolute`<br>*(Note: Embeddings are **concatenated** to features, not summed)* |
 
 ```{note}
 `Flux1` allows mixing strategies. For example, you can use `absolute` embeddings for your unordered physical parameters ($\theta$) while using `pos1d` or `rope` for your sequential observational data ($x$).
+```
+
+```{warning}
+**Preferred Embedding Strategies**:
+While the codebase supports the generic `rope` keyword (which adapts to N-dimensions), it is **strongly recommended** to use `rope1d` for sequential data and `rope2d` for image/grid data. This ensures compatibility with the helper functions in the pipelines.
 ```
 
 ```{warning}

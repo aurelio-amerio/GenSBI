@@ -51,5 +51,11 @@ download:
 	curl -L -o notebooks/my_first_model.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/my_first_model.ipynb
 
+	@echo "Downloading images to _static ..."
+	curl -L -o _static/animated_plot_samples_simformer.gif \
+		https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true
+	curl -L -o _static/animated_plot_posterior_simformer.gif \
+		https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true
+
 	@echo "Done."
 

@@ -116,3 +116,52 @@ pipeline = ConditionalFlowPipeline(
 ```
 
 The pipeline will automatically detecting that `dim_cond` is a tuple and use `init_ids_2d` (and expects you to pass patchified data during training).
+
+## Working with 2D Images & Spatial Data
+
+GenSBI provides first-class support for 2D data (like images from telescopes or simulations), but it requires specific preprocessing.
+
+### 1. Patchification is Mandatory
+
+The models process data as a sequence of tokens. A standard 2D image must be broken down into patches.
+
+Use `gensbi.recipes.utils.patchify_2d` to convert your image tensors `(Batch, H, W, C)` into token sequences `(Batch, Num_Tokens, Features)`.
+
+**Example Workflow:**
+
+1.  **Load Image Data**: Shape `(N, 64, 64, 3)`
+2.  **Patchify**:
+    ```python
+    x_patch = patchify_2d(images, patch_size=2)
+    # New Shape: (N, 1024, 12)
+    # 32*32 patches = 1024 tokens
+    # 2*2*3 pixels per patch = 12 channels per token
+    ```
+3.  **Feed to Pipeline**: Pass `x_patch` as your conditioning data.
+
+### 2. Use `rope2d` for Spatial Awareness
+
+When your data is an image, the *2D spatial relationship* between patches is crucial.
+
+*   **Avoid** `absolute` or `rope1d`: These treat the image as a long 1D line, losing the knowledge that pixel (0,0) is close to (0,1) AND (1,0).
+*   **Use** `rope2d`: This embedding strategy encodes the grid structure. The model will understand the 2D distance between patches.
+
+To use this in the `Flux1` model:
+
+```python
+params = Flux1Params(
+    ...
+    dim_cond=1024,                  # Total number of patches
+    id_embedding_strategy=("absolute", "rope2d"), # Obs=Params, Cond=Image
+)
+```
+
+**Note:** When manually creating IDs with `init_ids_2d`, pass the *grid dimensions* (e.g., `(32, 32)`), not the total number of tokens.
+
+### 3. Shape Mismatches
+
+Common error: Passing the raw image `(N, 64, 64, 3)` directly to the model.
+
+*   **Symptom**: Shape errors complaining about rank or dimension mismatches.
+*   **Fix**: Ensure you call `patchify_2d` before training and before inference.
+
