@@ -127,9 +127,7 @@ GenSBI supports two approaches for generative modeling:
 - **Concept**: Learn a velocity field that transports samples from a simple distribution (Gaussian noise) to the target distribution (posterior).
 - **Training**: The model learns to predict velocity at random time points. The model directly defines a vector field as a function of (obs, cond, t).
 - **Sampling**: Solve an ODE from t=0 to t=1 using the learned velocity field.
-- **Advantages**: Straighter paths in latent space, faster sampling, easier to train.
-- **Sampling**: Solve an ODE from t=0 to t=1.
-- **Advantages**: Straighter paths in latent space, faster sampling, easier to train.
+- **Advantages**: Straighter sampling paths lead to faster sampling and easier training.
 
 #### Diffusion
 - **Concept**: Learn to gradually denoise data that has been corrupted with noise.
