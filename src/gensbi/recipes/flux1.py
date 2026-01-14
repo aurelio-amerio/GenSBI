@@ -268,13 +268,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             model_type == "flux"
         ), f"Model type {model_type} not supported in Flux1FlowPipeline."
 
-        # Model parameters from config
-        dim_joint = dim_obs + dim_cond
-
         params_dict = parse_flux1_params(config_path)
-
-        if params_dict["theta"] == -1:
-            params_dict["theta"] = 4 * dim_joint
 
         params = Flux1Params(
             rngs=nnx.Rngs(0),
@@ -301,7 +295,6 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
-            id_embedding_strategy=params.id_embedding_strategy,
         )
 
         return pipeline
@@ -472,7 +465,6 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
-            id_embedding_strategy=params.id_embedding_strategy,
         )
 
         return pipeline

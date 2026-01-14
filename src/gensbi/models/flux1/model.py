@@ -312,14 +312,11 @@ class Flux1(nnx.Module):
 
         # running on sequences obs
         obs = self.obs_in(obs)
+        cond = self.cond_in(cond)
+        # if cond is a single vector, repeat it for each obs
+        if cond.shape[0] == 1 and obs.shape[0] > 1:
+            cond = jnp.repeat(cond, obs.shape[0], axis=0)
         vec = self.time_in(timestep_embedding(t, 256))
-
-        # conditioned = jnp.asarray(conditioned, dtype=jnp.bool_)  # type: ignore
-        # conditioned_int = jnp.asarray(conditioned, dtype=jnp.int32)[..., None]  # type: ignore
-
-        # condition_embedding = self.condition_embedding * (1 - conditioned_int)
-
-        # vec = vec + condition_embedding  # we add the condition embedding to the vector
 
         if self.params.guidance_embed:
             if guidance is None:
@@ -327,16 +324,6 @@ class Flux1(nnx.Module):
                     "Didn't get guidance strength for guidance distilled model."
                 )
             vec = vec + self.vector_in(guidance)
-
-        # cond_processed = self.cond_in(cond)  # (B, F, H)
-        # cond_null = jnp.repeat(
-        #     self.condition_null, repeats=obs.shape[0], axis=0
-        # )  # (B, F, H)
-        # cond = jnp.where(
-        #     conditioned[..., None, None], cond_processed, cond_null
-        # )  # we replace the condition with a null vector if not conditioned
-
-        cond = self.cond_in(cond)
 
         # if not using rope for a dimension, perform id embedding and add it to the input
         if self.obs_ids_embedder is not None:
