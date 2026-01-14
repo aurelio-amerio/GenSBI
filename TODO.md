@@ -23,3 +23,8 @@ The following tasks are planned for future development:
 - [ ] Deploy everything to PyPI 
 - [ ] Figure out what is the best way to include the GenSBI dependency into the sub packages without causing circular dependencieds
 - [ ] Currently Flux1 is optimized for 1D data, we need to generalize it for 2D data, and spherical data as well
+
+- [ ] Retrain the benchmark models using the latest GenSBI version, especially the getting started example
+- [ ] Implement contour levels like the ones from corner in the sns plot too
+- [ ] Write in the documentation some info concernign the ID embedding, and what to use/when 
+- [ ] Implement RoPE embedding with the 0-out trick

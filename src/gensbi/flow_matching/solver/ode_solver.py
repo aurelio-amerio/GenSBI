@@ -1,8 +1,5 @@
 from typing import Callable, Optional, Sequence, Tuple, Union
 
-# import torch
-# from torch import Tensor
-# from torchdiffeq import odeint
 
 import jax
 import jax.numpy as jnp

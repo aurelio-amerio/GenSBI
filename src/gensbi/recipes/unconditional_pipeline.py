@@ -23,6 +23,8 @@ from gensbi.models import (
     UnconditionalDiffLoss,
 )
 
+from gensbi.recipes.utils import init_ids_1d
+
 from einops import repeat
 
 from gensbi.utils.model_wrapping import _expand_dims
@@ -88,7 +90,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.obs_ids = _expand_dims(self.obs_ids)
+        self.obs_ids = init_ids_1d(self.dim_obs)
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -213,47 +215,47 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             "Batched sampling not implemented for UnconditionalFlowPipeline."
         )
 
-    def compute_unnorm_logprob(
-        self, x_1, step_size=0.01, use_ema=True, time_grid=None, **model_extras
-    ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
+    # def compute_unnorm_logprob(
+    #     self, x_1, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+    # ):
+    #     if use_ema:
+    #         model = self.ema_model_wrapped
+    #     else:
+    #         model = self.model_wrapped
 
-        if time_grid is None:
-            time_grid = jnp.array([1.0, 0.0])
-            return_intermediates = False
-        else:
-            # assert time grid is decreasing
-            assert jnp.all(time_grid[:-1] >= time_grid[1:])
-            return_intermediates = True
+    #     if time_grid is None:
+    #         time_grid = jnp.array([1.0, 0.0])
+    #         return_intermediates = False
+    #     else:
+    #         # assert time grid is decreasing
+    #         assert jnp.all(time_grid[:-1] >= time_grid[1:])
+    #         return_intermediates = True
 
-        solver = ODESolver(velocity_model=model)
+    #     solver = ODESolver(velocity_model=model)
 
-        # x_1 = _expand_dims(x_1)
-        assert (
-            x_1.ndim == 2
-        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
+    #     # x_1 = _expand_dims(x_1)
+    #     assert (
+    #         x_1.ndim == 2
+    #     ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
 
-        # todo need to check the model extras, is that node_ids instead?
-        model_extras = {"obs_ids": self.obs_ids, **model_extras}
+    #     # todo need to check the model extras, is that node_ids instead?
+    #     model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
-        logp_sampler = solver.get_unnormalized_logprob(
-            time_grid=time_grid,
-            method="Dopri5",
-            step_size=step_size,
-            log_p0=self.p0_obs.log_prob,
-            model_extras=model_extras,
-            return_intermediates=return_intermediates,
-        )
+    #     logp_sampler = solver.get_unnormalized_logprob(
+    #         time_grid=time_grid,
+    #         method="Dopri5",
+    #         step_size=step_size,
+    #         log_p0=self.p0_obs.log_prob,
+    #         model_extras=model_extras,
+    #         return_intermediates=return_intermediates,
+    #     )
 
-        if len(x_1) > 4:
-            # we trigger precompilation first
-            _ = logp_sampler(x_1[:4])
+    #     if len(x_1) > 4:
+    #         # we trigger precompilation first
+    #         _ = logp_sampler(x_1[:4])
 
-        exact_log_p = logp_sampler(x_1)
-        return exact_log_p
+    #     exact_log_p = logp_sampler(x_1)
+    #     return exact_log_p
 
 
 class UnconditionalDiffusionPipeline(AbstractPipeline):
@@ -316,7 +318,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.obs_ids = _expand_dims(self.obs_ids)
+        self.obs_ids = init_ids_1d(self.dim_obs)
         
         sigma_min = self.training_config.get("sigma_min", 0.002)
         sigma_max = self.training_config.get("sigma_max", 80.0)

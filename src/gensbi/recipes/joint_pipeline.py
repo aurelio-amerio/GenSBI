@@ -12,6 +12,8 @@ from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
 
+from gensbi.recipes.utils import init_ids_joint
+
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
@@ -177,7 +179,7 @@ class JointFlowPipeline(AbstractPipeline):
         Configuration for training. If None, default configuration is used.
     condition_mask_kind : str, optional
         Kind of condition mask to use. One of ["structured", "posterior"].
-        
+
     Examples
     --------
     Minimal example on how to instantiate and use the JointFlowPipeline:
@@ -185,16 +187,17 @@ class JointFlowPipeline(AbstractPipeline):
     .. literalinclude:: /examples/joint_flow_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/joint_flow_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -218,9 +221,15 @@ class JointFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
+        self.dim_joint = self.dim_obs + self.dim_cond
+
+        # self.cond_ids = _expand_dims(self.cond_ids)
+        # self.obs_ids = _expand_dims(self.obs_ids)
+        # self.node_ids = _expand_dims(self.node_ids)
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(
+            self.dim_obs, self.dim_cond
+        )
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -376,49 +385,49 @@ class JointFlowPipeline(AbstractPipeline):
         samples = sampler(key, nsamples)
         return samples
 
-    def compute_unnorm_logprob(
-        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
-    ):
+    # def compute_unnorm_logprob(
+    #     self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+    # ):
 
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
+    #     if use_ema:
+    #         model = self.ema_model_wrapped
+    #     else:
+    #         model = self.model_wrapped
 
-        if time_grid is None:
-            time_grid = jnp.array([1.0, 0.0])
-            return_intermediates = False
-        else:
-            # assert time grid is decreasing
-            assert jnp.all(time_grid[:-1] >= time_grid[1:])
-            return_intermediates = True
+    #     if time_grid is None:
+    #         time_grid = jnp.array([1.0, 0.0])
+    #         return_intermediates = False
+    #     else:
+    #         # assert time grid is decreasing
+    #         assert jnp.all(time_grid[:-1] >= time_grid[1:])
+    #         return_intermediates = True
 
-        solver = ODESolver(velocity_model=model)
+    #     solver = ODESolver(velocity_model=model)
 
-        # x_1 = _expand_dims(x_1)
-        assert (
-            x_1.ndim == 2
-        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
-        cond = _expand_dims(x_o)
+    #     # x_1 = _expand_dims(x_1)
+    #     assert (
+    #         x_1.ndim == 2
+    #     ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
+    #     cond = _expand_dims(x_o)
 
-        model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            **model_extras,
-        }
+    #     model_extras = {
+    #         "cond": cond,
+    #         "obs_ids": self.obs_ids,
+    #         "cond_ids": self.cond_ids,
+    #         **model_extras,
+    #     }
 
-        logp_sampler = solver.get_unnormalized_logprob(
-            time_grid=time_grid,
-            method="Dopri5",
-            step_size=step_size,
-            log_p0=self.p0_obs.log_prob,
-            model_extras=model_extras,
-            return_intermediates=return_intermediates,
-        )
+    #     logp_sampler = solver.get_unnormalized_logprob(
+    #         time_grid=time_grid,
+    #         method="Dopri5",
+    #         step_size=step_size,
+    #         log_p0=self.p0_obs.log_prob,
+    #         model_extras=model_extras,
+    #         return_intermediates=return_intermediates,
+    #     )
 
-        exact_log_p = logp_sampler(x_1)
-        return exact_log_p
+    #     exact_log_p = logp_sampler(x_1)
+    #     return exact_log_p
 
 
 class JointDiffusionPipeline(AbstractPipeline):
@@ -443,7 +452,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         Configuration for training. If None, default configuration is used.
     condition_mask_kind : str, optional
         Kind of condition mask to use. One of ["structured", "posterior"].
-        
+
     Examples
     --------
     Minimal example on how to instantiate and use the JointDiffusionPipeline:
@@ -451,16 +460,17 @@ class JointDiffusionPipeline(AbstractPipeline):
     .. literalinclude:: /examples/joint_diffusion_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/joint_diffusion_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -484,9 +494,13 @@ class JointDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
+        # self.cond_ids = _expand_dims(self.cond_ids)
+        # self.obs_ids = _expand_dims(self.obs_ids)
+        # self.node_ids = _expand_dims(self.node_ids)
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(
+            self.dim_obs, self.dim_cond
+        )
 
         self.path = EDMPath(
             scheduler=EDMScheduler(

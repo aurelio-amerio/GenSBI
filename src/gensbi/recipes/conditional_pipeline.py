@@ -12,6 +12,8 @@ from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
 
+from typing import Union, Tuple
+
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
@@ -33,6 +35,8 @@ import yaml
 
 from gensbi.recipes.pipeline import AbstractPipeline
 
+from gensbi.recipes.utils import init_ids_1d, init_ids_2d
+
 
 class ConditionalFlowPipeline(AbstractPipeline):
     """
@@ -46,14 +50,16 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Training dataset.
     val_dataset : grain dataset or iterator over batches
         Validation dataset.
-    dim_obs : int
-        Dimension of the parameter space.
-    dim_cond : int
-        Dimension of the observation space.
+    dim_obs : int or tuple of int
+        Dimension of the parameter space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+    dim_cond : int or tuple of int
+        Dimension of the observation space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
     ch_obs : int, optional
-        Number of channels in the observation data. Default is 1.
+        Number of channels per token in the observation data. Default is 1.
     ch_cond : int, optional
-        Number of channels in the conditional data. Default is 1.
+        Number of channels per token in the conditional data. Default is 1.
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
     training_config : dict, optional
@@ -75,6 +81,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
+    .. note::
+        Sampling in the latent space (latent diffusion/flow) is not currently supported.
+
     """
 
     def __init__(
@@ -82,10 +91,11 @@ class ConditionalFlowPipeline(AbstractPipeline):
         model,
         train_dataset,
         val_dataset,
-        dim_obs: int,
-        dim_cond: int,
+        dim_obs: Union[int, Tuple[int, int]],
+        dim_cond: Union[int, Tuple[int, int]],
         ch_obs=1,
         ch_cond=1,
+        id_embedding_strategy=("absolute", "absolute"),
         params=None,
         training_config=None,
     ):
@@ -104,15 +114,26 @@ class ConditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        # Flux1 uses different ids for obs and cond
-        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
-        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+        embeddings_1d = ["absolute", "pos1d", "rope1d"]
+        embeddings_2d = ["pos2d", "rope2d"]
 
-        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
-        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
-        cond_ids = cond_ids.at[..., 1].set(
-            1
-        )  # set second channel to 1 for conditioning tokens
+        if id_embedding_strategy[0] in embeddings_1d:
+            obs_ids = init_ids_1d(dim_obs, semantic_id=0)
+        elif id_embedding_strategy[0] in embeddings_2d:
+            obs_ids = init_ids_2d(dim_obs, semantic_id=0)
+        else:
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
+            )
+
+        if id_embedding_strategy[1] in embeddings_1d:
+            cond_ids = init_ids_1d(dim_cond, semantic_id=1)
+        elif id_embedding_strategy[1] in embeddings_2d:
+            cond_ids = init_ids_2d(dim_cond, semantic_id=1)
+        else:
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
+            )
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids
@@ -307,52 +328,52 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         return samples
 
-    def compute_unnorm_logprob(
-        self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
-    ):
-        if use_ema:
-            model = self.ema_model_wrapped
-        else:
-            model = self.model_wrapped
+    # def compute_unnorm_logprob(
+    #     self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras
+    # ):
+    #     if use_ema:
+    #         model = self.ema_model_wrapped
+    #     else:
+    #         model = self.model_wrapped
 
-        if time_grid is None:
-            time_grid = jnp.array([1.0, 0.0])
-            return_intermediates = False
-        else:
-            # assert time grid is decreasing
-            assert jnp.all(time_grid[:-1] >= time_grid[1:])
-            return_intermediates = True
+    #     if time_grid is None:
+    #         time_grid = jnp.array([1.0, 0.0])
+    #         return_intermediates = False
+    #     else:
+    #         # assert time grid is decreasing
+    #         assert jnp.all(time_grid[:-1] >= time_grid[1:])
+    #         return_intermediates = True
 
-        solver = ODESolver(velocity_model=model)
+    #     solver = ODESolver(velocity_model=model)
 
-        # x_1 = _expand_dims(x_1)
-        assert (
-            x_1.ndim == 2
-        ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
-        cond = _expand_dims(x_o)
+    #     # x_1 = _expand_dims(x_1)
+    #     assert (
+    #         x_1.ndim == 2
+    #     ), "x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported."
+    #     cond = _expand_dims(x_o)
 
-        model_extras = {
-            "cond": cond,
-            "obs_ids": self.obs_ids,
-            "cond_ids": self.cond_ids,
-            **model_extras,
-        }
+    #     model_extras = {
+    #         "cond": cond,
+    #         "obs_ids": self.obs_ids,
+    #         "cond_ids": self.cond_ids,
+    #         **model_extras,
+    #     }
 
-        logp_sampler = solver.get_unnormalized_logprob(
-            time_grid=time_grid,
-            method="Dopri5",
-            step_size=step_size,
-            log_p0=self.p0_obs.log_prob,
-            model_extras=model_extras,
-            return_intermediates=return_intermediates,
-        )
+    #     logp_sampler = solver.get_unnormalized_logprob(
+    #         time_grid=time_grid,
+    #         method="Dopri5",
+    #         step_size=step_size,
+    #         log_p0=self.p0_obs.log_prob,
+    #         model_extras=model_extras,
+    #         return_intermediates=return_intermediates,
+    #     )
 
-        if len(x_1) > 4:
-            # we trigger precompilation first
-            _ = logp_sampler(x_1[:4])
+    #     if len(x_1) > 4:
+    #         # we trigger precompilation first
+    #         _ = logp_sampler(x_1[:4])
 
-        exact_log_p = logp_sampler(x_1)
-        return exact_log_p
+    #     exact_log_p = logp_sampler(x_1)
+    #     return exact_log_p
 
 
 class ConditionalDiffusionPipeline(AbstractPipeline):
@@ -365,10 +386,12 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         Training dataset.
     val_dataset : grain dataset or iterator over batches
         Validation dataset.
-    dim_obs : int
-        Dimension of the parameter space.
-    dim_cond : int
-        Dimension of the observation space.
+    dim_obs : int or tuple of int
+        Dimension of the parameter space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+    dim_cond : int or tuple of int
+        Dimension of the observation space (number of tokens).
+        Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
     params : ConditionalParams, optional
         Parameters for the Conditional model. If None, default parameters are used.
     training_config : dict, optional
@@ -390,6 +413,9 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
+    .. note::
+        Sampling in the latent space (latent diffusion/flow) is not currently supported.
+
     """
 
     def __init__(
@@ -397,10 +423,11 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         model,
         train_dataset,
         val_dataset,
-        dim_obs: int,
-        dim_cond: int,
+        dim_obs: Union[int, Tuple[int, int]],
+        dim_cond: Union[int, Tuple[int, int]],
         ch_obs=1,
         ch_cond=1,
+        id_embedding_strategy=("absolute", "absolute"),
         params=None,
         training_config=None,
     ):
@@ -417,15 +444,36 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        # Flux1 uses different ids for obs and cond
-        obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
-        obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
+        # # Flux1 uses different ids for obs and cond
+        # obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
+        # obs_ids = obs_ids.at[..., 0].set(jnp.arange(dim_obs))
 
-        cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
-        cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
-        cond_ids = cond_ids.at[..., 1].set(
-            1
-        )  # set second channel to 1 for conditioning tokens
+        # cond_ids = jnp.zeros((1, dim_cond, 2), dtype=jnp.int32)
+        # cond_ids = cond_ids.at[..., 0].set(jnp.arange(dim_cond))
+        # cond_ids = cond_ids.at[..., 1].set(
+        #     1
+        # )  # set second channel to 1 for conditioning tokens
+
+        embeddings_1d = ["absolute", "pos1d", "rope1d"]
+        embeddings_2d = ["pos2d", "rope2d"]
+
+        if id_embedding_strategy[0] in embeddings_1d:
+            obs_ids = init_ids_1d(dim_obs, semantic_id=0)
+        elif id_embedding_strategy[0] in embeddings_2d:
+            obs_ids = init_ids_2d(dim_obs, semantic_id=0)
+        else:
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
+            )
+
+        if id_embedding_strategy[1] in embeddings_1d:
+            cond_ids = init_ids_1d(dim_cond, semantic_id=1)
+        elif id_embedding_strategy[1] in embeddings_2d:
+            cond_ids = init_ids_2d(dim_cond, semantic_id=1)
+        else:
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
+            )
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids

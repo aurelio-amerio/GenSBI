@@ -33,12 +33,7 @@ This page addresses common issues and frequently asked questions when using GenS
    pip install git+https://github.com/aurelio-amerio/GenSBI.git
    ```
 
-2. If using validation features, install the validation extras:
-   ```bash
-   pip install "GenSBI[validation] @ git+https://github.com/aurelio-amerio/GenSBI.git" --extra-index-url https://download.pytorch.org/whl/cpu
-   ```
-
-3. Check your Python version (requires Python 3.11+).
+2. Check your Python version (requires Python 3.11+).
 
 ## Training Issues
 
@@ -132,6 +127,13 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 
 4. **Gradient clipping**: Although not in default config, you may need to add gradient clipping to your custom optimizer.
 
+5. **Check `theta` for RoPE**: If using `rope1d` or `rope2d` embeddings and the model goes to NaN after a few epochs, the base frequency `theta` might be wrong.
+   - **Rule of thumb**: Use `theta = 10 * dim_rope_dimensions`.
+   - **Example (1D)**: Imagine `obs` uses absolute ID embedding and `cond` uses `rope1d`. If `cond` has 7 tokens, `theta` should be `~10 * 7 = 70` (usually rounded up to 100).
+   - **Example (2D)**: If `cond` uses `rope2d` with 32x32 images as input (patch size 2x2), the number of patches is 16x16=256. `theta` should be `~16 * 16 * 10 = 2560`.
+   - If both `obs` and `cond` use RoPE, sum the recommended results for each.
+   - **Note**: If the image is larger than 32x32, it is strongly advisable to first encode it using a CNN (see the gravitational lensing example).
+
 ### Memory Errors (OOM)
 
 **Problem**: GPU runs out of memory during training.
@@ -208,21 +210,19 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 
 ### SBC/TARP/L-C2ST Errors
 
-**Problem**: Errors when running validation diagnostics from the `sbi` library.
+### SBC/TARP/L-C2ST Errors
+
+**Problem**: Errors when running validation diagnostics from the `gensbi.diagnostics` module.
 
 **Solution**:
-1. **Check tensor shapes**: `sbi` expects 2D tensors `(num_samples, features)`. Flatten your data:
+1. **Check array shapes**: Diagnostics expect flattened 2D arrays `(num_samples, features)`. GenSBI data usually comes in 3D `(batch, features, channels)`.
    ```python
    # GenSBI format: (batch, features, channels)
-   # sbi format: (batch, features)
-   thetas_flat = posterior._ravel(thetas)  # or use .reshape()
+   # Diagnostics format: (batch, features * channels)
+   thetas_flat = thetas.reshape(thetas.shape[0], -1)
    ```
 
-2. **Convert to PyTorch**: `sbi` uses PyTorch tensors:
-   ```python
-   import torch
-   thetas_torch = torch.Tensor(np.array(thetas_flat))
-   ```
+2. **Check data types**: Ensure you are passing Numpy or JAX arrays, not PyTorch tensors.
 
 3. **Use separate validation data**: Don't use training data for validation diagnostics.
 
