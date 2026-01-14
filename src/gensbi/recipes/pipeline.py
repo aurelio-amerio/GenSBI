@@ -836,7 +836,7 @@ class AbstractPipeline(abc.ABC):
         sampler = self.get_sampler(x_o, *args, **kwargs)
         batched_sampler = _get_batch_sampler(
             sampler,
-            ncond=cond.shape[0],
+            ncond=x_o.shape[0],
             chunk_size=chunk_size,
             show_progress_bars=show_progress_bars,
         )
