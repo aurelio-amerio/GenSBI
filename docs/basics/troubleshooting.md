@@ -127,6 +127,13 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 
 4. **Gradient clipping**: Although not in default config, you may need to add gradient clipping to your custom optimizer.
 
+5. **Check `theta` for RoPE**: If using `rope1d` or `rope2d` embeddings and the model goes to NaN after a few epochs, the base frequency `theta` might be wrong.
+   - **Rule of thumb**: Use `theta = 10 * dim_rope_dimensions`.
+   - **Example (1D)**: Imagine `obs` uses absolute ID embedding and `cond` uses `rope1d`. If `cond` has 7 tokens, `theta` should be `~10 * 7 = 70` (usually rounded up to 100).
+   - **Example (2D)**: If `cond` uses `rope2d` with 32x32 images as input (patch size 2x2), the number of patches is 16x16=256. `theta` should be `~16 * 16 * 10 = 2560`.
+   - If both `obs` and `cond` use RoPE, sum the recommended results for each.
+   - **Note**: If the image is larger than 32x32, it is strongly advisable to first encode it using a CNN (see the gravitational lensing example).
+
 ### Memory Errors (OOM)
 
 **Problem**: GPU runs out of memory during training.

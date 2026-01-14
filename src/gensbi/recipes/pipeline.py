@@ -202,14 +202,15 @@ class AbstractPipeline(abc.ABC):
 
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
-        self.dim_joint = dim_obs + dim_cond
+        # test test
+        # self.dim_joint = dim_obs + dim_cond
 
         self.ch_obs = ch_obs
         self.ch_cond = ch_cond
 
-        self.node_ids = jnp.arange(self.dim_joint)
-        self.obs_ids = jnp.arange(self.dim_obs)  # observation ids
-        self.cond_ids = jnp.arange(self.dim_obs, self.dim_joint)  # conditional ids
+        # self.node_ids = None # to be set in subclass
+        # self.obs_ids = None # to be set in subclass
+        # self.cond_ids = None # to be set in subclass
 
         self.params = params
 
@@ -351,16 +352,18 @@ class AbstractPipeline(abc.ABC):
         #     decay_steps=num_steps - warmup_steps,
         #     end_value=min_lr,  # 1% of Peak
         # )
-        
-        
+
         # we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr
         decay_transition = self.training_config["decay_transition"]
-        
+
         warmup_schedule = optax.linear_schedule(
-            init_value=1e-7, end_value=max_lr, transition_steps=warmup_steps)
+            init_value=1e-7, end_value=max_lr, transition_steps=warmup_steps
+        )
         constant_schedule = optax.constant_schedule(value=max_lr)
         decay_schedule = optax.cosine_decay_schedule(
-            init_value=max_lr, decay_steps=int((1 - decay_transition) * num_steps), alpha=min_lr / max_lr
+            init_value=max_lr,
+            decay_steps=int((1 - decay_transition) * num_steps),
+            alpha=min_lr / max_lr,
         )
         schedule = optax.join_schedules(
             schedules=[
@@ -368,9 +371,9 @@ class AbstractPipeline(abc.ABC):
                 constant_schedule,
                 decay_schedule,
             ],
-            boundaries=[warmup_steps, int(decay_transition * num_steps)]
+            boundaries=[warmup_steps, int(decay_transition * num_steps)],
         )
-        
+
         # define the weight decay mask to avoid applying weight decay to bias and norm parameters
         def decay_mask_fn(params):
             return jax.tree_util.tree_map(lambda x: x.ndim > 1, params)
@@ -687,8 +690,7 @@ class AbstractPipeline(abc.ABC):
             # update the parameters ema
             if j % self.training_config["multistep"] == 0:
                 ema_step(self.ema_model, self.model, ema_optimizer)
-                
-            
+
             decay = 0.99
 
             if j == 0:
@@ -699,7 +701,9 @@ class AbstractPipeline(abc.ABC):
             if j > 0 and j % val_every == 0:
                 # batch_val = next(self.val_dataset_iter)
                 # l_val = val_step(self.model, batch_val, rngs.val_step())
-                l_val = val_step(self.model, batch_val, rng_val) # we use a fixed val batch and rng for validation, to avoid noise
+                l_val = val_step(
+                    self.model, batch_val, rng_val
+                )  # we use a fixed val batch and rng for validation, to avoid noise
 
                 ratio = l_val / min_val
                 if ratio > val_error_ratio:
@@ -779,7 +783,7 @@ class AbstractPipeline(abc.ABC):
         key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
-            Conditioning variable (e.g., observed data). 
+            Conditioning variable (e.g., observed data).
         nsamples : int, optional
             Number of samples to generate.
 
@@ -826,14 +830,13 @@ class AbstractPipeline(abc.ABC):
             Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
         """
 
-        cond = x_o
 
         # TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder
         # Possibly fixed by passing the kwargs, which should include the encoder_key
-        sampler = self.get_sampler(cond, *args, **kwargs)
+        sampler = self.get_sampler(x_o, *args, **kwargs)
         batched_sampler = _get_batch_sampler(
             sampler,
-            ncond=cond.shape[0],
+            ncond=x_o.shape[0],
             chunk_size=chunk_size,
             show_progress_bars=show_progress_bars,
         )
@@ -842,4 +845,4 @@ class AbstractPipeline(abc.ABC):
 
         res = batched_sampler(keys)
 
-        return res # shape (nsamples, batch_size_cond, dim_obs, ch_obs)
+        return res  # shape (nsamples, batch_size_cond, dim_obs, ch_obs)

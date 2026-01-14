@@ -44,7 +44,7 @@ params = Flux1Params(
     rngs=nnx.Rngs(0),
     dim_obs=3,
     dim_cond=5,
-    id_embedding_kind=("absolute", "absolute"),
+    id_embedding_strategy=("absolute", "absolute"),
 )
 
 model = Flux1(params)

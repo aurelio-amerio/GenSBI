@@ -42,8 +42,13 @@ x = jax.random.normal(key, (nsamples, dim_cond, 2))
 
 data = jnp.concatenate([theta, x], axis=1)
 
+
 def split_obs_cond(data):
-    return data[:, :dim_obs], data[:, dim_obs:]  # assuming first dim_obs are obs, last dim_cond are cond
+    return (
+        data[:, :dim_obs],
+        data[:, dim_obs:],
+    )  # assuming first dim_obs are obs, last dim_cond are cond
+
 
 train_dataset_joint = (
     grain.MapDataset.source(np.array(data)[:800])
@@ -68,7 +73,6 @@ train_dataset_cond = (
     .to_iter_dataset()
     .batch(32)
     .map(split_obs_cond)
-    
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
@@ -79,7 +83,6 @@ val_dataset_cond = (
     .to_iter_dataset()
     .batch(32)
     .map(split_obs_cond)
-    
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
@@ -108,9 +111,9 @@ params_flux1joint = Flux1JointParams(
     condition_dim=[2],
     qkv_bias=True,
     rngs=nnx.Rngs(0),
-    dim_joint=4,
+    dim_joint=dim_joint,
     theta=16,
-    id_embedding_kind="pos1d",
+    id_embedding_strategy="pos1d",
     guidance_embed=False,
     param_dtype=jnp.float32,
 )
@@ -130,7 +133,7 @@ params_flux = Flux1Params(
     dim_obs=dim_obs,
     dim_cond=dim_cond,
     theta=20,
-    id_embedding_kind=("pos1d", "pos1d"),
+    id_embedding_strategy=("pos1d", "pos1d"),
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
@@ -159,7 +162,7 @@ config_flow_flux1joint = "test/recipes/configs/config_flow_flux1joint.yaml"
 def test_load_configs(pipeline_cls, config_path):
 
     checkpoint_dir = tempfile.mkdtemp()
-    
+
     if pipeline_cls in [
         Flux1FlowPipeline,
         Flux1DiffusionPipeline,
@@ -186,7 +189,6 @@ def test_load_configs(pipeline_cls, config_path):
     return
 
 
-
 @pytest.mark.parametrize(
     "pipeline_cls, params",
     [
@@ -208,7 +210,7 @@ def test_model_pipeline(pipeline_cls, params):
     else:
         train_dataset = train_dataset_joint
         val_dataset = val_dataset_joint
-        
+
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         training_config = pipeline_cls._get_default_training_config()
@@ -247,8 +249,10 @@ def test_model_pipeline(pipeline_cls, params):
                 params=params,
                 training_config=training_config,
             )
-        
-        assert model_dir == pipeline.training_config["checkpoint_dir"], "Checkpoint dir mismatch"
+
+        assert (
+            model_dir == pipeline.training_config["checkpoint_dir"]
+        ), "Checkpoint dir mismatch"
 
         batch_size = 3
         t = jnp.linspace(0, 1, batch_size)
@@ -334,7 +338,7 @@ def test_model_pipeline(pipeline_cls, params):
         assert sample.shape == (
             32,
             dim_obs,
-            2
+            2,
         ), f"Expected shape (32, {dim_obs}, 2), got {sample.shape}"
 
         sample = pipeline.sample(
@@ -346,7 +350,7 @@ def test_model_pipeline(pipeline_cls, params):
         assert sample.shape == (
             32,
             dim_obs,
-            2
+            2,
         ), f"Expected shape (32, {dim_obs}, 2), got {sample.shape}"
 
         # sample from the restored model
@@ -359,7 +363,7 @@ def test_model_pipeline(pipeline_cls, params):
         assert jnp.allclose(
             sample, sample_restored
         ), "Restored model samples do not match"
-        
+
         # test batched sampling
         cond = jnp.zeros((3, dim_cond, 2))
         sample = pipeline.sample_batched(
@@ -368,7 +372,9 @@ def test_model_pipeline(pipeline_cls, params):
             nsamples=4,
             chunk_size=2,
         )
-        assert sample.shape == (4, 3, dim_obs, 2), f"Expected shape (4, 3, {dim_obs}, 2), got {sample.shape}"
-
-
-
+        assert sample.shape == (
+            4,
+            3,
+            dim_obs,
+            2,
+        ), f"Expected shape (4, 3, {dim_obs}, 2), got {sample.shape}"
