@@ -52,7 +52,7 @@ Since Transformers are permutation-invariant by default, we use **ID Embeddings*
 
 ### Strategies
 
-GenSBI supports several embedding strategies via the `id_embedding_kind` parameter (a tuple for `(obs, cond)`):
+GenSBI supports several embedding strategies via the `id_embedding_strategy` parameter (a tuple for `(obs, cond)`):
 
 1.  **`absolute` (Learned)**
     *   **Use for:** Unstructured data where order doesn't matter (e.g., a set of independent cosmological parameters).
