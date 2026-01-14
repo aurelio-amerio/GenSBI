@@ -830,11 +830,10 @@ class AbstractPipeline(abc.ABC):
             Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
         """
 
-        cond = x_o
 
         # TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder
         # Possibly fixed by passing the kwargs, which should include the encoder_key
-        sampler = self.get_sampler(cond, *args, **kwargs)
+        sampler = self.get_sampler(x_o, *args, **kwargs)
         batched_sampler = _get_batch_sampler(
             sampler,
             ncond=cond.shape[0],
