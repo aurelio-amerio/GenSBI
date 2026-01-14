@@ -58,9 +58,7 @@ GenSBI offers different embedding strategies to suit different data structures:
 * **RoPE (Rotary Positional Embeddings)**: Encodes position by rotating the attention keys and queries.
     * **Use when**: The **relative position** is what matters. This means the model should focus on the distance or relational structure between tokens rather than their absolute coordinates. This is powerful for sequences where local patterns are invariant to shifts.
 
-```{warning}
-**Current Pipeline Limitation**: While the models (Flux1, Simformer, Flux1Joint) explicitly support 2D data and 2D embeddings (`pos2d`), the current automatic **pipelines** in GenSBI initialize observation and conditioning IDs assuming a **1D structure**. Support for fully automatic 2D pipelines will be improved in a future release. For now, you may need to manually handle ID initialization for 2D tasks.
-```
+See the [Data, IDs, and Embeddings](data_and_embeddings.md) page for a detailed explanation of tokens, channels, and proper data preprocessing.
 
 ### Strategy Support by Model
 
@@ -101,7 +99,7 @@ params = Flux1Params(
     dim_obs=...,
     dim_cond=...,
     theta=...,
-    id_embedding_kind=("absolute", "absolute"),
+    id_embedding_strategy=("absolute", "absolute"),
     guidance_embed=...,
     param_dtype=...,
 )
@@ -122,7 +120,7 @@ params = Flux1Params(
 - **dim_obs**: The number of variables (tokens) the model performs inference on.
 - **dim_cond**: The number of variables the model is conditioned on.
 - **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). A recommended starting point is `10 * dim_obs`. The default code value is `10_000`.
-- **id_embedding_kind**: A tuple of strings `(obs_kind, cond_kind)` specifying the embedding strategy for observation and condition tokens respectively. Options: `"absolute"`, `"pos1d"`, `"pos2d"`, `"rope"`. Default: `("absolute", "absolute")`.
+- **id_embedding_strategy**: A tuple of strings `(obs_kind, cond_kind)` specifying the embedding strategy for observation and condition tokens respectively. Options: `"absolute"`, `"pos1d"`, `"pos2d"`, `"rope"`. Default: `("absolute", "absolute")`.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False` (not currently implemented for SBI).
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`. Use this to reduce memory usage. Switch to `jnp.float32` if you encounter numerical stability issues.
 
@@ -201,7 +199,7 @@ params = Flux1JointParams(
     rngs=...,
     dim_joint=...,
     theta=...,
-    id_embedding_kind="absolute",
+    id_embedding_strategy="absolute",
     guidance_embed=...,
     param_dtype=...,
 )
@@ -220,7 +218,7 @@ params = Flux1JointParams(
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **dim_joint**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.
 - **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). Default: `10_000`.
-- **id_embedding_kind**: String specifying the embedding strategy (e.g., `"absolute"`, `"rope"`). Default: `"absolute"`.
+- **id_embedding_strategy**: String specifying the embedding strategy (e.g., `"absolute"`, `"rope"`). Default: `"absolute"`.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False`.
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`.
 

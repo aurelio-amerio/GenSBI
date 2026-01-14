@@ -8,10 +8,11 @@ from flax import nnx
 from jax.typing import DTypeLike, ArrayLike
 
 
-from gensbi.experimental.models.autoencoders.commons import AutoEncoderParams, DiagonalGaussian
+from gensbi.experimental.models.autoencoders.commons import (
+    AutoEncoderParams,
+    DiagonalGaussian,
+)
 from flax.nnx import swish
-
-
 
 
 class AttnBlock2D(nnx.Module):
@@ -27,6 +28,7 @@ class AttnBlock2D(nnx.Module):
         param_dtype : DTypeLike
             Data type for parameters (default: jnp.bfloat16).
     """
+
     def __init__(
         self,
         in_channels: int,
@@ -133,6 +135,7 @@ class ResnetBlock2D(nnx.Module):
         param_dtype : DTypeLike
             Data type for parameters (default: jnp.bfloat16).
     """
+
     def __init__(
         self,
         in_channels: int,
@@ -228,6 +231,7 @@ class Downsample2D(nnx.Module):
         param_dtype : DTypeLike
             Data type for parameters (default: jnp.bfloat16).
     """
+
     def __init__(
         self,
         in_channels: int,
@@ -278,6 +282,7 @@ class Upsample2D(nnx.Module):
         param_dtype : DTypeLike
             Data type for parameters (default: jnp.bfloat16).
     """
+
     def __init__(
         self,
         in_channels: int,
@@ -344,6 +349,7 @@ class Encoder2D(nnx.Module):
         param_dtype : DTypeLike
             Data type for parameters (default: jnp.bfloat16).
     """
+
     def __init__(
         self,
         resolution: int,
@@ -504,6 +510,7 @@ class Decoder2D(nnx.Module):
         param_dtype : DTypeLike
             Data type for parameters (default: jnp.bfloat16).
     """
+
     def __init__(
         self,
         ch: int,
@@ -526,7 +533,12 @@ class Decoder2D(nnx.Module):
         # compute in_ch_mult, block_in and curr_res at lowest res
         block_in = ch * ch_mult[self.num_resolutions - 1]
         curr_res = resolution // 2 ** (self.num_resolutions - 1)
-        self.z_shape = (1, curr_res, curr_res, z_channels) #(1, z_channels, curr_res, curr_res)
+        self.z_shape = (
+            1,
+            curr_res,
+            curr_res,
+            z_channels,
+        )  # (1, z_channels, curr_res, curr_res)
 
         # z to block_in
         self.conv_in = nnx.Conv(
@@ -643,7 +655,6 @@ class Decoder2D(nnx.Module):
         return h
 
 
-
 class AutoEncoder2D(nnx.Module):
     """
     2D Autoencoder model with Gaussian latent space.
@@ -653,6 +664,7 @@ class AutoEncoder2D(nnx.Module):
         params : AutoEncoderParams
             Configuration parameters for the autoencoder.
     """
+
     def __init__(
         self,
         params: AutoEncoderParams,
@@ -683,6 +695,9 @@ class AutoEncoder2D(nnx.Module):
 
         self.scale_factor = nnx.Param(jnp.array(params.scale_factor))
         self.shift_factor = nnx.Param(jnp.array(params.shift_factor))
+
+        latent_dim = params.resolution // (2 ** (len(params.ch_mult) - 1))
+        self.latent_shape = (1, latent_dim, latent_dim, params.z_channels)
 
     def encode(self, x: Array, key=None) -> Array:
         """
@@ -743,4 +758,3 @@ class AutoEncoder2D(nnx.Module):
         """
 
         return self.decode(self.encode(x, key=key))
-    

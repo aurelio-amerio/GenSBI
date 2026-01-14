@@ -12,6 +12,8 @@ from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
 
+from gensbi.recipes.utils import init_ids_joint
+
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
@@ -177,7 +179,7 @@ class JointFlowPipeline(AbstractPipeline):
         Configuration for training. If None, default configuration is used.
     condition_mask_kind : str, optional
         Kind of condition mask to use. One of ["structured", "posterior"].
-        
+
     Examples
     --------
     Minimal example on how to instantiate and use the JointFlowPipeline:
@@ -185,16 +187,17 @@ class JointFlowPipeline(AbstractPipeline):
     .. literalinclude:: /examples/joint_flow_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/joint_flow_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -218,9 +221,15 @@ class JointFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
+        self.dim_joint = self.dim_obs + self.dim_cond
+
+        # self.cond_ids = _expand_dims(self.cond_ids)
+        # self.obs_ids = _expand_dims(self.obs_ids)
+        # self.node_ids = _expand_dims(self.node_ids)
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(
+            self.dim_obs, self.dim_cond
+        )
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -443,7 +452,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         Configuration for training. If None, default configuration is used.
     condition_mask_kind : str, optional
         Kind of condition mask to use. One of ["structured", "posterior"].
-        
+
     Examples
     --------
     Minimal example on how to instantiate and use the JointDiffusionPipeline:
@@ -451,16 +460,17 @@ class JointDiffusionPipeline(AbstractPipeline):
     .. literalinclude:: /examples/joint_diffusion_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/joint_diffusion_pipeline_marginals.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -484,9 +494,13 @@ class JointDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.cond_ids = _expand_dims(self.cond_ids)
-        self.obs_ids = _expand_dims(self.obs_ids)
-        self.node_ids = _expand_dims(self.node_ids)
+        # self.cond_ids = _expand_dims(self.cond_ids)
+        # self.obs_ids = _expand_dims(self.obs_ids)
+        # self.node_ids = _expand_dims(self.node_ids)
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(
+            self.dim_obs, self.dim_cond
+        )
 
         self.path = EDMPath(
             scheduler=EDMScheduler(

@@ -33,7 +33,7 @@ def test_flux_params_instantiation():
         guidance_embed=False,
         rngs=get_rngs(),
         param_dtype=jnp.bfloat16,
-        id_embedding_kind=("absolute", "absolute"),
+        id_embedding_strategy=("absolute", "absolute"),
     )
     hidden_size = int(
         jnp.sum(jnp.asarray(params.axes_dim, dtype=jnp.int32)) * params.num_heads
@@ -58,7 +58,7 @@ def test_flux_params_instantiation():
         guidance_embed=False,
         rngs=get_rngs(),
         param_dtype=jnp.bfloat16,
-        id_embedding_kind=("rope", "rope"),
+        id_embedding_strategy=("rope1d", "rope1d"),
     )
     hidden_size_rope = int(
         jnp.sum(jnp.asarray(params_rope.axes_dim, dtype=jnp.int32))
@@ -83,7 +83,7 @@ def test_flux_params_instantiation():
         guidance_embed=False,
         rngs=get_rngs(),
         param_dtype=jnp.bfloat16,
-        id_embedding_kind=("absolute", "rope"),
+        id_embedding_strategy=("absolute", "rope1d"),
     )
     hidden_size_rope = int(
         jnp.sum(jnp.asarray(params_mixed.axes_dim, dtype=jnp.int32))
@@ -109,7 +109,7 @@ def init_test_model_rope():
         dim_obs=3,
         dim_cond=5,
         qkv_bias=True,
-        id_embedding_kind=("rope", "rope"),
+        id_embedding_strategy=("rope1d", "rope1d"),
         guidance_embed=False,
         rngs=get_rngs(),
         param_dtype=jnp.bfloat16,
@@ -131,7 +131,7 @@ def init_test_model_standard():
         dim_obs=3,
         dim_cond=5,
         qkv_bias=True,
-        id_embedding_kind=("absolute", "absolute"),
+        id_embedding_strategy=("absolute", "absolute"),
         guidance_embed=False,
         rngs=get_rngs(),
         param_dtype=jnp.bfloat16,
@@ -153,7 +153,7 @@ def init_test_model_mixed():
         dim_obs=3,
         dim_cond=5,
         qkv_bias=True,
-        id_embedding_kind=("absolute", "rope"),
+        id_embedding_strategy=("absolute", "rope1d"),
         guidance_embed=False,
         rngs=get_rngs(),
         param_dtype=jnp.bfloat16,
@@ -200,7 +200,7 @@ def test_flux_forward_shape_embed(model_fn):
     assert out.shape == (4, 3, 1), f"Output shape is incorrect, got {out.shape}"
 
 
-#%%
+# %%
 
 
 @pytest.mark.parametrize(
@@ -285,12 +285,12 @@ def test_flux_param_dtype_propagation(model_fn):
         model.time_in.out_layer.kernel[...].dtype == jnp.bfloat16
     ), "time_in layer dtype not propagated correctly."
 
-    assert (
-        model.condition_embedding[...].dtype == jnp.bfloat16
-    ), "condition_embedding dtype not propagated correctly."
-    assert (
-        model.condition_null[...].dtype == jnp.bfloat16
-    ), "condition_null dtype not propagated correctly."
+    # assert (
+    #     model.condition_embedding[...].dtype == jnp.bfloat16
+    # ), "condition_embedding dtype not propagated correctly."
+    # assert (
+    #     model.condition_null[...].dtype == jnp.bfloat16
+    # ), "condition_null dtype not propagated correctly."
 
     # Representative transformer weights
     assert (

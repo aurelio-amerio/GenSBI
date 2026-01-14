@@ -23,6 +23,8 @@ from gensbi.models import (
     UnconditionalDiffLoss,
 )
 
+from gensbi.recipes.utils import init_ids_1d
+
 from einops import repeat
 
 from gensbi.utils.model_wrapping import _expand_dims
@@ -88,7 +90,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.obs_ids = _expand_dims(self.obs_ids)
+        self.obs_ids = init_ids_1d(self.dim_obs)
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -316,7 +318,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.obs_ids = _expand_dims(self.obs_ids)
+        self.obs_ids = init_ids_1d(self.dim_obs)
         
         sigma_min = self.training_config.get("sigma_min", 0.002)
         sigma_max = self.training_config.get("sigma_max", 80.0)
