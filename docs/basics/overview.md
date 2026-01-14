@@ -30,25 +30,7 @@ GenSBI provides three main model architectures:
 - **Simformer**: A single-stream transformer that explicitly embeds variable IDs. Best for low-dimensional problems.
 - **Flux1Joint**: A single-stream variant of Flux1 for explicit joint modeling. Good for likelihood-dominated problems.
 
-**Example:**
-```python
-from gensbi.models.flux1 import Flux1, Flux1Params
-from flax import nnx
-
-params = Flux1Params(
-    in_channels=1,
-    num_heads=8,
-    depth=12,
-    depth_single_blocks=24,
-    axes_dim=[10],
-    rngs=nnx.Rngs(0),
-    dim_obs=3,
-    dim_cond=5,
-    id_embedding_strategy=("absolute", "absolute"),
-)
-
-model = Flux1(params)
-```
+**For detailed comparisons and selection guides, see [Model Cards](/basics/model_cards).**
 
 ```{note}
 GenSBI represents both parameters ($\theta$) and observations ($x$) with the tensor convention `(batch, dim, channels)`.
@@ -124,18 +106,20 @@ samples = pipeline.sample(key=key, x_o=x_observed, nsamples=10_000)
 GenSBI supports two approaches for generative modeling:
 
 #### Flow Matching (Recommended)
-- **Concept**: Learn a velocity field that transports samples from a simple distribution (Gaussian noise) to the target distribution (posterior).
-- **Training**: The model learns to predict velocity at random time points. The model directly defines a vector field as a function of (obs, cond, t).
-- **Sampling**: Solve an ODE from t=0 to t=1 using the learned velocity field.
-- **Advantages**: Straighter sampling paths lead to faster sampling and easier training.
+- **Concept**: Learn a time-dependent **vector field** $v_t(x)$ that transports samples from a simple prior (Gaussian noise) to the target data distribution.
+- **Training**: The model directly regresses the vector field generating the probability paths. We typically use Optimal Transport paths (straight lines), which leads to a vector field that is stable and easy to learn.
+- **Sampling**: Solve an Ordinary Differential Equation (ODE) from t=0 to t=1 along the learned vector field. The linear trajectories allow for fast and robust integration.
+- **Why it's better**: Flow matching generally offers **faster training** and **faster sampling** than diffusion. The vector field with Optimal Transport paths behaves better than the score function, leading to straighter sampling trajectories that require fewer steps to solve.
 
 #### Diffusion
-- **Concept**: Learn to gradually denoise data that has been corrupted with noise.
-- **Training**: Predict the noise or score at different noise levels.
-- **Sampling**: Iteratively denoise starting from pure noise.
-- **Note**: As of the current version, flow matching models tend to be more stable and easier to train than diffusion models. This may change in future releases.
+- **Concept**: Learn to reverse a stochastic process that gradually adds noise to the data.
+- **Training**: The model learns the **score function** $\nabla \log p_t(x)$ (or equivalently predicts the noise) at different noise levels to reverse the corruption process.
+- **Sampling**: Solve a Stochastic Differential Equation (SDE) or ODE to iteratively denoise the samples.
+- **Pros/Cons**: Diffusion models can sometimes offer greater **sample diversity** due to the stochastic nature of SDEs. However, the score function can be harder to learn (singularities at small noise), and the non-linear reverse paths typically require more sampling steps.
 
 **Flow Matching is the recommended default in GenSBI.**
+
+**For a deeper mathematical dive, see the [Theoretical Overview](/theoretical_overview/index).**
 
 ## How Components Work Together
 

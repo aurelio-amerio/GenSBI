@@ -20,7 +20,7 @@ GenSBI is currently in **Beta**. Expect the API to generally be stable, but be a
 :class: tip
 
 Start here:
-1. [Installation](/documentation/installation) - Get GenSBI installed
+1. [Installation](/getting_started/installation) - Get GenSBI installed
 2. [Quick Start Guide](/getting_started/quick_start) - 15-minute introduction
 3. [My First Model Tutorial](/notebooks/my_first_model) - Complete step-by-step walkthrough
 ```
@@ -39,7 +39,7 @@ If you have a compatible NVIDIA GPU, install with CUDA 12 support for significan
 pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
 ```
 
-For more installation options, see the [Installation Guide](/documentation/installation).
+For more installation options, see the [Installation Guide](/getting_started/installation).
 
 ## Key Documentation Sections
 

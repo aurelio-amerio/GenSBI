@@ -27,4 +27,5 @@ The following tasks are planned for future development:
 - [ ] Retrain the benchmark models using the latest GenSBI version, especially the getting started example
 - [ ] Implement contour levels like the ones from corner in the sns plot too
 - [ ] Write in the documentation some info concernign the ID embedding, and what to use/when 
-- [ ] Implement RoPE embedding with the 0-out trick
+- [x] Implement RoPE embedding with the 0-out trick
+- [ ] for the Flux1Joint, add the possibility to concatenate the embedding ids, instead of just summing them
