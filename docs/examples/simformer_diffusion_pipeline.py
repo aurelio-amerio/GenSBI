@@ -8,7 +8,7 @@ import grain
 import numpy as np
 import jax
 from jax import numpy as jnp
-from gensbi.recipes import JointDiffusionPipeline
+from gensbi.recipes import SimformerDiffusionPipeline
 from gensbi.utils.plotting import plot_marginals
 
 from gensbi.models import Simformer, SimformerParams
@@ -90,18 +90,16 @@ params = SimformerParams(
     num_hidden_layers=1,
 )
 
-model = Simformer(params)
-
 # %% Instantiate the pipeline
-training_config = JointDiffusionPipeline.get_default_training_config()
+training_config = SimformerDiffusionPipeline.get_default_training_config()
 training_config["nsteps"] = 5000
 
-pipeline = JointDiffusionPipeline(
-    model,
+pipeline = SimformerDiffusionPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
+    params=params,
     condition_mask_kind="posterior",
     training_config=training_config,
 )
@@ -126,7 +124,7 @@ plot_marginals(
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("joint_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("simformer_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

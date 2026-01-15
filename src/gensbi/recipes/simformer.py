@@ -145,7 +145,7 @@ def parse_training_config(config_path: str):
 
     training_config = {}
     # overwrite the defaults with the config file values
-    training_config["num_steps"] = nsteps
+    training_config["nsteps"] = nsteps
     training_config["ema_decay"] = ema_decay
     training_config["decay_transition"] = decay_transition
 
@@ -270,7 +270,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         )
 
         # Training parameters
-        training_config = cls._get_default_training_config()
+        training_config = cls.get_default_training_config()
         training_config["checkpoint_dir"] = checkpoint_dir
 
         training_config_ = parse_training_config(config_path)
@@ -459,7 +459,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         )
 
         # Training parameters
-        training_config = cls._get_default_training_config()
+        training_config = cls.get_default_training_config()
         training_config["checkpoint_dir"] = checkpoint_dir
 
         training_config_ = parse_training_config(config_path)

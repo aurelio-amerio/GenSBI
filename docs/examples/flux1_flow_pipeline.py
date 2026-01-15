@@ -8,16 +8,15 @@ import grain
 import numpy as np
 import jax
 from jax import numpy as jnp
-from gensbi.recipes import JointDiffusionPipeline
-from gensbi.utils.plotting import plot_marginals
+from numpyro import distributions as dist
+from flax import nnx
 
-from gensbi.models import Simformer, SimformerParams
+from gensbi.recipes import Flux1FlowPipeline
+from gensbi.models import Flux1, Flux1Params
+
+from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
 
-from numpyro import distributions as dist
-
-
-from flax import nnx
 
 # %%
 
@@ -49,8 +48,15 @@ def simulator(key, nsamples):
 # %% Define your training and validation datasets.
 train_data = simulator(jax.random.PRNGKey(0), 10_000)
 val_data = simulator(jax.random.PRNGKey(1), 2000)
+
+
 # %%
-train_data.shape
+def split_obs_cond(data):
+    return (
+        data[:, :dim_obs],
+        data[:, dim_obs:],
+    )  # assuming first dim_obs are obs, last dim_cond are cond
+
 
 # %%
 
@@ -62,6 +68,7 @@ train_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
+    .map(split_obs_cond)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
@@ -71,38 +78,42 @@ val_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
+    .map(split_obs_cond)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 # %% Define your model
-params = SimformerParams(
-    rngs=nnx.Rngs(0),
+params = Flux1Params(
     in_channels=1,
-    dim_value=40,
-    dim_id=40,
-    dim_condition=10,
-    dim_joint=dim_joint,
-    fourier_features=256,
-    num_heads=4,
-    num_layers=8,
-    widening_factor=3,
-    qkv_features=40,
-    num_hidden_layers=1,
+    vec_in_dim=None,
+    context_in_dim=1,
+    mlp_ratio=3,
+    num_heads=2,
+    depth=4,
+    depth_single_blocks=8,
+    axes_dim=[
+        10,
+    ],
+    qkv_bias=True,
+    dim_obs=dim_obs,
+    dim_cond=dim_cond,
+    theta=10 * dim_joint,
+    id_embedding_strategy=("absolute", "absolute"),
+    rngs=nnx.Rngs(default=42),
+    param_dtype=jnp.float32,
 )
 
-model = Simformer(params)
 
 # %% Instantiate the pipeline
-training_config = JointDiffusionPipeline.get_default_training_config()
+training_config = Flux1FlowPipeline.get_default_training_config()
 training_config["nsteps"] = 5000
 
-pipeline = JointDiffusionPipeline(
-    model,
+pipeline = Flux1FlowPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
-    condition_mask_kind="posterior",
+    params=params,
     training_config=training_config,
 )
 
@@ -126,7 +137,7 @@ plot_marginals(
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("joint_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("flux1_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

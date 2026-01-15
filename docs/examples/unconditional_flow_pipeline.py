@@ -35,7 +35,7 @@ val_data = simulator(jax.random.PRNGKey(1), 2000).reshape(-1, 2, 1)
 # train_data_ = (train_data - mean_train) / std_train
 # val_data_ = (val_data - mean_train) / std_train
 
-batch_size = 128
+batch_size = 256
 
 train_dataset_grain = (
     grain.MapDataset.source(np.array(train_data))
@@ -113,15 +113,25 @@ model = MLP(
 # the obs input should have shape (batch_size, dim_joint, c), and the output will be of the same shape
 
 # %% Instantiate the pipeline
+training_config = UnconditionalFlowPipeline.get_default_training_config()
+training_config["nsteps"] = 5000
+
 dim_obs = 2  # Dimension of the parameter space
+ch_obs = 1  # Number of channels of the parameter space
+
 pipeline = UnconditionalFlowPipeline(
-    model, train_dataset_grain, val_dataset_grain, dim_obs
+    model,
+    train_dataset_grain,
+    val_dataset_grain,
+    dim_obs,
+    ch_obs,
+    training_config=training_config,
 )
 
 # %% Train the model
 rngs = nnx.Rngs(42)
 pipeline.train(
-    rngs, nsteps=5000, save_model=False
+    rngs, save_model=False
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior
@@ -133,6 +143,6 @@ samples = pipeline.sample(rngs.sample(), nsamples=100_000)
 plot_marginals(
     np.array(samples[..., 0]), true_param=[3, 3], gridsize=30, range=[(-2, 8), (-2, 8)]
 )
-plt.savefig("unconditional_flow_samples.png", dpi=300, bbox_inches='tight')
+plt.savefig("unconditional_flow_samples.png", dpi=300, bbox_inches="tight")
 plt.show()
 # %%
