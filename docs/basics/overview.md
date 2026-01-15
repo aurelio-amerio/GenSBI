@@ -218,6 +218,6 @@ Now that you understand the structure:
 2. **Set Up Training**: Follow the [Training Guide](/basics/training).
 3. **Run Inference**: See the [Inference Guide](/basics/inference).
 4. **Validate Results**: Use the [Validation Guide](/basics/validation).
-5. **Try Examples**: Explore the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples).
+5. **Try Examples**: Explore the [Examples](/examples) page and the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples).
 
 If you want to extend GenSBI or add custom components, see the [Contributing Guide](/CONTRIBUTING) and the [API Documentation](/api/gensbi/index).
