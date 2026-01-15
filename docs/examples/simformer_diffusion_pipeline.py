@@ -92,7 +92,7 @@ params = SimformerParams(
 
 # %% Instantiate the pipeline
 training_config = SimformerDiffusionPipeline.get_default_training_config()
-training_config["nsteps"] = 5000
+training_config["nsteps"] = 10000
 
 pipeline = SimformerDiffusionPipeline(
     train_dataset_grain,

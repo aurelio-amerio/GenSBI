@@ -94,7 +94,7 @@ params = Flux1JointParams(
 
 # %% Instantiate the pipeline
 training_config = Flux1JointDiffusionPipeline.get_default_training_config()
-training_config["nsteps"] = 5000
+training_config["nsteps"] = 10000
 
 pipeline = Flux1JointDiffusionPipeline(
     train_dataset_grain,

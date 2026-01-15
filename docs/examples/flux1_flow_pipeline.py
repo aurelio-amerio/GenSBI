@@ -106,7 +106,7 @@ params = Flux1Params(
 
 # %% Instantiate the pipeline
 training_config = Flux1FlowPipeline.get_default_training_config()
-training_config["nsteps"] = 5000
+training_config["nsteps"] = 10000
 
 pipeline = Flux1FlowPipeline(
     train_dataset_grain,
