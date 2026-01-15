@@ -8,16 +8,15 @@ import grain
 import numpy as np
 import jax
 from jax import numpy as jnp
-from gensbi.recipes import JointDiffusionPipeline
-from gensbi.utils.plotting import plot_marginals
+from numpyro import distributions as dist
+from flax import nnx
 
-from gensbi.models import Simformer, SimformerParams
+from gensbi.recipes import Flux1JointFlowPipeline
+from gensbi.models import Flux1JointParams
+
+from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
 
-from numpyro import distributions as dist
-
-
-from flax import nnx
 
 # %%
 
@@ -75,33 +74,33 @@ val_dataset_grain = (
 )
 
 # %% Define your model
-params = SimformerParams(
-    rngs=nnx.Rngs(0),
+params = Flux1JointParams(
     in_channels=1,
-    dim_value=40,
-    dim_id=40,
-    dim_condition=10,
+    vec_in_dim=None,
+    mlp_ratio=3.0,
+    num_heads=2,
+    depth_single_blocks=8,
+    axes_dim=[4],
+    condition_dim=[2],
+    qkv_bias=True,
+    rngs=nnx.Rngs(0),
     dim_joint=dim_joint,
-    fourier_features=256,
-    num_heads=4,
-    num_layers=8,
-    widening_factor=3,
-    qkv_features=40,
-    num_hidden_layers=1,
+    theta=10 * dim_joint,
+    id_embedding_strategy="absolute",
+    guidance_embed=False,
+    param_dtype=jnp.bfloat16,
 )
 
-model = Simformer(params)
-
 # %% Instantiate the pipeline
-training_config = JointDiffusionPipeline.get_default_training_config()
+training_config = Flux1JointFlowPipeline.get_default_training_config()
 training_config["nsteps"] = 5000
 
-pipeline = JointDiffusionPipeline(
-    model,
+pipeline = Flux1JointFlowPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
+    params=params,
     condition_mask_kind="posterior",
     training_config=training_config,
 )
@@ -126,7 +125,7 @@ plot_marginals(
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("joint_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("flux1joint_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

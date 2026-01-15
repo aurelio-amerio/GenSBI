@@ -159,7 +159,7 @@ def test_model_general_conditional(pipeline_cls):
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls._get_default_training_config()
+        training_config = pipeline_cls.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 
@@ -355,7 +355,7 @@ def test_model_general_unconditional(pipeline_cls):
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls._get_default_training_config()
+        training_config = pipeline_cls.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 

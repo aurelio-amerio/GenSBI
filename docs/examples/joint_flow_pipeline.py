@@ -18,8 +18,6 @@ from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
 
 
-
-
 # %%
 
 theta_prior = dist.Uniform(
@@ -55,7 +53,7 @@ train_data.shape
 
 # %%
 
-batch_size = 128
+batch_size = 256
 
 train_dataset_grain = (
     grain.MapDataset.source(np.array(train_data))
@@ -94,6 +92,8 @@ params = SimformerParams(
 model = Simformer(params)
 
 # %% Instantiate the pipeline
+training_config = JointFlowPipeline.get_default_training_config()
+training_config["nsteps"] = 5000
 
 pipeline = JointFlowPipeline(
     model,
@@ -102,12 +102,13 @@ pipeline = JointFlowPipeline(
     dim_obs,
     dim_cond,
     condition_mask_kind="posterior",
+    training_config=training_config,
 )
 
 # %% Train the model
 rngs = nnx.Rngs(42)
 pipeline.train(
-    rngs, nsteps=10000, save_model=False
+    rngs, save_model=False
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior
@@ -119,7 +120,10 @@ x_o = new_sample[:, dim_obs:, :]  # extract condition from the joint sample
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # %% Plot the samples
 plot_marginals(
-    np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0, :, 0]), range = [(1, 3), (1, 3), (-0.6, 0.5)]
+    np.array(samples[..., 0]),
+    gridsize=30,
+    true_param=np.array(true_theta[0, :, 0]),
+    range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
 plt.savefig("joint_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()

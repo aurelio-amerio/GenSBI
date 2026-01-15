@@ -18,8 +18,6 @@ from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
 
 
-
-
 # %%
 
 theta_prior = dist.Uniform(
@@ -50,14 +48,19 @@ def simulator(key, nsamples):
 # %% Define your training and validation datasets.
 train_data = simulator(jax.random.PRNGKey(0), 10_000)
 val_data = simulator(jax.random.PRNGKey(1), 2000)
+
+
 # %%
 def split_obs_cond(data):
-    return data[:, :dim_obs], data[:, dim_obs:]  # assuming first dim_obs are obs, last dim_cond are cond
+    return (
+        data[:, :dim_obs],
+        data[:, dim_obs:],
+    )  # assuming first dim_obs are obs, last dim_cond are cond
 
 
 # %%
 
-batch_size = 128
+batch_size = 256
 
 train_dataset_grain = (
     grain.MapDataset.source(np.array(train_data))
@@ -94,7 +97,8 @@ params = Flux1Params(
     qkv_bias=True,
     dim_obs=dim_obs,
     dim_cond=dim_cond,
-    theta=10*dim_joint,
+    id_embedding_strategy=("absolute", "absolute"),
+    theta=10 * dim_joint,
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
@@ -103,18 +107,22 @@ model = Flux1(params)
 
 # %% Instantiate the pipeline
 
+training_config = ConditionalDiffusionPipeline.get_default_training_config()
+training_config["nsteps"] = 5000
+
 pipeline = ConditionalDiffusionPipeline(
     model,
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
+    training_config=training_config,
 )
 
 # %% Train the model
 rngs = nnx.Rngs(42)
 pipeline.train(
-    rngs, nsteps=5000, save_model=False
+    rngs, save_model=False
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior
@@ -126,10 +134,15 @@ x_o = new_sample[:, dim_obs:, :]  # extract condition from the joint sample
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # %% Plot the samples
 plot_marginals(
-    np.array(samples[..., 0]), gridsize=30, true_param=np.array(true_theta[0, :, 0]), range = [(1, 3), (1, 3), (-0.6, 0.5)]
+    np.array(samples[..., 0]),
+    gridsize=30,
+    true_param=np.array(true_theta[0, :, 0]),
+    range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
 
-plt.savefig("conditional_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig(
+    "conditional_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight"
+)
 plt.show()
 
 # %%
