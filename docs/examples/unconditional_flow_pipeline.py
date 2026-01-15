@@ -114,7 +114,7 @@ model = MLP(
 
 # %% Instantiate the pipeline
 training_config = UnconditionalFlowPipeline.get_default_training_config()
-training_config["nsteps"] = 5000
+training_config["nsteps"] = 10000
 
 dim_obs = 2  # Dimension of the parameter space
 ch_obs = 1  # Number of channels of the parameter space

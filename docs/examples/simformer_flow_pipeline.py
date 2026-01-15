@@ -91,7 +91,7 @@ params = SimformerParams(
 
 # %% Instantiate the pipeline
 training_config = SimformerFlowPipeline.get_default_training_config()
-training_config["nsteps"] = 5000
+training_config["nsteps"] = 10000
 
 pipeline = SimformerFlowPipeline(
     train_dataset_grain,
