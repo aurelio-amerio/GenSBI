@@ -31,3 +31,9 @@ The following tasks are planned for future development:
 - [x] Implement RoPE embedding with the 0-out trick
 - [ ] For the Flux1Joint, add the possibility to concatenate the embedding ids, instead of just summing them
 - [ ] The theoretical overview is very basic currently, we will need to expand it
+- [ ] Update two moons example with full diagnostics, 
+- [ ] Make notebooks for all the examples with link to colab and github
+- [ ] Include plots from the img directory (so users have a reference plot even when they do their own experiments with the notebook)
+- [ ] Update lensing and GW notebooks to work on colab, and use relative paths (no hardcoded paths), assuming the notebook is being run from its own example directory
+- [ ] make examples from the Flux1 Flux1Joint and Simformer pipelines
+- [ ] rerun the examples from the example directory in gensbi, not only gensbi-examples

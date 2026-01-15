@@ -15,6 +15,8 @@ from jax import numpy as jnp
 from typing import Callable
 import chex
 
+import warnings
+
 from gensbi.diffusion.path.path import ProbPath
 from gensbi.diffusion.path.path_sample import EDMPathSample
 
