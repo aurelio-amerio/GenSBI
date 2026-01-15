@@ -9,9 +9,9 @@
   :class: logo-transparent-bg
 ```
 
-```{admonition} Beta Release
-:class: warning
-GenSBI is currently in **Beta**. Expect the API to generally be stable, but be aware that active development is ongoing. We welcome contributions and feedback!
+```{admonition} Project Status
+:class: info
+GenSBI is currently reaching the end of the **Alpha** cycle. The API is reaching stability, but may still change in the future.
 ```
 
 ## Getting Started
