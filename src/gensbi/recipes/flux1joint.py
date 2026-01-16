@@ -1,56 +1,5 @@
 """
-Pipeline for training and using a Flux1 model for simulation-based inference.
-
-Examples:
-    .. code-block:: python
-
-        import grain
-        import numpy as np
-        import jax
-        from jax import numpy as jnp
-        from gensbi.recipes import SimformerPipeline
-
-        # Define your training and validation datasets.
-        train_data = jax.random.rand((1024, 4)) # your training dataset
-        val_data = jax.random.rand((128, 4)) # your validation dataset
-
-        batch_size = 32
-
-        train_dataset_grain = (
-            grain.MapDataset.source(np.array(train_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        val_dataset_grain = (
-            grain.MapDataset.source(np.array(val_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        # Define the model
-        dim_obs = 2  # Dimension of the parameter space
-        dim_cond = 2      # Dimension of the observation space
-        pipeline = SimformerPipeline(train_dataset, val_dataset, dim_obs, dim_cond)
-
-        # Train the model
-        rngs = jax.random.PRNGKey(0)
-        pipeline.train(rngs)
-
-        # Sample from the posterior
-        x_o = jnp.array([0.5, -0.2])  # Example
-        samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-
-    .. note::
-
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
-
+Pipeline for training and using a Flux1Joint model for simulation-based inference.
 """
 
 import jax
@@ -201,6 +150,22 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             Configuration for training. If None, default configuration is used.
         condition_mask_kind : str, optional
             Kind of condition mask to use. One of ["structured", "posterior"].
+
+        Examples
+        --------
+        Minimal example on how to instantiate and use the Flux1JointFlowPipeline:
+
+        .. literalinclude:: /examples/flux1joint_flow_pipeline.py
+            :language: python
+            :linenos:
+
+        .. image:: /examples/flux1joint_flow_pipeline_marginals.png
+            :width: 600
+
+        .. note::
+            If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+            in a ``if __name__ == "__main__":`` guard.
+            See https://docs.python.org/3/library/multiprocessing.html
 
         """
         self.dim_joint = dim_obs + dim_cond
@@ -359,6 +324,22 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             Configuration for training. If None, default configuration is used.
         condition_mask_kind : str, optional
             Kind of condition mask to use. One of ["structured", "posterior"]. Default is "structured".
+
+        Examples
+        --------
+        Minimal example on how to instantiate and use the Flux1JointDiffusionPipeline:
+
+        .. literalinclude:: /examples/flux1joint_diffusion_pipeline.py
+            :language: python
+            :linenos:
+
+        .. image:: /examples/flux1joint_diffusion_pipeline_marginals.png
+            :width: 600
+
+        .. note::
+            If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+            in a ``if __name__ == "__main__":`` guard.
+            See https://docs.python.org/3/library/multiprocessing.html
 
         """
         self.dim_joint = dim_obs + dim_cond
