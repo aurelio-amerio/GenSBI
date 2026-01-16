@@ -204,11 +204,9 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 
 2. **Batch sampling**: Generate samples in batches rather than one at a time.
 
-3. **Consider Flow Matching over Diffusion**: Flow matching typically requires fewer integration steps.
+3. **Consider Flow Matching**: Flow matching learns straighter trajectories than diffusion, often allowing for fewer integration steps (faster sampling) without sacrificing quality.
 
 ## Validation Issues
-
-### SBC/TARP/L-C2ST Errors
 
 ### SBC/TARP/L-C2ST Errors
 

@@ -2,7 +2,7 @@
 import os
 
 # Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
-os.environ["JAX_PLATFORMS"] = "cuda"
+# os.environ["JAX_PLATFORMS"] = "cuda"
 
 import grain
 import numpy as np
@@ -25,17 +25,35 @@ def simulator(key, nsamples):
 
 
 # %% Define your training and validation datasets.
-train_data = simulator(jax.random.PRNGKey(0), 10_000).reshape(-1, 2, 1)
+# We generate a training dataset and a validation dataset using the simulator.
+# The simulator generates samples from a 2D Gaussian distribution.
+train_data = simulator(jax.random.PRNGKey(0), 100_000).reshape(-1, 2, 1)
 val_data = simulator(jax.random.PRNGKey(1), 2000).reshape(-1, 2, 1)
 
-# it is advisable to normalize the inference parameter space to zero mean and unit variance for better training performance
-# mean_train = jnp.mean(train_data, axis=0)
-# std_train = jnp.std(train_data, axis=0)
+# %% Normalize the dataset
+# It is important to normalize the data to have zero mean and unit variance.
+# This helps the model training process.
+means = jnp.mean(train_data, axis=0)
+stds = jnp.std(train_data, axis=0)
 
-# train_data_ = (train_data - mean_train) / std_train
-# val_data_ = (val_data - mean_train) / std_train
 
-batch_size = 128
+def normalize(data, means, stds):
+    return (data - means) / stds
+
+
+def unnormalize(data, means, stds):
+    return data * stds + means
+
+
+def process_data(data):
+    return normalize(data, means, stds)
+
+
+# %% Create the input pipeline using Grain
+# We use Grain to create an efficient input pipeline.
+# This involves shuffling, repeating for multiple epochs, and batching the data.
+# We also map the process_data function to prepare (normalize) the data.
+batch_size = 256
 
 train_dataset_grain = (
     grain.MapDataset.source(np.array(train_data))
@@ -43,15 +61,19 @@ train_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
+    .map(process_data)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 val_dataset_grain = (
     grain.MapDataset.source(np.array(val_data))
-    .shuffle(42)
+    .shuffle(
+        42
+    )  # Use a different seed/strategy for validation if needed, but shuffling is fine
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
+    .map(process_data)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
@@ -113,26 +135,41 @@ model = MLP(
 # the obs input should have shape (batch_size, dim_joint, c), and the output will be of the same shape
 
 # %% Instantiate the pipeline
+# The UnconditionalFlowPipeline handles the training loop and sampling.
+# We configure it with the model, datasets, dimensions using a default training configuration.
+training_config = UnconditionalFlowPipeline.get_default_training_config()
+training_config["nsteps"] = 10000
+
 dim_obs = 2  # Dimension of the parameter space
+ch_obs = 1  # Number of channels of the parameter space
+
 pipeline = UnconditionalFlowPipeline(
-    model, train_dataset_grain, val_dataset_grain, dim_obs
+    model,
+    train_dataset_grain,
+    val_dataset_grain,
+    dim_obs,
+    ch_obs,
+    training_config=training_config,
 )
 
 # %% Train the model
+# We create a random key for training and start the training process.
 rngs = nnx.Rngs(42)
 pipeline.train(
-    rngs, nsteps=5000, save_model=False
+    rngs, save_model=False
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior
+# We generate new samples using the trained model.
 samples = pipeline.sample(rngs.sample(), nsamples=100_000)
-# if you normalized the data before training, remember to unnormalize the samples
-# samples = samples * std_train + mean_train
+# Finally, we unnormalize the samples to get them back to the original scale.
+samples = unnormalize(samples, means, stds)
 
 # %% Plot the samples
+# We verify the model's performance by plotting the marginal distributions of the generated samples.
 plot_marginals(
     np.array(samples[..., 0]), true_param=[3, 3], gridsize=30, range=[(-2, 8), (-2, 8)]
 )
-plt.savefig("unconditional_flow_samples.png", dpi=300, bbox_inches='tight')
+plt.savefig("unconditional_flow_samples.png", dpi=300, bbox_inches="tight")
 plt.show()
 # %%

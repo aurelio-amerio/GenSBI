@@ -102,6 +102,7 @@ ae_params_2D = AutoEncoderParams(
     param_dtype=jnp.float32,
 )
 
+
 @pytest.mark.parametrize(
     "pipeline_cls, params, train_dataset, val_dataset",
     [
@@ -113,7 +114,7 @@ def test_vae_pipeline(pipeline_cls, params, train_dataset, val_dataset):
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls._get_default_training_config()
+        training_config = pipeline_cls.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 

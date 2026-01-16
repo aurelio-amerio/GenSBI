@@ -11,7 +11,7 @@ from jax import numpy as jnp
 from numpyro import distributions as dist
 from flax import nnx
 
-from gensbi.recipes import ConditionalFlowPipeline
+from gensbi.recipes import Flux1DiffusionPipeline
 from gensbi.models import Flux1, Flux1Params
 
 from gensbi.utils.plotting import plot_marginals
@@ -99,7 +99,9 @@ train_dataset_grain = (
 
 val_dataset_grain = (
     grain.MapDataset.source(np.array(val_data))
-    .shuffle(42)
+    .shuffle(
+        42
+    )  # Use a different seed/strategy for validation if needed, but shuffling is fine
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
@@ -124,26 +126,24 @@ params = Flux1Params(
     qkv_bias=True,
     dim_obs=dim_obs,
     dim_cond=dim_cond,
-    theta=10 * dim_joint,
     id_embedding_strategy=("absolute", "absolute"),
+    theta=10 * dim_joint,
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
 
-model = Flux1(params)
-
 # %% Instantiate the pipeline
-# The ConditionalFlowPipeline handles the training loop and sampling.
-# We configure it with the model, datasets, dimensions, and training configuration.
-training_config = ConditionalFlowPipeline.get_default_training_config()
+# The Flux1DiffusionPipeline handles the training loop and sampling.
+# We configure it with the model parameters, datasets, dimensions using a default training configuration.
+training_config = Flux1DiffusionPipeline.get_default_training_config()
 training_config["nsteps"] = 10000
 
-pipeline = ConditionalFlowPipeline(
-    model,
+pipeline = Flux1DiffusionPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
+    params=params,
     training_config=training_config,
 )
 
@@ -175,7 +175,8 @@ plot_marginals(
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("conditional_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+
+plt.savefig("flux1_diffusion_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

@@ -34,7 +34,7 @@ from gensbi.recipes.pipeline import AbstractPipeline
 
 class UnconditionalFlowPipeline(AbstractPipeline):
     """
-    Flow pipeline for training and using an Unconditional model for simulation-based inference. 
+    Flow pipeline for training and using an Unconditional model for simulation-based inference.
 
     Parameters
     ----------
@@ -56,19 +56,20 @@ class UnconditionalFlowPipeline(AbstractPipeline):
     Examples
     --------
     Minimal example on how to instantiate and use the UnconditionalFlowPipeline:
-    
+
     .. literalinclude:: /examples/unconditional_flow_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/unconditional_flow_samples.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
     """
+
     def __init__(
         self,
         model,
@@ -205,7 +206,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         )
         samples = sampler(key, nsamples)
         return samples
-    
+
     def sample_batched(
         self,
         *args,
@@ -260,7 +261,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
 
 class UnconditionalDiffusionPipeline(AbstractPipeline):
     """
-    Diffusion pipeline for training and using an Unconditional model for simulation-based inference. 
+    Diffusion pipeline for training and using an Unconditional model for simulation-based inference.
 
     Parameters
     ----------
@@ -286,16 +287,17 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
     .. literalinclude:: /examples/unconditional_diffusion_pipeline.py
         :language: python
         :linenos:
-        
+
     .. image:: /examples/unconditional_diffusion_pipeline_samples.png
         :width: 600
 
     .. note::
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped 
-        in a ``if __name__ == "__main__":`` guard. 
+        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+        in a ``if __name__ == "__main__":`` guard.
         See https://docs.python.org/3/library/multiprocessing.html
 
     """
+
     def __init__(
         self,
         model,
@@ -319,7 +321,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         )
 
         self.obs_ids = init_ids_1d(self.dim_obs)
-        
+
         sigma_min = self.training_config.get("sigma_min", 0.002)
         sigma_max = self.training_config.get("sigma_max", 80.0)
         self.path = EDMPath(
@@ -328,7 +330,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
                 sigma_max=sigma_max,
             )
         )
-        
+
         # self.sde = sde
         # if sde == "EDM":
         #     sigma_min = self.training_config.get("sigma_min", 0.002)
@@ -377,13 +379,13 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         )
 
     @classmethod
-    def _get_default_training_config(cls, sde="EDM"):
-        config = super()._get_default_training_config()
+    def get_default_training_config(cls, sde="EDM"):
+        config = super().get_default_training_config()
         config.update(
-                {
-                    "sigma_min": 0.002,  # from edm paper
-                    "sigma_max": 80.0,
-                }
+            {
+                "sigma_min": 0.002,  # from edm paper
+                "sigma_max": 80.0,
+            }
         )
         # if sde == "EDM":
         #     config.update(
@@ -416,7 +418,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
 
             x_1 = batch
             # sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], ))
-            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1,1))
+            sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], 1, 1))
             # sigma = repeat(sigma, f"b -> b {'1 ' * (x_1.ndim - 1)}")  # TODO fixme
 
             batch = (x_1, sigma)
@@ -478,7 +480,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         samples = sampler(key, nsamples)
 
         return samples
-    
+
     def sample_batched(
         self,
         *args,
