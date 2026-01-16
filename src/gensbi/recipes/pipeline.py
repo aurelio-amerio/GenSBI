@@ -178,7 +178,7 @@ class AbstractPipeline(abc.ABC):
     ch_cond : int, optional
         Number of channels in the conditional data (if applicable). Default is None.
     training_config : dict, optional
-        Training configuration. If None, uses defaults from `_get_default_training_config`.
+        Training configuration. If None, uses defaults from `get_default_training_config`.
 
     """
 
@@ -216,7 +216,7 @@ class AbstractPipeline(abc.ABC):
 
         self.training_config = training_config
         if training_config is None:
-            self.training_config = self._get_default_training_config()
+            self.training_config = self.get_default_training_config()
 
         self.training_config["min_scale"] = (
             self.training_config["min_lr"] / self.training_config["max_lr"]
@@ -342,14 +342,14 @@ class AbstractPipeline(abc.ABC):
         warmup_steps = (
             self.training_config["warmup_steps"] * self.training_config["multistep"]
         )
-        num_steps = self.training_config["num_steps"]
+        nsteps = self.training_config["nsteps"]
         max_lr = self.training_config["max_lr"]
         min_lr = self.training_config["min_lr"]
         # schedule = optax.warmup_cosine_decay_schedule(
         #     init_value=1e-7,  # Start tiny
         #     peak_value=max_lr,  # Peak
         #     warmup_steps=warmup_steps,
-        #     decay_steps=num_steps - warmup_steps,
+        #     decay_steps=nsteps - warmup_steps,
         #     end_value=min_lr,  # 1% of Peak
         # )
 
@@ -362,7 +362,7 @@ class AbstractPipeline(abc.ABC):
         constant_schedule = optax.constant_schedule(value=max_lr)
         decay_schedule = optax.cosine_decay_schedule(
             init_value=max_lr,
-            decay_steps=int((1 - decay_transition) * num_steps),
+            decay_steps=int((1 - decay_transition) * nsteps),
             alpha=min_lr / max_lr,
         )
         schedule = optax.join_schedules(
@@ -371,7 +371,7 @@ class AbstractPipeline(abc.ABC):
                 constant_schedule,
                 decay_schedule,
             ],
-            boundaries=[warmup_steps, int(decay_transition * num_steps)],
+            boundaries=[warmup_steps, int(decay_transition * nsteps)],
         )
 
         # define the weight decay mask to avoid applying weight decay to bias and norm parameters
@@ -396,7 +396,7 @@ class AbstractPipeline(abc.ABC):
         ...  # pragma: no cover
 
     @classmethod
-    def _get_default_training_config(cls):
+    def get_default_training_config(cls):
         """
         Return a dictionary of default training configuration parameters.
 
@@ -407,19 +407,13 @@ class AbstractPipeline(abc.ABC):
         """
         training_config = {}
 
-        training_config["num_steps"] = 50_000
+        training_config["nsteps"] = 50_000
 
         training_config["ema_decay"] = 0.999
+        
+        training_config["decay_transition"] = 0.80
+        training_config["warmup_steps"] = 500
 
-        # TODO, remove these params, as they are not used anymore
-        # training_config["patience"] = 10
-        # training_config["cooldown"] = 2
-        # training_config["factor"] = 0.5
-        # training_config["accumulation_size"] = 100
-        # training_config["rtol"] = 1e-4
-        #######
-        training_config["decay_transition"] = 0.70
-        training_config["warmup_steps"] = 1000
         training_config["max_lr"] = 1e-4
         training_config["min_lr"] = 1e-6
         training_config["val_every"] = 100
@@ -664,7 +658,7 @@ class AbstractPipeline(abc.ABC):
         self.ema_model.train()
 
         if nsteps is None:
-            nsteps = self.training_config["num_steps"]
+            nsteps = self.training_config["nsteps"]
         early_stopping = self.training_config["early_stopping"]
         val_every = self.training_config["val_every"]
 
@@ -829,7 +823,6 @@ class AbstractPipeline(abc.ABC):
         samples : array-like
             Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
         """
-
 
         # TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder
         # Possibly fixed by passing the kwargs, which should include the encoder_key

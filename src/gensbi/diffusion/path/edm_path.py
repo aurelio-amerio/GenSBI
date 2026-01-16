@@ -7,12 +7,15 @@ supporting various noise schedules (EDM, EDM-VP, EDM-VE).
 Based on the paper "Elucidating the Design Space of Diffusion-Based Generative Models"
 by Karras et al., 2022. https://arxiv.org/abs/2206.00364
 """
+
 from abc import ABC, abstractmethod
 import jax
 from jax import Array
 from jax import numpy as jnp
 from typing import Callable
 import chex
+
+import warnings
 
 from gensbi.diffusion.path.path import ProbPath
 from gensbi.diffusion.path.path_sample import EDMPathSample
@@ -21,14 +24,14 @@ from gensbi.diffusion.path.path_sample import EDMPathSample
 class EDMPath(ProbPath):
     """
     EDM probability path.
-    
+
     This class implements the probability path for EDM-based diffusion models,
     supporting different noise schedules (EDM, EDM-VP, EDM-VE).
-    
+
     Parameters
     ----------
         scheduler: The scheduler object for noise generation, must be one of 'EDM', 'EDM-VP', or 'EDM-VE'.
-        
+
     Example:
         .. code-block:: python
 
@@ -44,7 +47,7 @@ class EDMPath(ProbPath):
             print(sample.x_t.shape)
             # (32, 2)
     """
-    
+
     def __init__(self, scheduler) -> None:
         """
         Initialize the EDMPath with a scheduler.
@@ -52,7 +55,7 @@ class EDMPath(ProbPath):
         Parameters
         ----------
             scheduler: The scheduler object.
-            
+
         Raises
         ------
             AssertionError
@@ -64,6 +67,7 @@ class EDMPath(ProbPath):
             "EDM-VP",
             "EDM-VE",
         ], f"Scheduler must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.scheduler.name}."
+        warnings.warn("EDM-VP and EDM-VE paths are currently not recommended for use.")
         return
 
     def sample(self, key: Array, x_1: Array, sigma: Array) -> EDMPathSample:

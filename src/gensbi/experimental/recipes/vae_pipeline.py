@@ -1,4 +1,3 @@
-
 """
 VAE Pipeline module for GenSBI.
 
@@ -52,6 +51,7 @@ from gensbi.experimental.models.autoencoders import (
 )
 from gensbi.recipes.pipeline import ema_step, ModelEMA
 
+
 def parse_training_config(config_path: str):
     """
     Parse a training configuration file.
@@ -93,7 +93,7 @@ def parse_training_config(config_path: str):
 
     training_config = {}
     # overwrite the defaults with the config file values
-    training_config["num_steps"] = nsteps
+    training_config["nsteps"] = nsteps
     training_config["ema_decay"] = ema_decay
     training_config["decay_transition"] = decay_transition
 
@@ -108,6 +108,7 @@ def parse_training_config(config_path: str):
 
     return training_config
 
+
 # AutoEncoderParams:
 
 #     resolution: int
@@ -121,6 +122,7 @@ def parse_training_config(config_path: str):
 #     shift_factor: float
 #     rngs: nnx.Rngs
 #     param_dtype: DTypeLike
+
 
 def parse_autoencoder_params(config_path: str):
     """
@@ -200,7 +202,7 @@ class AbstractVAEPipeline:
 
         self.training_config = training_config
         if training_config is None:
-            self.training_config = self._get_default_training_config()
+            self.training_config = self.get_default_training_config()
 
         self.training_config["min_scale"] = (
             self.training_config["min_lr"] / self.training_config["max_lr"]
@@ -215,7 +217,7 @@ class AbstractVAEPipeline:
         self.ema_model = nnx.clone(self.model)
 
         self.loss_fn = vae_loss_fn
-        
+
     def init_pipeline_from_config(
         cls,
         train_dataset,
@@ -237,14 +239,13 @@ class AbstractVAEPipeline:
 
         params_dict = parse_autoencoder_params(config_path)
 
-
         params = AutoEncoderParams(
             rngs=nnx.Rngs(0),
             **params_dict,
         )
 
         # Training parameters
-        training_config = cls._get_default_training_config()
+        training_config = cls.get_default_training_config()
         training_config["checkpoint_dir"] = checkpoint_dir
 
         training_config_ = parse_training_config(config_path)
@@ -260,7 +261,6 @@ class AbstractVAEPipeline:
         )
 
         return pipeline
-
 
     def _get_ema_optimizer(self):
         """
@@ -319,7 +319,7 @@ class AbstractVAEPipeline:
 
     #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
     #     return optimizer
-    
+
     def _get_optimizer(self):
         """
         Construct the optimizer for training, including learning rate scheduling and gradient clipping.
@@ -332,19 +332,21 @@ class AbstractVAEPipeline:
         warmup_steps = (
             self.training_config["warmup_steps"] * self.training_config["multistep"]
         )
-        num_steps = self.training_config["num_steps"]
+        nsteps = self.training_config["nsteps"]
         max_lr = self.training_config["max_lr"]
         min_lr = self.training_config["min_lr"]
 
-        
         # we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr
         decay_transition = self.training_config["decay_transition"]
-        
+
         warmup_schedule = optax.linear_schedule(
-            init_value=1e-7, end_value=max_lr, transition_steps=warmup_steps)
+            init_value=1e-7, end_value=max_lr, transition_steps=warmup_steps
+        )
         constant_schedule = optax.constant_schedule(value=max_lr)
         decay_schedule = optax.cosine_decay_schedule(
-            init_value=max_lr, decay_steps=int((1 - decay_transition) * num_steps), alpha=min_lr / max_lr
+            init_value=max_lr,
+            decay_steps=int((1 - decay_transition) * nsteps),
+            alpha=min_lr / max_lr,
         )
         schedule = optax.join_schedules(
             schedules=[
@@ -352,9 +354,9 @@ class AbstractVAEPipeline:
                 constant_schedule,
                 decay_schedule,
             ],
-            boundaries=[warmup_steps, int(decay_transition * num_steps)]
+            boundaries=[warmup_steps, int(decay_transition * nsteps)],
         )
-        
+
         # define the weight decay mask to avoid applying weight decay to bias and norm parameters
         def decay_mask_fn(params):
             return jax.tree_util.tree_map(lambda x: x.ndim > 1, params)
@@ -370,7 +372,7 @@ class AbstractVAEPipeline:
         return optimizer
 
     @classmethod
-    def _get_default_training_config(cls):
+    def get_default_training_config(cls):
         """
         Return a dictionary of default training configuration parameters for VAE training.
 
@@ -381,12 +383,12 @@ class AbstractVAEPipeline:
         """
         training_config = {}
 
-        training_config["num_steps"] = 50_000
+        training_config["nsteps"] = 50_000
 
         training_config["ema_decay"] = 0.999
         training_config["warmup_steps"] = 500
         training_config["decay_transition"] = 0.70
-        
+
         training_config["max_lr"] = 1e-4
         training_config["min_lr"] = 1e-6
         training_config["val_every"] = 100
@@ -414,7 +416,6 @@ class AbstractVAEPipeline:
         )
         return
 
-
     def get_train_step_fn(self):
         """
         Return the training step function, which performs a single optimization step.
@@ -433,7 +434,6 @@ class AbstractVAEPipeline:
             return loss
 
         return train_step
-
 
     def get_val_step_fn(self):
         """
@@ -551,7 +551,6 @@ class AbstractVAEPipeline:
         print("Restored model from checkpoint")
         return
 
-
     def train(
         self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True
     ) -> Tuple[list, list]:
@@ -597,7 +596,7 @@ class AbstractVAEPipeline:
         val_loss_array = []
 
         if nsteps is None:
-            nsteps = self.training_config["num_steps"]
+            nsteps = self.training_config["nsteps"]
         early_stopping = self.training_config["early_stopping"]
         val_every = self.training_config["val_every"]
 
@@ -637,11 +636,13 @@ class AbstractVAEPipeline:
                 batch_val = next(self.val_dataset_iter)
                 l_val = val_step(self.model, batch_val, rngs.val_step(), kl_weight)
 
-                if l_val < l_train: # TODO figure out something more clever to do, since the loss may be negative here
-                    ratio = 0.
+                if (
+                    l_val < l_train
+                ):  # TODO figure out something more clever to do, since the loss may be negative here
+                    ratio = 0.0
                 else:
                     ratio = jnp.abs((l_train - l_val) / (l_train + 1e-8))
-                    
+
                 if ratio > val_error_ratio:
                     counter += 1
                 else:
@@ -670,7 +671,6 @@ class AbstractVAEPipeline:
             self.save_model(experiment_id)
 
         return loss_array, val_loss_array
-
 
 
 class VAE1DPipeline(AbstractVAEPipeline):
@@ -709,7 +709,6 @@ class VAE1DPipeline(AbstractVAEPipeline):
             training_config,
         )
         return
-
 
 
 class VAE2DPipeline(AbstractVAEPipeline):
