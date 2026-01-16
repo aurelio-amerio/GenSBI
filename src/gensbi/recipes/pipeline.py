@@ -410,6 +410,7 @@ class AbstractPipeline(abc.ABC):
         training_config["nsteps"] = 50_000
 
         training_config["ema_decay"] = 0.999
+        
         training_config["decay_transition"] = 0.80
         training_config["warmup_steps"] = 500
 
