@@ -49,6 +49,10 @@ def unnormalize(data, means, stds):
     return normalize(data, means, stds)
 
 
+def process_data(data):
+    return normalize(data, means, stds)
+
+
 # %% Create the input pipeline using Grain
 # We use Grain to create an efficient input pipeline.
 # This involves shuffling, repeating for multiple epochs, and batching the data.
