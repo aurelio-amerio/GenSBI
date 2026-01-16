@@ -4,7 +4,9 @@ This guide details how the training pipeline works in `GenSBI`, best practices f
 
 ## Training 101
 
-Training a flow matching model is extremely easy using the default pipeline. Here is a quick example:
+Training a flow matching model is extremely easy using the default pipeline. 
+For detailed parameter initialization arguments, see the [Model Cards](/basics/model_cards).
+The basic training pipeline is as follows:
 
 ```python
 from flax import nnx
@@ -15,7 +17,8 @@ train_dataset = ... # define a training dataset (infinite iterator)
 val_dataset = ...   # define a validation dataset (infinite iterator)
 dim_obs = ...       # dimension of the parameters (theta)
 dim_cond = ...      # dimension of the simulator observations (x)
-params = Flux1Params(...) # the parameters for your model
+
+params = Flux1Params(...) # parameters require specific arguments (see Model Cards)
 
 # Instantiate the pipeline
 pipeline = Flux1FlowPipeline(
@@ -46,10 +49,10 @@ See [Troubleshooting: Shape Mismatch Errors](/basics/troubleshooting#shape-misma
 
 ## Pipeline Overview
 
-The default training pipeline (e.g., `Flux1FlowPipeline`, `SimformerFlowPipeline`) is built on the `AbstractPipeline` class. It manages the entire training lifecycle:
+The default training pipeline (e.g., `Flux1FlowPipeline`, `SimformerFlowPipeline`) is built on the `AbstractPipeline` class. It manages the entire training lifecycle. For the default `Flux1` model, use the `Flux1FlowPipeline`. GenSBI also provides `SimformerFlowPipeline` (for low-dim) and `Flux1JointFlowPipeline`. See [Model Cards](/basics/model_cards) for details.
 
 - **State Management**: Uses **Flax NNX** for managing model parameters and optimizer states.
-- **Steps vs. Epochs**: Training runs for a fixed number of steps (`num_steps`), not epochs. This is common in generative modeling where datasets (like simulation outputs) might be effectively infinite.
+- **Steps vs. Epochs**: Training runs for a fixed number of steps (`nsteps`), not epochs. This is common in generative modeling where datasets (like simulation outputs) might be effectively infinite.
 - **EMA (Exponential Moving Average)**: The pipeline maintains a shadow copy of the model weights using EMA. This version is smoother and often yields better generation results. It is saved in a separate `checkpoints/ema` folder.
 - **Early Stopping**: Validation runs every `val_every` steps. If the validation loss stops improving or diverges significantly from training loss (controlled by `val_error_ratio`), training stops early.
 - **Checkpointing**: Models are automatically saved to the `checkpoints` directory. Both the latest training state and the EMA state are preserved.
@@ -113,6 +116,8 @@ def simulator(key, nsamples):
     # Run simulation
     return _simulator(sample_key, thetas)
 ```
+
+   
 
 ### 3. Setting up the Data Loader
 
@@ -191,7 +196,7 @@ These are the standard hyperparameters available in `AbstractPipeline`:
 
 | Key              | Default         | Description                                                  |
 | ---------------- | --------------- | ------------------------------------------------------------ |
-| `num_steps`      | `30,000`        | Total number of training steps.                              |
+| `nsteps`      | `30,000`        | Total number of training steps.                              |
 | `max_lr`         | `1e-3`          | Maximum learning rate.                                       |
 | `patience`       | `10`            | Steps to wait for improvement before reducing LR (via `reduce_on_plateau`). |
 | `multistep`      | `1`             | **Gradient Accumulation**. Accumulates gradients over $N$ steps before updating weights. |
@@ -208,11 +213,11 @@ To change parameters from the default training configuration, you can pass a cus
 from gensbi.recipes.flux1 import Flux1FlowPipeline
 
 # 1. Retrieve the default configuration
-training_config = Flux1FlowPipeline._get_default_training_config()
+training_config = Flux1FlowPipeline.get_default_training_config()
 
 # 2. Modify specific settings
 training_config["checkpoint_dir"] = "/path/to/custom/checkpoints"
-training_config["num_steps"] = 50_000 # Train for longer
+training_config["nsteps"] = 50_000 # Train for longer
 
 # 3. Instantiate the pipeline with the custom config
 pipeline = Flux1FlowPipeline(
@@ -264,7 +269,7 @@ class CustomFluxPipeline(Flux1FlowPipeline):
         """
         # Retrieve config values
         lr = self.training_config["max_lr"]
-        steps = self.training_config["num_steps"]
+        steps = self.training_config["nsteps"]
         
         # Example: Linear decay schedule
         schedule = optax.linear_schedule(
@@ -319,7 +324,7 @@ def train(
     self.model.train()
 
     if nsteps is None:
-        nsteps = self.training_config["num_steps"]
+        nsteps = self.training_config["nsteps"]
     early_stopping = self.training_config["early_stopping"]
     val_every = self.training_config["val_every"]
 

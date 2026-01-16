@@ -11,7 +11,7 @@ from jax import numpy as jnp
 from numpyro import distributions as dist
 from flax import nnx
 
-from gensbi.recipes import ConditionalFlowPipeline
+from gensbi.recipes import Flux1FlowPipeline
 from gensbi.models import Flux1, Flux1Params
 
 from gensbi.utils.plotting import plot_marginals
@@ -130,20 +130,19 @@ params = Flux1Params(
     param_dtype=jnp.float32,
 )
 
-model = Flux1(params)
 
 # %% Instantiate the pipeline
-# The ConditionalFlowPipeline handles the training loop and sampling.
-# We configure it with the model, datasets, dimensions, and training configuration.
-training_config = ConditionalFlowPipeline.get_default_training_config()
+# The Flux1FlowPipeline handles the training loop and sampling.
+# We configure it with the model parameters, datasets, dimensions using a default training configuration.
+training_config = Flux1FlowPipeline.get_default_training_config()
 training_config["nsteps"] = 10000
 
-pipeline = ConditionalFlowPipeline(
-    model,
+pipeline = Flux1FlowPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
+    params=params,
     training_config=training_config,
 )
 
@@ -168,14 +167,15 @@ x_o = new_sample[:, dim_obs:, :]  # extract condition from the joint sample
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # Finally, we unnormalize the samples to get them back to the original scale.
 samples = unnormalize(samples, means[:dim_obs], stds[:dim_obs])
+
 # %% Plot the samples
+# We verify the model's performance by plotting the marginal distributions of the generated samples
+# against the true parameters.
 plot_marginals(
     np.array(samples[..., 0]),
     gridsize=30,
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("conditional_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("flux1_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
-
-# %%

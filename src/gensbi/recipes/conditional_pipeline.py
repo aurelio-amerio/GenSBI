@@ -7,6 +7,7 @@ import jax.numpy as jnp
 from flax import nnx
 import optax
 from optax.contrib import reduce_on_plateau
+
 from numpyro import distributions as dist
 from tqdm.auto import tqdm
 from functools import partial
@@ -506,8 +507,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         )
 
     @classmethod
-    def _get_default_training_config(cls):
-        config = super()._get_default_training_config()
+    def get_default_training_config(cls):
+        config = super().get_default_training_config()
         config.update(
             {
                 "sigma_min": 0.002,  # from edm paper

@@ -1,4 +1,4 @@
-# Basics
+# User Guide
 
 This section covers the fundamental concepts and workflows for using the library effectively.
 
@@ -6,8 +6,8 @@ This section covers the fundamental concepts and workflows for using the library
 :maxdepth: 1
 
 overview
-model_cards
 data_and_embeddings
+model_cards
 training
 inference
 validation
