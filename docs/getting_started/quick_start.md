@@ -42,12 +42,12 @@ This example covers:
 The code below is a complete, runnable script:
 
 
-```{literalinclude} /examples/conditional_flow_pipeline.py
+```{literalinclude} /examples/flux1_flow_pipeline.py
 :language: python
 :linenos:
 ```
 
-```{image} /examples/conditional_flow_pipeline_marginals.png
+```{image} /examples/flux1_flow_pipeline_marginals.png
 :width: 600
 ```
 
