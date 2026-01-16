@@ -9,8 +9,10 @@
   :class: logo-transparent-bg
 ```
 
-## Work in progress!
-GenSBI is a work in progress, and we are actively developing new features and improvements. Expect the API and examples to evolve over time. We welcome contributions and feedback from the community!
+```{admonition} Project Status
+:class: info
+GenSBI is currently reaching the end of the **Alpha** cycle. The API is reaching stability, but may still change in the future.
+```
 
 ## Getting Started
 
@@ -18,18 +20,26 @@ GenSBI is a work in progress, and we are actively developing new features and im
 :class: tip
 
 Start here:
-1. [Installation](/documentation/installation) - Get GenSBI installed
-2. [Quick Start Guide](/getting_started/quick_start) - 5-minute introduction
+1. [Installation](/getting_started/installation) - Get GenSBI installed
+2. [Quick Start Guide](/getting_started/quick_start) - 15-minute introduction
 3. [My First Model Tutorial](/notebooks/my_first_model) - Complete step-by-step walkthrough
 ```
 
-To install GenSBI with GPU support:
+### Standard Installation (CPU / Compatible)
+
+```bash
+pip install git+https://github.com/aurelio-amerio/GenSBI.git
+```
+
+### High-Performance Installation (CUDA 12)
+
+If you have a compatible NVIDIA GPU, install with CUDA 12 support for significantly faster training:
 
 ```bash
 pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
 ```
 
-For more installation options, see the [Installation Guide](/documentation/installation).
+For more installation options, see the [Installation Guide](/getting_started/installation).
 
 ## Key Documentation Sections
 
@@ -69,8 +79,8 @@ Want to contribute? Check out the guides:
 
 ## Examples
 
-<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
-<img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true" alt="two-moons posterior sampling" height="400px">
+<img src="_static/animated_plot_samples_simformer.gif" alt="two-moons posterior sampling" height="400px">
+<img src="_static/animated_plot_posterior_simformer.gif" alt="two-moons posterior sampling" height="400px">
 
 Some key examples include:
 
@@ -118,6 +128,13 @@ If you use this library, please consider citing this work and the original metho
   howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
 }
 ```
+## Similar packages
+GenSBI is designed to provide a numerically efficient JAX implementation of flow and diffusion models, complementing existing SBI libraries. You might also want to check out:
+
+- **[`sbi`](https://github.com/sbi-dev/sbi)**: A comprehensive Pytorch-based package for simulation-based inference. It implements neural posterior estimation (NPE), neural likelihood estimation (NLE), and neural ratio estimation (NRE) methods. It is an excellent choice for a wide range of SBI tasks and supports amortized as well as sequential inference.
+- **[`swyft`](https://github.com/undark-lab/swyft)**: An official implementation of Truncated Marginal Neural Ratio Estimation (TMNRE). It is designed to be highly efficient for marginal posterior estimation and scales well to complex simulations, leveraging `dask` and `zarr` for handling large datasets.
+- **[`ltu-ili`](https://github.com/maho3/ltu-ili)**: The "Learning the Universe" Implicit Likelihood Inference library. It unifies multiple SBI backends (including `sbi`, `pydelfi`, and `lampe`) under a single interface, making it easy to benchmark different methods. It is particularly focused on applications in astrophysics and cosmology.
+- **[`sbijax`](https://github.com/dirmeier/sbijax)**: A simulation-based inference library built on top of JAX. It implements standard neural simulation-based inference methods (NPE, NLE, NRE) as well as ABC, leveraging JAX's just-in-time compilation and automatic differentiation for high-performance inference. Its API is inspired by the `sbi` package.
 
 ```{toctree}
 :hidden:

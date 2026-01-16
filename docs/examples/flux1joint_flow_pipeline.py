@@ -11,8 +11,8 @@ from jax import numpy as jnp
 from numpyro import distributions as dist
 from flax import nnx
 
-from gensbi.recipes import ConditionalFlowPipeline
-from gensbi.models import Flux1, Flux1Params
+from gensbi.recipes import Flux1JointFlowPipeline
+from gensbi.models import Flux1JointParams
 
 from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
@@ -51,8 +51,6 @@ def simulator(key, nsamples):
 # In this example, we use a simple Gaussian simulator.
 train_data = simulator(jax.random.PRNGKey(0), 100_000)
 val_data = simulator(jax.random.PRNGKey(1), 2000)
-
-
 # %% Normalize the dataset
 # It is important to normalize the data to have zero mean and unit variance.
 # This helps the model training process.
@@ -69,22 +67,20 @@ def unnormalize(data, means, stds):
 
 
 # %% Prepare the data for the pipeline
-# The pipeline expects the data to be split into observations and conditions.
-# We also apply normalization at this stage.
-def split_obs_cond(data):
-    data = normalize(data, means, stds)
-    return (
-        data[:, :dim_obs],
-        data[:, dim_obs:],
-    )  # assuming first dim_obs are obs, last dim_cond are cond
+# The pipeline expects the data to be normalized but not split (for joint pipelines).
+def process_data(data):
+    return normalize(data, means, stds)
 
+
+# %%
+train_data.shape
 
 # %%
 
 # %% Create the input pipeline using Grain
 # We use Grain to create an efficient input pipeline.
 # This involves shuffling, repeating for multiple epochs, and batching the data.
-# We also map the split_obs_cond function to prepare the data for the model.
+# We also map the process_data function to prepare (normalize) the data for the model.
 batch_size = 256
 
 train_dataset_grain = (
@@ -93,7 +89,7 @@ train_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
-    .map(split_obs_cond)
+    .map(process_data)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
@@ -103,47 +99,44 @@ val_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
-    .map(split_obs_cond)
+    .map(process_data)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 # %% Define your model
 # specific model parameters are defined here.
-# For Flux1, we need to specify dimensions, embedding strategies, and other architecture details.
-params = Flux1Params(
+# For Flux1Joint, we need to specify dimensions, embedding strategies, and other architecture details.
+params = Flux1JointParams(
     in_channels=1,
     vec_in_dim=None,
-    context_in_dim=1,
-    mlp_ratio=3,
+    mlp_ratio=3.0,
     num_heads=2,
-    depth=4,
     depth_single_blocks=8,
-    axes_dim=[
-        10,
-    ],
+    axes_dim=[10],
+    condition_dim=[2],
     qkv_bias=True,
-    dim_obs=dim_obs,
-    dim_cond=dim_cond,
+    rngs=nnx.Rngs(0),
+    dim_joint=dim_joint,
     theta=10 * dim_joint,
-    id_embedding_strategy=("absolute", "absolute"),
-    rngs=nnx.Rngs(default=42),
+    id_embedding_strategy="absolute",
+    guidance_embed=False,
     param_dtype=jnp.float32,
 )
 
-model = Flux1(params)
-
 # %% Instantiate the pipeline
-# The ConditionalFlowPipeline handles the training loop and sampling.
-# We configure it with the model, datasets, dimensions, and training configuration.
-training_config = ConditionalFlowPipeline.get_default_training_config()
+# The Flux1JointFlowPipeline handles the training loop and sampling.
+# We configure it with the model parameters, datasets, dimensions using a default training configuration.
+# We also specify the condition_mask_kind, which determines how conditioning is handled during training.
+training_config = Flux1JointFlowPipeline.get_default_training_config()
 training_config["nsteps"] = 10000
 
-pipeline = ConditionalFlowPipeline(
-    model,
+pipeline = Flux1JointFlowPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
+    params=params,
+    condition_mask_kind="posterior",
     training_config=training_config,
 )
 
@@ -168,14 +161,17 @@ x_o = new_sample[:, dim_obs:, :]  # extract condition from the joint sample
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 # Finally, we unnormalize the samples to get them back to the original scale.
 samples = unnormalize(samples, means[:dim_obs], stds[:dim_obs])
+
 # %% Plot the samples
+# We verify the model's performance by plotting the marginal distributions of the generated samples
+# against the true parameters.
 plot_marginals(
     np.array(samples[..., 0]),
     gridsize=30,
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("conditional_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("flux1joint_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

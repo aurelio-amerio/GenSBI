@@ -15,7 +15,11 @@ To set up your development environment, please follow these steps:
 2.  **Install dependencies**:
     We recommend using a virtual environment.
     ```bash
-    pip install -e ".[examples,validation]"
+    pip install -e ".[examples,test,docs]"
+    ```
+
+    ```{note}
+    Python 3.11 or higher is required.
     ```
 
 ## Running Tests
@@ -45,22 +49,21 @@ GenSBI/
 │   │   ├── flux1/          # Flux1 transformer model
 │   │   ├── flux1joint/     # Flux1Joint variant
 │   │   ├── simformer/      # Simformer model
-│   │   ├── autoencoders/   # VAE and autoencoder models
+│   │   ├── embedding/      # Embedding networks
 │   │   ├── wrappers/       # Model wrappers for time/noise handling
 │   │   └── losses/         # Loss function implementations
 │   ├── recipes/             # High-level training pipelines
 │   │   ├── flux1.py
 │   │   ├── simformer.py
-│   │   ├── base.py         # AbstractPipeline base class
+│   │   ├── pipeline.py     # AbstractPipeline base class
 │   │   └── ...
 │   ├── flow_matching/       # Flow matching implementation
 │   │   ├── path/           # Interpolation paths (OT, etc.)
 │   │   ├── solver/         # ODE solvers
 │   │   └── loss/           # Flow matching loss
 │   ├── diffusion/           # Diffusion model implementation
-│   │   ├── sampler/        # Diffusion samplers
-│   │   ├── sde/            # Stochastic differential equations
-│   │   └── loss/           # Diffusion loss functions
+│   │   ├── path/           # Diffusion paths and schedules (EDM, etc.)
+│   │   └── solver/         # SDE solvers and samplers
 │   └── utils/               # Utility functions
 ├── test/                    # Test suite
 │   ├── test_flow_matching/
@@ -82,6 +85,7 @@ GenSBI/
 Models are Flax NNX neural network modules that define the architecture:
 
 - **Base Models**: Pure neural network definitions (e.g., `Flux1`, `Simformer`)
+- **Embedding**: Embedding networks for IDs and time.
 - **Model Wrappers**: Wrap models to provide a unified vector field and divergence interface for ODE/SDE samplers
   - `ConditionalWrapper`: For conditional inference (θ | x)
   - `JointWrapper`: For joint inference on multiple variables
@@ -98,20 +102,20 @@ When adding a new model:
 
 Recipes (Pipelines) are high-level interfaces that orchestrate training and inference:
 
-- **AbstractPipeline**: Base class defining the training loop, validation, checkpointing, and EMA
+- **AbstractPipeline** (in `pipeline.py`): Base class defining the training loop, validation, checkpointing, and EMA
 - **Specific Pipelines**: Combine a model with flow matching or diffusion (e.g., `Flux1FlowPipeline`)
 
 When adding a new pipeline:
 1. Inherit from `AbstractPipeline`
 2. Implement required abstract methods
 3. Override `_get_optimizer()` if you need a custom optimizer
-4. Override `_get_default_training_config()` for custom hyperparameters
+4. Override `get_default_training_config()` for custom hyperparameters
 
 #### 3. Flow Matching (`src/gensbi/flow_matching/`)
 
 Components for Optimal Transport Flow Matching:
 
-- **Paths** (`path/`): Define interpolation between source and target (e.g., `CondOTProbPath`)
+- **Paths** (`path/`): Define interpolation between source and target (e.g., `AffineProbPath` with `CondOTScheduler`)
 - **Solvers** (`solver/`): ODE solvers for inference (e.g., `ODESolver`)
 - **Loss** (`loss/`): Flow matching loss functions
 
@@ -119,9 +123,9 @@ Components for Optimal Transport Flow Matching:
 
 Components for diffusion models:
 
-- **SDEs** (`sde/`): Define noise schedules (VP, VE, EDM)
-- **Samplers** (`sampler/`): Inference samplers (e.g., `EulerSampler`)
-- **Loss** (`loss/`): Diffusion loss functions (score matching, denoising)
+- **Paths** (`path/`): Define noise schedules and paths (e.g., `EDMPath`)
+- **Solvers** (`solver/`): Inference samplers and solvers (e.g., `SDESolver`, `EDMSampler`)
+
 
 ### How to Add New Features
 
@@ -155,8 +159,8 @@ Components for diffusion models:
 #### Adding a New Training Feature
 
 1. If it's pipeline-specific: Override methods in your pipeline class
-2. If it's general: Add to `AbstractPipeline` in `src/gensbi/recipes/base.py`
-3. Add configuration options to `_get_default_training_config()`
+2. If it's general: Add to `AbstractPipeline` in `src/gensbi/recipes/pipeline.py`
+3. Add configuration options to `get_default_training_config()`
 4. Write tests in `test/test_recipes/`
 
 #### Adding a New Loss Function

@@ -1,56 +1,5 @@
 """
 Pipeline for training and using a Flux1 model for simulation-based inference.
-
-Examples:
-    .. code-block:: python
-
-        import grain
-        import numpy as np
-        import jax
-        from jax import numpy as jnp
-        from gensbi.recipes import Flux1Pipeline
-
-        # Define your training and validation datasets.
-        train_data = jax.random.rand((1024, 4)) # your training dataset
-        val_data = jax.random.rand((128, 4)) # your validation dataset
-
-        batch_size = 32
-
-        train_dataset_grain = (
-            grain.MapDataset.source(np.array(train_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        val_dataset_grain = (
-            grain.MapDataset.source(np.array(val_data)[...,None])
-            .shuffle(42)
-            .repeat()
-            .to_iter_dataset()
-            .batch(batch_size)
-            # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-        )
-
-        # Define the model
-        dim_obs = 2  # Dimension of the parameter space
-        dim_cond = 2      # Dimension of the observation space
-        pipeline = Flux1Pipeline(train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
-
-        # Train the model
-        rngs = jax.random.PRNGKey(0)
-        pipeline.train(rngs)
-
-        # Sample from the posterior
-        x_o = jnp.array([0.5, -0.2])  # Example
-        samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-
-    .. note::
-
-        If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
-
 """
 
 import jax
@@ -152,7 +101,7 @@ def parse_training_config(config_path: str):
 
     training_config = {}
     # overwrite the defaults with the config file values
-    training_config["num_steps"] = nsteps
+    training_config["nsteps"] = nsteps
     training_config["ema_decay"] = ema_decay
     training_config["decay_transition"] = decay_transition
 
@@ -201,6 +150,22 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             Parameters for the Flux1 model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+
+        Examples
+        --------
+        Minimal example on how to instantiate and use the Flux1FlowPipeline:
+
+        .. literalinclude:: /examples/flux1_flow_pipeline.py
+            :language: python
+            :linenos:
+
+        .. image:: /examples/flux1_flow_pipeline_marginals.png
+            :width: 600
+
+        .. note::
+            If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+            in a ``if __name__ == "__main__":`` guard.
+            See https://docs.python.org/3/library/multiprocessing.html
 
         """
 
@@ -278,7 +243,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         )
 
         # Training parameters
-        training_config = cls._get_default_training_config()
+        training_config = cls.get_default_training_config()
         training_config["checkpoint_dir"] = checkpoint_dir
 
         training_config_ = parse_training_config(config_path)
@@ -364,6 +329,22 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
 
+        Examples
+        --------
+        Minimal example on how to instantiate and use the Flux1DiffusionPipeline:
+
+        .. literalinclude:: /examples/flux1_diffusion_pipeline.py
+            :language: python
+            :linenos:
+
+        .. image:: /examples/flux1_diffusion_pipeline_marginals.png
+            :width: 600
+
+        .. note::
+            If you plan on using multiprocessing prefetching, ensure that your script is wrapped
+            in a ``if __name__ == "__main__":`` guard.
+            See https://docs.python.org/3/library/multiprocessing.html
+
         """
 
         if params is not None:
@@ -448,7 +429,7 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         )
 
         # Training parameters
-        training_config = cls._get_default_training_config()
+        training_config = cls.get_default_training_config()
         training_config["checkpoint_dir"] = checkpoint_dir
 
         training_config_ = parse_training_config(config_path)

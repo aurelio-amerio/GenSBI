@@ -105,7 +105,7 @@ When adding a new pipeline:
 1. Inherit from `AbstractPipeline`
 2. Implement required abstract methods
 3. Override `_get_optimizer()` if you need a custom optimizer
-4. Override `_get_default_training_config()` for custom hyperparameters
+4. Override `get_default_training_config()` for custom hyperparameters
 
 #### 3. Flow Matching (`src/gensbi/flow_matching/`)
 
@@ -156,7 +156,7 @@ Components for diffusion models:
 
 1. If it's pipeline-specific: Override methods in your pipeline class
 2. If it's general: Add to `AbstractPipeline` in `src/gensbi/recipes/base.py`
-3. Add configuration options to `_get_default_training_config()`
+3. Add configuration options to `get_default_training_config()`
 4. Write tests in `test/test_recipes/`
 
 #### Adding a New Loss Function
