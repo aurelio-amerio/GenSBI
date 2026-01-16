@@ -2,7 +2,7 @@
 import os
 
 # Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
-os.environ["JAX_PLATFORMS"] = "cuda"
+# os.environ["JAX_PLATFORMS"] = "cuda"
 
 import grain
 import numpy as np
@@ -29,7 +29,7 @@ def simulator(key, nsamples):
 
 
 # %% Define your training and validation datasets.
-train_data = simulator(jax.random.PRNGKey(0), 10_000).reshape(-1, 2, 1)
+train_data = simulator(jax.random.PRNGKey(0), 100_000).reshape(-1, 2, 1)
 val_data = simulator(jax.random.PRNGKey(1), 2000).reshape(-1, 2, 1)
 # %%
 # %% Normalize the dataset

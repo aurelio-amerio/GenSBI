@@ -2,7 +2,7 @@
 import os
 
 # Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
-os.environ["JAX_PLATFORMS"] = "cuda"
+# os.environ["JAX_PLATFORMS"] = "cuda"
 
 import grain
 import numpy as np
@@ -27,7 +27,7 @@ def simulator(key, nsamples):
 # %% Define your training and validation datasets.
 # We generate a training dataset and a validation dataset using the simulator.
 # The simulator generates samples from a 2D Gaussian distribution.
-train_data = simulator(jax.random.PRNGKey(0), 10_000).reshape(-1, 2, 1)
+train_data = simulator(jax.random.PRNGKey(0), 100_000).reshape(-1, 2, 1)
 val_data = simulator(jax.random.PRNGKey(1), 2000).reshape(-1, 2, 1)
 
 # %% Normalize the dataset
