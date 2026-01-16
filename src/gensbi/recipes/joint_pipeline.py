@@ -1,5 +1,5 @@
 """
-Pipeline for training and using a Flux1 model for simulation-based inference.
+Pipeline for training and using a Joint model for simulation-based inference.
 """
 
 import jax
