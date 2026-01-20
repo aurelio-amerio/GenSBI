@@ -1,0 +1,594 @@
+gensbi.diagnostics.sbc
+======================
+
+.. py:module:: gensbi.diagnostics.sbc
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity
+   gensbi.diagnostics.sbc._plot_hist_region_expected_under_uniformity
+   gensbi.diagnostics.sbc._plot_ranks_as_cdf
+   gensbi.diagnostics.sbc._plot_ranks_as_hist
+   gensbi.diagnostics.sbc._prepare_reduce_functions
+   gensbi.diagnostics.sbc._run_sbc
+   gensbi.diagnostics.sbc._sbc_rank_plot
+   gensbi.diagnostics.sbc._validate_sbc_inputs
+   gensbi.diagnostics.sbc.check_prior_vs_dap
+   gensbi.diagnostics.sbc.check_sbc
+   gensbi.diagnostics.sbc.check_uniformity_c2st
+   gensbi.diagnostics.sbc.check_uniformity_frequentist
+   gensbi.diagnostics.sbc.run_sbc
+   gensbi.diagnostics.sbc.sbc_rank_plot
+
+
+Module Contents
+---------------
+
+.. py:function:: _plot_cdf_region_expected_under_uniformity(num_sbc_runs, num_bins, num_repeats, alpha = 0.2, color = 'gray')
+
+   
+   Plot region of empirical cdfs expected under uniformity on the current axis.
+
+   :param num_sbc_runs: Number of SBC runs.
+   :type num_sbc_runs: int
+   :param num_bins: Number of bins.
+   :type num_bins: int
+   :param num_repeats: Number of repeats.
+   :type num_repeats: int
+   :param alpha: Alpha for the region. Default is 0.2.
+   :type alpha: float, optional
+   :param color: Color for the region. Default is "gray".
+   :type color: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _plot_hist_region_expected_under_uniformity(num_sbc_runs, num_bins, num_posterior_samples, alpha = 0.2, color = 'gray')
+
+   
+   Plot region of empirical cdfs expected under uniformity.
+
+   :param num_sbc_runs: Number of SBC runs.
+   :type num_sbc_runs: int
+   :param num_bins: Number of bins.
+   :type num_bins: int
+   :param num_posterior_samples: Number of posterior samples.
+   :type num_posterior_samples: int
+   :param alpha: Alpha for the region. Default is 0.2.
+   :type alpha: float, optional
+   :param color: Color for the region. Default is "gray".
+   :type color: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _plot_ranks_as_cdf(ranks, num_bins, num_repeats, ranks_label = None, xlabel = None, color = None, alpha = 0.8, show_ylabel = True, num_ticks = 3)
+
+   
+   Plot ranks as empirical CDFs on the current axis.
+
+   :param ranks: SBC ranks in shape (num_sbc_runs, ).
+   :type ranks: np.ndarray
+   :param num_bins: Number of bins for the histogram, recommendation is num_sbc_runs / 20.
+   :type num_bins: int
+   :param num_repeats: Number of repeats of each CDF step, i.e., resolution of the eCDF.
+   :type num_repeats: int
+   :param ranks_label: Label for the ranks, e.g., when comparing ranks of different methods.
+   :type ranks_label: str, optional
+   :param xlabel: Label for the current parameter.
+   :type xlabel: str, optional
+   :param color: Line color for the cdf.
+   :type color: str, optional
+   :param alpha: Line transparency. Default is 0.8.
+   :type alpha: float, optional
+   :param show_ylabel: Whether to show y-label "counts". Default is True.
+   :type show_ylabel: bool, optional
+   :param num_ticks: Number of ticks on the x-axis. Default is 3.
+   :type num_ticks: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _plot_ranks_as_hist(ranks, num_bins, num_posterior_samples, ranks_label = None, xlabel = None, color = 'firebrick', alpha = 0.8, show_ylabel = False, num_ticks = 3, xlim_offset_factor = 0.1)
+
+   
+   Plot ranks as histograms on the current axis.
+
+   :param ranks: SBC ranks in shape (num_sbc_runs, ).
+   :type ranks: np.ndarray
+   :param num_bins: Number of bins for the histogram, recommendation is num_sbc_runs / 20.
+   :type num_bins: int
+   :param num_posterior_samples: Number of posterior samples used for ranking.
+   :type num_posterior_samples: int
+   :param ranks_label: Label for the ranks, e.g., when comparing ranks of different methods.
+   :type ranks_label: str, optional
+   :param xlabel: Label for the current parameter.
+   :type xlabel: str, optional
+   :param color: Histogram color, default from Talts et al. Default is "firebrick".
+   :type color: str, optional
+   :param alpha: Histogram transparency. Default is 0.8.
+   :type alpha: float, optional
+   :param show_ylabel: Whether to show y-label "counts". Default is False.
+   :type show_ylabel: bool, optional
+   :param num_ticks: Number of ticks on the x-axis. Default is 3.
+   :type num_ticks: int, optional
+   :param xlim_offset_factor: Factor for empty space left and right of the histogram. Default is 0.1.
+   :type xlim_offset_factor: float, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _prepare_reduce_functions(reduce_fns, param_dim)
+
+   
+   Prepare reduction functions for SBC analysis.
+
+   :param reduce_fns: Function(s) to reduce parameters to 1D.
+   :type reduce_fns: str or Callable or List[Callable]
+   :param param_dim: Dimensionality of parameter space.
+   :type param_dim: int
+
+   :returns: List of callable reduction functions.
+   :rtype: List[Callable]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _run_sbc(thetas, xs, posterior_samples, reduce_fns = 'marginals', show_progress_bar = True)
+
+   
+   Calculate ranks for SBC or expected coverage.
+
+   :param thetas: Ground-truth parameters.
+   :type thetas: Array
+   :param xs: Observed data corresponding to thetas.
+   :type xs: Array
+   :param posterior_samples: Samples from posterior distribution.
+   :type posterior_samples: Array
+   :param reduce_fns: Functions to reduce parameter space to 1D. Default is "marginals".
+   :type reduce_fns: str or Callable or List[Callable], optional
+   :param show_progress_bar: Whether to show progress bar. Default is True.
+   :type show_progress_bar: bool, optional
+
+   :returns: Array of ranks for each parameter and reduction function.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _sbc_rank_plot(ranks, num_posterior_samples, num_bins = None, plot_type = 'cdf', parameter_labels = None, ranks_labels = None, colors = None, num_repeats = 50, line_alpha = 0.8, show_uniform_region = True, uniform_region_alpha = 0.3, xlim_offset_factor = 0.1, num_cols = 4, params_in_subplots = False, show_ylabel = False, sharey = False, fig = None, legend_kwargs = None, ax=None, figsize = None)
+
+   
+   Plot simulation-based calibration ranks as empirical CDFs or histograms.
+
+   :param ranks: Array of ranks to be plotted shape (num_sbc_runs, num_parameters), or
+                 list of Arrays when comparing several sets of ranks, e.g., set of ranks
+                 obtained from different methods.
+   :type ranks: Array or List[Array]
+   :param num_posterior_samples: Number of posterior samples used for ranking.
+   :type num_posterior_samples: int
+   :param num_bins: Number of bins used for binning the ranks. Default is num_sbc_runs / 20.
+   :type num_bins: int, optional
+   :param plot_type: Type of SBC plot, histograms ("hist") or empirical cdfs ("cdf"). Default is "cdf".
+   :type plot_type: str, optional
+   :param parameter_labels: List of labels for each parameter dimension.
+   :type parameter_labels: List[str], optional
+   :param ranks_labels: List of labels for each set of ranks.
+   :type ranks_labels: List[str], optional
+   :param colors: List of colors for each parameter dimension, or each set of ranks.
+   :type colors: List[str], optional
+   :param num_repeats: Number of repeats for each empirical CDF step (resolution). Default is 50.
+   :type num_repeats: int, optional
+   :param line_alpha: Alpha for cdf lines or histograms. Default is 0.8.
+   :type line_alpha: float, optional
+   :param show_uniform_region: Whether to plot the region showing the cdfs expected under uniformity. Default is True.
+   :type show_uniform_region: bool, optional
+   :param uniform_region_alpha: Alpha for region showing the cdfs expected under uniformity. Default is 0.3.
+   :type uniform_region_alpha: float, optional
+   :param xlim_offset_factor: Factor for empty space left and right of the histogram. Default is 0.1.
+   :type xlim_offset_factor: float, optional
+   :param num_cols: Number of subplot columns, e.g., when plotting ranks of many parameters. Default is 4.
+   :type num_cols: int, optional
+   :param params_in_subplots: Whether to show each parameter in a separate subplot, or all in one. Default is False.
+   :type params_in_subplots: bool, optional
+   :param show_ylabel: Whether to show ylabels and ticks. Default is False.
+   :type show_ylabel: bool, optional
+   :param sharey: Whether to share the y-labels, ticks, and limits across subplots. Default is False.
+   :type sharey: bool, optional
+   :param fig: Figure object to plot in.
+   :type fig: Figure, optional
+   :param legend_kwargs: Kwargs for the legend.
+   :type legend_kwargs: Dict, optional
+   :param ax: Axis object, must contain as many sublpots as parameters or len(ranks).
+   :type ax: Axes, optional
+   :param figsize: Dimensions of figure object, default (8, 5) or (len(ranks) * 4, 5).
+   :type figsize: tuple, optional
+
+   :returns: * **fig** (*Figure*) -- Figure object.
+             * **ax** (*Axes*) -- Axis object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _validate_sbc_inputs(thetas, xs, num_sbc_samples, num_posterior_samples)
+
+   
+   Validate inputs for the SBC procedure.
+
+   :param thetas: Ground-truth parameters.
+   :type thetas: Array
+   :param xs: Observed data.
+   :type xs: Array
+   :param num_sbc_samples: Number of SBC samples.
+   :type num_sbc_samples: int
+   :param num_posterior_samples: Number of posterior samples.
+   :type num_posterior_samples: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_prior_vs_dap(prior_samples, dap_samples)
+
+   
+   Returns the C2ST accuracy between prior and data-averaged posterior samples.
+
+   C2ST is calculated for each dimension separately.
+
+   According to simulation-based calibration, the inference method is well-calibrated
+   if the data-averaged posterior samples follow the same distribution as the prior,
+   i.e., if the C2ST score is close to 0.5. If it is not, then this suggests that the
+   inference method is not well-calibrated (see Talts et al, "Simulation-based
+   calibration" for details).
+
+   :param prior_samples: Samples from the prior distribution.
+   :type prior_samples: Array
+   :param dap_samples: Samples from the data-averaged posterior.
+   :type dap_samples: Array
+
+   :returns: Array of C2ST scores for each parameter dimension.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_sbc(ranks, prior_samples, dap_samples, num_posterior_samples = 1000, num_c2st_repetitions = 1)
+
+   
+   Return uniformity checks and data-averaged posterior checks for SBC.
+
+   :param ranks: Ranks for each SBC run and for each model parameter,
+                 shape (N, dim_parameters).
+   :type ranks: Array
+   :param prior_samples: N samples from the prior.
+   :type prior_samples: Array
+   :param dap_samples: N samples from the data-averaged posterior.
+   :type dap_samples: Array
+   :param num_posterior_samples: Number of posterior samples used for SBC ranking. Default is 1000.
+   :type num_posterior_samples: int, optional
+   :param num_c2st_repetitions: Number of times C2ST is repeated to estimate robustness. Default is 1.
+   :type num_c2st_repetitions: int, optional
+
+   :returns: Dictionary containing:
+             - ks_pvals: p-values of the Kolmogorov-Smirnov test of uniformity,
+               one for each dim_parameters.
+             - c2st_ranks: C2ST accuracy between ranks and uniform baseline,
+               one for each dim_parameters.
+             - c2st_dap: C2ST accuracy between prior and DAP samples, single value.
+   :rtype: Dict[str, Array]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_uniformity_c2st(ranks, num_posterior_samples, num_repetitions = 1, seed = 1)
+
+   
+   Return C2ST scores for uniformity of the ranks.
+
+   Run a C2ST between ranks and uniform samples.
+
+   :param ranks: Ranks for each SBC run and for each model parameter,
+                 shape (N, dim_parameters).
+   :type ranks: Array
+   :param num_posterior_samples: Number of posterior samples used for SBC ranking.
+   :type num_posterior_samples: int
+   :param num_repetitions: Repetitions of C2ST tests to estimate classifier variance. Default is 1.
+   :type num_repetitions: int, optional
+   :param seed: Random seed. Default is 1.
+   :type seed: int, optional
+
+   :returns: c2st_ranks: C2ST accuracy between ranks and uniform baseline,
+             one for each dim_parameters.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_uniformity_frequentist(ranks, num_posterior_samples)
+
+   
+   Return p-values for uniformity of the ranks using Kolmogorov-Smirnov test.
+
+   :param ranks: Ranks for each SBC run and for each model parameter,
+                 shape (N, dim_parameters).
+   :type ranks: Array
+   :param num_posterior_samples: Number of posterior samples used for SBC ranking.
+   :type num_posterior_samples: int
+
+   :returns: ks_pvals: p-values of the Kolmogorov-Smirnov test of uniformity,
+             one for each dim_parameters.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: run_sbc(thetas, xs, posterior_samples, reduce_fns = 'marginals', show_progress_bar = True, **kwargs)
+
+   
+   Run simulation-based calibration (SBC) or expected coverage.
+
+   Note: This function implements two versions of coverage diagnostics:
+
+   - Setting ``reduce_fns = "marginals"`` performs SBC as proposed in Talts et al.
+     (see https://arxiv.org/abs/1804.06788).
+   - Setting ``reduce_fns = posterior.log_prob`` performs sample-based expected
+     coverage as proposed in Deistler et al.
+     (see https://arxiv.org/abs/2210.04815).
+
+   :param thetas: Ground-truth parameters for SBC, simulated from the prior.
+   :type thetas: Array
+   :param xs: Observed data for SBC, simulated from thetas.
+   :type xs: Array
+   :param posterior_samples: Samples from the posterior. Shape: (num_posterior_samples, num_sbc_samples, dim_theta).
+   :type posterior_samples: Array
+   :param reduce_fns: Function used to reduce the parameter space into 1D.
+                      Simulation-based calibration can be recovered by setting this to the
+                      string `"marginals"`. Sample-based expected coverage can be recovered
+                      by setting it to `posterior.log_prob` (as a Callable). Default is "marginals".
+   :type reduce_fns: str or Callable or List[Callable], optional
+   :param show_progress_bar: Whether to display a progress bar over SBC runs. Default is True.
+   :type show_progress_bar: bool, optional
+   :param \*\*kwargs: Additional keyword arguments.
+
+   :returns: * **ranks** (*Array*) -- Ranks of the ground truth parameters under the inferred posterior.
+             * **dap_samples** (*Array*) -- Samples from the data-averaged posterior.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: sbc_rank_plot(ranks, num_posterior_samples, num_bins = None, plot_type = 'cdf', parameter_labels = None, ranks_labels = None, colors = None, fig = None, ax = None, figsize = None, **kwargs)
+
+   
+   Plot simulation-based calibration ranks as empirical CDFs or histograms.
+
+   Additional options can be passed via the kwargs argument, see _sbc_rank_plot.
+
+   :param ranks: Array of ranks to be plotted shape (num_sbc_runs, num_parameters), or
+                 list of Arrays when comparing several sets of ranks, e.g., set of ranks
+                 obtained from different methods.
+   :type ranks: Array or List[Array]
+   :param num_posterior_samples: Number of posterior samples used for ranking.
+   :type num_posterior_samples: int
+   :param num_bins: Number of bins used for binning the ranks. Default is num_sbc_runs / 20.
+   :type num_bins: int, optional
+   :param plot_type: Type of SBC plot, histograms ("hist") or empirical cdfs ("cdf"). Default is "cdf".
+   :type plot_type: str, optional
+   :param parameter_labels: List of labels for each parameter dimension.
+   :type parameter_labels: List[str], optional
+   :param ranks_labels: List of labels for each set of ranks.
+   :type ranks_labels: List[str], optional
+   :param colors: List of colors for each parameter dimension, or each set of ranks.
+   :type colors: List[str], optional
+   :param fig: Figure object to plot in.
+   :type fig: Figure, optional
+   :param ax: Axis object to plot in.
+   :type ax: Axes, optional
+   :param figsize: Dimensions of figure object.
+   :type figsize: tuple, optional
+   :param \*\*kwargs: Additional keyword arguments passed to _sbc_rank_plot.
+
+   :returns: * **fig** (*Figure*) -- Figure object.
+             * **ax** (*Axes*) -- Axis object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

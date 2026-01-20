@@ -35,6 +35,33 @@ Selecting the appropriate model is crucial for balancing computational efficienc
 - **Simformer**: A lightweight transformer model optimized for low-dimensional data and rapid prototyping. It explicitly models the joint distribution of all variables by embedding values, variable IDs, and condition masks separately. This explicit embedding strategy is highly effective for low-dimensional data (fewer than ~10 dimensions) as it compresses the data less than RoPE, but it is less computationally efficient for high-dimensional problems.
 - **Flux1Joint**: Combines the joint-distribution modeling capabilities of `Simformer` with the scalable architecture of `Flux1`. It adopts the `Flux1` embedding strategy (explicit data embedding + RoPE for IDs), making it ideal for high-dimensional problems where explicitly learning the joint reconstruction of variables is crucial. While it outperforms `Simformer` on complex, high-dimensional tasks, `Simformer` is often preferable for very low-dimensional problems (less than 4 dimensions) due to its superior explicit ID embedding.
 
+## ID Embedding Strategies
+
+Transformers process data as sequences of tokens. To differentiate between unordered parameters (sets) and structured data (grids/sequences), GenSBI uses various ID embedding strategies.
+
+**For a detailed guide on ID strategies (Absolute vs. RoPE) and data preprocessing, please see [Data, IDs, and Embeddings](/basics/data_and_embeddings).**
+
+### Strategy Support by Model
+
+| Model | Obs & Cond Separation | Supported Strategies | Default |
+| :--- | :--- | :--- | :--- |
+| **Flux1** | **Separate**<br>Distinct embeddings for parameters (obs) and data (cond). | `absolute`, `pos1d`/`rope1d`, `pos2d`/`rope2d` | `absolute` (Params), `absolute` (Data) |
+| **Flux1Joint** | **Unified**<br>All variables are part of a single joint sequence. | `absolute`, `pos1d`/`rope1d`, `pos2d`/`rope2d` | `absolute` |
+| **Simformer** | **Unified**<br>Explicit learned embeddings for all tokens. | `absolute` (learned) | `absolute`<br>*(Note: Embeddings are **concatenated** to features, not summed)* |
+
+```{note}
+`Flux1` allows mixing strategies. For example, you can use `absolute` embeddings for your unordered physical parameters ($\theta$) while using `pos1d` or `rope` for your sequential observational data ($x$).
+```
+
+```{warning}
+**Preferred Embedding Strategies**:
+While the codebase supports the generic `rope` keyword (which adapts to N-dimensions), it is **strongly recommended** to use `rope1d` for sequential data and `rope2d` for image/grid data. This ensures compatibility with the helper functions in the pipelines.
+```
+
+```{warning}
+While `Flux1Joint` technically supports `rope`, it is generally recommended to use `absolute` embeddings for joint density estimation of unordered variables to avoid imposing artificial relational biases.
+```
+
 ## Flux1 Model Parameters
 
 Flux1 is a scalable architecture using double-stream blocks, capable of handling high-dimensional inputs efficiently.
@@ -58,6 +85,7 @@ params = Flux1Params(
     dim_obs=...,
     dim_cond=...,
     theta=...,
+    id_embedding_strategy=("absolute", "absolute"),
     guidance_embed=...,
     param_dtype=...,
 )
@@ -78,6 +106,7 @@ params = Flux1Params(
 - **dim_obs**: The number of variables (tokens) the model performs inference on.
 - **dim_cond**: The number of variables the model is conditioned on.
 - **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). A recommended starting point is `10 * dim_obs`. The default code value is `10_000`.
+- **id_embedding_strategy**: A tuple of strings `(obs_kind, cond_kind)` specifying the embedding strategy for observation and condition tokens respectively. Options: `"absolute"`, `"pos1d"`, `"pos2d"`, `"rope"`. Default: `("absolute", "absolute")`.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False` (not currently implemented for SBI).
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`. Use this to reduce memory usage. Switch to `jnp.float32` if you encounter numerical stability issues.
 
@@ -156,6 +185,7 @@ params = Flux1JointParams(
     rngs=...,
     dim_joint=...,
     theta=...,
+    id_embedding_strategy="absolute",
     guidance_embed=...,
     param_dtype=...,
 )
@@ -174,6 +204,7 @@ params = Flux1JointParams(
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **dim_joint**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.
 - **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). Default: `10_000`.
+- **id_embedding_strategy**: String specifying the embedding strategy (e.g., `"absolute"`, `"rope"`). Default: `"absolute"`.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False`.
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`.
 

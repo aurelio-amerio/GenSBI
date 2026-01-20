@@ -1,0 +1,168 @@
+gensbi.diagnostics.tarp
+=======================
+
+.. py:module:: gensbi.diagnostics.tarp
+
+.. autoapi-nested-parse::
+
+   Implementation taken from Lemos et al, 'Sampling-Based Accuracy Testing of
+   Posterior Estimators for General Inference' https://arxiv.org/abs/2302.03026
+
+   The TARP diagnostic is a global diagnostic which can be used to check a
+   trained posterior against a set of true values of theta.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.tarp._run_tarp
+   gensbi.diagnostics.tarp.check_tarp
+   gensbi.diagnostics.tarp.get_tarp_references
+   gensbi.diagnostics.tarp.plot_tarp
+   gensbi.diagnostics.tarp.run_tarp
+
+
+Module Contents
+---------------
+
+.. py:function:: _run_tarp(posterior_samples, thetas, references, distance = l2, num_bins = 30, z_score_theta = False)
+
+   
+   Estimates coverage of samples given true values `thetas` with the TARP method.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_tarp(ecp, alpha)
+
+   
+   Check the obtained TARP credibility levels and expected coverage probabilities.
+
+   This diagnostic helps to uncover underdispersed, well-covering, or overdispersed posteriors.
+
+   Let :math:`\mathrm{ecp}` be the expected coverage probability computed with the TARP method, and :math:`\alpha` the credibility levels (second output of ``run_tarp``).
+
+   The area to curve (ATC) is defined as:
+
+   .. math::
+       \mathrm{ATC} = \sum_{i: \alpha_i > 0.5} \left( \mathrm{ecp}_i - \alpha_i \right)
+
+   where values close to zero indicate well-calibrated posteriors. Values larger than zero indicate overdispersed distributions (the estimated posterior is too wide), while values smaller than zero indicate underdispersed distributions (the estimated posterior is too narrow). This property can also indicate if the posterior is biased (see Figure 2 of the reference paper).
+
+   A two-sample Kolmogorov-Smirnov test is performed between :math:`\mathrm{ecp}` and :math:`\alpha` to test the null hypothesis that both distributions are identical (produced by one common CDF). The p-value should be close to 1 for well-calibrated posteriors. Commonly, the null is rejected if p-value is below 0.05.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: get_tarp_references(key, thetas)
+
+   
+   Returns reference points for the TARP diagnostic, sampled from a uniform.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_tarp(ecp, alpha, title = None)
+
+   
+   Plot the expected coverage probability (ECP) against the credibility level (alpha).
+
+   :param ecp: Array of expected coverage probabilities.
+   :type ecp: array-like
+   :param alpha: Array of credibility levels.
+   :type alpha: array-like
+   :param title: Title for the plot. Default is "".
+   :type title: str, optional
+
+   :returns: * **fig** (*matplotlib.figure.Figure*) -- The figure object.
+             * **ax** (*matplotlib.axes.Axes*) -- The axes object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: run_tarp(thetas, posterior_samples, seed = 1, references = None, distance = l2, num_bins = 30, z_score_theta = True)
+
+   
+   Estimates coverage of samples given true values `thetas` with the TARP method.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

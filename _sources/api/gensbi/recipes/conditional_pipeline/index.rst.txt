@@ -23,7 +23,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: ConditionalDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
+.. py:class:: ConditionalDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), params=None, training_config=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -35,10 +35,12 @@ Module Contents
    :type train_dataset: grain dataset or iterator over batches
    :param val_dataset: Validation dataset.
    :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space.
-   :type dim_obs: int
-   :param dim_cond: Dimension of the observation space.
-   :type dim_cond: int
+   :param dim_obs: Dimension of the parameter space (number of tokens).
+                   Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_obs: int or tuple of int
+   :param dim_cond: Dimension of the observation space (number of tokens).
+                    Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_cond: int or tuple of int
    :param params: Parameters for the Conditional model. If None, default parameters are used.
    :type params: ConditionalParams, optional
    :param training_config: Configuration for training. If None, default configuration is used.
@@ -59,6 +61,9 @@ Module Contents
        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
        in a ``if __name__ == "__main__":`` guard.
        See https://docs.python.org/3/library/multiprocessing.html
+
+   .. note::
+       Sampling in the latent space (latent diffusion/flow) is not currently supported.
 
 
 
@@ -84,34 +89,6 @@ Module Contents
       
       Return a dictionary of default model parameters.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: _get_default_training_config()
-      :classmethod:
-
-
-      
-      Return a dictionary of default training configuration parameters.
-
-      :returns: **training_config** -- Default training configuration.
-      :rtype: dict
 
 
 
@@ -162,6 +139,34 @@ Module Contents
       
       Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_training_config()
+      :classmethod:
+
+
+      
+      Return a dictionary of default training configuration parameters.
+
+      :returns: **training_config** -- Default training configuration.
+      :rtype: dict
 
 
 
@@ -358,7 +363,7 @@ Module Contents
    .. py:attribute:: path
 
 
-.. py:class:: ConditionalFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
+.. py:class:: ConditionalFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), params=None, training_config=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -372,13 +377,15 @@ Module Contents
    :type train_dataset: grain dataset or iterator over batches
    :param val_dataset: Validation dataset.
    :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space.
-   :type dim_obs: int
-   :param dim_cond: Dimension of the observation space.
-   :type dim_cond: int
-   :param ch_obs: Number of channels in the observation data. Default is 1.
+   :param dim_obs: Dimension of the parameter space (number of tokens).
+                   Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_obs: int or tuple of int
+   :param dim_cond: Dimension of the observation space (number of tokens).
+                    Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_cond: int or tuple of int
+   :param ch_obs: Number of channels per token in the observation data. Default is 1.
    :type ch_obs: int, optional
-   :param ch_cond: Number of channels in the conditional data. Default is 1.
+   :param ch_cond: Number of channels per token in the conditional data. Default is 1.
    :type ch_cond: int, optional
    :param params: Parameters for the Conditional model. If None, default parameters are used.
    :type params: ConditionalParams, optional
@@ -400,6 +407,9 @@ Module Contents
        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
        in a ``if __name__ == "__main__":`` guard.
        See https://docs.python.org/3/library/multiprocessing.html
+
+   .. note::
+       Sampling in the latent space (latent diffusion/flow) is not currently supported.
 
 
 
@@ -492,9 +502,6 @@ Module Contents
 
       ..
           !! processed by numpydoc !!
-
-
-   .. py:method:: compute_unnorm_logprob(x_1, x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
 
 
    .. py:method:: get_loss_fn()

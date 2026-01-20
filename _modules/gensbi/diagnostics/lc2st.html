@@ -1,0 +1,1747 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gensbi.diagnostics.lc2st &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script src="../../../_static/thebelab-helper.js"></script>
+    <script src="../../../_static/jupyterlite_sphinx.js?v=96e329c5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/diagnostics/lc2st';</script>
+    <link rel="icon" href="../../../_static/logo_small.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />   
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo_small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../_static/logo_small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../gensbi.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.diagnostics.lc2st</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                   <h1>Source code for gensbi.diagnostics.lc2st</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This file is part of sbi, a toolkit for simulation-based inference. sbi is licensed</span>
+<span class="c1"># under the Apache License Version 2.0, see &lt;https://www.apache.org/licenses/&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># --------------------------------------------------------------------------</span>
+<span class="c1"># MODIFICATION NOTICE:</span>
+<span class="c1"># This file was modified by Aurelio Amerio on 01-2026.</span>
+<span class="c1"># Description: Ported implementation to use JAX instead of PyTorch.</span>
+<span class="c1"># --------------------------------------------------------------------------</span>
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">clone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">KFold</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neural_network</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPClassifier</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.axes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Axes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Figure</span><span class="p">,</span> <span class="n">FigureBase</span>
+
+
+<div class="viewcode-block" id="LC2ST">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LC2ST</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;L-C2ST: Local Classifier Two-Sample Test.</span>
+
+<span class="sd">    Implementation based on the official code from [1] and the exisiting C2ST</span>
+<span class="sd">    metric [2], using scikit-learn classifiers.</span>
+
+<span class="sd">    L-C2ST tests the local consistency of a posterior estimator :math:`q` with</span>
+<span class="sd">    respect to the true posterior :math:`p`, at a fixed observation :math:`x_o`,</span>
+<span class="sd">    i.e., whether the following null hypothesis holds:</span>
+
+<span class="sd">    :math:`H_0(x_o) := q(\theta \mid x_o) = p(\theta \mid x_o)`.</span>
+
+<span class="sd">    L-C2ST proceeds as follows:</span>
+
+<span class="sd">    1. It first trains a classifier to distinguish between samples from two joint</span>
+<span class="sd">       distributions :math:`[\theta_p, x_p]` and :math:`[\theta_q, x_q]`, and</span>
+<span class="sd">       evaluates the L-C2ST statistic at a given observation :math:`x_o`.</span>
+
+<span class="sd">    2. The L-C2ST statistic is the mean squared error between the predicted</span>
+<span class="sd">       probabilities of being in p (class 0) and a Dirac at 0.5, which corresponds to</span>
+<span class="sd">       the chance level of the classifier, unable to distinguish between p and q.</span>
+
+<span class="sd">    - If ``num_ensemble&gt;1``, the average prediction over all classifiers is used.</span>
+<span class="sd">    - If ``num_folds&gt;1`` the average statistic over all cv-folds is used.</span>
+
+<span class="sd">    To evaluate the test, steps 1 and 2 are performed over multiple trials under the</span>
+<span class="sd">    null hypothesis (H0). If the null distribution is not known, it is estimated</span>
+<span class="sd">    using the permutation method, i.e. by training the classifier on the permuted</span>
+<span class="sd">    data. The statistics obtained under (H0) is then compared to the one obtained</span>
+<span class="sd">    on observed data to compute the p-value, used to decide whether to reject (H0)</span>
+<span class="sd">    or not.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    thetas : Array</span>
+<span class="sd">        Samples from the prior, of shape (sample_size, dim).</span>
+<span class="sd">    xs : Array</span>
+<span class="sd">        Corresponding simulated data, of shape (sample_size, dim_x).</span>
+<span class="sd">    posterior_samples : Array</span>
+<span class="sd">        Samples from the estiamted posterior, of shape (sample_size, dim).</span>
+<span class="sd">    seed : int, optional</span>
+<span class="sd">        Seed for the sklearn classifier and the KFold cross validation. Default is 1.</span>
+<span class="sd">    num_folds : int, optional</span>
+<span class="sd">        Number of folds for the cross-validation. Default is 1 (no cross-validation).</span>
+<span class="sd">        This is useful to reduce variance coming from the data.</span>
+<span class="sd">    num_ensemble : int, optional</span>
+<span class="sd">        Number of classifiers for ensembling. Default is 1.</span>
+<span class="sd">        This is useful to reduce variance coming from the classifier.</span>
+<span class="sd">    classifier : str or Type[BaseEstimator], optional</span>
+<span class="sd">        Classification architecture to use, can be one of the following:</span>
+<span class="sd">        - &quot;random_forest&quot; or &quot;mlp&quot;, defaults to &quot;mlp&quot; or</span>
+<span class="sd">        - A classifier class (e.g., RandomForestClassifier, MLPClassifier).</span>
+<span class="sd">    z_score : bool, optional</span>
+<span class="sd">        Whether to z-score to normalize the data. Default is False.</span>
+<span class="sd">    classifier_kwargs : Dict[str, Any], optional</span>
+<span class="sd">        Custom kwargs for the sklearn classifier. Default is None.</span>
+<span class="sd">    num_trials_null : int, optional</span>
+<span class="sd">        Number of trials to estimate the null distribution. Default is 100.</span>
+<span class="sd">    permutation : bool, optional</span>
+<span class="sd">        Whether to use the permutation method for the null hypothesis. Default is True.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] : https://arxiv.org/abs/2306.03580, https://github.com/JuliaLinhart/lc2st</span>
+<span class="sd">    [2] : https://github.com/sbi-dev/sbi/blob/main/sbi/utils/metrics.py</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">thetas</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">xs</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">posterior_samples</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">num_folds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">num_ensemble</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">classifier</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseEstimator</span><span class="p">]]</span> <span class="o">=</span> <span class="n">MLPClassifier</span><span class="p">,</span>
+        <span class="n">z_score</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">classifier_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_trials_null</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">permutation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">thetas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">xs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Number of samples must match, got </span><span class="si">{</span><span class="n">thetas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">xs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># set observed data for classification</span>
+<div class="viewcode-block" id="LC2ST.theta_p">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.theta_p">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span> <span class="o">=</span> <span class="n">posterior_samples</span></div>
+
+<div class="viewcode-block" id="LC2ST.x_p">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.x_p">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_p</span> <span class="o">=</span> <span class="n">xs</span></div>
+
+<div class="viewcode-block" id="LC2ST.theta_q">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.theta_q">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span> <span class="o">=</span> <span class="n">thetas</span></div>
+
+<div class="viewcode-block" id="LC2ST.x_q">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.x_q">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_q</span> <span class="o">=</span> <span class="n">xs</span></div>
+
+
+        <span class="c1"># z-score normalization parameters</span>
+<div class="viewcode-block" id="LC2ST.z_score">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.z_score">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span> <span class="o">=</span> <span class="n">z_score</span></div>
+
+<div class="viewcode-block" id="LC2ST.theta_p_mean">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.theta_p_mean">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LC2ST.theta_p_std">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.theta_p_std">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LC2ST.x_p_mean">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.x_p_mean">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LC2ST.x_p_std">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.x_p_std">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+        <span class="c1"># set parameters for classifier training</span>
+<div class="viewcode-block" id="LC2ST.seed">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.seed">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span></div>
+
+<div class="viewcode-block" id="LC2ST.rngs">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.rngs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LC2ST.num_folds">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.num_folds">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_folds</span> <span class="o">=</span> <span class="n">num_folds</span></div>
+
+<div class="viewcode-block" id="LC2ST.num_ensemble">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.num_ensemble">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_ensemble</span> <span class="o">=</span> <span class="n">num_ensemble</span></div>
+
+
+        <span class="c1"># initialize classifier</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classifier</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">classifier</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;mlp&quot;</span><span class="p">:</span>
+                <span class="n">classifier</span> <span class="o">=</span> <span class="n">MLPClassifier</span>
+            <span class="k">elif</span> <span class="n">classifier</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;random_forest&quot;</span><span class="p">:</span>
+                <span class="n">classifier</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Invalid classifier: &quot;</span><span class="si">{</span><span class="n">classifier</span><span class="si">}</span><span class="s1">&quot;.&#39;</span>
+                    <span class="s1">&#39;Expected &quot;mlp&quot;, &quot;random_forest&quot;, &#39;</span>
+                    <span class="s2">&quot;or a valid scikit-learn classifier class.&quot;</span>
+                <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span>
+            <span class="n">classifier</span><span class="p">,</span> <span class="n">BaseEstimator</span>
+        <span class="p">),</span> <span class="s2">&quot;classier must either be a string or a subclass of BaseEstimator.&quot;</span>
+<div class="viewcode-block" id="LC2ST.clf_class">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.clf_class">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clf_class</span> <span class="o">=</span> <span class="n">classifier</span></div>
+
+
+        <span class="c1"># for MLPClassifier, set default parameters</span>
+        <span class="k">if</span> <span class="n">classifier_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clf_class</span> <span class="o">==</span> <span class="n">MLPClassifier</span><span class="p">:</span>
+                <span class="n">ndim</span> <span class="o">=</span> <span class="n">thetas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;activation&quot;</span><span class="p">:</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;hidden_layer_sizes&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">),</span>
+                    <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+                    <span class="s2">&quot;solver&quot;</span><span class="p">:</span> <span class="s2">&quot;adam&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;early_stopping&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;n_iter_no_change&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># initialize classifiers, will be set after training</span>
+<div class="viewcode-block" id="LC2ST.trained_clfs">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.trained_clfs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="LC2ST.trained_clfs_null">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.trained_clfs_null">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs_null</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+        <span class="c1"># parameters for the null hypothesis testing</span>
+<div class="viewcode-block" id="LC2ST.num_trials_null">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.num_trials_null">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_trials_null</span> <span class="o">=</span> <span class="n">num_trials_null</span></div>
+
+<div class="viewcode-block" id="LC2ST.permutation">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.permutation">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span> <span class="o">=</span> <span class="n">permutation</span></div>
+
+        <span class="c1"># can be specified if known and independent of x (see `LC2ST-NF`)</span>
+<div class="viewcode-block" id="LC2ST.null_distribution">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.null_distribution">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="LC2ST._train">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST._train">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_train</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theta_p</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">theta_q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_p</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">verbosity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the classifiers trained on observed data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta_p : Array</span>
+<span class="sd">            Samples from P, of shape (sample_size, dim).</span>
+<span class="sd">        theta_q : Array</span>
+<span class="sd">            Samples from Q, of shape (sample_size, dim).</span>
+<span class="sd">        x_p : Array</span>
+<span class="sd">            Observations corresponding to P, of shape (sample_size, dim_x).</span>
+<span class="sd">        x_q : Array</span>
+<span class="sd">            Observations corresponding to Q, of shape (sample_size, dim_x).</span>
+<span class="sd">        verbosity : int, optional</span>
+<span class="sd">            Verbosity level. Default is 0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List[Any]</span>
+<span class="sd">            List of trained classifiers for each cv fold.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># prepare data</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
+            <span class="n">theta_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_p</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
+            <span class="n">theta_q</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_q</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
+            <span class="n">x_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_p</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+            <span class="n">x_q</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_q</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+
+        <span class="c1"># initialize classifier</span>
+        <span class="n">clf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clf_class</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span> <span class="ow">or</span> <span class="p">{})</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_ensemble</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">clf</span> <span class="o">=</span> <span class="n">EnsembleClassifier</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_ensemble</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="n">verbosity</span><span class="p">)</span>
+
+        <span class="c1"># cross-validation</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_folds</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">trained_clfs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">kf</span> <span class="o">=</span> <span class="n">KFold</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_folds</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+            <span class="n">cv_splits</span> <span class="o">=</span> <span class="n">kf</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">theta_p</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">train_idx</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+                <span class="n">cv_splits</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Cross-validation&quot;</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="n">verbosity</span> <span class="o">&lt;</span> <span class="mi">1</span>
+            <span class="p">):</span>
+                <span class="c1"># get train split</span>
+                <span class="n">theta_p_train</span><span class="p">,</span> <span class="n">theta_q_train</span> <span class="o">=</span> <span class="n">theta_p</span><span class="p">[</span><span class="n">train_idx</span><span class="p">],</span> <span class="n">theta_q</span><span class="p">[</span><span class="n">train_idx</span><span class="p">]</span>
+                <span class="n">x_p_train</span><span class="p">,</span> <span class="n">x_q_train</span> <span class="o">=</span> <span class="n">x_p</span><span class="p">[</span><span class="n">train_idx</span><span class="p">],</span> <span class="n">x_q</span><span class="p">[</span><span class="n">train_idx</span><span class="p">]</span>
+
+                <span class="c1"># train classifier</span>
+                <span class="n">clf_n</span> <span class="o">=</span> <span class="n">train_lc2st</span><span class="p">(</span>
+                    <span class="n">theta_p_train</span><span class="p">,</span> <span class="n">theta_q_train</span><span class="p">,</span> <span class="n">x_p_train</span><span class="p">,</span> <span class="n">x_q_train</span><span class="p">,</span> <span class="n">clf</span>
+                <span class="p">)</span>
+
+                <span class="n">trained_clfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clf_n</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># train single classifier</span>
+            <span class="n">clf</span> <span class="o">=</span> <span class="n">train_lc2st</span><span class="p">(</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">,</span> <span class="n">x_p</span><span class="p">,</span> <span class="n">x_q</span><span class="p">,</span> <span class="n">clf</span><span class="p">)</span>
+            <span class="n">trained_clfs</span> <span class="o">=</span> <span class="p">[</span><span class="n">clf</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">trained_clfs</span></div>
+
+
+<div class="viewcode-block" id="LC2ST.get_scores">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.get_scores">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_scores</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theta_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">trained_clfs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">return_probs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the L-C2ST scores given the trained classifiers.</span>
+
+<span class="sd">        Mean squared error (MSE) between 0.5 and the predicted probabilities</span>
+<span class="sd">        of being in class 0 over the dataset (`theta_o`, `x_o`).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta_o : Array</span>
+<span class="sd">            Samples from the posterior conditioned on the observation `x_o`,</span>
+<span class="sd">            of shape (sample_size, dim).</span>
+<span class="sd">        x_o : Array</span>
+<span class="sd">            The observation, of shape (,dim_x).</span>
+<span class="sd">        trained_clfs : List[Any]</span>
+<span class="sd">            List of trained classifiers, of length `num_folds`.</span>
+<span class="sd">        return_probs : bool, optional</span>
+<span class="sd">            Whether to return the predicted probabilities of being in P. Default is False.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]</span>
+<span class="sd">            - scores: L-C2ST scores at `x_o`, of shape (`num_folds`,).</span>
+<span class="sd">            - (probs, scores): Predicted probabilities and L-C2ST scores at `x_o`,</span>
+<span class="sd">              each of shape (`num_folds`,).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">x_o</span> <span class="o">=</span> <span class="n">x_o</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+
+        <span class="c1"># prepare data</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
+            <span class="n">theta_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_o</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
+            <span class="n">x_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_o</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+
+        <span class="n">probs</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+
+        <span class="c1"># evaluate classifiers</span>
+        <span class="k">for</span> <span class="n">clf</span> <span class="ow">in</span> <span class="n">trained_clfs</span><span class="p">:</span>
+            <span class="n">proba</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">eval_lc2st</span><span class="p">(</span><span class="n">theta_o</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">clf</span><span class="p">,</span> <span class="n">return_proba</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">proba</span><span class="p">)</span>
+            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+        <span class="n">probs</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">probs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">return_probs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">probs</span><span class="p">,</span> <span class="n">scores</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">scores</span></div>
+
+
+<div class="viewcode-block" id="LC2ST.train_on_observed_data">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.train_on_observed_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">train_on_observed_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbosity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Trains the classifier on the observed data.</span>
+
+<span class="sd">        Saves the trained classifier(s) as a list of length `num_folds`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        seed : int, optional</span>
+<span class="sd">            Random state of the classifier. Default is None.</span>
+<span class="sd">        verbosity : int, optional</span>
+<span class="sd">            Verbosity level. Default is 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set random state</span>
+        <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;random_state&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: changing the random state of the classifier.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seed</span>
+
+        <span class="c1"># train the classifier</span>
+        <span class="n">trained_clfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_train</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_q</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="n">verbosity</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span> <span class="o">=</span> <span class="n">trained_clfs</span></div>
+
+
+<div class="viewcode-block" id="LC2ST.get_statistic_on_observed_data">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.get_statistic_on_observed_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_statistic_on_observed_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theta_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the L-C2ST statistics for the observed data.</span>
+
+<span class="sd">        Mean over all cv-scores.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta_o : Array</span>
+<span class="sd">            Samples from the posterior conditioned on the observation `x_o`,</span>
+<span class="sd">            of shape (sample_size, dim).</span>
+<span class="sd">        x_o : Array</span>
+<span class="sd">            The observation, of shape (, dim_x)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            L-C2ST statistic at `x_o`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">),</span> <span class="s2">&quot;No trained classifiers found. Run `train_on_observed_data` first.&quot;</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_scores</span><span class="p">(</span>
+            <span class="n">theta_o</span><span class="o">=</span><span class="n">theta_o</span><span class="p">,</span>
+            <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">,</span>
+            <span class="n">trained_clfs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span><span class="p">,</span>
+            <span class="n">return_probs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="LC2ST.p_value">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.p_value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_value</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theta_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Computes the p-value for L-C2ST.</span>
+
+<span class="sd">        The p-value is the proportion of times the L-C2ST statistic under the null</span>
+<span class="sd">        hypothesis is greater than the L-C2ST statistic at the observation `x_o`.</span>
+<span class="sd">        It is computed by taking the empirical mean over statistics computed on</span>
+<span class="sd">        several trials under the null hypothesis: $1/H \sum_{h=1}^{H} I(T_h &lt; T_o)$.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta_o : Array</span>
+<span class="sd">            Samples from the posterior conditioned on the observation `x_o`,</span>
+<span class="sd">            of dhape (sample_size, dim).</span>
+<span class="sd">        x_o : Array</span>
+<span class="sd">            The observation, of shape (, dim_x).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            p-value for L-C2ST at `x_o`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stat_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_statistic_on_observed_data</span><span class="p">(</span><span class="n">theta_o</span><span class="o">=</span><span class="n">theta_o</span><span class="p">,</span> <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">stats_null</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_statistics_under_null_hypothesis</span><span class="p">(</span>
+            <span class="n">theta_o</span><span class="o">=</span><span class="n">theta_o</span><span class="p">,</span> <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">,</span> <span class="n">return_probs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">stat_data</span> <span class="o">&lt;</span> <span class="n">stats_null</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="LC2ST.reject_test">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.reject_test">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reject_test</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theta_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the test result for L-C2ST at a given significance level.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta_o : Array</span>
+<span class="sd">            Samples from the posterior conditioned on the observation `x_o`,</span>
+<span class="sd">            of shape (sample_size, dim).</span>
+<span class="sd">        x_o : Array</span>
+<span class="sd">            The observation, of shape (, dim_x).</span>
+<span class="sd">        alpha : float, optional</span>
+<span class="sd">            Significance level. Default is 0.05.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            The L-C2ST result: True if rejected, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_value</span><span class="p">(</span><span class="n">theta_o</span><span class="o">=</span><span class="n">theta_o</span><span class="p">,</span> <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">alpha</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LC2ST.train_under_null_hypothesis">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.train_under_null_hypothesis">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">train_under_null_hypothesis</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">verbosity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the L-C2ST scores under the null hypothesis (H0).</span>
+<span class="sd">        Saves the trained classifiers for each null trial.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        verbosity : int, optional</span>
+<span class="sd">            Verbosity level. Default is 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">trained_clfs_null</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_trials_null</span><span class="p">),</span>
+            <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Training the classifiers under H0, permutation = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">disable</span><span class="o">=</span><span class="n">verbosity</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="c1"># prepare data</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">:</span>
+                <span class="n">joint_p</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">joint_q</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_q</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="c1"># permute data (same as permuting the labels)</span>
+                <span class="n">joint_p_perm</span><span class="p">,</span> <span class="n">joint_q_perm</span> <span class="o">=</span> <span class="n">permute_data</span><span class="p">(</span><span class="n">joint_p</span><span class="p">,</span> <span class="n">joint_q</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+                <span class="c1"># extract the permuted P and Q and x</span>
+                <span class="n">theta_p_t</span><span class="p">,</span> <span class="n">x_p_t</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">joint_p_perm</span><span class="p">[:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                    <span class="n">joint_p_perm</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">:],</span>
+                <span class="p">)</span>
+                <span class="n">theta_q_t</span><span class="p">,</span> <span class="n">x_q_t</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">joint_q_perm</span><span class="p">[:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                    <span class="n">joint_q_perm</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">:],</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="p">),</span> <span class="s2">&quot;You need to provide a null distribution&quot;</span>
+                <span class="n">theta_p_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
+                <span class="p">)</span>
+                <span class="n">theta_q_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
+                <span class="p">)</span>
+                <span class="n">x_p_t</span><span class="p">,</span> <span class="n">x_q_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_q</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
+                <span class="n">theta_p_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_p_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
+                <span class="n">theta_q_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_q_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
+                <span class="n">x_p_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_p_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+                <span class="n">x_q_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_q_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+
+            <span class="c1"># train</span>
+            <span class="n">clf_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_train</span><span class="p">(</span><span class="n">theta_p_t</span><span class="p">,</span> <span class="n">theta_q_t</span><span class="p">,</span> <span class="n">x_p_t</span><span class="p">,</span> <span class="n">x_q_t</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">trained_clfs_null</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">clf_t</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs_null</span> <span class="o">=</span> <span class="n">trained_clfs_null</span></div>
+
+
+<div class="viewcode-block" id="LC2ST.get_statistics_under_null_hypothesis">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.get_statistics_under_null_hypothesis">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_statistics_under_null_hypothesis</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theta_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">return_probs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">verbosity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the L-C2ST scores under the null hypothesis.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta_o : Array</span>
+<span class="sd">            Samples from the posterior conditioned on the observation `x_o`,</span>
+<span class="sd">            of shape (sample_size, dim).</span>
+<span class="sd">        x_o : Array</span>
+<span class="sd">            The observation, of shape (, dim_x).</span>
+<span class="sd">        return_probs : bool, optional</span>
+<span class="sd">            Whether to return the predicted probabilities of being in P. Default is False.</span>
+<span class="sd">        verbosity : int, optional</span>
+<span class="sd">            Verbosity level. Default is 1.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]</span>
+<span class="sd">            - scores: L-C2ST scores under (H0).</span>
+<span class="sd">            - (probs, scores): Predicted probabilities and L-C2ST scores under (H0).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs_null</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;You need to train the classifiers under (H0). </span><span class="se">\</span>
+<span class="s2">                    Run `train_under_null_hypothesis`.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs_null</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_trials_null</span>
+            <span class="p">),</span> <span class="s2">&quot;You need one classifier per trial.&quot;</span>
+
+        <span class="n">probs_null</span><span class="p">,</span> <span class="n">stats_null</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_trials_null</span><span class="p">),</span>
+            <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Computing T under (H0) - permutation = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">disable</span><span class="o">=</span><span class="n">verbosity</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="c1"># prepare data</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">:</span>
+                <span class="n">theta_o_t</span> <span class="o">=</span> <span class="n">theta_o</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="p">),</span> <span class="s2">&quot;You need to provide a null distribution&quot;</span>
+
+                <span class="n">theta_o_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="p">(</span><span class="n">theta_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
+                <span class="n">theta_o_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_o_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
+                <span class="n">x_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_o</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+
+            <span class="c1"># evaluate</span>
+            <span class="n">clf_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs_null</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+            <span class="n">probs</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_scores</span><span class="p">(</span>
+                <span class="n">theta_o</span><span class="o">=</span><span class="n">theta_o_t</span><span class="p">,</span> <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">,</span> <span class="n">trained_clfs</span><span class="o">=</span><span class="n">clf_t</span><span class="p">,</span> <span class="n">return_probs</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">probs_null</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+            <span class="n">stats_null</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+
+        <span class="n">probs_null</span><span class="p">,</span> <span class="n">stats_null</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">probs_null</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stats_null</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">return_probs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">probs_null</span><span class="p">,</span> <span class="n">stats_null</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">stats_null</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="train_lc2st">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.train_lc2st">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_lc2st</span><span class="p">(</span>
+    <span class="n">theta_p</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_p</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">clf</span><span class="p">:</span> <span class="n">BaseEstimator</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trains the classifier on the joint data for the L-C2ST.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    theta_p : Array</span>
+<span class="sd">        Samples from P, of shape (sample_size, dim).</span>
+<span class="sd">    theta_q : Array</span>
+<span class="sd">        Samples from Q, of shape (sample_size, dim).</span>
+<span class="sd">    x_p : Array</span>
+<span class="sd">        Observations corresponding to P, of shape (sample_size, dim_x).</span>
+<span class="sd">    x_q : Array</span>
+<span class="sd">        Observations corresponding to Q, of shape (sample_size, dim_x).</span>
+<span class="sd">    clf : BaseEstimator</span>
+<span class="sd">        Classifier to train.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Any</span>
+<span class="sd">        Trained classifier.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># concatenate to get joint data</span>
+    <span class="n">joint_p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">theta_p</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x_p</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">joint_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">theta_q</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x_q</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># prepare data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">joint_p</span><span class="p">,</span> <span class="n">joint_q</span><span class="p">))</span>
+    <span class="c1"># labels</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">joint_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">joint_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># train classifier</span>
+    <span class="n">clf_</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span>
+    <span class="n">clf_</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">return</span> <span class="n">clf_</span></div>
+
+
+
+<div class="viewcode-block" id="eval_lc2st">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.eval_lc2st">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">eval_lc2st</span><span class="p">(</span>
+    <span class="n">theta_p</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">clf</span><span class="p">:</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">return_proba</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Evaluates the classifier returned by `train_lc2st` for one observation</span>
+<span class="sd">    `x_o` and over the samples `P`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    theta_p : Array</span>
+<span class="sd">        Samples from p (class 0), of shape (sample_size, dim).</span>
+<span class="sd">    x_o : Array</span>
+<span class="sd">        The observation, of shape (1, dim_x).</span>
+<span class="sd">    clf : BaseEstimator</span>
+<span class="sd">        Trained classifier.</span>
+<span class="sd">    return_proba : bool, optional</span>
+<span class="sd">        Whether to return the predicted probabilities of being in P. Default is False.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Union[float, Tuple[np.ndarray, float]]</span>
+<span class="sd">        L-C2ST score at `x_o`: MSE between 0.5 and the predicted classifier</span>
+<span class="sd">        probability for class 0 on `theta_p`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># concatenate to get joint data</span>
+    <span class="n">joint_p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">theta_p</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="c1"># evaluate classifier</span>
+    <span class="c1"># probability of being in P (class 0)</span>
+    <span class="n">proba</span> <span class="o">=</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">joint_p</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+    <span class="c1"># mean squared error between proba and dirac at 0.5</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(((</span><span class="n">proba</span> <span class="o">-</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">proba</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">return_proba</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">proba</span><span class="p">,</span> <span class="n">score</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">score</span></div>
+
+
+
+<div class="viewcode-block" id="permute_data">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.permute_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">permute_data</span><span class="p">(</span><span class="n">theta_p</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Permutes the concatenated data [P,Q] to create null samples.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    theta_p : Array</span>
+<span class="sd">        Samples from P, of shape (sample_size, dim).</span>
+<span class="sd">    theta_q : Array</span>
+<span class="sd">        Samples from Q, of shape (sample_size, dim).</span>
+<span class="sd">    seed : int, optional</span>
+<span class="sd">        Random seed. Default is 1.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[Array, Array]</span>
+<span class="sd">        Permuted data [theta_p, theta_q].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="c1"># check inputs</span>
+    <span class="k">assert</span> <span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">theta_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">sample_size</span> <span class="o">=</span> <span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">x_perm</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">sample_size</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">x_perm</span><span class="p">[:</span><span class="n">sample_size</span><span class="p">],</span> <span class="n">x_perm</span><span class="p">[</span><span class="n">sample_size</span><span class="p">:]</span></div>
+
+
+
+<div class="viewcode-block" id="EnsembleClassifier">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.EnsembleClassifier">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EnsembleClassifier</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clf</span><span class="p">,</span> <span class="n">num_ensemble</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="EnsembleClassifier.clf">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.EnsembleClassifier.clf">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clf</span> <span class="o">=</span> <span class="n">clf</span></div>
+
+<div class="viewcode-block" id="EnsembleClassifier.num_ensemble">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.EnsembleClassifier.num_ensemble">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_ensemble</span> <span class="o">=</span> <span class="n">num_ensemble</span></div>
+
+<div class="viewcode-block" id="EnsembleClassifier.trained_clfs">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.EnsembleClassifier.trained_clfs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="EnsembleClassifier.verbosity">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.EnsembleClassifier.verbosity">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">verbosity</span></div>
+
+
+<div class="viewcode-block" id="EnsembleClassifier.fit">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.EnsembleClassifier.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ensemble</span><span class="p">),</span>
+            <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Ensemble training&quot;</span><span class="p">,</span>
+            <span class="n">disable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">clf</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clf</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+                <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="o">+=</span> <span class="n">n</span>  <span class="c1"># type: ignore</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># type: ignore</span>
+            <span class="n">clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EnsembleClassifier.predict_proba">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.EnsembleClassifier.predict_proba">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="n">probas</span> <span class="o">=</span> <span class="p">[</span><span class="n">clf</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="k">for</span> <span class="n">clf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">probas</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="plot_lc2st">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.plot_lc2st">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_lc2st</span><span class="p">(</span>
+    <span class="n">lc2st</span><span class="p">:</span> <span class="n">LC2ST</span><span class="p">,</span>
+    <span class="n">post_samples_star</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="n">fig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Figure</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">conf_alpha</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">]:</span>
+    
+    <span class="n">probs_data</span><span class="p">,</span> <span class="n">scores_data</span> <span class="o">=</span> <span class="n">lc2st</span><span class="o">.</span><span class="n">get_scores</span><span class="p">(</span>
+        <span class="n">theta_o</span><span class="o">=</span><span class="n">post_samples_star</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">,</span>
+        <span class="n">return_probs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">trained_clfs</span><span class="o">=</span><span class="n">lc2st</span><span class="o">.</span><span class="n">trained_clfs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">probs_null</span><span class="p">,</span> <span class="n">scores_null</span> <span class="o">=</span> <span class="n">lc2st</span><span class="o">.</span><span class="n">get_statistics_under_null_hypothesis</span><span class="p">(</span>
+        <span class="n">theta_o</span><span class="o">=</span><span class="n">post_samples_star</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">,</span>
+        <span class="n">return_probs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">p_value</span> <span class="o">=</span> <span class="n">lc2st</span><span class="o">.</span><span class="n">p_value</span><span class="p">(</span><span class="n">post_samples_star</span><span class="p">,</span> <span class="n">x_o</span><span class="p">)</span>
+    <span class="n">reject</span> <span class="o">=</span> <span class="n">lc2st</span><span class="o">.</span><span class="n">reject_test</span><span class="p">(</span><span class="n">post_samples_star</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">conf_alpha</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="p">)</span>
+        
+    <span class="n">quantiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">scores_null</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">conf_alpha</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">scores_null</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Null&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores_data</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Observed&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">quantiles</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">conf_alpha</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">% CI&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">quantiles</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Test statistic&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Density&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;p-value = </span><span class="si">{</span><span class="n">p_value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, reject = </span><span class="si">{</span><span class="n">reject</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span></div>
+
+</pre></div>
+<div class="section ablog__blog_comments">
+   
+</div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

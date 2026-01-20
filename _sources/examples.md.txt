@@ -89,6 +89,24 @@ The **SLCP** benchmark features a simple likelihood but a complex, multimodal po
 notebooks/slcp_flow_simformer
 ```
 
+### Advanced Examples: Custom Pipelines & Embeddings
+
+These advanced examples demonstrate how to write a custom embedding network for the Flux1 backbone using the `ConditionalFlowPipeline`. They showcase how to handle specific data structures (1D/2D) with custom architectures.
+
+**Lensing Example (2D)**
+Demonstrates how to embed 2D (mock) gravitational lensing data using a custom CNN.
+```{toctree}
+:maxdepth: 1
+notebooks/lensing_example
+```
+
+**Gravitational Waves Example (1D)**
+Demonstrates how to embed 1D (mock) gravitational waves data using a custom CNN.
+```{toctree}
+:maxdepth: 1
+notebooks/gw_example
+```
+
 ## Running the Examples
 
 ### Option 1: Google Colab (Easiest)
@@ -103,10 +121,10 @@ Most examples include a "Open in Colab" badge. Click it to run the notebook in G
    cd GenSBI-examples
    ```
 
-2. Install dependencies (see the [Installation Guide](/documentation/installation) for details):
+2. Install dependencies (see the [Installation Guide](/getting_started/installation) for details):
    ```bash
    pip install jupyter
-   pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
+   pip install "GenSBI[cuda12,examples] @ git+https://github.com/aurelio-amerio/GenSBI.git"
    ```
 
 3. Launch Jupyter:

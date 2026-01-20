@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="_static/thebelab.css" />
-    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
     <link rel="stylesheet" type="text/css" href="_static/jupyterlite_sphinx.css?v=8ee2c72c" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
@@ -47,8 +47,8 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="_static/doctools.js?v=9bcbadda"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=18a8d5f5"></script>
     <script src="_static/thebelab-helper.js"></script>
@@ -56,25 +56,22 @@
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script src="_static/togglebutton.js?v=1ae7504c"></script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
-    <script type="module">
-mermaid.initialize({
-    startOnLoad: true,
-    theme: 'neutral'
-});
-</script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
 
-const defaultStyle = document.createElement('style');
-defaultStyle.textContent = `pre.mermaid {
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
     /* Same as .mermaid-container > pre */
     display: block;
     width: 100%;
@@ -85,12 +82,11 @@ pre.mermaid > svg {
     height: 500px;
     width: 100%;
     max-width: 100% !important;
-}
-`;
-document.head.appendChild(defaultStyle);
+}`;
+    document.head.appendChild(defaultStyle);
 
-const fullscreenStyle = document.createElement('style');
-fullscreenStyle.textContent = `.mermaid-container {
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
     display: flex;
     flex-direction: row;
     width: 100%;
@@ -242,10 +238,32 @@ fullscreenStyle.textContent = `.mermaid-container {
 .mermaid-fullscreen-modal .mermaid-fullscreen-btn {
     display: none !important;
 }`;
-document.head.appendChild(fullscreenStyle);
+    document.head.appendChild(fullscreenStyle);
+}
 
 // Detect if page has dark background
 const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
     const bgColor = window.getComputedStyle(document.body).backgroundColor;
     const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
     if (match) {
@@ -253,15 +271,45 @@ const isDarkTheme = () => {
         const g = parseInt(match[2]);
         const b = parseInt(match[3]);
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
         return brightness < 128;
     }
+    // console.log("No dark or light theme detected, defaulting to light theme");
     return false;
 };
 
-const load = async () => {
-    await mermaid.run();
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
 
-    const all_mermaids = document.querySelectorAll(".mermaid");
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
     const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
 
     if ("False" === "True") {
@@ -269,10 +317,10 @@ const load = async () => {
         if(mermaids_to_add_zoom > 0) {
             var svgs = d3.selectAll("");
             if(all_mermaids.length !== mermaids_processed.length) {
-                setTimeout(load, 200);
+                setTimeout(() => runMermaid(false), 200);
                 return;
             } else if(svgs.size() !== mermaids_to_add_zoom) {
-                setTimeout(load, 200);
+                setTimeout(() => runMermaid(false), 200);
                 return;
             } else {
                 svgs.each(function() {
@@ -288,16 +336,21 @@ const load = async () => {
         }
     } else if(all_mermaids.length !== mermaids_processed.length) {
         // Wait for mermaid to process all diagrams
-        setTimeout(load, 200);
+        setTimeout(() => runMermaid(false), 200);
         return;
     }
-
-    const darkTheme = isDarkTheme();
 
     // Stop here if not adding fullscreen capability
     if ("True" !== "True") return;
 
-    const modal = document.createElement('div');
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
     modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
@@ -308,10 +361,8 @@ const load = async () => {
     `;
     document.body.appendChild(modal);
 
-    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
-
-    let previousScrollOffset = [window.scrollX, window.scrollY];
 
     const closeModal = () => {
         modal.classList.remove('active');
@@ -330,11 +381,14 @@ const load = async () => {
         }
     });
 
-    const allButtons = [];
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
             return;
         }
 
@@ -392,46 +446,57 @@ const load = async () => {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
-
         container.appendChild(fullscreenBtn);
-        allButtons.push(fullscreenBtn);
-    });
-
-    // Update theme classes when theme changes
-    const updateTheme = () => {
-        const dark = isDarkTheme();
-        allButtons.forEach(btn => {
-            if (dark) {
-                btn.classList.add('dark-theme');
-            } else {
-                btn.classList.remove('dark-theme');
-            }
-        });
-        if (dark) {
-            modal.classList.add('dark-theme');
-            modalContent.classList.add('dark-theme');
-            closeBtn.classList.add('dark-theme');
-        } else {
-            modal.classList.remove('dark-theme');
-            modalContent.classList.remove('dark-theme');
-            closeBtn.classList.remove('dark-theme');
-        }
-    };
-
-    // Watch for theme changes
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class', 'style', 'data-theme']
-    });
-    observer.observe(document.body, {
-        attributes: true,
-        attributeFilter: ['class', 'style']
     });
 };
 
-window.addEventListener("load", load);
-</script>
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
     <link rel="icon" href="_static/logo_small.png"/>
     <link rel="index" title="Index" href="#" />
@@ -969,6 +1034,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper.__call__">(gensbi.utils.model_wrapping.ModelWrapper method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.__post_init__">__post_init__() (gensbi.models.flux1.Flux1Params method)</a>
 
       <ul>
@@ -991,33 +1058,15 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/index.html#gensbi.__version__">__version__ (in module gensbi)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/utils/math/index.html#gensbi.utils.math._expand_dims">_expand_dims() (in module gensbi.utils.math)</a>
 </li>
       <li><a href="api/gensbi/utils/math/index.html#gensbi.utils.math._expand_time">_expand_time() (in module gensbi.utils.math)</a>
 </li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._get_batch_sampler">_get_batch_sampler() (in module gensbi.recipes.pipeline)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline._get_default_params">_get_default_params() (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline method)</a>
+      <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._get_default_params">_get_default_params() (gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline._get_default_params">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline._get_default_params">(gensbi.experimental.recipes.Flux1LatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline._get_default_params">(gensbi.experimental.recipes.Flux1LatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline._get_default_params">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline._get_default_params">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline._get_default_params">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline._get_default_params">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._get_default_params">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
-</li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline._get_default_params">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalDiffusionPipeline._get_default_params">(gensbi.recipes.ConditionalDiffusionPipeline method)</a>
@@ -1067,28 +1116,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalFlowPipeline._get_default_params">(gensbi.recipes.UnconditionalFlowPipeline method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline._get_default_training_config">_get_default_training_config() (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline class method)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline._get_default_training_config">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_default_training_config">(gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._get_default_training_config">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalDiffusionPipeline._get_default_training_config">(gensbi.recipes.ConditionalDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointDiffusionPipeline._get_default_training_config">(gensbi.recipes.joint_pipeline.JointDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointDiffusionPipeline._get_default_training_config">(gensbi.recipes.JointDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_default_training_config">(gensbi.recipes.pipeline.AbstractPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline._get_default_training_config">(gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalDiffusionPipeline._get_default_training_config">(gensbi.recipes.UnconditionalDiffusionPipeline class method)</a>
-</li>
-      </ul></li>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_ema_optimizer">_get_ema_optimizer() (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
 
       <ul>
@@ -1103,25 +1130,9 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_optimizer">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline._make_model">_make_model() (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline method)</a>
+      <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._make_model">_make_model() (gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline._make_model">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline._make_model">(gensbi.experimental.recipes.Flux1LatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline._make_model">(gensbi.experimental.recipes.Flux1LatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline._make_model">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline._make_model">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline._make_model">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline._make_model">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._make_model">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
-</li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline._make_model">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalDiffusionPipeline._make_model">(gensbi.recipes.ConditionalDiffusionPipeline method)</a>
@@ -1173,45 +1184,61 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._parse_range">_parse_range() (in module gensbi.utils.plotting)</a>
 </li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity">_plot_cdf_region_expected_under_uniformity() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._plot_hist_region_expected_under_uniformity">_plot_hist_region_expected_under_uniformity() (in module gensbi.diagnostics.sbc)</a>
+</li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_marginals_corner">_plot_marginals_corner() (in module gensbi.utils.plotting)</a>
 </li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_marginals_seaborn">_plot_marginals_seaborn() (in module gensbi.utils.plotting)</a>
 </li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper._process_x">_process_x() (gensbi.validation.distribution_wrapper.PosteriorWrapper method)</a>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._plot_ranks_as_cdf">_plot_ranks_as_cdf() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._plot_ranks_as_hist">_plot_ranks_as_hist() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._prepare_reduce_functions">_prepare_reduce_functions() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._process_x">_process_x() (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper method)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper._process_x">(gensbi.validation.PosteriorWrapper method)</a>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper._process_x">(gensbi.diagnostics.PosteriorWrapper method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper._ravel">_ravel() (gensbi.validation.distribution_wrapper.PosteriorWrapper method)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._ravel">_ravel() (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper method)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper._ravel">(gensbi.validation.PosteriorWrapper method)</a>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper._ravel">(gensbi.diagnostics.PosteriorWrapper method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper._unravel_theta">_unravel_theta() (gensbi.validation.distribution_wrapper.PosteriorWrapper method)</a>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._run_sbc">_run_sbc() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp._run_tarp">_run_tarp() (in module gensbi.diagnostics.tarp)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._sbc_rank_plot">_sbc_rank_plot() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST._train">_train() (gensbi.diagnostics.LC2ST method)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper._unravel_theta">(gensbi.validation.PosteriorWrapper method)</a>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST._train">(gensbi.diagnostics.lc2st.LC2ST method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper._unravel_xs">_unravel_xs() (gensbi.validation.distribution_wrapper.PosteriorWrapper method)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._unravel_theta">_unravel_theta() (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper method)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper._unravel_xs">(gensbi.validation.PosteriorWrapper method)</a>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper._unravel_theta">(gensbi.diagnostics.PosteriorWrapper method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline._wrap_model">_wrap_model() (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline method)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._unravel_xs">_unravel_xs() (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper method)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline._wrap_model">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper._unravel_xs">(gensbi.diagnostics.PosteriorWrapper method)</a>
 </li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline._wrap_model">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline method)</a>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._validate_sbc_inputs">_validate_sbc_inputs() (in module gensbi.diagnostics.sbc)</a>
 </li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline._wrap_model">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._wrap_model">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
-</li>
+      <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline._wrap_model">_wrap_model() (gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
+
+      <ul>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline._wrap_model">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalDiffusionPipeline._wrap_model">(gensbi.recipes.ConditionalDiffusionPipeline method)</a>
@@ -1269,10 +1296,10 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/models/flux1/math/index.html#gensbi.models.flux1.math.apply_rope">apply_rope() (in module gensbi.models.flux1.math)</a>
 </li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.args">args (gensbi.validation.distribution_wrapper.PosteriorWrapper attribute)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.args">args (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.args">(gensbi.validation.PosteriorWrapper attribute)</a>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.args">(gensbi.diagnostics.PosteriorWrapper attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/flow_matching/path/path/index.html#gensbi.flow_matching.path.path.ProbPath.assert_sample_shape">assert_sample_shape() (gensbi.flow_matching.path.path.ProbPath method)</a>
@@ -1391,6 +1418,12 @@ window.addEventListener("load", load);
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/diagnostics/metrics/index.html#gensbi.diagnostics.metrics.c2st">c2st() (in module gensbi.diagnostics.metrics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/metrics/c2st/index.html#gensbi.diagnostics.metrics.c2st.c2st">(in module gensbi.diagnostics.metrics.c2st)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.BaseSDE.c_in">c_in() (gensbi.diffusion.path.scheduler.edm.BaseSDE method)</a>
 
       <ul>
@@ -1479,17 +1512,9 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.AutoEncoderParams.ch">(gensbi.experimental.models.autoencoders.commons.AutoEncoderParams attribute)</a>, <a href="api/gensbi/experimental/models/autoencoders/commons/index.html#id0">[1]</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.ch_cond">ch_cond (gensbi.experimental.recipes.Flux1LatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.ch_cond">ch_cond (gensbi.recipes.flux1.Flux1DiffusionPipeline attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.ch_cond">(gensbi.experimental.recipes.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.ch_cond">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.ch_cond">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.ch_cond">(gensbi.recipes.flux1.Flux1DiffusionPipeline attribute)</a>
-</li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1FlowPipeline.ch_cond">(gensbi.recipes.flux1.Flux1FlowPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.Flux1DiffusionPipeline.ch_cond">(gensbi.recipes.Flux1DiffusionPipeline attribute)</a>
@@ -1507,17 +1532,9 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.AutoEncoderParams.ch_mult">(gensbi.experimental.models.autoencoders.commons.AutoEncoderParams attribute)</a>, <a href="api/gensbi/experimental/models/autoencoders/commons/index.html#id1">[1]</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.ch_obs">ch_obs (gensbi.experimental.recipes.Flux1LatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.ch_obs">ch_obs (gensbi.recipes.flux1.Flux1DiffusionPipeline attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.ch_obs">(gensbi.experimental.recipes.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.ch_obs">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.ch_obs">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.ch_obs">(gensbi.recipes.flux1.Flux1DiffusionPipeline attribute)</a>
-</li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1FlowPipeline.ch_obs">(gensbi.recipes.flux1.Flux1FlowPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.Flux1DiffusionPipeline.ch_obs">(gensbi.recipes.Flux1DiffusionPipeline attribute)</a>
@@ -1543,70 +1560,58 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.SimformerFlowPipeline.ch_obs">(gensbi.recipes.SimformerFlowPipeline attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/metrics/index.html#gensbi.diagnostics.metrics.check_c2st">check_c2st() (in module gensbi.diagnostics.metrics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/metrics/c2st/index.html#gensbi.diagnostics.metrics.c2st.check_c2st">(in module gensbi.diagnostics.metrics.c2st)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc.check_prior_vs_dap">check_prior_vs_dap() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.check_sbc">check_sbc() (in module gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc.check_sbc">(in module gensbi.diagnostics.sbc)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.check_tarp">check_tarp() (in module gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp.check_tarp">(in module gensbi.diagnostics.tarp)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc.check_uniformity_c2st">check_uniformity_c2st() (in module gensbi.diagnostics.sbc)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc.check_uniformity_frequentist">check_uniformity_frequentist() (in module gensbi.diagnostics.sbc)</a>
+</li>
       <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.DiagonalGaussian.chunk_dim">chunk_dim (gensbi.experimental.models.autoencoders.commons.DiagonalGaussian attribute)</a>
 </li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.clf">clf (gensbi.diagnostics.lc2st.EnsembleClassifier attribute)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.clf_class">clf_class (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.clf_class">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.cmap_lcontour">cmap_lcontour (in module gensbi.utils.plotting)</a>
 </li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.colors">colors (in module gensbi.utils.plotting)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.compute_unnorm_logprob">compute_unnorm_logprob() (gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.compute_unnorm_logprob">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.ConditionalFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.joint_pipeline.JointFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.JointFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/simformer/index.html#gensbi.recipes.simformer.SimformerFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.simformer.SimformerFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.SimformerFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.SimformerFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.unconditional_pipeline.UnconditionalFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalFlowPipeline.compute_unnorm_logprob">(gensbi.recipes.UnconditionalFlowPipeline method)</a>
-</li>
-      </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.cond_attn">cond_attn (gensbi.models.flux1.layers.DoubleStreamBlock attribute)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.cond_ids">cond_ids (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.cond_ids">cond_ids (gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.cond_ids">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.cond_ids">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.cond_ids">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.cond_ids">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline attribute)</a>
-</li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline.cond_ids">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalDiffusionPipeline.cond_ids">(gensbi.recipes.ConditionalDiffusionPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.cond_ids">(gensbi.recipes.ConditionalFlowPipeline attribute)</a>
 </li>
-        <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.cond_ids">(gensbi.recipes.flux1.Flux1DiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.Flux1DiffusionPipeline.cond_ids">(gensbi.recipes.Flux1DiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointDiffusionPipeline.cond_ids">(gensbi.recipes.joint_pipeline.JointDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointFlowPipeline.cond_ids">(gensbi.recipes.joint_pipeline.JointFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointDiffusionPipeline.cond_ids">(gensbi.recipes.JointDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointFlowPipeline.cond_ids">(gensbi.recipes.JointFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.cond_ids">(gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
-</li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1.cond_in">cond_in (gensbi.models.Flux1 attribute)</a>
 
       <ul>
@@ -1631,15 +1636,9 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1JointParams.condition_dim">(gensbi.models.Flux1JointParams attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1.condition_embedding">condition_embedding (gensbi.models.Flux1 attribute)</a>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Joint.condition_embedding">condition_embedding (gensbi.models.Flux1Joint attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1.condition_embedding">(gensbi.models.flux1.Flux1 attribute)</a>
-</li>
-        <li><a href="api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.model.Flux1.condition_embedding">(gensbi.models.flux1.model.Flux1 attribute)</a>
-</li>
-        <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Joint.condition_embedding">(gensbi.models.Flux1Joint attribute)</a>
-</li>
         <li><a href="api/gensbi/models/flux1joint/index.html#gensbi.models.flux1joint.Flux1Joint.condition_embedding">(gensbi.models.flux1joint.Flux1Joint attribute)</a>
 </li>
         <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1Joint.condition_embedding">(gensbi.models.flux1joint.model.Flux1Joint attribute)</a>
@@ -1659,14 +1658,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointDiffusionPipeline.condition_mask_kind">(gensbi.recipes.JointDiffusionPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointFlowPipeline.condition_mask_kind">(gensbi.recipes.JointFlowPipeline attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1.condition_null">condition_null (gensbi.models.Flux1 attribute)</a>
-
-      <ul>
-        <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1.condition_null">(gensbi.models.flux1.Flux1 attribute)</a>
-</li>
-        <li><a href="api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.model.Flux1.condition_null">(gensbi.models.flux1.model.Flux1 attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.ConditionalCFMLoss">ConditionalCFMLoss (class in gensbi.models)</a>
@@ -1695,18 +1686,6 @@ window.addEventListener("load", load);
 
       <ul>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline">(class in gensbi.recipes.conditional_pipeline)</a>
-</li>
-      </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline">ConditionalLatentDiffusionPipeline (class in gensbi.experimental.recipes)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline">(class in gensbi.experimental.recipes.latent_conditional_pipeline)</a>
-</li>
-      </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline">ConditionalLatentFlowPipeline (class in gensbi.experimental.recipes)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline">(class in gensbi.experimental.recipes.latent_conditional_pipeline)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.ConditionalWrapper">ConditionalWrapper (class in gensbi.models)</a>
@@ -1861,10 +1840,10 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D.Decoder2D">(gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.default_x">default_x (gensbi.validation.distribution_wrapper.PosteriorWrapper attribute)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.default_x">default_x (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.default_x">(gensbi.validation.PosteriorWrapper attribute)</a>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.default_x">(gensbi.diagnostics.PosteriorWrapper attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.BaseSDE.denoise">denoise() (gensbi.diffusion.path.scheduler.edm.BaseSDE method)</a>
@@ -1899,17 +1878,9 @@ window.addEventListener("load", load);
 </li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.EmbedND.dim">dim (gensbi.models.flux1.layers.EmbedND attribute)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.dim_cond">dim_cond (gensbi.experimental.recipes.Flux1LatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.dim_cond">dim_cond (gensbi.models.flux1.Flux1Params attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.dim_cond">(gensbi.experimental.recipes.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.dim_cond">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.dim_cond">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.dim_cond">(gensbi.models.flux1.Flux1Params attribute)</a>
-</li>
         <li><a href="api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.model.Flux1Params.dim_cond">(gensbi.models.flux1.model.Flux1Params attribute)</a>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.dim_cond">(gensbi.models.Flux1Params attribute)</a>
@@ -1976,7 +1947,9 @@ window.addEventListener("load", load);
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.Flux1JointFlowPipeline.dim_joint">(gensbi.recipes.Flux1JointFlowPipeline attribute)</a>
 </li>
-        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.dim_joint">(gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
+        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointFlowPipeline.dim_joint">(gensbi.recipes.joint_pipeline.JointFlowPipeline attribute)</a>
+</li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointFlowPipeline.dim_joint">(gensbi.recipes.JointFlowPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/simformer/index.html#gensbi.recipes.simformer.SimformerDiffusionPipeline.dim_joint">(gensbi.recipes.simformer.SimformerDiffusionPipeline attribute)</a>
 </li>
@@ -1987,17 +1960,9 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.SimformerFlowPipeline.dim_joint">(gensbi.recipes.SimformerFlowPipeline attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.dim_obs">dim_obs (gensbi.experimental.recipes.Flux1LatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.dim_obs">dim_obs (gensbi.models.flux1.Flux1Params attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.dim_obs">(gensbi.experimental.recipes.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.dim_obs">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.dim_obs">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.dim_obs">(gensbi.models.flux1.Flux1Params attribute)</a>
-</li>
         <li><a href="api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.model.Flux1Params.dim_obs">(gensbi.models.flux1.model.Flux1Params attribute)</a>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.dim_obs">(gensbi.models.Flux1Params attribute)</a>
@@ -2103,17 +2068,9 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.EDMScheduler">(class in gensbi.diffusion.path.scheduler.edm)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.ema_model">ema_model (gensbi.experimental.recipes.Flux1LatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.ema_model">ema_model (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.ema_model">(gensbi.experimental.recipes.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.ema_model">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.ema_model">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.ema_model">(gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline attribute)</a>
-</li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.ema_model">(gensbi.recipes.flux1.Flux1DiffusionPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1FlowPipeline.ema_model">(gensbi.recipes.flux1.Flux1FlowPipeline attribute)</a>
@@ -2139,8 +2096,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.SimformerFlowPipeline.ema_model">(gensbi.recipes.SimformerFlowPipeline attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.ema_model_wrapped">ema_model_wrapped (gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
 </li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.ema_step">ema_step() (in module gensbi.recipes.pipeline)</a>
@@ -2151,6 +2106,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.Embed">(class in gensbi.models.embedding.embedding)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/embedding/index.html#gensbi.models.embedding.Embed.embed">embed (gensbi.models.embedding.Embed attribute)</a>
 
       <ul>
@@ -2209,6 +2166,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D.Encoder2D">(gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier">EnsembleClassifier (class in gensbi.diagnostics.lc2st)</a>
+</li>
       <li><a href="api/gensbi/flow_matching/path/affine/index.html#gensbi.flow_matching.path.affine.AffineProbPath.epsilon_to_target">epsilon_to_target() (gensbi.flow_matching.path.affine.AffineProbPath method)</a>
 
       <ul>
@@ -2221,6 +2180,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/flow_matching/path/index.html#gensbi.flow_matching.path.AffineProbPath.epsilon_to_velocity">(gensbi.flow_matching.path.AffineProbPath method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.eval_lc2st">eval_lc2st() (in module gensbi.diagnostics.lc2st)</a>
+</li>
       <li><a href="api/gensbi/flow_matching/utils/index.html#gensbi.flow_matching.utils.expand_tensor_like">expand_tensor_like() (in module gensbi.flow_matching.utils)</a>
 
       <ul>
@@ -2267,6 +2228,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1Joint.final_layer">(gensbi.models.flux1joint.model.Flux1Joint attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.fit">fit() (gensbi.diagnostics.lc2st.EnsembleClassifier method)</a>
+</li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1">Flux1 (class in gensbi.models)</a>
 
       <ul>
@@ -2281,14 +2244,14 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline">(class in gensbi.recipes.flux1)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.Flux1FlowPipeline">Flux1FlowPipeline (class in gensbi.recipes)</a>
 
       <ul>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1FlowPipeline">(class in gensbi.recipes.flux1)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Joint">Flux1Joint (class in gensbi.models)</a>
 
       <ul>
@@ -2315,18 +2278,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/flux1joint/index.html#gensbi.models.flux1joint.Flux1JointParams">(class in gensbi.models.flux1joint)</a>
 </li>
         <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1JointParams">(class in gensbi.models.flux1joint.model)</a>
-</li>
-      </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline">Flux1LatentDiffusionPipeline (class in gensbi.experimental.recipes)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline">(class in gensbi.experimental.recipes.latent_flux1)</a>
-</li>
-      </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline">Flux1LatentFlowPipeline (class in gensbi.experimental.recipes)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline">(class in gensbi.experimental.recipes.latent_flux1)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params">Flux1Params (class in gensbi.models)</a>
@@ -2372,6 +2323,62 @@ window.addEventListener("load", load);
 
       <ul>
         <li><a href="api/gensbi/index.html#module-gensbi">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/index.html#module-gensbi.diagnostics">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics.distribution_wrapper
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#module-gensbi.diagnostics.distribution_wrapper">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics.lc2st
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#module-gensbi.diagnostics.lc2st">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics.metrics
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/metrics/index.html#module-gensbi.diagnostics.metrics">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics.metrics.c2st
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/metrics/c2st/index.html#module-gensbi.diagnostics.metrics.c2st">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics.metrics.l1_l2
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/metrics/l1_l2/index.html#module-gensbi.diagnostics.metrics.l1_l2">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics.sbc
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/sbc/index.html#module-gensbi.diagnostics.sbc">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.diagnostics.tarp
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/tarp/index.html#module-gensbi.diagnostics.tarp">module</a>
 </li>
       </ul></li>
       <li>
@@ -2498,20 +2505,6 @@ window.addEventListener("load", load);
 
       <ul>
         <li><a href="api/gensbi/experimental/recipes/index.html#module-gensbi.experimental.recipes">module</a>
-</li>
-      </ul></li>
-      <li>
-    gensbi.experimental.recipes.latent_conditional_pipeline
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#module-gensbi.experimental.recipes.latent_conditional_pipeline">module</a>
-</li>
-      </ul></li>
-      <li>
-    gensbi.experimental.recipes.latent_flux1
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#module-gensbi.experimental.recipes.latent_flux1">module</a>
 </li>
       </ul></li>
       <li>
@@ -2703,6 +2696,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/losses/conditional/index.html#module-gensbi.models.losses.conditional">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     gensbi.models.losses.joint
 
@@ -2724,8 +2719,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/simformer/index.html#module-gensbi.models.simformer">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     gensbi.models.simformer.model
 
@@ -2825,6 +2818,13 @@ window.addEventListener("load", load);
 </li>
       </ul></li>
       <li>
+    gensbi.recipes.utils
+
+      <ul>
+        <li><a href="api/gensbi/recipes/utils/index.html#module-gensbi.recipes.utils">module</a>
+</li>
+      </ul></li>
+      <li>
     gensbi.utils
 
       <ul>
@@ -2859,24 +2859,28 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/utils/plotting/index.html#module-gensbi.utils.plotting">module</a>
 </li>
       </ul></li>
-      <li>
-    gensbi.validation
-
-      <ul>
-        <li><a href="api/gensbi/validation/index.html#module-gensbi.validation">module</a>
-</li>
-      </ul></li>
-      <li>
-    gensbi.validation.distribution_wrapper
-
-      <ul>
-        <li><a href="api/gensbi/validation/distribution_wrapper/index.html#module-gensbi.validation.distribution_wrapper">module</a>
-</li>
-      </ul></li>
       <li><a href="api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.EDMPathSample.get_batch">get_batch() (gensbi.diffusion.path.path_sample.EDMPathSample method)</a>
 </li>
       <li><a href="api/gensbi/utils/misc/index.html#gensbi.utils.misc.get_colored_value">get_colored_value() (in module gensbi.utils.misc)</a>
 </li>
+      <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_default_training_config">get_default_training_config() (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline class method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.get_default_training_config">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalDiffusionPipeline.get_default_training_config">(gensbi.recipes.ConditionalDiffusionPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointDiffusionPipeline.get_default_training_config">(gensbi.recipes.joint_pipeline.JointDiffusionPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointDiffusionPipeline.get_default_training_config">(gensbi.recipes.JointDiffusionPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.get_default_training_config">(gensbi.recipes.pipeline.AbstractPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline.get_default_training_config">(gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.get_default_training_config">(gensbi.recipes.UnconditionalDiffusionPipeline class method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper.get_divergence">get_divergence() (gensbi.utils.model_wrapping.ModelWrapper method)</a>
 </li>
       <li><a href="api/gensbi/diffusion/path/edm_path/index.html#gensbi.diffusion.path.edm_path.EDMPath.get_loss_fn">get_loss_fn() (gensbi.diffusion.path.edm_path.EDMPath method)</a>
@@ -2885,14 +2889,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/diffusion/path/index.html#gensbi.diffusion.path.EDMPath.get_loss_fn">(gensbi.diffusion.path.EDMPath method)</a>
 </li>
         <li><a href="api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.BaseSDE.get_loss_fn">(gensbi.diffusion.path.scheduler.edm.BaseSDE method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.get_loss_fn">(gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.get_loss_fn">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.get_loss_fn">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.get_loss_fn">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.get_loss_fn">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
 </li>
@@ -2926,14 +2922,6 @@ window.addEventListener("load", load);
       <ul>
         <li><a href="api/gensbi/diffusion/solver/index.html#gensbi.diffusion.solver.SDESolver.get_sampler">(gensbi.diffusion.solver.SDESolver method)</a>
 </li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.get_sampler">(gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.get_sampler">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.get_sampler">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.get_sampler">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
-</li>
         <li><a href="api/gensbi/flow_matching/solver/ode_solver/index.html#gensbi.flow_matching.solver.ode_solver.ODESolver.get_sampler">(gensbi.flow_matching.solver.ode_solver.ODESolver method)</a>
 </li>
         <li><a href="api/gensbi/flow_matching/solver/index.html#gensbi.flow_matching.solver.ODESolver.get_sampler">(gensbi.flow_matching.solver.ODESolver method)</a>
@@ -2965,17 +2953,29 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalFlowPipeline.get_sampler">(gensbi.recipes.UnconditionalFlowPipeline method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.get_train_step_fn">get_train_step_fn() (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline method)</a>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.get_scores">get_scores() (gensbi.diagnostics.LC2ST method)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.get_train_step_fn">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.get_scores">(gensbi.diagnostics.lc2st.LC2ST method)</a>
 </li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.get_train_step_fn">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline method)</a>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.get_statistic_on_observed_data">get_statistic_on_observed_data() (gensbi.diagnostics.LC2ST method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.get_statistic_on_observed_data">(gensbi.diagnostics.lc2st.LC2ST method)</a>
 </li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.get_train_step_fn">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.get_statistics_under_null_hypothesis">get_statistics_under_null_hypothesis() (gensbi.diagnostics.LC2ST method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.get_statistics_under_null_hypothesis">(gensbi.diagnostics.lc2st.LC2ST method)</a>
 </li>
-        <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_train_step_fn">(gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp.get_tarp_references">get_tarp_references() (in module gensbi.diagnostics.tarp)</a>
 </li>
+      <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_train_step_fn">get_train_step_fn() (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
+
+      <ul>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.get_train_step_fn">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline.get_train_step_fn">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline method)</a>
@@ -3063,18 +3063,18 @@ window.addEventListener("load", load);
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.id_embedding_kind">id_embedding_kind (gensbi.models.flux1.Flux1Params attribute)</a>
+      <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.id_embedding_strategy">id_embedding_strategy (gensbi.models.flux1.Flux1Params attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.model.Flux1Params.id_embedding_kind">(gensbi.models.flux1.model.Flux1Params attribute)</a>
+        <li><a href="api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.model.Flux1Params.id_embedding_strategy">(gensbi.models.flux1.model.Flux1Params attribute)</a>
 </li>
-        <li><a href="api/gensbi/models/flux1joint/index.html#gensbi.models.flux1joint.Flux1JointParams.id_embedding_kind">(gensbi.models.flux1joint.Flux1JointParams attribute)</a>
+        <li><a href="api/gensbi/models/flux1joint/index.html#gensbi.models.flux1joint.Flux1JointParams.id_embedding_strategy">(gensbi.models.flux1joint.Flux1JointParams attribute)</a>
 </li>
-        <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1JointParams.id_embedding_kind">(gensbi.models.flux1joint.model.Flux1JointParams attribute)</a>
+        <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1JointParams.id_embedding_strategy">(gensbi.models.flux1joint.model.Flux1JointParams attribute)</a>
 </li>
-        <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1JointParams.id_embedding_kind">(gensbi.models.Flux1JointParams attribute)</a>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1JointParams.id_embedding_strategy">(gensbi.models.Flux1JointParams attribute)</a>
 </li>
-        <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.id_embedding_kind">(gensbi.models.Flux1Params attribute)</a>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.id_embedding_strategy">(gensbi.models.Flux1Params attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.Identity">Identity (class in gensbi.models.flux1.layers)</a>
@@ -3155,25 +3155,15 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.MLPEmbedder.in_layer">(gensbi.models.flux1.layers.MLPEmbedder attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.init_pipeline_from_config">init_pipeline_from_config() (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline class method)</a>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.init_ids_1d">init_ids_1d() (in module gensbi.recipes.utils)</a>
+</li>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.init_ids_2d">init_ids_2d() (in module gensbi.recipes.utils)</a>
+</li>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.init_ids_joint">init_ids_joint() (in module gensbi.recipes.utils)</a>
+</li>
+      <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.init_pipeline_from_config">init_pipeline_from_config() (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.Flux1LatentDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.Flux1LatentFlowPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline class method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.init_pipeline_from_config">(gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
-</li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.init_pipeline_from_config">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline class method)</a>
 </li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline.init_pipeline_from_config">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline class method)</a>
@@ -3303,10 +3293,10 @@ window.addEventListener("load", load);
 </li>
       <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.DiagonalGaussian.kl_loss">kl_loss (gensbi.experimental.models.autoencoders.commons.DiagonalGaussian attribute)</a>
 </li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.kwargs">kwargs (gensbi.validation.distribution_wrapper.PosteriorWrapper attribute)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.kwargs">kwargs (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.kwargs">(gensbi.validation.PosteriorWrapper attribute)</a>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.kwargs">(gensbi.diagnostics.PosteriorWrapper attribute)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -3315,14 +3305,32 @@ window.addEventListener("load", load);
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/diagnostics/metrics/index.html#gensbi.diagnostics.metrics.l1">l1() (in module gensbi.diagnostics.metrics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/metrics/l1_l2/index.html#gensbi.diagnostics.metrics.l1_l2.l1">(in module gensbi.diagnostics.metrics.l1_l2)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/metrics/index.html#gensbi.diagnostics.metrics.l2">l2() (in module gensbi.diagnostics.metrics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/metrics/l1_l2/index.html#gensbi.diagnostics.metrics.l1_l2.l2">(in module gensbi.diagnostics.metrics.l1_l2)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.LastLayer">LastLayer (class in gensbi.models.flux1.layers)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoder1D.latent_shape">latent_shape (gensbi.experimental.models.AutoEncoder1D attribute)</a>
 
       <ul>
+        <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoder2D.latent_shape">(gensbi.experimental.models.AutoEncoder2D attribute)</a>
+</li>
         <li><a href="api/gensbi/experimental/models/autoencoders/index.html#gensbi.experimental.models.autoencoders.AutoEncoder1D.latent_shape">(gensbi.experimental.models.autoencoders.AutoEncoder1D attribute)</a>
 </li>
+        <li><a href="api/gensbi/experimental/models/autoencoders/index.html#gensbi.experimental.models.autoencoders.AutoEncoder2D.latent_shape">(gensbi.experimental.models.autoencoders.AutoEncoder2D attribute)</a>
+</li>
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.latent_shape">(gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D attribute)</a>
+</li>
+        <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D.latent_shape">(gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.AttentionBlock.layer_norm">layer_norm (gensbi.models.simformer.transformer.AttentionBlock attribute)</a>
@@ -3331,6 +3339,12 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.layer_norm">(gensbi.models.simformer.transformer.DenseBlock attribute)</a>
 </li>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.layer_norm">(gensbi.models.simformer.transformer.Transformer attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST">LC2ST (class in gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST">(class in gensbi.diagnostics.lc2st)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.Modulation.lin">lin (gensbi.models.flux1.layers.Modulation attribute)</a>
@@ -3349,17 +3363,9 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.Loss">Loss (class in gensbi.experimental.models.autoencoders.commons)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.loss_fn">loss_fn (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.loss_fn">loss_fn (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.loss_fn">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.loss_fn">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.loss_fn">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.loss_fn">(gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline attribute)</a>
-</li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.ConditionalDiffLoss.loss_fn">(gensbi.models.ConditionalDiffLoss attribute)</a>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.JointDiffLoss.loss_fn">(gensbi.models.JointDiffLoss attribute)</a>
@@ -3497,6 +3503,22 @@ window.addEventListener("load", load);
       <ul>
         <li><a href="api/gensbi/index.html#module-gensbi">gensbi</a>
 </li>
+        <li><a href="api/gensbi/diagnostics/index.html#module-gensbi.diagnostics">gensbi.diagnostics</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#module-gensbi.diagnostics.distribution_wrapper">gensbi.diagnostics.distribution_wrapper</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#module-gensbi.diagnostics.lc2st">gensbi.diagnostics.lc2st</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/metrics/index.html#module-gensbi.diagnostics.metrics">gensbi.diagnostics.metrics</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/metrics/c2st/index.html#module-gensbi.diagnostics.metrics.c2st">gensbi.diagnostics.metrics.c2st</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/metrics/l1_l2/index.html#module-gensbi.diagnostics.metrics.l1_l2">gensbi.diagnostics.metrics.l1_l2</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/sbc/index.html#module-gensbi.diagnostics.sbc">gensbi.diagnostics.sbc</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/tarp/index.html#module-gensbi.diagnostics.tarp">gensbi.diagnostics.tarp</a>
+</li>
         <li><a href="api/gensbi/diffusion/index.html#module-gensbi.diffusion">gensbi.diffusion</a>
 </li>
         <li><a href="api/gensbi/diffusion/path/index.html#module-gensbi.diffusion.path">gensbi.diffusion.path</a>
@@ -3532,10 +3554,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#module-gensbi.experimental.models.autoencoders.commons">gensbi.experimental.models.autoencoders.commons</a>
 </li>
         <li><a href="api/gensbi/experimental/recipes/index.html#module-gensbi.experimental.recipes">gensbi.experimental.recipes</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#module-gensbi.experimental.recipes.latent_conditional_pipeline">gensbi.experimental.recipes.latent_conditional_pipeline</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#module-gensbi.experimental.recipes.latent_flux1">gensbi.experimental.recipes.latent_flux1</a>
 </li>
         <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#module-gensbi.experimental.recipes.vae_pipeline">gensbi.experimental.recipes.vae_pipeline</a>
 </li>
@@ -3625,6 +3643,8 @@ window.addEventListener("load", load);
 </li>
         <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#module-gensbi.recipes.unconditional_pipeline">gensbi.recipes.unconditional_pipeline</a>
 </li>
+        <li><a href="api/gensbi/recipes/utils/index.html#module-gensbi.recipes.utils">gensbi.recipes.utils</a>
+</li>
         <li><a href="api/gensbi/utils/index.html#module-gensbi.utils">gensbi.utils</a>
 </li>
         <li><a href="api/gensbi/utils/math/index.html#module-gensbi.utils.math">gensbi.utils.math</a>
@@ -3634,10 +3654,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/utils/model_wrapping/index.html#module-gensbi.utils.model_wrapping">gensbi.utils.model_wrapping</a>
 </li>
         <li><a href="api/gensbi/utils/plotting/index.html#module-gensbi.utils.plotting">gensbi.utils.plotting</a>
-</li>
-        <li><a href="api/gensbi/validation/index.html#module-gensbi.validation">gensbi.validation</a>
-</li>
-        <li><a href="api/gensbi/validation/distribution_wrapper/index.html#module-gensbi.validation.distribution_wrapper">gensbi.validation.distribution_wrapper</a>
 </li>
       </ul></li>
   </ul></td>
@@ -3680,18 +3696,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/flow_matching/path/scheduler/index.html#gensbi.flow_matching.path.scheduler.ScheduleTransformedModel.new_scheduler">(gensbi.flow_matching.path.scheduler.ScheduleTransformedModel attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointDiffusionPipeline.node_ids">node_ids (gensbi.recipes.joint_pipeline.JointDiffusionPipeline attribute)</a>
-
-      <ul>
-        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointFlowPipeline.node_ids">(gensbi.recipes.joint_pipeline.JointFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointDiffusionPipeline.node_ids">(gensbi.recipes.JointDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointFlowPipeline.node_ids">(gensbi.recipes.JointFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.node_ids">(gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
-</li>
-      </ul></li>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.norm">norm (gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D attribute)</a>
 
       <ul>
@@ -3724,6 +3728,26 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.Decoder2D.norm_out">(gensbi.experimental.models.autoencoders.autoencoder_2d.Decoder2D attribute)</a>
 </li>
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D.norm_out">(gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.null_distribution">null_distribution (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.null_distribution">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.num_ensemble">num_ensemble (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.num_ensemble">(gensbi.diagnostics.lc2st.EnsembleClassifier attribute)</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.num_ensemble">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.num_folds">num_folds (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.num_folds">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1.num_heads">num_heads (gensbi.models.Flux1 attribute)</a>
@@ -3814,6 +3838,12 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D.num_resolutions">(gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.num_trials_null">num_trials_null (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.num_trials_null">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -3822,36 +3852,14 @@ window.addEventListener("load", load);
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.obs_attn">obs_attn (gensbi.models.flux1.layers.DoubleStreamBlock attribute)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.obs_ids">obs_ids (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline attribute)</a>
+      <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.obs_ids">obs_ids (gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.obs_ids">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.obs_ids">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.obs_ids">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline.obs_ids">(gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline attribute)</a>
-</li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline.obs_ids">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalDiffusionPipeline.obs_ids">(gensbi.recipes.ConditionalDiffusionPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.obs_ids">(gensbi.recipes.ConditionalFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.obs_ids">(gensbi.recipes.flux1.Flux1DiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.Flux1DiffusionPipeline.obs_ids">(gensbi.recipes.Flux1DiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointDiffusionPipeline.obs_ids">(gensbi.recipes.joint_pipeline.JointDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointFlowPipeline.obs_ids">(gensbi.recipes.joint_pipeline.JointFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointDiffusionPipeline.obs_ids">(gensbi.recipes.JointDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointFlowPipeline.obs_ids">(gensbi.recipes.JointFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.obs_ids">(gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline.obs_ids">(gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline attribute)</a>
 </li>
@@ -3878,8 +3886,6 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.obs_mlp">obs_mlp (gensbi.models.flux1.layers.DoubleStreamBlock attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.obs_mod">obs_mod (gensbi.models.flux1.layers.DoubleStreamBlock attribute)</a>
 </li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.obs_norm1">obs_norm1 (gensbi.models.flux1.layers.DoubleStreamBlock attribute)</a>
@@ -3898,6 +3904,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/flow_matching/path/scheduler/index.html#gensbi.flow_matching.path.scheduler.ScheduleTransformedModel.original_scheduler">(gensbi.flow_matching.path.scheduler.ScheduleTransformedModel attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoderParams.out_ch">out_ch (gensbi.experimental.models.AutoEncoderParams attribute)</a>, <a href="api/gensbi/experimental/models/index.html#id4">[1]</a>
 
       <ul>
@@ -3964,13 +3972,9 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointFlowPipeline.p0_joint">(gensbi.recipes.JointFlowPipeline attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.p0_obs">p0_obs (gensbi.experimental.recipes.ConditionalLatentFlowPipeline attribute)</a>
+      <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline.p0_obs">p0_obs (gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.p0_obs">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline.p0_obs">(gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline attribute)</a>
-</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.p0_obs">(gensbi.recipes.ConditionalFlowPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointFlowPipeline.p0_obs">(gensbi.recipes.joint_pipeline.JointFlowPipeline attribute)</a>
@@ -3998,6 +4002,12 @@ window.addEventListener("load", load);
 
       <ul>
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.EDMScheduler.P_std">(gensbi.diffusion.path.scheduler.EDMScheduler attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.p_value">p_value() (gensbi.diagnostics.LC2ST method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.p_value">(gensbi.diagnostics.lc2st.LC2ST method)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoderParams.param_dtype">param_dtype (gensbi.experimental.models.AutoEncoderParams attribute)</a>, <a href="api/gensbi/experimental/models/index.html#id5">[1]</a>
@@ -4054,21 +4064,15 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.parse_autoencoder_params">parse_autoencoder_params() (in module gensbi.experimental.recipes.vae_pipeline)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.parse_flux1_params">parse_flux1_params() (in module gensbi.experimental.recipes.latent_flux1)</a>
-
-      <ul>
-        <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.parse_flux1_params">(in module gensbi.recipes.flux1)</a>
+      <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.parse_flux1_params">parse_flux1_params() (in module gensbi.recipes.flux1)</a>
 </li>
-      </ul></li>
       <li><a href="api/gensbi/recipes/flux1joint/index.html#gensbi.recipes.flux1joint.parse_flux1joint_params">parse_flux1joint_params() (in module gensbi.recipes.flux1joint)</a>
 </li>
       <li><a href="api/gensbi/recipes/simformer/index.html#gensbi.recipes.simformer.parse_simformer_params">parse_simformer_params() (in module gensbi.recipes.simformer)</a>
 </li>
-      <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.parse_training_config">parse_training_config() (in module gensbi.experimental.recipes.latent_flux1)</a>
+      <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.parse_training_config">parse_training_config() (in module gensbi.experimental.recipes.vae_pipeline)</a>
 
       <ul>
-        <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.parse_training_config">(in module gensbi.experimental.recipes.vae_pipeline)</a>
-</li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.parse_training_config">(in module gensbi.recipes.flux1)</a>
 </li>
         <li><a href="api/gensbi/recipes/flux1joint/index.html#gensbi.recipes.flux1joint.parse_training_config">(in module gensbi.recipes.flux1joint)</a>
@@ -4076,18 +4080,12 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/simformer/index.html#gensbi.recipes.simformer.parse_training_config">(in module gensbi.recipes.simformer)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.patchify_2d">patchify_2d() (in module gensbi.recipes.utils)</a>
+</li>
       <li><a href="api/gensbi/diffusion/solver/sde_solver/index.html#gensbi.diffusion.solver.sde_solver.SDESolver.path">path (gensbi.diffusion.solver.sde_solver.SDESolver attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/diffusion/solver/index.html#gensbi.diffusion.solver.SDESolver.path">(gensbi.diffusion.solver.SDESolver attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.path">(gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.path">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.path">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.path">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline attribute)</a>
 </li>
         <li><a href="api/gensbi/flow_matching/loss/continuous_loss/index.html#gensbi.flow_matching.loss.continuous_loss.ContinuousFMLoss.path">(gensbi.flow_matching.loss.continuous_loss.ContinuousFMLoss attribute)</a>
 </li>
@@ -4166,18 +4164,38 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.PEMatrix">PEMatrix (class in gensbi.models.embedding.embedding)</a>
 </li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.pipeline">pipeline (gensbi.validation.distribution_wrapper.PosteriorWrapper attribute)</a>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.permutation">permutation (gensbi.diagnostics.LC2ST attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.pipeline">(gensbi.validation.PosteriorWrapper attribute)</a>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.permutation">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.permute_data">permute_data() (in module gensbi.diagnostics.lc2st)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.pipeline">pipeline (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.pipeline">(gensbi.diagnostics.PosteriorWrapper attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_2d_dist_contour">plot_2d_dist_contour() (in module gensbi.utils.plotting)</a>
 </li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_2d_levels">plot_2d_levels() (in module gensbi.utils.plotting)</a>
 </li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.plot_lc2st">plot_lc2st() (in module gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.plot_lc2st">(in module gensbi.diagnostics.lc2st)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_marginals">plot_marginals() (in module gensbi.utils.plotting)</a>
 </li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.plot_tarp">plot_tarp() (in module gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp.plot_tarp">(in module gensbi.diagnostics.tarp)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.plot_trajectories">plot_trajectories() (in module gensbi.utils.plotting)</a>
 </li>
       <li><a href="api/gensbi/flow_matching/path/scheduler/index.html#gensbi.flow_matching.path.scheduler.PolynomialConvexScheduler">PolynomialConvexScheduler (class in gensbi.flow_matching.path.scheduler)</a>
@@ -4186,13 +4204,15 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/flow_matching/path/scheduler/scheduler/index.html#gensbi.flow_matching.path.scheduler.scheduler.PolynomialConvexScheduler">(class in gensbi.flow_matching.path.scheduler.scheduler)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper">PosteriorWrapper (class in gensbi.validation)</a>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper">PosteriorWrapper (class in gensbi.diagnostics)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper">(class in gensbi.validation.distribution_wrapper)</a>
+        <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper">(class in gensbi.diagnostics.distribution_wrapper)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SingleStreamBlock.pre_norm">pre_norm (gensbi.models.flux1.layers.SingleStreamBlock attribute)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.predict_proba">predict_proba() (gensbi.diagnostics.lc2st.EnsembleClassifier method)</a>
 </li>
       <li><a href="api/gensbi/diffusion/path/path/index.html#gensbi.diffusion.path.path.ProbPath">ProbPath (class in gensbi.diffusion.path.path)</a>
 
@@ -4288,6 +4308,12 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D.reg">(gensbi.experimental.models.autoencoders.autoencoder_2d.AutoEncoder2D attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.reject_test">reject_test() (gensbi.diagnostics.LC2ST method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.reject_test">(gensbi.diagnostics.lc2st.LC2ST method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.MLPEmbedder.repeats">repeats (gensbi.models.embedding.embedding.MLPEmbedder attribute)</a>
 
       <ul>
@@ -4330,11 +4356,17 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.EDMScheduler.rho">(gensbi.diffusion.path.scheduler.EDMScheduler attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoder1D.rngs">rngs (gensbi.experimental.models.AutoEncoder1D attribute)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.rngs">rngs (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper attribute)</a>
 
       <ul>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.rngs">(gensbi.diagnostics.LC2ST attribute)</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.rngs">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.rngs">(gensbi.diagnostics.PosteriorWrapper attribute)</a>
+</li>
+        <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoder1D.rngs">(gensbi.experimental.models.AutoEncoder1D attribute)</a>
+</li>
         <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoder2D.rngs">(gensbi.experimental.models.AutoEncoder2D attribute)</a>
 </li>
         <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoderParams.rngs">(gensbi.experimental.models.AutoEncoderParams attribute)</a>, <a href="api/gensbi/experimental/models/index.html#id7">[1]</a>
@@ -4371,13 +4403,23 @@ window.addEventListener("load", load);
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.SimformerParams.rngs">(gensbi.models.SimformerParams attribute)</a>
 </li>
-        <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.rngs">(gensbi.validation.distribution_wrapper.PosteriorWrapper attribute)</a>
-</li>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.rngs">(gensbi.validation.PosteriorWrapper attribute)</a>
-</li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1/math/index.html#gensbi.models.flux1.math.rope">rope() (in module gensbi.models.flux1.math)</a>
 </li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.run_sbc">run_sbc() (in module gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc.run_sbc">(in module gensbi.diagnostics.sbc)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.run_tarp">run_tarp() (in module gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp.run_tarp">(in module gensbi.diagnostics.tarp)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -4418,9 +4460,13 @@ window.addEventListener("load", load);
       </ul></li>
       <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.DiagonalGaussian.sample">sample (gensbi.experimental.models.autoencoders.commons.DiagonalGaussian attribute)</a>
 </li>
-      <li><a href="api/gensbi/diffusion/path/edm_path/index.html#gensbi.diffusion.path.edm_path.EDMPath.sample">sample() (gensbi.diffusion.path.edm_path.EDMPath method)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.sample">sample() (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper method)</a>
 
       <ul>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.sample">(gensbi.diagnostics.PosteriorWrapper method)</a>
+</li>
+        <li><a href="api/gensbi/diffusion/path/edm_path/index.html#gensbi.diffusion.path.edm_path.EDMPath.sample">(gensbi.diffusion.path.edm_path.EDMPath method)</a>
+</li>
         <li><a href="api/gensbi/diffusion/path/index.html#gensbi.diffusion.path.EDMPath.sample">(gensbi.diffusion.path.EDMPath method)</a>
 </li>
         <li><a href="api/gensbi/diffusion/path/path/index.html#gensbi.diffusion.path.path.ProbPath.sample">(gensbi.diffusion.path.path.ProbPath method)</a>
@@ -4432,14 +4478,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/diffusion/solver/index.html#gensbi.diffusion.solver.Solver.sample">(gensbi.diffusion.solver.Solver method)</a>
 </li>
         <li><a href="api/gensbi/diffusion/solver/solver/index.html#gensbi.diffusion.solver.solver.Solver.sample">(gensbi.diffusion.solver.solver.Solver method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.sample">(gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.sample">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.sample">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.sample">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/flow_matching/path/affine/index.html#gensbi.flow_matching.path.affine.AffineProbPath.sample">(gensbi.flow_matching.path.affine.AffineProbPath method)</a>
 </li>
@@ -4491,14 +4529,14 @@ window.addEventListener("load", load);
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalFlowPipeline.sample">(gensbi.recipes.UnconditionalFlowPipeline method)</a>
 </li>
-        <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.sample">(gensbi.validation.distribution_wrapper.PosteriorWrapper method)</a>
-</li>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.sample">(gensbi.validation.PosteriorWrapper method)</a>
-</li>
       </ul></li>
-      <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.sample_batched">sample_batched() (gensbi.recipes.pipeline.AbstractPipeline method)</a>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.sample_batched">sample_batched() (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper method)</a>
 
       <ul>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.sample_batched">(gensbi.diagnostics.PosteriorWrapper method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.sample_batched">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline.sample_batched">(gensbi.recipes.unconditional_pipeline.UnconditionalDiffusionPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalFlowPipeline.sample_batched">(gensbi.recipes.unconditional_pipeline.UnconditionalFlowPipeline method)</a>
@@ -4506,10 +4544,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.sample_batched">(gensbi.recipes.UnconditionalDiffusionPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalFlowPipeline.sample_batched">(gensbi.recipes.UnconditionalFlowPipeline method)</a>
-</li>
-        <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.sample_batched">(gensbi.validation.distribution_wrapper.PosteriorWrapper method)</a>
-</li>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.sample_batched">(gensbi.validation.PosteriorWrapper method)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.sample_condition_mask">sample_condition_mask() (in module gensbi.recipes.joint_pipeline)</a>
@@ -4548,6 +4582,12 @@ window.addEventListener("load", load);
 
       <ul>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.save_model">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.sbc_rank_plot">sbc_rank_plot() (in module gensbi.diagnostics)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc.sbc_rank_plot">(in module gensbi.diagnostics.sbc)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.ModulationOut.scale">scale (gensbi.models.flux1.layers.ModulationOut attribute)</a>
@@ -4606,14 +4646,14 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/flow_matching/path/scheduler/scheduler/index.html#gensbi.flow_matching.path.scheduler.scheduler.SchedulerOutput">(class in gensbi.flow_matching.path.scheduler.scheduler)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/flow_matching/path/scheduler/index.html#gensbi.flow_matching.path.scheduler.ScheduleTransformedModel">ScheduleTransformedModel (class in gensbi.flow_matching.path.scheduler)</a>
 
       <ul>
         <li><a href="api/gensbi/flow_matching/path/scheduler/schedule_transform/index.html#gensbi.flow_matching.path.scheduler.schedule_transform.ScheduleTransformedModel">(class in gensbi.flow_matching.path.scheduler.schedule_transform)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/diffusion/solver/sde_solver/index.html#gensbi.diffusion.solver.sde_solver.SDESolver.score_model">score_model (gensbi.diffusion.solver.sde_solver.SDESolver attribute)</a>
 
       <ul>
@@ -4626,12 +4666,18 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/diffusion/solver/sde_solver/index.html#gensbi.diffusion.solver.sde_solver.SDESolver">(class in gensbi.diffusion.solver.sde_solver)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SelfAttention">SelfAttention (class in gensbi.models.flux1.layers)</a>
-</li>
-      <li><a href="api/gensbi/validation/distribution_wrapper/index.html#gensbi.validation.distribution_wrapper.PosteriorWrapper.set_default_x">set_default_x() (gensbi.validation.distribution_wrapper.PosteriorWrapper method)</a>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.seed">seed (gensbi.diagnostics.LC2ST attribute)</a>
 
       <ul>
-        <li><a href="api/gensbi/validation/index.html#gensbi.validation.PosteriorWrapper.set_default_x">(gensbi.validation.PosteriorWrapper method)</a>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.seed">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SelfAttention">SelfAttention (class in gensbi.models.flux1.layers)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.set_default_x">set_default_x() (gensbi.diagnostics.distribution_wrapper.PosteriorWrapper method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.PosteriorWrapper.set_default_x">(gensbi.diagnostics.PosteriorWrapper method)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.ModulationOut.shift">shift (gensbi.models.flux1.layers.ModulationOut attribute)</a>
@@ -4896,6 +4942,30 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.theta">(gensbi.models.Flux1Params attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.theta_p">theta_p (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.theta_p">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.theta_p_mean">theta_p_mean (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.theta_p_mean">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.theta_p_std">theta_p_std (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.theta_p_std">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.theta_q">theta_q (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.theta_q">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1.time_in">time_in (gensbi.models.Flux1 attribute)</a>
 
       <ul>
@@ -4956,6 +5026,34 @@ window.addEventListener("load", load);
 
       <ul>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.train_dataset_iter">(gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.train_lc2st">train_lc2st() (in module gensbi.diagnostics.lc2st)</a>
+</li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.train_on_observed_data">train_on_observed_data() (gensbi.diagnostics.LC2ST method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.train_on_observed_data">(gensbi.diagnostics.lc2st.LC2ST method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.train_under_null_hypothesis">train_under_null_hypothesis() (gensbi.diagnostics.LC2ST method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.train_under_null_hypothesis">(gensbi.diagnostics.lc2st.LC2ST method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.trained_clfs">trained_clfs (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.trained_clfs">(gensbi.diagnostics.lc2st.EnsembleClassifier attribute)</a>
+</li>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.trained_clfs">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.trained_clfs_null">trained_clfs_null (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.trained_clfs_null">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.training_config">training_config (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline attribute)</a>
@@ -5086,24 +5184,6 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.VAE2DPipeline">(class in gensbi.experimental.recipes.vae_pipeline)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.vae_cond">vae_cond (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline attribute)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.vae_cond">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.vae_cond">(gensbi.experimental.recipes.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.vae_cond">(gensbi.experimental.recipes.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.vae_cond">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.vae_cond">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.vae_cond">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.vae_cond">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline attribute)</a>
-</li>
-      </ul></li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.vae_loss_fn">vae_loss_fn() (in module gensbi.experimental.models)</a>
 
       <ul>
@@ -5112,32 +5192,12 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.vae_loss_fn">(in module gensbi.experimental.models.autoencoders.commons)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline.vae_obs">vae_obs (gensbi.experimental.recipes.ConditionalLatentDiffusionPipeline attribute)</a>
-
-      <ul>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.ConditionalLatentFlowPipeline.vae_obs">(gensbi.experimental.recipes.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentDiffusionPipeline.vae_obs">(gensbi.experimental.recipes.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.Flux1LatentFlowPipeline.vae_obs">(gensbi.experimental.recipes.Flux1LatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline.vae_obs">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_conditional_pipeline/index.html#gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline.vae_obs">(gensbi.experimental.recipes.latent_conditional_pipeline.ConditionalLatentFlowPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline.vae_obs">(gensbi.experimental.recipes.latent_flux1.Flux1LatentDiffusionPipeline attribute)</a>
-</li>
-        <li><a href="api/gensbi/experimental/recipes/latent_flux1/index.html#gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline.vae_obs">(gensbi.experimental.recipes.latent_flux1.Flux1LatentFlowPipeline attribute)</a>
-</li>
-      </ul></li>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset">val_dataset (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.val_dataset">(gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset_iter">val_dataset_iter (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline attribute)</a>
 
       <ul>
@@ -5158,6 +5218,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.vec_in_dim">(gensbi.models.Flux1Params attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1.vector_in">vector_in (gensbi.models.Flux1 attribute)</a>
 
       <ul>
@@ -5190,6 +5252,8 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/flow_matching/path/index.html#gensbi.flow_matching.path.AffineProbPath.velocity_to_target">(gensbi.flow_matching.path.AffineProbPath method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.verbosity">verbosity (gensbi.diagnostics.lc2st.EnsembleClassifier attribute)</a>
+</li>
       <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VEScheduler">VEScheduler (class in gensbi.diffusion.path.scheduler)</a>
 
       <ul>
@@ -5242,8 +5306,32 @@ window.addEventListener("load", load);
         <li><a href="api/gensbi/flow_matching/path/index.html#gensbi.flow_matching.path.PathSample.x_1">(gensbi.flow_matching.path.PathSample attribute)</a>, <a href="api/gensbi/flow_matching/path/index.html#id3">[1]</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.x_p">x_p (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.x_p">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.x_p_mean">x_p_mean (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.x_p_mean">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.x_p_std">x_p_std (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.x_p_std">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.x_q">x_q (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.x_q">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.EDMPathSample.x_t">x_t (gensbi.diffusion.path.path_sample.EDMPathSample attribute)</a>, <a href="api/gensbi/diffusion/path/path_sample/index.html#id2">[1]</a>
 
       <ul>
@@ -5276,6 +5364,12 @@ window.addEventListener("load", load);
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.z_score">z_score (gensbi.diagnostics.LC2ST attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.z_score">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.z_shape">z_shape (gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D attribute)</a>
 
       <ul>
@@ -5340,7 +5434,7 @@ window.addEventListener("load", load);
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

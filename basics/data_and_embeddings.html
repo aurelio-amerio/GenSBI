@@ -1,0 +1,860 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Data, IDs, and Embeddings &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/jupyter-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
+    <link rel="stylesheet" type="text/css" href="../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=18a8d5f5"></script>
+    <script src="../_static/thebelab-helper.js"></script>
+    <script src="../_static/jupyterlite_sphinx.js?v=96e329c5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'basics/data_and_embeddings';</script>
+    <link rel="icon" href="../_static/logo_small.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Model Cards" href="model_cards.html" />
+    <link rel="prev" title="Conceptual Overview: How GenSBI is Structured" href="overview.html" /> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />   
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo_small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../_static/logo_small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../getting_started/index.html">Quick Start</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/quick_start.html">15-minute quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notebooks/my_first_model.html">My First Model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Basics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="overview.html">Conceptual Overview: How GenSBI is Structured</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Data, IDs, and Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model_cards.html">Model Cards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html">Training Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html">Inference Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html">Contributing to GenSBI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../theoretical_overview/index.html">Theoretical Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../theoretical_overview/flow.html">Flow Matching: A Short Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theoretical_overview/diffusion.html">EDM Diffusion Models: A Short Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/gensbi/index.html">API Documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/distribution_wrapper/index.html">gensbi.diagnostics.distribution_wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/lc2st/index.html">gensbi.diagnostics.lc2st</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/index.html">gensbi.diagnostics.metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/c2st/index.html">gensbi.diagnostics.metrics.c2st</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/l1_l2/index.html">gensbi.diagnostics.metrics.l1_l2</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/sbc/index.html">gensbi.diagnostics.sbc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/tarp/index.html">gensbi.diagnostics.tarp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diffusion/index.html">gensbi.diffusion</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diffusion/path/index.html">gensbi.diffusion.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/edm_path/index.html">gensbi.diffusion.path.edm_path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/path/index.html">gensbi.diffusion.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/path_sample/index.html">gensbi.diffusion.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/scheduler/index.html">gensbi.diffusion.path.scheduler</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diffusion/solver/index.html">gensbi.diffusion.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/solver/edm_samplers/index.html">gensbi.diffusion.solver.edm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/solver/sde_solver/index.html">gensbi.diffusion.solver.sde_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/solver/solver/index.html">gensbi.diffusion.solver.solver</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/experimental/index.html">gensbi.experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/experimental/models/index.html">gensbi.experimental.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/experimental/models/autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/experimental/recipes/index.html">gensbi.experimental.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/experimental/recipes/vae_pipeline/index.html">gensbi.experimental.recipes.vae_pipeline</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/index.html">gensbi.flow_matching</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/loss/index.html">gensbi.flow_matching.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/loss/continuous_loss/index.html">gensbi.flow_matching.loss.continuous_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/path/index.html">gensbi.flow_matching.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/affine/index.html">gensbi.flow_matching.path.affine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/path/index.html">gensbi.flow_matching.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/path_sample/index.html">gensbi.flow_matching.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/scheduler/index.html">gensbi.flow_matching.path.scheduler</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/solver/index.html">gensbi.flow_matching.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/solver/ode_solver/index.html">gensbi.flow_matching.solver.ode_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/solver/solver/index.html">gensbi.flow_matching.solver.solver</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/utils/index.html">gensbi.flow_matching.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/utils/utils/index.html">gensbi.flow_matching.utils.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/models/index.html">gensbi.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/embedding/index.html">gensbi.models.embedding</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/embedding/embedding/index.html">gensbi.models.embedding.embedding</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/flux1/index.html">gensbi.models.flux1</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1/layers/index.html">gensbi.models.flux1.layers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1/math/index.html">gensbi.models.flux1.math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1/model/index.html">gensbi.models.flux1.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/flux1joint/index.html">gensbi.models.flux1joint</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1joint/model/index.html">gensbi.models.flux1joint.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/losses/index.html">gensbi.models.losses</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/losses/conditional/index.html">gensbi.models.losses.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/losses/joint/index.html">gensbi.models.losses.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/losses/unconditional/index.html">gensbi.models.losses.unconditional</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/simformer/index.html">gensbi.models.simformer</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/simformer/model/index.html">gensbi.models.simformer.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/simformer/transformer/index.html">gensbi.models.simformer.transformer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/wrappers/conditional/index.html">gensbi.models.wrappers.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/wrappers/joint/index.html">gensbi.models.wrappers.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/wrappers/unconditional/index.html">gensbi.models.wrappers.unconditional</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/recipes/index.html">gensbi.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/conditional_pipeline/index.html">gensbi.recipes.conditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/flux1/index.html">gensbi.recipes.flux1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/pipeline/index.html">gensbi.recipes.pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/simformer/index.html">gensbi.recipes.simformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/unconditional_pipeline/index.html">gensbi.recipes.unconditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/utils/index.html">gensbi.recipes.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/utils/index.html">gensbi.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/math/index.html">gensbi.utils.math</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/misc/index.html">gensbi.utils.misc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/model_wrapping/index.html">gensbi.utils.model_wrapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/plotting/index.html">gensbi.utils.plotting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../documentation/index.html" class="nav-link">Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Data, IDs, and Embeddings</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                   <section class="tex2jax_ignore mathjax_ignore" id="data-ids-and-embeddings">
+<h1>Data, IDs, and Embeddings<a class="headerlink" href="#data-ids-and-embeddings" title="Link to this heading">#</a></h1>
+<p>GenSBI uses a flexible system to handle various data modalities, including unstructured parameter sets, time-series, and 2D images. This page explains how data is structured, how to preprocess it, and how the model identifies different variables using ID embeddings.</p>
+<section id="data-structure-tokens-and-channels">
+<h2>Data Structure: Tokens and Channels<a class="headerlink" href="#data-structure-tokens-and-channels" title="Link to this heading">#</a></h2>
+<p>GenSBI models (like Flux1) operate on tensors with the shape <code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">num_tokens,</span> <span class="pre">num_channels)</span></code>.</p>
+<ul class="simple">
+<li><p><strong>Tokens (<code class="docutils literal notranslate"><span class="pre">dim</span></code>):</strong> Represent distinct variables or observables.</p>
+<ul>
+<li><p>For <strong>unstructured data</strong> (e.g., physical parameters <span class="math notranslate nohighlight">\(\theta_1, \theta_2\)</span>), each parameter is a token.</p></li>
+<li><p>For <strong>time-series</strong>, each time step is a token.</p></li>
+<li><p>For <strong>images</strong>, the image is broken into patches, and each patch is a token.</p></li>
+</ul>
+</li>
+<li><p><strong>Channels (<code class="docutils literal notranslate"><span class="pre">ch</span></code>):</strong> Represent the features per token.</p>
+<ul>
+<li><p>For simple parameters, this is usually 1.</p></li>
+<li><p>For a gravitational wave detector reading at a specific time, this could be 1 (amplitude).</p></li>
+<li><p>For an image patch, this could be the number of pixels in that patch (e.g., <span class="math notranslate nohighlight">\(patch\_size \times patch\_size \times color\_channels\)</span>).</p></li>
+</ul>
+</li>
+</ul>
+<p>Distinguishing between <em>what</em> a token is (its ID) and <em>what value</em> it holds is key to the model’s performance.</p>
+</section>
+<section id="preprocessing">
+<h2>Preprocessing<a class="headerlink" href="#preprocessing" title="Link to this heading">#</a></h2>
+<p>Proper data preprocessing is critical for efficient training.</p>
+<section id="normalization">
+<h3>Normalization<a class="headerlink" href="#normalization" title="Link to this heading">#</a></h3>
+<p>To speed up convergence, <strong>ensure your data is normalized</strong>.</p>
+<ul class="simple">
+<li><p><strong>Standardization</strong>: Shift and scale your data so that it has approximately 0 mean and unit variance.</p>
+<ul>
+<li><p>Apply this to both parameters (inference targets) and observations (conditioning data).</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="patchification-for-images">
+<h3>Patchification (for Images)<a class="headerlink" href="#patchification-for-images" title="Link to this heading">#</a></h3>
+<p>Transformers process sequences, not grids. If you are using 2D image data, you <strong>must patchify</strong> it before passing it to the model (or pipeline).</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.utils.patchify_2d</span></code> flattens a 2D image into a sequence of tokens.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">patchify_2d</span>
+
+<span class="c1"># Input shape: (Batch, Height, Width, Channels)</span>
+<span class="c1"># e.g., (32, 64, 64, 3)</span>
+<span class="n">images</span> <span class="o">=</span> <span class="o">...</span> 
+
+<span class="c1"># Patchify</span>
+<span class="c1"># Output shape: (Batch, Num_Tokens, Features_Per_Token)</span>
+<span class="c1"># With 2x2 patches: (32, 32*32, 2*2*3) = (32, 1024, 12)</span>
+<span class="n">tokens</span> <span class="o">=</span> <span class="n">patchify_2d</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id-embeddings">
+<h2>ID Embeddings<a class="headerlink" href="#id-embeddings" title="Link to this heading">#</a></h2>
+<p>Since Transformers are permutation-invariant by default, we use <strong>ID Embeddings</strong> to tell the model the identity or position of each token. This applies to both the <strong>variables you want to infer (observations/parameters)</strong> and the <strong>data you condition on (conditions)</strong>.</p>
+<section id="strategies">
+<h3>Strategies<a class="headerlink" href="#strategies" title="Link to this heading">#</a></h3>
+<p>GenSBI supports several embedding strategies via the <code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> parameter (a tuple for <code class="docutils literal notranslate"><span class="pre">(obs,</span> <span class="pre">cond)</span></code>):</p>
+<ol class="arabic simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">absolute</span></code> (Learned)</strong></p>
+<ul class="simple">
+<li><p><strong>Use for:</strong> Unstructured data where order doesn’t matter (e.g., a set of independent cosmological parameters).</p></li>
+<li><p><strong>Mechanism:</strong> The model learns a unique vector for each token index.</p></li>
+<li><p><strong>Initialization:</strong> Use <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code>.</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">pos1d</span></code> / <code class="docutils literal notranslate"><span class="pre">rope1d</span></code> (1D Positional)</strong></p>
+<ul class="simple">
+<li><p><strong>Use for:</strong> Sequential data (e.g., time series, spectra).</p></li>
+<li><p><strong>Mechanism:</strong> Encodes the 1D index (<span class="math notranslate nohighlight">\(t=1, t=2, \dots\)</span>). <code class="docutils literal notranslate"><span class="pre">rope1d</span></code> uses Rotary Positional Embeddings, which are generally superior for capturing relative distances.</p></li>
+<li><p><strong>Initialization:</strong> Use <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code>.</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">pos2d</span></code> / <code class="docutils literal notranslate"><span class="pre">rope2d</span></code> (2D Positional)</strong></p>
+<ul class="simple">
+<li><p><strong>Use for:</strong> Image data or 2D grids.</p></li>
+<li><p><strong>Mechanism:</strong> Encodes the 2D coordinates <span class="math notranslate nohighlight">\((x, y)\)</span> of the token. <code class="docutils literal notranslate"><span class="pre">rope2d</span></code> extends RoPE to two dimensions.</p></li>
+<li><p><strong>Initialization:</strong> Use <code class="docutils literal notranslate"><span class="pre">init_ids_2d</span></code>.</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="initialization-example">
+<h3>Initialization Example<a class="headerlink" href="#initialization-example" title="Link to this heading">#</a></h3>
+<p>When using one of the default pipelines, like the <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline</span></code>, <strong>ID initialization is handled automatically</strong> based on your <code class="docutils literal notranslate"><span class="pre">dims</span></code> and <code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code>.</p>
+<p>However, if you are using the models directly or need custom handling, here is how to initialize the IDs for both observations and conditions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_ids_1d</span><span class="p">,</span> <span class="n">init_ids_2d</span>
+
+<span class="c1"># Example: </span>
+<span class="c1"># Obs: 5 unstructured parameters (absolute)</span>
+<span class="c1"># Cond: 64x64 image (rope2d)</span>
+
+<span class="n">dim_obs</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">dim_cond</span> <span class="o">=</span> <span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span> <span class="c1"># passed as tuple implies 2D</span>
+
+<span class="c1"># --- Observation IDs (Unstructured) ---</span>
+<span class="c1"># semantic_id=0 identifies these as &quot;observation&quot; tokens</span>
+<span class="n">obs_ids</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">dim_obs</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="c1"># Shape: (1, 5, 2) -&gt; (Batch per device, Num_Tokens, ID_Features)</span>
+
+<span class="c1"># --- Condition IDs (Image) ---</span>
+<span class="c1"># semantic_id=1 identifies these as &quot;condition&quot; tokens</span>
+<span class="n">cond_ids</span> <span class="o">=</span> <span class="n">init_ids_2d</span><span class="p">(</span><span class="n">dim_cond</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># Shape: (1, 1024, 3) -&gt; (Batch per device, Num_Tokens, ID_Features) </span>
+<span class="c1"># Note: 64x64 image -&gt; 32x32 patches = 1024 tokens</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Obs IDs shape: </span><span class="si">{</span><span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cond IDs shape: </span><span class="si">{</span><span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="automatic-pipeline-handling">
+<h3>Automatic Pipeline Handling<a class="headerlink" href="#automatic-pipeline-handling" title="Link to this heading">#</a></h3>
+<p>If you use the recipes (e.g., <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline</span></code>), you simply specify the structure:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">ConditionalFlowPipeline</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=...</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>                     <span class="c1"># 5 tokens</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">),</span>             <span class="c1"># Image dimensions</span>
+    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;rope2d&quot;</span><span class="p">),</span> <span class="c1"># Obs=Absolute, Cond=RoPE 2D</span>
+    <span class="o">...</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The pipeline will automatically detecting that <code class="docutils literal notranslate"><span class="pre">dim_cond</span></code> is a tuple and use <code class="docutils literal notranslate"><span class="pre">init_ids_2d</span></code> (and expects you to pass patchified data during training).</p>
+</section>
+</section>
+<section id="working-with-2d-images-spatial-data">
+<h2>Working with 2D Images &amp; Spatial Data<a class="headerlink" href="#working-with-2d-images-spatial-data" title="Link to this heading">#</a></h2>
+<p>GenSBI provides first-class support for 2D data (like images from telescopes or simulations), but it requires specific preprocessing.</p>
+<section id="patchification-is-mandatory">
+<h3>1. Patchification is Mandatory<a class="headerlink" href="#patchification-is-mandatory" title="Link to this heading">#</a></h3>
+<p>The models process data as a sequence of tokens. A standard 2D image must be broken down into patches.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.utils.patchify_2d</span></code> to convert your image tensors <code class="docutils literal notranslate"><span class="pre">(Batch,</span> <span class="pre">H,</span> <span class="pre">W,</span> <span class="pre">C)</span></code> into token sequences <code class="docutils literal notranslate"><span class="pre">(Batch,</span> <span class="pre">Num_Tokens,</span> <span class="pre">Features)</span></code>.</p>
+<p><strong>Example Workflow:</strong></p>
+<ol class="arabic">
+<li><p><strong>Load Image Data</strong>: Shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">64,</span> <span class="pre">64,</span> <span class="pre">3)</span></code></p></li>
+<li><p><strong>Patchify</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x_patch</span> <span class="o">=</span> <span class="n">patchify_2d</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">patch_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c1"># New Shape: (N, 1024, 12)</span>
+<span class="c1"># 32*32 patches = 1024 tokens</span>
+<span class="c1"># 2*2*3 pixels per patch = 12 channels per token</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Feed to Pipeline</strong>: Pass <code class="docutils literal notranslate"><span class="pre">x_patch</span></code> as your conditioning data.</p></li>
+</ol>
+</section>
+<section id="use-rope2d-for-spatial-awareness">
+<h3>2. Use <code class="docutils literal notranslate"><span class="pre">rope2d</span></code> for Spatial Awareness<a class="headerlink" href="#use-rope2d-for-spatial-awareness" title="Link to this heading">#</a></h3>
+<p>When your data is an image, the <em>2D spatial relationship</em> between patches is crucial.</p>
+<ul class="simple">
+<li><p><strong>Avoid</strong> <code class="docutils literal notranslate"><span class="pre">absolute</span></code> or <code class="docutils literal notranslate"><span class="pre">rope1d</span></code>: These treat the image as a long 1D line, losing the knowledge that pixel (0,0) is close to (0,1) AND (1,0).</p></li>
+<li><p><strong>Use</strong> <code class="docutils literal notranslate"><span class="pre">rope2d</span></code>: This embedding strategy encodes the grid structure. The model will understand the 2D distance between patches.</p></li>
+</ul>
+<p>To use this in the <code class="docutils literal notranslate"><span class="pre">Flux1</span></code> model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
+    <span class="o">...</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>                  <span class="c1"># Total number of patches</span>
+    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;rope2d&quot;</span><span class="p">),</span> <span class="c1"># Obs=Params, Cond=Image</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> When manually creating IDs with <code class="docutils literal notranslate"><span class="pre">init_ids_2d</span></code>, pass the <em>grid dimensions</em> (e.g., <code class="docutils literal notranslate"><span class="pre">(32,</span> <span class="pre">32)</span></code>), not the total number of tokens.</p>
+</section>
+<section id="shape-mismatches">
+<h3>3. Shape Mismatches<a class="headerlink" href="#shape-mismatches" title="Link to this heading">#</a></h3>
+<p>Common error: Passing the raw image <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">64,</span> <span class="pre">64,</span> <span class="pre">3)</span></code> directly to the model.</p>
+<ul class="simple">
+<li><p><strong>Symptom</strong>: Shape errors complaining about rank or dimension mismatches.</p></li>
+<li><p><strong>Fix</strong>: Ensure you call <code class="docutils literal notranslate"><span class="pre">patchify_2d</span></code> before training and before inference.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+<div class="section ablog__blog_comments">
+   
+</div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="overview.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Conceptual Overview: How GenSBI is Structured</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="model_cards.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Model Cards</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-structure-tokens-and-channels">Data Structure: Tokens and Channels</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preprocessing">Preprocessing</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#normalization">Normalization</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#patchification-for-images">Patchification (for Images)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id-embeddings">ID Embeddings</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#strategies">Strategies</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#initialization-example">Initialization Example</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-pipeline-handling">Automatic Pipeline Handling</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#working-with-2d-images-spatial-data">Working with 2D Images &amp; Spatial Data</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#patchification-is-mandatory">1. Patchification is Mandatory</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-rope2d-for-spatial-awareness">2. Use <code class="docutils literal notranslate"><span class="pre">rope2d</span></code> for Spatial Awareness</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#shape-mismatches">3. Shape Mismatches</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

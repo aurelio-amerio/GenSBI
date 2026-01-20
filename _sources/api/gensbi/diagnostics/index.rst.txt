@@ -1,0 +1,873 @@
+gensbi.diagnostics
+==================
+
+.. py:module:: gensbi.diagnostics
+
+.. autoapi-nested-parse::
+
+   
+   This module adapts part of the sbi.diagnostics package for use in GenSBI.
+
+   See individual files for license and modification notices.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/diagnostics/distribution_wrapper/index
+   /api/gensbi/diagnostics/lc2st/index
+   /api/gensbi/diagnostics/metrics/index
+   /api/gensbi/diagnostics/sbc/index
+   /api/gensbi/diagnostics/tarp/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.LC2ST
+   gensbi.diagnostics.PosteriorWrapper
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.check_sbc
+   gensbi.diagnostics.check_tarp
+   gensbi.diagnostics.plot_lc2st
+   gensbi.diagnostics.plot_tarp
+   gensbi.diagnostics.run_sbc
+   gensbi.diagnostics.run_tarp
+   gensbi.diagnostics.sbc_rank_plot
+
+
+Package Contents
+----------------
+
+.. py:class:: LC2ST(thetas, xs, posterior_samples, seed = 1, num_folds = 1, num_ensemble = 1, classifier = MLPClassifier, z_score = False, classifier_kwargs = None, num_trials_null = 100, permutation = True)
+
+   
+   L-C2ST: Local Classifier Two-Sample Test.
+
+   Implementation based on the official code from [1] and the exisiting C2ST
+   metric [2], using scikit-learn classifiers.
+
+   L-C2ST tests the local consistency of a posterior estimator :math:`q` with
+   respect to the true posterior :math:`p`, at a fixed observation :math:`x_o`,
+   i.e., whether the following null hypothesis holds:
+
+   :math:`H_0(x_o) := q(\theta \mid x_o) = p(\theta \mid x_o)`.
+
+   L-C2ST proceeds as follows:
+
+   1. It first trains a classifier to distinguish between samples from two joint
+      distributions :math:`[\theta_p, x_p]` and :math:`[\theta_q, x_q]`, and
+      evaluates the L-C2ST statistic at a given observation :math:`x_o`.
+
+   2. The L-C2ST statistic is the mean squared error between the predicted
+      probabilities of being in p (class 0) and a Dirac at 0.5, which corresponds to
+      the chance level of the classifier, unable to distinguish between p and q.
+
+   - If ``num_ensemble>1``, the average prediction over all classifiers is used.
+   - If ``num_folds>1`` the average statistic over all cv-folds is used.
+
+   To evaluate the test, steps 1 and 2 are performed over multiple trials under the
+   null hypothesis (H0). If the null distribution is not known, it is estimated
+   using the permutation method, i.e. by training the classifier on the permuted
+   data. The statistics obtained under (H0) is then compared to the one obtained
+   on observed data to compute the p-value, used to decide whether to reject (H0)
+   or not.
+
+   :param thetas: Samples from the prior, of shape (sample_size, dim).
+   :type thetas: Array
+   :param xs: Corresponding simulated data, of shape (sample_size, dim_x).
+   :type xs: Array
+   :param posterior_samples: Samples from the estiamted posterior, of shape (sample_size, dim).
+   :type posterior_samples: Array
+   :param seed: Seed for the sklearn classifier and the KFold cross validation. Default is 1.
+   :type seed: int, optional
+   :param num_folds: Number of folds for the cross-validation. Default is 1 (no cross-validation).
+                     This is useful to reduce variance coming from the data.
+   :type num_folds: int, optional
+   :param num_ensemble: Number of classifiers for ensembling. Default is 1.
+                        This is useful to reduce variance coming from the classifier.
+   :type num_ensemble: int, optional
+   :param classifier: Classification architecture to use, can be one of the following:
+                      - "random_forest" or "mlp", defaults to "mlp" or
+                      - A classifier class (e.g., RandomForestClassifier, MLPClassifier).
+   :type classifier: str or Type[BaseEstimator], optional
+   :param z_score: Whether to z-score to normalize the data. Default is False.
+   :type z_score: bool, optional
+   :param classifier_kwargs: Custom kwargs for the sklearn classifier. Default is None.
+   :type classifier_kwargs: Dict[str, Any], optional
+   :param num_trials_null: Number of trials to estimate the null distribution. Default is 100.
+   :type num_trials_null: int, optional
+   :param permutation: Whether to use the permutation method for the null hypothesis. Default is True.
+   :type permutation: bool, optional
+
+   .. rubric:: References
+
+   [1] : https://arxiv.org/abs/2306.03580, https://github.com/JuliaLinhart/lc2st
+   [2] : https://github.com/sbi-dev/sbi/blob/main/sbi/utils/metrics.py
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _train(theta_p, theta_q, x_p, x_q, verbosity = 0)
+
+      
+      Returns the classifiers trained on observed data.
+
+      :param theta_p: Samples from P, of shape (sample_size, dim).
+      :type theta_p: Array
+      :param theta_q: Samples from Q, of shape (sample_size, dim).
+      :type theta_q: Array
+      :param x_p: Observations corresponding to P, of shape (sample_size, dim_x).
+      :type x_p: Array
+      :param x_q: Observations corresponding to Q, of shape (sample_size, dim_x).
+      :type x_q: Array
+      :param verbosity: Verbosity level. Default is 0.
+      :type verbosity: int, optional
+
+      :returns: List of trained classifiers for each cv fold.
+      :rtype: List[Any]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_scores(theta_o, x_o, trained_clfs, return_probs = False)
+
+      
+      Computes the L-C2ST scores given the trained classifiers.
+
+      Mean squared error (MSE) between 0.5 and the predicted probabilities
+      of being in class 0 over the dataset (`theta_o`, `x_o`).
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (,dim_x).
+      :type x_o: Array
+      :param trained_clfs: List of trained classifiers, of length `num_folds`.
+      :type trained_clfs: List[Any]
+      :param return_probs: Whether to return the predicted probabilities of being in P. Default is False.
+      :type return_probs: bool, optional
+
+      :returns:
+
+                - scores: L-C2ST scores at `x_o`, of shape (`num_folds`,).
+                - (probs, scores): Predicted probabilities and L-C2ST scores at `x_o`,
+                  each of shape (`num_folds`,).
+      :rtype: Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_statistic_on_observed_data(theta_o, x_o)
+
+      
+      Computes the L-C2ST statistics for the observed data.
+
+      Mean over all cv-scores.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x)
+      :type x_o: Array
+
+      :returns: L-C2ST statistic at `x_o`.
+      :rtype: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_statistics_under_null_hypothesis(theta_o, x_o, return_probs = False, verbosity = 0)
+
+      
+      Computes the L-C2ST scores under the null hypothesis.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x).
+      :type x_o: Array
+      :param return_probs: Whether to return the predicted probabilities of being in P. Default is False.
+      :type return_probs: bool, optional
+      :param verbosity: Verbosity level. Default is 1.
+      :type verbosity: int, optional
+
+      :returns:
+
+                - scores: L-C2ST scores under (H0).
+                - (probs, scores): Predicted probabilities and L-C2ST scores under (H0).
+      :rtype: Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: p_value(theta_o, x_o)
+
+      
+      Computes the p-value for L-C2ST.
+
+      The p-value is the proportion of times the L-C2ST statistic under the null
+      hypothesis is greater than the L-C2ST statistic at the observation `x_o`.
+      It is computed by taking the empirical mean over statistics computed on
+      several trials under the null hypothesis: $1/H \sum_{h=1}^{H} I(T_h < T_o)$.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of dhape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x).
+      :type x_o: Array
+
+      :returns: p-value for L-C2ST at `x_o`.
+      :rtype: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: reject_test(theta_o, x_o, alpha = 0.05)
+
+      
+      Computes the test result for L-C2ST at a given significance level.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x).
+      :type x_o: Array
+      :param alpha: Significance level. Default is 0.05.
+      :type alpha: float, optional
+
+      :returns: The L-C2ST result: True if rejected, False otherwise.
+      :rtype: bool
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: train_on_observed_data(seed = None, verbosity = 1)
+
+      
+      Trains the classifier on the observed data.
+
+      Saves the trained classifier(s) as a list of length `num_folds`.
+
+      :param seed: Random state of the classifier. Default is None.
+      :type seed: int, optional
+      :param verbosity: Verbosity level. Default is 1.
+      :type verbosity: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: train_under_null_hypothesis(verbosity = 1)
+
+      
+      Computes the L-C2ST scores under the null hypothesis (H0).
+      Saves the trained classifiers for each null trial.
+
+      :param verbosity: Verbosity level. Default is 1.
+      :type verbosity: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: clf_class
+
+
+   .. py:attribute:: null_distribution
+      :value: None
+
+
+
+   .. py:attribute:: num_ensemble
+      :value: 1
+
+
+
+   .. py:attribute:: num_folds
+      :value: 1
+
+
+
+   .. py:attribute:: num_trials_null
+      :value: 100
+
+
+
+   .. py:attribute:: permutation
+      :value: True
+
+
+
+   .. py:attribute:: rngs
+
+
+   .. py:attribute:: seed
+      :value: 1
+
+
+
+   .. py:attribute:: theta_p
+
+
+   .. py:attribute:: theta_p_mean
+
+
+   .. py:attribute:: theta_p_std
+
+
+   .. py:attribute:: theta_q
+
+
+   .. py:attribute:: trained_clfs
+      :value: None
+
+
+
+   .. py:attribute:: trained_clfs_null
+      :value: None
+
+
+
+   .. py:attribute:: x_p
+
+
+   .. py:attribute:: x_p_mean
+
+
+   .. py:attribute:: x_p_std
+
+
+   .. py:attribute:: x_q
+
+
+   .. py:attribute:: z_score
+      :value: False
+
+
+
+.. py:class:: PosteriorWrapper(pipeline, *args, rngs, theta_shape=None, x_shape=None, **kwargs)
+
+   
+   Wrap a GenSBI pipeline into a distribution compatible with `sbi`.
+
+   :param pipeline:
+   :type pipeline: An instance of a Pipeline from GenSBI.
+   :param rngs:
+   :type rngs: A nnx.Rngs instance for random number generation.
+   :param theta_shape:
+   :type theta_shape: Optional shape of the parameters (theta) to be sampled.
+   :param x_shape:
+   :type x_shape: Optional shape of the observations (x) to condition on.
+   :param \*args:
+   :type \*args: Additional arguments to be passed to the pipeline during sampling.
+   :param \*\*kwargs:
+   :type \*\*kwargs: Additional arguments to be passed to the pipeline during sampling.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _process_x(x)
+
+
+   .. py:method:: _ravel(x)
+
+
+   .. py:method:: _unravel_theta(x)
+
+
+   .. py:method:: _unravel_xs(x)
+
+
+   .. py:method:: sample(sample_shape, x = None, **kwargs)
+
+      
+      Sample from the posterior distribution conditioned on x.
+
+      :param sample_shape: Shape of the samples to be drawn.
+      :type sample_shape: Tuple
+      :param x: Optional tensor of observations to condition on. If None, uses the default_x.
+      :type x: Array
+
+      :returns: Samples from the posterior distribution of shape (sample_shape, dim_theta * ch_theta).
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_batched(sample_shape, x = None, chunk_size = 50, show_progress_bars=True, **kwargs)
+
+      
+      Sample from the posterior distribution conditioned on x.
+
+      :param sample_shape: Shape of the samples to be drawn.
+      :type sample_shape: Tuple
+      :param x: Optional tensor of observations to condition on. If None, uses the default_x.
+      :type x: Array
+      :param chunk_size: Size of the chunks to use for batched sampling.
+      :type chunk_size: int
+      :param show_progress_bars: Whether to show progress bars during sampling.
+      :type show_progress_bars: bool
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: set_default_x(x)
+
+
+   .. py:attribute:: args
+      :value: ()
+
+
+
+   .. py:attribute:: default_x
+      :value: None
+
+
+
+   .. py:attribute:: kwargs
+
+
+   .. py:attribute:: pipeline
+
+
+   .. py:attribute:: rngs
+
+
+.. py:function:: check_sbc(ranks, prior_samples, dap_samples, num_posterior_samples = 1000, num_c2st_repetitions = 1)
+
+   
+   Return uniformity checks and data-averaged posterior checks for SBC.
+
+   :param ranks: Ranks for each SBC run and for each model parameter,
+                 shape (N, dim_parameters).
+   :type ranks: Array
+   :param prior_samples: N samples from the prior.
+   :type prior_samples: Array
+   :param dap_samples: N samples from the data-averaged posterior.
+   :type dap_samples: Array
+   :param num_posterior_samples: Number of posterior samples used for SBC ranking. Default is 1000.
+   :type num_posterior_samples: int, optional
+   :param num_c2st_repetitions: Number of times C2ST is repeated to estimate robustness. Default is 1.
+   :type num_c2st_repetitions: int, optional
+
+   :returns: Dictionary containing:
+             - ks_pvals: p-values of the Kolmogorov-Smirnov test of uniformity,
+               one for each dim_parameters.
+             - c2st_ranks: C2ST accuracy between ranks and uniform baseline,
+               one for each dim_parameters.
+             - c2st_dap: C2ST accuracy between prior and DAP samples, single value.
+   :rtype: Dict[str, Array]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_tarp(ecp, alpha)
+
+   
+   Check the obtained TARP credibility levels and expected coverage probabilities.
+
+   This diagnostic helps to uncover underdispersed, well-covering, or overdispersed posteriors.
+
+   Let :math:`\mathrm{ecp}` be the expected coverage probability computed with the TARP method, and :math:`\alpha` the credibility levels (second output of ``run_tarp``).
+
+   The area to curve (ATC) is defined as:
+
+   .. math::
+       \mathrm{ATC} = \sum_{i: \alpha_i > 0.5} \left( \mathrm{ecp}_i - \alpha_i \right)
+
+   where values close to zero indicate well-calibrated posteriors. Values larger than zero indicate overdispersed distributions (the estimated posterior is too wide), while values smaller than zero indicate underdispersed distributions (the estimated posterior is too narrow). This property can also indicate if the posterior is biased (see Figure 2 of the reference paper).
+
+   A two-sample Kolmogorov-Smirnov test is performed between :math:`\mathrm{ecp}` and :math:`\alpha` to test the null hypothesis that both distributions are identical (produced by one common CDF). The p-value should be close to 1 for well-calibrated posteriors. Commonly, the null is rejected if p-value is below 0.05.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_lc2st(lc2st, post_samples_star, x_o, fig = None, ax = None, conf_alpha=0.05)
+
+.. py:function:: plot_tarp(ecp, alpha, title = None)
+
+   
+   Plot the expected coverage probability (ECP) against the credibility level (alpha).
+
+   :param ecp: Array of expected coverage probabilities.
+   :type ecp: array-like
+   :param alpha: Array of credibility levels.
+   :type alpha: array-like
+   :param title: Title for the plot. Default is "".
+   :type title: str, optional
+
+   :returns: * **fig** (*matplotlib.figure.Figure*) -- The figure object.
+             * **ax** (*matplotlib.axes.Axes*) -- The axes object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: run_sbc(thetas, xs, posterior_samples, reduce_fns = 'marginals', show_progress_bar = True, **kwargs)
+
+   
+   Run simulation-based calibration (SBC) or expected coverage.
+
+   Note: This function implements two versions of coverage diagnostics:
+
+   - Setting ``reduce_fns = "marginals"`` performs SBC as proposed in Talts et al.
+     (see https://arxiv.org/abs/1804.06788).
+   - Setting ``reduce_fns = posterior.log_prob`` performs sample-based expected
+     coverage as proposed in Deistler et al.
+     (see https://arxiv.org/abs/2210.04815).
+
+   :param thetas: Ground-truth parameters for SBC, simulated from the prior.
+   :type thetas: Array
+   :param xs: Observed data for SBC, simulated from thetas.
+   :type xs: Array
+   :param posterior_samples: Samples from the posterior. Shape: (num_posterior_samples, num_sbc_samples, dim_theta).
+   :type posterior_samples: Array
+   :param reduce_fns: Function used to reduce the parameter space into 1D.
+                      Simulation-based calibration can be recovered by setting this to the
+                      string `"marginals"`. Sample-based expected coverage can be recovered
+                      by setting it to `posterior.log_prob` (as a Callable). Default is "marginals".
+   :type reduce_fns: str or Callable or List[Callable], optional
+   :param show_progress_bar: Whether to display a progress bar over SBC runs. Default is True.
+   :type show_progress_bar: bool, optional
+   :param \*\*kwargs: Additional keyword arguments.
+
+   :returns: * **ranks** (*Array*) -- Ranks of the ground truth parameters under the inferred posterior.
+             * **dap_samples** (*Array*) -- Samples from the data-averaged posterior.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: run_tarp(thetas, posterior_samples, seed = 1, references = None, distance = l2, num_bins = 30, z_score_theta = True)
+
+   
+   Estimates coverage of samples given true values `thetas` with the TARP method.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: sbc_rank_plot(ranks, num_posterior_samples, num_bins = None, plot_type = 'cdf', parameter_labels = None, ranks_labels = None, colors = None, fig = None, ax = None, figsize = None, **kwargs)
+
+   
+   Plot simulation-based calibration ranks as empirical CDFs or histograms.
+
+   Additional options can be passed via the kwargs argument, see _sbc_rank_plot.
+
+   :param ranks: Array of ranks to be plotted shape (num_sbc_runs, num_parameters), or
+                 list of Arrays when comparing several sets of ranks, e.g., set of ranks
+                 obtained from different methods.
+   :type ranks: Array or List[Array]
+   :param num_posterior_samples: Number of posterior samples used for ranking.
+   :type num_posterior_samples: int
+   :param num_bins: Number of bins used for binning the ranks. Default is num_sbc_runs / 20.
+   :type num_bins: int, optional
+   :param plot_type: Type of SBC plot, histograms ("hist") or empirical cdfs ("cdf"). Default is "cdf".
+   :type plot_type: str, optional
+   :param parameter_labels: List of labels for each parameter dimension.
+   :type parameter_labels: List[str], optional
+   :param ranks_labels: List of labels for each set of ranks.
+   :type ranks_labels: List[str], optional
+   :param colors: List of colors for each parameter dimension, or each set of ranks.
+   :type colors: List[str], optional
+   :param fig: Figure object to plot in.
+   :type fig: Figure, optional
+   :param ax: Axis object to plot in.
+   :type ax: Axes, optional
+   :param figsize: Dimensions of figure object.
+   :type figsize: tuple, optional
+   :param \*\*kwargs: Additional keyword arguments passed to _sbc_rank_plot.
+
+   :returns: * **fig** (*Figure*) -- Figure object.
+             * **ax** (*Axes*) -- Axis object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

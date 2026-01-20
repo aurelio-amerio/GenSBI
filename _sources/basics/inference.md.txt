@@ -52,24 +52,21 @@ samples1 = sampler_fn(jax.random.PRNGKey(1), nsamples=5000)
 samples2 = sampler_fn(jax.random.PRNGKey(2), nsamples=5000)
 ```
 
-<!-- ### Batching over Observations
-
-If you need to perform inference for a batch of different observations $x_1, x_2, ..., x_N$, you should use `jax.vmap` over the pipeline's sampler or loop efficiently.
-
-```python
-# Example of vmapping the sampler
-def get_samples(key, x):
-    return pipeline.sample(key, condition=x, num_samples=1000)
-
-keys = jax.random.split(key, num_observations)
-batch_samples = jax.vmap(get_samples)(keys, batch_of_observations)
-``` -->
-
-<!-- ## Post-Processing
-
-The samples returned are JAX arrays. For analysis, you typically want to convert them to NumPy arrays or use them directly in validation metrics.
+## Batched Inference
+To perform inference efficiently on a batch of different observations (e.g., $N$ diverse inputs), use the `sample_batched` method. This handles internal batching and chunking to manage memory usage.
 
 ```python
-import numpy as np
-samples_np = np.array(samples)
-``` -->
+# xs: Batch of conditions with shape (B, dim_cond, ch_cond)
+xs = ... 
+
+# Generate samples
+posterior_samples = pipeline.sample_batched(
+    key=jax.random.PRNGKey(42),
+    condition=xs, 
+    nsamples=1000,
+    chunk_size=20, # Process 20 observations at a time
+)
+
+# Returns: (num_posterior_samples, B, dim_obs, ch_obs)
+# e.g. (1000, B, dim_obs, 1)
+```

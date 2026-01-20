@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/jupyter-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/thebelab.css" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
@@ -47,8 +47,8 @@
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../../_static/copybutton.js?v=18a8d5f5"></script>
     <script src="../../../../_static/thebelab-helper.js"></script>
@@ -56,25 +56,22 @@
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="../../../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
-    <script type="module">
-mermaid.initialize({
-    startOnLoad: true,
-    theme: 'neutral'
-});
-</script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
 
-const defaultStyle = document.createElement('style');
-defaultStyle.textContent = `pre.mermaid {
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
     /* Same as .mermaid-container > pre */
     display: block;
     width: 100%;
@@ -85,12 +82,11 @@ pre.mermaid > svg {
     height: 500px;
     width: 100%;
     max-width: 100% !important;
-}
-`;
-document.head.appendChild(defaultStyle);
+}`;
+    document.head.appendChild(defaultStyle);
 
-const fullscreenStyle = document.createElement('style');
-fullscreenStyle.textContent = `.mermaid-container {
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
     display: flex;
     flex-direction: row;
     width: 100%;
@@ -242,10 +238,32 @@ fullscreenStyle.textContent = `.mermaid-container {
 .mermaid-fullscreen-modal .mermaid-fullscreen-btn {
     display: none !important;
 }`;
-document.head.appendChild(fullscreenStyle);
+    document.head.appendChild(fullscreenStyle);
+}
 
 // Detect if page has dark background
 const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
     const bgColor = window.getComputedStyle(document.body).backgroundColor;
     const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
     if (match) {
@@ -253,15 +271,45 @@ const isDarkTheme = () => {
         const g = parseInt(match[2]);
         const b = parseInt(match[3]);
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
         return brightness < 128;
     }
+    // console.log("No dark or light theme detected, defaulting to light theme");
     return false;
 };
 
-const load = async () => {
-    await mermaid.run();
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
 
-    const all_mermaids = document.querySelectorAll(".mermaid");
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
     const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
 
     if ("False" === "True") {
@@ -269,10 +317,10 @@ const load = async () => {
         if(mermaids_to_add_zoom > 0) {
             var svgs = d3.selectAll("");
             if(all_mermaids.length !== mermaids_processed.length) {
-                setTimeout(load, 200);
+                setTimeout(() => runMermaid(false), 200);
                 return;
             } else if(svgs.size() !== mermaids_to_add_zoom) {
-                setTimeout(load, 200);
+                setTimeout(() => runMermaid(false), 200);
                 return;
             } else {
                 svgs.each(function() {
@@ -288,16 +336,21 @@ const load = async () => {
         }
     } else if(all_mermaids.length !== mermaids_processed.length) {
         // Wait for mermaid to process all diagrams
-        setTimeout(load, 200);
+        setTimeout(() => runMermaid(false), 200);
         return;
     }
-
-    const darkTheme = isDarkTheme();
 
     // Stop here if not adding fullscreen capability
     if ("True" !== "True") return;
 
-    const modal = document.createElement('div');
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
     modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
@@ -308,10 +361,8 @@ const load = async () => {
     `;
     document.body.appendChild(modal);
 
-    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
-
-    let previousScrollOffset = [window.scrollX, window.scrollY];
 
     const closeModal = () => {
         modal.classList.remove('active');
@@ -330,11 +381,14 @@ const load = async () => {
         }
     });
 
-    const allButtons = [];
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
             return;
         }
 
@@ -392,46 +446,57 @@ const load = async () => {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
-
         container.appendChild(fullscreenBtn);
-        allButtons.push(fullscreenBtn);
-    });
-
-    // Update theme classes when theme changes
-    const updateTheme = () => {
-        const dark = isDarkTheme();
-        allButtons.forEach(btn => {
-            if (dark) {
-                btn.classList.add('dark-theme');
-            } else {
-                btn.classList.remove('dark-theme');
-            }
-        });
-        if (dark) {
-            modal.classList.add('dark-theme');
-            modalContent.classList.add('dark-theme');
-            closeBtn.classList.add('dark-theme');
-        } else {
-            modal.classList.remove('dark-theme');
-            modalContent.classList.remove('dark-theme');
-            closeBtn.classList.remove('dark-theme');
-        }
-    };
-
-    // Watch for theme changes
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class', 'style', 'data-theme']
-    });
-    observer.observe(document.body, {
-        attributes: true,
-        attributeFilter: ['class', 'style']
     });
 };
 
-window.addEventListener("load", load);
-</script>
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/models/flux1/model';</script>
     <link rel="icon" href="../../../../_static/logo_small.png"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
@@ -798,10 +863,26 @@ window.addEventListener("load", load);
 <span class="sd">    - Conditioning data (often denoted $x$) has shape `(batch, dim_cond, context_in_dim)`.</span>
 <span class="sd">        `context_in_dim` can be &gt; 1 (e.g., multiple detectors or multiple features per measured token).</span>
 
-<span class="sd">    Example: 2 parameters, frequency grid with 2 detectors</span>
+<span class="sd">    **Data Stucture and ID Embeddings**:</span>
 
-<span class="sd">    - `dim_obs = 2`, `in_channels = 1`  -&gt; `(batch, 2, 1)`</span>
-<span class="sd">    - `dim_cond = n_freq`, `context_in_dim = 2` -&gt; `(batch, n_freq, 2)`</span>
+<span class="sd">    Flux1 supports unstructured, 1D, and 2D data (and can be extended to ND) through different ID embedding strategies.</span>
+<span class="sd">    The model needs to know *what* each token represents distinct from its value. This is handled by `id_embedding_strategy`.</span>
+
+<span class="sd">    - `absolute`: Learned embeddings. Use for **unstructured data** (order doesn&#39;t matter, e.g. physical parameters).</span>
+<span class="sd">        Initialize IDs using `gensbi.recipes.utils.init_ids_1d` (the `semantic_id` will be ignored).</span>
+<span class="sd">    - `pos1d` / `rope1d`: 1D positional embeddings. Use for **sequential data** (order matters, e.g. time series, spectra).</span>
+<span class="sd">        Initialize IDs using `gensbi.recipes.utils.init_ids_1d`. The `semantic_id` is optional for `pos1d` but recommended for `rope1d`.</span>
+<span class="sd">    - `pos2d` / `rope2d`: 2D positional embeddings. Use for **image data** or 2D grids.</span>
+<span class="sd">        Initialize IDs using `gensbi.recipes.utils.init_ids_2d`. The `semantic_id` is optional for `pos2d` but recommended for `rope2d`.</span>
+
+<span class="sd">    **Preprocessing for Images/2D Data**:</span>
+
+<span class="sd">    - **Patchification**: 2D images must be patchified (flattened into a sequence of tokens) before passing them to the model.</span>
+<span class="sd">      Use `gensbi.recipes.utils.patchify_2d` for this purpose.</span>
+<span class="sd">    - **Normalization**: To speed up convergence, ensure data is normalized to 0 mean and unit variance.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        See the documentation and tutorials for more information on id embeddings and data preprocessing.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -831,8 +912,8 @@ window.addEventListener("load", load);
 <span class="sd">            Number of conditioning tokens.</span>
 <span class="sd">        theta : int</span>
 <span class="sd">            Scaling factor for positional encoding.</span>
-<span class="sd">        id_embedding_kind : tuple[str, str]</span>
-<span class="sd">            Kind of ID embedding for obs and cond respectively. Options are &quot;absolute&quot;, &quot;pos1d&quot;, &quot;pos2d&quot; or &quot;rope&quot;.</span>
+<span class="sd">        id_embedding_strategy : tuple[str, str]</span>
+<span class="sd">            Kind of ID embedding for obs and cond respectively. Options are &quot;absolute&quot;, &quot;pos1d&quot;, &quot;pos2d&quot;, &quot;rope1d&quot;, &quot;rope2d&quot;.</span>
 <span class="sd">        guidance_embed : bool</span>
 <span class="sd">            Whether to use guidance embedding.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
@@ -892,9 +973,9 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.theta">[docs]</a>
     <span class="n">theta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span></div>
 
-<div class="viewcode-block" id="Flux1Params.id_embedding_kind">
-<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.id_embedding_kind">[docs]</a>
-    <span class="n">id_embedding_kind</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+<div class="viewcode-block" id="Flux1Params.id_embedding_strategy">
+<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.id_embedding_strategy">[docs]</a>
+    <span class="n">id_embedding_strategy</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
         <span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
     <span class="p">)</span>  <span class="c1"># &quot;absolute&quot;, &quot;pos1d&quot;, &quot;pos2d&quot; or &quot;rope&quot; - for obs and cond respectively</span></div>
@@ -911,14 +992,21 @@ window.addEventListener("load", load);
 <div class="viewcode-block" id="Flux1Params.__post_init__">
 <a class="viewcode-back" href="../../../../api/gensbi/models/index.html#gensbi.models.flux1.Flux1Params.__post_init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">availabel_embeddings</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;pos1d&quot;</span><span class="p">,</span> <span class="s2">&quot;pos2d&quot;</span><span class="p">,</span> <span class="s2">&quot;rope&quot;</span><span class="p">]</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">availabel_embeddings</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Unknown id embedding kind </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> for obs.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">availabel_embeddings</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Unknown id embedding kind </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> for cond.&quot;</span>
-        <span class="c1"># Enforce that if either is &#39;rope&#39;, both must be &#39;rope&#39;</span>
-        <span class="k">if</span> <span class="s2">&quot;rope&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;rope&quot;</span><span class="p">,</span> <span class="p">(</span>
-                <span class="s2">&quot;If using RoPE, both obs and cond must use RoPE embedding.&quot;</span>
-            <span class="p">)</span>
+        <span class="n">availabel_embeddings</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pos1d&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pos2d&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rope&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rope1d&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rope2d&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">availabel_embeddings</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Unknown id embedding kind </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> for obs.&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">availabel_embeddings</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Unknown id embedding kind </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> for cond.&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
             <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span>
         <span class="p">)</span>
@@ -966,27 +1054,48 @@ window.addEventListener("load", load);
         <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">num_heads</span></div>
 
 
-        <span class="k">if</span> <span class="s2">&quot;rope&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">use_rope</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_cond</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span>
+        <span class="p">)</span>
+
+        <span class="c1"># rope1d and rope2d are all equivalent to rope</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_obs</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rope&quot;</span><span class="p">,</span> <span class="s2">&quot;rope1d&quot;</span><span class="p">,</span> <span class="s2">&quot;rope2d&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_obs</span> <span class="o">=</span> <span class="s2">&quot;rope&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_cond</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rope&quot;</span><span class="p">,</span> <span class="s2">&quot;rope1d&quot;</span><span class="p">,</span> <span class="s2">&quot;rope2d&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_cond</span> <span class="o">=</span> <span class="s2">&quot;rope&quot;</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_obs</span> <span class="o">==</span> <span class="s2">&quot;rope&quot;</span>
+            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_cond</span> <span class="o">==</span> <span class="s2">&quot;rope&quot;</span>
+        <span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pe_embedder</span> <span class="o">=</span> <span class="n">EmbedND</span><span class="p">(</span>
                 <span class="n">dim</span><span class="o">=</span><span class="n">pe_dim</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">axes_dim</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">axes_dim</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">use_rope</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pe_embedder</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_obs</span> <span class="o">==</span> <span class="s2">&quot;rope&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_obs</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_obs</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span>
                 <span class="n">num_embeddings</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span>
                 <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
-                <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_cond</span> <span class="o">==</span> <span class="s2">&quot;rope&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_cond</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_cond</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span>
                 <span class="n">num_embeddings</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_cond</span><span class="p">,</span>
                 <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
-                <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_kind</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1035,22 +1144,16 @@ window.addEventListener("load", load);
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="Flux1.condition_embedding">
-<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1.condition_embedding">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="mf">0.01</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Flux1.condition_null">
-<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1.condition_null">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">condition_null</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
-                <span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">cond</span><span class="p">(),</span>
-                <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_cond</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="p">)</span></div>
-
+        <span class="c1"># self.condition_embedding = nnx.Param(</span>
+        <span class="c1">#     0.01 * jnp.ones((1, self.hidden_size), dtype=params.param_dtype)</span>
+        <span class="c1"># )</span>
+        <span class="c1"># self.condition_null = nnx.Param(</span>
+        <span class="c1">#     jax.random.normal(</span>
+        <span class="c1">#         params.rngs.cond(),</span>
+        <span class="c1">#         (1, params.dim_cond, self.hidden_size),</span>
+        <span class="c1">#         dtype=params.param_dtype,</span>
+        <span class="c1">#     )</span>
+        <span class="c1"># )</span>
 
 <div class="viewcode-block" id="Flux1.double_blocks">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1.double_blocks">[docs]</a>
@@ -1107,7 +1210,7 @@ window.addEventListener("load", load);
         <span class="n">obs_ids</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
         <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
         <span class="n">cond_ids</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
-        <span class="n">conditioned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">Array</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">conditioned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">Array</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># does nothing</span>
         <span class="n">guidance</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
 
@@ -1130,14 +1233,11 @@ window.addEventListener("load", load);
 
         <span class="c1"># running on sequences obs</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_in</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_in</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
+        <span class="c1"># if cond is a single vector, repeat it for each obs</span>
+        <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_in</span><span class="p">(</span><span class="n">timestep_embedding</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">256</span><span class="p">))</span>
-
-        <span class="n">conditioned</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">conditioned</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-        <span class="n">conditioned_int</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">conditioned</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
-
-        <span class="n">condition_embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">conditioned_int</span><span class="p">)</span>
-
-        <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">+</span> <span class="n">condition_embedding</span>  <span class="c1"># we add the condition embedding to the vector</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">guidance_embed</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">guidance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1146,21 +1246,29 @@ window.addEventListener("load", load);
                 <span class="p">)</span>
             <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vector_in</span><span class="p">(</span><span class="n">guidance</span><span class="p">)</span>
 
-        <span class="n">cond_processed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_in</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>  <span class="c1"># (B, F, H)</span>
-        <span class="n">cond_null</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">condition_null</span><span class="p">,</span> <span class="n">repeats</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
-        <span class="p">)</span>  <span class="c1"># (B, F, H)</span>
-        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-            <span class="n">conditioned</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">cond_processed</span><span class="p">,</span> <span class="n">cond_null</span>
-        <span class="p">)</span>  <span class="c1"># we replace the condition with a null vector if not conditioned</span>
+        <span class="c1"># if not using rope for a dimension, perform id embedding and add it to the input</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
+            <span class="n">obs_ids_rope</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">obs_ids</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obs_ids_rope</span> <span class="o">=</span> <span class="n">obs_ids</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cond</span> <span class="o">=</span> <span class="n">cond</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">)</span>
+            <span class="n">cond_ids_rope</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">cond_ids</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cond_ids_rope</span> <span class="o">=</span> <span class="n">cond_ids</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_rope</span><span class="p">:</span>
-            <span class="n">ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">cond_ids</span><span class="p">,</span> <span class="n">obs_ids</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_obs</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_cond</span><span class="p">:</span>
+            <span class="c1"># we use rope embeddings</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">cond_ids_rope</span><span class="p">,</span> <span class="n">obs_ids_rope</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">pe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pe_embedder</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># we add the positional embeddings</span>
-            <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="n">cond</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">)</span>
             <span class="n">pe</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">double_blocks</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
@@ -1233,7 +1341,7 @@ window.addEventListener("load", load);
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

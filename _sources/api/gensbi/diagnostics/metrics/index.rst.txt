@@ -1,0 +1,190 @@
+gensbi.diagnostics.metrics
+==========================
+
+.. py:module:: gensbi.diagnostics.metrics
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/diagnostics/metrics/c2st/index
+   /api/gensbi/diagnostics/metrics/l1_l2/index
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.metrics.c2st
+   gensbi.diagnostics.metrics.check_c2st
+   gensbi.diagnostics.metrics.l1
+   gensbi.diagnostics.metrics.l2
+
+
+Package Contents
+----------------
+
+.. py:function:: c2st(X, Y, seed = 1, n_folds = 5, metric = 'accuracy', classifier = 'rf', classifier_kwargs = None, z_score = True, noise_scale = None, verbosity = 0)
+
+   
+   Compute classifier-based two-sample test accuracy between X and Y.
+
+   This method uses a classifier to distinguish between two sets of samples.
+   If the returned accuracy is 0.5, X and Y are considered to be from the same generating distribution.
+   If the accuracy is close to 1, X and Y are considered to be from different distributions.
+
+   Training of the classifier is performed with N-fold cross-validation using scikit-learn.
+   By default, a `RandomForestClassifier` is used (``classifier='rf'``).
+   Alternatively, a multi-layer perceptron is available (``classifier='mlp'``).
+
+   Both sets of samples are normalized (z-scored) using the mean and standard deviation of X,
+   unless ``z_score=False``. If features in X are close to constant, the standard deviation
+   is set to 1 to avoid division by zero.
+
+   :param X: Samples from one distribution. Shape: (n_samples, n_features).
+   :type X: jax.Array
+   :param Y: Samples from another distribution. Shape: (n_samples, n_features).
+   :type Y: jax.Array
+   :param seed: Seed for the sklearn classifier and the KFold cross-validation. Default is 1.
+   :type seed: int, optional
+   :param n_folds: Number of folds to use for cross-validation. Default is 5.
+   :type n_folds: int, optional
+   :param metric: Scikit-learn metric to use for scoring. Default is 'accuracy'.
+   :type metric: str, optional
+   :param classifier: Classification architecture to use. 'rf' for RandomForestClassifier, 'mlp' for MLPClassifier, or a scikit-learn compatible classifier. Default is 'rf'.
+   :type classifier: str or Callable, optional
+   :param classifier_kwargs: Additional keyword arguments for the classifier.
+   :type classifier_kwargs: dict, optional
+   :param z_score: Whether to z-score X and Y using the mean and std of X. Default is True.
+   :type z_score: bool, optional
+   :param noise_scale: If provided, adds Gaussian noise with standard deviation ``noise_scale`` to X and Y.
+   :type noise_scale: float, optional
+   :param verbosity: Controls the verbosity of scikit-learn's cross_val_score. Default is 0.
+   :type verbosity: int, optional
+
+   :returns: Mean accuracy score over the test sets from cross-validation.
+   :rtype: float
+
+   .. rubric:: Examples
+
+   >>> c2st(X, Y)
+   0.519  # X and Y likely come from the same distribution
+   >>> c2st(P, Q)
+   0.998  # P and Q likely come from different distributions
+
+   .. rubric:: References
+
+   [1] http://arxiv.org/abs/1610.06545
+   [2] https://www.osti.gov/biblio/826696/
+   [3] https://scikit-learn.org/stable/modules/cross_validation.html
+   [4] https://github.com/psteinb/c2st/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_c2st(x, y, alg, tol = 0.1)
+
+   
+   Compute classification based two-sample test accuracy and assert it close to
+   chance.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: l1(x, y, axis = -1)
+
+   
+   Calculates the L1 (Manhattan) distance between two tensors.
+
+   :param x: The first tensor.
+   :type x: Array
+   :param y: The second tensor.
+   :type y: Array
+   :param axis: The axis along which to calculate the L2 distance. Defaults to -1.
+   :type axis: int, optional
+
+   :returns: A tensor containing the L1 distance between x and y along the specified axis.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: l2(x, y, axis = -1)
+
+   
+   Calculates the L2 (Euclidean) distance between two tensors.
+
+   :param x: The first tensor.
+   :type x: Array
+   :param y: The second tensor.
+   :type y: Array
+   :param axis: The axis along which to calculate the L2 distance. Defaults to -1.
+   :type axis: int, optional
+
+   :returns: A tensor containing the L2 distance between x and y along the specified axis.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

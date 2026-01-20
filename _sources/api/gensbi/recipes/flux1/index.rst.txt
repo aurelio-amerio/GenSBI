@@ -7,57 +7,6 @@ gensbi.recipes.flux1
 
    Pipeline for training and using a Flux1 model for simulation-based inference.
 
-   .. rubric:: Examples
-
-   .. code-block:: python
-
-       import grain
-       import numpy as np
-       import jax
-       from jax import numpy as jnp
-       from gensbi.recipes import Flux1Pipeline
-
-       # Define your training and validation datasets.
-       train_data = jax.random.rand((1024, 4)) # your training dataset
-       val_data = jax.random.rand((128, 4)) # your validation dataset
-
-       batch_size = 32
-
-       train_dataset_grain = (
-           grain.MapDataset.source(np.array(train_data)[...,None])
-           .shuffle(42)
-           .repeat()
-           .to_iter_dataset()
-           .batch(batch_size)
-           # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-       )
-
-       val_dataset_grain = (
-           grain.MapDataset.source(np.array(val_data)[...,None])
-           .shuffle(42)
-           .repeat()
-           .to_iter_dataset()
-           .batch(batch_size)
-           # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
-       )
-
-       # Define the model
-       dim_obs = 2  # Dimension of the parameter space
-       dim_cond = 2      # Dimension of the observation space
-       pipeline = Flux1Pipeline(train_dataset_grain, val_dataset_grain, dim_obs, dim_cond)
-
-       # Train the model
-       rngs = jax.random.PRNGKey(0)
-       pipeline.train(rngs)
-
-       # Sample from the posterior
-       x_o = jnp.array([0.5, -0.2])  # Example
-       samples = pipeline.sample(rngs, x_o, nsamples=10000, step_size=0.01)
-
-   .. note::
-
-       If you plan on using multiprocessing prefetching, ensure that your script is wrapped in a `if __name__ == "__main__":` guard. See https://docs.python.org/3/library/multiprocessing.html
-
    ..
        !! processed by numpydoc !!
 
@@ -95,10 +44,12 @@ Module Contents
    :type train_dataset: grain dataset or iterator over batches
    :param val_dataset: Validation dataset.
    :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space.
-   :type dim_obs: int
-   :param dim_cond: Dimension of the observation space.
-   :type dim_cond: int
+   :param dim_obs: Dimension of the parameter space (number of tokens).
+                   Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_obs: int or tuple of int
+   :param dim_cond: Dimension of the observation space (number of tokens).
+                    Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_cond: int or tuple of int
    :param params: Parameters for the Conditional model. If None, default parameters are used.
    :type params: ConditionalParams, optional
    :param training_config: Configuration for training. If None, default configuration is used.
@@ -119,6 +70,9 @@ Module Contents
        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
        in a ``if __name__ == "__main__":`` guard.
        See https://docs.python.org/3/library/multiprocessing.html
+
+   .. note::
+       Sampling in the latent space (latent diffusion/flow) is not currently supported.
 
 
 
@@ -223,9 +177,6 @@ Module Contents
 
 
 
-   .. py:attribute:: cond_ids
-
-
    .. py:attribute:: dim_cond
 
 
@@ -233,9 +184,6 @@ Module Contents
 
 
    .. py:attribute:: ema_model
-
-
-   .. py:attribute:: obs_ids
 
 
 .. py:class:: Flux1FlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
@@ -252,13 +200,15 @@ Module Contents
    :type train_dataset: grain dataset or iterator over batches
    :param val_dataset: Validation dataset.
    :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space.
-   :type dim_obs: int
-   :param dim_cond: Dimension of the observation space.
-   :type dim_cond: int
-   :param ch_obs: Number of channels in the observation data. Default is 1.
+   :param dim_obs: Dimension of the parameter space (number of tokens).
+                   Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_obs: int or tuple of int
+   :param dim_cond: Dimension of the observation space (number of tokens).
+                    Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :type dim_cond: int or tuple of int
+   :param ch_obs: Number of channels per token in the observation data. Default is 1.
    :type ch_obs: int, optional
-   :param ch_cond: Number of channels in the conditional data. Default is 1.
+   :param ch_cond: Number of channels per token in the conditional data. Default is 1.
    :type ch_cond: int, optional
    :param params: Parameters for the Conditional model. If None, default parameters are used.
    :type params: ConditionalParams, optional
@@ -280,6 +230,9 @@ Module Contents
        If you plan on using multiprocessing prefetching, ensure that your script is wrapped
        in a ``if __name__ == "__main__":`` guard.
        See https://docs.python.org/3/library/multiprocessing.html
+
+   .. note::
+       Sampling in the latent space (latent diffusion/flow) is not currently supported.
 
 
 

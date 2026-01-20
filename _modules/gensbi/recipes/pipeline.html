@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/jupyter-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/thebelab.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
     <link rel="stylesheet" type="text/css" href="../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
@@ -47,8 +47,8 @@
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../_static/copybutton.js?v=18a8d5f5"></script>
     <script src="../../../_static/thebelab-helper.js"></script>
@@ -56,25 +56,22 @@
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="../../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
-    <script type="module">
-mermaid.initialize({
-    startOnLoad: true,
-    theme: 'neutral'
-});
-</script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
 
-const defaultStyle = document.createElement('style');
-defaultStyle.textContent = `pre.mermaid {
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
     /* Same as .mermaid-container > pre */
     display: block;
     width: 100%;
@@ -85,12 +82,11 @@ pre.mermaid > svg {
     height: 500px;
     width: 100%;
     max-width: 100% !important;
-}
-`;
-document.head.appendChild(defaultStyle);
+}`;
+    document.head.appendChild(defaultStyle);
 
-const fullscreenStyle = document.createElement('style');
-fullscreenStyle.textContent = `.mermaid-container {
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
     display: flex;
     flex-direction: row;
     width: 100%;
@@ -242,10 +238,32 @@ fullscreenStyle.textContent = `.mermaid-container {
 .mermaid-fullscreen-modal .mermaid-fullscreen-btn {
     display: none !important;
 }`;
-document.head.appendChild(fullscreenStyle);
+    document.head.appendChild(fullscreenStyle);
+}
 
 // Detect if page has dark background
 const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
     const bgColor = window.getComputedStyle(document.body).backgroundColor;
     const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
     if (match) {
@@ -253,15 +271,45 @@ const isDarkTheme = () => {
         const g = parseInt(match[2]);
         const b = parseInt(match[3]);
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
         return brightness < 128;
     }
+    // console.log("No dark or light theme detected, defaulting to light theme");
     return false;
 };
 
-const load = async () => {
-    await mermaid.run();
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
 
-    const all_mermaids = document.querySelectorAll(".mermaid");
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
     const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
 
     if ("False" === "True") {
@@ -269,10 +317,10 @@ const load = async () => {
         if(mermaids_to_add_zoom > 0) {
             var svgs = d3.selectAll("");
             if(all_mermaids.length !== mermaids_processed.length) {
-                setTimeout(load, 200);
+                setTimeout(() => runMermaid(false), 200);
                 return;
             } else if(svgs.size() !== mermaids_to_add_zoom) {
-                setTimeout(load, 200);
+                setTimeout(() => runMermaid(false), 200);
                 return;
             } else {
                 svgs.each(function() {
@@ -288,16 +336,21 @@ const load = async () => {
         }
     } else if(all_mermaids.length !== mermaids_processed.length) {
         // Wait for mermaid to process all diagrams
-        setTimeout(load, 200);
+        setTimeout(() => runMermaid(false), 200);
         return;
     }
-
-    const darkTheme = isDarkTheme();
 
     // Stop here if not adding fullscreen capability
     if ("True" !== "True") return;
 
-    const modal = document.createElement('div');
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
     modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
@@ -308,10 +361,8 @@ const load = async () => {
     `;
     document.body.appendChild(modal);
 
-    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
     const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
-
-    let previousScrollOffset = [window.scrollX, window.scrollY];
 
     const closeModal = () => {
         modal.classList.remove('active');
@@ -330,11 +381,14 @@ const load = async () => {
         }
     });
 
-    const allButtons = [];
-
     document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
         if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
             mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
             return;
         }
 
@@ -392,46 +446,57 @@ const load = async () => {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
-
         container.appendChild(fullscreenBtn);
-        allButtons.push(fullscreenBtn);
-    });
-
-    // Update theme classes when theme changes
-    const updateTheme = () => {
-        const dark = isDarkTheme();
-        allButtons.forEach(btn => {
-            if (dark) {
-                btn.classList.add('dark-theme');
-            } else {
-                btn.classList.remove('dark-theme');
-            }
-        });
-        if (dark) {
-            modal.classList.add('dark-theme');
-            modalContent.classList.add('dark-theme');
-            closeBtn.classList.add('dark-theme');
-        } else {
-            modal.classList.remove('dark-theme');
-            modalContent.classList.remove('dark-theme');
-            closeBtn.classList.remove('dark-theme');
-        }
-    };
-
-    // Watch for theme changes
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class', 'style', 'data-theme']
-    });
-    observer.observe(document.body, {
-        attributes: true,
-        attributeFilter: ['class', 'style']
     });
 };
 
-window.addEventListener("load", load);
-</script>
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/recipes/pipeline';</script>
     <link rel="icon" href="../../../_static/logo_small.png"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -951,7 +1016,7 @@ window.addEventListener("load", load);
 <span class="sd">    ch_cond : int, optional</span>
 <span class="sd">        Number of channels in the conditional data (if applicable). Default is None.</span>
 <span class="sd">    training_config : dict, optional</span>
-<span class="sd">        Training configuration. If None, uses defaults from `_get_default_training_config`.</span>
+<span class="sd">        Training configuration. If None, uses defaults from `get_default_training_config`.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -993,10 +1058,8 @@ window.addEventListener("load", load);
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.dim_cond">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim_cond</span> <span class="o">=</span> <span class="n">dim_cond</span></div>
 
-<div class="viewcode-block" id="AbstractPipeline.dim_joint">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.dim_joint">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span></div>
-
+        <span class="c1"># test test</span>
+        <span class="c1"># self.dim_joint = dim_obs + dim_cond</span>
 
 <div class="viewcode-block" id="AbstractPipeline.ch_obs">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.ch_obs">[docs]</a>
@@ -1007,18 +1070,9 @@ window.addEventListener("load", load);
         <span class="bp">self</span><span class="o">.</span><span class="n">ch_cond</span> <span class="o">=</span> <span class="n">ch_cond</span></div>
 
 
-<div class="viewcode-block" id="AbstractPipeline.node_ids">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.node_ids">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">node_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="AbstractPipeline.obs_ids">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.obs_ids">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">)</span>  <span class="c1"># observation ids</span></div>
-
-<div class="viewcode-block" id="AbstractPipeline.cond_ids">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.cond_ids">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">)</span>  <span class="c1"># conditional ids</span></div>
-
+        <span class="c1"># self.node_ids = None # to be set in subclass</span>
+        <span class="c1"># self.obs_ids = None # to be set in subclass</span>
+        <span class="c1"># self.cond_ids = None # to be set in subclass</span>
 
 <div class="viewcode-block" id="AbstractPipeline.params">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.params">[docs]</a>
@@ -1030,7 +1084,7 @@ window.addEventListener("load", load);
         <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="n">training_config</span></div>
 
         <span class="k">if</span> <span class="n">training_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_training_config</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span>
@@ -1185,26 +1239,28 @@ window.addEventListener("load", load);
         <span class="n">warmup_steps</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span>
         <span class="p">)</span>
-        <span class="n">num_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span>
+        <span class="n">nsteps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span>
         <span class="n">max_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span>
         <span class="n">min_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span>
         <span class="c1"># schedule = optax.warmup_cosine_decay_schedule(</span>
         <span class="c1">#     init_value=1e-7,  # Start tiny</span>
         <span class="c1">#     peak_value=max_lr,  # Peak</span>
         <span class="c1">#     warmup_steps=warmup_steps,</span>
-        <span class="c1">#     decay_steps=num_steps - warmup_steps,</span>
+        <span class="c1">#     decay_steps=nsteps - warmup_steps,</span>
         <span class="c1">#     end_value=min_lr,  # 1% of Peak</span>
         <span class="c1"># )</span>
-        
-        
+
         <span class="c1"># we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr</span>
         <span class="n">decay_transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span>
-        
+
         <span class="n">warmup_schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">linear_schedule</span><span class="p">(</span>
-            <span class="n">init_value</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">,</span> <span class="n">end_value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">,</span> <span class="n">transition_steps</span><span class="o">=</span><span class="n">warmup_steps</span><span class="p">)</span>
+            <span class="n">init_value</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">,</span> <span class="n">end_value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">,</span> <span class="n">transition_steps</span><span class="o">=</span><span class="n">warmup_steps</span>
+        <span class="p">)</span>
         <span class="n">constant_schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">constant_schedule</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">)</span>
         <span class="n">decay_schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">cosine_decay_schedule</span><span class="p">(</span>
-            <span class="n">init_value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">,</span> <span class="n">decay_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay_transition</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_steps</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="n">min_lr</span> <span class="o">/</span> <span class="n">max_lr</span>
+            <span class="n">init_value</span><span class="o">=</span><span class="n">max_lr</span><span class="p">,</span>
+            <span class="n">decay_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay_transition</span><span class="p">)</span> <span class="o">*</span> <span class="n">nsteps</span><span class="p">),</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">min_lr</span> <span class="o">/</span> <span class="n">max_lr</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">join_schedules</span><span class="p">(</span>
             <span class="n">schedules</span><span class="o">=</span><span class="p">[</span>
@@ -1212,9 +1268,9 @@ window.addEventListener("load", load);
                 <span class="n">constant_schedule</span><span class="p">,</span>
                 <span class="n">decay_schedule</span><span class="p">,</span>
             <span class="p">],</span>
-            <span class="n">boundaries</span><span class="o">=</span><span class="p">[</span><span class="n">warmup_steps</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">decay_transition</span> <span class="o">*</span> <span class="n">num_steps</span><span class="p">)]</span>
+            <span class="n">boundaries</span><span class="o">=</span><span class="p">[</span><span class="n">warmup_steps</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">decay_transition</span> <span class="o">*</span> <span class="n">nsteps</span><span class="p">)],</span>
         <span class="p">)</span>
-        
+
         <span class="c1"># define the weight decay mask to avoid applying weight decay to bias and norm parameters</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">decay_mask_fn</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
@@ -1241,9 +1297,9 @@ window.addEventListener("load", load);
 
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="AbstractPipeline._get_default_training_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_default_training_config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_training_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<div class="viewcode-block" id="AbstractPipeline.get_default_training_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.get_default_training_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_training_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a dictionary of default training configuration parameters.</span>
 
@@ -1254,19 +1310,13 @@ window.addEventListener("load", load);
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">training_config</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50_000</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50_000</span>
 
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.999</span>
+        
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.80</span>
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">500</span>
 
-        <span class="c1"># TODO, remove these params, as they are not used anymore</span>
-        <span class="c1"># training_config[&quot;patience&quot;] = 10</span>
-        <span class="c1"># training_config[&quot;cooldown&quot;] = 2</span>
-        <span class="c1"># training_config[&quot;factor&quot;] = 0.5</span>
-        <span class="c1"># training_config[&quot;accumulation_size&quot;] = 100</span>
-        <span class="c1"># training_config[&quot;rtol&quot;] = 1e-4</span>
-        <span class="c1">#######</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.70</span>
-        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1000</span>
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-4</span>
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-6</span>
         <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
@@ -1535,7 +1585,7 @@ window.addEventListener("load", load);
         <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">nsteps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">nsteps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;num_steps&quot;</span><span class="p">]</span>
+            <span class="n">nsteps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span>
         <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span>
         <span class="n">val_every</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span>
 
@@ -1561,8 +1611,7 @@ window.addEventListener("load", load);
             <span class="c1"># update the parameters ema</span>
             <span class="k">if</span> <span class="n">j</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">ema_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">ema_optimizer</span><span class="p">)</span>
-                
-            
+
             <span class="n">decay</span> <span class="o">=</span> <span class="mf">0.99</span>
 
             <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -1573,7 +1622,9 @@ window.addEventListener("load", load);
             <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="n">val_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="c1"># batch_val = next(self.val_dataset_iter)</span>
                 <span class="c1"># l_val = val_step(self.model, batch_val, rngs.val_step())</span>
-                <span class="n">l_val</span> <span class="o">=</span> <span class="n">val_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span><span class="p">)</span> <span class="c1"># we use a fixed val batch and rng for validation, to avoid noise</span>
+                <span class="n">l_val</span> <span class="o">=</span> <span class="n">val_step</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span>
+                <span class="p">)</span>  <span class="c1"># we use a fixed val batch and rng for validation, to avoid noise</span>
 
                 <span class="n">ratio</span> <span class="o">=</span> <span class="n">l_val</span> <span class="o">/</span> <span class="n">min_val</span>
                 <span class="k">if</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="n">val_error_ratio</span><span class="p">:</span>
@@ -1659,7 +1710,7 @@ window.addEventListener("load", load);
 <span class="sd">        key : jax.random.PRNGKey</span>
 <span class="sd">            Random number generator key.</span>
 <span class="sd">        x_o : array-like</span>
-<span class="sd">            Conditioning variable (e.g., observed data). </span>
+<span class="sd">            Conditioning variable (e.g., observed data).</span>
 <span class="sd">        nsamples : int, optional</span>
 <span class="sd">            Number of samples to generate.</span>
 
@@ -1709,14 +1760,12 @@ window.addEventListener("load", load);
 <span class="sd">            Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">cond</span> <span class="o">=</span> <span class="n">x_o</span>
-
         <span class="c1"># TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder</span>
         <span class="c1"># Possibly fixed by passing the kwargs, which should include the encoder_key</span>
-        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">batched_sampler</span> <span class="o">=</span> <span class="n">_get_batch_sampler</span><span class="p">(</span>
             <span class="n">sampler</span><span class="p">,</span>
-            <span class="n">ncond</span><span class="o">=</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">ncond</span><span class="o">=</span><span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
             <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
             <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
         <span class="p">)</span>
@@ -1725,7 +1774,7 @@ window.addEventListener("load", load);
 
         <span class="n">res</span> <span class="o">=</span> <span class="n">batched_sampler</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">res</span> <span class="c1"># shape (nsamples, batch_size_cond, dim_obs, ch_obs)</span></div>
+        <span class="k">return</span> <span class="n">res</span>  <span class="c1"># shape (nsamples, batch_size_cond, dim_obs, ch_obs)</span></div>
 </div>
 
 </pre></div>
@@ -1786,7 +1835,7 @@ window.addEventListener("load", load);
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
     <br/>
   </p>
 </div>

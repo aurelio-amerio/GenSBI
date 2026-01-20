@@ -1,0 +1,662 @@
+gensbi.diagnostics.lc2st
+========================
+
+.. py:module:: gensbi.diagnostics.lc2st
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.lc2st.EnsembleClassifier
+   gensbi.diagnostics.lc2st.LC2ST
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.lc2st.eval_lc2st
+   gensbi.diagnostics.lc2st.permute_data
+   gensbi.diagnostics.lc2st.plot_lc2st
+   gensbi.diagnostics.lc2st.train_lc2st
+
+
+Module Contents
+---------------
+
+.. py:class:: EnsembleClassifier(clf, num_ensemble=1, verbosity=1)
+
+   Bases: :py:obj:`sklearn.base.BaseEstimator`
+
+
+   
+   Base class for all estimators in scikit-learn.
+
+   Inheriting from this class provides default implementations of:
+
+   - setting and getting parameters used by `GridSearchCV` and friends;
+   - textual and HTML representation displayed in terminals and IDEs;
+   - estimator serialization;
+   - parameters validation;
+   - data validation;
+   - feature names validation.
+
+   Read more in the :ref:`User Guide <rolling_your_own_estimator>`.
+
+   .. rubric:: Notes
+
+   All estimators should specify all the parameters that can be set
+   at the class level in their ``__init__`` as explicit keyword
+   arguments (no ``*args`` or ``**kwargs``).
+
+   .. rubric:: Examples
+
+   >>> import numpy as np
+   >>> from sklearn.base import BaseEstimator
+   >>> class MyEstimator(BaseEstimator):
+   ...     def __init__(self, *, param=1):
+   ...         self.param = param
+   ...     def fit(self, X, y=None):
+   ...         self.is_fitted_ = True
+   ...         return self
+   ...     def predict(self, X):
+   ...         return np.full(shape=X.shape[0], fill_value=self.param)
+   >>> estimator = MyEstimator(param=2)
+   >>> estimator.get_params()
+   {'param': 2}
+   >>> X = np.array([[1, 2], [2, 3], [3, 4]])
+   >>> y = np.array([1, 0, 1])
+   >>> estimator.fit(X, y).predict(X)
+   array([2, 2, 2])
+   >>> estimator.set_params(param=3).fit(X, y).predict(X)
+   array([3, 3, 3])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: fit(X, y)
+
+
+   .. py:method:: predict_proba(X)
+
+
+   .. py:attribute:: clf
+
+
+   .. py:attribute:: num_ensemble
+      :value: 1
+
+
+
+   .. py:attribute:: trained_clfs
+      :value: []
+
+
+
+   .. py:attribute:: verbosity
+      :value: 1
+
+
+
+.. py:class:: LC2ST(thetas, xs, posterior_samples, seed = 1, num_folds = 1, num_ensemble = 1, classifier = MLPClassifier, z_score = False, classifier_kwargs = None, num_trials_null = 100, permutation = True)
+
+   
+   L-C2ST: Local Classifier Two-Sample Test.
+
+   Implementation based on the official code from [1] and the exisiting C2ST
+   metric [2], using scikit-learn classifiers.
+
+   L-C2ST tests the local consistency of a posterior estimator :math:`q` with
+   respect to the true posterior :math:`p`, at a fixed observation :math:`x_o`,
+   i.e., whether the following null hypothesis holds:
+
+   :math:`H_0(x_o) := q(\theta \mid x_o) = p(\theta \mid x_o)`.
+
+   L-C2ST proceeds as follows:
+
+   1. It first trains a classifier to distinguish between samples from two joint
+      distributions :math:`[\theta_p, x_p]` and :math:`[\theta_q, x_q]`, and
+      evaluates the L-C2ST statistic at a given observation :math:`x_o`.
+
+   2. The L-C2ST statistic is the mean squared error between the predicted
+      probabilities of being in p (class 0) and a Dirac at 0.5, which corresponds to
+      the chance level of the classifier, unable to distinguish between p and q.
+
+   - If ``num_ensemble>1``, the average prediction over all classifiers is used.
+   - If ``num_folds>1`` the average statistic over all cv-folds is used.
+
+   To evaluate the test, steps 1 and 2 are performed over multiple trials under the
+   null hypothesis (H0). If the null distribution is not known, it is estimated
+   using the permutation method, i.e. by training the classifier on the permuted
+   data. The statistics obtained under (H0) is then compared to the one obtained
+   on observed data to compute the p-value, used to decide whether to reject (H0)
+   or not.
+
+   :param thetas: Samples from the prior, of shape (sample_size, dim).
+   :type thetas: Array
+   :param xs: Corresponding simulated data, of shape (sample_size, dim_x).
+   :type xs: Array
+   :param posterior_samples: Samples from the estiamted posterior, of shape (sample_size, dim).
+   :type posterior_samples: Array
+   :param seed: Seed for the sklearn classifier and the KFold cross validation. Default is 1.
+   :type seed: int, optional
+   :param num_folds: Number of folds for the cross-validation. Default is 1 (no cross-validation).
+                     This is useful to reduce variance coming from the data.
+   :type num_folds: int, optional
+   :param num_ensemble: Number of classifiers for ensembling. Default is 1.
+                        This is useful to reduce variance coming from the classifier.
+   :type num_ensemble: int, optional
+   :param classifier: Classification architecture to use, can be one of the following:
+                      - "random_forest" or "mlp", defaults to "mlp" or
+                      - A classifier class (e.g., RandomForestClassifier, MLPClassifier).
+   :type classifier: str or Type[BaseEstimator], optional
+   :param z_score: Whether to z-score to normalize the data. Default is False.
+   :type z_score: bool, optional
+   :param classifier_kwargs: Custom kwargs for the sklearn classifier. Default is None.
+   :type classifier_kwargs: Dict[str, Any], optional
+   :param num_trials_null: Number of trials to estimate the null distribution. Default is 100.
+   :type num_trials_null: int, optional
+   :param permutation: Whether to use the permutation method for the null hypothesis. Default is True.
+   :type permutation: bool, optional
+
+   .. rubric:: References
+
+   [1] : https://arxiv.org/abs/2306.03580, https://github.com/JuliaLinhart/lc2st
+   [2] : https://github.com/sbi-dev/sbi/blob/main/sbi/utils/metrics.py
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _train(theta_p, theta_q, x_p, x_q, verbosity = 0)
+
+      
+      Returns the classifiers trained on observed data.
+
+      :param theta_p: Samples from P, of shape (sample_size, dim).
+      :type theta_p: Array
+      :param theta_q: Samples from Q, of shape (sample_size, dim).
+      :type theta_q: Array
+      :param x_p: Observations corresponding to P, of shape (sample_size, dim_x).
+      :type x_p: Array
+      :param x_q: Observations corresponding to Q, of shape (sample_size, dim_x).
+      :type x_q: Array
+      :param verbosity: Verbosity level. Default is 0.
+      :type verbosity: int, optional
+
+      :returns: List of trained classifiers for each cv fold.
+      :rtype: List[Any]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_scores(theta_o, x_o, trained_clfs, return_probs = False)
+
+      
+      Computes the L-C2ST scores given the trained classifiers.
+
+      Mean squared error (MSE) between 0.5 and the predicted probabilities
+      of being in class 0 over the dataset (`theta_o`, `x_o`).
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (,dim_x).
+      :type x_o: Array
+      :param trained_clfs: List of trained classifiers, of length `num_folds`.
+      :type trained_clfs: List[Any]
+      :param return_probs: Whether to return the predicted probabilities of being in P. Default is False.
+      :type return_probs: bool, optional
+
+      :returns:
+
+                - scores: L-C2ST scores at `x_o`, of shape (`num_folds`,).
+                - (probs, scores): Predicted probabilities and L-C2ST scores at `x_o`,
+                  each of shape (`num_folds`,).
+      :rtype: Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_statistic_on_observed_data(theta_o, x_o)
+
+      
+      Computes the L-C2ST statistics for the observed data.
+
+      Mean over all cv-scores.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x)
+      :type x_o: Array
+
+      :returns: L-C2ST statistic at `x_o`.
+      :rtype: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_statistics_under_null_hypothesis(theta_o, x_o, return_probs = False, verbosity = 0)
+
+      
+      Computes the L-C2ST scores under the null hypothesis.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x).
+      :type x_o: Array
+      :param return_probs: Whether to return the predicted probabilities of being in P. Default is False.
+      :type return_probs: bool, optional
+      :param verbosity: Verbosity level. Default is 1.
+      :type verbosity: int, optional
+
+      :returns:
+
+                - scores: L-C2ST scores under (H0).
+                - (probs, scores): Predicted probabilities and L-C2ST scores under (H0).
+      :rtype: Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: p_value(theta_o, x_o)
+
+      
+      Computes the p-value for L-C2ST.
+
+      The p-value is the proportion of times the L-C2ST statistic under the null
+      hypothesis is greater than the L-C2ST statistic at the observation `x_o`.
+      It is computed by taking the empirical mean over statistics computed on
+      several trials under the null hypothesis: $1/H \sum_{h=1}^{H} I(T_h < T_o)$.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of dhape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x).
+      :type x_o: Array
+
+      :returns: p-value for L-C2ST at `x_o`.
+      :rtype: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: reject_test(theta_o, x_o, alpha = 0.05)
+
+      
+      Computes the test result for L-C2ST at a given significance level.
+
+      :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
+                      of shape (sample_size, dim).
+      :type theta_o: Array
+      :param x_o: The observation, of shape (, dim_x).
+      :type x_o: Array
+      :param alpha: Significance level. Default is 0.05.
+      :type alpha: float, optional
+
+      :returns: The L-C2ST result: True if rejected, False otherwise.
+      :rtype: bool
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: train_on_observed_data(seed = None, verbosity = 1)
+
+      
+      Trains the classifier on the observed data.
+
+      Saves the trained classifier(s) as a list of length `num_folds`.
+
+      :param seed: Random state of the classifier. Default is None.
+      :type seed: int, optional
+      :param verbosity: Verbosity level. Default is 1.
+      :type verbosity: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: train_under_null_hypothesis(verbosity = 1)
+
+      
+      Computes the L-C2ST scores under the null hypothesis (H0).
+      Saves the trained classifiers for each null trial.
+
+      :param verbosity: Verbosity level. Default is 1.
+      :type verbosity: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: clf_class
+
+
+   .. py:attribute:: null_distribution
+      :value: None
+
+
+
+   .. py:attribute:: num_ensemble
+      :value: 1
+
+
+
+   .. py:attribute:: num_folds
+      :value: 1
+
+
+
+   .. py:attribute:: num_trials_null
+      :value: 100
+
+
+
+   .. py:attribute:: permutation
+      :value: True
+
+
+
+   .. py:attribute:: rngs
+
+
+   .. py:attribute:: seed
+      :value: 1
+
+
+
+   .. py:attribute:: theta_p
+
+
+   .. py:attribute:: theta_p_mean
+
+
+   .. py:attribute:: theta_p_std
+
+
+   .. py:attribute:: theta_q
+
+
+   .. py:attribute:: trained_clfs
+      :value: None
+
+
+
+   .. py:attribute:: trained_clfs_null
+      :value: None
+
+
+
+   .. py:attribute:: x_p
+
+
+   .. py:attribute:: x_p_mean
+
+
+   .. py:attribute:: x_p_std
+
+
+   .. py:attribute:: x_q
+
+
+   .. py:attribute:: z_score
+      :value: False
+
+
+
+.. py:function:: eval_lc2st(theta_p, x_o, clf, return_proba = False)
+
+   
+   Evaluates the classifier returned by `train_lc2st` for one observation
+   `x_o` and over the samples `P`.
+
+   :param theta_p: Samples from p (class 0), of shape (sample_size, dim).
+   :type theta_p: Array
+   :param x_o: The observation, of shape (1, dim_x).
+   :type x_o: Array
+   :param clf: Trained classifier.
+   :type clf: BaseEstimator
+   :param return_proba: Whether to return the predicted probabilities of being in P. Default is False.
+   :type return_proba: bool, optional
+
+   :returns: L-C2ST score at `x_o`: MSE between 0.5 and the predicted classifier
+             probability for class 0 on `theta_p`.
+   :rtype: Union[float, Tuple[np.ndarray, float]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: permute_data(theta_p, theta_q, seed = 1)
+
+   
+   Permutes the concatenated data [P,Q] to create null samples.
+
+   :param theta_p: Samples from P, of shape (sample_size, dim).
+   :type theta_p: Array
+   :param theta_q: Samples from Q, of shape (sample_size, dim).
+   :type theta_q: Array
+   :param seed: Random seed. Default is 1.
+   :type seed: int, optional
+
+   :returns: Permuted data [theta_p, theta_q].
+   :rtype: Tuple[Array, Array]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_lc2st(lc2st, post_samples_star, x_o, fig = None, ax = None, conf_alpha=0.05)
+
+.. py:function:: train_lc2st(theta_p, theta_q, x_p, x_q, clf)
+
+   
+   Trains the classifier on the joint data for the L-C2ST.
+
+   :param theta_p: Samples from P, of shape (sample_size, dim).
+   :type theta_p: Array
+   :param theta_q: Samples from Q, of shape (sample_size, dim).
+   :type theta_q: Array
+   :param x_p: Observations corresponding to P, of shape (sample_size, dim_x).
+   :type x_p: Array
+   :param x_q: Observations corresponding to Q, of shape (sample_size, dim_x).
+   :type x_q: Array
+   :param clf: Classifier to train.
+   :type clf: BaseEstimator
+
+   :returns: Trained classifier.
+   :rtype: Any
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
