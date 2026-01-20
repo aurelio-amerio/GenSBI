@@ -1,6 +1,5 @@
 # Installation
 
-
 To avoid dependency issues, it is recommended to create a new conda/mamba environment.
 
 ```bash
@@ -11,25 +10,25 @@ conda activate gensbi
 To install, clone the repository and install dependencies:
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI.git
+pip install gensbi
 ```
 
 If a GPU is available, it is advisable to install the cuda version of the package:
 
 ```bash
-pip install "gensbi[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
+pip install gensbi[cuda12]
 ```
 
 If you want to run the examples, install the GenSBI-examples repository:
 
 ```bash
-pip install "gensbi[examples] @ git+https://github.com/aurelio-amerio/GenSBI.git" 
+pip install gensbi[examples]
 ```
 
 To install all the optional dependencies at once, run:
 
-```bashts
-pip install "gensbi[cuda12,examples] @ git+https://github.com/aurelio-amerio/GenSBI.git" 
+```bash
+pip install gensbi[cuda12,examples]
 ```
 
 ## Requirements

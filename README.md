@@ -1,7 +1,10 @@
 # GenSBI
+
 [![Build](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml/badge.svg)](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml)
 ![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
+[![](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
 ![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
+<!-- [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi) -->
 
 > [!IMPORTANT]  
 > This library is at an early stage of development. The API is potentially subject to change.
@@ -23,7 +26,7 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 ## Installation
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI.git
+pip install gensbi
 ```
 
 For GPU support and other options, see the [Installation Guide](https://aurelio-amerio.github.io/GenSBI/getting_started/installation.html).
@@ -65,6 +68,7 @@ samples = pipeline.sample(key, x_observed, num_samples=10_000)
 ```
 
 ## Examples
+
 <table align="center" style="width:95%;">
   <tr>
     <td align="center">
@@ -75,9 +79,6 @@ samples = pipeline.sample(key, x_observed, num_samples=10_000)
     </td>
   </tr>
 </table>
-
-
-
 
 Examples for this library are available separately in the [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository.
 
@@ -104,8 +105,7 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 - `gaussian_linear_flow_flux1joint.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/gaussian_linear/flow_flux1joint/gaussian_linear_flow_flux1joint.ipynb) <br>
 Uses the Flux1Joint model for posterior density estimation on the Gaussian Linear benchmark.
 - `slcp_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb) <br>
-Uses the Simformer model for posterior density estimation on the SLCP benchmark.    
-
+Uses the Simformer model for posterior density estimation on the SLCP benchmark.
 
 > [!NOTE]
 > A full list of the currently available examples is available at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
@@ -125,7 +125,8 @@ If you use this library, please consider citing this work and the original metho
 }
 ```
 
-### Reference implementations:
+### Reference implementations
+
 - **Facebook Flow Matching library**: [https://github.com/facebookresearch/flow_matching](https://github.com/facebookresearch/flow_matching)
 - **Elucidating the Design Space of Diffusion-Based Generative Models**: [https://github.com/NVlabs/edm](https://github.com/NVlabs/edm)
 - **Simformer model**: [https://github.com/mackelab/simformer](https://github.com/mackelab/simformer)
