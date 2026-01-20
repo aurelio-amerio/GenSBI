@@ -9,13 +9,17 @@ This page addresses common issues and frequently asked questions when using GenS
 **Problem**: JAX is not detecting your GPU, or you're getting CUDA-related errors.
 
 **Solution**:
+
 1. Ensure you installed the correct JAX version for your CUDA version. **CUDA 12 is recommended**:
+
    ```bash
-   pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
+   pip install gensbi[cuda12]
    ```
+
    Note: CUDA 11 is not officially supported. CUDA 13 support will be available in an upcoming release.
 
 2. Verify JAX can see your GPU:
+
    ```python
    import jax
    print(jax.devices())  # Should show GPU devices
@@ -28,9 +32,11 @@ This page addresses common issues and frequently asked questions when using GenS
 **Problem**: Getting `ModuleNotFoundError` or import errors.
 
 **Solution**:
+
 1. Ensure GenSBI is installed correctly:
+
    ```bash
-   pip install git+https://github.com/aurelio-amerio/GenSBI.git
+   pip install gensbi
    ```
 
 2. Check your Python version (requires Python 3.11+).
@@ -42,11 +48,13 @@ This page addresses common issues and frequently asked questions when using GenS
 **Problem**: Getting errors like "incompatible shapes" or dimension mismatches.
 
 **Solution**:
+
 1. **Check data shapes**: GenSBI expects data in the format `(batch, features, channels)`.
    - For scalar features: `(batch, num_features, 1)`
    - Example: 3 parameters → shape `(batch_size, 3, 1)`
 
 2. **Verify dim_obs and dim_cond**: These should match the number of features (not including channels).
+
    ```python
    # If theta has shape (batch, 3, 1) and x has shape (batch, 5, 1)
    dim_obs = 3   # Number of parameters
@@ -85,14 +93,14 @@ Conditioning data often has **more than one channel** (`ch_cond >= 1`), because 
 Suppose your simulator parameters are two scalars $\theta = (\theta_1, \theta_2)$, and your observation is a frequency-domain strain measured by **two detectors** on the same frequency grid with `n_lambda` frequency bins.
 
 - Parameters tensor (`theta`):
-   - `dim_obs = 2` (two parameters)
-   - `ch_obs = 1` (each parameter is a scalar)
-   - shape: `(batch, 2, 1)`
+  - `dim_obs = 2` (two parameters)
+  - `ch_obs = 1` (each parameter is a scalar)
+  - shape: `(batch, 2, 1)`
 
 - Conditioning tensor (`x`):
-   - `dim_cond = n_lambda` (one token per frequency bin)
-   - `ch_cond = 2` (two detector strain values per frequency)
-   - shape: `(batch, n_lambda, 2)`
+  - `dim_cond = n_lambda` (one token per frequency bin)
+  - `ch_cond = 2` (two detector strain values per frequency)
+  - shape: `(batch, n_lambda, 2)`
 
 In other words: the *frequency grid lives in* `dim_cond`, while the *detector index lives in* `ch_cond`.
 
@@ -103,6 +111,7 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Problem**: Loss stays flat or doesn't improve during training.
 
 **Solution**:
+
 1. **Increase batch size**: Flow matching and diffusion models benefit from large batch sizes (ideally 1024+) to cover the time interval well. If your GPU memory is limited, use gradient accumulation (`multistep`) to achieve a large effective batch size (e.g., physical batch of 128 × multistep of 8 = 1024 effective batch size).
 
 2. **Check learning rate**: Default is `1e-3`. Try reducing to `1e-4` or increasing to `5e-4`.
@@ -116,11 +125,13 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Problem**: Loss becomes NaN or explodes during training.
 
 **Solution**:
+
 1. **Check data normalization**: Extreme values can cause instability. Consider normalizing your data to a reasonable range (e.g., [-1, 1] or [0, 1]). Ideally, normalize both data and parameters to have zero mean and unit variance for best results.
 
 2. **Reduce learning rate**: Try `max_lr=1e-4` or lower.
 
 3. **Use float32 precision**: If using `bfloat16`, switch to `float32` in model parameters:
+
    ```python
    params = Flux1Params(..., param_dtype=jnp.float32)
    ```
@@ -139,9 +150,11 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Problem**: GPU runs out of memory during training.
 
 **Solution**:
+
 1. **Reduce batch size**: Lower your DataLoader batch size.
 
 2. **Use gradient accumulation**: Set `training_config["multistep"]` to accumulate gradients over multiple steps:
+
    ```python
    training_config["multistep"] = 4  # Effective batch = batch_size * 4
    ```
@@ -159,7 +172,9 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Problem**: Script hangs when using multiprocessing with grain or similar data loaders.
 
 **Solution**:
+
 1. **Guard GPU initialization**: Add this at the very top of your script:
+
    ```python
    import os
    if __name__ != "__main__":
@@ -169,6 +184,7 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
    ```
 
 2. **Use `if __name__ == "__main__":`**: Wrap your main code in this guard:
+
    ```python
    if __name__ == "__main__":
        main()
@@ -183,6 +199,7 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Problem**: Posterior samples are unrealistic or don't match expectations.
 
 **Solution**:
+
 1. **Use EMA model**: Ensure you're using the EMA version of your model (loaded from `checkpoints/ema/`).
 
 2. **Increase sampling steps**: If using a custom ODE solver, increase the number of integration steps.
@@ -196,7 +213,9 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Problem**: Sampling takes too long.
 
 **Solution**:
+
 1. **Use JIT compilation**: Call `get_sampler()` once and reuse the function:
+
    ```python
    sampler_fn = pipeline.get_sampler(x_observed)
    samples = sampler_fn(jax.random.PRNGKey(42), num_samples=10_000)
@@ -213,7 +232,9 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Problem**: Errors when running validation diagnostics from the `gensbi.diagnostics` module.
 
 **Solution**:
+
 1. **Check array shapes**: Diagnostics expect flattened 2D arrays `(num_samples, features)`. GenSBI data usually comes in 3D `(batch, features, channels)`.
+
    ```python
    # GenSBI format: (batch, features, channels)
    # Diagnostics format: (batch, features * channels)
@@ -233,6 +254,7 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 **Question**: Should I use Flux1, Simformer, or Flux1Joint?
 
 **Answer**:
+
 - **Flux1** (default): Best for most applications, especially high-dimensional problems (>10 parameters or >100 observations). Very memory efficient.
 - **Simformer**: Best for low-dimensional problems (<10 parameters total) and rapid prototyping. Easiest to understand.
 - **Flux1Joint**: Best when you need explicit joint modeling of all variables. Often better for likelihood-dominated problems. Falls between Flux1 and Simformer in memory efficiency.
@@ -245,10 +267,12 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 
 **Answer**:
 **Starting points:**
+
 - **Flux1**: `depth=4-8`, `depth_single_blocks=8-16`, `num_heads=6-8`
 - **Simformer**: `num_layers=4-6`, `num_heads=4-6`, `dim_value=40`
 
 **Tuning strategy:**
+
 1. Start with default/recommended values
 2. If underfitting, increase depth first (number of layers)
 3. Then increase width (heads, feature dimensions)
@@ -264,6 +288,7 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 The data format depends on whether you're using a conditional or joint estimator:
 
 **Conditional methods (e.g., Flux1)**: Expect tuples `(obs, cond)` where:
+
 - `obs`: parameters to infer, shape `(batch, dim_obs, ch_obs)`
 - `cond`: conditioning data (observations), shape `(batch, dim_cond, ch_cond)`
 
@@ -274,6 +299,7 @@ The data format depends on whether you're using a conditional or joint estimator
 For scalar data, `channels = 1`.
 
 Example:
+
 ```python
 def split_obs_cond(data):
     # data shape: (batch, dim_obs + dim_cond, 1)

@@ -1,6 +1,9 @@
-# GenSBI 
+# GenSBI
+
 ![Tests](../img/badges/tests.svg)
 ![Coverage](../img/badges/coverage.svg)
+[![](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
+<!-- [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi) -->
 
 ```{image} _static/logo.png
   :alt: GenSBI Logo
@@ -28,7 +31,7 @@ Start here:
 ### Standard Installation (CPU / Compatible)
 
 ```bash
-pip install git+https://github.com/aurelio-amerio/GenSBI.git
+pip install gensbi
 ```
 
 ### High-Performance Installation (CUDA 12)
@@ -36,7 +39,7 @@ pip install git+https://github.com/aurelio-amerio/GenSBI.git
 If you have a compatible NVIDIA GPU, install with CUDA 12 support for significantly faster training:
 
 ```bash
-pip install "GenSBI[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI.git"
+pip install gensbi[cuda12]
 ```
 
 For more installation options, see the [Installation Guide](/getting_started/installation).
@@ -104,7 +107,7 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 - `gaussian_linear_flow_flux1joint.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/gaussian_linear/flow_flux1joint/gaussian_linear_flow_flux1joint.ipynb) <br>
 Uses the Flux1Joint model for posterior density estimation on the Gaussian Linear benchmark.
 - `slcp_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb) <br>
-Uses the Simformer model for posterior density estimation on the SLCP benchmark. 
+Uses the Simformer model for posterior density estimation on the SLCP benchmark.
 
 See the [Examples](/examples) page for the complete list and detailed descriptions.
 
@@ -128,7 +131,9 @@ If you use this library, please consider citing this work and the original metho
   howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
 }
 ```
+
 ## Similar packages
+
 GenSBI is designed to provide a numerically efficient JAX implementation of flow and diffusion models, complementing existing SBI libraries. You might also want to check out:
 
 - **[`sbi`](https://github.com/sbi-dev/sbi)**: A comprehensive Pytorch-based package for simulation-based inference. It implements neural posterior estimation (NPE), neural likelihood estimation (NLE), and neural ratio estimation (NRE) methods. It is an excellent choice for a wide range of SBI tasks and supports amortized as well as sequential inference.
@@ -144,5 +149,3 @@ Get Started! </documentation/index>
 Examples </examples>
 References </references>
 ```
-
-
