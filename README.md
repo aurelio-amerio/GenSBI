@@ -2,9 +2,10 @@
 
 [![Build](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml/badge.svg)](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml)
 ![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
-[![](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
+[![Version](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
+[![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi)
+
 ![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
-<!-- [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi) -->
 
 > [!IMPORTANT]  
 > This library is at an early stage of development. The API is potentially subject to change.
