@@ -2,8 +2,8 @@
 
 ![Tests](../img/badges/tests.svg)
 ![Coverage](../img/badges/coverage.svg)
-[![](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
-<!-- [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi) -->
+[![Version](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
+[![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi)
 
 ```{image} _static/logo.png
   :alt: GenSBI Logo
