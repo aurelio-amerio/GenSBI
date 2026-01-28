@@ -37,11 +37,11 @@ class SimformerParams:
             Random number generators for initialization.
         in_channels : int
             Number of channels/features per token.
-        dim_value : int
+        value_emb_dim : int
             Dimension of the value embeddings.
-        dim_id : int
+        id_emb_dim : int
             Dimension of the ID embeddings.
-        dim_condition : int
+        cond_emb_dim : int
             Dimension of the condition embeddings.
         dim_joint : int
             Number of tokens in the joint sequence.
@@ -64,9 +64,9 @@ class SimformerParams:
 
     rngs: nnx.Rngs
     in_channels: int
-    dim_value: int
-    dim_id: int
-    dim_condition: int
+    value_emb_dim: int
+    id_emb_dim: int
+    cond_emb_dim: int
     dim_joint: int
     num_heads: int
     num_layers: int
@@ -78,7 +78,7 @@ class SimformerParams:
 
     def __post_init__(self):
         if self.qkv_features is None:
-            self.qkv_features = self.dim_value + self.dim_id + self.dim_condition
+            self.qkv_features = self.value_emb_dim + self.id_emb_dim + self.cond_emb_dim
 
 
 class Simformer(nnx.Module):
@@ -98,20 +98,20 @@ class Simformer(nnx.Module):
     ):
         self.params = params
         self.in_channels = params.in_channels
-        self.dim_value = params.dim_value
-        self.dim_id = params.dim_id
-        self.dim_condition = params.dim_condition
+        self.value_emb_dim = params.value_emb_dim
+        self.id_emb_dim = params.id_emb_dim
+        self.cond_emb_dim = params.cond_emb_dim
 
         if embedding_net_value is not None:
             self.embedding_net_value = embedding_net_value
         else:
             self.embedding_net_value = MLPEmbedder(
                 in_dim=self.in_channels,
-                hidden_dim=params.dim_value,
+                hidden_dim=params.value_emb_dim,
                 rngs=params.rngs,
                 param_dtype=params.param_dtype,
             )
-        # self.embedding_net_value = lambda obs: jnp.repeat(obs, dim_value, axis=-1)
+        # self.embedding_net_value = lambda obs: jnp.repeat(obs, value_emb_dim, axis=-1)
 
         fourier_features = params.fourier_features
         self.embedding_time = GaussianFourierEmbedding(
@@ -122,15 +122,17 @@ class Simformer(nnx.Module):
         )
         self.embedding_net_id = nnx.Embed(
             num_embeddings=params.dim_joint,
-            features=params.dim_id,
+            features=params.id_emb_dim,
             rngs=params.rngs,
             param_dtype=params.param_dtype,
         )
         self.condition_embedding = nnx.Param(
-            0.01 * jnp.ones((1, 1, params.dim_condition), dtype=params.param_dtype)
+            0.01 * jnp.ones((1, 1, params.cond_emb_dim), dtype=params.param_dtype)
         )
 
-        self.total_tokens = params.dim_value + params.dim_id + params.dim_condition
+        self.total_tokens = (
+            params.value_emb_dim + params.id_emb_dim + params.cond_emb_dim
+        )
 
         self.transformer = Transformer(
             din=self.total_tokens,
@@ -225,14 +227,14 @@ class Simformer(nnx.Module):
             self.condition_embedding * condition_mask
         )  # If condition_mask is 0, then the embedding is 0, otherwise it is the condition_embedding vector
         condition_embedding = jnp.broadcast_to(
-            condition_embedding, (batch_size, seq_len, self.dim_condition)
+            condition_embedding, (batch_size, seq_len, self.cond_emb_dim)
         )
 
         # Embed inputs and broadcast
         value_embeddings = self.embedding_net_value(obs)
         id_embeddings = self.embedding_net_id(node_ids)
         id_embeddings = jnp.broadcast_to(
-            id_embeddings, (batch_size, seq_len, self.dim_id)
+            id_embeddings, (batch_size, seq_len, self.id_emb_dim)
         )
 
         # Concatenate embeddings (alternatively you can also add instead of concatenating)
