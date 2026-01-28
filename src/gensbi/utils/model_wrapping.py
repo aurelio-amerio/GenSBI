@@ -14,9 +14,6 @@ from typing import Callable
 
 from .math import divergence, _expand_dims, _expand_time
 
-
-
-
 class ModelWrapper(nnx.Module):
     """
     Wrapper class for models to provide ODE solver integration.

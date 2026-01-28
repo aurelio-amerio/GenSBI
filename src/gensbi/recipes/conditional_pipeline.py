@@ -119,18 +119,18 @@ class ConditionalFlowPipeline(AbstractPipeline):
         embeddings_2d = ["pos2d", "rope2d"]
 
         if id_embedding_strategy[0] in embeddings_1d:
-            obs_ids = init_ids_1d(dim_obs, semantic_id=0)
+            obs_ids, dim_obs = init_ids_1d(dim_obs, semantic_id=0)
         elif id_embedding_strategy[0] in embeddings_2d:
-            obs_ids = init_ids_2d(dim_obs, semantic_id=0)
+            obs_ids, dim_obs = init_ids_2d(dim_obs, semantic_id=0)
         else:
             raise ValueError(
                 f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
             )
 
         if id_embedding_strategy[1] in embeddings_1d:
-            cond_ids = init_ids_1d(dim_cond, semantic_id=1)
+            cond_ids, dim_cond = init_ids_1d(dim_cond, semantic_id=1)
         elif id_embedding_strategy[1] in embeddings_2d:
-            cond_ids = init_ids_2d(dim_cond, semantic_id=1)
+            cond_ids, dim_cond = init_ids_2d(dim_cond, semantic_id=1)
         else:
             raise ValueError(
                 f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
@@ -138,18 +138,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids
+        self.dim_obs = dim_obs
+        self.dim_cond = dim_cond
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
         self.loss_fn = ConditionalCFMLoss(self.path)
 
-        self.p0_obs = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros((self.dim_obs, self.ch_obs)),
-                scale=jnp.ones((self.dim_obs, self.ch_obs)),
-            ),
-            reinterpreted_batch_ndims=2,
-        )
+        # self.p0_obs = dist.Independent(
+        #     dist.Normal(
+        #         loc=jnp.zeros((self.dim_obs, self.ch_obs)),
+        #         scale=jnp.ones((self.dim_obs, self.ch_obs)),
+        #     ),
+        #     reinterpreted_batch_ndims=2,
+        # )
 
     @classmethod
     def init_pipeline_from_config(
@@ -459,18 +461,18 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         embeddings_2d = ["pos2d", "rope2d"]
 
         if id_embedding_strategy[0] in embeddings_1d:
-            obs_ids = init_ids_1d(dim_obs, semantic_id=0)
+            obs_ids, dim_obs = init_ids_1d(dim_obs, semantic_id=0)
         elif id_embedding_strategy[0] in embeddings_2d:
-            obs_ids = init_ids_2d(dim_obs, semantic_id=0)
+            obs_ids, dim_obs = init_ids_2d(dim_obs, semantic_id=0)
         else:
             raise ValueError(
                 f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
             )
 
         if id_embedding_strategy[1] in embeddings_1d:
-            cond_ids = init_ids_1d(dim_cond, semantic_id=1)
+            cond_ids, dim_cond = init_ids_1d(dim_cond, semantic_id=1)
         elif id_embedding_strategy[1] in embeddings_2d:
-            cond_ids = init_ids_2d(dim_cond, semantic_id=1)
+            cond_ids, dim_cond = init_ids_2d(dim_cond, semantic_id=1)
         else:
             raise ValueError(
                 f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
@@ -478,6 +480,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
 
         self.obs_ids = obs_ids
         self.cond_ids = cond_ids
+        self.dim_obs = dim_obs
+        self.dim_cond = dim_cond
 
         self.path = EDMPath(
             scheduler=EDMScheduler(

@@ -62,15 +62,23 @@ class ConditionalCFMLoss(ContinuousFMLoss):
         x_t = path_sample.x_t
 
         if self.cfg_scale is not None:
-            key = jax.random.PRNGKey(0)
-            conditioned = jax.random.bernoulli(
-                key, p=self.cfg_scale, shape=(x_t.shape[0],)
+            raise NotImplementedError(
+                "cfg_scale is not implemented for ConditionalCFMLoss"
             )
+            # key = jax.random.PRNGKey(0)
+            # conditioned = jax.random.bernoulli(
+            #     key, p=self.cfg_scale, shape=(x_t.shape[0],)
+            # )
         else:
             conditioned = jnp.ones((x_t.shape[0],), dtype=jnp.bool_)
 
         model_output = vf(
-            t=path_sample.t, obs=x_t, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids, conditioned=conditioned
+            t=path_sample.t,
+            obs=x_t,
+            obs_ids=obs_ids,
+            cond=cond,
+            cond_ids=cond_ids,
+            conditioned=conditioned,
         )
         loss = model_output - path_sample.dx_t
         loss = jnp.square(loss)
