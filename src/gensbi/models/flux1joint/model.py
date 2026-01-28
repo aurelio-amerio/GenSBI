@@ -55,11 +55,11 @@ class Flux1JointParams:
             Number of attention heads.
         depth_single_blocks : int
             Number of single stream blocks.
-        value_dim : int
+        value_emb_dim : int
             Number of features per head used to embed the data.
-        condition_dim : int
+        cond_emb_dim : int
             Number of features per head used to encode the condition mask, which determines the features on which we are conditioning.
-        id_dim : int
+        id_emb_dim : int
             Number of features per head used to encode the token ids.
         qkv_bias : bool
             Whether to use bias in QKV layers.
@@ -81,9 +81,9 @@ class Flux1JointParams:
     mlp_ratio: float
     num_heads: int
     depth_single_blocks: int
-    value_dim: int
-    condition_dim: int
-    id_dim: int
+    value_emb_dim: int
+    cond_emb_dim: int
+    id_emb_dim: int
     qkv_bias: bool
     rngs: nnx.Rngs
     dim_joint: int  # joint dimension
@@ -98,13 +98,13 @@ class Flux1JointParams:
             self.id_embedding_strategy in available_embeddings
         ), f"Unknown id embedding kind {self.id_embedding_strategy} for obs."
 
-        self.input_token_dim = int(self.value_dim * self.num_heads)
+        self.input_token_dim = int(self.value_emb_dim * self.num_heads)
         if self.id_embedding_strategy == "sum":
-            self.condition_dim = 0
-            self.id_dim = 0
+            self.cond_emb_dim = 0
+            self.id_emb_dim = 0
 
-        self.condition_token_dim = int(self.condition_dim * self.num_heads)
-        self.id_token_dim = int(self.id_dim * self.num_heads)
+        self.condition_token_dim = int(self.cond_emb_dim * self.num_heads)
+        self.id_token_dim = int(self.id_emb_dim * self.num_heads)
 
         self.hidden_size = int(
             self.input_token_dim + self.condition_token_dim + self.id_token_dim

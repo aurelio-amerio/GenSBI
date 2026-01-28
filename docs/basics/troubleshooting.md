@@ -269,7 +269,7 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 **Starting points:**
 
 - **Flux1**: `depth=4-8`, `depth_single_blocks=8-16`, `num_heads=6-8`
-- **Simformer**: `num_layers=4-6`, `num_heads=4-6`, `dim_value=40`
+- **Simformer**: `num_layers=4-6`, `num_heads=4-6`, `value_emb_dim=40`
 
 **Tuning strategy:**
 

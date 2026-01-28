@@ -46,8 +46,7 @@ Transformers process data as sequences of tokens. To differentiate between unord
 | Model | Obs & Cond Separation | Supported Strategies | Default |
 | :--- | :--- | :--- | :--- |
 | **Flux1** | **Separate**<br>Distinct embeddings for parameters (obs) and data (cond). | `absolute`, `pos1d`/`rope1d`, `pos2d`/`rope2d` | `absolute` (Params), `absolute` (Data) |
-| **Flux1Joint** | **Unified**<br>All variables are part of a single joint sequence. | `absolute`, `pos1d`/`rope1d`, `pos2d`/`rope2d` | `absolute` |
-| **Simformer** | **Unified**<br>Explicit learned embeddings for all tokens. | `absolute` (learned) | `absolute`<br>*(Note: Embeddings are **concatenated** to features, not summed)* |
+| **Flux1Joint** | **Unified**<br>All variables are part of a single joint sequence. | `absolute` (learned) | `absolute`<br>*(Note: Embeddings can be **concatenated** or **summed**)* |
 
 ```{note}
 `Flux1` allows mixing strategies. For example, you can use `absolute` embeddings for your unordered physical parameters ($\theta$) while using `pos1d` or `rope` for your sequential observational data ($x$).
@@ -56,10 +55,6 @@ Transformers process data as sequences of tokens. To differentiate between unord
 ```{warning}
 **Preferred Embedding Strategies**:
 While the codebase supports the generic `rope` keyword (which adapts to N-dimensions), it is **strongly recommended** to use `rope1d` for sequential data and `rope2d` for image/grid data. This ensures compatibility with the helper functions in the pipelines.
-```
-
-```{warning}
-While `Flux1Joint` technically supports `rope`, it is generally recommended to use `absolute` embeddings for joint density estimation of unordered variables to avoid imposing artificial relational biases.
 ```
 
 ## Flux1 Model Parameters
@@ -128,9 +123,9 @@ from gensbi.models.simformer import SimformerParams
 params = SimformerParams(
     rngs=...,
     in_channels=...,
-    dim_value=...,
-    dim_id=...,
-    dim_condition=...,
+    value_emb_dim=...,
+    id_emb_dim=...,
+    cond_emb_dim=...,
     dim_joint=...,
     num_heads=...,
     num_layers=...,
@@ -145,9 +140,9 @@ params = SimformerParams(
 
 - **rngs**: Random number generators for model initialization (e.g., `nnx.Rngs(0)`).
 - **in_channels**: Number of input channels in the data (e.g., `1` for scalar/vector fields). This defines the depth of the input tensor, not the number of features or tokens.
-- **dim_value**: The dimension of the value embeddings. This determines the size of the feature representation inside the model. Higher values allow modeling more complex data; a good starting point is `40`.
-- **dim_id**: The dimension of the ID embeddings. This embeds the unique identifier for each variable (token). For datasets with many variables, consider increasing this; a good starting point is `10`.
-- **dim_condition**: The dimension of the condition embeddings. This represents the conditioning mask (i.e., which variables are observed vs. unobserved). A good starting point is `10`.
+- **value_emb_dim**: The dimension of the value embeddings. This determines the size of the feature representation inside the model. Higher values allow modeling more complex data; a good starting point is `40`.
+- **id_emb_dim**: The dimension of the ID embeddings. This embeds the unique identifier for each variable (token). For datasets with many variables, consider increasing this; a good starting point is `10`.
+- **cond_emb_dim**: The dimension of the condition embeddings. This represents the conditioning mask (i.e., which variables are observed vs. unobserved). A good starting point is `10`.
 - **dim_joint**: The total number of variables to be modeled jointly (the sequence length). For example, modeling a 3D distribution conditioned on 2 observed variables would require a `dim_joint` of 5.
 - **num_heads**: Number of attention heads. A standard starting point is `4`. Adjust based on data complexity and model size constraints.
 - **num_layers**: Number of transformer layers. A default of `4` works well for many problems. Increase this for complex, multimodal posterior distributions.
@@ -160,8 +155,8 @@ params = SimformerParams(
 
 - **Precision**: Currently, the Simformer model runs on `float32` precision only.
 - **Architecture**: The model treats every variable in the data as a distinct token. It learns the joint distribution of these tokens conditioned on an observed subset.
-- **Embedding Dimensions**: The total embedding size for a token is `dim_tot = dim_value + dim_id + dim_condition`. This sum **must** be divisible by `num_heads` to ensure correct attention splitting; otherwise, initialization will fail.
-- **Tuning Strategy**: Start by increasing `num_layers` (depth). If performance is still lacking, increase `dim_value` and `dim_id` (width), and finally adjust `num_heads`.
+- **Embedding Dimensions**: The total embedding size for a token is `dim_tot = value_emb_dim + id_emb_dim + cond_emb_dim`. This sum **must** be divisible by `num_heads` to ensure correct attention splitting; otherwise, initialization will fail.
+- **Tuning Strategy**: Start by increasing `num_layers` (depth). If performance is still lacking, increase `value_emb_dim` and `id_emb_dim` (width), and finally adjust `num_heads`.
 - **Limitations**: If your problem requires more than 8 layers, >12 heads, `dim_tot > 256`, or inference on >10 variables, `Flux1` or `Flux1Joint` are recommended for better memory efficiency.
 
 ## Flux1Joint Model Parameters
@@ -179,13 +174,13 @@ params = Flux1JointParams(
     mlp_ratio=...,
     num_heads=...,
     depth_single_blocks=...,
-    axes_dim=...,
-    condition_dim=...,
+    value_emb_dim=...,
+    cond_emb_dim=...,
+    id_emb_dim=...,
     qkv_bias=...,
     rngs=...,
     dim_joint=...,
-    theta=...,
-    id_embedding_strategy="absolute",
+    id_embedding_strategy=...,
     guidance_embed=...,
     param_dtype=...,
 )
@@ -198,13 +193,13 @@ params = Flux1JointParams(
 - **mlp_ratio**: The expansion ratio for the MLP layers within the transformer blocks (typically `4.0`).
 - **num_heads**: Number of attention heads. Ensure `in_channels` is divisible by this number.
 - **depth_single_blocks**: The total number of transformer layers. Since `Flux1Joint` relies entirely on Single Stream blocks to mix joint information, this defines the total depth of the network.
-- **axes_dim**: A sequence of integers defining the number of features per attention head for the **joint variables** (the target variables being modeled). For 1D unstructured data, a typical value is around `[10]` or greater.
-- **condition_dim**: A list with the number of features to be used to encode the condition mask in each token. Should match in dimension with `axes_dim`.
+- **value_emb_dim**: Number of features per head used to embed the data.
+- **cond_emb_dim**: Number of features per head used to encode the condition mask.
+- **id_emb_dim**: Number of features per head used to encode the token ids.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **dim_joint**: The number of variables to be modeled jointly. This equates to the sequence length of the target tokens.
-- **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). Default: `10_000`.
-- **id_embedding_strategy**: String specifying the embedding strategy (e.g., `"absolute"`, `"rope"`). Default: `"absolute"`.
+- **id_embedding_strategy**: String specifying the embedding strategy (e.g., `"sum"`, `"concat"`). Default: `"sum"`.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False`.
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`.
 

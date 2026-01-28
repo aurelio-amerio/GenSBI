@@ -40,9 +40,9 @@ def parse_simformer_params(config_path: str):
 
     params_dict = dict(
         in_channels=model_params.get("in_channels", 1),
-        dim_value=model_params.get("dim_value", 40),
-        dim_id=model_params.get("dim_id", 40),
-        dim_condition=model_params.get("dim_condition", 10),
+        value_emb_dim=model_params.get("value_emb_dim", 40),
+        id_emb_dim=model_params.get("id_emb_dim", 40),
+        cond_emb_dim=model_params.get("cond_emb_dim", 10),
         fourier_features=model_params.get("fourier_features", 128),
         num_heads=model_params.get("num_heads", 4),
         num_layers=model_params.get("num_layers", 8),
@@ -269,9 +269,9 @@ class SimformerFlowPipeline(JointFlowPipeline):
         params = SimformerParams(
             rngs=nnx.Rngs(0),
             in_channels=self.ch_obs,
-            dim_value=40,
-            dim_id=40,
-            dim_condition=10,
+            value_emb_dim=40,
+            id_emb_dim=40,
+            cond_emb_dim=10,
             dim_joint=self.dim_joint,
             fourier_features=128,
             num_heads=4,
@@ -473,9 +473,9 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         """
         params = SimformerParams(
             in_channels=self.ch_obs,
-            dim_value=40,
-            dim_id=40,
-            dim_condition=10,
+            value_emb_dim=40,
+            id_emb_dim=40,
+            cond_emb_dim=10,
             dim_joint=self.dim_joint,
             fourier_features=128,
             num_heads=4,
