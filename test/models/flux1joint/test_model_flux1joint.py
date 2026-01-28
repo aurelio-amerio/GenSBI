@@ -14,50 +14,43 @@ import pytest
 # %%
 
 
-def get_params(id_embedding_strategy="absolute", param_dtype=jnp.float32):
+def get_params(id_embedding_strategy="sum", param_dtype=jnp.float32):
     return Flux1JointParams(
         in_channels=1,
         vec_in_dim=None,
         mlp_ratio=3.0,
         num_heads=2,
         depth_single_blocks=2,
-        axes_dim=[4],
-        condition_dim=[2],
+        value_dim=4,
+        condition_dim=2,
+        id_dim=4,
         qkv_bias=True,
         rngs=nnx.Rngs(0),
         dim_joint=4,
-        theta=16,
         id_embedding_strategy=id_embedding_strategy,
         guidance_embed=False,
         param_dtype=param_dtype,
     )
 
 
-def init_test_model_joint_rope():
-    params = get_params(id_embedding_strategy="rope", param_dtype=jnp.bfloat16)
+
+
+
+def init_test_model_joint_sum():
+    params = get_params(id_embedding_strategy="sum", param_dtype=jnp.bfloat16)
     model = Flux1Joint(params)
     return model
 
-
-def init_test_model_joint_absolute():
-    params = get_params(id_embedding_strategy="absolute", param_dtype=jnp.bfloat16)
+def init_test_model_joint_concat():
+    params = get_params(id_embedding_strategy="concat", param_dtype=jnp.bfloat16)
     model = Flux1Joint(params)
     return model
 
-
-# %%
-# test that calling with rope issues a warning
-def test_flux1joint_rope_warning():
-    with pytest.warns(
-        UserWarning,
-        match="Using RoPE embedding for joint density estimation is not recommended. Consider using 'absolute' embeddings instead.",
-    ):
-        _ = init_test_model_joint_rope()
 
 
 @pytest.mark.parametrize(
     "model_fn",
-    [init_test_model_joint_rope, init_test_model_joint_absolute],
+    [init_test_model_joint_sum, init_test_model_joint_concat],
 )
 def test_flux1joint_forward_shape(model_fn):
     model = model_fn()
@@ -71,7 +64,7 @@ def test_flux1joint_forward_shape(model_fn):
 
 @pytest.mark.parametrize(
     "model_fn",
-    [init_test_model_joint_rope, init_test_model_joint_absolute],
+    [init_test_model_joint_sum, init_test_model_joint_concat],
 )
 def test_flux1joint_wrapper(model_fn):
     model = model_fn()
@@ -123,7 +116,7 @@ def test_flux1joint_wrapper(model_fn):
 
 @pytest.mark.parametrize(
     "model_fn",
-    [init_test_model_joint_rope, init_test_model_joint_absolute],
+    [init_test_model_joint_sum, init_test_model_joint_concat],
 )
 def test_flux1joint_param_dtype_propagation(model_fn):
     model = model_fn()

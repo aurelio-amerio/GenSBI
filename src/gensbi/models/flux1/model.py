@@ -116,7 +116,7 @@ class Flux1Params:
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        availabel_embeddings = [
+        available_embeddings = [
             "absolute",
             "pos1d",
             "pos2d",
@@ -125,10 +125,10 @@ class Flux1Params:
             "rope2d",
         ]
         assert (
-            self.id_embedding_strategy[0] in availabel_embeddings
+            self.id_embedding_strategy[0] in available_embeddings
         ), f"Unknown id embedding kind {self.id_embedding_strategy[0]} for obs."
         assert (
-            self.id_embedding_strategy[1] in availabel_embeddings
+            self.id_embedding_strategy[1] in available_embeddings
         ), f"Unknown id embedding kind {self.id_embedding_strategy[1]} for cond."
 
         self.hidden_size = int(

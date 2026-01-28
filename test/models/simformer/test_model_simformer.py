@@ -5,11 +5,15 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 import jax.numpy as jnp
 from flax import nnx
 
+import pytest
+
 from gensbi.models.simformer.model import Simformer, SimformerParams
 from gensbi.models.wrappers import JointWrapper
 
+
 def get_rngs():
     return nnx.Rngs(0)
+
 
 def get_params():
     return SimformerParams(
@@ -39,6 +43,25 @@ def test_simformer_forward_shape():
     out = model(t, x, node_ids=node_ids, condition_mask=condition_mask)
     assert out.shape == (1, 4, 1), f"Output shape is incorrect, got {out.shape}"
 
+    edge_mask = jnp.ones((1, 4, 4))
+    out = model(
+        t, x, node_ids=node_ids, condition_mask=condition_mask, edge_mask=edge_mask
+    )
+    assert out.shape == (1, 4, 1), f"Output shape is incorrect, got {out.shape}"
+
+    edge_mask = jnp.ones((4, 4))
+    out = model(
+        t, x, node_ids=node_ids, condition_mask=condition_mask, edge_mask=edge_mask
+    )
+    assert out.shape == (1, 4, 1), f"Output shape is incorrect, got {out.shape}"
+
+    # test shape error
+    edge_mask = jnp.zeros(4)
+    with pytest.raises(ValueError):
+        out = model(
+            t, x, node_ids=node_ids, condition_mask=condition_mask, edge_mask=edge_mask
+        )
+
 
 def test_simformer_wrapper():
     params = get_params()
@@ -47,11 +70,17 @@ def test_simformer_wrapper():
 
     obs = jnp.ones((12, 2, 1))
     cond = jnp.ones((12, 2, 1))
-    obs_ids = jnp.arange(2).reshape(1,-1)
-    cond_ids = jnp.arange(2).reshape(1,-1)
-    t = jnp.ones((12,1))
+    obs_ids = jnp.arange(2).reshape(1, -1)
+    cond_ids = jnp.arange(2).reshape(1, -1)
+    t = jnp.ones((12, 1))
 
-    extra_args = {"cond": cond, "cond_ids": cond_ids, "obs_ids": obs_ids, "edge_mask": None, "conditioned": True}
+    extra_args = {
+        "cond": cond,
+        "cond_ids": cond_ids,
+        "obs_ids": obs_ids,
+        "edge_mask": None,
+        "conditioned": True,
+    }
 
     out = wrapper(
         t=t,
@@ -59,17 +88,29 @@ def test_simformer_wrapper():
         **extra_args,
     )
 
-    assert out.shape == (12, 2, 1), f"1 - Wrapper output shape is incorrect, got {out.shape}"
+    assert out.shape == (
+        12,
+        2,
+        1,
+    ), f"1 - Wrapper output shape is incorrect, got {out.shape}"
 
     vf = wrapper.get_vector_field(**extra_args)
     out = vf(t, obs, None)
 
-    assert out.shape == (12, 2, 1), f"2 - Vector field output shape is incorrect, got {out.shape}"
+    assert out.shape == (
+        12,
+        2,
+        1,
+    ), f"2 - Vector field output shape is incorrect, got {out.shape}"
 
     vf = wrapper.get_vector_field()
     out = vf(t, obs, args=extra_args)
 
-    assert out.shape == (12, 2, 1), f"3 - Vector field output shape is incorrect, got {out.shape}"
+    assert out.shape == (
+        12,
+        2,
+        1,
+    ), f"3 - Vector field output shape is incorrect, got {out.shape}"
 
 
 def test_simformer_param_dtype_propagation():

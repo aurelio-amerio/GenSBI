@@ -23,7 +23,7 @@ def init_ids_1d(dim: int, semantic_id: Union[int, None] = None):
 
     ids[0, :, 0] = np.arange(dim)
 
-    return jnp.array(ids, dtype=jnp.int32)
+    return jnp.array(ids, dtype=jnp.int32), dim
 
 
 def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0):
@@ -33,7 +33,9 @@ def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0):
     img_ids[..., 2] = img_ids[..., 2] + np.arange(dim[1] // 2)[None, :]
     img_ids = repeat(img_ids, "h w c -> b (h w) c", b=1)
 
-    return jnp.array(img_ids, dtype=jnp.int32)
+    dim = (dim[0] // 2) * (dim[1] // 2)
+
+    return jnp.array(img_ids, dtype=jnp.int32), dim
 
 
 @jax.jit

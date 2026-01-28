@@ -91,7 +91,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.obs_ids = init_ids_1d(self.dim_obs)
+        self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -320,7 +320,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        self.obs_ids = init_ids_1d(self.dim_obs)
+        self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
 
         sigma_min = self.training_config.get("sigma_min", 0.002)
         sigma_max = self.training_config.get("sigma_max", 80.0)

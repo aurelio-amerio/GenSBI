@@ -47,11 +47,11 @@ def parse_flux1joint_params(config_path: str):
         mlp_ratio=model_params.get("mlp_ratio", 3.0),
         num_heads=model_params.get("num_heads", 4),
         depth_single_blocks=model_params.get("depth_single_blocks", 8),
-        axes_dim=model_params.get("axes_dim", [10]),
-        condition_dim=model_params.get("condition_dim", [4]),
+        value_dim=model_params.get("value_dim", 10),
+        condition_dim=model_params.get("condition_dim", 4),
+        id_dim=model_params.get("id_dim", 10),
         qkv_bias=model_params.get("qkv_bias", True),
-        theta=model_params.get("theta", -1),
-        id_embedding_strategy=model_params.get("id_embedding_strategy", "absolute"),
+        id_embedding_strategy=model_params.get("id_embedding_strategy", "concat"),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
 
@@ -230,9 +230,6 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
 
         params_dict = parse_flux1joint_params(config_path)
 
-        if params_dict["theta"] == -1:
-            params_dict["theta"] = 4 * dim_joint
-
         params = Flux1JointParams(
             rngs=nnx.Rngs(0),
             dim_joint=dim_joint,
@@ -278,13 +275,13 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             mlp_ratio=3.0,
             num_heads=4,
             depth_single_blocks=8,
-            axes_dim=[10],
-            condition_dim=[4],
+            value_dim=10,
+            condition_dim=4,
+            id_dim=10,
             qkv_bias=True,
             rngs=nnx.Rngs(0),
             dim_joint=self.dim_joint,
-            theta=self.dim_joint * 4,
-            id_embedding_strategy="absolute",
+            id_embedding_strategy="concat",
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
         )
@@ -404,9 +401,6 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
 
         params_dict = parse_flux1joint_params(config_path)
 
-        if params_dict["theta"] == -1:
-            params_dict["theta"] = 4 * dim_joint
-
         params = Flux1JointParams(
             rngs=nnx.Rngs(0),
             dim_joint=dim_joint,
@@ -451,13 +445,13 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             mlp_ratio=3.0,
             num_heads=4,
             depth_single_blocks=8,
-            axes_dim=[10],
-            condition_dim=[4],
+            value_dim=10,
+            condition_dim=4,
+            id_dim=10,
             qkv_bias=True,
             rngs=nnx.Rngs(0),
             dim_joint=self.dim_joint,
-            theta=self.dim_joint * 10,
-            id_embedding_strategy="absolute",
+            id_embedding_strategy="concat",
             guidance_embed=False,
             param_dtype=jnp.bfloat16,
         )
