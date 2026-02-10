@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from typing import Union
+
+from typing import Union, Optional
 
 import jax
 import jax.numpy as jnp
@@ -74,8 +75,6 @@ class Flux1Params:
             Number of double stream blocks.
         depth_single_blocks : int
             Number of single stream blocks.
-        axes_dim : list[int]
-            Dimensions of the axes for positional encoding.
         qkv_bias : bool
             Whether to use bias in QKV layers.
         rngs : nnx.Rngs
@@ -84,7 +83,15 @@ class Flux1Params:
             Number of observation/parameter tokens.
         dim_cond : int
             Number of conditioning tokens.
-        theta : int
+        axes_dim : Optional[list[int]]
+            Dimensions of the axes for positional encoding.
+        val_emb_dim : Optional[int]
+            Features per head for value embedding.
+        id_emb_dim : Optional[int]
+            Features per head for ID embedding.
+        combining_strategy : str
+            Strategy for combining embeddings ("sum" or "concat").
+        theta : Optional[int]
             Scaling factor for positional encoding.
         id_embedding_strategy : tuple[str, str]
             Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d", "rope1d", "rope2d".
@@ -102,12 +109,15 @@ class Flux1Params:
     num_heads: int
     depth: int
     depth_single_blocks: int
-    axes_dim: list[int]
     qkv_bias: bool
     rngs: nnx.Rngs
     dim_obs: int  # observation dimension
     dim_cond: int  # condition dimension
-    theta: int = 500
+    axes_dim: Optional[list[int]] = None
+    val_emb_dim: Optional[int] = None  # Features per head for value
+    id_emb_dim: Optional[int] = None  # Features per head for ID
+    combining_strategy: str = "sum"  # "sum" or "concat"
+    theta: Optional[int] = None
     id_embedding_strategy: tuple[str, str] = (
         "absolute",
         "absolute",
@@ -131,9 +141,36 @@ class Flux1Params:
             self.id_embedding_strategy[1] in available_embeddings
         ), f"Unknown id embedding kind {self.id_embedding_strategy[1]} for cond."
 
-        self.hidden_size = int(
-            jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
-        )
+        if self.combining_strategy == "sum":
+            if self.axes_dim is None:
+                raise ValueError("axes_dim required for 'sum' strategy")
+
+            # Legacy/Standard Flux1 calculation
+            self.hidden_size = int(
+                jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
+            )
+
+        elif self.combining_strategy == "concat":
+            assert (
+                "rope" not in self.id_embedding_strategy[0]
+                and "rope" not in self.id_embedding_strategy[1]
+            ), f"rope embedding not supported for concat strategy, found {self.id_embedding_strategy}"
+
+            if self.val_emb_dim is None or self.id_emb_dim is None:
+                raise ValueError(
+                    "val_emb_dim and id_emb_dim required for 'concat' strategy"
+                )
+
+            self.input_token_dim = int(self.val_emb_dim * self.num_heads)
+            self.id_token_dim = int(self.id_emb_dim * self.num_heads)
+            self.hidden_size = self.input_token_dim + self.id_token_dim
+
+        else:
+            raise ValueError(f"Unknown strategy: {self.combining_strategy}")
+
+        if self.theta is None:
+            self.theta = 10 * (self.dim_obs + self.dim_cond)
+
         self.qkv_features = self.hidden_size
 
 
@@ -149,11 +186,8 @@ class Flux1(nnx.Module):
         self.hidden_size = params.hidden_size
         self.qkv_features = params.qkv_features
 
-        pe_dim = self.qkv_features // params.num_heads
-        if sum(params.axes_dim) != pe_dim:
-            raise ValueError(
-                f"Got {params.axes_dim} but expected positional dim {pe_dim}"
-            )
+        self.combining_strategy = params.combining_strategy
+
         self.num_heads = params.num_heads
 
         self.id_embedding_strategy_obs, self.id_embedding_strategy_cond = (
@@ -170,6 +204,11 @@ class Flux1(nnx.Module):
             self.id_embedding_strategy_obs == "rope"
             or self.id_embedding_strategy_cond == "rope"
         ):
+            pe_dim = self.qkv_features // params.num_heads
+            if sum(params.axes_dim) != pe_dim:
+                raise ValueError(
+                    f"Got {params.axes_dim} but expected positional dim {pe_dim}"
+                )
             self.pe_embedder = EmbedND(
                 dim=pe_dim, theta=params.theta, axes_dim=params.axes_dim
             )
@@ -183,7 +222,11 @@ class Flux1(nnx.Module):
             self.use_rope_obs = False
             self.obs_ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_obs,
-                hidden_size=self.hidden_size,
+                hidden_size=(
+                    self.hidden_size
+                    if self.combining_strategy == "sum"
+                    else params.id_token_dim
+                ),
                 kind=params.id_embedding_strategy[0],
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
@@ -196,7 +239,11 @@ class Flux1(nnx.Module):
             self.use_rope_cond = False
             self.cond_ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_cond,
-                hidden_size=self.hidden_size,
+                hidden_size=(
+                    self.hidden_size
+                    if self.combining_strategy == "sum"
+                    else params.id_token_dim
+                ),
                 kind=params.id_embedding_strategy[1],
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
@@ -204,7 +251,11 @@ class Flux1(nnx.Module):
 
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
-            out_features=self.hidden_size,
+            out_features=(
+                self.hidden_size
+                if self.combining_strategy == "sum"
+                else params.input_token_dim
+            ),
             use_bias=True,
             rngs=params.rngs,
             param_dtype=params.param_dtype,
@@ -228,7 +279,11 @@ class Flux1(nnx.Module):
 
         self.cond_in = nnx.Linear(
             in_features=params.context_in_dim,
-            out_features=self.hidden_size,
+            out_features=(
+                self.hidden_size
+                if self.combining_strategy == "sum"
+                else params.input_token_dim
+            ),
             use_bias=True,
             rngs=params.rngs,
             param_dtype=params.param_dtype,
@@ -313,9 +368,18 @@ class Flux1(nnx.Module):
         # running on sequences obs
         obs = self.obs_in(obs)
         cond = self.cond_in(cond)
-        # if cond is a single vector, repeat it for each obs
+
+        # broadcast cond if necessary
         if cond.shape[0] == 1 and obs.shape[0] > 1:
             cond = jnp.repeat(cond, obs.shape[0], axis=0)
+
+        # broadcast ids if necessary
+        if obs_ids.shape[0] == 1 and obs.shape[0] > 1:
+            obs_ids = jnp.repeat(obs_ids, obs.shape[0], axis=0)
+
+        if cond_ids.shape[0] == 1 and cond.shape[0] > 1:
+            cond_ids = jnp.repeat(cond_ids, cond.shape[0], axis=0)
+
         vec = self.time_in(timestep_embedding(t, 256))
 
         if self.params.guidance_embed:
@@ -327,28 +391,46 @@ class Flux1(nnx.Module):
 
         # if not using rope for a dimension, perform id embedding and add it to the input
         if self.obs_ids_embedder is not None:
-            obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
-            obs_ids_rope = jnp.zeros(
-                (obs_ids.shape[0], obs_ids.shape[1], cond_ids.shape[2]),
-                dtype=obs_ids.dtype,
-            )
-        else:
-            obs_ids_rope = obs_ids
-        if self.cond_ids_embedder is not None:
-            cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(cond_ids)
-            cond_ids_rope = jnp.zeros(
-                (cond_ids.shape[0], cond_ids.shape[1], obs_ids.shape[2]),
-                dtype=cond_ids.dtype,
-            )
-        else:
-            cond_ids_rope = cond_ids
+            if self.combining_strategy == "sum":
+                obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
+            else:
+                obs = jnp.concatenate((obs, self.obs_ids_embedder(obs_ids)), axis=-1)
 
+        if self.cond_ids_embedder is not None:
+            if self.combining_strategy == "sum":
+                cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(
+                    cond_ids
+                )
+            else:
+                cond = jnp.concatenate(
+                    (cond, self.cond_ids_embedder(cond_ids)), axis=-1
+                )
+
+        # Prepare rope embeddings if needed
+        pe = None
         if self.use_rope_obs or self.use_rope_cond:
-            # we use rope embeddings
+            if self.obs_ids_embedder is not None:
+                # obs uses absolute embedding, so we create dummy rope ids
+                obs_ids_rope = jnp.zeros(
+                    (obs_ids.shape[0], obs_ids.shape[1], cond_ids.shape[2]),
+                    dtype=obs_ids.dtype,
+                )
+            else:
+                # obs uses rope
+                obs_ids_rope = obs_ids
+
+            if self.cond_ids_embedder is not None:
+                # cond uses absolute embedding, so we create dummy rope ids
+                cond_ids_rope = jnp.zeros(
+                    (cond_ids.shape[0], cond_ids.shape[1], obs_ids.shape[2]),
+                    dtype=cond_ids.dtype,
+                )
+            else:
+                # cond uses rope
+                cond_ids_rope = cond_ids
+
             ids = jnp.concatenate((cond_ids_rope, obs_ids_rope), axis=1)
             pe = self.pe_embedder(ids)
-        else:
-            pe = None
 
         for block in self.double_blocks.layers:
             obs, cond = block(obs=obs, cond=cond, vec=vec, pe=pe)
@@ -358,5 +440,8 @@ class Flux1(nnx.Module):
             obs = block(obs, vec=vec, pe=pe)
         obs = obs[:, cond.shape[1] :, ...]
 
+        # TODO FIXME: right now, we fixed the patch size to 1, as the library does not support generation of images.
+        # This is generally the case fo SBI, where we are interested in estimating 1D parameters,
+        # but this should be changed if we plan to extend this library to work for emulation too.
         obs = self.final_layer(obs, vec)  # (N, T, patch_size ** 2 * out_channels)
         return obs
