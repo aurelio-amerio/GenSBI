@@ -118,7 +118,8 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             "Model creation not implemented for UnconditionalFlowPipeline."
         )
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, ch_obs):
         raise NotImplementedError(
             "Default parameters not implemented for UnconditionalFlowPipeline."
         )
@@ -373,7 +374,8 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             "Model creation not implemented for UnconditionalDiffusionPipeline."
         )
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, ch_obs):
         raise NotImplementedError(
             "Default parameters not implemented for UnconditionalDiffusionPipeline."
         )
