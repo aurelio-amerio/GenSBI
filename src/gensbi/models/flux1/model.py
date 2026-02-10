@@ -163,7 +163,9 @@ class Flux1Params:
 
             self.input_token_dim = int(self.val_emb_dim * self.num_heads)
             self.id_token_dim = int(self.id_emb_dim * self.num_heads)
-            self.hidden_size = self.input_token_dim + self.id_token_dim
+            self.hidden_size = (
+                self.input_token_dim + self.id_token_dim
+            ) * self.num_heads
 
         else:
             raise ValueError(f"Unknown strategy: {self.combining_strategy}")
@@ -225,7 +227,7 @@ class Flux1(nnx.Module):
                 hidden_size=(
                     self.hidden_size
                     if self.combining_strategy == "sum"
-                    else params.id_token_dim
+                    else params.id_token_dim * params.num_heads
                 ),
                 kind=params.id_embedding_strategy[0],
                 param_dtype=params.param_dtype,
@@ -242,7 +244,7 @@ class Flux1(nnx.Module):
                 hidden_size=(
                     self.hidden_size
                     if self.combining_strategy == "sum"
-                    else params.id_token_dim
+                    else params.id_token_dim * params.num_heads
                 ),
                 kind=params.id_embedding_strategy[1],
                 param_dtype=params.param_dtype,
@@ -254,7 +256,7 @@ class Flux1(nnx.Module):
             out_features=(
                 self.hidden_size
                 if self.combining_strategy == "sum"
-                else params.input_token_dim
+                else params.input_token_dim * params.num_heads
             ),
             use_bias=True,
             rngs=params.rngs,
@@ -282,7 +284,7 @@ class Flux1(nnx.Module):
             out_features=(
                 self.hidden_size
                 if self.combining_strategy == "sum"
-                else params.input_token_dim
+                else params.input_token_dim * params.num_heads
             ),
             use_bias=True,
             rngs=params.rngs,
@@ -394,7 +396,8 @@ class Flux1(nnx.Module):
             if self.combining_strategy == "sum":
                 obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
             else:
-                obs = jnp.concatenate((obs, self.obs_ids_embedder(obs_ids)), axis=-1)
+                obs_ids_embed = self.obs_ids_embedder(obs_ids)
+                obs = jnp.concatenate((obs, obs_ids_embed), axis=-1)
 
         if self.cond_ids_embedder is not None:
             if self.combining_strategy == "sum":

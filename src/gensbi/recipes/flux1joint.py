@@ -142,6 +142,8 @@ def parse_training_config(config_path: str):
     early_stopping = train_params.get("early_stopping", True)
     nsteps = train_params.get("nsteps", 30000) * multistep
     val_every = train_params.get("val_every", 100) * multistep
+    sigma_min = train_params.get("sigma_min", 0.002)
+    sigma_max = train_params.get("sigma_max", 80.0)
 
     # Optimizer parameters
     opt_params = config.get("optimizer", {})
@@ -172,6 +174,8 @@ def parse_training_config(config_path: str):
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
     training_config["warmup_steps"] = warmup_steps
+    training_config["sigma_min"] = sigma_min
+    training_config["sigma_max"] = sigma_max
 
     return training_config
 
@@ -270,7 +274,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
 
         """
         params, training_config, method = _flux1joint_config_from_path(
-            config_path, dim_joint
+            config_path, dim_obs + dim_cond
         )
 
         assert (
@@ -298,6 +302,13 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
         """
         model = Flux1Joint(params)
         return model
+
+    @classmethod
+    def get_default_params(cls, dim_joint, in_channels):
+        """
+        Return a dictionary of default model parameters.
+        """
+        return get_default_flux1joint_params(dim_joint, in_channels)
 
 
 class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
@@ -394,7 +405,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
 
         """
         params, training_config, method = _flux1joint_config_from_path(
-            config_path, dim_joint
+            config_path, dim_obs + dim_cond
         )
 
         assert (
@@ -422,3 +433,10 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
         """
         model = Flux1Joint(params)
         return model
+
+    @classmethod
+    def get_default_params(cls, dim_joint, in_channels):
+        """
+        Return a dictionary of default model parameters.
+        """
+        return get_default_flux1joint_params(dim_joint, in_channels)

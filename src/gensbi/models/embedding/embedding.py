@@ -21,6 +21,7 @@ class MLPEmbedder(nnx.Module):
     param_dtype : DTypeLike, optional
         Data type for parameters. Defaults to jnp.float32.
     """
+
     def __init__(
         self,
         in_dim: int,
@@ -74,7 +75,7 @@ class MLPEmbedder(nnx.Module):
 
 class SimpleTimeEmbedding(nnx.Module):
     """Simple time embedding module using cosine and sine transformations."""
-    
+
     def __init__(self):
         """Initialize simple time embedding module."""
         return
@@ -208,6 +209,7 @@ class GaussianFourierEmbedding(nnx.Module):
 
 class PEMatrix(nnx.Variable):
     """Variable type for storing pre-computed position embedding matrices."""
+
     pass
 
 
@@ -254,9 +256,7 @@ class SinusoidalPosEmbed1D(nnx.Module):
         # Block Concatenation: [Sin Block | Cos Block]
         emb_sin = jnp.sin(out)
         emb_cos = jnp.cos(out)
-        pe = jnp.concatenate(
-            [emb_sin, emb_cos], axis=1
-        )  # (MaxLen, D)
+        pe = jnp.concatenate([emb_sin, emb_cos], axis=1)  # (MaxLen, D)
 
         # Register as a constant (frozen state)
         self.pe = PEMatrix(jnp.asarray(pe, dtype=param_dtype))
@@ -278,7 +278,8 @@ class SinusoidalPosEmbed1D(nnx.Module):
         seq_len = ids.shape[1]
         # Slice the pre-computed matrix
         # This is extremely fast (just a memory pointer offset)
-        return self.pe[None, :seq_len, :]
+        res = self.pe[None, :seq_len, :]
+        return jnp.repeat(res, ids.shape[0], axis=0)
 
 
 class SinusoidalPosEmbed2D(nnx.Module):
@@ -320,8 +321,7 @@ class SinusoidalPosEmbed2D(nnx.Module):
             pos = jnp.arange(length, dtype=jnp.float32)
             out = jnp.einsum("m,d->md", pos, omega)
 
-            return jnp.concatenate(
-                [jnp.sin(out), jnp.cos(out)], axis=1)  # (Length, D)
+            return jnp.concatenate([jnp.sin(out), jnp.cos(out)], axis=1)  # (Length, D)
 
         # --- Pre-computation ---
         # 1. Height Embeddings (Y-axis)
@@ -370,7 +370,7 @@ class SinusoidalPosEmbed2D(nnx.Module):
 class Embed(nnx.Module):
     """
     Wrapper around nnx.Embed that handles 3D input by removing the last dimension.
-    
+
     Parameters
     ----------
     *args
@@ -378,6 +378,7 @@ class Embed(nnx.Module):
     **kwargs
         Keyword arguments passed to nnx.Embed.
     """
+
     def __init__(self, *args, **kwargs):
         self.embed = nnx.Embed(*args, **kwargs)
 

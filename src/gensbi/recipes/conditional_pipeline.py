@@ -166,9 +166,10 @@ class ConditionalFlowPipeline(AbstractPipeline):
             "Model creation not implemented for ConditionalFlowPipeline."
         )
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
         raise NotImplementedError(
-            "Default parameters not implemented for ConditionalFlowPipeline."
+            "Default parameters not implemented for ConditionalDiffusionPipeline."
         )
 
     def get_loss_fn(
@@ -505,7 +506,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             "Model creation not implemented for ConditionalDiffusionPipeline."
         )
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
         raise NotImplementedError(
             "Default parameters not implemented for ConditionalDiffusionPipeline."
         )

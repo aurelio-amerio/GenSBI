@@ -101,24 +101,7 @@ params_simf = SimformerParams(
     num_hidden_layers=1,
 )
 
-params_flux1joint_flow = Flux1JointParams(
-    in_channels=2,
-    vec_in_dim=None,
-    mlp_ratio=3.0,
-    num_heads=2,
-    depth_single_blocks=2,
-    value_emb_dim=4,
-    cond_emb_dim=2,
-    id_emb_dim=4,
-    qkv_bias=True,
-    rngs=nnx.Rngs(0),
-    dim_joint=dim_joint,
-    id_embedding_strategy="sum",
-    guidance_embed=False,
-    param_dtype=jnp.float32,
-)
-
-params_flux1joint_diff = Flux1JointParams(
+params_flux1joint = Flux1JointParams(
     in_channels=2,
     vec_in_dim=None,
     mlp_ratio=3.0,
@@ -135,7 +118,7 @@ params_flux1joint_diff = Flux1JointParams(
     param_dtype=jnp.float32,
 )
 
-params_flux_flow = Flux1Params(
+params_flux = Flux1Params(
     in_channels=2,
     vec_in_dim=None,
     context_in_dim=2,
@@ -150,33 +133,10 @@ params_flux_flow = Flux1Params(
     dim_obs=dim_obs,
     dim_cond=dim_cond,
     theta=20,
-    combining_strategy="sum",
-    id_embedding_strategy=("absolute", "absolute"),
+    id_embedding_strategy=("pos1d", "pos1d"),
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
-
-params_flux_diff = Flux1Params(
-    in_channels=2,
-    vec_in_dim=None,
-    context_in_dim=2,
-    mlp_ratio=1,
-    num_heads=2,
-    depth=2,
-    depth_single_blocks=2,
-    val_emb_dim=4,
-    id_emb_dim=4,
-    qkv_bias=True,
-    dim_obs=dim_obs,
-    dim_cond=dim_cond,
-    theta=20,
-    combining_strategy="concat",
-    id_embedding_strategy=("absolute", "pos1d"),
-    rngs=nnx.Rngs(default=42),
-    param_dtype=jnp.float32,
-)
-
-# TODO add configuration for flux1 with concat instead of sum, maybe do it for diffusion only. do the same for flux1joint
 
 # %%
 
@@ -230,62 +190,14 @@ def test_load_configs(pipeline_cls, config_path):
 
 
 @pytest.mark.parametrize(
-    "pipeline_cls",
-    [
-        Flux1FlowPipeline,
-        Flux1DiffusionPipeline,
-    ],
-)
-def test_defaults_flux1(pipeline_cls):
-    default_params = pipeline_cls.get_default_params(1, 2, 1, 1)
-    assert isinstance(
-        default_params, Flux1Params
-    ), f"Expected Flux1Params, got {type(default_params)}"
-
-    return
-
-
-@pytest.mark.parametrize(
-    "pipeline_cls",
-    [
-        Flux1JointFlowPipeline,
-        Flux1JointDiffusionPipeline,
-    ],
-)
-def test_defaults_flux1joint(pipeline_cls):
-    default_params = pipeline_cls.get_default_params(3, 1)
-    assert isinstance(
-        default_params, Flux1JointParams
-    ), f"Expected Flux1JointParams, got {type(default_params)}"
-
-    return
-
-
-@pytest.mark.parametrize(
-    "pipeline_cls",
-    [
-        SimformerFlowPipeline,
-        SimformerDiffusionPipeline,
-    ],
-)
-def test_defaults_simformer(pipeline_cls):
-    default_params = pipeline_cls.get_default_params(2, 1)
-    assert isinstance(
-        default_params, SimformerParams
-    ), f"Expected SimformerParams, got {type(default_params)}"
-
-    return
-
-
-@pytest.mark.parametrize(
     "pipeline_cls, params",
     [
         (SimformerFlowPipeline, params_simf),
         (SimformerDiffusionPipeline, params_simf),
-        (Flux1JointFlowPipeline, params_flux1joint_flow),
-        (Flux1JointDiffusionPipeline, params_flux1joint_diff),
-        (Flux1FlowPipeline, params_flux_flow),
-        (Flux1DiffusionPipeline, params_flux_diff),
+        (Flux1JointFlowPipeline, params_flux1joint),
+        (Flux1JointDiffusionPipeline, params_flux1joint),
+        (Flux1FlowPipeline, params_flux),
+        (Flux1DiffusionPipeline, params_flux),
     ],
 )
 def test_model_pipeline(pipeline_cls, params):
@@ -349,6 +261,13 @@ def test_model_pipeline(pipeline_cls, params):
 
         obs_ids = pipeline.obs_ids
         cond_ids = pipeline.cond_ids
+
+        # try getting the default parameters
+        default_params = pipeline._get_default_params()
+        # make sure the default parameters are of the same class as params
+        assert isinstance(
+            default_params, type(params)
+        ), f"Expected {type(params)}, got {type(default_params)}"
 
         # try training the model
         pipeline.train(nnx.Rngs(0), nsteps=2, save_model=True)
