@@ -81,6 +81,9 @@ params = Flux1Params(
     dim_cond=...,
     theta=...,
     id_embedding_strategy=("absolute", "absolute"),
+    combining_strategy="sum",  # "sum" or "concat"
+    val_emb_dim=None,  # Required if combining_strategy="concat"
+    id_emb_dim=None,   # Required if combining_strategy="concat"
     guidance_embed=...,
     param_dtype=...,
 )
@@ -95,13 +98,18 @@ params = Flux1Params(
 - **num_heads**: Number of attention heads.
 - **depth**: Number of Double Stream blocks (processes information and context separately).
 - **depth_single_blocks**: Number of Single Stream blocks (processes information and context jointly). A common heuristic is to set this to roughly double the `depth`.
-- **axes_dim**: A sequence of integers defining the number of features per attention head, per axis. For 1D data, this is a single-element list defining the per-head dimension. The total number of transformer features is `sum(axes_dim) * num_heads`. For unstructured 1D data, a typical value is around `[10]` or greater.
+- **axes_dim**: A sequence of integers defining the number of features per attention head, per axis. For 1D data, this is a single-element list defining the per-head dimension. The total number of transformer features is `sum(axes_dim) * num_heads`. For unstructured 1D data, a typical value is around `[10]` or greater. **Required when `combining_strategy="sum"`**.
 - **qkv_bias**: Whether to use bias terms in QKV projections. Default: `True`.
 - **rngs**: Random number generators for initialization (e.g., `nnx.Rngs(0)`).
 - **dim_obs**: The number of variables (tokens) the model performs inference on.
 - **dim_cond**: The number of variables the model is conditioned on.
 - **theta**: Scaling factor for Rotary Positional Embeddings (RoPE). A recommended starting point is `10 * dim_obs`. The default code value is `10_000`.
 - **id_embedding_strategy**: A tuple of strings `(obs_kind, cond_kind)` specifying the embedding strategy for observation and condition tokens respectively. Options: `"absolute"`, `"pos1d"`, `"pos2d"`, `"rope"`. Default: `("absolute", "absolute")`.
+- **combining_strategy**: Strategy for combining value and ID embeddings ("sum" or "concat"). Default: `"sum"`.
+    - **"sum"**: Standard approach for large transformers. Requires `axes_dim`. Best for large models/dimensionality.
+    - **"concat"**: Concatenates value and ID embeddings. Requires `val_emb_dim` and `id_emb_dim`. Best for small models to reduce confusion.
+- **val_emb_dim**: Features per head for value embedding. **Required when `combining_strategy="concat"`**.
+- **id_emb_dim**: Features per head for ID embedding. **Required when `combining_strategy="concat"`**. A good starting ratio for `val_emb_dim : id_emb_dim` is **1:1**.
 - **guidance_embed**: Whether to use guidance embeddings. Default: `False` (not currently implemented for SBI).
 - **param_dtype**: Data type for model parameters. Default: `jnp.bfloat16`. Use this to reduce memory usage. Switch to `jnp.float32` if you encounter numerical stability issues.
 
@@ -109,6 +117,7 @@ params = Flux1Params(
 
 - **Architecture Configuration**: It is strongly recommended to use double the number of Single Stream blocks (`depth_single_blocks`) compared to the number of Double Stream blocks (`depth`).
 - **Tuning Strategy**: A typical depth range for the model is between 8 and 20. For the attention mechanism, starting with 6-8 heads and approximately 10 features per head is recommended; these can be increased based on data complexity.
+- **ID Embedding Strategy**: For small networks (small per-head dimension, few heads), consider using `combining_strategy="concat"` to reduce confusion between value and ID. When using "concat", a 1:1 ratio between `val_emb_dim` and `id_emb_dim` is a good starting point. For larger models, sticking to `combining_strategy="sum"` is usually preferred.
 - **High-Dimensional Data**: If your condition dimension is large (>100) or observation dimension is moderately high (>20), it is highly recommended to employ an embedding network to derive summary statistics for the data. See the latent diffusion example (WIP).
 
 ## Simformer Model Parameters

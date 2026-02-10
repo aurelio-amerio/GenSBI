@@ -278,6 +278,24 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 3. Then increase width (heads, feature dimensions)
 4. Monitor memory usage and training time
 
+### Optimizing Flux1/Flux1Joint for Low Dimensionality
+
+**Problem**: You want to use the scalability of Flux1/Flux1Joint but your problem has very low dimensionality (e.g., < 4 dimensions), and performance is suboptimal.
+
+**Solution**:
+
+1. **Use `combining_strategy="concat"`**: In low-dimensional regimes with small per-head dimensions, summing the ID embeddings can obscure the signal. Concatenating them preserves distinct information channels.
+
+   ```python
+   # In your config or code
+   id_embedding_strategy=["absolute", "absolute"]
+   combining_strategy="concat"
+   val_emb_dim=10
+   id_emb_dim=10  # 1:1 ratio is recommended for small models
+   ```
+
+2. **Use the 1:1 Ratio**: As a starting point, ensure that `val_emb_dim` and `id_emb_dim` are roughly equal.
+
 ## Data Preparation
 
 ### How Should I Structure My Data?

@@ -50,6 +50,18 @@ class Flux1Params:
     - `pos2d` / `rope2d`: 2D positional embeddings. Use for **image data** or 2D grids.
         Initialize IDs using `gensbi.recipes.utils.init_ids_2d`. The `semantic_id` is optional for `pos2d` but recommended for `rope2d`.
 
+    **Combining ID Embeddings**:
+
+    Strategies for combining the value and ID embeddings (`combining_strategy`):
+
+    - `"sum"` (Default): The value and ID embeddings are summed. This is the standard approach for large transformers.
+      Requires `axes_dim` to be specified.
+      **Recommended for**: Large models, high-dimensional data, or when using RoPE.
+    - `"concat"`: The value and ID embeddings are concatenated.
+      Requires `val_emb_dim` (features for value) and `id_emb_dim` (features for ID) to be specified.
+      **Recommended for**: Small models (low dimension per head, few heads) to reduce confusion between value and positional information.
+      A good starting ratio for `val_emb_dim : id_emb_dim` is **1:1**.
+
     **Preprocessing for Images/2D Data**:
 
     - **Patchification**: 2D images must be patchified (flattened into a sequence of tokens) before passing them to the model.
@@ -84,13 +96,13 @@ class Flux1Params:
         dim_cond : int
             Number of conditioning tokens.
         axes_dim : Optional[list[int]]
-            Dimensions of the axes for positional encoding.
+            Dimensions of the axes for positional encoding (required for "sum" strategy).
         val_emb_dim : Optional[int]
-            Features per head for value embedding.
+            Features per head for value embedding (required for "concat" strategy).
         id_emb_dim : Optional[int]
-            Features per head for ID embedding.
+            Features per head for ID embedding (required for "concat" strategy).
         combining_strategy : str
-            Strategy for combining embeddings ("sum" or "concat").
+            Strategy for combining embeddings ("sum" or "concat"). Default is "sum".
         theta : Optional[int]
             Scaling factor for positional encoding.
         id_embedding_strategy : tuple[str, str]
