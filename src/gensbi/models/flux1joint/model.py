@@ -89,7 +89,7 @@ class Flux1JointParams:
     qkv_bias: bool
     rngs: nnx.Rngs
     dim_joint: int  # joint dimension
-    combining_strategy: str = "sum"
+    id_merge_mode: str = "sum"
     id_embedding_strategy: str = "absolute"
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
@@ -98,15 +98,15 @@ class Flux1JointParams:
         available_strategies = ["sum", "concat"]
 
         assert (
-            self.combining_strategy in available_strategies
-        ), f"Unknown combining strategy {self.combining_strategy}."
+            self.id_merge_mode in available_strategies
+        ), f"Unknown combining strategy {self.id_merge_mode}."
 
         assert (
             self.id_embedding_strategy == "absolute"
         ), f"Unknown id embedding strategy {self.id_embedding_strategy}."
 
         self.input_token_dim = int(self.val_emb_dim * self.num_heads)
-        if self.combining_strategy == "sum":
+        if self.id_merge_mode == "sum":
             self.cond_emb_dim = 0
             self.id_emb_dim = 0
 
@@ -138,7 +138,7 @@ class Flux1Joint(nnx.Module):
 
         self.num_heads = params.num_heads
 
-        if params.combining_strategy == "sum":
+        if params.id_merge_mode == "sum":
             self.ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_joint,
                 hidden_size=self.hidden_size,
@@ -146,7 +146,7 @@ class Flux1Joint(nnx.Module):
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
-        elif params.combining_strategy == "concat":
+        elif params.id_merge_mode == "concat":
             self.ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_joint,
                 hidden_size=self.params.id_token_dim,
@@ -155,7 +155,7 @@ class Flux1Joint(nnx.Module):
                 rngs=params.rngs,
             )
         else:
-            raise ValueError(f"Unknown combining strategy: {params.combining_strategy}")
+            raise ValueError(f"Unknown combining strategy: {params.id_merge_mode}")
 
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
