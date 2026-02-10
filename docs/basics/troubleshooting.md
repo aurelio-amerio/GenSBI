@@ -284,12 +284,12 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 
 **Solution**:
 
-1. **Use `combining_strategy="concat"`**: In low-dimensional regimes with small per-head dimensions, summing the ID embeddings can obscure the signal. Concatenating them preserves distinct information channels.
+1. **Use `id_merge_mode="concat"`**: In low-dimensional regimes with small per-head dimensions, summing the ID embeddings can obscure the signal. Concatenating them preserves distinct information channels.
 
    ```python
    # In your config or code
    id_embedding_strategy=["absolute", "absolute"]
-   combining_strategy="concat"
+   id_merge_mode="concat"
    val_emb_dim=10
    id_emb_dim=10  # 1:1 ratio is recommended for small models
    ```

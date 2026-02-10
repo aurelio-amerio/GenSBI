@@ -40,13 +40,19 @@ def parse_simformer_params(config_path: str):
 
     params_dict = dict(
         in_channels=model_params.get("in_channels", 1),
-        value_emb_dim=model_params.get("value_emb_dim", 40),
+        val_emb_dim=model_params.get(
+            "val_emb_dim", model_params.get("value_emb_dim", 40)
+        ),  # Support both
         id_emb_dim=model_params.get("id_emb_dim", 40),
         cond_emb_dim=model_params.get("cond_emb_dim", 10),
         fourier_features=model_params.get("fourier_features", 128),
         num_heads=model_params.get("num_heads", 4),
-        num_layers=model_params.get("num_layers", 8),
-        widening_factor=model_params.get("widening_factor", 3),
+        depth=model_params.get(
+            "depth", model_params.get("num_layers", 8)
+        ),  # Support both
+        mlp_ratio=model_params.get(
+            "mlp_ratio", model_params.get("widening_factor", 3)
+        ),  # Support both
         qkv_features=model_params.get("qkv_features", 90),
         num_hidden_layers=model_params.get("num_hidden_layers", 1),
     )
@@ -61,14 +67,14 @@ def get_default_simformer_params(dim_joint: int, in_channels: int = 1):
     return SimformerParams(
         rngs=nnx.Rngs(0),
         in_channels=in_channels,
-        value_emb_dim=40,
+        val_emb_dim=40,
         id_emb_dim=40,
         cond_emb_dim=10,
         dim_joint=dim_joint,
         fourier_features=128,
         num_heads=4,
-        num_layers=8,
-        widening_factor=3,
+        depth=8,
+        mlp_ratio=3,
         qkv_features=40,
         num_hidden_layers=1,
     )

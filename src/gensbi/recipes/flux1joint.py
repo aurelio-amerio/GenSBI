@@ -47,11 +47,15 @@ def parse_flux1joint_params(config_path: str):
         mlp_ratio=model_params.get("mlp_ratio", 3.0),
         num_heads=model_params.get("num_heads", 4),
         depth_single_blocks=model_params.get("depth_single_blocks", 8),
-        value_emb_dim=model_params.get("value_emb_dim", 10),
+        val_emb_dim=model_params.get(
+            "val_emb_dim", model_params.get("value_emb_dim", 10)
+        ),  # Support both for now
         cond_emb_dim=model_params.get("cond_emb_dim", 4),
         id_emb_dim=model_params.get("id_emb_dim", 10),
         qkv_bias=model_params.get("qkv_bias", True),
-        id_embedding_strategy=model_params.get("id_embedding_strategy", "concat"),
+        id_merge_mode=model_params.get(
+            "id_merge_mode", model_params.get("id_embedding_strategy", "concat")
+        ),
         guidance_embed=model_params.get("guidance_embed", False),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
@@ -69,13 +73,13 @@ def get_default_flux1joint_params(dim_joint: int, in_channels: int = 1):
         mlp_ratio=3.0,
         num_heads=4,
         depth_single_blocks=8,
-        value_emb_dim=10,
+        val_emb_dim=10,
         cond_emb_dim=4,
         id_emb_dim=10,
         qkv_bias=True,
         rngs=nnx.Rngs(0),
         dim_joint=dim_joint,
-        id_embedding_strategy="concat",
+        id_merge_mode="concat",
         guidance_embed=False,
         param_dtype=jnp.bfloat16,
     )
@@ -193,7 +197,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
         condition_mask_kind="structured",
     ):
         """
-        Flow pipeline for training and using a Simformer model for simulation-based inference.
+        Flow pipeline for training and using a Flux1Joint model for simulation-based inference.
 
         Parameters
         ----------
@@ -208,7 +212,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
         ch_obs : int
             Number of channels in the observation data.
         params : Flux1JointParams, optional
-            Parameters for the Simformer model. If None, default parameters are used.
+            Parameters for the Flux1Joint model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
         condition_mask_kind : str, optional
@@ -298,7 +302,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
 
     def _make_model(self, params):
         """
-        Create and return the Simformer model to be trained.
+        Create and return the Flux1Joint model to be trained.
         """
         model = Flux1Joint(params)
         return model
@@ -324,7 +328,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
         condition_mask_kind="structured",
     ):
         """
-        Diffusion pipeline for training and using a Simformer model for simulation-based inference.
+        Diffusion pipeline for training and using a Flux1Joint model for simulation-based inference.
 
         Parameters
         ----------
@@ -339,7 +343,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
         ch_obs : int
             Number of channels in the observation data.
         params : Flux1JointParams, optional
-            Parameters for the Simformer model. If None, default parameters are used.
+            Parameters for the Flux1Joint model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
         condition_mask_kind : str, optional
@@ -429,7 +433,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
 
     def _make_model(self, params):
         """
-        Create and return the Simformer model to be trained.
+        Create and return the Flux1Joint model to be trained.
         """
         model = Flux1Joint(params)
         return model
