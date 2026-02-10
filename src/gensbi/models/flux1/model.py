@@ -52,7 +52,7 @@ class Flux1Params:
 
     **Combining ID Embeddings**:
 
-    Strategies for combining the value and ID embeddings (`combining_strategy`):
+    Strategies for combining the value and ID embeddings (`id_merge_mode`):
 
     - `"sum"` (Default): The value and ID embeddings are summed. This is the standard approach for large transformers.
       Requires `axes_dim` to be specified.
@@ -101,7 +101,7 @@ class Flux1Params:
             Features per head for value embedding (required for "concat" strategy).
         id_emb_dim : Optional[int]
             Features per head for ID embedding (required for "concat" strategy).
-        combining_strategy : str
+        id_merge_mode : str
             Strategy for combining embeddings ("sum" or "concat"). Default is "sum".
         theta : Optional[int]
             Scaling factor for positional encoding.
@@ -128,7 +128,7 @@ class Flux1Params:
     axes_dim: Optional[list[int]] = None
     val_emb_dim: Optional[int] = None  # Features per head for value
     id_emb_dim: Optional[int] = None  # Features per head for ID
-    combining_strategy: str = "sum"  # "sum" or "concat"
+    id_merge_mode: str = "sum"  # "sum" or "concat"
     theta: Optional[int] = None
     id_embedding_strategy: tuple[str, str] = (
         "absolute",
@@ -153,7 +153,7 @@ class Flux1Params:
             self.id_embedding_strategy[1] in available_embeddings
         ), f"Unknown id embedding kind {self.id_embedding_strategy[1]} for cond."
 
-        if self.combining_strategy == "sum":
+        if self.id_merge_mode == "sum":
             if self.axes_dim is None:
                 raise ValueError("axes_dim required for 'sum' strategy")
 
@@ -162,7 +162,7 @@ class Flux1Params:
                 jnp.sum(jnp.asarray(self.axes_dim, dtype=jnp.int32)) * self.num_heads
             )
 
-        elif self.combining_strategy == "concat":
+        elif self.id_merge_mode == "concat":
             assert (
                 "rope" not in self.id_embedding_strategy[0]
                 and "rope" not in self.id_embedding_strategy[1]
@@ -175,12 +175,10 @@ class Flux1Params:
 
             self.input_token_dim = int(self.val_emb_dim * self.num_heads)
             self.id_token_dim = int(self.id_emb_dim * self.num_heads)
-            self.hidden_size = (
-                self.input_token_dim + self.id_token_dim
-            ) * self.num_heads
+            self.hidden_size = self.input_token_dim + self.id_token_dim
 
         else:
-            raise ValueError(f"Unknown strategy: {self.combining_strategy}")
+            raise ValueError(f"Unknown strategy: {self.id_merge_mode}")
 
         if self.theta is None:
             self.theta = 10 * (self.dim_obs + self.dim_cond)
@@ -200,7 +198,7 @@ class Flux1(nnx.Module):
         self.hidden_size = params.hidden_size
         self.qkv_features = params.qkv_features
 
-        self.combining_strategy = params.combining_strategy
+        self.id_merge_mode = params.id_merge_mode
 
         self.num_heads = params.num_heads
 
@@ -238,8 +236,8 @@ class Flux1(nnx.Module):
                 num_embeddings=params.dim_obs,
                 hidden_size=(
                     self.hidden_size
-                    if self.combining_strategy == "sum"
-                    else params.id_token_dim * params.num_heads
+                    if self.id_merge_mode == "sum"
+                    else params.id_token_dim
                 ),
                 kind=params.id_embedding_strategy[0],
                 param_dtype=params.param_dtype,
@@ -255,8 +253,8 @@ class Flux1(nnx.Module):
                 num_embeddings=params.dim_cond,
                 hidden_size=(
                     self.hidden_size
-                    if self.combining_strategy == "sum"
-                    else params.id_token_dim * params.num_heads
+                    if self.id_merge_mode == "sum"
+                    else params.id_token_dim
                 ),
                 kind=params.id_embedding_strategy[1],
                 param_dtype=params.param_dtype,
@@ -267,8 +265,8 @@ class Flux1(nnx.Module):
             in_features=self.in_channels,
             out_features=(
                 self.hidden_size
-                if self.combining_strategy == "sum"
-                else params.input_token_dim * params.num_heads
+                if self.id_merge_mode == "sum"
+                else params.input_token_dim
             ),
             use_bias=True,
             rngs=params.rngs,
@@ -295,8 +293,8 @@ class Flux1(nnx.Module):
             in_features=params.context_in_dim,
             out_features=(
                 self.hidden_size
-                if self.combining_strategy == "sum"
-                else params.input_token_dim * params.num_heads
+                if self.id_merge_mode == "sum"
+                else params.input_token_dim
             ),
             use_bias=True,
             rngs=params.rngs,
@@ -405,14 +403,14 @@ class Flux1(nnx.Module):
 
         # if not using rope for a dimension, perform id embedding and add it to the input
         if self.obs_ids_embedder is not None:
-            if self.combining_strategy == "sum":
+            if self.id_merge_mode == "sum":
                 obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
             else:
                 obs_ids_embed = self.obs_ids_embedder(obs_ids)
                 obs = jnp.concatenate((obs, obs_ids_embed), axis=-1)
 
         if self.cond_ids_embedder is not None:
-            if self.combining_strategy == "sum":
+            if self.id_merge_mode == "sum":
                 cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(
                     cond_ids
                 )

@@ -109,7 +109,7 @@ def test_flux_params_instantiation():
         rngs=get_rngs(),
         param_dtype=jnp.bfloat16,
         id_embedding_strategy=("absolute", "absolute"),
-        combining_strategy="concat",
+        id_merge_mode="concat",
         val_emb_dim=4,
         id_emb_dim=4,
     )
@@ -203,7 +203,7 @@ def init_test_model_concat():
         dim_cond=5,
         qkv_bias=True,
         id_embedding_strategy=("absolute", "absolute"),
-        combining_strategy="concat",
+        id_merge_mode="concat",
         val_emb_dim=4,
         id_emb_dim=4,
         guidance_embed=False,

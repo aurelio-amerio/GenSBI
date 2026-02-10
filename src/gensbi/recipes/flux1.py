@@ -52,7 +52,7 @@ def parse_flux1_params(config_path: str):
         axes_dim=model_params.get("axes_dim", None),
         val_emb_dim=model_params.get("val_emb_dim", None),
         id_emb_dim=model_params.get("id_emb_dim", None),
-        combining_strategy=model_params.get("combining_strategy", "sum"),
+        id_merge_mode=model_params.get("id_merge_mode", "sum"),
         qkv_bias=model_params.get("qkv_bias", True),
         theta=model_params.get("theta", None),
         id_embedding_strategy=tuple(

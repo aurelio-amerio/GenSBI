@@ -55,7 +55,7 @@ class Flux1JointParams:
             Number of attention heads.
         depth_single_blocks : int
             Number of single stream blocks.
-        value_emb_dim : int
+        val_emb_dim : int
             Number of features per head used to embed the data.
         cond_emb_dim : int
             Number of features per head used to encode the condition mask, which determines the features on which we are conditioning.
@@ -67,8 +67,10 @@ class Flux1JointParams:
             Random number generators for initialization.
         dim_joint : int
             Number of tokens in the joint sequence.
+        id_merge_mode : str
+            Strategy for combining embeddings ("sum" or "concat").
         id_embedding_strategy : str
-            Kind of embedding for token ids ('sum', 'concat').
+            Kind of ID embedding. Currently only "absolute" is supported for Flux1Joint.
         guidance_embed : bool
             Whether to use guidance embedding.
         param_dtype : DTypeLike
@@ -81,25 +83,30 @@ class Flux1JointParams:
     mlp_ratio: float
     num_heads: int
     depth_single_blocks: int
-    value_emb_dim: int
+    val_emb_dim: int
     cond_emb_dim: int
     id_emb_dim: int
     qkv_bias: bool
     rngs: nnx.Rngs
     dim_joint: int  # joint dimension
-    id_embedding_strategy: str = "sum"
+    combining_strategy: str = "sum"
+    id_embedding_strategy: str = "absolute"
     guidance_embed: bool = False
     param_dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
-        available_embeddings = ["sum", "concat"]
+        available_strategies = ["sum", "concat"]
 
         assert (
-            self.id_embedding_strategy in available_embeddings
-        ), f"Unknown id embedding kind {self.id_embedding_strategy} for obs."
+            self.combining_strategy in available_strategies
+        ), f"Unknown combining strategy {self.combining_strategy}."
 
-        self.input_token_dim = int(self.value_emb_dim * self.num_heads)
-        if self.id_embedding_strategy == "sum":
+        assert (
+            self.id_embedding_strategy == "absolute"
+        ), f"Unknown id embedding strategy {self.id_embedding_strategy}."
+
+        self.input_token_dim = int(self.val_emb_dim * self.num_heads)
+        if self.combining_strategy == "sum":
             self.cond_emb_dim = 0
             self.id_emb_dim = 0
 
@@ -131,15 +138,15 @@ class Flux1Joint(nnx.Module):
 
         self.num_heads = params.num_heads
 
-        if params.id_embedding_strategy == "sum":
+        if params.combining_strategy == "sum":
             self.ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_joint,
                 hidden_size=self.hidden_size,
-                kind="absolute",
+                kind=params.id_embedding_strategy,
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
-        elif params.id_embedding_strategy == "concat":
+        elif params.combining_strategy == "concat":
             self.ids_embedder = FeatureEmbedder(
                 num_embeddings=params.dim_joint,
                 hidden_size=self.params.id_token_dim,
@@ -148,9 +155,7 @@ class Flux1Joint(nnx.Module):
                 rngs=params.rngs,
             )
         else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {params.id_embedding_strategy}"
-            )
+            raise ValueError(f"Unknown combining strategy: {params.combining_strategy}")
 
         self.obs_in = nnx.Linear(
             in_features=self.in_channels,
@@ -176,12 +181,12 @@ class Flux1Joint(nnx.Module):
             else Identity()
         )
 
-        if params.id_embedding_strategy == "sum":
+        if params.id_merge_mode == "sum":
             self.condition_embedding = nnx.Param(
                 0.01
                 * jnp.ones((1, 1, self.params.hidden_size), dtype=params.param_dtype)
             )
-        elif params.id_embedding_strategy == "concat":
+        elif params.id_merge_mode == "concat":
             self.condition_embedding = nnx.Param(
                 0.01
                 * jnp.ones(
@@ -189,9 +194,7 @@ class Flux1Joint(nnx.Module):
                 )
             )
         else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {params.id_embedding_strategy}"
-            )
+            raise ValueError(f"Unknown combining strategy: {params.id_merge_mode}")
 
         self.single_blocks = nnx.Sequential(
             *[
@@ -244,14 +247,12 @@ class Flux1Joint(nnx.Module):
         condition_embedding = self.condition_embedding * condition_mask
         ids_embedding = self.ids_embedder(node_ids)
 
-        if self.params.id_embedding_strategy == "sum":
+        if self.params.id_merge_mode == "sum":
             obs = obs * jnp.sqrt(self.hidden_size) + ids_embedding + condition_embedding
-        elif self.params.id_embedding_strategy == "concat":
+        elif self.params.id_merge_mode == "concat":
             obs = jnp.concatenate([obs, condition_embedding, ids_embedding], axis=-1)
         else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {self.params.id_embedding_strategy}"
-            )
+            raise ValueError(f"Unknown combining strategy: {self.params.id_merge_mode}")
 
         vec = self.time_in(timestep_embedding(t, 256))
         if self.params.guidance_embed:
