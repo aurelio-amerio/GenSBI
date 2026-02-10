@@ -90,7 +90,34 @@ def test_flux_params_instantiation():
         * params_mixed.num_heads
     )
     assert params_mixed.hidden_size == hidden_size_rope
+    assert params_mixed.hidden_size == hidden_size_rope
     assert params_mixed.qkv_features == hidden_size_rope
+
+    # Test concat strategy params
+    params_concat = Flux1Params(
+        in_channels=1,
+        vec_in_dim=None,
+        context_in_dim=1,
+        mlp_ratio=4,
+        num_heads=4,
+        depth=1,
+        depth_single_blocks=2,
+        dim_obs=2,
+        dim_cond=2,
+        qkv_bias=True,
+        guidance_embed=False,
+        rngs=get_rngs(),
+        param_dtype=jnp.bfloat16,
+        id_embedding_strategy=("absolute", "absolute"),
+        combining_strategy="concat",
+        val_emb_dim=4,
+        id_emb_dim=4,
+    )
+    hidden_size_concat = int(
+        (params_concat.val_emb_dim + params_concat.id_emb_dim) * params_concat.num_heads
+    )
+    assert params_concat.hidden_size == hidden_size_concat
+    assert params_concat.qkv_features == hidden_size_concat
 
 
 # %%
@@ -159,6 +186,31 @@ def init_test_model_mixed():
         param_dtype=jnp.bfloat16,
     )
     model = Flux1(params)
+    model = Flux1(params)
+    return model
+
+
+def init_test_model_concat():
+    params = Flux1Params(
+        in_channels=1,
+        vec_in_dim=None,
+        context_in_dim=1,
+        mlp_ratio=4,
+        num_heads=4,
+        depth=1,
+        depth_single_blocks=2,
+        dim_obs=3,
+        dim_cond=5,
+        qkv_bias=True,
+        id_embedding_strategy=("absolute", "absolute"),
+        combining_strategy="concat",
+        val_emb_dim=4,
+        id_emb_dim=4,
+        guidance_embed=False,
+        rngs=get_rngs(),
+        param_dtype=jnp.bfloat16,
+    )
+    model = Flux1(params)
     return model
 
 
@@ -171,6 +223,10 @@ def init_test_model_mixed():
         init_test_model_rope,
         init_test_model_standard,
         init_test_model_mixed,
+        init_test_model_rope,
+        init_test_model_standard,
+        init_test_model_mixed,
+        init_test_model_concat,
     ],
 )
 def test_flux_forward_shape_embed(model_fn):
@@ -209,6 +265,10 @@ def test_flux_forward_shape_embed(model_fn):
         init_test_model_rope,
         init_test_model_standard,
         init_test_model_mixed,
+        init_test_model_rope,
+        init_test_model_standard,
+        init_test_model_mixed,
+        init_test_model_concat,
     ],
 )
 def test_flux_wrapper(model_fn):
@@ -267,6 +327,10 @@ def test_flux_wrapper(model_fn):
         init_test_model_rope,
         init_test_model_standard,
         init_test_model_mixed,
+        init_test_model_rope,
+        init_test_model_standard,
+        init_test_model_mixed,
+        init_test_model_concat,
     ],
 )
 def test_flux_param_dtype_propagation(model_fn):

@@ -52,10 +52,69 @@ def parse_flux1joint_params(config_path: str):
         id_emb_dim=model_params.get("id_emb_dim", 10),
         qkv_bias=model_params.get("qkv_bias", True),
         id_embedding_strategy=model_params.get("id_embedding_strategy", "concat"),
+        guidance_embed=model_params.get("guidance_embed", False),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
     )
 
     return params_dict
+
+
+def get_default_flux1joint_params(dim_joint: int, in_channels: int = 1):
+    """
+    Return default parameters for the Flux1Joint model.
+    """
+    return Flux1JointParams(
+        in_channels=in_channels,
+        vec_in_dim=None,
+        mlp_ratio=3.0,
+        num_heads=4,
+        depth_single_blocks=8,
+        value_emb_dim=10,
+        cond_emb_dim=4,
+        id_emb_dim=10,
+        qkv_bias=True,
+        rngs=nnx.Rngs(0),
+        dim_joint=dim_joint,
+        id_embedding_strategy="concat",
+        guidance_embed=False,
+        param_dtype=jnp.bfloat16,
+    )
+
+
+def _flux1joint_config_from_path(config_path: str, dim_joint: int):
+    """
+    Helper to parse common configuration for Flux1Joint pipelines.
+
+    Returns
+    -------
+    params : Flux1JointParams
+        The parsed model parameters.
+    training_config : dict
+        The parsed training configuration.
+    method : str
+        The methodology (flow or diffusion) specified in the config.
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    # methodology
+    strategy = config.get("strategy", {})
+    method = strategy.get("method")
+    model_type = strategy.get("model")
+
+    assert model_type == "flux1joint", f"Model type {model_type} not supported."
+
+    params_dict = parse_flux1joint_params(config_path)
+
+    params = Flux1JointParams(
+        rngs=nnx.Rngs(0),
+        dim_joint=dim_joint,
+        **params_dict,
+    )
+
+    training_config = parse_training_config(config_path)
+
+    return params, training_config, method
 
 
 def parse_training_config(config_path: str):
@@ -173,7 +232,7 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
         self.ch_obs = ch_obs
 
         if params is None:
-            params = self._get_default_params()
+            params = get_default_flux1joint_params(self.dim_joint, self.ch_obs)
 
         model = self._make_model(params)
 
@@ -210,40 +269,16 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             Path to the configuration file.
 
         """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
+        params, training_config, method = _flux1joint_config_from_path(
+            config_path, dim_joint
+        )
 
         assert (
             method == "flow"
-        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
-        assert (
-            model_type == "flux1joint"
-        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
+        ), f"Method {method} not supported in Flux1JointFlowPipeline."
 
-        # Model parameters from config
-        dim_joint = dim_obs + dim_cond
-
-        params_dict = parse_flux1joint_params(config_path)
-
-        params = Flux1JointParams(
-            rngs=nnx.Rngs(0),
-            dim_joint=dim_joint,
-            **params_dict,
-        )
-
-        # Training parameters
-        training_config = cls.get_default_training_config()
+        # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -263,29 +298,6 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
         """
         model = Flux1Joint(params)
         return model
-
-    def _get_default_params(self):
-        """
-        Return default parameters for the Simformer model.
-        """
-        # TODO
-        params = Flux1JointParams(
-            in_channels=self.ch_obs,
-            vec_in_dim=None,
-            mlp_ratio=3.0,
-            num_heads=4,
-            depth_single_blocks=8,
-            value_emb_dim=10,
-            cond_emb_dim=4,
-            id_emb_dim=10,
-            qkv_bias=True,
-            rngs=nnx.Rngs(0),
-            dim_joint=self.dim_joint,
-            id_embedding_strategy="concat",
-            guidance_embed=False,
-            param_dtype=jnp.bfloat16,
-        )
-        return params
 
 
 class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
@@ -344,7 +356,7 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
         self.ch_obs = ch_obs
 
         if params is None:
-            params = self._get_default_params()
+            params = get_default_flux1joint_params(self.dim_joint, self.ch_obs)
 
         model = self._make_model(params)
 
@@ -381,40 +393,16 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             Path to the configuration file.
 
         """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
+        params, training_config, method = _flux1joint_config_from_path(
+            config_path, dim_joint
+        )
 
         assert (
             method == "diffusion"
         ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
-        assert (
-            model_type == "flux1joint"
-        ), f"Model type {model_type} not supported in Flux1JointDiffusionPipeline."
 
-        # Model parameters from config
-        dim_joint = dim_obs + dim_cond
-
-        params_dict = parse_flux1joint_params(config_path)
-
-        params = Flux1JointParams(
-            rngs=nnx.Rngs(0),
-            dim_joint=dim_joint,
-            **params_dict,
-        )
-
-        # Training parameters
-        training_config = cls.get_default_training_config()
+        # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -434,25 +422,3 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
         """
         model = Flux1Joint(params)
         return model
-
-    def _get_default_params(self):
-        """
-        Return default parameters for the Simformer model.
-        """
-        params = Flux1JointParams(
-            in_channels=self.ch_obs,
-            vec_in_dim=None,
-            mlp_ratio=3.0,
-            num_heads=4,
-            depth_single_blocks=8,
-            value_emb_dim=10,
-            cond_emb_dim=4,
-            id_emb_dim=10,
-            qkv_bias=True,
-            rngs=nnx.Rngs(0),
-            dim_joint=self.dim_joint,
-            id_embedding_strategy="concat",
-            guidance_embed=False,
-            param_dtype=jnp.bfloat16,
-        )
-        return params
