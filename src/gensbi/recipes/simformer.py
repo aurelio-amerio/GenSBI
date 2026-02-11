@@ -40,18 +40,80 @@ def parse_simformer_params(config_path: str):
 
     params_dict = dict(
         in_channels=model_params.get("in_channels", 1),
-        dim_value=model_params.get("dim_value", 40),
-        dim_id=model_params.get("dim_id", 40),
-        dim_condition=model_params.get("dim_condition", 10),
+        val_emb_dim=model_params.get(
+            "val_emb_dim", model_params.get("value_emb_dim", 40)
+        ),  # Support both
+        id_emb_dim=model_params.get("id_emb_dim", 40),
+        cond_emb_dim=model_params.get("cond_emb_dim", 10),
         fourier_features=model_params.get("fourier_features", 128),
         num_heads=model_params.get("num_heads", 4),
-        num_layers=model_params.get("num_layers", 8),
-        widening_factor=model_params.get("widening_factor", 3),
+        depth=model_params.get(
+            "depth", model_params.get("num_layers", 8)
+        ),  # Support both
+        mlp_ratio=model_params.get(
+            "mlp_ratio", model_params.get("widening_factor", 3)
+        ),  # Support both
         qkv_features=model_params.get("qkv_features", 90),
         num_hidden_layers=model_params.get("num_hidden_layers", 1),
     )
 
     return params_dict
+
+
+def get_default_simformer_params(dim_joint: int, in_channels: int = 1):
+    """
+    Return default parameters for the Simformer model.
+    """
+    return SimformerParams(
+        rngs=nnx.Rngs(0),
+        in_channels=in_channels,
+        val_emb_dim=40,
+        id_emb_dim=40,
+        cond_emb_dim=10,
+        dim_joint=dim_joint,
+        fourier_features=128,
+        num_heads=4,
+        depth=8,
+        mlp_ratio=3,
+        qkv_features=40,
+        num_hidden_layers=1,
+    )
+
+
+def _simformer_config_from_path(config_path: str, dim_joint: int):
+    """
+    Helper to parse common configuration for Simformer pipelines.
+
+    Returns
+    -------
+    params : SimformerParams
+        The parsed model parameters.
+    training_config : dict
+        The parsed training configuration.
+    method : str
+        The methodology (flow or diffusion) specified in the config.
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    # methodology
+    strategy = config.get("strategy", {})
+    method = strategy.get("method")
+    model_type = strategy.get("model")
+
+    assert model_type == "simformer", f"Model type {model_type} not supported."
+
+    params_dict = parse_simformer_params(config_path)
+
+    params = SimformerParams(
+        rngs=nnx.Rngs(0),
+        dim_joint=dim_joint,
+        **params_dict,
+    )
+
+    training_config = parse_training_config(config_path)
+
+    return params, training_config, method
 
 
 def parse_training_config(config_path: str):
@@ -79,6 +141,8 @@ def parse_training_config(config_path: str):
     early_stopping = train_params.get("early_stopping", True)
     nsteps = train_params.get("nsteps", 30000) * multistep
     val_every = train_params.get("val_every", 100) * multistep
+    sigma_min = train_params.get("sigma_min", 0.002)
+    sigma_max = train_params.get("sigma_max", 80.0)
 
     # Optimizer parameters
     opt_params = config.get("optimizer", {})
@@ -106,6 +170,8 @@ def parse_training_config(config_path: str):
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
     training_config["warmup_steps"] = warmup_steps
+    training_config["sigma_min"] = sigma_min
+    training_config["sigma_max"] = sigma_max
 
     return training_config
 
@@ -169,7 +235,7 @@ class SimformerFlowPipeline(JointFlowPipeline):
         self.ch_obs = ch_obs
 
         if params is None:
-            params = self._get_default_params()
+            params = get_default_simformer_params(self.dim_joint, self.ch_obs)
 
         model = self._make_model(params)
 
@@ -208,40 +274,16 @@ class SimformerFlowPipeline(JointFlowPipeline):
             Path to the configuration file.
 
         """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
+        params, training_config, method = _simformer_config_from_path(
+            config_path, dim_obs + dim_cond
+        )
 
         assert (
             method == "flow"
         ), f"Method {method} not supported in SimformerFlowPipeline."
-        assert (
-            model_type == "simformer"
-        ), f"Model type {model_type} not supported in SimformerFlowPipeline."
 
-        # Model parameters from config
-        dim_joint = dim_obs + dim_cond
-
-        params_dict = parse_simformer_params(config_path)
-
-        params = SimformerParams(
-            rngs=nnx.Rngs(0),
-            dim_joint=dim_joint,
-            **params_dict,
-        )
-
-        # Training parameters
-        training_config = cls.get_default_training_config()
+        # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -262,25 +304,12 @@ class SimformerFlowPipeline(JointFlowPipeline):
         model = Simformer(params)
         return model
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_joint, in_channels):
         """
-        Return default parameters for the Simformer model.
+        Return a dictionary of default model parameters.
         """
-        params = SimformerParams(
-            rngs=nnx.Rngs(0),
-            in_channels=self.ch_obs,
-            dim_value=40,
-            dim_id=40,
-            dim_condition=10,
-            dim_joint=self.dim_joint,
-            fourier_features=128,
-            num_heads=4,
-            num_layers=8,
-            widening_factor=3,
-            qkv_features=40,
-            num_hidden_layers=1,
-        )
-        return params
+        return get_default_simformer_params(dim_joint, in_channels)
 
     def sample(
         self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
@@ -374,7 +403,7 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         self.ch_obs = ch_obs
 
         if params is None:
-            params = self._get_default_params()
+            params = get_default_simformer_params(self.dim_joint, self.ch_obs)
 
         model = self._make_model(params)
 
@@ -413,40 +442,16 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
             Path to the configuration file.
 
         """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
+        params, training_config, method = _simformer_config_from_path(
+            config_path, dim_obs + dim_cond
+        )
 
         assert (
             method == "diffusion"
         ), f"Method {method} not supported in SimformerDiffusionPipeline."
-        assert (
-            model_type == "simformer"
-        ), f"Model type {model_type} not supported in SimformerDiffusionPipeline."
 
-        # Model parameters from config
-        dim_joint = dim_obs + dim_cond
-
-        params_dict = parse_simformer_params(config_path)
-
-        params = SimformerParams(
-            rngs=nnx.Rngs(0),
-            dim_joint=dim_joint,
-            **params_dict,
-        )
-
-        # Training parameters
-        training_config = cls.get_default_training_config()
+        # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -467,25 +472,12 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         model = Simformer(params)
         return model
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_joint, in_channels):
         """
-        Return default parameters for the Simformer model.
+        Return a dictionary of default model parameters.
         """
-        params = SimformerParams(
-            in_channels=self.ch_obs,
-            dim_value=40,
-            dim_id=40,
-            dim_condition=10,
-            dim_joint=self.dim_joint,
-            fourier_features=128,
-            num_heads=4,
-            num_layers=8,
-            widening_factor=3,
-            qkv_features=40,
-            rngs=nnx.Rngs(0),
-            num_hidden_layers=1,
-        )
-        return params
+        return get_default_simformer_params(dim_joint, in_channels)
 
     def sample(
         self,
