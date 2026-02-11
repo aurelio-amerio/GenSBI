@@ -1,0 +1,93 @@
+def plot_band(zmax=3.5):
+
+    figure, axis = plt.subplots(1, 2, figsize=(10, 5))
+    k = 0
+    for i in range(2):
+        for j in range(1):
+            hat_z = estimate_hat_z(coverage[k], zmax=zmax)
+            z = hat_z["z"]
+            axis[i].plot(z, hat_z["mean"], "k")
+            axis[i].set_title(label[i])
+            upper = hat_z["upper"]
+            upper = np.where(upper == np.inf, 100.0, upper)
+            axis[i].fill_between(z, hat_z["lower"], upper, color="0.8")
+            axis[i].plot([0, 4], [0, 4], "--", color="darkgreen")
+
+            for t in range(1, int(zmax) + 1):
+                l = np.interp(t, z, hat_z["mean"])
+                if l != np.inf:
+                    axis[i].plot([0, t], [l, l], ":", color="r")
+                    c = 1 - alpha_from_z(l)
+                    axis[i].text(0.1, l + 0.05, ("%.2f" % (c * 100)) + "%")
+                    axis[i].plot([t, t], [0, l], ":", color="r")
+                else:
+                    axis[i].plot([t, t], [0, 10.0], ":", color="r")
+                c = 1 - alpha_from_z(t)
+                axis[i].text(t, 0.3, ("%.2f" % (c * 100)) + "%", rotation=-90)
+            axis[i].set_xlim([0, zmax])
+            axis[i].set_ylim([0, zmax + 0.5])
+            axis[i].set_ylabel("Empirical coverage, $\hat z$")
+            axis[i].set_xlabel("Confidence level, $z$")
+            phi = 40
+            axis[i].text(
+                zmax / 2,
+                zmax / 2 + 0.4,
+                "Conservative",
+                ha="center",
+                va="center",
+                rotation=phi,
+                color="darkgreen",
+            )
+            axis[i].text(
+                zmax / 2 + 0.4,
+                zmax / 2,
+                "Overconfident",
+                ha="center",
+                va="center",
+                rotation=phi,
+                color="darkgreen",
+            )
+            k = k + 1
+            if k == 29:
+                break
+            plt.savefig("coverage_noise.pdf")
+
+
+probit = lambda x: scipy.stats.norm.ppf(x)
+z_from_alpha = lambda alpha: probit(1 - alpha / 2)
+alpha_from_z = lambda z: 2 - scipy.stats.norm.cdf(z) * 2
+alpha_from_z(2)
+
+
+def Jefferys_interval(k, n, z=1):
+    alpha = alpha_from_z(z=z)
+    lower = scipy.stats.beta.ppf(alpha / 2, k + 0.5, n - k + 0.5)
+    upper = scipy.stats.beta.ppf(1 - alpha / 2, k + 0.5, n - k + 0.5)
+    return np.array([np.where(k > 0, lower, 0.0), np.where(k < n, upper, 1.0)]).T
+
+
+def estimate_hat_z(masses, nbins=50, zmax=4, z_band=1):
+    n = len(masses)
+    zlist = np.linspace(0, zmax, nbins)
+    tlist = 1 - alpha_from_z(zlist)
+    # print(tlist)
+    k = np.array([sum(masses < t) for t in tlist])
+    r_mean = k / n
+    r_band = Jefferys_interval(k, n, z=z_band)
+    z_mean = z_from_alpha(1 - r_mean)
+    z_band = z_from_alpha(1 - r_band)
+    return dict(z=zlist, mean=z_mean, upper=z_band[:, 1], lower=z_band[:, 0])
+
+
+gammas_total = []
+for j in range(2):
+    # print(j)
+    gamma = []
+    for i in range(0, 500):
+        # plt.figure()
+        samples = posterior.sample((10000,), x=gw_total_test[i])
+        # plt.hist(samples[:,13],bins=50)
+        xx, yy = estimator.fit(np.array(samples[:, j])).evaluate(5000)
+        f = interp1d(xx, yy, kind="linear", assume_sorted=True)
+        gamma.append(yy[yy >= f(z[i][j])].sum() / yy.sum())
+    gammas_total.append(gamma)

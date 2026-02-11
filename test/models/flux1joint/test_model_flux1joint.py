@@ -14,33 +14,34 @@ import pytest
 # %%
 
 
-def get_params(id_embedding_strategy="sum", param_dtype=jnp.float32):
+def get_params(id_merge_mode="sum", param_dtype=jnp.float32):
     return Flux1JointParams(
         in_channels=1,
         vec_in_dim=None,
         mlp_ratio=3.0,
         num_heads=2,
         depth_single_blocks=2,
-        value_emb_dim=4,
+        val_emb_dim=4,
         cond_emb_dim=2,
         id_emb_dim=4,
         qkv_bias=True,
         rngs=nnx.Rngs(0),
         dim_joint=4,
-        id_embedding_strategy=id_embedding_strategy,
+        id_merge_mode=id_merge_mode,
+        id_embedding_strategy="absolute",
         guidance_embed=False,
         param_dtype=param_dtype,
     )
 
 
 def init_test_model_joint_sum():
-    params = get_params(id_embedding_strategy="sum", param_dtype=jnp.bfloat16)
+    params = get_params(id_merge_mode="sum", param_dtype=jnp.bfloat16)
     model = Flux1Joint(params)
     return model
 
 
 def init_test_model_joint_concat():
-    params = get_params(id_embedding_strategy="concat", param_dtype=jnp.bfloat16)
+    params = get_params(id_merge_mode="concat", param_dtype=jnp.bfloat16)
     model = Flux1Joint(params)
     return model
 
