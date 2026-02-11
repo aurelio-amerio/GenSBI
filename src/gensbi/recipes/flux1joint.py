@@ -54,7 +54,10 @@ def parse_flux1joint_params(config_path: str):
         id_emb_dim=model_params.get("id_emb_dim", 10),
         qkv_bias=model_params.get("qkv_bias", True),
         id_merge_mode=model_params.get(
-            "id_merge_mode", model_params.get("id_embedding_strategy", "concat")
+            "id_merge_mode", model_params.get("id_merge_mode", "concat")
+        ),
+        id_embedding_strategy=model_params.get(
+            "id_embedding_strategy", model_params.get("id_embedding_strategy", "absolute")
         ),
         guidance_embed=model_params.get("guidance_embed", False),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
