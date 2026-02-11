@@ -13,7 +13,6 @@ import jax
 from jax import Array
 from jax import numpy as jnp
 from typing import Callable
-import chex
 
 import warnings
 
