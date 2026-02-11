@@ -48,7 +48,7 @@ def parse_flux1joint_params(config_path: str):
         num_heads=model_params.get("num_heads", 4),
         depth_single_blocks=model_params.get("depth_single_blocks", 8),
         val_emb_dim=model_params.get(
-            "val_emb_dim", model_params.get("value_emb_dim", 10)
+            "val_emb_dim", model_params.get("val_emb_dim", 10)
         ),  # Support both for now
         cond_emb_dim=model_params.get("cond_emb_dim", 4),
         id_emb_dim=model_params.get("id_emb_dim", 10),
