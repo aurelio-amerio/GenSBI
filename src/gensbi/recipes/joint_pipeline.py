@@ -272,9 +272,10 @@ class JointFlowPipeline(AbstractPipeline):
             "_make_model is not implemented for JointFlowPipeline."
         )
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
         raise NotImplementedError(
-            "_get_default_params is not implemented for JointFlowPipeline."
+            "Default parameters not implemented for JointDiffusionPipeline."
         )
 
     def get_loss_fn(
@@ -535,9 +536,10 @@ class JointDiffusionPipeline(AbstractPipeline):
             "_make_model is not implemented for JointDiffusionPipeline."
         )
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
         raise NotImplementedError(
-            "_get_default_params is not implemented for JointDiffusionPipeline."
+            "Default parameters not implemented for JointDiffusionPipeline."
         )
 
     @classmethod

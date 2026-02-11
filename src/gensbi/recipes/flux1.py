@@ -48,9 +48,13 @@ def parse_flux1_params(config_path: str):
         num_heads=model_params.get("num_heads", 6),
         depth=model_params.get("depth", 8),
         depth_single_blocks=model_params.get("depth_single_blocks", 16),
-        axes_dim=model_params.get("axes_dim", [6, 0]),
+        # Fields with set defaults in Flux1Params
+        axes_dim=model_params.get("axes_dim", None),
+        val_emb_dim=model_params.get("val_emb_dim", None),
+        id_emb_dim=model_params.get("id_emb_dim", None),
+        id_merge_mode=model_params.get("id_merge_mode", "sum"),
         qkv_bias=model_params.get("qkv_bias", True),
-        theta=model_params.get("theta", -1),
+        theta=model_params.get("theta", None),
         id_embedding_strategy=tuple(
             model_params.get("id_embedding_strategy", ("absolute", "absolute"))
         ),
@@ -58,6 +62,73 @@ def parse_flux1_params(config_path: str):
     )
 
     return params_dict
+
+
+def get_default_flux1_params(
+    dim_obs: int, dim_cond: int, ch_obs: int = 1, ch_cond: int = 1
+) -> Flux1Params:
+    """
+    Return default parameters for the Flux1 model.
+    """
+    return Flux1Params(
+        in_channels=ch_obs,
+        vec_in_dim=None,
+        context_in_dim=ch_cond,
+        mlp_ratio=4,
+        num_heads=6,
+        depth=8,
+        depth_single_blocks=16,
+        qkv_bias=True,
+        rngs=nnx.Rngs(default=42),
+        dim_obs=dim_obs,
+        dim_cond=dim_cond,
+        axes_dim=[6, 0],
+        theta=10 * (dim_obs + dim_cond),
+        id_embedding_strategy=("absolute", "absolute"),
+        param_dtype=jnp.float32,
+    )
+
+
+def _flux1_config_from_path(config_path: str, dim_obs: int, dim_cond: int):
+    """
+    Helper to parse common configuration for Flux1 pipelines.
+
+    Returns
+    -------
+    params : Flux1Params
+        The parsed model parameters.
+    training_config : dict
+        The parsed training configuration.
+    method : str
+        The methodology (flow or diffusion) specified in the config.
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    # methodology
+    strategy = config.get("strategy", {})
+    method = strategy.get("method")
+    model_type = strategy.get("model")
+
+    assert model_type == "flux", f"Model type {model_type} not supported."
+
+    params_dict = parse_flux1_params(config_path)
+
+    # Handle theta default logic if it was set to -1 (meaning "auto")
+    if params_dict["theta"] in [-1, None]:
+        dim_joint = dim_obs + dim_cond
+        params_dict["theta"] = 10 * dim_joint  # Default value used in original code
+
+    params = Flux1Params(
+        rngs=nnx.Rngs(0),
+        dim_obs=dim_obs,
+        dim_cond=dim_cond,
+        **params_dict,
+    )
+
+    training_config = parse_training_config(config_path)
+
+    return params, training_config, method
 
 
 def parse_training_config(config_path: str):
@@ -85,6 +156,8 @@ def parse_training_config(config_path: str):
     early_stopping = train_params.get("early_stopping", True)
     nsteps = train_params.get("nsteps", 30000) * multistep
     val_every = train_params.get("val_every", 100) * multistep
+    sigma_min = train_params.get("sigma_min", 0.002)
+    sigma_max = train_params.get("sigma_max", 80.0)
 
     # Optimizer parameters
     opt_params = config.get("optimizer", {})
@@ -113,6 +186,8 @@ def parse_training_config(config_path: str):
     training_config["experiment_id"] = experiment_id
     training_config["multistep"] = multistep
     training_config["warmup_steps"] = warmup_steps
+    training_config["sigma_min"] = sigma_min
+    training_config["sigma_max"] = sigma_max
 
     return training_config
 
@@ -182,7 +257,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         self.ch_cond = ch_cond
 
         if params is None:
-            params = self._get_default_params()
+            params = get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
         model = self._make_model(params)
 
@@ -220,36 +295,14 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             Path to the configuration file.
 
         """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
-
-        assert method == "flow", f"Method {method} not supported in Flux1FlowPipeline."
-        assert (
-            model_type == "flux"
-        ), f"Model type {model_type} not supported in Flux1FlowPipeline."
-
-        params_dict = parse_flux1_params(config_path)
-
-        params = Flux1Params(
-            rngs=nnx.Rngs(0),
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            **params_dict,
+        params, training_config, method = _flux1_config_from_path(
+            config_path, dim_obs, dim_cond
         )
 
-        # Training parameters
-        training_config = cls.get_default_training_config()
+        assert method == "flow", f"Method {method} not supported in Flux1FlowPipeline."
+
+        # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -271,28 +324,12 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         model = Flux1(params)
         return model
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
         """
-        Return default parameters for the Flux1 model.
+        Return a dictionary of default model parameters.
         """
-        params = Flux1Params(
-            in_channels=self.ch_obs,
-            vec_in_dim=None,
-            context_in_dim=self.ch_cond,
-            mlp_ratio=4,
-            num_heads=6,
-            depth=8,
-            depth_single_blocks=16,
-            axes_dim=[6, 1],
-            qkv_bias=True,
-            dim_obs=self.dim_obs,
-            dim_cond=self.dim_cond,
-            theta=10 * (self.dim_obs + self.dim_cond),
-            id_embedding_strategy=("absolute", "absolute"),
-            rngs=nnx.Rngs(default=42),
-            param_dtype=jnp.float32,
-        )
-        return params
+        return get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
 
 class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
@@ -360,7 +397,7 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         self.ch_cond = ch_cond
 
         if params is None:
-            params = self._get_default_params()
+            params = get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
         model = self._make_model(params)
 
@@ -398,44 +435,16 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             Path to the configuration file.
 
         """
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-
-        # methodology
-        strategy = config.get("strategy", {})
-        method = strategy.get("method")
-        model_type = strategy.get("model")
+        params, training_config, method = _flux1_config_from_path(
+            config_path, dim_obs, dim_cond
+        )
 
         assert (
             method == "diffusion"
         ), f"Method {method} not supported in Flux1DiffusionPipeline."
-        assert (
-            model_type == "flux"
-        ), f"Model type {model_type} not supported in Flux1DiffusionPipeline."
 
-        # Model parameters from config
-        dim_joint = dim_obs + dim_cond
-
-        params_dict = parse_flux1_params(config_path)
-
-        if params_dict["theta"] == -1:
-            params_dict["theta"] = 4 * dim_joint
-
-        params = Flux1Params(
-            rngs=nnx.Rngs(0),
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            **params_dict,
-        )
-
-        # Training parameters
-        training_config = cls.get_default_training_config()
+        # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
-
-        training_config_ = parse_training_config(config_path)
-
-        for key, value in training_config_.items():
-            training_config[key] = value  # update with config file values
 
         pipeline = cls(
             train_dataset,
@@ -457,25 +466,9 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         model = Flux1(params)
         return model
 
-    def _get_default_params(self):
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
         """
-        Return default parameters for the Flux1 model.
+        Return a dictionary of default model parameters.
         """
-        params = Flux1Params(
-            in_channels=self.ch_obs,
-            vec_in_dim=None,
-            context_in_dim=self.ch_cond,
-            mlp_ratio=4,
-            num_heads=6,
-            depth=8,
-            depth_single_blocks=16,
-            axes_dim=[6, 1],
-            qkv_bias=True,
-            dim_obs=self.dim_obs,
-            dim_cond=self.dim_cond,
-            theta=10 * (self.dim_obs + self.dim_cond),
-            id_embedding_strategy=("absolute", "absolute"),
-            rngs=nnx.Rngs(default=42),
-            param_dtype=jnp.float32,
-        )
-        return params
+        return get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
