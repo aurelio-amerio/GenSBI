@@ -389,11 +389,10 @@ class AbstractPipeline(abc.ABC):
         return optimizer
 
     @abc.abstractmethod
-    def _get_default_params(self, rngs: nnx.Rngs):
-        """
-        Return a dictionary of default model parameters.
-        """
-        ...  # pragma: no cover
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
+        raise NotImplementedError(
+            "Default parameters not implemented for ConditionalFlowPipeline."
+        )
 
     @classmethod
     def get_default_training_config(cls):

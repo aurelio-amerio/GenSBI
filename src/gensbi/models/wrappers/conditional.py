@@ -10,9 +10,6 @@ from jax import Array
 
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
-
-
-
 class ConditionalWrapper(ModelWrapper):
     """
     Wrapper for conditional models to handle input expansion and calling convention.
