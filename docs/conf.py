@@ -12,8 +12,8 @@ import os
 from pathlib import Path
 
 # sys.path.insert(0, str(Path('..', 'src').resolve())) # Add the source directory to the path
-sys.path.insert(0, os.path.abspath('../src'))
-sys.path.insert(0, os.path.abspath('../src/gensbi'))
+sys.path.insert(0, os.path.abspath("../src"))
+sys.path.insert(0, os.path.abspath("../src/gensbi"))
 
 project = "GenSBI"
 copyright = "2025, Aurelio Amerio"
@@ -39,13 +39,13 @@ extensions = [
     "nbsphinx",
     "numpydoc",
     "sphinx_togglebutton",
-    "jupyterlite_sphinx",
+    # "jupyterlite_sphinx",
     "sphinx_favicon",
 ]
 
 
 # -- MyST options ------------------------------------------------------------
-myst_enable_extensions = ["colon_fence", "linkify", "substitution","dollarmath"]
+myst_enable_extensions = ["colon_fence", "linkify", "substitution", "dollarmath"]
 myst_heading_anchors = 2
 myst_substitutions = {"rtd": "[Read the Docs](https://readthedocs.org/)"}
 
@@ -58,7 +58,7 @@ mermaid.initialize({
 });
 """
 
-nbsphinx_execute = 'never'
+nbsphinx_execute = "never"
 
 # -- Internationalization ----------------------------------------------------
 language = "en"
@@ -77,7 +77,6 @@ html_logo = "_static/logo_small.png"
 html_favicon = "_static/logo_small.png"
 
 html_theme_options = {
-    
     "header_links_before_dropdown": 4,
     "icon_links": [
         {
@@ -98,9 +97,9 @@ html_theme_options = {
     "search_as_you_type": True,
 }
 
-html_static_path = ['_static']
+html_static_path = ["_static"]
 html_css_files = [
-    'custom.css',
+    "custom.css",
 ]
 
 # -- Options for autosummary/autodoc output ------------------------------------
