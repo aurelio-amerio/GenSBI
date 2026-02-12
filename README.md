@@ -92,21 +92,16 @@ A beginner-friendly notebook introducing the core concepts of GenSBI on a simple
 
 **Unconditional Density Estimation:**
 
-- `flow_matching_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/flow_matching_2d_unconditional.ipynb) <br>
+- `flow_matching_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/flow_matching_2d_unconditional.ipynb) <br>
 Demonstrates how to use flow matching in 2D for unconditional density estimation.
-- `diffusion_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/diffusion_2d_unconditional.ipynb) <br>
+- `diffusion_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_2d_unconditional.ipynb) <br>
 Demonstrates how to use diffusion models in 2D for unconditional density estimation.
 
 **Conditional Density Estimation:**
-
-- `two_moons_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/two_moons_flow_simformer.ipynb) <br>
-Uses the Simformer model for posterior density estimation on the two-moons benchmark.
 - `two_moons_flow_flux.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_flux/two_moons_flow_flux.ipynb) <br>
 Uses the Flux1 model for posterior density estimation on the two-moons benchmark.
-- `gaussian_linear_flow_flux1joint.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/gaussian_linear/flow_flux1joint/gaussian_linear_flow_flux1joint.ipynb) <br>
-Uses the Flux1Joint model for posterior density estimation on the Gaussian Linear benchmark.
-- `slcp_flow_simformer.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb) <br>
-Uses the Simformer model for posterior density estimation on the SLCP benchmark.
+- `two_moons_diffusion_flux.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/diffusion_flux/two_moons_diffusion_flux.ipynb) <br>
+Uses the Diffusion model for posterior density estimation on the two-moons benchmark.
 
 > [!NOTE]
 > A full list of the currently available examples is available at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
@@ -119,7 +114,7 @@ If you use this library, please consider citing this work and the original metho
 @misc{GenSBI,
   author       = {Amerio, Aurelio},
   title        = "{GenSBI: Generative models for Simulation-Based Inference}",
-  year         = {2025}, 
+  year         = {2026}, 
   publisher    = {GitHub},
   journal      = {GitHub repository},
   howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}

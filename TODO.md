@@ -9,8 +9,8 @@ The following tasks are planned for future development:
 - [x] Implement wrappers to make training of flow matching and diffusion models similar.
 - [x] Write tests for core functionalities.
 - [ ] Consider implementing classifier free guidance for conditional models.
-- [ ] Add more examples and benchmarks.
-- [ ] Improve documentation and tutorials.
+- [x] Add more examples and benchmarks.
+- [x] Improve documentation and tutorials.
 - [x] Provide SOTA pre-trained models and checkpoints for some SBI benchmark cases
 - [x] Implement VAE training pipeline
 - [ ] ... implement better loss functions for 1D and 2D VAEs (e.g. windowed frequency decomposition, and perceptual loss for images)
