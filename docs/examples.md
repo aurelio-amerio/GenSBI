@@ -4,7 +4,7 @@ This page provides links and descriptions for example notebooks and scripts demo
 
 All examples are available in the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples).
 
-```
+```{tip}
 **New to GenSBI?** Start with the [Quick Start Guide](/getting_started/quick_start) and the [my_first_model notebook](/notebooks/my_first_model) for a complete walkthrough.
 ```
 
@@ -19,7 +19,7 @@ All examples are available in the [GenSBI-examples repository](https://github.co
 - Sampling from the posterior
 - Validating results with SBC, TARP, and L-C2ST
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/my_first_model
@@ -35,7 +35,7 @@ These examples demonstrate how to use flow matching and diffusion models for unc
 - Training diffusion models on 2D data
 - Basics of data preparation and visualization
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/diffusion_2d_unconditional
@@ -57,7 +57,7 @@ The **two moons** problem is a classic 2D benchmark with a bimodal posterior. It
 - Using the Flux1 model on simple problems
 - Visualizing bimodal posterior distributions
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/two_moons_diffusion_flux
@@ -78,7 +78,7 @@ The **Bernoulli Generalized Linear Model** (**GLM)** task involves inferring the
 - Handling datasets comprised of sufficient statistics
 - Comparing Flux and Flux1Joint on 10D problems
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/bernoulli_glm_flow_flux
@@ -95,7 +95,7 @@ The **Gaussian linear** problem involves inferring the mean of a 10D Gaussian mo
 - Using Flux1Joint for explicit joint modeling
 - verifying calibration on high-dimensional Gaussian posteriors
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/gaussian_linear_flow_flux
@@ -112,7 +112,7 @@ The **Gaussian Mixture** task requires inferring the common mean of a mixture of
 - Robustness to outlier-prone likelihoods
 - Visualizing posteriors with varying sharpness
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/gaussian_mixture_flow_flux
@@ -131,7 +131,7 @@ For this task, we train all three main models (**Flux1**, **Flux1Joint**, and **
 - Comparing Flux1, Flux1Joint, and Simformer performance
 - Understanding when joint distribution learning is beneficial over direct posterior estimation
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/slcp_flow_flux
@@ -152,7 +152,7 @@ The **Gravitational Waves** example demonstrates how to embed 1D (mock) gravitat
 - Handling 1D time-series data
 - Designing custom embedding networks for Flux1
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/gw_example
@@ -167,7 +167,7 @@ The **Gravitational Lensing** example demonstrates how to embed 2D (mock) gravit
 - Handling 2D image data
 - Integrating vision-based embedding networks with Flux1
 
-```
+```{toctree}
 :maxdepth: 1
 
 notebooks/lensing_example
@@ -183,20 +183,20 @@ Most examples include an "Open in Colab" badge. Click it to run the notebook in 
 
 1. Clone the examples repository:
 
-   ```
+   ```bash
    git clone [https://github.com/aurelio-amerio/GenSBI-examples.git](https://github.com/aurelio-amerio/GenSBI-examples.git)
    cd GenSBI-examples
    ```
 
 2. Install dependencies (see the [Installation Guide](https://www.google.com/search?q=/getting_started/installation) for details):
 
-   ```
+   ```bash
    pip install jupyter
    pip install "GenSBI[cuda12,examples] @ git+[https://github.com/aurelio-amerio/GenSBI.git](https://github.com/aurelio-amerio/GenSBI.git)"
    ```
 
 3. Launch Jupyter:
 
-   ```
+   ```bash
    jupyter notebook
    ```
