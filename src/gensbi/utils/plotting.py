@@ -5,6 +5,7 @@ This module provides visualization functions for generative models, including
 trajectory plots, marginal distributions, and 2D contour plots. Supports both
 seaborn and corner-based plotting styles.
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -21,11 +22,11 @@ sns.set_style("darkgrid")
 def plot_trajectories(traj):
     """
     Plot trajectories showing the flow from source to target distribution.
-    
+
     Parameters
     ----------
         traj: Trajectory data of shape (time_steps, n_samples, n_dims).
-        
+
     Returns
     -------
         Tuple of (figure, axes) objects.
@@ -358,7 +359,7 @@ def _plot_marginals_seaborn(
 
     grid_kw = {}
     if ndim == 2:
-        grid_kw = {'width_ratios': [6, 1], 'height_ratios': [1, 6]}
+        grid_kw = {"width_ratios": [6, 1], "height_ratios": [1, 6]}
 
     fig, axes = plt.subplots(
         ndim, ndim, figsize=(2.5 * ndim, 2.5 * ndim), gridspec_kw=grid_kw
@@ -381,67 +382,114 @@ def _plot_marginals_seaborn(
         for j in np.arange(i):
             ax = axes[i, j]
             x_data, y_data = data[:, j], data[:, i]
-            
-            extent = axis_ranges[j] + axis_ranges[i] if axis_ranges[j] and axis_ranges[i] else None
-            
-            ax.hexbin(x_data, y_data, gridsize=gridsize, cmap=cmap, extent=extent, color=color, **hexbin_kwargs)
 
-            if axis_ranges[j]: ax.set_xlim(axis_ranges[j])
-            if axis_ranges[i]: ax.set_ylim(axis_ranges[i])
+            extent = (
+                axis_ranges[j] + axis_ranges[i]
+                if axis_ranges[j] and axis_ranges[i]
+                else None
+            )
+
+            ax.hexbin(
+                x_data,
+                y_data,
+                gridsize=gridsize,
+                cmap=cmap,
+                extent=extent,
+                color=color,
+                **hexbin_kwargs,
+            )
+
+            if axis_ranges[j]:
+                ax.set_xlim(axis_ranges[j])
+            if axis_ranges[i]:
+                ax.set_ylim(axis_ranges[i])
 
             if plot_levels:
                 levels = np.sort(1 - np.array([0.6827, 0.9545]))
-                sns.kdeplot(x=x_data, y=y_data, levels=levels, color=hist_color, zorder=3, alpha=1, linewidths=1, ax=ax)
+                sns.kdeplot(
+                    x=x_data,
+                    y=y_data,
+                    levels=levels,
+                    color=hist_color,
+                    zorder=3,
+                    alpha=1,
+                    linewidths=1,
+                    ax=ax,
+                )
 
             if true_param is not None:
-                ax.scatter(true_param[j], true_param[i], color=true_val_color, marker="s", s=50, zorder=10)
-                ax.axvline(true_param[j], color=true_val_color, ls="-", lw=1.5, zorder=5)
-                ax.axhline(true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5)
+                ax.scatter(
+                    true_param[j],
+                    true_param[i],
+                    color=true_val_color,
+                    marker="s",
+                    s=50,
+                    zorder=10,
+                )
+                ax.axvline(
+                    true_param[j], color=true_val_color, ls="-", lw=1.5, zorder=5
+                )
+                ax.axhline(
+                    true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5
+                )
 
-            if i == ndim - 1: ax.set_xlabel(labels[j], fontsize=fontsize)
-            if j == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
+            if i == ndim - 1:
+                ax.set_xlabel(labels[j], fontsize=fontsize)
+            if j == 0:
+                ax.set_ylabel(labels[i], fontsize=fontsize)
 
     # diagonal: histograms
     for i in np.arange(ndim):
         ax = axes[i, i]
         x_data = data[:, i]
         binrange = axis_ranges[i] if axis_ranges[i] else None
-        
+
         # 1. Determine orientation once
-        is_rotated = (ndim == 2 and i == 1)
-        
+        is_rotated = ndim == 2 and i == 1
+
         # 2. Set plot parameters based on orientation
         hist_params = {
-            'bins': bins, 'color': color_hist, 'fill': fill, 
-            'binrange': binrange, 'stat': "density", **histplot_kwargs
+            "bins": bins,
+            "color": color_hist,
+            "fill": fill,
+            "binrange": binrange,
+            "stat": "density",
+            **histplot_kwargs,
         }
         if is_rotated:
-            hist_params['y'] = x_data
+            hist_params["y"] = x_data
         else:
-            hist_params['x'] = x_data
+            hist_params["x"] = x_data
 
         # 3. Make a single, clean plot call
         sns.histplot(ax=ax, **hist_params)
 
-
         # 4. Handle limits and true values based on orientation
         if is_rotated:
             if true_param is not None:
-                ax.axhline(true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5)
-            if axis_ranges[i]: ax.set_ylim(axis_ranges[i])
+                ax.axhline(
+                    true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5
+                )
+            if axis_ranges[i]:
+                ax.set_ylim(axis_ranges[i])
             ax.autoscale(enable=True, axis="x", tight=False)
         else:
             if true_param is not None:
-                ax.axvline(true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5)
-            if axis_ranges[i]: ax.set_xlim(axis_ranges[i])
+                ax.axvline(
+                    true_param[i], color=true_val_color, ls="-", lw=1.5, zorder=5
+                )
+            if axis_ranges[i]:
+                ax.set_xlim(axis_ranges[i])
             ax.autoscale(enable=True, axis="y", tight=False)
 
         # 5. Handle labels with simplified logic
-        ax.set_xlabel(""); ax.set_ylabel("") # Default: no labels
+        ax.set_xlabel("")
+        ax.set_ylabel("")  # Default: no labels
         ax.set_yticklabels([])
         if ndim > 2:
             # if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
-            if i == ndim - 1: ax.set_xlabel(labels[i], fontsize=fontsize)
+            if i == ndim - 1:
+                ax.set_xlabel(labels[i], fontsize=fontsize)
         if i != ndim - 1:
             ax.set_ylabel("")
             ax.set_yticklabels([])
@@ -452,21 +500,25 @@ def _plot_marginals_seaborn(
             ax.set_yticklabels([])
             ax.set_xlabel("")
             ax.set_xticklabels([])
-    
+
     if ndim == 2:
 
-        y_ticks = axes[0,0].get_yticks()
+        y_ticks = axes[0, 0].get_yticks()
         y_ticks = y_ticks[y_ticks > 0]
-        axes[0,0].set_yticks(y_ticks)
+        axes[0, 0].set_yticks(y_ticks)
 
-        x_ticks = axes[1,1].get_xticks()
+        x_ticks = axes[1, 1].get_xticks()
         x_ticks = x_ticks[x_ticks > 0]
-        axes[1,1].set_xticks(x_ticks)
+        axes[1, 1].set_xticks(x_ticks)
 
-        fig.subplots_adjust(hspace=0.03, wspace=0.03, left=0.12, right=0.98, top=0.98, bottom=0.12)
+        fig.subplots_adjust(
+            hspace=0.03, wspace=0.03, left=0.12, right=0.98, top=0.98, bottom=0.12
+        )
 
     else:
-        fig.subplots_adjust(hspace=0.05, wspace=0.05, left=0.06, right=0.98, top=0.98, bottom=0.06)
+        fig.subplots_adjust(
+            hspace=0.05, wspace=0.05, left=0.06, right=0.98, top=0.98, bottom=0.06
+        )
     return fig, axes
 
 
@@ -511,7 +563,7 @@ def _plot_marginals_corner(
 def plot_marginals(
     data,
     backend="corner",
-    plot_levels=True,
+    plot_levels=None,
     labels=None,
     gridsize=15,
     hexbin_kwargs={},
@@ -565,6 +617,9 @@ def plot_marginals(
     - For 'seaborn', 2D data uses jointplot, higher dimensions use a custom grid of hexbin and histogram plots.
     """
     if backend == "corner":
+        if plot_levels is None:
+            plot_levels = True
+
         return _plot_marginals_corner(
             data,
             labels=labels,
@@ -574,19 +629,20 @@ def plot_marginals(
             **kwargs,
         )
     elif backend == "seaborn":
-
+        if plot_levels is None:
+            plot_levels = False
 
         return _plot_marginals_seaborn(
-                data,
-                plot_levels=plot_levels,
-                labels=labels,
-                gridsize=gridsize,
-                hexbin_kwargs=hexbin_kwargs,
-                histplot_kwargs=histplot_kwargs,
-                range=range,
-                true_param=true_param,
-                **kwargs,
-            )
+            data,
+            plot_levels=plot_levels,
+            labels=labels,
+            gridsize=gridsize,
+            hexbin_kwargs=hexbin_kwargs,
+            histplot_kwargs=histplot_kwargs,
+            range=range,
+            true_param=true_param,
+            **kwargs,
+        )
     else:
         raise ValueError(f"Unknown backend: {backend}. Use 'corner' or 'seaborn'.")
 
@@ -677,7 +733,7 @@ def plot_2d_dist_contour(
     true_param=None,
     levels=[0.6827, 0.9545],
     cmap=cmap_lcontour,
-    display_labels=False
+    display_labels=False,
 ):
     """
     Plot a 2D contour plot of a distribution.
