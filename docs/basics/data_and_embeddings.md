@@ -23,9 +23,14 @@ Proper data preprocessing is critical for efficient training.
 
 ### Normalization
 
-To speed up convergence, **ensure your data is normalized**.
-*   **Standardization**: Shift and scale your data so that it has approximately 0 mean and unit variance.
-    *   Apply this to both parameters (inference targets) and observations (conditioning data).
+To ensure efficient training and optimal performance, it is **highly advisable** to normalize your data.
+
+*   **Target**: Shift and scale your data so that it has approximately **zero mean and unit variance**.
+*   **Scope**: Apply this normalization to **both** the parameters you want to infer (`obs`) and the conditioning data (`conds`).
+*   **Benefits**: Normalizing your data significantly **speeds up convergence** and makes the models **more stable** during training.
+    - **Why?** Generative models use a **base distribution** (or "diffusion prior"), usually $\mathcal{N}(0, 1)$, as the starting point for generation.
+    - Your physical parameters come from a **simulation prior**. If this simulation prior is far from $\mathcal{N}(0, 1)$ (e.g., scale is $10^{-30}$ or centered at $100$), the model must learn a difficult transport map.
+    - Normalizing your parameters to zero mean and unit variance aligns the simulation prior with the diffusion prior, making the learning task much easier.
 
 ### Patchification (for Images)
 
