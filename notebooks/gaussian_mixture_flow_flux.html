@@ -1,0 +1,858 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Gaussian Mixture Flux1 Flow Example &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/gaussian_mixture_flow_flux';</script>
+    <link rel="icon" href="../_static/logo_small.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Gaussian Mixture Flux1Joint Flow Example" href="gaussian_mixture_flow_flux1joint.html" />
+    <link rel="prev" title="Gaussian Linear Flux1Joint Flow Example" href="gaussian_linear_flow_flux1joint.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo_small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../_static/logo_small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="my_first_model.html">My First Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="diffusion_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional.html">Flow Matching 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux.html">Two Moons Flux1 Score Matching (Diffusion) Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux1joint.html">Two Moons Flux1joint Score Matching (Diffusion) Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_simformer.html">Two Moons Simformer Score Matching (Diffusion) Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux.html">Two Moons Flux1 Flow Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux1joint.html">Two Moons Flux1joint Flow Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_flow_simformer.html">Two Moons Simformer Flow Matching Example</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="bernoulli_glm_flow_flux.html">Bernoulli GLM Flux1 Flow Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bernoulli_glm_flow_flux1joint.html">Bernoulli GLM Flux1Joint Flow Example</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="gaussian_linear_flow_flux.html">Gaussian Linear Flux1 Flow Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gaussian_linear_flow_flux1joint.html">Gaussian Linear Flux1Joint Flow Example</a></li>
+</ul>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Gaussian Mixture Flux1 Flow Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gaussian_mixture_flow_flux1joint.html">Gaussian Mixture Flux1Joint Flow Example</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="slcp_flow_flux.html">SLCP Flux1 Flow Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slcp_flow_flux1joint.html">SLCP Flux1Joint Flow Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slcp_flow_simformer.html">SLCP Simformer Flow Example</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="gw_example.html">Gravitational Waves Example: CNN Embedding + Flow Matching</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="lensing_example.html">Gravitational Lensing Example: CNN Embedding + Flow Matching</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Gaussian Mixture Flux1 Flow Example</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="gaussian-mixture-flux1-flow-example">
+<h1>Gaussian Mixture Flux1 Flow Example<a class="headerlink" href="#gaussian-mixture-flux1-flow-example" title="Link to this heading">#</a></h1>
+<p><a class="reference external" href="https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/gaussian_mixture/flow_flux/gaussian_mixture_flow_flux.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
+<blockquote>
+<div><p>Notice: This notebook has been automatically generated. If you find any errors, please <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI-examples/issues">open an issue</a> on the GenSBI-examples GitHub repository.</p>
+</div></blockquote>
+<hr class="docutils" />
+<p>This notebook demonstrates conditional Flow Matching on the Gaussian Mixture task using JAX and Flax.</p>
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Section</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1. <a class="reference internal" href="#introduction-setup"><span class="xref myst">Introduction &amp; Setup</span></a></p></td>
+<td><p>Overview, environment, device, autoreload</p></td>
+</tr>
+<tr class="row-odd"><td><p>2. <a class="reference internal" href="#task-data-preparation"><span class="xref myst">Task &amp; Data Preparation</span></a></p></td>
+<td><p>Define task, visualize data, create datasets</p></td>
+</tr>
+<tr class="row-even"><td><p>3. <a class="reference internal" href="#model-configuration-definition"><span class="xref myst">Model Configuration &amp; Definition</span></a></p></td>
+<td><p>Load config, set parameters, instantiate model</p></td>
+</tr>
+<tr class="row-odd"><td><p>4. <a class="reference internal" href="#training"><span class="xref myst">Training</span></a></p></td>
+<td><p>Train or restore model, manage checkpoints</p></td>
+</tr>
+<tr class="row-even"><td><p>5. <a class="reference internal" href="#evaluation-visualization"><span class="xref myst">Evaluation &amp; Visualization</span></a></p></td>
+<td><p>Visualize loss, sample posterior, compute log prob</p></td>
+</tr>
+<tr class="row-odd"><td><p>6. <a class="reference internal" href="../api/gensbi/diagnostics/index.html#module-gensbi.diagnostics" title="gensbi.diagnostics"><span class="xref myst py py-mod">Diagnostics</span></a></p></td>
+<td><p>Run diagnostics (TARP, SBC, L-C2ST)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<hr class="docutils" />
+<section id="introduction-setup">
+<h2>1. Introduction &amp; Setup<a class="headerlink" href="#introduction-setup" title="Link to this heading">#</a></h2>
+<hr class="docutils" />
+<p>In this section, we introduce the problem, set up the computational environment, import required libraries, configure JAX for CPU or GPU usage, and enable autoreload for iterative development. Compatibility with Google Colab is also ensured.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if running on Colab and install dependencies if needed</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>
+    <span class="n">colab</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">colab</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">if</span> <span class="n">colab</span><span class="p">:</span>
+    <span class="c1"># Install required packages and clone the repository</span>
+    <span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">quiet</span> <span class="s2">&quot;gensbi[cuda12] @ git+https://github.com/aurelio-amerio/GenSBI&quot;</span>
+    <span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">quiet</span> <span class="s2">&quot;gensbi-examples @ git+https://github.com/aurelio-amerio/GenSBI-examples&quot;</span>
+    <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">aurelio</span><span class="o">-</span><span class="n">amerio</span><span class="o">/</span><span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span>
+    <span class="o">%</span><span class="n">cd</span> <span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">sbi</span><span class="o">-</span><span class="n">benchmarks</span><span class="o">/</span><span class="n">gaussian_mixture</span><span class="o">/</span><span class="n">flow_flux</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="c1"># select device</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span> 
+<span class="c1"># os.environ[&quot;JAX_PLATFORMS&quot;] = &quot;cpu&quot; </span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="task-data-preparation">
+<h2>2. Task &amp; Data Preparation<a class="headerlink" href="#task-data-preparation" title="Link to this heading">#</a></h2>
+<hr class="docutils" />
+<p>In this section, we define the Gaussian Mixture task, visualize reference samples, and create the training and validation datasets required for model learning. Batch size and sample count are set for reproducibility and performance.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">restore_model</span><span class="o">=</span><span class="kc">True</span>
+<span class="n">train_model</span><span class="o">=</span><span class="kc">False</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">orbax.checkpoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ocp</span>
+<span class="c1"># get the current notebook path</span>
+<span class="n">notebook_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">notebook_path</span><span class="p">,</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpyro</span><span class="w"> </span><span class="kn">import</span> <span class="n">distributions</span> <span class="k">as</span> <span class="n">dist</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi_examples.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_task</span>
+<span class="n">task</span> <span class="o">=</span> <span class="n">get_task</span><span class="p">(</span><span class="s2">&quot;gaussian_mixture&quot;</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;conditional&quot;</span><span class="p">,</span> <span class="n">use_multiprocessing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># reference posterior for an observation</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">num_observation</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot the 2D posterior </span>
+<span class="n">plot_marginals</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reference_samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;seaborn&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># make a dataset</span>
+<span class="n">nsamples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set batch size for training. Larger batch sizes help prevent overfitting, but are limited by available GPU memory.</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="c1"># Create training and validation datasets using the Gaussian Mixture task object.</span>
+<span class="n">train_dataset</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_train_dataset</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+<span class="n">val_dataset</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_val_dataset</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+
+<span class="c1"># Create iterators for the training and validation datasets.</span>
+<span class="n">dataset_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)</span>
+<span class="n">val_dataset_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">val_dataset</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="model-configuration-definition">
+<h2>3. Model Configuration &amp; Definition<a class="headerlink" href="#model-configuration-definition" title="Link to this heading">#</a></h2>
+<hr class="docutils" />
+<p>In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model. Edge masks and marginalization functions are used for flexible inference and posterior estimation.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1FlowPipeline</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+
+<span class="c1"># Path to the configuration file.</span>
+<span class="n">config_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">notebook_path</span><span class="si">}</span><span class="s2">/config/config_flow_flux.yaml&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract dimensionality information from the task object.</span>
+<span class="n">dim_obs</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dim_obs</span>  <span class="c1"># Number of parameters to infer</span>
+<span class="n">dim_cond</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dim_cond</span>    <span class="c1"># Number of observed data dimensions</span>
+
+<span class="n">dim_joint</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dim_joint</span>  <span class="c1"># Joint dimension (for model input)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Flux1FlowPipeline</span><span class="o">.</span><span class="n">init_pipeline_from_config</span><span class="p">(</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">,</span>
+        <span class="n">config_path</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="training">
+<h2>4. Training<a class="headerlink" href="#training" title="Link to this heading">#</a></h2>
+<hr class="docutils" />
+<p>In this section, we train the model or restore a checkpoint.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># pipeline.train(nnx.Rngs(0), save_model=False)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="evaluation-visualization">
+<h2>5. Evaluation &amp; Visualization<a class="headerlink" href="#evaluation-visualization" title="Link to this heading">#</a></h2>
+<hr class="docutils" />
+<p>In this section, we evaluate the trained Simformer model by sampling from the posterior, and comparing results to reference data.</p>
+<section id="section-5-1-posterior-sampling">
+<h3>Section 5.1: Posterior Sampling<a class="headerlink" href="#section-5-1-posterior-sampling" title="Link to this heading">#</a></h3>
+<hr class="docutils" />
+<p>In this section, we sample from the posterior distribution using the trained model and visualize the results. Posterior samples are generated for a selected observation and compared to reference samples to assess model accuracy.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># we want to do conditional inference. We need an observation for which we want to ocmpute the posterior</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_samples</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">observation</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+    <span class="n">true_param</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">get_true_parameters</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+    <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">observation</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">reference_samples</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span>  <span class="n">get_samples</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="section-5-2-visualize-posterior-samples">
+<h3>Section 5.2: Visualize Posterior Samples<a class="headerlink" href="#section-5-2-visualize-posterior-samples" title="Link to this heading">#</a></h3>
+<hr class="docutils" />
+<p>In this section, we plot the posterior samples as a 2D histogram to visualize the learned distribution and compare it to the ground truth.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span><span class="p">,</span> <span class="n">plot_2d_dist_contour</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;seaborn&quot;</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># alternatively use &quot;corner&quot; to plot containment levels too</span>
+<span class="c1"># plot_marginals(samples[-1,...,0], backend=&quot;corner&quot;, gridsize=20)</span>
+<span class="c1"># plt.show()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gaussian_mixture/flow_flux/imgs/marginals_ema.png" width=800></section>
+</section>
+<section id="diagnostics">
+<h2>6. Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading">#</a></h2>
+<p>We report here the results of the posterior calibration tests. As an excercise, you can implement the tests as in the Two Moons example and compare the results.</p>
+<p><strong>Average C2ST</strong>: 0.5085 ± 0.0072</p>
+<p><strong>TARP:</strong> <br><br>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gaussian_mixture/flow_flux/imgs/tarp.png" width=400></p>
+<p><strong>SBC</strong> <br><br></p>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gaussian_mixture/flow_flux/imgs/sbc.png" width=800><p><strong>L-C2ST</strong><br><br>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gaussian_mixture/flow_flux/imgs/lc2st.png" width=400></p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="gaussian_linear_flow_flux1joint.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Gaussian Linear Flux1Joint Flow Example</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="gaussian_mixture_flow_flux1joint.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Gaussian Mixture Flux1Joint Flow Example</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#table-of-contents">Table of Contents</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction-setup">1. Introduction &amp; Setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#task-data-preparation">2. Task &amp; Data Preparation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-configuration-definition">3. Model Configuration &amp; Definition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training">4. Training</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#evaluation-visualization">5. Evaluation &amp; Visualization</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#section-5-1-posterior-sampling">Section 5.1: Posterior Sampling</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#section-5-2-visualize-posterior-samples">Section 5.2: Visualize Posterior Samples</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#diagnostics">6. Diagnostics</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

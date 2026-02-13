@@ -32,11 +32,8 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyter-sphinx.css" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
   
@@ -51,17 +48,12 @@
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../../_static/copybutton.js?v=18a8d5f5"></script>
-    <script src="../../../../_static/thebelab-helper.js"></script>
-    <script src="../../../../_static/jupyterlite_sphinx.js?v=96e329c5"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
     <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
 
@@ -500,10 +492,10 @@ window.addEventListener("load", load);</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/models/flux1/model';</script>
     <link rel="icon" href="../../../../_static/logo_small.png"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../../search.html" /> 
+    <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="" />   
+  <meta name="docsearch:version" content="" />
   </head>
   
   
@@ -821,10 +813,12 @@ window.addEventListener("load", load);</script>
                 
 <div id="searchbox"></div>
                 <article class="bd-article">
-                   <h1>Source code for gensbi.models.flux1.model</h1><div class="highlight"><pre>
+                  
+  <h1>Source code for gensbi.models.flux1.model</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -875,6 +869,18 @@ window.addEventListener("load", load);</script>
 <span class="sd">    - `pos2d` / `rope2d`: 2D positional embeddings. Use for **image data** or 2D grids.</span>
 <span class="sd">        Initialize IDs using `gensbi.recipes.utils.init_ids_2d`. The `semantic_id` is optional for `pos2d` but recommended for `rope2d`.</span>
 
+<span class="sd">    **Combining ID Embeddings**:</span>
+
+<span class="sd">    Strategies for combining the value and ID embeddings (`id_merge_mode`):</span>
+
+<span class="sd">    - `&quot;sum&quot;` (Default): The value and ID embeddings are summed. This is the standard approach for large transformers.</span>
+<span class="sd">      Requires `axes_dim` to be specified.</span>
+<span class="sd">      **Recommended for**: Large models, high-dimensional data, or when using RoPE.</span>
+<span class="sd">    - `&quot;concat&quot;`: The value and ID embeddings are concatenated.</span>
+<span class="sd">      Requires `val_emb_dim` (features for value) and `id_emb_dim` (features for ID) to be specified.</span>
+<span class="sd">      **Recommended for**: Small models (low dimension per head, few heads) to reduce confusion between value and positional information.</span>
+<span class="sd">      A good starting ratio for `val_emb_dim : id_emb_dim` is **1:1**.</span>
+
 <span class="sd">    **Preprocessing for Images/2D Data**:</span>
 
 <span class="sd">    - **Patchification**: 2D images must be patchified (flattened into a sequence of tokens) before passing them to the model.</span>
@@ -900,8 +906,6 @@ window.addEventListener("load", load);</script>
 <span class="sd">            Number of double stream blocks.</span>
 <span class="sd">        depth_single_blocks : int</span>
 <span class="sd">            Number of single stream blocks.</span>
-<span class="sd">        axes_dim : list[int]</span>
-<span class="sd">            Dimensions of the axes for positional encoding.</span>
 <span class="sd">        qkv_bias : bool</span>
 <span class="sd">            Whether to use bias in QKV layers.</span>
 <span class="sd">        rngs : nnx.Rngs</span>
@@ -910,7 +914,15 @@ window.addEventListener("load", load);</script>
 <span class="sd">            Number of observation/parameter tokens.</span>
 <span class="sd">        dim_cond : int</span>
 <span class="sd">            Number of conditioning tokens.</span>
-<span class="sd">        theta : int</span>
+<span class="sd">        axes_dim : Optional[list[int]]</span>
+<span class="sd">            Dimensions of the axes for positional encoding (required for &quot;sum&quot; strategy).</span>
+<span class="sd">        val_emb_dim : Optional[int]</span>
+<span class="sd">            Features per head for value embedding (required for &quot;concat&quot; strategy).</span>
+<span class="sd">        id_emb_dim : Optional[int]</span>
+<span class="sd">            Features per head for ID embedding (required for &quot;concat&quot; strategy).</span>
+<span class="sd">        id_merge_mode : str</span>
+<span class="sd">            Strategy for combining embeddings (&quot;sum&quot; or &quot;concat&quot;). Default is &quot;sum&quot;.</span>
+<span class="sd">        theta : Optional[int]</span>
 <span class="sd">            Scaling factor for positional encoding.</span>
 <span class="sd">        id_embedding_strategy : tuple[str, str]</span>
 <span class="sd">            Kind of ID embedding for obs and cond respectively. Options are &quot;absolute&quot;, &quot;pos1d&quot;, &quot;pos2d&quot;, &quot;rope1d&quot;, &quot;rope2d&quot;.</span>
@@ -949,10 +961,6 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.depth_single_blocks">[docs]</a>
     <span class="n">depth_single_blocks</span><span class="p">:</span> <span class="nb">int</span></div>
 
-<div class="viewcode-block" id="Flux1Params.axes_dim">
-<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.axes_dim">[docs]</a>
-    <span class="n">axes_dim</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span></div>
-
 <div class="viewcode-block" id="Flux1Params.qkv_bias">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.qkv_bias">[docs]</a>
     <span class="n">qkv_bias</span><span class="p">:</span> <span class="nb">bool</span></div>
@@ -969,9 +977,25 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.dim_cond">[docs]</a>
     <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># condition dimension</span></div>
 
+<div class="viewcode-block" id="Flux1Params.axes_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.axes_dim">[docs]</a>
+    <span class="n">axes_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Flux1Params.val_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.val_emb_dim">[docs]</a>
+    <span class="n">val_emb_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Features per head for value</span></div>
+
+<div class="viewcode-block" id="Flux1Params.id_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.id_emb_dim">[docs]</a>
+    <span class="n">id_emb_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Features per head for ID</span></div>
+
+<div class="viewcode-block" id="Flux1Params.id_merge_mode">
+<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.id_merge_mode">[docs]</a>
+    <span class="n">id_merge_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;sum&quot;</span>  <span class="c1"># &quot;sum&quot; or &quot;concat&quot;</span></div>
+
 <div class="viewcode-block" id="Flux1Params.theta">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.theta">[docs]</a>
-    <span class="n">theta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span></div>
+    <span class="n">theta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="Flux1Params.id_embedding_strategy">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.id_embedding_strategy">[docs]</a>
@@ -992,7 +1016,7 @@ window.addEventListener("load", load);</script>
 <div class="viewcode-block" id="Flux1Params.__post_init__">
 <a class="viewcode-back" href="../../../../api/gensbi/models/index.html#gensbi.models.flux1.Flux1Params.__post_init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">availabel_embeddings</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">available_embeddings</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
             <span class="s2">&quot;pos1d&quot;</span><span class="p">,</span>
             <span class="s2">&quot;pos2d&quot;</span><span class="p">,</span>
@@ -1001,15 +1025,42 @@ window.addEventListener("load", load);</script>
             <span class="s2">&quot;rope2d&quot;</span><span class="p">,</span>
         <span class="p">]</span>
         <span class="k">assert</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">availabel_embeddings</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">available_embeddings</span>
         <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Unknown id embedding kind </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> for obs.&quot;</span>
         <span class="k">assert</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">availabel_embeddings</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">available_embeddings</span>
         <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Unknown id embedding kind </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> for cond.&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
-            <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;axes_dim required for &#39;sum&#39; strategy&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Legacy/Standard Flux1 calculation</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;concat&quot;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="p">(</span>
+                <span class="s2">&quot;rope&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="ow">and</span> <span class="s2">&quot;rope&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;rope embedding not supported for concat strategy, found </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_emb_dim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;val_emb_dim and id_emb_dim required for &#39;concat&#39; strategy&quot;</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_token_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_emb_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id_token_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_token_dim</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_token_dim</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown strategy: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_cond</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span></div>
 </div>
 
@@ -1044,11 +1095,11 @@ window.addEventListener("load", load);</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">qkv_features</span></div>
 
 
-        <span class="n">pe_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">//</span> <span class="n">params</span><span class="o">.</span><span class="n">num_heads</span>
-        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">)</span> <span class="o">!=</span> <span class="n">pe_dim</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">axes_dim</span><span class="si">}</span><span class="s2"> but expected positional dim </span><span class="si">{</span><span class="n">pe_dim</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
+<div class="viewcode-block" id="Flux1.id_merge_mode">
+<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1.id_merge_mode">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">id_merge_mode</span></div>
+
+
 <div class="viewcode-block" id="Flux1.num_heads">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1.num_heads">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">num_heads</span></div>
@@ -1068,6 +1119,11 @@ window.addEventListener("load", load);</script>
             <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_obs</span> <span class="o">==</span> <span class="s2">&quot;rope&quot;</span>
             <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy_cond</span> <span class="o">==</span> <span class="s2">&quot;rope&quot;</span>
         <span class="p">):</span>
+            <span class="n">pe_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">//</span> <span class="n">params</span><span class="o">.</span><span class="n">num_heads</span>
+            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">)</span> <span class="o">!=</span> <span class="n">pe_dim</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">axes_dim</span><span class="si">}</span><span class="s2"> but expected positional dim </span><span class="si">{</span><span class="n">pe_dim</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pe_embedder</span> <span class="o">=</span> <span class="n">EmbedND</span><span class="p">(</span>
                 <span class="n">dim</span><span class="o">=</span><span class="n">pe_dim</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">axes_dim</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">axes_dim</span>
             <span class="p">)</span>
@@ -1081,7 +1137,11 @@ window.addEventListener("load", load);</script>
             <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_obs</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span>
                 <span class="n">num_embeddings</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span>
-                <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="n">hidden_size</span><span class="o">=</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span>
+                    <span class="k">else</span> <span class="n">params</span><span class="o">.</span><span class="n">id_token_dim</span>
+                <span class="p">),</span>
                 <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
@@ -1094,7 +1154,11 @@ window.addEventListener("load", load);</script>
             <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_cond</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span>
                 <span class="n">num_embeddings</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_cond</span><span class="p">,</span>
-                <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="n">hidden_size</span><span class="o">=</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span>
+                    <span class="k">else</span> <span class="n">params</span><span class="o">.</span><span class="n">id_token_dim</span>
+                <span class="p">),</span>
                 <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
@@ -1104,7 +1168,11 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1.obs_in">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">obs_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
             <span class="n">in_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
-            <span class="n">out_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span>
+                <span class="k">else</span> <span class="n">params</span><span class="o">.</span><span class="n">input_token_dim</span>
+            <span class="p">),</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
@@ -1137,7 +1205,11 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1.cond_in">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
             <span class="n">in_features</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">context_in_dim</span><span class="p">,</span>
-            <span class="n">out_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">out_features</span><span class="o">=</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span>
+                <span class="k">else</span> <span class="n">params</span><span class="o">.</span><span class="n">input_token_dim</span>
+            <span class="p">),</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
@@ -1234,9 +1306,18 @@ window.addEventListener("load", load);</script>
         <span class="c1"># running on sequences obs</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_in</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
         <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_in</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
-        <span class="c1"># if cond is a single vector, repeat it for each obs</span>
+
+        <span class="c1"># broadcast cond if necessary</span>
         <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># broadcast ids if necessary</span>
+        <span class="k">if</span> <span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">obs_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">cond_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">,</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="n">vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_in</span><span class="p">(</span><span class="n">timestep_embedding</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">256</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">guidance_embed</span><span class="p">:</span>
@@ -1248,28 +1329,47 @@ window.addEventListener("load", load);</script>
 
         <span class="c1"># if not using rope for a dimension, perform id embedding and add it to the input</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
-            <span class="n">obs_ids_rope</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">obs_ids</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">obs_ids_rope</span> <span class="o">=</span> <span class="n">obs_ids</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="n">cond</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">)</span>
-            <span class="n">cond_ids_rope</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">cond_ids</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">cond_ids_rope</span> <span class="o">=</span> <span class="n">cond_ids</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span><span class="p">:</span>
+                <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">obs_ids_embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
+                <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_ids_embed</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span><span class="p">:</span>
+                <span class="n">cond</span> <span class="o">=</span> <span class="n">cond</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span>
+                    <span class="n">cond_ids</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Prepare rope embeddings if needed</span>
+        <span class="n">pe</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_obs</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_rope_cond</span><span class="p">:</span>
-            <span class="c1"># we use rope embeddings</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># obs uses absolute embedding, so we create dummy rope ids</span>
+                <span class="n">obs_ids_rope</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">obs_ids</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># obs uses rope</span>
+                <span class="n">obs_ids_rope</span> <span class="o">=</span> <span class="n">obs_ids</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># cond uses absolute embedding, so we create dummy rope ids</span>
+                <span class="n">cond_ids_rope</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cond_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">obs_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">cond_ids</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># cond uses rope</span>
+                <span class="n">cond_ids_rope</span> <span class="o">=</span> <span class="n">cond_ids</span>
+
             <span class="n">ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">cond_ids_rope</span><span class="p">,</span> <span class="n">obs_ids_rope</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">pe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pe_embedder</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">pe</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">double_blocks</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
             <span class="n">obs</span><span class="p">,</span> <span class="n">cond</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">,</span> <span class="n">vec</span><span class="o">=</span><span class="n">vec</span><span class="p">,</span> <span class="n">pe</span><span class="o">=</span><span class="n">pe</span><span class="p">)</span>
@@ -1279,14 +1379,14 @@ window.addEventListener("load", load);</script>
             <span class="n">obs</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">vec</span><span class="o">=</span><span class="n">vec</span><span class="p">,</span> <span class="n">pe</span><span class="o">=</span><span class="n">pe</span><span class="p">)</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[:,</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">:,</span> <span class="o">...</span><span class="p">]</span>
 
+        <span class="c1"># TODO FIXME: right now, we fixed the patch size to 1, as the library does not support generation of images.</span>
+        <span class="c1"># This is generally the case fo SBI, where we are interested in estimating 1D parameters,</span>
+        <span class="c1"># but this should be changed if we plan to extend this library to work for emulation too.</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_layer</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>  <span class="c1"># (N, T, patch_size ** 2 * out_channels)</span>
         <span class="k">return</span> <span class="n">obs</span></div>
 </div>
 
 </pre></div>
-<div class="section ablog__blog_comments">
-   
-</div>
 
                 </article>
               

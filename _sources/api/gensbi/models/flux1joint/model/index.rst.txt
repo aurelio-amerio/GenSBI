@@ -47,9 +47,6 @@ Module Contents
    .. py:method:: __call__(t, obs, node_ids, condition_mask, guidance = None, edge_mask = None)
 
 
-   .. py:attribute:: condition_embedding
-
-
    .. py:attribute:: final_layer
 
 
@@ -109,19 +106,21 @@ Module Contents
    :type num_heads: int
    :param depth_single_blocks: Number of single stream blocks.
    :type depth_single_blocks: int
-   :param axes_dim: Dimensions of the axes for positional encoding.
-   :type axes_dim: list[int]
-   :param condition_dim: Number of features used to encode the condition mask, which determines the features on which we are conditioning.
-   :type condition_dim: list[int]
+   :param val_emb_dim: Number of features per head used to embed the data.
+   :type val_emb_dim: int
+   :param cond_emb_dim: Number of features per head used to encode the condition mask, which determines the features on which we are conditioning.
+   :type cond_emb_dim: int
+   :param id_emb_dim: Number of features per head used to encode the token ids.
+   :type id_emb_dim: int
    :param qkv_bias: Whether to use bias in QKV layers.
    :type qkv_bias: bool
    :param rngs: Random number generators for initialization.
    :type rngs: nnx.Rngs
    :param dim_joint: Number of tokens in the joint sequence.
    :type dim_joint: int
-   :param theta: Scaling factor for positional encoding.
-   :type theta: int
-   :param id_embedding_strategy: Kind of embedding for token ids ('absolute', 'pos1d', 'pos2d', 'rope').
+   :param id_merge_mode: Strategy for combining embeddings ("sum" or "concat").
+   :type id_merge_mode: str
+   :param id_embedding_strategy: Kind of ID embedding. Currently only "absolute" is supported for Flux1Joint.
    :type id_embedding_strategy: str
    :param guidance_embed: Whether to use guidance embedding.
    :type guidance_embed: bool
@@ -148,12 +147,8 @@ Module Contents
    .. py:method:: __post_init__()
 
 
-   .. py:attribute:: axes_dim
-      :type:  list[int]
-
-
-   .. py:attribute:: condition_dim
-      :type:  list[int]
+   .. py:attribute:: cond_emb_dim
+      :type:  int
 
 
    .. py:attribute:: depth_single_blocks
@@ -170,9 +165,19 @@ Module Contents
 
 
 
+   .. py:attribute:: id_emb_dim
+      :type:  int
+
+
    .. py:attribute:: id_embedding_strategy
       :type:  str
       :value: 'absolute'
+
+
+
+   .. py:attribute:: id_merge_mode
+      :type:  str
+      :value: 'sum'
 
 
 
@@ -200,10 +205,8 @@ Module Contents
       :type:  flax.nnx.Rngs
 
 
-   .. py:attribute:: theta
+   .. py:attribute:: val_emb_dim
       :type:  int
-      :value: 500
-
 
 
    .. py:attribute:: vec_in_dim

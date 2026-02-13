@@ -200,13 +200,21 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 
 **Solution**:
 
-1. **Use EMA model**: Ensure you're using the EMA version of your model (loaded from `checkpoints/ema/`).
+1. **Check data normalization**: If the posteriors look odd, this is the first thing you should look at.
+    - **Distinguish between two priors**:
+        - **Diffusion/Flow Prior**: The base distribution used by the generative model (usually a standard normal $\mathcal{N}(0, 1)$). The model learns to transport this distribution to your target posterior.
+        - **Simulation Prior**: The physical prior distribution from which you drew your training parameters.
+    - If your physical parameters (simulation prior) are not normalized to zero mean and unit variance, they will be far from the diffusion/flow prior.
+    - This mismatch forces the model to learn a complex, long-range transport map, which is difficult and prone to instability.
+    - **Solution**: Normalize your parameters (and data) so that the simulation prior roughly overlaps with the standard normal diffusion prior. After inference, you can denormalize the samples to get back to the original parameter space. See the [Data and Embeddings Guide](/basics/data_and_embeddings) for more details.
 
-2. **Increase sampling steps**: If using a custom ODE solver, increase the number of integration steps.
+2. **Use EMA model**: Ensure you're using the EMA version of your model (loaded from `checkpoints/ema/`).
 
-3. **Check conditioning**: Verify that `x_observed` has the correct shape `(1, dim_cond, ch_cond)` and values.
+3. **Increase sampling steps**: Increase the number of integration steps of the SDE/ODE solver (if not using an adaptive solver).
 
-4. **Run validation diagnostics**: Use SBC, TARP, or L-C2ST to check if your model is well-calibrated. See the [Validation Guide](/basics/validation).
+4. **Check conditioning**: Verify that `x_observed` has the correct shape `(1, dim_cond, ch_cond)` and values.
+
+5. **Run validation diagnostics**: Use SBC, TARP, or L-C2ST to check if your model is well-calibrated. See the [Validation Guide](/basics/validation).
 
 ### Slow Inference
 
@@ -221,7 +229,16 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
    samples = sampler_fn(jax.random.PRNGKey(42), num_samples=10_000)
    ```
 
-2. **Batch sampling**: Generate samples in batches rather than one at a time.
+2. **Batch sampling**: Generate samples in batches rather than one at a time. This is particularly useful for large batch sizes, or if memory is limited.
+
+   ```python
+   # Batch sampling
+   nsamples = 100_000 # a (potentially large) number of samples 
+   chunk_size = 1000 # number of samples to generate at a time (smaller if memory is limited)
+   x_obs = ... # one or more observations for which we want to sample the posterior
+   samples = pipeline.sample_batched(jax.random.PRNGKey(42), x_obs, nsamples=nsamples, chunk_size=chunk_size,
+            show_progress_bars=True)
+   ```
 
 3. **Consider Flow Matching**: Flow matching learns straighter trajectories than diffusion, often allowing for fewer integration steps (faster sampling) without sacrificing quality.
 
@@ -269,7 +286,7 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 **Starting points:**
 
 - **Flux1**: `depth=4-8`, `depth_single_blocks=8-16`, `num_heads=6-8`
-- **Simformer**: `num_layers=4-6`, `num_heads=4-6`, `dim_value=40`
+- **Simformer**: `num_layers=4-6`, `num_heads=4-6`, `val_emb_dim=40`
 
 **Tuning strategy:**
 
@@ -277,6 +294,24 @@ See [Model Cards](/basics/model_cards) for detailed comparisons.
 2. If underfitting, increase depth first (number of layers)
 3. Then increase width (heads, feature dimensions)
 4. Monitor memory usage and training time
+
+### Optimizing Flux1/Flux1Joint for Low Dimensionality
+
+**Problem**: You want to use the scalability of Flux1/Flux1Joint but your problem has very low dimensionality (e.g., < 4 dimensions), and performance is suboptimal.
+
+**Solution**:
+
+1. **Use `id_merge_mode="concat"`**: In low-dimensional regimes with small per-head dimensions, summing the ID embeddings can obscure the signal. Concatenating them preserves distinct information channels.
+
+   ```python
+   # In your config or code
+   id_embedding_strategy=["absolute", "absolute"]
+   id_merge_mode="concat"
+   val_emb_dim=10
+   id_emb_dim=10  # 1:1 ratio is recommended for small models
+   ```
+
+2. **Use the 1:1 Ratio**: As a starting point, ensure that `val_emb_dim` and `id_emb_dim` are roughly equal.
 
 ## Data Preparation
 

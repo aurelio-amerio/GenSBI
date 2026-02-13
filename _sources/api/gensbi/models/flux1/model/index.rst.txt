@@ -57,6 +57,9 @@ Module Contents
    .. py:attribute:: hidden_size
 
 
+   .. py:attribute:: id_merge_mode
+
+
    .. py:attribute:: in_channels
 
 
@@ -113,6 +116,18 @@ Module Contents
    - `pos2d` / `rope2d`: 2D positional embeddings. Use for **image data** or 2D grids.
        Initialize IDs using `gensbi.recipes.utils.init_ids_2d`. The `semantic_id` is optional for `pos2d` but recommended for `rope2d`.
 
+   **Combining ID Embeddings**:
+
+   Strategies for combining the value and ID embeddings (`id_merge_mode`):
+
+   - `"sum"` (Default): The value and ID embeddings are summed. This is the standard approach for large transformers.
+     Requires `axes_dim` to be specified.
+     **Recommended for**: Large models, high-dimensional data, or when using RoPE.
+   - `"concat"`: The value and ID embeddings are concatenated.
+     Requires `val_emb_dim` (features for value) and `id_emb_dim` (features for ID) to be specified.
+     **Recommended for**: Small models (low dimension per head, few heads) to reduce confusion between value and positional information.
+     A good starting ratio for `val_emb_dim : id_emb_dim` is **1:1**.
+
    **Preprocessing for Images/2D Data**:
 
    - **Patchification**: 2D images must be patchified (flattened into a sequence of tokens) before passing them to the model.
@@ -136,8 +151,6 @@ Module Contents
    :type depth: int
    :param depth_single_blocks: Number of single stream blocks.
    :type depth_single_blocks: int
-   :param axes_dim: Dimensions of the axes for positional encoding.
-   :type axes_dim: list[int]
    :param qkv_bias: Whether to use bias in QKV layers.
    :type qkv_bias: bool
    :param rngs: Random number generators for initialization.
@@ -146,8 +159,16 @@ Module Contents
    :type dim_obs: int
    :param dim_cond: Number of conditioning tokens.
    :type dim_cond: int
+   :param axes_dim: Dimensions of the axes for positional encoding (required for "sum" strategy).
+   :type axes_dim: Optional[list[int]]
+   :param val_emb_dim: Features per head for value embedding (required for "concat" strategy).
+   :type val_emb_dim: Optional[int]
+   :param id_emb_dim: Features per head for ID embedding (required for "concat" strategy).
+   :type id_emb_dim: Optional[int]
+   :param id_merge_mode: Strategy for combining embeddings ("sum" or "concat"). Default is "sum".
+   :type id_merge_mode: str
    :param theta: Scaling factor for positional encoding.
-   :type theta: int
+   :type theta: Optional[int]
    :param id_embedding_strategy: Kind of ID embedding for obs and cond respectively. Options are "absolute", "pos1d", "pos2d", "rope1d", "rope2d".
    :type id_embedding_strategy: tuple[str, str]
    :param guidance_embed: Whether to use guidance embedding.
@@ -176,7 +197,9 @@ Module Contents
 
 
    .. py:attribute:: axes_dim
-      :type:  list[int]
+      :type:  Optional[list[int]]
+      :value: None
+
 
 
    .. py:attribute:: context_in_dim
@@ -205,9 +228,21 @@ Module Contents
 
 
 
+   .. py:attribute:: id_emb_dim
+      :type:  Optional[int]
+      :value: None
+
+
+
    .. py:attribute:: id_embedding_strategy
       :type:  tuple[str, str]
       :value: ('absolute', 'absolute')
+
+
+
+   .. py:attribute:: id_merge_mode
+      :type:  str
+      :value: 'sum'
 
 
 
@@ -236,8 +271,14 @@ Module Contents
 
 
    .. py:attribute:: theta
-      :type:  int
-      :value: 500
+      :type:  Optional[int]
+      :value: None
+
+
+
+   .. py:attribute:: val_emb_dim
+      :type:  Optional[int]
+      :value: None
 
 
 

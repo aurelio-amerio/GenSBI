@@ -32,11 +32,8 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyter-sphinx.css" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/thebelab.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Vibur" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/jupyterlite_sphinx.css?v=8ee2c72c" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
   
@@ -51,17 +48,12 @@
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../../_static/copybutton.js?v=18a8d5f5"></script>
-    <script src="../../../../_static/thebelab-helper.js"></script>
-    <script src="../../../../_static/jupyterlite_sphinx.js?v=96e329c5"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
     <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
 
@@ -500,10 +492,10 @@ window.addEventListener("load", load);</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/models/simformer/model';</script>
     <link rel="icon" href="../../../../_static/logo_small.png"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../../search.html" /> 
+    <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="" />   
+  <meta name="docsearch:version" content="" />
   </head>
   
   
@@ -821,7 +813,8 @@ window.addEventListener("load", load);</script>
                 
 <div id="searchbox"></div>
                 <article class="bd-article">
-                   <h1>Source code for gensbi.models.simformer.model</h1><div class="highlight"><pre>
+                  
+  <h1>Source code for gensbi.models.simformer.model</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
@@ -863,11 +856,11 @@ window.addEventListener("load", load);</script>
 <span class="sd">            Random number generators for initialization.</span>
 <span class="sd">        in_channels : int</span>
 <span class="sd">            Number of channels/features per token.</span>
-<span class="sd">        dim_value : int</span>
+<span class="sd">        val_emb_dim : int</span>
 <span class="sd">            Dimension of the value embeddings.</span>
-<span class="sd">        dim_id : int</span>
+<span class="sd">        id_emb_dim : int</span>
 <span class="sd">            Dimension of the ID embeddings.</span>
-<span class="sd">        dim_condition : int</span>
+<span class="sd">        cond_emb_dim : int</span>
 <span class="sd">            Dimension of the condition embeddings.</span>
 <span class="sd">        dim_joint : int</span>
 <span class="sd">            Number of tokens in the joint sequence.</span>
@@ -875,10 +868,10 @@ window.addEventListener("load", load);</script>
 <span class="sd">            Number of Fourier features for time embedding.</span>
 <span class="sd">        num_heads : int</span>
 <span class="sd">            Number of attention heads.</span>
-<span class="sd">        num_layers : int</span>
+<span class="sd">        depth : int</span>
 <span class="sd">            Number of transformer layers.</span>
-<span class="sd">        widening_factor : int</span>
-<span class="sd">            Widening factor for the transformer.</span>
+<span class="sd">        mlp_ratio : int</span>
+<span class="sd">            Widening factor for the transformer parameters (MLP ratio).</span>
 <span class="sd">        qkv_features : int</span>
 <span class="sd">            Number of features for QKV layers.</span>
 <span class="sd">        num_hidden_layers : int</span>
@@ -896,17 +889,17 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.in_channels">[docs]</a>
     <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span></div>
 
-<div class="viewcode-block" id="SimformerParams.dim_value">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.dim_value">[docs]</a>
-    <span class="n">dim_value</span><span class="p">:</span> <span class="nb">int</span></div>
+<div class="viewcode-block" id="SimformerParams.val_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.val_emb_dim">[docs]</a>
+    <span class="n">val_emb_dim</span><span class="p">:</span> <span class="nb">int</span></div>
 
-<div class="viewcode-block" id="SimformerParams.dim_id">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.dim_id">[docs]</a>
-    <span class="n">dim_id</span><span class="p">:</span> <span class="nb">int</span></div>
+<div class="viewcode-block" id="SimformerParams.id_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.id_emb_dim">[docs]</a>
+    <span class="n">id_emb_dim</span><span class="p">:</span> <span class="nb">int</span></div>
 
-<div class="viewcode-block" id="SimformerParams.dim_condition">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.dim_condition">[docs]</a>
-    <span class="n">dim_condition</span><span class="p">:</span> <span class="nb">int</span></div>
+<div class="viewcode-block" id="SimformerParams.cond_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.cond_emb_dim">[docs]</a>
+    <span class="n">cond_emb_dim</span><span class="p">:</span> <span class="nb">int</span></div>
 
 <div class="viewcode-block" id="SimformerParams.dim_joint">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.dim_joint">[docs]</a>
@@ -916,9 +909,9 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.num_heads">[docs]</a>
     <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span></div>
 
-<div class="viewcode-block" id="SimformerParams.num_layers">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.num_layers">[docs]</a>
-    <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span></div>
+<div class="viewcode-block" id="SimformerParams.depth">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.depth">[docs]</a>
+    <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span></div>
 
 <div class="viewcode-block" id="SimformerParams.num_hidden_layers">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.num_hidden_layers">[docs]</a>
@@ -928,9 +921,9 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.fourier_features">[docs]</a>
     <span class="n">fourier_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span></div>
 
-<div class="viewcode-block" id="SimformerParams.widening_factor">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.widening_factor">[docs]</a>
-    <span class="n">widening_factor</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span></div>
+<div class="viewcode-block" id="SimformerParams.mlp_ratio">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.mlp_ratio">[docs]</a>
+    <span class="n">mlp_ratio</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span></div>
 
 <div class="viewcode-block" id="SimformerParams.qkv_features">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.qkv_features">[docs]</a>
@@ -945,7 +938,7 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.__post_init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_value</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_id</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_condition</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_emb_dim</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb_dim</span></div>
 </div>
 
 
@@ -975,17 +968,17 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.in_channels">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">in_channels</span></div>
 
-<div class="viewcode-block" id="Simformer.dim_value">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.dim_value">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dim_value</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_value</span></div>
+<div class="viewcode-block" id="Simformer.val_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.val_emb_dim">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_emb_dim</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">val_emb_dim</span></div>
 
-<div class="viewcode-block" id="Simformer.dim_id">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.dim_id">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dim_id</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_id</span></div>
+<div class="viewcode-block" id="Simformer.id_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.id_emb_dim">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">id_emb_dim</span></div>
 
-<div class="viewcode-block" id="Simformer.dim_condition">
-<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.dim_condition">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dim_condition</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_condition</span></div>
+<div class="viewcode-block" id="Simformer.cond_emb_dim">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.cond_emb_dim">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb_dim</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">cond_emb_dim</span></div>
 
 
         <span class="k">if</span> <span class="n">embedding_net_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -993,11 +986,11 @@ window.addEventListener("load", load);</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net_value</span> <span class="o">=</span> <span class="n">MLPEmbedder</span><span class="p">(</span>
                 <span class="n">in_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
-                <span class="n">hidden_dim</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_value</span><span class="p">,</span>
+                <span class="n">hidden_dim</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">val_emb_dim</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="c1"># self.embedding_net_value = lambda obs: jnp.repeat(obs, dim_value, axis=-1)</span>
+        <span class="c1"># self.embedding_net_value = lambda obs: jnp.repeat(obs, val_emb_dim, axis=-1)</span>
 
         <span class="n">fourier_features</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">fourier_features</span>
 <div class="viewcode-block" id="Simformer.embedding_time">
@@ -1013,7 +1006,7 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.embedding_net_id">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net_id</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span>
             <span class="n">num_embeddings</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">,</span>
-            <span class="n">features</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_id</span><span class="p">,</span>
+            <span class="n">features</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_emb_dim</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
@@ -1021,13 +1014,13 @@ window.addEventListener("load", load);</script>
 <div class="viewcode-block" id="Simformer.condition_embedding">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.condition_embedding">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="mf">0.01</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_condition</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+            <span class="mf">0.01</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">cond_emb_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
         <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Simformer.total_tokens">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.total_tokens">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">total_tokens</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_value</span> <span class="o">+</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_id</span> <span class="o">+</span> <span class="n">params</span><span class="o">.</span><span class="n">dim_condition</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_tokens</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">val_emb_dim</span> <span class="o">+</span> <span class="n">params</span><span class="o">.</span><span class="n">id_emb_dim</span> <span class="o">+</span> <span class="n">params</span><span class="o">.</span><span class="n">cond_emb_dim</span></div>
 
 
 <div class="viewcode-block" id="Simformer.transformer">
@@ -1036,9 +1029,9 @@ window.addEventListener("load", load);</script>
             <span class="n">din</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">total_tokens</span><span class="p">,</span>
             <span class="n">dcontext</span><span class="o">=</span><span class="n">fourier_features</span><span class="p">,</span>
             <span class="n">num_heads</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span>
-            <span class="n">num_layers</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span>
             <span class="n">features</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">qkv_features</span><span class="p">,</span>
-            <span class="n">widening_factor</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">widening_factor</span><span class="p">,</span>
+            <span class="n">widening_factor</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">mlp_ratio</span><span class="p">,</span>
             <span class="n">num_hidden_layers</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_hidden_layers</span><span class="p">,</span>
             <span class="n">act</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
             <span class="n">skip_connection_attn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1131,14 +1124,14 @@ window.addEventListener("load", load);</script>
             <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">*</span> <span class="n">condition_mask</span>
         <span class="p">)</span>  <span class="c1"># If condition_mask is 0, then the embedding is 0, otherwise it is the condition_embedding vector</span>
         <span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
-            <span class="n">condition_embedding</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_condition</span><span class="p">)</span>
+            <span class="n">condition_embedding</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb_dim</span><span class="p">)</span>
         <span class="p">)</span>
 
         <span class="c1"># Embed inputs and broadcast</span>
         <span class="n">value_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net_value</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
         <span class="n">id_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net_id</span><span class="p">(</span><span class="n">node_ids</span><span class="p">)</span>
         <span class="n">id_embeddings</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
-            <span class="n">id_embeddings</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_id</span><span class="p">)</span>
+            <span class="n">id_embeddings</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span><span class="p">)</span>
         <span class="p">)</span>
 
         <span class="c1"># Concatenate embeddings (alternatively you can also add instead of concatenating)</span>
@@ -1288,9 +1281,6 @@ window.addEventListener("load", load);</script>
 <span class="c1">#         else:</span>
 <span class="c1">#             return self.unconditioned(obs, obs_ids, t, edge_mask=edge_mask)</span>
 </pre></div>
-<div class="section ablog__blog_comments">
-   
-</div>
 
                 </article>
               
