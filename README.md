@@ -70,7 +70,7 @@ samples = pipeline.sample(key, x_observed, num_samples=10_000)
 
 ## Examples
 
-<table align="center" style="width:95%;">
+<!-- <table align="center" style="width:95%;">
   <tr>
     <td align="center">
       <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
@@ -79,7 +79,9 @@ samples = pipeline.sample(key, x_observed, num_samples=10_000)
       <img src="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true" alt="two-moons posterior sampling" height="300">
     </td>
   </tr>
-</table>
+</table> -->
+
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/gensbi_animation_small.gif" width=600px>
 
 Examples for this library are available separately in the [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository.
 
