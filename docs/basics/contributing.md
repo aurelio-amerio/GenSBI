@@ -15,7 +15,7 @@ To set up your development environment, please follow these steps:
 2.  **Install dependencies**:
     We recommend using a virtual environment.
     ```bash
-    pip install -e ".[examples,test,docs]"
+    pip install -e ".[cuda12,examples,test,docs]"
     ```
 
     ```{note}

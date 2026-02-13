@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build distribution 📦
@@ -43,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/GenSBI # Replace <package-name> with your PyPI project name
+      url: https://pypi.org/p/gensbi # Replace <package-name> with your PyPI project name
     permissions:
       id-token: write # IMPORTANT: mandatory for trusted publishing
 
@@ -58,14 +61,15 @@ jobs:
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
-    # if: false
+    # if: false 
     needs:
       - build
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/GenSBI
+      url: https://test.pypi.org/p/gensbi
 
     permissions:
       id-token: write # IMPORTANT: mandatory for trusted publishing
