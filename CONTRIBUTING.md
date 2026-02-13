@@ -15,7 +15,7 @@ To set up your development environment, please follow these steps:
 2.  **Install dependencies**:
     We recommend using a virtual environment.
     ```bash
-    pip install -e ".[examples,validation]"
+    pip install -e ".[cuda12,examples,test,docs]"
     ```
 
 ## Running Tests
@@ -232,8 +232,8 @@ All PRs will be reviewed for:
 ## Questions?
 
 If you have questions about contributing:
-- Check the [Conceptual Overview](/basics/overview) to understand the architecture
-- Read the [API Documentation](/api/gensbi/index)
+- Check the [Conceptual Overview](https://gensbi.com/basics/overview.html) to understand the architecture
+- Read the [API Documentation](https://gensbi.com/api/index.html)
 - Open an issue on GitHub for discussion
 
 We appreciate your contributions and look forward to collaborating with you!
