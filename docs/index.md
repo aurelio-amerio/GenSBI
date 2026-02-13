@@ -82,8 +82,10 @@ Want to contribute? Check out the guides:
 
 ## Examples
 
-<img src="_static/animated_plot_samples_simformer.gif" alt="two-moons posterior sampling" height="400px">
-<img src="_static/animated_plot_posterior_simformer.gif" alt="two-moons posterior sampling" height="400px">
+<!-- <img src="_static/animated_plot_samples_simformer.gif" alt="two-moons posterior sampling" height="400px">
+<img src="_static/animated_plot_posterior_simformer.gif" alt="two-moons posterior sampling" height="400px"> -->
+
+<img src="_static/gensbi_animation_small.gif" alt="gensbi sampling" width=600px>
 
 Some key examples include:
 
