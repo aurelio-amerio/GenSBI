@@ -33,13 +33,9 @@ extensions = [
     "sphinxcontrib.mermaid",
     "autoapi.extension",
     # For extension examples and demos
-    "myst_parser",
-    "ablog",
-    "jupyter_sphinx",
-    "nbsphinx",
+    "myst_nb",
     "numpydoc",
     "sphinx_togglebutton",
-    # "jupyterlite_sphinx",
     "sphinx_favicon",
 ]
 
@@ -58,7 +54,12 @@ mermaid.initialize({
 });
 """
 
-nbsphinx_execute = "never"
+
+nb_execution_mode = "off"
+
+nb_custom_formats = {
+    ".md": ["jupytext.reads", {"fmt": "mystnb"}],
+}
 
 # -- Internationalization ----------------------------------------------------
 language = "en"
@@ -106,6 +107,7 @@ html_css_files = [
 autosummary_generate = True
 autodoc_typehints = "description"
 autodoc_member_order = "groupwise"
+
 
 # -- Options for autoapi -------------------------------------------------------
 autoapi_type = "python"
