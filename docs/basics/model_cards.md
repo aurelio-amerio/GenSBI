@@ -132,7 +132,7 @@ from gensbi.models.simformer import SimformerParams
 params = SimformerParams(
     rngs=...,
     in_channels=...,
-    value_emb_dim=...,
+    val_emb_dim=...,
     id_emb_dim=...,
     cond_emb_dim=...,
     dim_joint=...,
@@ -164,8 +164,8 @@ params = SimformerParams(
 
 - **Precision**: Currently, the Simformer model runs on `float32` precision only.
 - **Architecture**: The model treats every variable in the data as a distinct token. It learns the joint distribution of these tokens conditioned on an observed subset.
-- **Embedding Dimensions**: The total embedding size for a token is `dim_tot = value_emb_dim + id_emb_dim + cond_emb_dim`. This sum **must** be divisible by `num_heads` to ensure correct attention splitting; otherwise, initialization will fail.
-- **Tuning Strategy**: Start by increasing `num_layers` (depth). If performance is still lacking, increase `value_emb_dim` and `id_emb_dim` (width), and finally adjust `num_heads`.
+- **Embedding Dimensions**: The total embedding size for a token is `dim_tot = val_emb_dim + id_emb_dim + cond_emb_dim`. This sum **must** be divisible by `num_heads` to ensure correct attention splitting; otherwise, initialization will fail.
+- **Tuning Strategy**: Start by increasing `num_layers` (depth). If performance is still lacking, increase `val_emb_dim` and `id_emb_dim` (width), and finally adjust `num_heads`.
 - **Limitations**: If your problem requires more than 8 layers, >12 heads, `dim_tot > 256`, or inference on >10 variables, `Flux1` or `Flux1Joint` are recommended for better memory efficiency.
 
 ## Flux1Joint Model Parameters
@@ -183,7 +183,7 @@ params = Flux1JointParams(
     mlp_ratio=...,
     num_heads=...,
     depth_single_blocks=...,
-    value_emb_dim=...,
+    val_emb_dim=...,
     cond_emb_dim=...,
     id_emb_dim=...,
     qkv_bias=...,
