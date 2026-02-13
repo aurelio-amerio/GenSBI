@@ -1,3 +1,12 @@
+import swyft
+import plot_signal as pl
+import scipy
+from KDEpy import FFTKDE
+from scipy.interpolate import interp1d
+
+estimator = FFTKDE(bw="ISJ")
+
+
 def plot_band(zmax=3.5):
 
     figure, axis = plt.subplots(1, 2, figsize=(10, 5))
