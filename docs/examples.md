@@ -184,15 +184,15 @@ Most examples include an "Open in Colab" badge. Click it to run the notebook in 
 1. Clone the examples repository:
 
    ```bash
-   git clone [https://github.com/aurelio-amerio/GenSBI-examples.git](https://github.com/aurelio-amerio/GenSBI-examples.git)
+   git clone https://github.com/aurelio-amerio/GenSBI-examples.git
    cd GenSBI-examples
    ```
 
-2. Install dependencies (see the [Installation Guide](https://www.google.com/search?q=/getting_started/installation) for details):
+2. Install dependencies (see the [Installation Guide](/getting_started/installation) for details):
 
    ```bash
    pip install jupyter
-   pip install "GenSBI[cuda12,examples] @ git+[https://github.com/aurelio-amerio/GenSBI.git](https://github.com/aurelio-amerio/GenSBI.git)"
+   pip install "gensbi[cuda12,examples]"
    ```
 
 3. Launch Jupyter:
