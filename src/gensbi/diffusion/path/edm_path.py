@@ -66,7 +66,10 @@ class EDMPath(ProbPath):
             "EDM-VP",
             "EDM-VE",
         ], f"Scheduler must be one of ['EDM', 'EDM-VP', 'EDM-VE'], got {self.scheduler.name}."
-        warnings.warn("EDM-VP and EDM-VE paths are currently not recommended for use.")
+        if self.scheduler.name in ["EDM-VP", "EDM-VE"]:
+            warnings.warn(
+                "EDM-VP and EDM-VE paths are currently not recommended for use."
+            )
         return
 
     def sample(self, key: Array, x_1: Array, sigma: Array) -> EDMPathSample:

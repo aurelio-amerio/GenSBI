@@ -41,7 +41,7 @@ def parse_simformer_params(config_path: str):
     params_dict = dict(
         in_channels=model_params.get("in_channels", 1),
         val_emb_dim=model_params.get(
-            "val_emb_dim", model_params.get("value_emb_dim", 40)
+            "val_emb_dim", model_params.get("val_emb_dim", 40)
         ),  # Support both
         id_emb_dim=model_params.get("id_emb_dim", 40),
         cond_emb_dim=model_params.get("cond_emb_dim", 10),

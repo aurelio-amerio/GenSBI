@@ -289,7 +289,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         :language: python
         :linenos:
 
-    .. image:: /examples/unconditional_diffusion_pipeline_samples.png
+    .. image:: /examples/unconditional_diffusion_samples.png
         :width: 600
 
     .. note::
