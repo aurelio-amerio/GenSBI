@@ -32,6 +32,7 @@ preview:
 download:
 	@echo "Downloading example notebooks to notebooks ..."
 	@mkdir -p notebooks
+	@rm -rf notebooks/*
 	curl -L -o notebooks/my_first_model.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/my_first_model.ipynb
 
