@@ -106,7 +106,7 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 Uses the Diffusion model for posterior density estimation on the two-moons benchmark.
 
 > [!NOTE]
-> A full list of the currently available examples is available at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
+> A complete list of the currently available examples can be found at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
 
 ## Citing GenSBI
 
