@@ -21,7 +21,7 @@ trained posterior against a set of true values of theta.
 from typing import Callable, Optional, Tuple, Union
 from dataclasses import dataclass, field
 
-from scipy.stats import kstest, norm, beta
+from scipy.stats import kstest, norm
 import jax
 from jax import numpy as jnp
 from jax import Array
@@ -31,8 +31,8 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-
 from gensbi.diagnostics.metrics import l1, l2
+from gensbi.diagnostics.utils import alpha_from_z, jefferys_interval, probit
 
 
 @dataclass
@@ -40,18 +40,21 @@ class TARPResult:
     """
     Result of the TARP diagnostic.
 
+    Stores the Expected Coverage Probability (ECP) curve and its uncertainty
+    bounds. Provides z-score properties for the confidence-level view.
+
     Parameters
     ----------
     ecp : Array
         Expected coverage probability. shape: (num_bootstrap, num_bins + 1) or (num_bins + 1,)
     alpha : Array
-        Credibility values. shape: (num_bins + 1,)
+        Credibility levels (histogram bin edges). shape: (num_bins + 1,)
     ecp_mean : Array
-        Mean ECP. shape: (num_bins + 1,)
+        Mean ECP across bootstrap iterations (or identical to ecp if no bootstrap).
     ecp_lower : Optional[Array]
-        Lower bound of ECP (e.g. 2.5% quantile). shape: (num_bins + 1,)
+        Lower bound of ECP (2.5th percentile or Jeffrey's lower). shape: (num_bins + 1,)
     ecp_upper : Optional[Array]
-        Upper bound of ECP (e.g. 97.5% quantile). shape: (num_bins + 1,)
+        Upper bound of ECP (97.5th percentile or Jeffrey's upper). shape: (num_bins + 1,)
     """
 
     ecp: Array
@@ -85,48 +88,15 @@ class TARPResult:
         return self._to_z(self.ecp_upper)
 
     def _to_z(self, p: Array) -> Array:
-        """Convert probability/credibility p to z-score."""
+        """Convert coverage probability p to z-score via probit(0.5 + p/2).
+
+        This maps p ∈ [0, 1] to z ∈ [0, ∞) such that p = 0.6827 → z = 1 (1σ),
+        p = 0.9545 → z = 2 (2σ), etc. Values are clipped to [eps, 1-eps] to
+        avoid infinities at the boundaries.
+        """
         p = np.array(p)
-        eps = 1e-6
-        p_clipped = np.clip(p, eps, 1 - eps)
-        # Using 0.5 + p/2 puts 0.95 -> 0.975 -> 1.96
-        # Using 1 - (1-p)/2 leads to same.
-        return norm.ppf(0.5 + p_clipped / 2)
-
-
-def alpha_from_z(z):
-    """Convert z-score to alpha (significance level)."""
-    return 2 - norm.cdf(z) * 2
-
-
-def jefferys_interval(k, n, z=1.0):
-    """
-    Compute Jefferys interval for a binomial proportion.
-
-    Parameters
-    ----------
-    k : array_like
-        Number of successes.
-    n : int or array_like
-        Total number of trials.
-    z : float, optional
-        Z-score for the interval (default is 1).
-
-    Returns
-    -------
-    interval : np.ndarray of shape (..., 2)
-        Lower and upper bounds of the interval.
-    """
-    alpha = alpha_from_z(z=z)
-    lower = beta.ppf(alpha / 2, k + 0.5, n - k + 0.5)
-    upper = beta.ppf(1 - alpha / 2, k + 0.5, n - k + 0.5)
-
-    # Handle edges manually if needed, though beta.ppf handles handles valid inputs
-    # If k=0, lower=0. If k=n, upper=1.
-    lower = np.where(k > 0, lower, 0.0)
-    upper = np.where(k < n, upper, 1.0)
-
-    return lower, upper
+        p_clipped = np.clip(p, 1e-6, 1 - 1e-6)
+        return probit(0.5 + p_clipped / 2)
 
 
 def run_tarp(
@@ -177,8 +147,6 @@ def run_tarp(
         Credibility values, see equation 2 of the paper.
     """
     key = jax.random.PRNGKey(seed)
-
-    # Ensure inputs are JAX arrays
     thetas = jnp.asarray(thetas)
     posterior_samples = jnp.asarray(posterior_samples)
 
@@ -192,9 +160,7 @@ def run_tarp(
         dim_theta,
     ), f"Wrong posterior samples shape for TARP: {posterior_samples.shape}, expected {(num_posterior_samples, num_tarp_samples, dim_theta)}"
 
-    # Sample reference points uniformly if not provided
-    # If bootstrapping, we regenerate references per iteration (defer to _run_tarp_bootstrap)
-    # If not bootstrapping, we generate them once here.
+    # Generate references once for non-bootstrap; bootstrap regenerates per iteration
     if references is None and not bootstrap:
         references = get_tarp_references(key, thetas)
 
@@ -202,8 +168,6 @@ def run_tarp(
         references = jnp.asarray(references)
 
     if not bootstrap:
-        # If references was None, it's now generated (because not bootstrap)
-        # If it was passed, it's asarray'd.
         ecp, alpha = _run_tarp_single(
             key,
             posterior_samples,
@@ -214,11 +178,11 @@ def run_tarp(
             z_score_theta,
         )
 
-        # Calculate Jeffrey's intervals (95% CI -> z=1.96)
+        # Without bootstrap, approximate 95% CI using Jeffrey's interval
+        # (Beta prior-based interval for binomial proportions). This is
+        # cheaper than bootstrap and gives smooth, well-calibrated bands.
         num_sims = thetas.shape[0]
         k_values = np.array(ecp) * num_sims
-
-        # Use z=1.96 for 95% CI to match plot_tarp labels
         lower, upper = jefferys_interval(k_values, num_sims, z=1.96)
 
         return TARPResult(
@@ -229,8 +193,8 @@ def run_tarp(
             ecp_upper=jnp.array(upper),
         )
 
-    # Bootstrap implementation
-    # references might be None here (if it was None originally)
+    # With bootstrap, uncertainty is estimated from the percentiles
+    # of the ECP distribution across bootstrap iterations.
     ecp, alpha = _run_tarp_bootstrap(
         key,
         posterior_samples,
@@ -242,9 +206,8 @@ def run_tarp(
         num_bootstrap,
     )
 
-    # Compute statistics
     ecp_mean = jnp.mean(ecp, axis=0)
-    ecp_lower = jnp.percentile(ecp, 2.5, axis=0)
+    ecp_lower = jnp.percentile(ecp, 2.5, axis=0)  # 95% CI
     ecp_upper = jnp.percentile(ecp, 97.5, axis=0)
 
     return TARPResult(
@@ -284,23 +247,23 @@ def _run_tarp_bootstrap(
     z_score_theta: bool,
     num_bootstrap: int,
 ) -> Tuple[Array, Array]:
+    """Bootstrap TARP: resample (theta, posterior) pairs with replacement.
+
+    Each iteration draws a bootstrap sample, optionally generates new
+    reference points, and runs _compute_tarp. Uses jax.lax.scan instead
+    of vmap so only one iteration is materialized at a time, avoiding
+    OOM when the dataset is large.
+    """
 
     num_sims = thetas.shape[0]
 
-    # Define the bootstrap iteration
-    def bootstrap_iter(key, _):
-        # Split key for index sampling and potential reference generation
+    def bootstrap_step(carry, key):
         rng_idx, rng_ref = jax.random.split(key)
-
-        # Sample indices with replacement
         idx = jax.random.randint(rng_idx, shape=(num_sims,), minval=0, maxval=num_sims)
 
-        # Resample data
-        # Fix: index posterior_samples along the simulation axis (axis 1)
         boot_samples = posterior_samples[:, idx, :]
         boot_thetas = thetas[idx]
 
-        # If references were not provided (None), generate them for this bootstrap sample
         if references is None:
             curr_references = get_tarp_references(rng_ref, boot_thetas)
         else:
@@ -314,16 +277,12 @@ def _run_tarp_bootstrap(
             num_bins,
             z_score_theta,
         )
-        return ecp, alpha
+        return carry, (ecp, alpha)
 
-    # VMAP approach
-    # We need keys for each bootstrap
     keys = jax.random.split(rng_key, num_bootstrap)
+    _, (ecp_results, alpha_results) = jax.lax.scan(bootstrap_step, None, keys)
 
-    # vmap over keys
-    ecp_results, alpha_results = jax.vmap(bootstrap_iter)(keys, None)
-
-    # alpha should be the same for all (it depends on num_bins), so we just take the first one
+    # alpha is identical across bootstrap iterations (depends only on num_bins)
     return ecp_results, alpha_results[0]
 
 
@@ -337,97 +296,81 @@ def _compute_tarp(
     z_score_theta: bool = False,
 ) -> Tuple[Array, Array]:
     """
-    Estimates coverage of samples given true values `thetas` with the TARP method.
+    Core TARP computation (JIT-compiled).
+
+    For each simulation i, computes f_i = fraction of posterior samples that
+    are closer to the reference point than the true parameter theta_i
+    (Algorithm 2, Eq. 4 in Lemos et al.). Under perfect calibration,
+    f_i ~ Uniform(0, 1), so the empirical CDF of {f_i} should follow the
+    diagonal.
     """
     num_posterior_samples, num_tarp_samples, _ = posterior_samples.shape
 
-    # Ensure num_bins is an integer (it might be passed as None in signature but handle it)
-    # logic moved to run_tarp or ensured before calling JIT
-
     if z_score_theta:
-        # Normalize all data to [0, 1] range based on theta bounds
-        lo = thetas.min(axis=0, keepdims=True)  # min over batch
-        hi = thetas.max(axis=0, keepdims=True)  # max over batch
-
-        # Add epsilon to avoid division by zero
-        denom = hi - lo + 1e-10
+        # Normalize all arrays to [0, 1] per dimension so that the distance
+        # metric treats all dimensions equally. References must be normalized
+        # with the same bounds as thetas.
+        lo = thetas.min(axis=0, keepdims=True)
+        hi = thetas.max(axis=0, keepdims=True)
+        denom = hi - lo + 1e-10  # avoid division by zero for constant dimensions
 
         posterior_samples = (posterior_samples - lo) / denom
         thetas = (thetas - lo) / denom
-        # CRITICAL FIX: Normalize references using the same bounds
         references = (references - lo) / denom
 
-    # distances between references and samples
-    # Shape: (num_posterior_samples, num_tarp_samples)
-    sample_dists = distance(references, posterior_samples)
-
-    # distances between references and true values
-    # Shape: (num_tarp_samples,)
-    theta_dists = distance(references, thetas)
-
-    # compute coverage, f in algorithm 2
-    # Compare each posterior sample distance to the true theta distance
-    # Broadcasting: (num_posterior_samples, num_tarp_samples) < (num_tarp_samples,)
-    # We use vmap or broadcasting.
-    # sample_dists: (n_post, n_sim)
-    # theta_dists: (n_sim,)
-    # comparison: (n_post, n_sim)
-
+    # For each simulation i, compute f_i = |{s : d(r_i, s) < d(r_i, θ_i)}| / N_post.
+    # f_i is the fraction of posterior samples closer to the reference than
+    # the true parameter (Eq. 4 in Lemos et al.). Under perfect calibration,
+    # f_i ~ Uniform(0, 1).
+    sample_dists = distance(references, posterior_samples)  # (n_post, n_sim)
+    theta_dists = distance(references, thetas)  # (n_sim,)
     coverage_values = (
         jnp.sum(sample_dists < theta_dists, axis=0) / num_posterior_samples
     )
 
-    # CRITICAL FIX: Explicit range=(0.0, 1.0) ensures alpha grid is consistent
+    # Bin the coverage values and build the empirical CDF.
+    # range=(0, 1) ensures a consistent alpha grid across runs.
     hist, alpha_grid = jnp.histogram(
         coverage_values, density=True, bins=num_bins, range=(0.0, 1.0)
     )
 
-    # calculate empirical CDF via cumsum and normalize
+    # Cumulative sum gives ECP at each alpha bin edge.
+    # Prepend 0 so ECP(0) = 0, matching the alpha_grid which includes 0.
     ecp = jnp.cumsum(hist, axis=0) / hist.sum()
-
-    # add 0 to the beginning of the ecp curve to match the alpha grid
     ecp = jnp.concatenate([jnp.zeros((1,)), ecp])
 
     return ecp, alpha_grid
 
 
 def get_tarp_references(key, thetas: Array) -> Array:
-    """Returns reference points for the TARP diagnostic, sampled from a uniform."""
-
-    # obtain min/max per dimension of theta
-    lo = thetas.min(axis=0)  # min for each theta dimension
-    hi = thetas.max(axis=0)  # max for each theta dimension
-
-    samples = jax.random.uniform(key, thetas.shape, minval=lo, maxval=hi)
-
-    # sample one reference point for each entry in theta
-    return samples
+    """Sample reference points uniformly from the bounding box of theta."""
+    lo = thetas.min(axis=0)
+    hi = thetas.max(axis=0)
+    return jax.random.uniform(key, thetas.shape, minval=lo, maxval=hi)
 
 
 def check_tarp(
     result: TARPResult,
 ) -> Tuple[float, float]:
     r"""
-    Check the obtained TARP credibility levels and expected coverage probabilities.
+    Quantitative check of the TARP coverage curve.
 
     Returns
     -------
     atc : float
-        Area to curve, the difference between the ecp and alpha curve for :math:`\alpha > 0.5`.
+        Area To Curve for :math:`\alpha > 0.5`. Positive means conservative
+        (ECP above diagonal), negative means overconfident.
     ks_prob : float
-        p-value for a two-sample Kolmogorov-Smirnov test between ecp and alpha.
+        Two-sample KS test p-value. Low values indicate the ECP differs
+        significantly from the ideal diagonal.
     """
 
-    # Extract info from result
     ecp = result.ecp_mean
     alpha = result.alpha
 
-    # get the index of the middle of the alpha grid
     midindex = alpha.shape[0] // 2
-    # area to curve: difference between ecp and alpha above 0.5.
     atc = (ecp[midindex:] - alpha[midindex:]).sum().item()
 
-    # Kolmogorov-Smirnov test between ecp and alpha
     kstest_pvals: float = kstest(np.array(ecp), np.array(alpha))[1]  # type: ignore
 
     return atc, kstest_pvals
@@ -452,8 +395,8 @@ def plot_tarp(
         Figure size.
     mode : str, optional
         "credibility", "confidence", or "both". Default is "credibility".
-        "credibility" plots ECP vs Alpha.
-        "confidence" plots Z-score(ECP) vs Z-score(Alpha).
+        "credibility" plots ECP vs alpha.
+        "confidence" plots z(ECP) vs z(alpha).
     """
 
     if mode not in ["credibility", "confidence", "both"]:
@@ -489,10 +432,8 @@ def _plot_tarp_credibility(result: TARPResult, ax: Axes, title: Optional[str] = 
     ecp_mean = np.array(result.ecp_mean)
     alpha = np.array(result.alpha)
 
-    # Plot mean
     ax.plot(alpha, ecp_mean, color="#202A44", label="TARP")
 
-    # Plot bands if available
     if result.ecp_lower is not None and result.ecp_upper is not None:
         ax.fill_between(
             alpha,
@@ -503,31 +444,18 @@ def _plot_tarp_credibility(result: TARPResult, ax: Axes, title: Optional[str] = 
             label="95% CI",
         )
 
-    # Diagonal reference
     ax.plot([0, 1], [0, 1], "--", color="darkgreen", label="Ideal")
 
-    # Styling consistent with marginal_coverage
     ax.set_xlabel(r"Credibility Level $\alpha$")
     ax.set_ylabel(r"Expected Coverage Probability")
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
     ax.set_title(title or "TARP Coverage (Credibility)")
-    # ax.set_aspect("equal")
 
-    # Add Conservative / Overconfident text
-    # ticks = [0.0, 1.0]
-    # ax.set_xticks(ticks)
-    # ax.set_yticks(ticks)
-
-    # compute the rotation angle
-    x_ = [0, 10]
-    y_ = [0, 10]
-    p1 = ax.transData.transform((x_[0], y_[0]))
-    p2 = ax.transData.transform((x_[1], y_[1]))
-    dy_screen = p2[1] - p1[1]
-    dx_screen = p2[0] - p1[0]
-    phi = np.degrees(np.arctan2(dy_screen, dx_screen))
-    # Positions similar to marginal_coverage but scaled to [0,1]
+    # Compute rotation angle for diagonal labels
+    p1 = ax.transData.transform((0, 0))
+    p2 = ax.transData.transform((10, 10))
+    phi = np.degrees(np.arctan2(p2[1] - p1[1], p2[0] - p1[0]))
     ax.text(
         0.5,
         0.5 + 0.1,
@@ -563,7 +491,6 @@ def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = N
     bg_z_lower = result.z_lower
     bg_z_upper = result.z_upper
 
-    # Plot mean
     ax.plot(z_nominal, z_empirical, color="#202A44", label="TARP")
 
     if bg_z_lower is not None and bg_z_upper is not None:
@@ -584,18 +511,12 @@ def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = N
     ax.set_xlabel(r"Nominal coverage ($z$)")
     ax.set_ylabel(r"Empirical coverage ($\hat{z}$)")
     ax.set_title(title or "TARP Coverage (Confidence)")
-    # ax.set_aspect("equal")
 
-    # compute the rotation angle
-    x_ = [0, 10]
-    y_ = [0, 10]
-    p1 = ax.transData.transform((x_[0], y_[0]))
-    p2 = ax.transData.transform((x_[1], y_[1]))
-    dy_screen = p2[1] - p1[1]
-    dx_screen = p2[0] - p1[0]
-    phi = np.degrees(np.arctan2(dy_screen, dx_screen))
+    # Compute rotation angle for diagonal labels
+    p1 = ax.transData.transform((0, 0))
+    p2 = ax.transData.transform((10, 10))
+    phi = np.degrees(np.arctan2(p2[1] - p1[1], p2[0] - p1[0]))
 
-    # Overconfident/Conservative
     ax.text(
         zmax / 2,
         (zmax / 2) * 1.2,
@@ -621,26 +542,14 @@ def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = N
         fontsize=11,
     )
 
-    # Add red dotted lines for 1, 2, 3 sigma levels
     for sigma in [1, 2, 3]:
-        # Target Z (Nominal) is just sigma
         target_z = sigma
-
-        # Interpolate achieved Z at this nominal Z
         if target_z <= z_nominal.max() and target_z >= z_nominal.min():
             achieved_z = np.interp(target_z, z_nominal, z_empirical)
-
-            # Vertical line (Nominal)
             ax.plot([target_z, target_z], [0, achieved_z], ":", color="r", alpha=1)
-
-            # Horizontal line (Empirical)
             ax.plot([0, target_z], [achieved_z, achieved_z], ":", color="r", alpha=1)
 
-            # Convert sigma to percentage for label
             target_alpha = 2 * norm.cdf(target_z) - 1
-
-            # Label sigma on X axis
-            # marginal_coverage uses: ax.text(t, 0.3, ("%.2f%%" % (c * 100)), rotation=-90)
             ax.text(
                 target_z + 0.02,
                 0.1,
@@ -649,14 +558,9 @@ def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = N
                 ha="left",
                 va="bottom",
                 rotation=-90,
-                # fontsize=9,
             )
 
-            # Convert achieved Z to percentage for label
             achieved_p = 2 * norm.cdf(achieved_z) - 1
-
-            # Label Z value on Y axis (Empirical Z converted to %)
-            # marginal_coverage: ax.text(0.1, l + 0.05, ("%.2f%%" % (c*100)))
             ax.text(
                 0.1,
                 achieved_z + 0.02,
@@ -664,7 +568,4 @@ def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = N
                 color="k",
                 ha="left",
                 va="bottom",
-                # fontsize=9,
             )
-
-    # ax.legend(loc="upper left")
