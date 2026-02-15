@@ -15,12 +15,24 @@ gensbi.diagnostics.tarp
        !! processed by numpydoc !!
 
 
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.tarp.TARPResult
+
+
 Functions
 ---------
 
 .. autoapisummary::
 
-   gensbi.diagnostics.tarp._run_tarp
+   gensbi.diagnostics.tarp._compute_tarp
+   gensbi.diagnostics.tarp._plot_tarp_confidence
+   gensbi.diagnostics.tarp._plot_tarp_credibility
+   gensbi.diagnostics.tarp._run_tarp_bootstrap
+   gensbi.diagnostics.tarp._run_tarp_single
    gensbi.diagnostics.tarp.check_tarp
    gensbi.diagnostics.tarp.get_tarp_references
    gensbi.diagnostics.tarp.plot_tarp
@@ -30,10 +42,229 @@ Functions
 Module Contents
 ---------------
 
-.. py:function:: _run_tarp(posterior_samples, thetas, references, distance = l2, num_bins = 30, z_score_theta = False)
+.. py:class:: TARPResult
 
    
-   Estimates coverage of samples given true values `thetas` with the TARP method.
+   Result of the TARP diagnostic.
+
+   Stores the Expected Coverage Probability (ECP) curve and its uncertainty
+   bounds. Provides z-score properties for the confidence-level view.
+
+   :param ecp: Expected coverage probability. shape: (num_bootstrap, num_bins + 1) or (num_bins + 1,)
+   :type ecp: Array
+   :param alpha: Credibility levels (histogram bin edges). shape: (num_bins + 1,)
+   :type alpha: Array
+   :param ecp_mean: Mean ECP across bootstrap iterations (or identical to ecp if no bootstrap).
+   :type ecp_mean: Array
+   :param ecp_lower: Lower bound of ECP (2.5th percentile or Jeffrey's lower). shape: (num_bins + 1,)
+   :type ecp_lower: Optional[Array]
+   :param ecp_upper: Upper bound of ECP (97.5th percentile or Jeffrey's upper). shape: (num_bins + 1,)
+   :type ecp_upper: Optional[Array]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _to_z(p)
+
+      
+      Convert coverage probability p to z-score via probit(0.5 + p/2).
+
+      This maps p ∈ [0, 1] to z ∈ [0, ∞) such that p = 0.6827 → z = 1 (1σ),
+      p = 0.9545 → z = 2 (2σ), etc. Values are clipped to [eps, 1-eps] to
+      avoid infinities at the boundaries.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: alpha
+      :type:  jax.Array
+
+
+   .. py:attribute:: ecp
+      :type:  jax.Array
+
+
+   .. py:attribute:: ecp_lower
+      :type:  Optional[jax.Array]
+      :value: None
+
+
+
+   .. py:attribute:: ecp_mean
+      :type:  jax.Array
+
+
+   .. py:attribute:: ecp_upper
+      :type:  Optional[jax.Array]
+      :value: None
+
+
+
+   .. py:property:: z_alpha
+      :type: jax.Array
+
+
+      
+      Z-scores corresponding to alpha (nominal coverage).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: z_lower
+      :type: Optional[jax.Array]
+
+
+      
+      Z-scores of the lower bound.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: z_mean
+      :type: jax.Array
+
+
+      
+      Z-scores corresponding to ecp_mean (empirical coverage).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: z_upper
+      :type: Optional[jax.Array]
+
+
+      
+      Z-scores of the upper bound.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:function:: _compute_tarp(posterior_samples, thetas, references, distance = l2, num_bins = 30, z_score_theta = False)
+
+   
+   Core TARP computation (JIT-compiled).
+
+   For each simulation i, computes f_i = fraction of posterior samples that
+   are closer to the reference point than the true parameter theta_i
+   (Algorithm 2, Eq. 4 in Lemos et al.). Under perfect calibration,
+   f_i ~ Uniform(0, 1), so the empirical CDF of {f_i} should follow the
+   diagonal.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _plot_tarp_confidence(result, ax, title = None)
+
+   
+   Internal function to plot confidence mode (Z-scores).
 
 
 
@@ -53,23 +284,88 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: check_tarp(ecp, alpha)
+.. py:function:: _plot_tarp_credibility(result, ax, title = None)
 
    
-   Check the obtained TARP credibility levels and expected coverage probabilities.
+   Internal function to plot credibility mode.
 
-   This diagnostic helps to uncover underdispersed, well-covering, or overdispersed posteriors.
 
-   Let :math:`\mathrm{ecp}` be the expected coverage probability computed with the TARP method, and :math:`\alpha` the credibility levels (second output of ``run_tarp``).
 
-   The area to curve (ATC) is defined as:
 
-   .. math::
-       \mathrm{ATC} = \sum_{i: \alpha_i > 0.5} \left( \mathrm{ecp}_i - \alpha_i \right)
 
-   where values close to zero indicate well-calibrated posteriors. Values larger than zero indicate overdispersed distributions (the estimated posterior is too wide), while values smaller than zero indicate underdispersed distributions (the estimated posterior is too narrow). This property can also indicate if the posterior is biased (see Figure 2 of the reference paper).
 
-   A two-sample Kolmogorov-Smirnov test is performed between :math:`\mathrm{ecp}` and :math:`\alpha` to test the null hypothesis that both distributions are identical (produced by one common CDF). The p-value should be close to 1 for well-calibrated posteriors. Commonly, the null is rejected if p-value is below 0.05.
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _run_tarp_bootstrap(rng_key, posterior_samples, thetas, references, distance, num_bins, z_score_theta, num_bootstrap)
+
+   
+   Bootstrap TARP: resample (theta, posterior) pairs with replacement.
+
+   Each iteration draws a bootstrap sample, optionally generates new
+   reference points, and runs _compute_tarp. Uses jax.lax.scan instead
+   of vmap so only one iteration is materialized at a time, avoiding
+   OOM when the dataset is large.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _run_tarp_single(rng_key, posterior_samples, thetas, references, distance, num_bins, z_score_theta)
+
+   
+   Runs a single iteration of TARP.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_tarp(result)
+
+   
+   Quantitative check of the TARP coverage curve.
+
+   :returns: * **atc** (*float*) -- Area To Curve for :math:`\alpha > 0.5`. Positive means conservative
+               (ECP above diagonal), negative means overconfident.
+             * **ks_prob** (*float*) -- Two-sample KS test p-value. Low values indicate the ECP differs
+               significantly from the ideal diagonal.
 
 
 
@@ -91,7 +387,7 @@ Module Contents
 .. py:function:: get_tarp_references(key, thetas)
 
    
-   Returns reference points for the TARP diagnostic, sampled from a uniform.
+   Sample reference points uniformly from the bounding box of theta.
 
 
 
@@ -111,20 +407,21 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: plot_tarp(ecp, alpha, title = None)
+.. py:function:: plot_tarp(result, title = None, figsize = None, mode = 'both')
 
    
-   Plot the expected coverage probability (ECP) against the credibility level (alpha).
+   Plot the expected coverage probability (ECP).
 
-   :param ecp: Array of expected coverage probabilities.
-   :type ecp: array-like
-   :param alpha: Array of credibility levels.
-   :type alpha: array-like
-   :param title: Title for the plot. Default is "".
+   :param result: Results from run_tarp.
+   :type result: TARPResult
+   :param title: Title of the plot.
    :type title: str, optional
-
-   :returns: * **fig** (*matplotlib.figure.Figure*) -- The figure object.
-             * **ax** (*matplotlib.axes.Axes*) -- The axes object.
+   :param figsize: Figure size.
+   :type figsize: tuple, optional
+   :param mode: "credibility", "confidence", or "both". Default is "credibility".
+                "credibility" plots ECP vs alpha.
+                "confidence" plots z(ECP) vs z(alpha).
+   :type mode: str, optional
 
 
 
@@ -143,7 +440,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: run_tarp(thetas, posterior_samples, seed = 1, references = None, distance = l2, num_bins = 30, z_score_theta = True)
+.. py:function:: run_tarp(thetas, posterior_samples, seed = 1, references = None, distance = l2, num_bins = 30, z_score_theta = True, bootstrap = False, num_bootstrap = 100)
 
    
    Estimates coverage of samples given true values `thetas` with the TARP method.

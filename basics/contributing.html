@@ -359,6 +359,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/distribution_wrapper/index.html">gensbi.diagnostics.distribution_wrapper</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/lc2st/index.html">gensbi.diagnostics.lc2st</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/marginal_coverage/index.html">gensbi.diagnostics.marginal_coverage</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/index.html">gensbi.diagnostics.metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/c2st/index.html">gensbi.diagnostics.metrics.c2st</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/l1_l2/index.html">gensbi.diagnostics.metrics.l1_l2</a></li>
@@ -366,6 +367,7 @@
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/sbc/index.html">gensbi.diagnostics.sbc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/tarp/index.html">gensbi.diagnostics.tarp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/utils/index.html">gensbi.diagnostics.utils</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diffusion/index.html">gensbi.diffusion</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -537,10 +539,10 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="contributing-to-gensbi">
 <h1>Contributing to GenSBI<a class="headerlink" href="#contributing-to-gensbi" title="Link to this heading">#</a></h1>
-<p>Thank you for your interest in contributing to GenSBI! We welcome contributions in the form of bug reports, feature requests, and pull requests.</p>
+<p>Thank you for your interest in contributing to GenSBI! All contributions are welcome, whether it’s improving the documentation, implementing new models for flow matching or score matching, fixing bugs, or anything else.</p>
+<p>Feel free to <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI/issues">open an issue</a> to propose new features, report bugs, or discuss ideas.</p>
 <section id="development-setup">
 <h2>Development Setup<a class="headerlink" href="#development-setup" title="Link to this heading">#</a></h2>
-<p>To set up your development environment, please follow these steps:</p>
 <ol class="arabic">
 <li><p><strong>Clone the repository</strong>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/aurelio-amerio/GenSBI.git
@@ -548,8 +550,7 @@
 </pre></div>
 </div>
 </li>
-<li><p><strong>Install dependencies</strong>:
-We recommend using a virtual environment.</p>
+<li><p><strong>Install dependencies</strong> (we recommend using a virtual environment):</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[cuda12,examples,test,docs]&quot;</span>
 </pre></div>
 </div>
@@ -560,239 +561,82 @@ We recommend using a virtual environment.</p>
 </li>
 </ol>
 </section>
-<section id="running-tests">
-<h2>Running Tests<a class="headerlink" href="#running-tests" title="Link to this heading">#</a></h2>
-<p>We use <code class="docutils literal notranslate"><span class="pre">pytest</span></code> for testing. To run the test suite:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>test/
-</pre></div>
-</div>
-<p>Ensure all tests pass before submitting a pull request.</p>
+<section id="requirements-for-contributions">
+<h2>Requirements for Contributions<a class="headerlink" href="#requirements-for-contributions" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Tests</strong>: All new functionality must include comprehensive tests. We use <code class="docutils literal notranslate"><span class="pre">pytest</span></code>; run the full suite with <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">test/</span></code> and ensure all tests pass before submitting a PR.</p></li>
+<li><p><strong>Documentation</strong>: All public functions and classes must be documented using <strong>NumPy-style docstrings</strong>.</p></li>
+<li><p><strong>Code style</strong>: Please follow PEP 8 conventions.</p></li>
+</ul>
 </section>
-<section id="code-style">
-<h2>Code Style<a class="headerlink" href="#code-style" title="Link to this heading">#</a></h2>
-<p>Please ensure your code adheres to the existing style conventions. We generally follow PEP 8.</p>
-</section>
-<section id="codebase-overview">
-<h2>Codebase Overview<a class="headerlink" href="#codebase-overview" title="Link to this heading">#</a></h2>
-<p>GenSBI is organized into several main components. Understanding this structure will help you navigate the codebase and make contributions effectively.</p>
 <section id="directory-structure">
-<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading">#</a></h3>
+<h2>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading">#</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GenSBI/
 ├── src/gensbi/              # Main source code
 │   ├── models/              # Neural network architectures
-│   │   ├── flux1/          # Flux1 transformer model
-│   │   ├── flux1joint/     # Flux1Joint variant
-│   │   ├── simformer/      # Simformer model
-│   │   ├── embedding/      # Embedding networks
-│   │   ├── wrappers/       # Model wrappers for time/noise handling
-│   │   └── losses/         # Loss function implementations
+│   │   ├── embedding/       # Embedding layers
+│   │   ├── flux1/           # Flux1 transformer model
+│   │   ├── flux1joint/      # Flux1Joint variant
+│   │   ├── simformer/       # Simformer model
+│   │   ├── losses/          # Loss function implementations
+│   │   └── wrappers/        # Model wrappers for ODE/SDE interface
 │   ├── recipes/             # High-level training pipelines
+│   │   ├── pipeline.py      # AbstractPipeline base class
+│   │   ├── conditional_pipeline.py
+│   │   ├── unconditional_pipeline.py
+│   │   ├── joint_pipeline.py
 │   │   ├── flux1.py
+│   │   ├── flux1joint.py
 │   │   ├── simformer.py
-│   │   ├── pipeline.py     # AbstractPipeline base class
-│   │   └── ...
+│   │   └── config_examples/ # Example configuration files
 │   ├── flow_matching/       # Flow matching implementation
-│   │   ├── path/           # Interpolation paths (OT, etc.)
-│   │   ├── solver/         # ODE solvers
-│   │   └── loss/           # Flow matching loss
+│   │   ├── path/            # Interpolation paths
+│   │   ├── solver/          # ODE solvers
+│   │   ├── loss/            # Flow matching loss
+│   │   └── utils/           # Flow matching utilities
 │   ├── diffusion/           # Diffusion model implementation
-│   │   ├── path/           # Diffusion paths and schedules (EDM, etc.)
-│   │   └── solver/         # SDE solvers and samplers
+│   │   ├── path/            # Noise schedules (VP, VE, EDM)
+│   │   └── solver/          # Diffusion samplers
+│   ├── diagnostics/         # Diagnostic and validation tools
+│   │   ├── metrics/         # Evaluation metrics
+│   │   ├── lc2st.py         # LC2ST diagnostic
+│   │   ├── sbc.py           # Simulation-Based Calibration
+│   │   ├── tarp.py          # TARP diagnostic
+│   │   └── marginal_coverage.py
+│   ├── experimental/        # Experimental features
+│   │   ├── models/
+│   │   └── recipes/
 │   └── utils/               # Utility functions
 ├── test/                    # Test suite
-│   ├── test_flow_matching/
-│   ├── test_diffusion/
-│   ├── test_models/
-│   └── ...
+│   ├── diagnostics/
+│   ├── diffusion/
+│   ├── experimental/
+│   ├── flow_matching/
+│   ├── models/
+│   ├── recipes/
+│   └── utils/
 ├── docs/                    # Documentation source
-│   ├── basics/             # User guides
-│   ├── getting_started/    # Quick start &amp; installation
-│   ├── examples/           # Example notebooks
-│   └── conf.py             # Sphinx configuration
-└── pyproject.toml          # Package configuration
+│   ├── basics/              # User guides
+│   ├── getting_started/     # Installation &amp; quick start
+│   ├── theoretical_overview/# Theory behind flow &amp; diffusion models
+│   ├── examples/            # Example pipeline scripts
+│   ├── notebooks/           # Tutorial notebooks
+│   └── conf.py              # Sphinx configuration
+└── pyproject.toml           # Package configuration
 </pre></div>
 </div>
-</section>
-<section id="key-components">
-<h3>Key Components<a class="headerlink" href="#key-components" title="Link to this heading">#</a></h3>
-<section id="models-src-gensbi-models">
-<h4>1. Models (<code class="docutils literal notranslate"><span class="pre">src/gensbi/models/</span></code>)<a class="headerlink" href="#models-src-gensbi-models" title="Link to this heading">#</a></h4>
-<p>Models are Flax NNX neural network modules that define the architecture:</p>
-<ul class="simple">
-<li><p><strong>Base Models</strong>: Pure neural network definitions (e.g., <code class="docutils literal notranslate"><span class="pre">Flux1</span></code>, <code class="docutils literal notranslate"><span class="pre">Simformer</span></code>)</p></li>
-<li><p><strong>Embedding</strong>: Embedding networks for IDs and time.</p></li>
-<li><p><strong>Model Wrappers</strong>: Wrap models to provide a unified vector field and divergence interface for ODE/SDE samplers</p>
-<ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">ConditionalWrapper</span></code>: For conditional inference (θ | x)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">JointWrapper</span></code>: For joint inference on multiple variables</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">UnconditionalWrapper</span></code>: For unconditional density estimation</p></li>
-</ul>
-</li>
-</ul>
-<p>When adding a new model:</p>
-<ol class="arabic simple">
-<li><p>Create a new directory under <code class="docutils literal notranslate"><span class="pre">models/</span></code></p></li>
-<li><p>Implement the model as a <code class="docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p></li>
-<li><p>Define a params dataclass (using <code class="docutils literal notranslate"><span class="pre">&#64;dataclass</span></code>)</p></li>
-<li><p>Add a wrapper in <code class="docutils literal notranslate"><span class="pre">models/wrappers/</span></code> if needed</p></li>
-<li><p>Add tests in <code class="docutils literal notranslate"><span class="pre">test/test_models/</span></code></p></li>
-</ol>
-</section>
-<section id="recipes-src-gensbi-recipes">
-<h4>2. Recipes (<code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/</span></code>)<a class="headerlink" href="#recipes-src-gensbi-recipes" title="Link to this heading">#</a></h4>
-<p>Recipes (Pipelines) are high-level interfaces that orchestrate training and inference:</p>
-<ul class="simple">
-<li><p><strong>AbstractPipeline</strong> (in <code class="docutils literal notranslate"><span class="pre">pipeline.py</span></code>): Base class defining the training loop, validation, checkpointing, and EMA</p></li>
-<li><p><strong>Specific Pipelines</strong>: Combine a model with flow matching or diffusion (e.g., <code class="docutils literal notranslate"><span class="pre">Flux1FlowPipeline</span></code>)</p></li>
-</ul>
-<p>When adding a new pipeline:</p>
-<ol class="arabic simple">
-<li><p>Inherit from <code class="docutils literal notranslate"><span class="pre">AbstractPipeline</span></code></p></li>
-<li><p>Implement required abstract methods</p></li>
-<li><p>Override <code class="docutils literal notranslate"><span class="pre">_get_optimizer()</span></code> if you need a custom optimizer</p></li>
-<li><p>Override <code class="docutils literal notranslate"><span class="pre">get_default_training_config()</span></code> for custom hyperparameters</p></li>
-</ol>
-</section>
-<section id="flow-matching-src-gensbi-flow-matching">
-<h4>3. Flow Matching (<code class="docutils literal notranslate"><span class="pre">src/gensbi/flow_matching/</span></code>)<a class="headerlink" href="#flow-matching-src-gensbi-flow-matching" title="Link to this heading">#</a></h4>
-<p>Components for Optimal Transport Flow Matching:</p>
-<ul class="simple">
-<li><p><strong>Paths</strong> (<code class="docutils literal notranslate"><span class="pre">path/</span></code>): Define interpolation between source and target (e.g., <code class="docutils literal notranslate"><span class="pre">AffineProbPath</span></code> with <code class="docutils literal notranslate"><span class="pre">CondOTScheduler</span></code>)</p></li>
-<li><p><strong>Solvers</strong> (<code class="docutils literal notranslate"><span class="pre">solver/</span></code>): ODE solvers for inference (e.g., <code class="docutils literal notranslate"><span class="pre">ODESolver</span></code>)</p></li>
-<li><p><strong>Loss</strong> (<code class="docutils literal notranslate"><span class="pre">loss/</span></code>): Flow matching loss functions</p></li>
-</ul>
-</section>
-<section id="diffusion-src-gensbi-diffusion">
-<h4>4. Diffusion (<code class="docutils literal notranslate"><span class="pre">src/gensbi/diffusion/</span></code>)<a class="headerlink" href="#diffusion-src-gensbi-diffusion" title="Link to this heading">#</a></h4>
-<p>Components for diffusion models:</p>
-<ul class="simple">
-<li><p><strong>Paths</strong> (<code class="docutils literal notranslate"><span class="pre">path/</span></code>): Define noise schedules and paths (e.g., <code class="docutils literal notranslate"><span class="pre">EDMPath</span></code>)</p></li>
-<li><p><strong>Solvers</strong> (<code class="docutils literal notranslate"><span class="pre">solver/</span></code>): Inference samplers and solvers (e.g., <code class="docutils literal notranslate"><span class="pre">SDESolver</span></code>, <code class="docutils literal notranslate"><span class="pre">EDMSampler</span></code>)</p></li>
-</ul>
-</section>
-</section>
-<section id="how-to-add-new-features">
-<h3>How to Add New Features<a class="headerlink" href="#how-to-add-new-features" title="Link to this heading">#</a></h3>
-<section id="adding-a-new-model-architecture">
-<h4>Adding a New Model Architecture<a class="headerlink" href="#adding-a-new-model-architecture" title="Link to this heading">#</a></h4>
-<ol class="arabic">
-<li><p>Create <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/your_model/</span></code></p></li>
-<li><p>Implement the model:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-
-<span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">YourModelParams</span><span class="p">:</span>
-    <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="c1"># ... other params</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">YourModel</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">YourModelParams</span><span class="p">):</span>
-        <span class="c1"># Initialize layers</span>
-        <span class="k">pass</span>
-    
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># Forward pass</span>
-        <span class="k">return</span> <span class="n">output</span>
-</pre></div>
-</div>
-</li>
-<li><p>Add a pipeline recipe in <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/your_model.py</span></code></p></li>
-<li><p>Write tests in <code class="docutils literal notranslate"><span class="pre">test/test_models/test_your_model.py</span></code></p></li>
-<li><p>Add a Model Card in <code class="docutils literal notranslate"><span class="pre">docs/basics/model_cards.md</span></code></p></li>
-</ol>
-</section>
-<section id="adding-a-new-training-feature">
-<h4>Adding a New Training Feature<a class="headerlink" href="#adding-a-new-training-feature" title="Link to this heading">#</a></h4>
-<ol class="arabic simple">
-<li><p>If it’s pipeline-specific: Override methods in your pipeline class</p></li>
-<li><p>If it’s general: Add to <code class="docutils literal notranslate"><span class="pre">AbstractPipeline</span></code> in <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/pipeline.py</span></code></p></li>
-<li><p>Add configuration options to <code class="docutils literal notranslate"><span class="pre">get_default_training_config()</span></code></p></li>
-<li><p>Write tests in <code class="docutils literal notranslate"><span class="pre">test/test_recipes/</span></code></p></li>
-</ol>
-</section>
-<section id="adding-a-new-loss-function">
-<h4>Adding a New Loss Function<a class="headerlink" href="#adding-a-new-loss-function" title="Link to this heading">#</a></h4>
-<ol class="arabic simple">
-<li><p>Create the loss in <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/losses/</span></code> or <code class="docutils literal notranslate"><span class="pre">src/gensbi/flow_matching/loss/</span></code></p></li>
-<li><p>Make it compatible with the pipeline’s <code class="docutils literal notranslate"><span class="pre">get_loss_fn()</span></code> method</p></li>
-<li><p>Add tests in the appropriate test directory</p></li>
-</ol>
-</section>
-</section>
-<section id="testing-guidelines">
-<h3>Testing Guidelines<a class="headerlink" href="#testing-guidelines" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Write tests for all new functionality</p></li>
-<li><p>Use pytest fixtures for common setup</p></li>
-<li><p>Test edge cases and error conditions</p></li>
-<li><p>Ensure tests are deterministic (use fixed random seeds)</p></li>
-<li><p>Run the full test suite before submitting a PR</p></li>
-</ul>
-<p>Example test structure:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.your_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">YourModel</span><span class="p">,</span> <span class="n">YourModelParams</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">test_your_model_forward_pass</span><span class="p">():</span>
-    <span class="n">params</span> <span class="o">=</span> <span class="n">YourModelParams</span><span class="p">(</span><span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">YourModel</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-    <span class="c1"># ... test logic</span>
-</pre></div>
-</div>
-</section>
-<section id="documentation-guidelines">
-<h3>Documentation Guidelines<a class="headerlink" href="#documentation-guidelines" title="Link to this heading">#</a></h3>
-<p>When adding new features:</p>
-<ol class="arabic">
-<li><p><strong>Docstrings</strong>: Add Google-style docstrings to all public functions/classes</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">your_function</span><span class="p">(</span><span class="n">arg1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">arg2</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Brief description.</span>
-<span class="sd">    </span>
-<span class="sd">    Longer description if needed.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        arg1: Description of arg1.</span>
-<span class="sd">        arg2: Description of arg2.</span>
-<span class="sd">        </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        Description of return value.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-</pre></div>
-</div>
-</li>
-<li><p><strong>User Guides</strong>: Update relevant guides in <code class="docutils literal notranslate"><span class="pre">docs/basics/</span></code> if your feature affects users</p></li>
-<li><p><strong>Model Cards</strong>: If adding a new model, add a section to <code class="docutils literal notranslate"><span class="pre">docs/basics/model_cards.md</span></code></p></li>
-<li><p><strong>Examples</strong>: Consider adding a simple example in the docstring or a notebook in the examples repo</p></li>
-</ol>
 </section>
 <section id="pull-request-process">
-<h3>Pull Request Process<a class="headerlink" href="#pull-request-process" title="Link to this heading">#</a></h3>
+<h2>Pull Request Process<a class="headerlink" href="#pull-request-process" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
-<li><p><strong>Create a branch</strong>: <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-b</span> <span class="pre">feature/your-feature-name</span></code></p></li>
-<li><p><strong>Make changes</strong>: Implement your feature with tests</p></li>
-<li><p><strong>Run tests</strong>: <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">test/</span></code></p></li>
-<li><p><strong>Update docs</strong>: Add/update documentation as needed</p></li>
-<li><p><strong>Commit</strong>: Use clear, descriptive commit messages</p></li>
-<li><p><strong>Push</strong>: <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">origin</span> <span class="pre">feature/your-feature-name</span></code></p></li>
-<li><p><strong>Open PR</strong>: Provide a clear description of changes and motivation</p></li>
+<li><p>Create a branch: <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-b</span> <span class="pre">feature/your-feature-name</span></code></p></li>
+<li><p>Make your changes with tests and documentation</p></li>
+<li><p>Run tests: <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">test/</span></code></p></li>
+<li><p>Push and open a PR with a clear description of your changes</p></li>
 </ol>
-</section>
-<section id="code-review">
-<h3>Code Review<a class="headerlink" href="#code-review" title="Link to this heading">#</a></h3>
-<p>All PRs will be reviewed for:</p>
-<ul class="simple">
-<li><p>Correctness and functionality</p></li>
-<li><p>Test coverage</p></li>
-<li><p>Code style and clarity</p></li>
-<li><p>Documentation completeness</p></li>
-<li><p>Compatibility with existing features</p></li>
-</ul>
-</section>
 </section>
 <section id="questions">
 <h2>Questions?<a class="headerlink" href="#questions" title="Link to this heading">#</a></h2>
-<p>If you have questions about contributing:</p>
 <ul class="simple">
 <li><p>Check the <a class="reference internal" href="overview.html"><span class="doc std std-doc">Conceptual Overview</span></a> to understand the architecture</p></li>
 <li><p>Read the <a class="reference internal" href="../api/gensbi/index.html"><span class="doc std std-doc">API Documentation</span></a></p></li>
@@ -850,29 +694,9 @@ We recommend using a virtual environment.</p>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-setup">Development Setup</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-tests">Running Tests</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#code-style">Code Style</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#codebase-overview">Codebase Overview</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-structure">Directory Structure</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-components">Key Components</a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#models-src-gensbi-models">1. Models (<code class="docutils literal notranslate"><span class="pre">src/gensbi/models/</span></code>)</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#recipes-src-gensbi-recipes">2. Recipes (<code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/</span></code>)</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#flow-matching-src-gensbi-flow-matching">3. Flow Matching (<code class="docutils literal notranslate"><span class="pre">src/gensbi/flow_matching/</span></code>)</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#diffusion-src-gensbi-diffusion">4. Diffusion (<code class="docutils literal notranslate"><span class="pre">src/gensbi/diffusion/</span></code>)</a></li>
-</ul>
-</li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-add-new-features">How to Add New Features</a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#adding-a-new-model-architecture">Adding a New Model Architecture</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#adding-a-new-training-feature">Adding a New Training Feature</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#adding-a-new-loss-function">Adding a New Loss Function</a></li>
-</ul>
-</li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-guidelines">Testing Guidelines</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#documentation-guidelines">Documentation Guidelines</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pull-request-process">Pull Request Process</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#code-review">Code Review</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirements-for-contributions">Requirements for Contributions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-structure">Directory Structure</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pull-request-process">Pull Request Process</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#questions">Questions?</a></li>
 </ul>
   </nav></div>

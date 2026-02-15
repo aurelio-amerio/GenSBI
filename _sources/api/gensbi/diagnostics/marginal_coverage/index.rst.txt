@@ -1,0 +1,220 @@
+gensbi.diagnostics.marginal_coverage
+====================================
+
+.. py:module:: gensbi.diagnostics.marginal_coverage
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE
+   gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram
+   gensbi.diagnostics.marginal_coverage.compute_marginal_coverage
+   gensbi.diagnostics.marginal_coverage.estimate_hat_z
+   gensbi.diagnostics.marginal_coverage.plot_marginal_coverage
+
+
+Module Contents
+---------------
+
+.. py:function:: _compute_marginal_coverage_KDE(theta, posterior_samples, grid_points=2048, bw='ISJ')
+
+   
+   Computes the marginal coverage (credibility) for each observation and dimension
+   using Kernel Density Estimation.
+
+   For each observation b and dimension d, estimates the 1D marginal posterior
+   density p(x) via KDE, then computes the HPD (Highest Posterior Density)
+   credibility:
+
+   .. math::
+       lpha = \int_{p(x) > p( heta^*)} p(x) dx
+
+   This gives the probability mass in regions denser than the true value.
+   If the posterior is well calibrated, alpha should be Uniform(0, 1).
+
+   :param theta: The ground truth parameters.
+   :type theta: array_like of shape (N_batch, D_dim)
+   :param posterior_samples: Samples from the posterior.
+   :type posterior_samples: array_like of shape (N_samples, N_batch, D_dim)
+   :param grid_points: Number of grid points for KDE evaluation. Default is 2048.
+   :type grid_points: int, optional
+   :param bw: Bandwidth method or value for KDE. Default is "ISJ"
+              (Improved Sheather-Jones, a plug-in bandwidth selector).
+   :type bw: str or float, optional
+
+   :returns: **alpha** -- The credibility values (0 to 1).
+             If the posterior is well calibrated, these should be uniformly distributed.
+   :rtype: np.ndarray of shape (D_dim, N_batch)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _compute_marginal_coverage_histogram(theta, posterior_samples, bins='stone')
+
+   
+   Computes marginal coverage using empirical histograms.
+
+   This is a discrete approximation of the HPD credibility: for each
+   (observation, dimension) pair, it bins the posterior samples and
+   sums the mass of all bins at least as dense as the one containing
+   the true parameter. Faster than KDE and works well for multimodal
+   distributions, but accuracy depends on bin count.
+
+   :param theta: The ground truth parameters.
+   :type theta: array_like of shape (N_batch, D_dim)
+   :param posterior_samples: Samples from the posterior.
+   :type posterior_samples: array_like of shape (N_samples, N_batch, D_dim)
+   :param bins: Number of bins or binning strategy. See ``numpy.histogram_bin_edges``
+                for valid string values ('stone', 'scott', 'fd', 'sturges', etc).
+                Default is 'stone'.
+   :type bins: int or str, optional
+
+   :returns: **alpha_values** -- The credibility values (0 to 1).
+   :rtype: np.ndarray of shape (D_dim, N_batch)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: compute_marginal_coverage(theta, posterior_samples, method='histogram', **kwargs)
+
+   
+   Compute marginal coverage for each observation and dimension.
+
+   :param theta: The ground truth parameters.
+   :type theta: array_like of shape (N_batch, D_dim)
+   :param posterior_samples: Samples from the posterior.
+   :type posterior_samples: array_like of shape (N_samples, N_batch, D_dim)
+   :param method: Method to use for computing marginal coverage. Options are:
+                  - "histogram": Use empirical histograms (default).
+                  - "KDE": Use Kernel Density Estimation.
+   :type method: str, optional
+   :param \*\*kwargs: Additional keyword arguments to pass to the chosen method.
+   :type \*\*kwargs: dict, optional
+
+   :returns: **alpha_values** -- The credibility values (0 to 1).
+   :rtype: np.ndarray of shape (D_dim, N_batch)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: estimate_hat_z(alpha_values, nbins=50, zmax=4, z_band=1)
+
+   
+   Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.
+
+   Given a set of HPD credibility values (alpha), this function builds the
+   empirical CDF of those values and converts it to z-score space. For a
+   well-calibrated posterior, hat{z} should equal z along the diagonal.
+
+   :param alpha_values: 1D array of credibility values for a single dimension.
+   :type alpha_values: array_like
+   :param nbins: Number of bins for z (default is 50).
+   :type nbins: int, optional
+   :param zmax: Maximum z value to evaluate (default is 4).
+   :type zmax: float, optional
+   :param z_band: Z-score for the Jeffrey's uncertainty band (default is 1, ~68% CI).
+   :type z_band: float, optional
+
+   :returns: **stats** -- Dictionary containing:
+             - 'z': Nominal coverage z-values.
+             - 'mean': Empirical coverage hat{z}.
+             - 'upper': Upper bound of uncertainty band.
+             - 'lower': Lower bound of uncertainty band.
+   :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_marginal_coverage(alpha_values, zmax=3.5, n_cols=3, figsize=None)
+
+   
+   Plots the marginal coverage for all dimensions.
+
+   :param alpha_values: Credibility values.
+   :type alpha_values: np.ndarray of shape (D_dim, N_batch)
+   :param zmax: Maximum z-score for plotting limits (default is 3.5).
+   :type zmax: float, optional
+   :param n_cols: Number of columns in the subplot grid (default is 3).
+   :type n_cols: int, optional
+   :param figsize: Figure size (width, height). If None, calculated automatically.
+   :type figsize: tuple, optional
+
+   :returns: **fig** -- The figure object.
+   :rtype: matplotlib.figure.Figure
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Two Moons Flux1joint Score Matching (Diffusion) Example &#8212; GenSBI  documentation</title>
+    <title>Two Moons Flux1Joint Score Matching Example &#8212; GenSBI  documentation</title>
   
   
   
@@ -55,12 +55,14 @@
     <script src="../_static/togglebutton.js?v=1ae7504c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/two_moons_diffusion_flux1joint';</script>
     <link rel="icon" href="../_static/logo_small.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Two Moons Simformer Score Matching (Diffusion) Example" href="two_moons_diffusion_simformer.html" />
-    <link rel="prev" title="Two Moons Flux1 Score Matching (Diffusion) Example" href="two_moons_diffusion_flux.html" />
+    <link rel="next" title="Two Moons Simformer Score Matching Example" href="two_moons_diffusion_simformer.html" />
+    <link rel="prev" title="Two Moons Flux1 Score Matching Example" href="two_moons_diffusion_flux.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -340,11 +342,11 @@
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux.html">Two Moons Flux1 Score Matching (Diffusion) Example</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Two Moons Flux1joint Score Matching (Diffusion) Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_simformer.html">Two Moons Simformer Score Matching (Diffusion) Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux.html">Two Moons Flux1 Score Matching Example</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Two Moons Flux1Joint Score Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_simformer.html">Two Moons Simformer Score Matching Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux.html">Two Moons Flux1 Flow Matching Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux1joint.html">Two Moons Flux1joint Flow Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux1joint.html">Two Moons Flux1Joint Flow Matching Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="two_moons_flow_simformer.html">Two Moons Simformer Flow Matching Example</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -412,7 +414,7 @@
     
     <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Two Moons Flux1joint Score Matching (Diffusion) Example</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Two Moons Flux1Joint Score Matching Example</span></li>
   </ul>
 </nav>
 </div>
@@ -429,15 +431,15 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="two-moons-flux1joint-score-matching-diffusion-example">
-<h1>Two Moons Flux1joint Score Matching (Diffusion) Example<a class="headerlink" href="#two-moons-flux1joint-score-matching-diffusion-example" title="Link to this heading">#</a></h1>
+  <section class="tex2jax_ignore mathjax_ignore" id="two-moons-flux1joint-score-matching-example">
+<h1>Two Moons Flux1Joint Score Matching Example<a class="headerlink" href="#two-moons-flux1joint-score-matching-example" title="Link to this heading">#</a></h1>
 <hr class="docutils" />
-<p>This notebook demonstrates conditional diffusion (score matching) on the Two Moons task using JAX and Flax.</p>
+<p>This notebook demonstrates conditional Score Matching on the Two Moons task using JAX and Flax.</p>
 <p><strong>About Simulation-Based Inference (SBI):</strong> SBI refers to a class of methods for inferring parameters of complex models when the likelihood function is intractable, but simulation is possible. SBI algorithms learn to approximate the posterior distribution over parameters given observed data, enabling inference in scientific and engineering domains where traditional methods fail.</p>
 <p><strong>The Two Moons Dataset:</strong>
 The Two Moons dataset is a two-dimensional simulation-based inference benchmark designed to test an algorithm’s ability to handle complex posterior distributions. Its posterior is both bimodal (two distinct peaks) and locally crescent-shaped, making it a challenging task for inference algorithms. The primary purpose of this benchmark is to evaluate how well different methods can capture and represent multimodality and intricate structure in the posterior.</p>
 <p><strong>Purpose of This Notebook:</strong>
-This notebook trains and evaluates a Flux1joint diffusion/score-matching model on the Two Moons task. The goal is to assess the model’s ability to learn and represent a non-trivial posterior distribution with both global (bimodal) and local (crescent-shaped) complexity.</p>
+This notebook trains and evaluates a Flux1Joint Score Matching model on the Two Moons task. The goal is to assess the model’s ability to learn and represent a non-trivial posterior distribution with both global (bimodal) and local (crescent-shaped) complexity.</p>
 <section id="table-of-contents">
 <h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -447,23 +449,23 @@ This notebook trains and evaluates a Flux1joint diffusion/score-matching model o
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>1. Introduction &amp; Setup</p></td>
+<tr class="row-even"><td><p>1. <a class="reference internal" href="#introduction-setup"><span class="xref myst">Introduction &amp; Setup</span></a></p></td>
 <td><p>Overview, environment, device, autoreload</p></td>
 </tr>
-<tr class="row-odd"><td><p>2. Task &amp; Data Preparation</p></td>
+<tr class="row-odd"><td><p>2. <a class="reference internal" href="#task-data-preparation"><span class="xref myst">Task &amp; Data Preparation</span></a></p></td>
 <td><p>Define task, visualize data, create datasets</p></td>
 </tr>
-<tr class="row-even"><td><p>3. Model Configuration &amp; Definition</p></td>
+<tr class="row-even"><td><p>3. <a class="reference internal" href="#model-configuration-definition"><span class="xref myst">Model Configuration &amp; Definition</span></a></p></td>
 <td><p>Load config, set parameters, instantiate model</p></td>
 </tr>
-<tr class="row-odd"><td><p>4. Training</p></td>
+<tr class="row-odd"><td><p>4. <a class="reference internal" href="#training"><span class="xref myst">Training</span></a></p></td>
 <td><p>Train or restore model, manage checkpoints</p></td>
 </tr>
-<tr class="row-even"><td><p>5. Evaluation &amp; Visualization</p></td>
+<tr class="row-even"><td><p>5. <a class="reference internal" href="#evaluation-visualization"><span class="xref myst">Evaluation &amp; Visualization</span></a></p></td>
 <td><p>Visualize loss, sample posterior, compute log prob</p></td>
 </tr>
-<tr class="row-odd"><td><p>6. Diagnostics</p></td>
-<td><p>Run diagnostics (TARP, SBC, L-C2ST)</p></td>
+<tr class="row-odd"><td><p>6. <a class="reference internal" href="#posterior-calibration-checks"><span class="xref myst">Posterior Calibration Checks</span></a></p></td>
+<td><p>Marginal coverage, TARP, SBC, L-C2ST</p></td>
 </tr>
 </tbody>
 </table>
@@ -471,12 +473,12 @@ This notebook trains and evaluates a Flux1joint diffusion/score-matching model o
 </section>
 <hr class="docutils" />
 <section id="introduction-setup">
-<h2>1. Introduction &amp; Setup <a class="anchor" id="1"></a><a class="headerlink" href="#introduction-setup" title="Link to this heading">#</a></h2>
+<h2>1. Introduction &amp; Setup<a class="headerlink" href="#introduction-setup" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
 <p>In this section, we introduce the problem, set up the computational environment, import required libraries, configure JAX for CPU or GPU usage, and enable autoreload for iterative development. Compatibility with Google Colab is also ensured.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if running on Colab and install dependencies if needed</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if running on Colab and install dependencies if needed</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>
     <span class="n">colab</span> <span class="o">=</span> <span class="kc">True</span>
@@ -485,48 +487,16 @@ This notebook trains and evaluates a Flux1joint diffusion/score-matching model o
 
 <span class="k">if</span> <span class="n">colab</span><span class="p">:</span>
     <span class="c1"># Install required packages and clone the repository</span>
-    <span class="o">%</span><span class="k">pip</span> install --quiet &quot;gensbi[cuda12, examples] @ git+https://github.com/aurelio-amerio/GenSBI&quot;
-    <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/aurelio-amerio/GenSBI-examples
-    <span class="o">%</span><span class="k">cd</span> GenSBI-examples/examples/sbi-benchmarks/two_moons/diffusion_flux1joint
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Installing build dependencies ... ?25l?25hdone
-  Getting requirements to build wheel ... ?25l?25hdone
-  Preparing metadata (pyproject.toml) ... ?25l?25hdone
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">199.6/199.6 kB</span> <span class=" -Color -Color-Red">14.5 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">181.2/181.2 kB</span> <span class=" -Color -Color-Red">21.2 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">490.5/490.5 kB</span> <span class=" -Color -Color-Red">37.4 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">2.9/2.9 MB</span> <span class=" -Color -Color-Red">89.3 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">80.3/80.3 MB</span> <span class=" -Color -Color-Red">10.2 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>:00:0100:01
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">384.1/384.1 kB</span> <span class=" -Color -Color-Red">28.6 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">8.9/8.9 MB</span> <span class=" -Color -Color-Red">78.6 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>:00:0100:01
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">5.6/5.6 MB</span> <span class=" -Color -Color-Red">78.7 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>:00:0100:01
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">150.5/150.5 MB</span> <span class=" -Color -Color-Red">6.9 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>:00:0100:01
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">56.1/56.1 kB</span> <span class=" -Color -Color-Red">5.9 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">74.6/74.6 kB</span> <span class=" -Color -Color-Red">8.9 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">97.4/97.4 kB</span> <span class=" -Color -Color-Red">11.6 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">180.5/180.5 kB</span> <span class=" -Color -Color-Red">20.7 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">40.5/40.5 MB</span> <span class=" -Color -Color-Red">20.1 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>:00:0100:01
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">51.0/51.0 kB</span> <span class=" -Color -Color-Red">5.8 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
-?25h  Building wheel for gensbi (pyproject.toml) ... ?25l?25hdone
-Cloning into &#39;GenSBI-examples&#39;...
-remote: Enumerating objects: 1833, done.
-remote: Counting objects: 100% (1833/1833), done.
-remote: Compressing objects: 100% (1519/1519), done.
-remote: Total 1833 (delta 340), reused 1665 (delta 234), pack-reused 0 (from 0)
-Receiving objects: 100% (1833/1833), 1.52 GiB | 47.81 MiB/s, done.
-Resolving deltas: 100% (340/340), done.
-Updating files: 100% (1444/1444), done.
-/content/GenSBI-examples/examples/sbi-benchmarks/two_moons/diffusion_flux1joint
+    <span class="o">%</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">quiet</span> <span class="s2">&quot;gensbi[cuda12, examples] @ git+https://github.com/aurelio-amerio/GenSBI&quot;</span>
+    <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">aurelio</span><span class="o">-</span><span class="n">amerio</span><span class="o">/</span><span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span>
+    <span class="o">%</span><span class="n">cd</span> <span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">sbi</span><span class="o">-</span><span class="n">benchmarks</span><span class="o">/</span><span class="n">two_moons</span><span class="o">/</span><span class="n">diffusion_flux1joint</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="c1"># select device</span>
 
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span> 
@@ -537,12 +507,12 @@ Updating files: 100% (1444/1444), done.
 </div>
 </section>
 <section id="task-data-preparation">
-<h2>2. Task &amp; Data Preparation <a class="anchor" id="2"></a><a class="headerlink" href="#task-data-preparation" title="Link to this heading">#</a></h2>
+<h2>2. Task &amp; Data Preparation<a class="headerlink" href="#task-data-preparation" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
 <p>In this section, we define the Two Moons task, visualize reference samples, and create the training and validation datasets required for model learning. Batch size and sample count are set for reproducibility and performance.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">restore_model</span><span class="o">=</span><span class="kc">True</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">restore_model</span><span class="o">=</span><span class="kc">True</span>
 <span class="n">train_model</span><span class="o">=</span><span class="kc">False</span>
 </pre></div>
 </div>
@@ -550,7 +520,7 @@ Updating files: 100% (1444/1444), done.
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">orbax.checkpoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ocp</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">orbax.checkpoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ocp</span>
 <span class="c1"># get the current notebook path</span>
 <span class="n">notebook_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
 <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">notebook_path</span><span class="p">,</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">)</span>
@@ -561,7 +531,7 @@ Updating files: 100% (1444/1444), done.
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
@@ -574,35 +544,22 @@ Updating files: 100% (1444/1444), done.
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi_examples.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TwoMoons</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi_examples.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TwoMoons</span>
 <span class="n">task</span> <span class="o">=</span> <span class="n">TwoMoons</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;joint&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/usr/local/lib/python3.12/dist-packages/huggingface_hub/utils/_auth.py:104: UserWarning: 
-Error while fetching `HF_TOKEN` secret value from your vault: &#39;Requesting secret HF_TOKEN timed out. Secrets can only be fetched when running from the Colab UI.&#39;.
-You are not authenticated with the Hugging Face Hub in this notebook.
-If the error persists, please let us know by opening an issue on GitHub (https://github.com/huggingface/huggingface_hub/issues/new).
-  warnings.warn(
-</pre></div>
-</div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "62c5e6bb73794fbe82fcca34727ed979", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "8ffe8e19ca5c40ca80b40ce1efd5fd27", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-</pre></div>
-</div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "afa36f2c18a441c3a1ed3911d2951eff", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "0251135b9e874c8ab60da9571eb0919b", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "4b1946c092404a568851103a2b207e15", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "99d50d9f852442678283b2204b345214", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "5a4ee1bd4c1244699b15293ec0075148", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "b6cc3a2dcfeb4baca79907038578a62d", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "3ee57fde76ac4a4497f5f8c0e0505a1a", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "eb753eec4b4940718707a92a11168821", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># reference posterior for an observation</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># reference posterior for an observation</span>
 <span class="n">obs</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">num_observation</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -610,19 +567,16 @@ WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated req
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot the 2D posterior </span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot the 2D posterior </span>
 <span class="n">plot_marginals</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reference_samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="nb">range</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">),(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)],</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;seaborn&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<img alt="../_images/9c5b6fcbf3cbe1f9892cf00e9058bd40bbaf4bf85f2f1c201007dd213ec0d2d4.png" src="../_images/9c5b6fcbf3cbe1f9892cf00e9058bd40bbaf4bf85f2f1c201007dd213ec0d2d4.png" />
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># make a dataset</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># make a dataset</span>
 <span class="n">nsamples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e5</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -630,7 +584,7 @@ WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated req
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set batch size for training. Larger batch sizes help prevent overfitting, but are limited by available GPU memory.</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set batch size for training. Larger batch sizes help prevent overfitting, but are limited by available GPU memory.</span>
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">4096</span>
 <span class="c1"># Create training and validation datasets using the Two Moons task object.</span>
 <span class="n">train_dataset</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_train_dataset</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
@@ -645,21 +599,21 @@ WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated req
 </div>
 </section>
 <section id="model-configuration-definition">
-<h2>3. Model Configuration &amp; Definition <a class="anchor" id="3"></a><a class="headerlink" href="#model-configuration-definition" title="Link to this heading">#</a></h2>
+<h2>3. Model Configuration &amp; Definition<a class="headerlink" href="#model-configuration-definition" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
-<p>In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model. Edge masks and marginalization functions are used for flexible inference and posterior estimation.</p>
+<p>In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1Joint model. Edge masks and marginalization functions are used for flexible inference and posterior estimation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1JointDiffusionPipeline</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1JointDiffusionPipeline</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 
-<span class="c1"># Path to the flux1joint diffusion configuration file.</span>
+<span class="c1"># Path to the Flux1Joint Score Matching configuration file.</span>
 <span class="n">config_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">notebook_path</span><span class="si">}</span><span class="s2">/config/config_diffusion_flux1joint.yaml&quot;</span>
 </pre></div>
 </div>
@@ -667,18 +621,18 @@ WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated req
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract dimensionality information from the task object.</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract dimensionality information from the task object.</span>
 <span class="n">dim_obs</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dim_obs</span>  <span class="c1"># Number of parameters to infer</span>
 <span class="n">dim_cond</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dim_cond</span>    <span class="c1"># Number of observed data dimensions</span>
 
-<span class="n">dim_joint</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dim_joint</span>  <span class="c1"># Joint dimension (for model input)</span>
+<span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span>  <span class="c1"># Joint dimension (for model input)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Flux1JointDiffusionPipeline</span><span class="o">.</span><span class="n">init_pipeline_from_config</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Flux1JointDiffusionPipeline</span><span class="o">.</span><span class="n">init_pipeline_from_config</span><span class="p">(</span>
         <span class="n">train_dataset</span><span class="p">,</span>
         <span class="n">val_dataset</span><span class="p">,</span>
         <span class="n">dim_obs</span><span class="p">,</span>
@@ -689,48 +643,29 @@ WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated req
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/usr/local/lib/python3.12/dist-packages/gensbi/diffusion/path/edm_path.py:69: UserWarning: EDM-VP and EDM-VE paths are currently not recommended for use.
-  warnings.warn(&quot;EDM-VP and EDM-VE paths are currently not recommended for use.&quot;)
-</pre></div>
-</div>
-</div>
 </div>
 </section>
 <section id="training">
-<h2>4. Training <a class="anchor" id="4"></a><a class="headerlink" href="#training" title="Link to this heading">#</a></h2>
+<h2>4. Training<a class="headerlink" href="#training" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
-<p>In this section, we train the flow matching model or restore a checkpoint.</p>
+<p>In this section, we train the Score Matching model or restore a checkpoint.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># pipeline.train(nnx.Rngs(0), 5, save_model=False)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># pipeline.train(nnx.Rngs(0), 5, save_model=False)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-benchmarks/two_moons/diffusion_flux1joint/checkpoints
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-benchmarks/two_moons/diffusion_flux1joint/checkpoints/ema
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 </div>
 </section>
 <section id="evaluation-visualization">
-<h2>5. Evaluation &amp; Visualization <a class="anchor" id="5"></a><a class="headerlink" href="#evaluation-visualization" title="Link to this heading">#</a></h2>
+<h2>5. Evaluation &amp; Visualization<a class="headerlink" href="#evaluation-visualization" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
 <p>In this section, we evaluate the trained Simformer model by sampling from the posterior, and comparing results to reference data. We also compute and visualize the unnormalized log probability over a grid to assess model calibration and density estimation. These analyses provide insight into model performance and reliability.</p>
 <section id="section-5-1-posterior-sampling">
@@ -739,7 +674,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 <p>In this section, we sample from the posterior distribution using the trained model and visualize the results. Posterior samples are generated for a selected observation and compared to reference samples to assess model accuracy.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># we want to do conditional inference. We need an observation for which we want to ocmpute the posterior</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># we want to do conditional inference. We need an observation for which we want to ocmpute the posterior</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_samples</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">observation</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
     <span class="n">true_param</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">get_true_parameters</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
@@ -747,7 +682,9 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
     <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 
-    <span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">observation</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">observation</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">reference_samples</span>
 </pre></div>
 </div>
@@ -755,19 +692,14 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span>  <span class="n">get_samples</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span>  <span class="n">get_samples</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span> <span class="c1"># (100, 10000, 2)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(100, 10000, 2, 1)
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span> <span class="c1"># (100, 10000, 2)</span>
 </pre></div>
 </div>
 </div>
@@ -779,31 +711,24 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 <p>In this section, we plot the posterior samples as a 2D histogram to visualize the learned distribution and compare it to the ground truth.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span><span class="p">,</span> <span class="n">plot_2d_dist_contour</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span><span class="p">,</span> <span class="n">plot_2d_dist_contour</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)])</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;seaborn&quot;</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="nb">range</span> <span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
-<span class="c1"># check how we set the ranges in the seaborn plot, it seems wrong</span>
-<span class="n">plot_marginals</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;seaborn&quot;</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="nb">range</span> <span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)])</span>
-<span class="c1"># plt.text(1.05, 1.05, f&quot;t = {1.0}&quot;, transform=plt.gca().transAxes)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="c1"># alternatively use &quot;corner&quot; to plot containment levels too</span>
+<span class="c1"># plot_marginals(samples[-1,...,0], plot_levels=True, gridsize=30, range=[(-1., 0), (0, 1.)])</span>
+<span class="c1"># plt.show()</span>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
-</pre></div>
 </div>
-<img alt="../_images/503ea9435e8d829f791cdb958427b94efa270697dcf9e541068905242c3257a6.png" src="../_images/503ea9435e8d829f791cdb958427b94efa270697dcf9e541068905242c3257a6.png" />
-<img alt="../_images/0d823fc5e62874a380785d5345c9cdad5a33ac4ea87d246f7fa88e578e1439c8.png" src="../_images/0d823fc5e62874a380785d5345c9cdad5a33ac4ea87d246f7fa88e578e1439c8.png" />
-</div>
-</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/diffusion_flux1joint/imgs/marginals_ema_1.png" width=400>
 </section>
 <section id="animations">
 <h3>5.3. Animations<a class="headerlink" href="#animations" title="Link to this heading">#</a></h3>
@@ -811,7 +736,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 <p>In this section, we create and display animations of posterior samples and density contours over time. These visualizations illustrate the evolution of the learned distribution during the sampling process, providing dynamic insight into model behavior and convergence.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">imageio.v3</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">imageio</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">imageio.v3</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">imageio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 </pre></div>
@@ -820,7 +745,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># samples</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># samples</span>
 
 <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -855,15 +780,10 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>100%|██████████| 100/100 [00:52&lt;00:00,  1.92it/s]
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># repeat the last frame 10 times to make the gif pause at the end</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># repeat the last frame 10 times to make the gif pause at the end</span>
 <span class="n">images</span> <span class="o">+=</span> <span class="p">[</span><span class="n">images</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">*</span> <span class="mi">20</span>
 </pre></div>
 </div>
@@ -871,7 +791,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">imageio</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">imageio</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span>
     <span class="s1">&#39;animated_plot_samples.gif&#39;</span><span class="p">,</span> 
     <span class="n">images</span><span class="p">,</span> 
     <span class="n">duration</span><span class="o">=</span><span class="mi">5000</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">),</span> 
@@ -883,17 +803,18 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </div>
 </section>
 </section>
-<section id="diagnostics">
-<h2>6. Diagnostics <a class="anchor" id="6"></a><a class="headerlink" href="#diagnostics" title="Link to this heading">#</a></h2>
+<section id="posterior-calibration-checks">
+<h2>6. Posterior Calibration Checks<a class="headerlink" href="#posterior-calibration-checks" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
     <span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="s2">&quot;google.protobuf.runtime_version&quot;</span>
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_sbc</span><span class="p">,</span> <span class="n">sbc_rank_plot</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_tarp</span><span class="p">,</span> <span class="n">plot_tarp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics.marginal_coverage</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_marginal_coverage</span><span class="p">,</span> <span class="n">plot_marginal_coverage</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">LC2ST</span><span class="p">,</span> <span class="n">plot_lc2st</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -905,7 +826,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">num_calibration_samples</span> <span class="o">=</span> <span class="mi">200</span> <span class="c1">#excercise: try 500, what changes?</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">num_calibration_samples</span> <span class="o">=</span> <span class="mi">200</span> <span class="c1">#excercise: try 500, what changes?</span>
 <span class="n">num_posterior_samples</span> <span class="o">=</span> <span class="mi">1000</span> <span class="c1">#excercise: try 10_000, what changes?</span>
 
 <span class="c1"># Get test data</span>
@@ -929,50 +850,51 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sampling 1000 posterior samples for 200 observations...
+</div>
+<section id="marginal-coverage">
+<h3>6.1. Marginal coverage<a class="headerlink" href="#marginal-coverage" title="Link to this heading">#</a></h3>
+<p>In this test, we compare the expected confidence level <span class="math notranslate nohighlight">\(z\)</span> with the empirical coverage level <span class="math notranslate nohighlight">\(\hat{z}\)</span> for each parameter.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">alpha_marginal</span> <span class="o">=</span> <span class="n">compute_marginal_coverage</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;histogram&quot;</span><span class="p">)</span>
+<span class="n">plot_marginal_coverage</span><span class="p">(</span><span class="n">alpha_marginal</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sampling: 100%|██████████| 20/20 [01:28&lt;00:00,  4.40s/it]
-</pre></div>
 </div>
 </div>
-</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/diffusion_flux1joint/imgs/marginal_coverage_1.png" width=800>
+</section>
 <section id="tarp-test-of-accuracy-and-reliability-of-posterior">
-<h3>6.1. TARP (Test of Accuracy and Reliability of Posterior)<a class="headerlink" href="#tarp-test-of-accuracy-and-reliability-of-posterior" title="Link to this heading">#</a></h3>
+<h3>6.2. TARP (Test of Accuracy and Reliability of Posterior)<a class="headerlink" href="#tarp-test-of-accuracy-and-reliability-of-posterior" title="Link to this heading">#</a></h3>
 <p>We calculate the Expected Coverage Probability (ECP) to assess the calibration of the posterior.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running TARP diagnostic...&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running TARP diagnostic...&quot;</span><span class="p">)</span>
 
 <span class="c1"># Calculate ECP and Alpha</span>
-<span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
+<span class="n">tarp_result</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
     <span class="n">thetas</span><span class="p">,</span>
     <span class="n">posterior_samples</span><span class="p">,</span>
     <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># will be calculated automatically.</span>
 <span class="p">)</span>
 
 <span class="c1"># Plot TARP</span>
-<span class="n">plot_tarp</span><span class="p">(</span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+<span class="n">plot_tarp</span><span class="p">(</span><span class="n">tarp_result</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;TARP&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running TARP diagnostic...
-</pre></div>
 </div>
-<img alt="../_images/60ac74d80b4ff830983f7c54a9f54720c1f833a758a72066cdebfe86975a493d.png" src="../_images/60ac74d80b4ff830983f7c54a9f54720c1f833a758a72066cdebfe86975a493d.png" />
-</div>
-</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/diffusion_flux1joint/imgs/tarp_1.png" width=800>
 </section>
 <section id="sbc-simulation-based-calibration">
-<h3>6.2. SBC (Simulation-Based Calibration)<a class="headerlink" href="#sbc-simulation-based-calibration" title="Link to this heading">#</a></h3>
+<h3>6.3. SBC (Simulation-Based Calibration)<a class="headerlink" href="#sbc-simulation-based-calibration" title="Link to this heading">#</a></h3>
 <p>We check the uniformity of the rank statistics.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running SBC diagnostic...&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running SBC diagnostic...&quot;</span><span class="p">)</span>
 
 <span class="c1"># Compute ranks</span>
 <span class="n">ranks</span><span class="p">,</span> <span class="n">dap_samples</span> <span class="o">=</span> <span class="n">run_sbc</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="p">)</span>
@@ -984,23 +906,15 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running SBC diagnostic...
-</pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Calculating ranks for 200 SBC samples: 100%|██████████| 200/200 [00:02&lt;00:00, 96.07it/s] 
-</pre></div>
-</div>
-<img alt="../_images/cd934b3e1cf85fc8ae07e3e865b32ade6188c8155966663e18c68ce6034e16f9.png" src="../_images/cd934b3e1cf85fc8ae07e3e865b32ade6188c8155966663e18c68ce6034e16f9.png" />
-</div>
-</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/diffusion_flux1joint/imgs/sbc_1.png" width=500>
 </section>
 <section id="l-c2st-local-classifier-2-sample-test">
-<h3>6.3. L-C2ST (Local Classifier 2-Sample Test)<a class="headerlink" href="#l-c2st-local-classifier-2-sample-test" title="Link to this heading">#</a></h3>
+<h3>6.4. L-C2ST (Local Classifier 2-Sample Test)<a class="headerlink" href="#l-c2st-local-classifier-2-sample-test" title="Link to this heading">#</a></h3>
 <p>We train a classifier to distinguish between true and sampled parameters.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running L-C2ST diagnostic...&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Running L-C2ST diagnostic...&quot;</span><span class="p">)</span>
 
 <span class="c1"># 1. Prepare data for LC2ST</span>
 <span class="c1"># We use a slightly larger set for training the classifier, but single sample per observation</span>
@@ -1021,15 +935,10 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running L-C2ST diagnostic...
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># 2. Train the L-C2ST classifier</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 2. Train the L-C2ST classifier</span>
 <span class="c1"># Validation split happens inside LC2ST or we can hold out manually. </span>
 <span class="c1"># Here we hold out the last sample for visualization.</span>
 <span class="n">lc2st</span> <span class="o">=</span> <span class="n">LC2ST</span><span class="p">(</span>
@@ -1063,22 +972,10 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/sbi-
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Training classifier under null hypothesis...
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Training the classifiers under H0, permutation = True: 100%|██████████| 100/100 [12:32&lt;00:00,  7.52s/it]
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Training classifier on observed data...
-Sampling for visualization...
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_lc2st</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_lc2st</span><span class="p">(</span>
     <span class="n">lc2st</span><span class="p">,</span>
     <span class="n">post_samples_star_flat</span><span class="p">,</span>
     <span class="n">x_o_star_flat</span><span class="p">,</span>
@@ -1087,15 +984,8 @@ Sampling for visualization...
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<img alt="../_images/aab8376b48dfa2977831554d0ced8cdb9a77c6179ed6346fa839dd8de62d5d46.png" src="../_images/aab8376b48dfa2977831554d0ced8cdb9a77c6179ed6346fa839dd8de62d5d46.png" />
 </div>
-</div>
-<blockquote>
-<div><p><strong>Note:</strong> <br>
-The posteriors are imbalanced. This model was trained with a default configuration for illustration purposes, and the performance can be improved with more careful tuning of the model and training hyperparameters.</p>
-</div></blockquote>
-</section>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/diffusion_flux1joint/imgs/lc2st_1.png" width=500></section>
 </section>
 </section>
 
@@ -1115,7 +1005,7 @@ The posteriors are imbalanced. This model was trained with a default configurati
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Two Moons Flux1 Score Matching (Diffusion) Example</p>
+        <p class="prev-next-title">Two Moons Flux1 Score Matching Example</p>
       </div>
     </a>
     <a class="right-next"
@@ -1123,7 +1013,7 @@ The posteriors are imbalanced. This model was trained with a default configurati
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Two Moons Simformer Score Matching (Diffusion) Example</p>
+        <p class="prev-next-title">Two Moons Simformer Score Matching Example</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1147,20 +1037,21 @@ The posteriors are imbalanced. This model was trained with a default configurati
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#table-of-contents">Table of Contents</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction-setup">1. Introduction &amp; Setup <a class="anchor" id="1"></a></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#task-data-preparation">2. Task &amp; Data Preparation <a class="anchor" id="2"></a></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-configuration-definition">3. Model Configuration &amp; Definition <a class="anchor" id="3"></a></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training">4. Training <a class="anchor" id="4"></a></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#evaluation-visualization">5. Evaluation &amp; Visualization <a class="anchor" id="5"></a></a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction-setup">1. Introduction &amp; Setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#task-data-preparation">2. Task &amp; Data Preparation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-configuration-definition">3. Model Configuration &amp; Definition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training">4. Training</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#evaluation-visualization">5. Evaluation &amp; Visualization</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#section-5-1-posterior-sampling">Section 5.1: Posterior Sampling</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#section-5-2-visualize-posterior-samples">Section 5.2: Visualize Posterior Samples</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#animations">5.3. Animations</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#diagnostics">6. Diagnostics <a class="anchor" id="6"></a></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tarp-test-of-accuracy-and-reliability-of-posterior">6.1. TARP (Test of Accuracy and Reliability of Posterior)</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sbc-simulation-based-calibration">6.2. SBC (Simulation-Based Calibration)</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#l-c2st-local-classifier-2-sample-test">6.3. L-C2ST (Local Classifier 2-Sample Test)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-calibration-checks">6. Posterior Calibration Checks</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#marginal-coverage">6.1. Marginal coverage</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tarp-test-of-accuracy-and-reliability-of-posterior">6.2. TARP (Test of Accuracy and Reliability of Posterior)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sbc-simulation-based-calibration">6.3. SBC (Simulation-Based Calibration)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#l-c2st-local-classifier-2-sample-test">6.4. L-C2ST (Local Classifier 2-Sample Test)</a></li>
 </ul>
 </li>
 </ul>

@@ -342,11 +342,11 @@
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux.html">Two Moons Flux1 Score Matching (Diffusion) Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux1joint.html">Two Moons Flux1joint Score Matching (Diffusion) Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_simformer.html">Two Moons Simformer Score Matching (Diffusion) Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux.html">Two Moons Flux1 Score Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_flux1joint.html">Two Moons Flux1Joint Score Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_diffusion_simformer.html">Two Moons Simformer Score Matching Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux.html">Two Moons Flux1 Flow Matching Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux1joint.html">Two Moons Flux1joint Flow Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux1joint.html">Two Moons Flux1Joint Flow Matching Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="two_moons_flow_simformer.html">Two Moons Simformer Flow Matching Example</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -817,76 +817,28 @@
 <img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/lensing/imgs/lensing_samples_conf1.png" alt="lensing" width="500"></section>
 <section id="diagnostics">
 <h2>7. Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading">#</a></h2>
-<p>We run several diagnostics to validate the quality of the posterior estimation.</p>
+<p>You should run several diagnostics to validate the quality of the posterior estimation.
+We leave as an excercise the implementation of these diagnostics (or take a look at the training script: <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/lensing/train-lensing.py"><code class="docutils literal notranslate"><span class="pre">train-lensing.py</span></code></a>).</p>
+<p>Below are the results of the diagnostics for the lensing example.</p>
 <blockquote>
 <div><p><strong>Note:</strong> <br>
 Running these tests is slow, and requires a GPU.</p>
 </div></blockquote>
-<section id="tarp-test-of-accuracy-and-reliability-of-posterior">
-<h3>TARP (Test of Accuracy and Reliability of Posterior)<a class="headerlink" href="#tarp-test-of-accuracy-and-reliability-of-posterior" title="Link to this heading">#</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># # split in thetas and xs</span>
-<span class="n">thetas_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_test</span><span class="p">[</span><span class="s2">&quot;thetas&quot;</span><span class="p">])[:</span><span class="mi">200</span><span class="p">]</span>
-<span class="n">xs_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_test</span><span class="p">[</span><span class="s2">&quot;xs&quot;</span><span class="p">])[:</span><span class="mi">200</span><span class="p">]</span>
-
-<span class="n">thetas_</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thetas_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">),</span> <span class="n">thetas_mean</span><span class="p">,</span> <span class="n">thetas_std</span><span class="p">)</span>
-<span class="n">xs_</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xs_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">),</span> <span class="n">xs_mean</span><span class="p">,</span> <span class="n">xs_std</span><span class="p">)</span>
-<span class="n">xs_</span> <span class="o">=</span> <span class="n">xs_</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
-
-<span class="n">num_posterior_samples</span> <span class="o">=</span> <span class="mi">1000</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sampling for TARP...&quot;</span><span class="p">)</span>
-<span class="n">posterior_samples_</span> <span class="o">=</span> <span class="n">pipeline_latent</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span>
-    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">),</span>
-    <span class="n">xs_</span><span class="p">,</span>
-    <span class="n">num_posterior_samples</span><span class="p">,</span>
-    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">encoder_key</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1234</span><span class="p">),</span>
-<span class="p">)</span>
-
-<span class="n">thetas</span> <span class="o">=</span> <span class="n">thetas_</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">thetas_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">xs</span> <span class="o">=</span> <span class="n">xs_</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">xs_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="n">posterior_samples</span> <span class="o">=</span> <span class="n">posterior_samples_</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
-    <span class="n">posterior_samples_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">posterior_samples_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span>
-<span class="p">)</span>
-
-<span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
-    <span class="n">thetas</span><span class="p">,</span>
-    <span class="n">posterior_samples</span><span class="p">,</span>
-    <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># will be calculated automatically.</span>
-<span class="p">)</span>
-
-<span class="n">plot_tarp</span><span class="p">(</span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
-<span class="c1"># plt.savefig(</span>
-<span class="c1">#     f&quot;imgs/lensing_tarp_v1a_conf{experiment}.png&quot;, dpi=100, bbox_inches=&quot;tight&quot;</span>
-<span class="c1"># )  # uncomment to save the figure</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-</div>
-<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/lensing/imgs/lensing_tarp_v1a_conf1.png" alt="lensing" width="500"></section>
-<section id="sbc-simulation-based-calibration">
-<h3>SBC (Simulation-Based Calibration)<a class="headerlink" href="#sbc-simulation-based-calibration" title="Link to this heading">#</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ranks</span><span class="p">,</span> <span class="n">dap_samples</span> <span class="o">=</span> <span class="n">run_sbc</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="p">)</span>
-
-<span class="n">f</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">sbc_rank_plot</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span> <span class="n">num_bins</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-<span class="c1"># plt.savefig(</span>
-<span class="c1">#     f&quot;imgs/lensing_sbc_v1a_conf{experiment}.png&quot;, dpi=100, bbox_inches=&quot;tight&quot;</span>
-<span class="c1"># )  # uncomment to save the figure</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-</div>
-<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/lensing/imgs/lensing_sbc_v1a_conf1.png" alt="lensing" width="600"><blockquote>
-<div><p><strong>Note:</strong><br>
-The model is slightly overconfident in the second dimension. <br> The model in this example has been trained in a “fast” configuration, as an example, and can be further refined by optimizing the model parameters and training configuration.</p>
-</div></blockquote>
+<p><strong>SBC</strong>: <br>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/lensing/imgs/lensing_sbc_conf1.png" alt="lensing" width="500"></p>
+<p><strong>Marginal coverage</strong>: <br>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/lensing/imgs/lensing_marginal_coverage_conf1.png" alt="lensing" width="800"></p>
+<p><strong>TARP</strong>: <br>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/lensing/imgs/lensing_tarp_conf1.png" alt="lensing" width="800"></p>
+<p><strong>L-C2ST</strong>: <br>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/lensing/imgs/lensing_lc2st_conf1.png" alt="lensing" width="400"></p>
+<section id="conclusions">
+<h3>Conclusions<a class="headerlink" href="#conclusions" title="Link to this heading">#</a></h3>
+<p>The SBC test tells us that the posterior for the first dimension is reasonable, while the second dimension is slightly skewed. <br>
+The marginal coverage test tells us that the the posterior for the first dimension is slightly underconfident while the second dimension is slightly overconfident. <br>
+The TARP test tells us that the posterior is overall well-calibrated, but the model is slightly overconfident in the region around the peak of the distribution (<span class="math notranslate nohighlight">\(\alpha\)</span>&lt;0.6). <br>
+The L-C2ST test tells us that a local classifier cannot distinguish samples drawan from the true joint distributions, and samples drawn from the model, meaning that we can’t reject the hypothesis that the model is well calibrated. <br></p>
+<p>Final remark: The model in this example has been trained in a “fast” configuration, as an example, and can be further refined by optimizing the model parameters and training configuration.</p>
 </section>
 </section>
 </section>
@@ -951,8 +903,7 @@ The model is slightly overconfident in the second dimension. <br> The model in t
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pipeline-setup-and-restoration">5. Pipeline Setup and Restoration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inference-and-visualization">6. Inference and Visualization</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#diagnostics">7. Diagnostics</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tarp-test-of-accuracy-and-reliability-of-posterior">TARP (Test of Accuracy and Reliability of Posterior)</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sbc-simulation-based-calibration">SBC (Simulation-Based Calibration)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conclusions">Conclusions</a></li>
 </ul>
 </li>
 </ul>

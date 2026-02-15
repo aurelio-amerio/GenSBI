@@ -361,6 +361,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/distribution_wrapper/index.html">gensbi.diagnostics.distribution_wrapper</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/lc2st/index.html">gensbi.diagnostics.lc2st</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/marginal_coverage/index.html">gensbi.diagnostics.marginal_coverage</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/index.html">gensbi.diagnostics.metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/c2st/index.html">gensbi.diagnostics.metrics.c2st</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/l1_l2/index.html">gensbi.diagnostics.metrics.l1_l2</a></li>
@@ -368,6 +369,7 @@
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/sbc/index.html">gensbi.diagnostics.sbc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/tarp/index.html">gensbi.diagnostics.tarp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/utils/index.html">gensbi.diagnostics.utils</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diffusion/index.html">gensbi.diffusion</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -545,7 +547,7 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># step 1: install packages</span>
-<span class="c1"># %pip install --quiet  &quot;GenSBI[cuda12,examples] @ git+https://github.com/aurelio-amerio/GenSBI.git&quot; </span>
+<span class="c1"># %pip install --quiet  &quot;gensbi[cuda12,examples] @ git+https://github.com/aurelio-amerio/GenSBI.git&quot; </span>
 </pre></div>
 </div>
 </div>
@@ -595,8 +597,8 @@ If you are using Colab, you may need to restart the runtime after installation t
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="c1"># Set JAX backend (use &#39;cuda&#39; for GPU, &#39;cpu&#39; otherwise)</span>
-<span class="c1"># os.environ[&quot;JAX_PLATFORMS&quot;] = &quot;cuda&quot;</span>
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span>
+<span class="c1"># os.environ[&quot;JAX_PLATFORMS&quot;] = &quot;cpu&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">grain</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -665,7 +667,7 @@ If you are using Colab, you may need to restart the runtime after installation t
 </section>
 <section id="the-dataset">
 <h2>The dataset<a class="headerlink" href="#the-dataset" title="Link to this heading">#</a></h2>
-<p>We generate a training dataset by running the simulator multiple times. We sample parameters from the prior and then run the simulator for each parameter set. This dataset of <span class="math notranslate nohighlight">\((	heta, x)\)</span> pairs is used to train the neural density estimator.</p>
+<p>We generate a training dataset by running the simulator multiple times. We sample parameters from the prior and then run the simulator for each parameter set. This dataset of <span class="math notranslate nohighlight">\((\theta, x)\)</span> pairs is used to train the neural density estimator.</p>
 <p>GenSBI is designed to work with any dataset that provides an iterator yielding pairs of (parameters, observations).
 However, for efficient training, especially with large datasets, we recommend using a high-performance data loader like <code class="docutils literal notranslate"><span class="pre">grain</span></code> to handle batching, shuffling, and prefetching.</p>
 <div class="cell docutils container">
@@ -976,12 +978,37 @@ It is crucial that we use a seed different from the one used during training to 
 <img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_sbc_2.png" width=600><p>All of the bars fall within the confidence intervals of the uniform distribution, thus we cannot reject the hypothesis that the posterior marginals are calibrated.</p>
 <p>See the SBI tutorial <a class="reference external" href="https://sbi.readthedocs.io/en/latest/how_to_guide/16_sbc.html">https://sbi.readthedocs.io/en/latest/how_to_guide/16_sbc.html</a> for more details on SBC.</p>
 </section>
+<section id="marginal-posteriors-credibility-test">
+<h3>Marginal posteriors credibility test<a class="headerlink" href="#marginal-posteriors-credibility-test" title="Link to this heading">#</a></h3>
+<p>The (marginal) credibility test is a statistical test that checks if the model’s posterior distribution is consistent with the observed data. In particular, it evaluates if the true parameter values are within the credible region of the posterior distribution. This test can be used to identify if the marginal posterior distribution in a specific dimension is over or under confident.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">alpha_marginal</span> <span class="o">=</span> <span class="n">compute_marginal_coverage</span><span class="p">(</span>
+    <span class="n">thetas</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;histogram&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginal_coverage</span><span class="p">(</span><span class="n">alpha_marginal</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+    <span class="s2">&quot;flux1_flow_pipeline_marginal_coverage.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span>
+<span class="p">)</span>  <span class="c1"># uncomment to save the figure</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_marginal_coverage_2.png" width=900><p>From this test, it turns out that the model posterior distribution is slightly overconfident in the first dimension. It is well calibrated in the second dimension, and it is overconfident in the third dimension.</p>
+</section>
 <section id="tarp">
 <h3>TARP<a class="headerlink" href="#tarp" title="Link to this heading">#</a></h3>
 <p>TARP is an alternative calibration check that evaluates the joint posterior (not just individual marginals). See <a class="reference external" href="https://arxiv.org/abs/2302.03026">Lemos et al. (2023)</a> for details.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tarp_results</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
     <span class="n">thetas</span><span class="p">,</span>
     <span class="n">posterior_samples</span><span class="p">,</span>
     <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># will be calculated automatically.</span>
@@ -992,7 +1019,7 @@ It is crucial that we use a seed different from the one used during training to 
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">atc</span><span class="p">,</span> <span class="n">ks_pval</span> <span class="o">=</span> <span class="n">check_tarp</span><span class="p">(</span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">atc</span><span class="p">,</span> <span class="n">ks_pval</span> <span class="o">=</span> <span class="n">check_tarp</span><span class="p">(</span><span class="n">tarp_results</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">atc</span><span class="p">,</span> <span class="s2">&quot;Should be close to 0&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">ks_pval</span><span class="p">,</span> <span class="s2">&quot;Should be larger than 0.05&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1001,14 +1028,14 @@ It is crucial that we use a seed different from the one used during training to 
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_tarp</span><span class="p">(</span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_tarp</span><span class="p">(</span><span class="n">tarp_results</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;flux1_flow_pipeline_tarp.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span> <span class="c1"># uncomment to save the figure</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 </div>
-<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_tarp_2.png" width=400><p>If the blue curve is above the diagonal, then the posterior estimate is under-confident. If it is under the diagonal, then the posterior estimate is over-confident.</p>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_tarp_2.png" width=800><p>If the black curve is above the diagonal, then the posterior estimate is under-confident. If it is under the diagonal, then the posterior estimate is over-confident.</p>
 <p>While the curve does not coincide exactly with the diagonal, from the TARP test we cannot reject the hypothesis that the model is properly calibrated.</p>
 <p>See <a class="reference external" href="https://sbi.readthedocs.io/en/latest/how_to_guide/17_tarp.html">https://sbi.readthedocs.io/en/latest/how_to_guide/17_tarp.html</a> for more details on TARP.</p>
 </section>
@@ -1127,7 +1154,7 @@ It is crucial that we use a seed different from the one used during training to 
 </section>
 <section id="conclusions">
 <h2>Conclusions<a class="headerlink" href="#conclusions" title="Link to this heading">#</a></h2>
-<p>Based on SBC, TARP, and L-C2ST, all calibration tests are consistent with a well-calibrated posterior. We cannot reject the hypothesis that the model is properly calibrated.</p>
+<p>Based on SBC, Marginal coverage,TARP, and L-C2ST, all calibration tests are consistent with a mostly well-calibrated posterior. We cannot reject the hypothesis that the model is properly calibrated.</p>
 </section>
 </section>
 
@@ -1186,6 +1213,7 @@ It is crucial that we use a seed different from the one used during training to 
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#next-steps">Next steps</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#posterior-calibration-tests">Posterior calibration tests</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sbc">SBC</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#marginal-posteriors-credibility-test">Marginal posteriors credibility test</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tarp">TARP</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#l-c2st">L-C2ST</a></li>
 </ul>

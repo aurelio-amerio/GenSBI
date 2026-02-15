@@ -34,13 +34,13 @@
         },
         {
             "cell_type": "code",
-            "execution_count": 1,
+            "execution_count": null,
             "id": "b45ff30e",
             "metadata": {},
             "outputs": [],
             "source": [
                 "# step 1: install packages\n",
-                "# %pip install --quiet  \"GenSBI[cuda12,examples] @ git+https://github.com/aurelio-amerio/GenSBI.git\" "
+                "# %pip install --quiet  \"gensbi[cuda12,examples] @ git+https://github.com/aurelio-amerio/GenSBI.git\" "
             ]
         },
         {
@@ -122,8 +122,8 @@
                 "import os\n",
                 "\n",
                 "# Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)\n",
-                "# os.environ[\"JAX_PLATFORMS\"] = \"cuda\"\n",
-                "os.environ[\"JAX_PLATFORMS\"] = \"cpu\"\n",
+                "os.environ[\"JAX_PLATFORMS\"] = \"cuda\"\n",
+                "# os.environ[\"JAX_PLATFORMS\"] = \"cpu\"\n",
                 "\n",
                 "import grain\n",
                 "import numpy as np\n",
@@ -244,7 +244,7 @@
             "id": "ef9dcc67",
             "metadata": {},
             "source": [
-                "We generate a training dataset by running the simulator multiple times. We sample parameters from the prior and then run the simulator for each parameter set. This dataset of $(\theta, x)$ pairs is used to train the neural density estimator.\n",
+                "We generate a training dataset by running the simulator multiple times. We sample parameters from the prior and then run the simulator for each parameter set. This dataset of $(\\theta, x)$ pairs is used to train the neural density estimator.\n",
                 "\n",
                 "GenSBI is designed to work with any dataset that provides an iterator yielding pairs of (parameters, observations). \n",
                 "However, for efficient training, especially with large datasets, we recommend using a high-performance data loader like `grain` to handle batching, shuffling, and prefetching."
@@ -813,6 +813,64 @@
         },
         {
             "cell_type": "markdown",
+            "id": "05ae70cf",
+            "metadata": {},
+            "source": [
+                "### Marginal posteriors credibility test"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "b3a6132e",
+            "metadata": {},
+            "source": [
+                "The (marginal) credibility test is a statistical test that checks if the model's posterior distribution is consistent with the observed data. In particular, it evaluates if the true parameter values are within the credible region of the posterior distribution. This test can be used to identify if the marginal posterior distribution in a specific dimension is over or under confident."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "cb8813ec",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "alpha_marginal = compute_marginal_coverage(\n",
+                "    thetas, posterior_samples, method=\"histogram\"\n",
+                ")"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "cafac7b9",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "plot_marginal_coverage(alpha_marginal)\n",
+                "plt.savefig(\n",
+                "    \"flux1_flow_pipeline_marginal_coverage.png\", dpi=100, bbox_inches=\"tight\"\n",
+                ")  # uncomment to save the figure\n",
+                "plt.show()"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "77b115ff",
+            "metadata": {},
+            "source": [
+                "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_marginal_coverage_2.png\" width=900>"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "9d51ba58",
+            "metadata": {},
+            "source": [
+                "From this test, it turns out that the model posterior distribution is slightly overconfident in the first dimension. It is well calibrated in the second dimension, and it is overconfident in the third dimension."
+            ]
+        },
+        {
+            "cell_type": "markdown",
             "id": "560d2b45",
             "metadata": {},
             "source": [
@@ -834,7 +892,7 @@
             "metadata": {},
             "outputs": [],
             "source": [
-                "ecp, alpha = run_tarp(\n",
+                "tarp_results = run_tarp(\n",
                 "    thetas,\n",
                 "    posterior_samples,\n",
                 "    references=None,  # will be calculated automatically.\n",
@@ -848,7 +906,7 @@
             "metadata": {},
             "outputs": [],
             "source": [
-                "atc, ks_pval = check_tarp(ecp, alpha)\n",
+                "atc, ks_pval = check_tarp(tarp_results)\n",
                 "print(atc, \"Should be close to 0\")\n",
                 "print(ks_pval, \"Should be larger than 0.05\")"
             ]
@@ -860,7 +918,7 @@
             "metadata": {},
             "outputs": [],
             "source": [
-                "plot_tarp(ecp, alpha)\n",
+                "plot_tarp(tarp_results)\n",
                 "plt.savefig(\"flux1_flow_pipeline_tarp.png\", dpi=100, bbox_inches=\"tight\") # uncomment to save the figure\n",
                 "plt.show()"
             ]
@@ -870,7 +928,7 @@
             "id": "84759aef",
             "metadata": {},
             "source": [
-                "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_tarp_2.png\" width=400>"
+                "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_tarp_2.png\" width=800>"
             ]
         },
         {
@@ -878,7 +936,7 @@
             "id": "58678a03",
             "metadata": {},
             "source": [
-                "If the blue curve is above the diagonal, then the posterior estimate is under-confident. If it is under the diagonal, then the posterior estimate is over-confident.\n",
+                "If the black curve is above the diagonal, then the posterior estimate is under-confident. If it is under the diagonal, then the posterior estimate is over-confident.\n",
                 "\n",
                 "While the curve does not coincide exactly with the diagonal, from the TARP test we cannot reject the hypothesis that the model is properly calibrated."
             ]
@@ -1074,7 +1132,7 @@
             "id": "cd5ae3aa",
             "metadata": {},
             "source": [
-                "Based on SBC, TARP, and L-C2ST, all calibration tests are consistent with a well-calibrated posterior. We cannot reject the hypothesis that the model is properly calibrated."
+                "Based on SBC, Marginal coverage,TARP, and L-C2ST, all calibration tests are consistent with a mostly well-calibrated posterior. We cannot reject the hypothesis that the model is properly calibrated."
             ]
         }
     ],
