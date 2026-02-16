@@ -1,4 +1,5 @@
 import pytest
+import jax
 import jax.numpy as jnp
 from gensbi.models.flux1.math import attention, rope, apply_rope
 
@@ -102,10 +103,21 @@ def test_attention_mask():
 
 def test_attention_pe():
     B, H, L, D = 2, 4, 10, 16
-    q = jnp.ones((B, H, L, D))
-    k = jnp.ones((B, H, L, D))
-    v = jnp.ones((B, H, L, D))
-    pe = jnp.ones((B, 1, L, D//2, 2, 2))
+    # Use non-uniform Q, K to ensure attention weights are not uniform
+    key = jax.random.PRNGKey(0)
+    q = jax.random.normal(key, (B, H, L, D))
+    k = jax.random.normal(key, (B, H, L, D))
+    v = jax.random.normal(key, (B, H, L, D))
 
-    out = attention(q, k, v, pe=pe)
-    assert out.shape == (B, L, H*D)
+    # 1. Run without PE
+    out_no_pe = attention(q, k, v, pe=None)
+
+    # 2. Run with PE (use non-identity PE to ensure effect)
+    # Using ones as PE will rotate/scale q and k
+    pe = jnp.ones((B, 1, L, D//2, 2, 2))
+    out_pe = attention(q, k, v, pe=pe)
+
+    assert out_pe.shape == (B, L, H*D)
+
+    # Check that PE actually changes the output
+    assert not jnp.allclose(out_no_pe, out_pe)
