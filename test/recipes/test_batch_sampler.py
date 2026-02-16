@@ -1,7 +1,7 @@
 import pytest
 import jax
 import jax.numpy as jnp
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from gensbi.recipes.pipeline import _get_batch_sampler
 
 # Fixture to provide a simple mock sampler function
@@ -173,3 +173,44 @@ def test_results_concatenation(mock_sampler_fn):
     for i in range(n_samples):
         expected_val = jnp.sum(keys[i])
         assert jnp.allclose(results[i], expected_val)
+
+def test_pytree_output():
+    """Test that the sampler works with PyTree outputs (e.g., dict of arrays)."""
+
+    # Sampler returning a dict
+    def pytree_sampler(key, ncond):
+        val = jnp.sum(key) + ncond
+        # Ensure outputs are at least 0-d arrays so vmap works nicely,
+        # but here val is scalar (0-d array). vmap adds a batch dim.
+        return {'a': val, 'b': val * 2}
+
+    ncond = 1
+    chunk_size = 2
+    n_samples = 3
+
+    # We patch jax.vmap to count calls. We must disable JIT for this to work
+    # because process_chunk is jitted.
+    with jax.disable_jit():
+        sampler = _get_batch_sampler(
+            sampler_fn=pytree_sampler,
+            ncond=ncond,
+            chunk_size=chunk_size,
+            show_progress_bars=False
+        )
+
+        keys = jax.random.split(jax.random.PRNGKey(0), n_samples)
+
+        # This should succeed now
+        results = sampler(keys)
+
+        assert isinstance(results, dict)
+        assert 'a' in results
+        assert 'b' in results
+        assert results['a'].shape == (n_samples,)
+        assert results['b'].shape == (n_samples,)
+
+        # Check values
+        for i in range(n_samples):
+            val = jnp.sum(keys[i]) + ncond
+            assert jnp.allclose(results['a'][i], val)
+            assert jnp.allclose(results['b'][i], val * 2)
