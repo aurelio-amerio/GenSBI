@@ -135,3 +135,30 @@ def test_target_to_epsilon():
 def test_cond_ot_instantiation():
     path = CondOTProbPath()
     assert isinstance(path, AffineProbPath)
+
+def test_assert_sample_shape_raises():
+    path = AffineProbPath(CondOTScheduler())
+    batch_size, dim = 10, 5
+    x_0 = jnp.ones((batch_size, dim))
+    x_1 = jnp.ones((batch_size, dim))
+    t = jnp.ones((batch_size,))
+
+    # Case 1: t has ndim != 1 (scalar)
+    with pytest.raises(AssertionError, match="The time vector t must have shape"):
+        path.assert_sample_shape(x_0, x_1, jnp.array(0.5))
+
+    # Case 2: t has ndim != 1 (2D)
+    with pytest.raises(AssertionError, match="The time vector t must have shape"):
+        path.assert_sample_shape(x_0, x_1, jnp.ones((batch_size, 1)))
+
+    # Case 3: t batch size mismatch
+    with pytest.raises(AssertionError, match="Time t dimension must match the batch size"):
+        path.assert_sample_shape(x_0, x_1, jnp.ones((batch_size + 1,)))
+
+    # Case 4: x_0 mismatch
+    with pytest.raises(AssertionError, match="Time t dimension must match the batch size"):
+        path.assert_sample_shape(jnp.ones((batch_size + 1, dim)), x_1, t)
+
+    # Case 5: x_1 mismatch
+    with pytest.raises(AssertionError, match="Time t dimension must match the batch size"):
+        path.assert_sample_shape(x_0, jnp.ones((batch_size + 1, dim)), t)
