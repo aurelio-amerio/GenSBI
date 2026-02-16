@@ -73,25 +73,21 @@ def test_expand_dims(input_array, expected_shape):
         assert jnp.array_equal(res, input_array)
 
 
-def test_expand_time():
-    """Test internal time expansion for rank 0, 1, and 2 inputs."""
-    # Scalar: () -> (1, 1)
-    t0 = jnp.array(0.5)
-    res0 = _expand_time(t0)
-    assert res0.ndim == 2
-    assert res0.shape == (1, 1)
-    assert res0[0, 0] == t0
-
-    # 1D array: (N,) -> (N, 1)
-    t1 = jnp.array([0.1, 0.2])
-    res1 = _expand_time(t1)
-    assert res1.ndim == 2
-    assert res1.shape == (2, 1)
-    assert jnp.array_equal(res1.flatten(), t1)
-
-    # 2D array: (N, 1) -> (N, 1) (unchanged)
-    t2 = jnp.array([[0.1], [0.2]])
-    res2 = _expand_time(t2)
-    assert res2.ndim == 2
-    assert res2.shape == (2, 1)
-    assert jnp.array_equal(res2, t2)
+@pytest.mark.parametrize(
+    "input_time, expected_shape",
+    [
+        (jnp.array(0.5), (1, 1)),  # Scalar: () -> (1, 1)
+        (jnp.array([0.1, 0.2]), (2, 1)),  # 1D array: (N,) -> (N, 1)
+        (jnp.array([[0.1], [0.2]]), (2, 1)),  # 2D array: (N, 1) -> (N, 1)
+    ],
+    ids=["scalar", "1D", "2D"],
+)
+def test_expand_time(input_time, expected_shape):
+    """Test internal time expansion for various input ranks."""
+    res = _expand_time(input_time)
+    assert res.ndim == 2
+    assert res.shape == expected_shape
+    if input_time.ndim < 2:
+        assert jnp.array_equal(res.flatten(), jnp.atleast_1d(input_time).flatten())
+    else:
+        assert jnp.array_equal(res, input_time)
