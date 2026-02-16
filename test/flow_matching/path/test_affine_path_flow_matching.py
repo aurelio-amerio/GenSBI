@@ -136,29 +136,18 @@ def test_cond_ot_instantiation():
     path = CondOTProbPath()
     assert isinstance(path, AffineProbPath)
 
-def test_assert_sample_shape_raises():
-    path = AffineProbPath(CondOTScheduler())
-    batch_size, dim = 10, 5
-    x_0 = jnp.ones((batch_size, dim))
-    x_1 = jnp.ones((batch_size, dim))
-    t = jnp.ones((batch_size,))
-
-    # Case 1: t has ndim != 1 (scalar)
-    with pytest.raises(AssertionError, match="The time vector t must have shape"):
-        path.assert_sample_shape(x_0, x_1, jnp.array(0.5))
-
-    # Case 2: t has ndim != 1 (2D)
-    with pytest.raises(AssertionError, match="The time vector t must have shape"):
-        path.assert_sample_shape(x_0, x_1, jnp.ones((batch_size, 1)))
-
-    # Case 3: t batch size mismatch
-    with pytest.raises(AssertionError, match="Time t dimension must match the batch size"):
-        path.assert_sample_shape(x_0, x_1, jnp.ones((batch_size + 1,)))
-
-    # Case 4: x_0 mismatch
-    with pytest.raises(AssertionError, match="Time t dimension must match the batch size"):
-        path.assert_sample_shape(jnp.ones((batch_size + 1, dim)), x_1, t)
-
-    # Case 5: x_1 mismatch
-    with pytest.raises(AssertionError, match="Time t dimension must match the batch size"):
-        path.assert_sample_shape(x_0, jnp.ones((batch_size + 1, dim)), t)
+@pytest.mark.parametrize(
+    "x0_shape, x1_shape, t_val, expected_msg",
+    [
+        ((10, 5), (10, 5), jnp.array(0.5), "The time vector t must have shape"),
+        ((10, 5), (10, 5), jnp.ones((10, 1)), "The time vector t must have shape"),
+        ((10, 5), (10, 5), jnp.ones((11,)), "Time t dimension must match the batch size"),
+        ((11, 5), (10, 5), jnp.ones((10,)), "Time t dimension must match the batch size"),
+        ((10, 5), (11, 5), jnp.ones((10,)), "Time t dimension must match the batch size"),
+    ],
+)
+def test_assert_sample_shape_raises(affine_prob_path, x0_shape, x1_shape, t_val, expected_msg):
+    x_0 = jnp.ones(x0_shape)
+    x_1 = jnp.ones(x1_shape)
+    with pytest.raises(AssertionError, match=expected_msg):
+        affine_prob_path.assert_sample_shape(x_0, x_1, t_val)
