@@ -77,6 +77,8 @@ def jefferys_interval(k, n, z=1):
     upper : np.ndarray
         Upper bounds of the interval.
     """
+    k = np.asarray(k)
+    n = np.asarray(n)
     alpha = alpha_from_z(z=z)
     lower = scipy.stats.beta.ppf(alpha / 2, k + 0.5, n - k + 0.5)
     upper = scipy.stats.beta.ppf(1 - alpha / 2, k + 0.5, n - k + 0.5)
