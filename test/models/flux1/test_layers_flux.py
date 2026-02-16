@@ -45,17 +45,19 @@ def test_embed_nd_mismatch_axes():
     layer = EmbedND(dim, theta, axes_dim)
 
     # Case 1: More axes in input than configured -> IndexError
-    ids_too_many = jnp.zeros((1, 5, 3)) # 3 axes, but configured for 2
+    batch_size = 1
+    seq_len = 5
+    ids_too_many = jnp.zeros((batch_size, seq_len, len(axes_dim) + 1))
     with pytest.raises(IndexError):
         layer(ids_too_many)
 
     # Case 2: Fewer axes in input than configured -> subset of embeddings
-    ids_too_few = jnp.zeros((1, 5, 1)) # 1 axis
+    ids_too_few = jnp.zeros((batch_size, seq_len, 1)) # 1 axis
     output = layer(ids_too_few)
 
     # Should only use the first axis_dim (8)
     # Output shape: (1, 1, 5, 8/2, 2, 2) -> (1, 1, 5, 4, 2, 2)
-    expected_shape = (1, 1, 5, 4, 2, 2)
+    expected_shape = (batch_size, 1, seq_len, axes_dim[0] // 2, 2, 2)
     assert output.shape == expected_shape
 
 
