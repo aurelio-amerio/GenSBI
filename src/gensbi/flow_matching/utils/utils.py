@@ -40,12 +40,13 @@ def unsqueeze_to_match(source: Array, target: Array, how: str = "suffix") -> Arr
     ), f"{how} is not supported, only 'prefix' and 'suffix' are supported."
 
     dim_diff = len(target.shape) - len(source.shape)
+    if dim_diff <= 0:
+        return source
 
-    for _ in range(dim_diff):
-        if how == "prefix":
-            source = jnp.expand_dims(source, axis=0)
-        elif how == "suffix":
-            source = jnp.expand_dims(source, axis=-1)
+    if how == "prefix":
+        return jnp.reshape(source, (1,) * dim_diff + source.shape)
+    elif how == "suffix":
+        return jnp.reshape(source, source.shape + (1,) * dim_diff)
 
     return source
 
