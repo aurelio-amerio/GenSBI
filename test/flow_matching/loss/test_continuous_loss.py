@@ -1,10 +1,11 @@
 import jax
 import jax.numpy as jnp
 import pytest
-from gensbi.flow_matching.loss.continuous_loss import  ContinuousFMLoss
 
+from gensbi.flow_matching.loss.continuous_loss import ContinuousFMLoss
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
+
 
 @pytest.mark.parametrize("reduction", ["None", "mean", "sum"])
 def test_loss(reduction):

@@ -6,7 +6,6 @@ supporting both conditioned and unconditioned inference modes.
 """
 from typing import Optional
 
-
 import jax.numpy as jnp
 from jax import Array
 from jax.typing import DTypeLike

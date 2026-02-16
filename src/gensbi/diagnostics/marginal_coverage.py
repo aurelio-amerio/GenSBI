@@ -1,13 +1,13 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from KDEpy import FFTKDE
 from tqdm import tqdm
 
 from gensbi.diagnostics.utils import (
-    probit,
-    z_from_alpha,
     alpha_from_z,
     jefferys_interval,
+    probit,
+    z_from_alpha,
 )
 
 

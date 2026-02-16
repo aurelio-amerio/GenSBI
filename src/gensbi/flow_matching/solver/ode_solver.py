@@ -1,11 +1,10 @@
 from typing import Callable, Optional, Sequence, Tuple, Union
 
-
+import diffrax
 import jax
 import jax.numpy as jnp
-from jax import Array
-import diffrax
 from diffrax import AbstractERK
+from jax import Array
 
 from gensbi.flow_matching.solver.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper

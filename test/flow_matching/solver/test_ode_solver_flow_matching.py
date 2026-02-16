@@ -2,17 +2,15 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
+import diffrax
 import jax.numpy as jnp
 import pytest
-from gensbi.flow_matching.solver.ode_solver import ODESolver
-from gensbi.utils.model_wrapping import ModelWrapper
-
 from flax import nnx
 from numpyro import distributions as dist
 
-import diffrax
-
+from gensbi.flow_matching.solver.ode_solver import ODESolver
 from gensbi.utils.math import _expand_dims, _expand_time
+from gensbi.utils.model_wrapping import ModelWrapper
 
 
 class DummyModel(nnx.Module):

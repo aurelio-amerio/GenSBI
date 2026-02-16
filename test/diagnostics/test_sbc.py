@@ -5,16 +5,14 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
+import pytest
 from flax import nnx
 
-import pytest
-
-
-from gensbi.diagnostics import run_sbc, sbc_rank_plot, check_sbc
+from gensbi.diagnostics import check_sbc, run_sbc, sbc_rank_plot
 from gensbi.diagnostics.sbc import _validate_sbc_inputs
+
 
 def get_sbc_data():
     class DummyPipeline:

@@ -2,16 +2,14 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import jax
-import jax.numpy as jnp
-from flax import nnx
-
 import warnings
 
+import jax
+import jax.numpy as jnp
 import pytest
+from flax import nnx
 
 from gensbi.recipes.joint_pipeline import sample_condition_mask
-
 from gensbi.recipes.utils import init_ids_1d, init_ids_2d, init_ids_joint
 
 

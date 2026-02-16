@@ -3,19 +3,18 @@ import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
+import pytest
 from flax import nnx
 
-import pytest
-
 from gensbi.models.embedding import (
-    MLPEmbedder,
-    GaussianFourierEmbedding,
-    SimpleTimeEmbedding,
-    SinusoidalTimeEmbedding,
-    SinusoidalPosEmbed1D,
-    SinusoidalPosEmbed2D,
     Embed,
     FeatureEmbedder,
+    GaussianFourierEmbedding,
+    MLPEmbedder,
+    SimpleTimeEmbedding,
+    SinusoidalPosEmbed1D,
+    SinusoidalPosEmbed2D,
+    SinusoidalTimeEmbedding,
 )
 
 

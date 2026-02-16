@@ -5,12 +5,12 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
-from gensbi.diagnostics.tarp import check_tarp, run_tarp, plot_tarp, TARPResult
 from gensbi.diagnostics.metrics import l1
+from gensbi.diagnostics.tarp import TARPResult, check_tarp, plot_tarp, run_tarp
 
 
 def get_tarp_data():

@@ -6,14 +6,12 @@ including parameter dataclasses, Gaussian latent space modules, and loss functio
 """
 from dataclasses import dataclass
 
-from flax import nnx
-from jax.typing import DTypeLike
-
-from jax import Array
 import jax
 import jax.numpy as jnp
-
 import optax
+from flax import nnx
+from jax import Array
+from jax.typing import DTypeLike
 
 
 @dataclass

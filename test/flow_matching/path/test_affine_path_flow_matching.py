@@ -1,9 +1,11 @@
 import os
+
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
 import pytest
+
 from gensbi.flow_matching.path.affine import AffineProbPath, CondOTProbPath
 from gensbi.flow_matching.path.scheduler import (
     CondOTScheduler,
@@ -12,6 +14,7 @@ from gensbi.flow_matching.path.scheduler import (
     PolynomialConvexScheduler,
     VPScheduler,
 )
+
 
 @pytest.fixture
 def affine_prob_path():

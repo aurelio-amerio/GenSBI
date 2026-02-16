@@ -3,31 +3,26 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import jax
-import jax.numpy as jnp
-from flax import nnx
-
+import itertools
+import tempfile
 import warnings
 
-import pytest
-
-import tempfile
-
 import grain
+import jax
+import jax.numpy as jnp
 import numpy as np
+import pytest
+from flax import nnx
 
-from gensbi.models import SimformerParams, Flux1JointParams, Flux1Params
+from gensbi.models import Flux1JointParams, Flux1Params, SimformerParams
 from gensbi.recipes import (
-    SimformerFlowPipeline,
-    SimformerDiffusionPipeline,
-    Flux1JointFlowPipeline,
-    Flux1JointDiffusionPipeline,
-    Flux1FlowPipeline,
     Flux1DiffusionPipeline,
+    Flux1FlowPipeline,
+    Flux1JointDiffusionPipeline,
+    Flux1JointFlowPipeline,
+    SimformerDiffusionPipeline,
+    SimformerFlowPipeline,
 )
-
-import itertools
-
 
 nsamples = 1000
 key = jax.random.PRNGKey(0)

@@ -1,10 +1,13 @@
 
 import os
+
 os.environ["JAX_PLATFORMS"] = "cpu"
 import jax
 import jax.numpy as jnp
 import pytest
+
 from gensbi.diagnostics.metrics.c2st import c2st, check_c2st
+
 
 def test_c2st_basics():
     # Identical distributions -> accuracy ~ 0.5

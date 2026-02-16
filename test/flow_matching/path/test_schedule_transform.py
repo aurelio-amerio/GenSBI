@@ -5,8 +5,12 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 import jax.numpy as jnp
 import pytest
 
-from gensbi.flow_matching.path.scheduler import CondOTScheduler, VPScheduler
-from gensbi.flow_matching.path.scheduler import ScheduleTransformedModel
+from gensbi.flow_matching.path.scheduler import (
+    CondOTScheduler,
+    ScheduleTransformedModel,
+    VPScheduler,
+)
+
 
 def test_schedule_transform():
 

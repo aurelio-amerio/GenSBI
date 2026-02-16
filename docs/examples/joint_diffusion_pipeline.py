@@ -1,23 +1,25 @@
 # %% Imports
-import os
+import os  # isort: skip
 
 # Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
 # os.environ["JAX_PLATFORMS"] = "cuda"
 
 import grain
-import numpy as np
 import jax
+import matplotlib.pyplot as plt
+import numpy as np
+from flax import nnx
 from jax import numpy as jnp
+from numpyro import distributions as dist
+
+from gensbi.models import Simformer, SimformerParams
 from gensbi.recipes import JointDiffusionPipeline
 from gensbi.utils.plotting import plot_marginals
 
-from gensbi.models import Simformer, SimformerParams
-import matplotlib.pyplot as plt
-
-from numpyro import distributions as dist
 
 
-from flax import nnx
+
+
 
 # %%
 

@@ -1,8 +1,9 @@
-import jax
-from jax import Array
-from einops import rearrange
-from jax import numpy as jnp
 from typing import Optional, Tuple
+
+import jax
+from einops import rearrange
+from jax import Array
+from jax import numpy as jnp
 
 
 def attention(

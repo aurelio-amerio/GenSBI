@@ -4,16 +4,13 @@ Unconditional model wrapper for GenSBI.
 This module provides a wrapper class for unconditional models used in flow matching,
 handling proper input expansion and calling conventions.
 """
-from jax import Array
 from typing import Optional
-
 
 import jax.numpy as jnp
 from jax import Array
 from jax.typing import DTypeLike
 
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
-
 
 
 class UnconditionalWrapper(ModelWrapper):

@@ -5,22 +5,24 @@ This package provides transformer-based models for simulation-based inference,
 including Flux1, Simformer, and autoencoder architectures, along with their
 associated loss functions and wrappers.
 """
-from .flux1 import Flux1Params, Flux1
-
+from .flux1 import Flux1, Flux1Params
+from .flux1joint import (
+    Flux1Joint,
+    Flux1JointParams,
+)
+from .losses import (
+    ConditionalCFMLoss,
+    ConditionalDiffLoss,
+    JointCFMLoss,
+    JointDiffLoss,
+    UnconditionalCFMLoss,
+    UnconditionalDiffLoss,
+)
 from .simformer import (
     Simformer,
     SimformerParams,
 )
-
-from .flux1joint import (
-    Flux1Joint,
-    Flux1JointParams,
-)   
-
-
-from .losses import JointCFMLoss, JointDiffLoss, ConditionalCFMLoss, ConditionalDiffLoss, UnconditionalCFMLoss, UnconditionalDiffLoss   
-
-from .wrappers import JointWrapper, ConditionalWrapper, UnconditionalWrapper
+from .wrappers import ConditionalWrapper, JointWrapper, UnconditionalWrapper
 
 __all__ = [
     "Flux1",

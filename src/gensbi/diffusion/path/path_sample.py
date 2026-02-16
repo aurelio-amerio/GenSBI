@@ -6,8 +6,9 @@ probability path, including EDM path samples from "Elucidating the Design Space
 of Diffusion-Based Generative Models" (Karras et al., 2022).
 """
 from dataclasses import dataclass, field
-from jax import Array
 from typing import Tuple
+
+from jax import Array
 
 
 @dataclass

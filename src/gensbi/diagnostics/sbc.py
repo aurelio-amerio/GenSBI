@@ -8,20 +8,6 @@
 # --------------------------------------------------------------------------
 
 import warnings
-from typing import Callable, Dict, List, Tuple, Union
-
-from jax import Array
-import jax.numpy as jnp
-import jax
-
-import numpy as np
-
-from scipy.stats import kstest, uniform
-from tqdm import tqdm
-
-from gensbi.diagnostics.metrics import c2st
-
-
 from typing import (
     Any,
     Callable,
@@ -36,11 +22,17 @@ from typing import (
     get_args,
 )
 
-
+import jax
+import jax.numpy as jnp
+import numpy as np
+from jax import Array
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure, FigureBase
-from scipy.stats import binom, gaussian_kde, iqr
+from scipy.stats import binom, gaussian_kde, iqr, kstest, uniform
+from tqdm import tqdm
+
+from gensbi.diagnostics.metrics import c2st
 
 
 def run_sbc(

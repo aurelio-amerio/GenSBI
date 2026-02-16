@@ -1,7 +1,8 @@
+from typing import Callable, Optional, Tuple
+
 import jax
 import jax.numpy as jnp
 from flax import nnx
-from typing import Callable, Tuple, Optional
 from jax.numpy import ndarray as Array
 
 from gensbi.flow_matching.loss import ContinuousFMLoss

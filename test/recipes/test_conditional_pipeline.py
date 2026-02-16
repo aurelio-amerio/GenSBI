@@ -2,22 +2,17 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import jax
-import jax.numpy as jnp
-from flax import nnx
-
+import tempfile
 import warnings
 
-import pytest
-
-import tempfile
-
 import grain
+import jax
+import jax.numpy as jnp
 import numpy as np
+import pytest
+from flax import nnx
 
-
-from gensbi.recipes import ConditionalFlowPipeline, ConditionalDiffusionPipeline
-
+from gensbi.recipes import ConditionalDiffusionPipeline, ConditionalFlowPipeline
 
 nsamples = 1000
 key = jax.random.PRNGKey(0)

@@ -1,12 +1,13 @@
 #%%
 import os
+
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
-
 import pytest
 
-from gensbi.diagnostics.metrics import l1, l2, c2st
+from gensbi.diagnostics.metrics import c2st, l1, l2
+
 #%%
 key = jax.random.PRNGKey(0)
 x = jax.random.normal(key, (100, 5))

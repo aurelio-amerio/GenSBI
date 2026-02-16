@@ -10,11 +10,10 @@
 
 from typing import Any, Callable, Dict, Optional, Union
 
-import numpy as np
-import jax 
-from jax import Array
+import jax
 import jax.numpy as jnp
-
+import numpy as np
+from jax import Array
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, cross_val_score
 from sklearn.neural_network import MLPClassifier

@@ -1,9 +1,9 @@
 import jax
-from jax import numpy as jnp
-from flax import nnx
 import numpy as np
-from jax.typing import DTypeLike
+from flax import nnx
 from jax import Array
+from jax import numpy as jnp
+from jax.typing import DTypeLike
 
 
 class MLPEmbedder(nnx.Module):

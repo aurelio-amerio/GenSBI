@@ -1,20 +1,18 @@
-import jax
-import jax.numpy as jnp
-from jax import Array
-from jax.typing import DTypeLike
-
-from einops import rearrange
-from flax import nnx
-
+from dataclasses import dataclass
 from functools import partial
 from typing import Optional
 
-from dataclasses import dataclass
+import jax
+import jax.numpy as jnp
+from einops import rearrange
+from flax import nnx
+from jax import Array
+from jax.typing import DTypeLike
+
+from gensbi.models.embedding import GaussianFourierEmbedding, MLPEmbedder
+from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 from .transformer import Transformer
-from gensbi.models.embedding import GaussianFourierEmbedding, MLPEmbedder
-
-from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 
 @dataclass

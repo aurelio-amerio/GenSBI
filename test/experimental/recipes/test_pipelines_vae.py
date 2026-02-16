@@ -2,27 +2,18 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import jax
-import jax.numpy as jnp
-from flax import nnx
-
+import tempfile
 import warnings
 
-import pytest
-
-import tempfile
-
 import grain
+import jax
+import jax.numpy as jnp
 import numpy as np
-
-
-import grain
-
+import pytest
+from flax import nnx
 
 from gensbi.experimental.models.autoencoders import AutoEncoderParams
-
 from gensbi.experimental.recipes import VAE1DPipeline, VAE2DPipeline
-
 
 df_train_1D = jax.random.normal(jax.random.PRNGKey(0), (1000, 128, 2))
 df_val_1D = jax.random.normal(jax.random.PRNGKey(1), (200, 128, 2))

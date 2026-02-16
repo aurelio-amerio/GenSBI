@@ -1,18 +1,17 @@
 import jax
 import jax.numpy as jnp
+from einops import rearrange
+from flax import nnx
+from flax.nnx import swish
 
 # from chex import Array
 from jax import Array
-from einops import rearrange
-from flax import nnx
-from jax.typing import DTypeLike, ArrayLike
-
+from jax.typing import ArrayLike, DTypeLike
 
 from gensbi.experimental.models.autoencoders.commons import (
     AutoEncoderParams,
     DiagonalGaussian,
 )
-from flax.nnx import swish
 
 
 class AttnBlock2D(nnx.Module):

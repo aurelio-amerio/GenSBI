@@ -2,24 +2,23 @@
 import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
-import numpy as np
 import matplotlib
-
+import numpy as np
 from jax import numpy as jnp
 
 matplotlib.use("Agg")  # Use non-interactive backend for testing
 import matplotlib.pyplot as plt
 import pytest
+from numpyro import distributions as dist
+
 from gensbi.utils.plotting import (
     _parse_range,
-    plot_trajectories,
     _plot_marginals_seaborn,
-    plot_marginals,
-    plot_2d_levels,
     plot_2d_dist_contour,
+    plot_2d_levels,
+    plot_marginals,
+    plot_trajectories,
 )
-
-from numpyro import distributions as dist
 
 
 # %%

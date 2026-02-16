@@ -2,14 +2,15 @@
 Cookie cutter modules for creating and training SBI models.
 """
 
-from .simformer import SimformerFlowPipeline, SimformerDiffusionPipeline
-from .flux1joint import Flux1JointFlowPipeline, Flux1JointDiffusionPipeline
-from .flux1 import Flux1FlowPipeline, Flux1DiffusionPipeline
-
+from .conditional_pipeline import ConditionalDiffusionPipeline, ConditionalFlowPipeline
+from .flux1 import Flux1DiffusionPipeline, Flux1FlowPipeline
+from .flux1joint import Flux1JointDiffusionPipeline, Flux1JointFlowPipeline
 from .joint_pipeline import JointDiffusionPipeline, JointFlowPipeline
-from .conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline
-from .unconditional_pipeline import UnconditionalFlowPipeline, UnconditionalDiffusionPipeline
-
+from .simformer import SimformerDiffusionPipeline, SimformerFlowPipeline
+from .unconditional_pipeline import (
+    UnconditionalDiffusionPipeline,
+    UnconditionalFlowPipeline,
+)
 
 __all__ = [
     "SimformerFlowPipeline",

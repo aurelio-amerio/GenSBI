@@ -4,6 +4,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
 import pytest
+
 from gensbi.flow_matching.path.scheduler import (
     CondOTScheduler,
     ConvexScheduler,

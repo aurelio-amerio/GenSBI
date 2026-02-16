@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from jax import Array
-from gensbi.diffusion.path.path_sample import EDMPathSample
 from typing import Any
+
+from jax import Array
+
+from gensbi.diffusion.path.path_sample import EDMPathSample
 
 
 class ProbPath(ABC):

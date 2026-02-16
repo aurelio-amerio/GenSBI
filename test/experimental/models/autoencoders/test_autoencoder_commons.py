@@ -2,12 +2,13 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import jax.numpy as jnp
 import jax
-from flax import nnx
+import jax.numpy as jnp
 import pytest
+from flax import nnx
 
 from gensbi.experimental.models.autoencoders.commons import DiagonalGaussian
+
 
 def test_DiagonalGaussian():
     batch_size = 12

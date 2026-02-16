@@ -7,7 +7,6 @@ from flax import nnx
 from jax import Array
 
 from gensbi.models.wrappers.unconditional import UnconditionalWrapper
-
 from gensbi.utils.math import _expand_dims, _expand_time
 
 

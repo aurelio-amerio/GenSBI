@@ -6,9 +6,8 @@ import jax.numpy as jnp
 from flax import nnx
 from jax import Array
 
-from gensbi.utils.model_wrapping import ModelWrapper # , GuidedModelWrapper
-
 from gensbi.utils.math import _expand_dims, _expand_time
+from gensbi.utils.model_wrapping import ModelWrapper  # , GuidedModelWrapper
 
 
 class DummyModel(nnx.Module):

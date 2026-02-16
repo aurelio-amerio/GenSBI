@@ -1,9 +1,11 @@
 import os
+
 os.environ['JAX_PLATFORMS'] = "cpu"
 
 import jax
 import jax.numpy as jnp
 import pytest
+
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler
 

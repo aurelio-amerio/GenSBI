@@ -1,9 +1,11 @@
 import os
+
 os.environ['JAX_PLATFORMS'] = "cpu"
 
 import pytest
-from gensbi.diffusion.path.path_sample import EDMPathSample
 from jax import numpy as jnp
+
+from gensbi.diffusion.path.path_sample import EDMPathSample
 
 
 def test_path_sample_initialization():

@@ -6,13 +6,14 @@ facilitating integration with ODE solvers and providing utilities for computing
 vector fields and divergences.
 """
 from abc import ABC
-from flax import nnx
-from jax import Array
-import jax.numpy as jnp
-
 from typing import Callable
 
-from .math import divergence, _expand_dims, _expand_time
+import jax.numpy as jnp
+from flax import nnx
+from jax import Array
+
+from .math import _expand_dims, _expand_time, divergence
+
 
 class ModelWrapper(nnx.Module):
     """

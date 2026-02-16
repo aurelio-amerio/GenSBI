@@ -1,13 +1,14 @@
 import os
+
 os.environ['JAX_PLATFORMS'] = "cpu"
 
 import jax
 import pytest
-from gensbi.diffusion.solver import SDESolver
+from flax import nnx
+
 from gensbi.diffusion.path.edm_path import EDMPath
 from gensbi.diffusion.path.scheduler.edm import EDMScheduler, VEScheduler, VPScheduler
-
-from flax import nnx
+from gensbi.diffusion.solver import SDESolver
 
 
 class DummyScoreModel(nnx.Module):

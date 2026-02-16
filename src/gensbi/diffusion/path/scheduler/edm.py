@@ -10,10 +10,11 @@ Based on the paper "Elucidating the Design Space of Diffusion-Based Generative M
 by Karras et al., 2022. https://arxiv.org/abs/2206.00364
 """
 import abc
+from typing import Any, Callable
+
 import jax
 import jax.numpy as jnp
 from jax import Array
-from typing import Callable, Any
 
 # from .samplers import sampler #moved to samplers module
 

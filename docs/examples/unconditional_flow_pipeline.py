@@ -1,20 +1,25 @@
 # %% Imports
-import os
+import os  # isort: skip
 
 # Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
 # os.environ["JAX_PLATFORMS"] = "cuda"
 
 import grain
-import numpy as np
 import jax
+import matplotlib.pyplot as plt
+import numpy as np
+from flax import nnx
 from jax import numpy as jnp
+
 from gensbi.recipes import UnconditionalFlowPipeline
 from gensbi.utils.model_wrapping import _expand_dims, _expand_time
 from gensbi.utils.plotting import plot_marginals
-import matplotlib.pyplot as plt
+
+# Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
+# os.environ["JAX_PLATFORMS"] = "cuda"
 
 
-from flax import nnx
+
 
 
 # %% define a simulator

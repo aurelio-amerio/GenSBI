@@ -1,6 +1,7 @@
-import pytest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
 from gensbi.diagnostics.marginal_coverage import (
     compute_marginal_coverage,
     plot_marginal_coverage,

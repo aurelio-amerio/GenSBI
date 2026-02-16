@@ -4,12 +4,11 @@ import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
+import pytest
 from flax import nnx
 
 from gensbi.models.flux1joint.model import Flux1Joint, Flux1JointParams
 from gensbi.models.wrappers import JointWrapper
-
-import pytest
 
 # %%
 

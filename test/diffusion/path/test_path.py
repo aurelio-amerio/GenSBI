@@ -1,7 +1,9 @@
 import jax
 import jax.numpy as jnp
 import pytest
+
 from gensbi.diffusion.path.path import ProbPath
+
 
 class DummyScheduler:
     def __init__(self):

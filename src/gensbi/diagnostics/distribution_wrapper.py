@@ -1,10 +1,9 @@
-from flax import nnx
-
-from jax import Array
+from typing import Callable, Optional
 
 from einops import rearrange
+from flax import nnx
+from jax import Array
 
-from typing import Callable, Optional
 from gensbi.recipes.pipeline import AbstractPipeline
 
 

@@ -6,15 +6,13 @@ trajectory plots, marginal distributions, and 2D contour plots. Supports both
 seaborn and corner-based plotting styles.
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.colors import LinearSegmentedColormap
-
-import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-
+import seaborn as sns
 from corner import corner
+from matplotlib.colors import LinearSegmentedColormap
 
 sns.set_style("darkgrid")
 

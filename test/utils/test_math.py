@@ -1,11 +1,13 @@
 import os
+
 os.environ['JAX_PLATFORMS']="cpu"
 
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
 import pytest
 
 from gensbi.utils.math import divergence
+
 
 def test_divergence_linear_field():
     # vf(t, x, args) = A @ x, where A is a constant matrix

@@ -4,6 +4,7 @@ Abstract solver interface for flow matching.
 This module defines the abstract base class for solvers used in flow matching algorithms.
 """
 from abc import ABC, abstractmethod
+
 from jax import Array
 
 

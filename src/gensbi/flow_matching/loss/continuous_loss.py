@@ -4,9 +4,10 @@ Continuous flow matching loss functions.
 This module implements loss functions for training continuous flow matching models,
 computing the squared difference between predicted and target velocities.
 """
+from typing import Any, Callable, Tuple
+
 import jax.numpy as jnp
 from flax import nnx
-from typing import Callable, Tuple, Any
 from jax import Array
 
 

@@ -2,13 +2,14 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
+import jax
 import jax.numpy as jnp
-from flax import nnx
 import pytest
-import jax 
+from flax import nnx
 
-from gensbi.experimental.models.autoencoders.autoencoder_2d import AutoEncoder2D
 from gensbi.experimental.models.autoencoders import AutoEncoderParams, vae_loss_fn
+from gensbi.experimental.models.autoencoders.autoencoder_2d import AutoEncoder2D
+
 
 def test_autoencoder_2d():
     resolution = 16

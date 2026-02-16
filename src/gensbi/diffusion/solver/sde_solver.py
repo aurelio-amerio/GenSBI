@@ -2,12 +2,11 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
-from jax import jit
-from jax import Array
+from jax import Array, jit
 
-from gensbi.diffusion.solver.solver import Solver
-from gensbi.diffusion.solver.edm_samplers import edm_sampler, edm_ablation_sampler
 from gensbi.diffusion.path import EDMPath
+from gensbi.diffusion.solver.edm_samplers import edm_ablation_sampler, edm_sampler
+from gensbi.diffusion.solver.solver import Solver
 
 
 class SDESolver(Solver):

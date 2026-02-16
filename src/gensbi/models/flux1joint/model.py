@@ -1,31 +1,25 @@
+import warnings
+from dataclasses import dataclass
+from functools import partial
+from typing import Callable, Optional, Union
+
 import jax
 import jax.numpy as jnp
+import numpy as np
+from einops import rearrange
+from flax import nnx
 from jax import Array
 from jax.typing import DTypeLike
 
-from einops import rearrange
-from flax import nnx
-
-import numpy as np
-from functools import partial
-from typing import Optional
-
-from dataclasses import dataclass
-
+from gensbi.models.embedding import FeatureEmbedder
 from gensbi.models.flux1.layers import (
     EmbedND,
+    Identity,
     LastLayer,
     MLPEmbedder,
     SingleStreamBlock,
     timestep_embedding,
-    Identity,
 )
-
-from gensbi.models.embedding import FeatureEmbedder
-
-import warnings
-
-from typing import Union, Callable, Optional
 
 
 @dataclass

@@ -20,36 +20,29 @@ Key features:
 See the `VAE1DPipeline` and `VAE2DPipeline` classes for concrete examples.
 """
 
-from flax import nnx
-import jax
-from jax import numpy as jnp
-from typing import Any, Callable, Optional, Tuple
-from jax import Array
-
-from numpyro import distributions as dist
-
 import abc
+import os
 from functools import partial
+from typing import Any, Callable, Optional, Tuple
 
+import jax
 import optax
-
-from optax.schedules import linear_schedule, constant_schedule
-
-import yaml
-
 import orbax.checkpoint as ocp
-
+import yaml
+from flax import nnx
+from jax import Array
+from jax import numpy as jnp
+from numpyro import distributions as dist
+from optax.schedules import constant_schedule, linear_schedule
 from tqdm import tqdm
 
-import os
-
 from gensbi.experimental.models.autoencoders import (
-    AutoEncoderParams,
-    vae_loss_fn,
     AutoEncoder1D,
     AutoEncoder2D,
+    AutoEncoderParams,
+    vae_loss_fn,
 )
-from gensbi.recipes.pipeline import ema_step, ModelEMA
+from gensbi.recipes.pipeline import ModelEMA, ema_step
 
 
 def parse_training_config(config_path: str):

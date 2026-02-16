@@ -2,23 +2,20 @@
 Pipeline for training and using a Flux1Joint model for simulation-based inference.
 """
 
+import os
+
 import jax
 import jax.numpy as jnp
+import numpyro.distributions as dist
+import yaml
 from flax import nnx
 
 from gensbi.models import (
     Flux1Joint,
     Flux1JointParams,
 )
-
-import numpyro.distributions as dist
-
+from gensbi.recipes.joint_pipeline import JointDiffusionPipeline, JointFlowPipeline
 from gensbi.utils.model_wrapping import _expand_dims
-
-import os
-import yaml
-
-from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline
 
 
 def parse_flux1joint_params(config_path: str):

@@ -4,32 +4,24 @@ Pipeline for training and using a Unconditional model for simulation-based infer
 
 import jax
 import jax.numpy as jnp
+from einops import repeat
 from flax import nnx
-
 from numpyro import distributions as dist
-
-
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler, VPScheduler
 from gensbi.diffusion.solver import SDESolver
-
+from gensbi.flow_matching.path import AffineProbPath
+from gensbi.flow_matching.path.scheduler import CondOTScheduler
+from gensbi.flow_matching.solver import ODESolver
 from gensbi.models import (
     UnconditionalCFMLoss,
-    UnconditionalWrapper,
     UnconditionalDiffLoss,
+    UnconditionalWrapper,
 )
-
-from gensbi.recipes.utils import init_ids_1d
-
-from einops import repeat
-
-from gensbi.utils.model_wrapping import _expand_dims
-
 from gensbi.recipes.pipeline import AbstractPipeline
+from gensbi.recipes.utils import init_ids_1d
+from gensbi.utils.model_wrapping import _expand_dims
 
 
 class UnconditionalFlowPipeline(AbstractPipeline):

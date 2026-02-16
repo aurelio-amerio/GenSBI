@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from jax import Array
 
 import jax
 import jax.numpy as jnp
+from jax import Array
 
 from gensbi.flow_matching.path.path_sample import PathSample
 

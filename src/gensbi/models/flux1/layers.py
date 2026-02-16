@@ -1,14 +1,15 @@
 import math
 from dataclasses import dataclass
 
+import jax
 import jax.numpy as jnp
-from jax import Array
 from einops import rearrange
 from flax import nnx
+from jax import Array
 from jax.typing import DTypeLike
-import jax
 
 from .math import attention, rope
+
 
 class Identity(nnx.Module):
     def __call__(self, x: Array) -> Array:

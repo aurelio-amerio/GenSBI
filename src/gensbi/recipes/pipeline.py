@@ -10,26 +10,20 @@ See `JointPipeline` and `ConditionalPipeline` for concrete examples.
 
 """
 
-from flax import nnx
-import jax
-from jax import numpy as jnp
-from typing import Any, Callable, Optional, Tuple
-from jax import Array
-
-from numpyro import distributions as dist
-
 import abc
-from functools import partial
-
-import optax
-from optax.contrib import reduce_on_plateau
-
-import orbax.checkpoint as ocp
-
-from tqdm import tqdm
-
 import os
+from functools import partial
+from typing import Any, Callable, Optional, Tuple
 
+import jax
+import optax
+import orbax.checkpoint as ocp
+from flax import nnx
+from jax import Array
+from jax import numpy as jnp
+from numpyro import distributions as dist
+from optax.contrib import reduce_on_plateau
+from tqdm import tqdm
 
 from gensbi.utils.misc import get_colored_value
 

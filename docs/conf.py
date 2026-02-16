@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # sys.path.insert(0, str(Path('..', 'src').resolve())) # Add the source directory to the path

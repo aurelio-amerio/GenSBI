@@ -5,14 +5,12 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
+import pytest
 from flax import nnx
 
-import pytest
-
-from gensbi.diagnostics import plot_lc2st, LC2ST
+from gensbi.diagnostics import LC2ST, plot_lc2st
 
 
 # %%

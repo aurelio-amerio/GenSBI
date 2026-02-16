@@ -2,41 +2,34 @@
 Pipeline for training and using a Joint model for simulation-based inference.
 """
 
+import os
+from functools import partial
+
 import jax
 import jax.numpy as jnp
-from flax import nnx
+import numpyro.distributions as dist
 import optax
+import orbax.checkpoint as ocp
+import yaml
+from einops import repeat
+from flax import nnx
 from optax.contrib import reduce_on_plateau
 from tqdm.auto import tqdm
-from functools import partial
-import orbax.checkpoint as ocp
-
-from gensbi.recipes.utils import init_ids_joint
-
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
-
-from einops import repeat
-
+from gensbi.flow_matching.path import AffineProbPath
+from gensbi.flow_matching.path.scheduler import CondOTScheduler
+from gensbi.flow_matching.solver import ODESolver
 from gensbi.models import (
     JointCFMLoss,
-    JointWrapper,
     JointDiffLoss,
+    JointWrapper,
 )
-
-import numpyro.distributions as dist
-
-from gensbi.utils.model_wrapping import _expand_dims
-
-import os
-import yaml
-
 from gensbi.recipes.pipeline import AbstractPipeline, ModelEMA
+from gensbi.recipes.utils import init_ids_joint
+from gensbi.utils.model_wrapping import _expand_dims
 
 
 def sample_structured_conditional_mask(

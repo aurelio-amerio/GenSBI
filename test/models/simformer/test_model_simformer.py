@@ -3,9 +3,8 @@ import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
-from flax import nnx
-
 import pytest
+from flax import nnx
 
 from gensbi.models.simformer.model import Simformer, SimformerParams
 from gensbi.models.wrappers import JointWrapper

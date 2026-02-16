@@ -2,9 +2,9 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
+import jax
 import jax.numpy as jnp
 from flax import nnx
-import jax
 
 from gensbi.models.simformer.transformer import Transformer
 

@@ -1,10 +1,13 @@
 import os
+
 os.environ['JAX_PLATFORMS'] = "cpu"
 
-import pytest
-from gensbi.diffusion.path.scheduler import EDMScheduler,  VEScheduler, VPScheduler
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
+import pytest
+
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler, VPScheduler
+
 
 @pytest.mark.parametrize("scheduler_cls", [EDMScheduler, VEScheduler, VPScheduler])
 def test_name(scheduler_cls):

@@ -1,9 +1,12 @@
 import os
+
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
 import pytest
+
 from gensbi.flow_matching.utils.utils import unsqueeze_to_match
+
 
 def test_unsqueeze_to_match_suffix():
     source = jnp.ones(3)

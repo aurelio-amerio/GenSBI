@@ -4,19 +4,16 @@ Pipeline for training and using a Flux1 model for simulation-based inference.
 
 import jax
 import jax.numpy as jnp
+import yaml
 from flax import nnx
-
 
 from gensbi.models import (
     Flux1,
     Flux1Params,
 )
-
-import yaml
-
 from gensbi.recipes.conditional_pipeline import (
-    ConditionalFlowPipeline,
     ConditionalDiffusionPipeline,
+    ConditionalFlowPipeline,
 )
 
 

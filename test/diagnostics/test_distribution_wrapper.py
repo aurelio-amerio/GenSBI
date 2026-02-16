@@ -5,10 +5,8 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-
-from flax import nnx
-
 import pytest
+from flax import nnx
 
 from gensbi.diagnostics import PosteriorWrapper
 

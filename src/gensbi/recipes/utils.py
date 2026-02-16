@@ -1,9 +1,10 @@
+from typing import Tuple, Union
+
 import jax
-from jax import numpy as jnp
 import numpy as np
-from typing import Union, Tuple
-from einops import repeat, rearrange
+from einops import rearrange, repeat
 from jax import Array
+from jax import numpy as jnp
 
 
 def init_ids_joint(dim_obs: int, dim_cond: int):

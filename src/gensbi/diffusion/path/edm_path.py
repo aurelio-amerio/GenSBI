@@ -8,13 +8,13 @@ Based on the paper "Elucidating the Design Space of Diffusion-Based Generative M
 by Karras et al., 2022. https://arxiv.org/abs/2206.00364
 """
 
+import warnings
 from abc import ABC, abstractmethod
+from typing import Callable
+
 import jax
 from jax import Array
 from jax import numpy as jnp
-from typing import Callable
-
-import warnings
 
 from gensbi.diffusion.path.path import ProbPath
 from gensbi.diffusion.path.path_sample import EDMPathSample

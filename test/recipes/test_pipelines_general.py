@@ -2,30 +2,25 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import jax
-import jax.numpy as jnp
-from flax import nnx
-
+import tempfile
 import warnings
 
-import pytest
-
-import tempfile
-
-from gensbi.recipes import (
-    ConditionalFlowPipeline,
-    ConditionalDiffusionPipeline,
-    UnconditionalFlowPipeline,
-    UnconditionalDiffusionPipeline,
-    JointFlowPipeline,
-    JointDiffusionPipeline,
-)
-
-from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
-
 import grain
+import jax
+import jax.numpy as jnp
 import numpy as np
+import pytest
+from flax import nnx
 
+from gensbi.models import Flux1, Flux1Params, Simformer, SimformerParams
+from gensbi.recipes import (
+    ConditionalDiffusionPipeline,
+    ConditionalFlowPipeline,
+    JointDiffusionPipeline,
+    JointFlowPipeline,
+    UnconditionalDiffusionPipeline,
+    UnconditionalFlowPipeline,
+)
 
 nsamples = 1000
 key = jax.random.PRNGKey(0)

@@ -10,23 +10,19 @@
 
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-import numpy as np
 import jax
-from jax import Array
 import jax.numpy as jnp
-
+import matplotlib.pyplot as plt
+import numpy as np
 from flax import nnx
-
+from jax import Array
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure, FigureBase
 from sklearn.base import BaseEstimator, clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.neural_network import MLPClassifier
-
 from tqdm import tqdm
-
-import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure, FigureBase
 
 
 class LC2ST:

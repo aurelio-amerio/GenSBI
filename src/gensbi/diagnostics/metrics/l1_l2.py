@@ -2,6 +2,7 @@ import jax
 from jax import Array
 from jax import numpy as jnp
 
+
 def l1(x: Array, y: Array, axis: int = -1) -> Array:
     """
     Calculates the L1 (Manhattan) distance between two tensors.

@@ -4,16 +4,14 @@ Utility functions for flow matching.
 This module provides helper functions for tensor manipulation and array operations
 commonly used in flow matching algorithms, including dimension expansion and broadcasting.
 """
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import jax
 import jax.numpy as jnp
-from jax import Array
-
 import matplotlib.pyplot as plt
 import numpy as np
-
 from einops import einsum
+from jax import Array
 
 
 def unsqueeze_to_match(source: Array, target: Array, how: str = "suffix") -> Array:

@@ -1,6 +1,5 @@
 import math
 
-
 # ANSI Escape Codes
 RED = "\033[91m"
 YELLOW = "\033[93m"

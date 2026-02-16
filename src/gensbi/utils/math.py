@@ -4,11 +4,12 @@ Mathematical utility functions for GenSBI.
 This module provides mathematical operations and transformations used throughout
 the library, including dimension expansion and divergence computation for vector fields.
 """
+from typing import Callable, Optional
+
 import jax
 import jax.numpy as jnp
+from einops import einsum, rearrange
 from jax import Array
-from typing import Callable, Optional
-from einops import rearrange, einsum
 
 
 def _expand_dims(x: Array) -> Array:

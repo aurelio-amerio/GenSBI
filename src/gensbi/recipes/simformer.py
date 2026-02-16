@@ -4,18 +4,14 @@ Pipeline for training and using a Simformer model for simulation-based inference
 
 import jax
 import jax.numpy as jnp
-from flax import config, nnx
-
 import yaml
-
+from flax import config, nnx
 
 from gensbi.models import (
     Simformer,
     SimformerParams,
 )
-
-
-from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline
+from gensbi.recipes.joint_pipeline import JointDiffusionPipeline, JointFlowPipeline
 
 
 def parse_simformer_params(config_path: str):

@@ -4,8 +4,8 @@ import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
-from flax import nnx
 import pytest
+from flax import nnx
 
 from gensbi.models.flux1.model import Flux1, Flux1Params
 from gensbi.models.wrappers import ConditionalWrapper

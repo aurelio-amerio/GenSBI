@@ -18,18 +18,17 @@ The TARP diagnostic is a global diagnostic which can be used to check a
 trained posterior against a set of true values of theta.
 """
 
-from typing import Callable, Optional, Tuple, Union
 from dataclasses import dataclass, field
+from typing import Callable, Optional, Tuple, Union
 
-from scipy.stats import kstest, norm
 import jax
-from jax import numpy as jnp
-from jax import Array
-
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from jax import Array
+from jax import numpy as jnp
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from scipy.stats import kstest, norm
 
 from gensbi.diagnostics.metrics import l1, l2
 from gensbi.diagnostics.utils import alpha_from_z, jefferys_interval, probit

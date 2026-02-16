@@ -1,10 +1,9 @@
-import jax
-from jax import numpy as jnp
-from jax import jit
-from jax import Array
-from typing import Callable, Optional, Any
+from typing import Any, Callable, Optional
 
+import jax
 from einops import repeat
+from jax import Array, jit
+from jax import numpy as jnp
 
 
 def edm_sampler(

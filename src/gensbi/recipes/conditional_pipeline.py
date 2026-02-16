@@ -2,41 +2,32 @@
 Pipeline for training and using a Conditional model for simulation-based inference.
 """
 
+import os
+from functools import partial
+from typing import Tuple, Union
+
 import jax
 import jax.numpy as jnp
-from flax import nnx
 import optax
-from optax.contrib import reduce_on_plateau
-
-from numpyro import distributions as dist
-from tqdm.auto import tqdm
-from functools import partial
 import orbax.checkpoint as ocp
-
-from typing import Union, Tuple
-
-from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
+import yaml
+from einops import repeat
+from flax import nnx
+from numpyro import distributions as dist
+from optax.contrib import reduce_on_plateau
+from tqdm.auto import tqdm
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
 from gensbi.diffusion.solver import SDESolver
-
-from gensbi.models import ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
-
-from einops import repeat
-
+from gensbi.flow_matching.path import AffineProbPath
+from gensbi.flow_matching.path.scheduler import CondOTScheduler
+from gensbi.flow_matching.solver import ODESolver
+from gensbi.models import ConditionalCFMLoss, ConditionalDiffLoss, ConditionalWrapper
 from gensbi.models.flux1 import model
-from gensbi.utils.model_wrapping import _expand_dims
-
-import os
-
-import yaml
-
 from gensbi.recipes.pipeline import AbstractPipeline
-
 from gensbi.recipes.utils import init_ids_1d, init_ids_2d
+from gensbi.utils.model_wrapping import _expand_dims
 
 
 class ConditionalFlowPipeline(AbstractPipeline):

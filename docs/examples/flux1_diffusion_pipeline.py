@@ -1,21 +1,23 @@
 # %% Imports
-import os
+import os  # isort: skip
 
 # Set JAX backend (use 'cuda' for GPU, 'cpu' otherwise)
 # os.environ["JAX_PLATFORMS"] = "cuda"
 
 import grain
-import numpy as np
 import jax
+import matplotlib.pyplot as plt
+import numpy as np
+from flax import nnx
 from jax import numpy as jnp
 from numpyro import distributions as dist
-from flax import nnx
 
-from gensbi.recipes import Flux1DiffusionPipeline
 from gensbi.models import Flux1, Flux1Params
-
+from gensbi.recipes import Flux1DiffusionPipeline
 from gensbi.utils.plotting import plot_marginals
-import matplotlib.pyplot as plt
+
+
+
 
 
 # %%

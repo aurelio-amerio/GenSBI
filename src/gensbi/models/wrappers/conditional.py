@@ -7,8 +7,8 @@ handling proper input expansion and calling conventions for conditional inferenc
 
 from jax import Array
 
-
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
+
 
 class ConditionalWrapper(ModelWrapper):
     """

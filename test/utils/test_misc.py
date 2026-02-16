@@ -1,8 +1,9 @@
 import os
+
 os.environ['JAX_PLATFORMS']="cpu"
 
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
 import pytest
 
 from gensbi.utils.misc import get_colored_value, scale_lr

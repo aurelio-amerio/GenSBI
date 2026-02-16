@@ -1,25 +1,22 @@
 from dataclasses import dataclass
-
-
-from typing import Union, Optional
+from typing import Optional, Union
 
 import jax
 import jax.numpy as jnp
-from jax import Array
 from flax import nnx
+from jax import Array
 from jax.typing import DTypeLike
 
+from gensbi.models.embedding import FeatureEmbedder
 from gensbi.models.flux1.layers import (
     DoubleStreamBlock,
     EmbedND,
+    Identity,
     LastLayer,
     MLPEmbedder,
     SingleStreamBlock,
     timestep_embedding,
-    Identity,
 )
-
-from gensbi.models.embedding import FeatureEmbedder
 
 
 @dataclass

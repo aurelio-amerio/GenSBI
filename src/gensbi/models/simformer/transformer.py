@@ -1,11 +1,12 @@
-import jax
-from jax import numpy as jnp
-from jax import jit, vmap
-from flax import nnx
 from typing import Callable, Optional
-from jaxtyping import Array, PyTree
-from jax.typing import DTypeLike
 
+import jax
+from flax import nnx
+from jax import jit
+from jax import numpy as jnp
+from jax import vmap
+from jax.typing import DTypeLike
+from jaxtyping import Array, PyTree
 
 # layer = nnx.MultiHeadAttention(
 #     num_heads=8, in_features=5, qkv_features=16, decode=False, rngs=nnx.Rngs(0)
