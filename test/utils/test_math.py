@@ -53,28 +53,24 @@ def test_divergence_with_args():
     assert jnp.allclose(div, 8.0)
 
 
-def test_expand_dims():
-    """Test internal dimension expansion for rank 1, 2, and 3 inputs."""
-    # 1D array: (N,) -> (1, N, 1)
-    x1 = jnp.arange(5)
-    res1 = _expand_dims(x1)
-    assert res1.ndim == 3
-    assert res1.shape == (1, 5, 1)
-    assert jnp.array_equal(res1.flatten(), x1)
-
-    # 2D array: (N, D) -> (N, D, 1)
-    x2 = jnp.arange(10).reshape(5, 2)
-    res2 = _expand_dims(x2)
-    assert res2.ndim == 3
-    assert res2.shape == (5, 2, 1)
-    assert jnp.array_equal(res2.flatten(), x2.flatten())
-
-    # 3D array: (N, D, C) -> (N, D, C) (unchanged)
-    x3 = jnp.arange(30).reshape(5, 2, 3)
-    res3 = _expand_dims(x3)
-    assert res3.ndim == 3
-    assert res3.shape == (5, 2, 3)
-    assert jnp.array_equal(res3, x3)
+@pytest.mark.parametrize(
+    "input_array, expected_shape",
+    [
+        (jnp.arange(5), (1, 5, 1)),  # 1D array: (N,) -> (1, N, 1)
+        (jnp.arange(10).reshape(5, 2), (5, 2, 1)),  # 2D array: (N, D) -> (N, D, 1)
+        (jnp.arange(30).reshape(5, 2, 3), (5, 2, 3)),  # 3D array: (N, D, C) -> (N, D, C)
+    ],
+    ids=["1D", "2D", "3D"],
+)
+def test_expand_dims(input_array, expected_shape):
+    """Test internal dimension expansion for various input ranks."""
+    res = _expand_dims(input_array)
+    assert res.ndim == 3
+    assert res.shape == expected_shape
+    if input_array.ndim < 3:
+        assert jnp.array_equal(res.flatten(), input_array.flatten())
+    else:
+        assert jnp.array_equal(res, input_array)
 
 
 def test_expand_time():
