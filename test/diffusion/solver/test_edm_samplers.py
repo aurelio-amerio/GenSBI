@@ -19,7 +19,7 @@ class MockSDE:
     def timesteps(self, step_indices, n_steps):
         # We assume step_indices map to indices in _timesteps
         # Or simpler, just return linspace regardless of indices for mock purposes
-        return jnp.linspace(10.0, 0.0, n_steps + 1)[:-1]
+        return self._timesteps[step_indices]
 
     def denoise(self, model, x, t, **kwargs):
         # Pass through to model
