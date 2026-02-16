@@ -345,13 +345,6 @@ class AbstractPipeline(abc.ABC):
         nsteps = self.training_config["nsteps"]
         max_lr = self.training_config["max_lr"]
         min_lr = self.training_config["min_lr"]
-        # schedule = optax.warmup_cosine_decay_schedule(
-        #     init_value=1e-7,  # Start tiny
-        #     peak_value=max_lr,  # Peak
-        #     warmup_steps=warmup_steps,
-        #     decay_steps=nsteps - warmup_steps,
-        #     end_value=min_lr,  # 1% of Peak
-        # )
 
         # we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr
         decay_transition = self.training_config["decay_transition"]
