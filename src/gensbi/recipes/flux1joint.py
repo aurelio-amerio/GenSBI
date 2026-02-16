@@ -109,7 +109,8 @@ def _flux1joint_config_from_path(config_path: str, dim_joint: int):
     method = strategy.get("method")
     model_type = strategy.get("model")
 
-    assert model_type == "flux1joint", f"Model type {model_type} not supported."
+    if model_type != "flux1joint":
+        raise ValueError(f"Model type {model_type} not supported.")
 
     params_dict = parse_flux1joint_params(config_path)
 
@@ -284,9 +285,10 @@ class Flux1JointFlowPipeline(JointFlowPipeline):
             config_path, dim_obs + dim_cond
         )
 
-        assert (
-            method == "flow"
-        ), f"Method {method} not supported in Flux1JointFlowPipeline."
+        if method != "flow":
+            raise ValueError(
+                f"Method {method} not supported in Flux1JointFlowPipeline."
+            )
 
         # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
@@ -415,9 +417,10 @@ class Flux1JointDiffusionPipeline(JointDiffusionPipeline):
             config_path, dim_obs + dim_cond
         )
 
-        assert (
-            method == "diffusion"
-        ), f"Method {method} not supported in Flux1JointDiffusionPipeline."
+        if method != "diffusion":
+            raise ValueError(
+                f"Method {method} not supported in Flux1JointDiffusionPipeline."
+            )
 
         # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
