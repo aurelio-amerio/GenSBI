@@ -66,7 +66,9 @@ def test_apply_rope_rotation():
     q_out, k_out = apply_rope(q, k, freqs_cis)
 
     # For 90 deg: c=0, s=1.
-    # out = [0, 1]*1 + [-1, 0]*0 = [0, 1].
+    # rope output structure: [[c, -s], [s, c]] = [[0, -1], [1, 0]]
+    # apply_rope effectively does: [c, s]*x + [-s, c]*y due to column slicing
+    # x=1, y=0: [c, s] = [0, 1]
     expected = jnp.array([[[[0.0, 1.0]]]])
     assert jnp.allclose(q_out, expected, atol=1e-5)
 
