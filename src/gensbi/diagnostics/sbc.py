@@ -238,7 +238,7 @@ def _prepare_reduce_functions(
                 "`reduce_fn` must either be the string `marginals` or a Callable or a "
                 "List of Callables."
             )
-        return [eval(f"lambda theta, x: theta[:, {i}]") for i in range(param_dim)]
+        return [lambda theta, x, i=i: theta[:, i] for i in range(param_dim)]
 
     if isinstance(reduce_fns, Callable):
         return [reduce_fns]
