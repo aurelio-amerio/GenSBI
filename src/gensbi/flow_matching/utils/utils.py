@@ -44,9 +44,10 @@ def unsqueeze_to_match(source: Array, target: Array, how: str = "suffix") -> Arr
         return source
 
     if how == "prefix":
-        return jnp.reshape(source, (1,) * dim_diff + source.shape)
+        return jnp.expand_dims(source, axis=tuple(range(dim_diff)))
     elif how == "suffix":
-        return jnp.reshape(source, source.shape + (1,) * dim_diff)
+        start_dim = len(source.shape)
+        return jnp.expand_dims(source, axis=tuple(range(start_dim, start_dim + dim_diff)))
 
     return source
 
