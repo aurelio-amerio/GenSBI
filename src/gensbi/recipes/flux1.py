@@ -110,7 +110,8 @@ def _flux1_config_from_path(config_path: str, dim_obs: int, dim_cond: int):
     method = strategy.get("method")
     model_type = strategy.get("model")
 
-    assert model_type == "flux", f"Model type {model_type} not supported."
+    if model_type != "flux":
+        raise ValueError(f"Model type {model_type} not supported.")
 
     params_dict = parse_flux1_params(config_path)
 
@@ -299,7 +300,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             config_path, dim_obs, dim_cond
         )
 
-        assert method == "flow", f"Method {method} not supported in Flux1FlowPipeline."
+        if method != "flow":
+            raise ValueError(f"Method {method} not supported in Flux1FlowPipeline.")
 
         # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
@@ -439,9 +441,10 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             config_path, dim_obs, dim_cond
         )
 
-        assert (
-            method == "diffusion"
-        ), f"Method {method} not supported in Flux1DiffusionPipeline."
+        if method != "diffusion":
+            raise ValueError(
+                f"Method {method} not supported in Flux1DiffusionPipeline."
+            )
 
         # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
