@@ -16,10 +16,6 @@ from gensbi.models import Simformer, SimformerParams
 from gensbi.recipes import SimformerFlowPipeline
 from gensbi.utils.plotting import plot_marginals
 
-
-
-
-
 # %%
 
 theta_prior = dist.Uniform(

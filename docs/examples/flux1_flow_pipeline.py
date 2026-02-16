@@ -16,10 +16,6 @@ from gensbi.models import Flux1, Flux1Params
 from gensbi.recipes import Flux1FlowPipeline
 from gensbi.utils.plotting import plot_marginals
 
-
-
-
-
 # %%
 
 theta_prior = dist.Uniform(
