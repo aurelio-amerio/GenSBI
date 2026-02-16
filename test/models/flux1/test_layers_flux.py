@@ -3,7 +3,10 @@ import jax.numpy as jnp
 from flax import nnx
 import jax
 
-from gensbi.models.flux1.layers import EmbedND, MLPEmbedder, Modulation
+from gensbi.models.flux1.layers import (
+    EmbedND, MLPEmbedder, Modulation, timestep_embedding, QKNorm, SelfAttention,
+    DoubleStreamBlock, SingleStreamBlock, LastLayer
+)
 
 def get_rngs():
     return nnx.Rngs(0)
@@ -45,19 +48,17 @@ def test_embed_nd_mismatch_axes():
     layer = EmbedND(dim, theta, axes_dim)
 
     # Case 1: More axes in input than configured -> IndexError
-    batch_size = 1
-    seq_len = 5
-    ids_too_many = jnp.zeros((batch_size, seq_len, len(axes_dim) + 1))
+    ids_too_many = jnp.zeros((1, 5, 3)) # 3 axes, but configured for 2
     with pytest.raises(IndexError):
         layer(ids_too_many)
 
     # Case 2: Fewer axes in input than configured -> subset of embeddings
-    ids_too_few = jnp.zeros((batch_size, seq_len, 1)) # 1 axis
+    ids_too_few = jnp.zeros((1, 5, 1)) # 1 axis
     output = layer(ids_too_few)
 
     # Should only use the first axis_dim (8)
     # Output shape: (1, 1, 5, 8/2, 2, 2) -> (1, 1, 5, 4, 2, 2)
-    expected_shape = (batch_size, 1, seq_len, axes_dim[0] // 2, 2, 2)
+    expected_shape = (1, 1, 5, 4, 2, 2)
     assert output.shape == expected_shape
 
 
@@ -91,24 +92,14 @@ def test_modulation_shape():
     assert out2 is not None
 
     # Check shapes of ModulationOut components
-    # Modulation produces shift, scale, gate.
-    # Each should have shape (Batch, 1, dim) because of:
-    # out = jnp.split(self.lin(nnx.silu(vec))[:, None, :], self.multiplier, axis=-1)
-    # self.lin outputs multiplier * dim.
-    # [:, None, :] adds a dimension.
-
     assert out1.shift.shape == (2, 1, dim)
     assert out1.scale.shape == (2, 1, dim)
     assert out1.gate.shape == (2, 1, dim)
-
     assert out2.shift.shape == (2, 1, dim)
     assert out2.scale.shape == (2, 1, dim)
     assert out2.gate.shape == (2, 1, dim)
 
     # Verify zero initialization
-    # Since kernel and bias are zeros, output should be zero.
-    # But nnx.silu(vec) might not be zero.
-    # However, linear layer with zero weights/bias produces zero output regardless of input.
     assert jnp.all(out1.shift == 0)
     assert jnp.all(out1.scale == 0)
     assert jnp.all(out1.gate == 0)
@@ -126,3 +117,89 @@ def test_modulation_shape():
     assert out1.shift.shape == (2, 1, dim)
     assert out1.scale.shape == (2, 1, dim)
     assert out1.gate.shape == (2, 1, dim)
+
+def test_timestep_embedding_shape():
+    batch_size = 4
+    dim = 256
+    t = jnp.ones((batch_size,))
+
+    emb = timestep_embedding(t, dim)
+
+    assert emb.shape == (batch_size, dim)
+    # Check if dtype propagates correctly
+    assert emb.dtype == t.dtype
+
+def test_qk_norm_shape():
+    dim = 16
+    rngs = get_rngs()
+    layer = QKNorm(dim, rngs=rngs)
+
+    q = jnp.ones((2, 5, dim))
+    k = jnp.ones((2, 5, dim))
+    v = jnp.ones((2, 5, dim))
+
+    q_norm, k_norm = layer(q, k, v)
+
+    assert q_norm.shape == q.shape
+    assert k_norm.shape == k.shape
+
+def test_self_attention_shape():
+    dim = 32
+    num_heads = 4
+    rngs = get_rngs()
+
+    layer = SelfAttention(dim, rngs=rngs, num_heads=num_heads)
+
+    x = jnp.ones((2, 5, dim)) # (B, L, D)
+
+    out = layer(x, pe=None)
+    assert out.shape == x.shape
+
+def test_double_stream_block_shape():
+    hidden_size = 32
+    num_heads = 4
+    mlp_ratio = 4.0
+    rngs = get_rngs()
+
+    block = DoubleStreamBlock(hidden_size, num_heads, mlp_ratio, rngs=rngs)
+
+    obs = jnp.ones((2, 5, hidden_size)) # (B, L_obs, D)
+    cond = jnp.ones((2, 3, hidden_size)) # (B, L_cond, D)
+    vec = jnp.ones((2, hidden_size)) # (B, D)
+
+    obs_out, cond_out = block(obs, cond, vec)
+
+    assert obs_out.shape == obs.shape
+    assert cond_out.shape == cond.shape
+
+def test_single_stream_block_shape():
+    hidden_size = 32
+    num_heads = 4
+    rngs = get_rngs()
+
+    block = SingleStreamBlock(hidden_size, num_heads, rngs=rngs)
+
+    x = jnp.ones((2, 8, hidden_size)) # (B, L, D)
+    vec = jnp.ones((2, hidden_size)) # (B, D)
+
+    out = block(x, vec)
+
+    assert out.shape == x.shape
+
+def test_last_layer_shape():
+    hidden_size = 32
+    patch_size = 1
+    out_channels = 3
+    rngs = get_rngs()
+
+    layer = LastLayer(hidden_size, patch_size, out_channels, rngs=rngs)
+
+    x = jnp.ones((2, 5, hidden_size))
+    vec = jnp.ones((2, hidden_size))
+
+    out = layer(x, vec)
+
+    # Expected output: (B, L, patch_size^2 * out_channels)
+    expected_shape = (2, 5, patch_size * patch_size * out_channels)
+
+    assert out.shape == expected_shape

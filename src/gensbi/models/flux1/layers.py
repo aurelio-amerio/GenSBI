@@ -377,7 +377,7 @@ class SingleStreamBlock(nnx.Module):
         else:
             self.qkv_features = qkv_features
         self.num_heads = num_heads
-        head_dim = qkv_features // num_heads
+        head_dim = self.qkv_features // num_heads
         self.scale = qk_scale or head_dim**-0.5
 
         self.mlp_hidden_dim = int(hidden_size * mlp_ratio)
