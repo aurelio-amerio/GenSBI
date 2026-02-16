@@ -70,3 +70,41 @@ def test_model_wrapper_divergence():
 #     vf = wrapper.get_vector_field()
 #     vf_out = vf(t, x, None)
 #     assert vf_out.shape == (2, 3, 1), f"Expected vector field shape (2, 3, 1), got {vf_out.shape}"
+class SpyModel(nnx.Module):
+    def __call__(self, x: Array, t: Array, *args, **kwargs):
+        # We verify that arguments are correctly passed by summing them to the output
+        val = 0.0
+        if "captured_arg" in kwargs:
+            val += kwargs["captured_arg"]
+
+        if "dynamic_arg" in kwargs:
+            val += kwargs["dynamic_arg"]
+
+        return x + val
+
+
+def test_model_wrapper_argument_passing():
+    model = SpyModel()
+    wrapper = ModelWrapper(model)
+
+    x = jnp.ones((2, 3))
+    t = jnp.ones((2,))
+
+    # 1. Test arguments via get_vector_field (static/config args)
+    # These args are captured in the closure
+    vf = wrapper.get_vector_field(captured_arg=10.0)
+
+    # 2. Test arguments via call (dynamic args)
+    # These args are passed at runtime
+    res = vf(t, x, args={'dynamic_arg': 5.0})
+
+    # Expected: x (ones) + 10.0 + 5.0 = 16.0
+    # x is expanded to (2, 3, 1) by ModelWrapper
+    expected = x[..., None] + 15.0
+
+    assert jnp.allclose(res, expected)
+
+    # 3. Test without dynamic args
+    res_static = vf(t, x, None)
+    expected_static = x[..., None] + 10.0
+    assert jnp.allclose(res_static, expected_static)
