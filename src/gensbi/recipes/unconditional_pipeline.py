@@ -14,13 +14,13 @@ from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler, VPScheduler
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
 from gensbi.diffusion.solver import SDESolver
 
 from gensbi.models import (
     UnconditionalCFMLoss,
     UnconditionalWrapper,
-    UnconditionalDiffLoss,
+    UnconditionalEDMLoss,
 )
 
 from gensbi.recipes.utils import init_ids_1d
@@ -345,21 +345,21 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         # elif sde == "VE":
         #     sigma_min = self.training_config.get("sigma_min", 0.001)
         #     sigma_max = self.training_config.get("sigma_max", 15.0)
-        #     self.path = EDMPath(scheduler=VEScheduler(
+        #     self.path = EDMPath(scheduler=VEEdmScheduler(
         #         sigma_min=sigma_min,
         #         sigma_max=sigma_max,
         #     ))
         # elif sde == "VP":
         #     beta_min = self.training_config.get("beta_min", 0.1)
         #     beta_max = self.training_config.get("beta_max", 20.0)
-        #     self.path = EDMPath(scheduler=VPScheduler(
+        #     self.path = EDMPath(scheduler=VPEdmScheduler(
         #         beta_min = beta_min,
         #         beta_max = beta_max,
         #     ))
         # else:
         #     raise ValueError(f"Unknown sde type: {sde}")
 
-        self.loss_fn = UnconditionalDiffLoss(self.path)
+        self.loss_fn = UnconditionalEDMLoss(self.path)
 
     @classmethod
     def init_pipeline_from_config(

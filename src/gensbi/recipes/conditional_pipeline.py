@@ -20,10 +20,10 @@ from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler
 from gensbi.diffusion.solver import SDESolver
 
-from gensbi.models import ConditionalCFMLoss, ConditionalWrapper, ConditionalDiffLoss
+from gensbi.models import ConditionalCFMLoss, ConditionalWrapper, ConditionalEDMLoss
 
 from einops import repeat
 
@@ -491,7 +491,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             )
         )
 
-        self.loss_fn = ConditionalDiffLoss(self.path)
+        self.loss_fn = ConditionalEDMLoss(self.path)
 
     @classmethod
     def init_pipeline_from_config(

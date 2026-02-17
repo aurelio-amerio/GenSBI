@@ -4,7 +4,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-from gensbi.models.losses import ConditionalCFMLoss, ConditionalDiffLoss
+from gensbi.models.losses import ConditionalCFMLoss, ConditionalEDMLoss
 
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.path import AffineProbPath
@@ -35,7 +35,7 @@ def test_flux_diffloss_runs():
 
     scheduler = EDMScheduler()
     path = EDMPath(scheduler=scheduler)
-    loss = ConditionalDiffLoss(path)
+    loss = ConditionalEDMLoss(path)
 
     def vf(obs, obs_ids, cond, cond_ids, t, conditioned=True):
         return obs + 1

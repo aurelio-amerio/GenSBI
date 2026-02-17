@@ -87,9 +87,9 @@ class ConditionalCFMLoss(ContinuousFMLoss):
 
 
 # TODO: WIP
-class ConditionalDiffLoss(nnx.Module):
+class ConditionalEDMLoss(nnx.Module):
     """
-    ConditionalDiffLoss is a class that computes the diffusion score matching loss for the Conditional model.
+    ConditionalEDMLoss is a class that computes the diffusion score matching loss for the Conditional model.
 
     Parameters
     ----------
@@ -155,6 +155,70 @@ class ConditionalDiffLoss(nnx.Module):
         model_extras["obs_ids"] = obs_ids
         model_extras["cond_ids"] = cond_ids
 
-        loss = self.loss_fn(model, batch, loss_mask=None, model_extras=model_extras)
+        loss = self.loss_fn(
+            model, batch, condition_mask=None, model_extras=model_extras
+        )
+
+        return loss  # type: ignore
+
+
+class ConditionalSMLoss(nnx.Module):
+    """
+    ConditionalSMLoss computes the standard score matching loss for the Conditional model.
+
+    Parameters
+    ----------
+        path: SMPath probability path for training.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.loss_fn = self.path.get_loss_fn()
+
+    def __call__(
+        self,
+        key: jax.random.PRNGKey,
+        model: Callable,
+        batch: Tuple[Array, Array],
+        cond,
+        obs_ids,
+        cond_ids,
+    ) -> Array:
+        """
+        Evaluate the score matching loss.
+
+        Parameters
+        ----------
+            key : jax.random.PRNGKey
+                Random key for stochastic operations.
+            model : Callable
+                Score model.
+            batch : Tuple[Array, Array]
+                Input data (x_1,).
+            cond : jnp.ndarray
+                The conditioning data.
+            obs_ids : jnp.ndarray
+                The observation IDs.
+            cond_ids : jnp.ndarray
+                The conditioning IDs.
+
+        Returns
+        -------
+            Array
+                Computed loss.
+        """
+        (x_1,) = batch
+
+        path_sample = self.path.sample(key, x_1)
+        batch = path_sample.get_batch()
+
+        model_extras = {}
+        model_extras["cond"] = cond
+        model_extras["obs_ids"] = obs_ids
+        model_extras["cond_ids"] = cond_ids
+
+        loss = self.loss_fn(
+            model, batch, condition_mask=None, model_extras=model_extras
+        )
 
         return loss  # type: ignore

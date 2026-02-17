@@ -63,9 +63,9 @@ class UnconditionalCFMLoss(ContinuousFMLoss):
         return self.reduction(jnp.square(loss))  # type: ignore
 
 
-class UnconditionalDiffLoss(nnx.Module):
+class UnconditionalEDMLoss(nnx.Module):
     """
-    UnconditionalDiffLoss is a class that computes the diffusion score matching loss for the Unconditional model.
+    UnconditionalEDMLoss is a class that computes the diffusion score matching loss for the Unconditional model.
 
     Parameters
     ----------
@@ -114,6 +114,65 @@ class UnconditionalDiffLoss(nnx.Module):
         condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)
         kwargs["condition_mask"] = condition_mask
 
-        loss = self.loss_fn(model, batch, loss_mask=condition_mask, model_extras=kwargs)
+        loss = self.loss_fn(
+            model, batch, condition_mask=condition_mask, model_extras=kwargs
+        )
+
+        return loss  # type: ignore
+
+
+class UnconditionalSMLoss(nnx.Module):
+    """
+    UnconditionalSMLoss computes the standard score matching loss for the Unconditional model.
+
+    This loss uses the denoising score matching objective where the model
+    predicts the score (gradient of log density) of the noised distribution.
+
+    Parameters
+    ----------
+        path: SMPath probability path for training.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.loss_fn = self.path.get_loss_fn()
+
+    def __call__(
+        self,
+        key: jax.random.PRNGKey,
+        model: Callable,
+        batch: Tuple[Array, Array],
+        **kwargs,
+    ) -> Array:
+        """
+        Evaluate the score matching loss.
+
+        Parameters
+        ----------
+            key : jax.random.PRNGKey
+                Random key for stochastic operations.
+            model : Callable
+                Score model, called as model(obs=x_t, t=t, **kwargs).
+            batch : Tuple[Array, Array]
+                Input data. For SM, batch is (x_1,) — a single element tuple
+                containing the clean data. The time sampling is handled internally.
+            **kwargs: Additional keyword arguments.
+
+        Returns
+        -------
+            Array
+                Computed loss.
+        """
+        (x_1,) = batch
+
+        path_sample = self.path.sample(key, x_1)
+        batch = path_sample.get_batch()
+
+        condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)
+        kwargs["condition_mask"] = condition_mask
+
+        loss = self.loss_fn(
+            model, batch, condition_mask=condition_mask, model_extras=kwargs
+        )
 
         return loss  # type: ignore

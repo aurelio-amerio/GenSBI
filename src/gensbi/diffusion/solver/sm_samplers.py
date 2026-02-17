@@ -1,0 +1,218 @@
+"""
+Score matching SDE samplers.
+
+This module implements reverse SDE sampling for standard score matching models
+using diffrax for numerical integration.
+
+Based on "Score-Based Generative Modeling through Stochastic Differential Equations"
+by Song et al., 2021. https://arxiv.org/abs/2011.13456
+"""
+
+from typing import Any, Callable, Optional
+import math
+
+import jax
+import jax.numpy as jnp
+from jax import Array, jit
+
+import diffrax
+from diffrax import (
+    diffeqsolve,
+    ControlTerm,
+    MultiTerm,
+    ODETerm,
+    VirtualBrownianTree,
+    SaveAt,
+)
+
+
+def sm_reverse_sde_sampler(
+    sde: Any,
+    score_model: Callable,
+    x_init: Array,
+    *,
+    key: Array,
+    condition_mask: Optional[Array] = None,
+    condition_value: Optional[Array] = None,
+    return_intermediates: bool = False,
+    n_steps: int = 1000,
+    eps: float = 1e-3,
+    method: str = "Euler",
+    model_kwargs: dict = {},
+) -> Array:
+    r"""
+    Sample from the reverse SDE using diffrax integration.
+
+    The reverse SDE is:
+
+    .. math::
+        dx = \left[ f(x,t) - g(t)^2 s_\theta(x, t) \right] dt + g(t) d\bar{W}
+
+    where :math:`s_\theta` is the learned score model, :math:`f` is the forward drift,
+    and :math:`g` is the forward diffusion coefficient.
+
+    Supports inputs of arbitrary shape beyond the batch dimension, e.g.
+    ``(batch, dim)``, ``(batch, features, channel)``, etc. Internally, the state
+    is flattened to 1D per sample for diffrax compatibility, then reshaped back.
+
+    Parameters
+    ----------
+        sde : Any
+            The forward SDE scheduler (VPSmScheduler or VESmScheduler).
+        score_model : Callable
+            The score model function, called as ``score_model(obs=x, t=t, **model_kwargs)``.
+        x_init : Array
+            Initial samples from the prior, shape ``(batch_size, ...)``.
+        key : Array
+            JAX random key.
+        condition_mask : Optional[Array]
+            Boolean mask for conditioning (True for conditioned dimensions).
+        condition_value : Optional[Array]
+            Values for conditioned dimensions.
+        return_intermediates : bool
+            Whether to return all intermediate steps.
+        n_steps : int
+            Number of integration steps.
+        eps : float
+            Minimum time (to avoid singularities near t=0).
+        method : str
+            Integration method. One of ``"Euler"``, ``Heun``, ``"SEA"``, ``"ShARK"``.
+        model_kwargs : dict
+            Additional keyword arguments passed to the score model.
+
+    Returns
+    -------
+        Array
+            Sampled output. Shape ``(batch_size, ...)`` if ``return_intermediates`` is False,
+            or ``(n_steps+1, batch_size, ...)`` if True.
+    """
+    assert (
+        condition_mask is None or condition_value is not None
+    ), "Condition value must be provided if condition mask is provided"
+
+    solvers = {
+        "Euler": diffrax.Euler,
+        "Heun": diffrax.Heun,
+        "SEA": diffrax.SEA,
+        "ShARK": diffrax.ShARK,
+    }
+    assert (
+        method in solvers
+    ), f"Unknown method '{method}'. Choose from {list(solvers.keys())}."
+
+    if method in ["Euler", "Heun"]:
+        levy_area = diffrax.BrownianIncrement
+    else:
+        levy_area = diffrax.SpaceTimeLevyArea
+
+    solver = solvers[method]()
+
+    t0 = sde.T
+    t1 = eps
+    dt0 = -(t0 - t1) / n_steps
+
+    batch_size = x_init.shape[0]
+    sample_shape = x_init.shape[1:]  # e.g. (dim,) or (features, channel)
+    flat_dim = math.prod(sample_shape)
+
+    # Apply conditioning to initial samples
+    if condition_mask is not None:
+        x_init = x_init * (1 - condition_mask) + condition_value * condition_mask
+        # Flatten mask for per-sample use
+        condition_mask_flat = condition_mask.reshape(batch_size, flat_dim)
+    else:
+        condition_mask_flat = None
+
+    def make_reverse_drift(cond_mask_i):
+        """Create reverse drift closure for a single sample."""
+
+        def reverse_drift(t, y_flat, args):
+            # y_flat: (flat_dim,) -> reshape to sample_shape for model
+            y = y_flat.reshape(sample_shape)
+            t_broadcast = jnp.broadcast_to(t, y.shape)
+            # Add batch dim for model call
+            y_batched = y[None, ...]  # (1, ...)
+            t_batched = t_broadcast[None, ...]  # (1, ...)
+            score = score_model(obs=y_batched, t=t_batched, **model_kwargs)
+            score = jnp.squeeze(score, axis=0)  # remove batch dim
+            score_flat = score.reshape(flat_dim)
+
+            g_sq = sde.diffusion(t_broadcast) ** 2
+            forward_drift = sde.drift(y, t_broadcast)
+            result = forward_drift - g_sq * score.reshape(sample_shape)
+            if cond_mask_i is not None:
+                result = result * (1 - cond_mask_i.reshape(sample_shape))
+            return result.reshape(flat_dim)
+
+        return reverse_drift
+
+    def make_reverse_diffusion(cond_mask_i):
+        """Create reverse diffusion closure for a single sample.
+        Returns a (flat_dim, flat_dim) matrix for ControlTerm.
+        """
+
+        def reverse_diffusion(t, y_flat, args):
+            t_broadcast = jnp.broadcast_to(t, (flat_dim,))
+            g = sde.diffusion(t_broadcast)
+            if cond_mask_i is not None:
+                g = g * (1 - cond_mask_i.reshape(flat_dim))
+            return jnp.diag(g)
+
+        return reverse_diffusion
+
+    def sample_one(key_i, y0_flat, cond_mask_i):
+        tol = min(2e-5, abs(dt0))
+
+        brownian_motion = VirtualBrownianTree(
+            t1,
+            t0,
+            tol=tol,
+            shape=(flat_dim,),
+            key=key_i,
+            levy_area=levy_area,
+        )
+        drift_fn = make_reverse_drift(cond_mask_i)
+        diff_fn = make_reverse_diffusion(cond_mask_i)
+
+        terms = MultiTerm(
+            ODETerm(drift_fn),
+            ControlTerm(diff_fn, brownian_motion),
+        )
+
+        if return_intermediates:
+            saveat = SaveAt(ts=jnp.linspace(t0, t1, n_steps + 1))
+        else:
+            saveat = SaveAt(t1=True)
+
+        sol = diffeqsolve(
+            terms,
+            solver,
+            t0,
+            t1,
+            dt0=dt0,
+            y0=y0_flat,
+            saveat=saveat,
+        )
+        return sol.ys  # (n_saves, flat_dim)
+
+    # Flatten inputs for diffrax
+    x_init_flat = x_init.reshape(batch_size, flat_dim)
+
+    keys = jax.random.split(key, batch_size)
+
+    if condition_mask_flat is not None:
+        results = jax.vmap(sample_one)(keys, x_init_flat, condition_mask_flat)
+    else:
+        # Use None broadcast via vmap in_axes
+        results = jax.vmap(sample_one, in_axes=(0, 0, None))(keys, x_init_flat, None)
+
+    # results shape: (batch, n_saves, flat_dim)
+    if return_intermediates:
+        # (batch, n_steps+1, flat_dim) -> (n_steps+1, batch, *sample_shape)
+        results = results.reshape(batch_size, n_steps + 1, *sample_shape)
+        ndim = len(sample_shape)
+        perm = (1, 0) + tuple(range(2, 2 + ndim))
+        return jnp.transpose(results, perm)
+    else:
+        # (batch, 1, flat_dim) -> (batch, *sample_shape)
+        return results.reshape(batch_size, *sample_shape)

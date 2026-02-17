@@ -4,7 +4,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-from gensbi.models.losses import UnconditionalCFMLoss, UnconditionalDiffLoss
+from gensbi.models.losses import UnconditionalCFMLoss, UnconditionalEDMLoss
 
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.path import AffineProbPath
@@ -31,7 +31,7 @@ def test_simformer_cfmloss_runs():
 def test_simformer_diffloss_runs():
     scheduler = EDMScheduler()
     path = EDMPath(scheduler=scheduler)
-    loss = UnconditionalDiffLoss(path)
+    loss = UnconditionalEDMLoss(path)
 
     def vf(obs, t, *args, **kwargs):
         return obs + t

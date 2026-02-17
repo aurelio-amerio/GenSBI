@@ -18,7 +18,7 @@ from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler
 from gensbi.diffusion.solver import SDESolver
 
 from einops import repeat
@@ -26,7 +26,7 @@ from einops import repeat
 from gensbi.models import (
     JointCFMLoss,
     JointWrapper,
-    JointDiffLoss,
+    JointEDMLoss,
 )
 
 import numpyro.distributions as dist
@@ -509,7 +509,7 @@ class JointDiffusionPipeline(AbstractPipeline):
             )
         )
 
-        self.loss_fn = JointDiffLoss(self.path)
+        self.loss_fn = JointEDMLoss(self.path)
 
         if self.dim_cond == 0:
             raise ValueError(

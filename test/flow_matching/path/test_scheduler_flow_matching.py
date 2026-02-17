@@ -11,7 +11,7 @@ from gensbi.flow_matching.path.scheduler import (
     LinearVPScheduler,
     PolynomialConvexScheduler,
     SchedulerOutput,
-    VPScheduler,
+    VPEdmScheduler,
 )
 
 
@@ -38,7 +38,7 @@ class MockScheduler(ConvexScheduler):
         LinearVPScheduler,
         MockScheduler,
         PolynomialConvexScheduler,
-        VPScheduler,
+        VPEdmScheduler,
     ],
 )
 def test_scheduler_output_shapes(scheduler_cls):
@@ -82,7 +82,7 @@ def test_kappa_inverse(scheduler_cls):
         LinearVPScheduler,
         MockScheduler,
         PolynomialConvexScheduler,
-        VPScheduler,
+        VPEdmScheduler,
     ],
 )
 def test_snr_inverse(scheduler_cls):

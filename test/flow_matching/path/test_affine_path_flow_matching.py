@@ -1,4 +1,5 @@
 import os
+
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
@@ -10,13 +11,15 @@ from gensbi.flow_matching.path.scheduler import (
     CosineScheduler,
     LinearVPScheduler,
     PolynomialConvexScheduler,
-    VPScheduler,
+    VPEdmScheduler,
 )
+
 
 @pytest.fixture
 def affine_prob_path():
     scheduler = CondOTScheduler()
     return AffineProbPath(scheduler)
+
 
 @pytest.mark.parametrize(
     "scheduler_cls",
@@ -25,7 +28,7 @@ def affine_prob_path():
         CosineScheduler,
         LinearVPScheduler,
         PolynomialConvexScheduler,
-        VPScheduler,
+        VPEdmScheduler,
     ],
 )
 def test_affine_prob_path_sample(scheduler_cls):
@@ -50,6 +53,7 @@ def test_affine_prob_path_sample(scheduler_cls):
     assert jnp.all(sample.x_0 == x_0)
     assert jnp.all(sample.x_1 == x_1)
 
+
 @pytest.mark.parametrize(
     "scheduler_cls",
     [
@@ -57,7 +61,7 @@ def test_affine_prob_path_sample(scheduler_cls):
         CosineScheduler,
         LinearVPScheduler,
         PolynomialConvexScheduler,
-        VPScheduler,
+        VPEdmScheduler,
     ],
 )
 def test_assert_sample_shape(scheduler_cls):
@@ -74,11 +78,11 @@ def test_assert_sample_shape(scheduler_cls):
     affine_prob_path.assert_sample_shape(x_0, x_1, t)
 
 
-
 # test affine class functions
 
+
 def test_target_to_velocity():
-    path =  AffineProbPath(CondOTScheduler())
+    path = AffineProbPath(CondOTScheduler())
     x_1 = jnp.array([[2.0, 2.0], [3.0, 3.0]])
     x_t = jnp.array([[1.5, 1.5], [2.5, 2.5]])
     t = jnp.array([0.5, 0.5])
@@ -86,8 +90,9 @@ def test_target_to_velocity():
 
     assert velocity.shape == x_t.shape
 
+
 def test_epsilon_to_velocity():
-    path =  AffineProbPath(CondOTScheduler())
+    path = AffineProbPath(CondOTScheduler())
     x_t = jnp.array([[1.5, 1.5], [2.5, 2.5]])
     epsilon = jnp.array([[0.5, 0.5], [0.5, 0.5]])
     t = jnp.array([0.5, 0.5])
@@ -95,17 +100,19 @@ def test_epsilon_to_velocity():
 
     assert velocity.shape == epsilon.shape
 
+
 def test_velocity_to_target():
-    path =  AffineProbPath(CondOTScheduler())
+    path = AffineProbPath(CondOTScheduler())
     x_t = jnp.array([[1.5, 1.5], [2.5, 2.5]])
     velocity = jnp.array([[0.1, 0.1], [0.1, 0.1]])
     t = jnp.array([0.5, 0.5])
-    x_1 = path.velocity_to_target(velocity,  x_t, t)
+    x_1 = path.velocity_to_target(velocity, x_t, t)
 
     assert x_1.shape == x_t.shape
 
+
 def test_epsilon_to_target():
-    path =  AffineProbPath(CondOTScheduler())
+    path = AffineProbPath(CondOTScheduler())
     epsilon = jnp.array([[0.5, 0.5], [0.5, 0.5]])
     x_t = jnp.array([[1.5, 1.5], [2.5, 2.5]])
     t = jnp.array([0.5, 0.5])
@@ -113,8 +120,9 @@ def test_epsilon_to_target():
 
     assert x_1.shape == x_t.shape
 
+
 def test_velocity_to_epsilon():
-    path =  AffineProbPath(CondOTScheduler())
+    path = AffineProbPath(CondOTScheduler())
     velocity = jnp.array([[0.1, 0.1], [0.1, 0.1]])
     x_t = jnp.array([[1.5, 1.5], [2.5, 2.5]])
     t = jnp.array([0.5, 0.5])
@@ -122,14 +130,15 @@ def test_velocity_to_epsilon():
 
     assert epsilon.shape == x_t.shape
 
-def test_target_to_epsilon():   
-    path =  AffineProbPath(CondOTScheduler())
+
+def test_target_to_epsilon():
+    path = AffineProbPath(CondOTScheduler())
     x_1 = jnp.array([[2.0, 2.0], [3.0, 3.0]])
     x_t = jnp.array([[1.5, 1.5], [2.5, 2.5]])
     t = jnp.array([0.5, 0.5])
     epsilon = path.target_to_epsilon(x_1, x_t, t)
 
-    assert epsilon.shape == x_t.shape   
+    assert epsilon.shape == x_t.shape
 
 
 def test_cond_ot_instantiation():

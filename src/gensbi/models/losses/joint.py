@@ -70,9 +70,9 @@ class JointCFMLoss(ContinuousFMLoss):
         return self.reduction(jnp.square(loss))  # type: ignore
 
 
-class JointDiffLoss(nnx.Module):
+class JointEDMLoss(nnx.Module):
     """
-    JointDiffLoss is a class that computes the diffusion score matching loss for the Joint model.
+    JointEDMLoss is a class that computes the diffusion score matching loss for the Joint model.
 
     Parameters
     ----------
@@ -122,6 +122,64 @@ class JointDiffLoss(nnx.Module):
         if condition_mask is not None:
             kwargs["condition_mask"] = condition_mask
 
-        loss = self.loss_fn(model, batch, loss_mask=condition_mask, model_extras=kwargs)
+        loss = self.loss_fn(
+            model, batch, condition_mask=condition_mask, model_extras=kwargs
+        )
+
+        return loss  # type: ignore
+
+
+class JointSMLoss(nnx.Module):
+    """
+    JointSMLoss computes the standard score matching loss for the Joint model.
+
+    Parameters
+    ----------
+        path: SMPath probability path for training.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.loss_fn = self.path.get_loss_fn()
+
+    def __call__(
+        self,
+        key: jax.random.PRNGKey,
+        model: Callable,
+        batch: Tuple[Array, Array],
+        condition_mask: Optional[Array] = None,
+        **kwargs,
+    ) -> Array:
+        """
+        Evaluate the score matching loss.
+
+        Parameters
+        ----------
+            key : jax.random.PRNGKey
+                Random key for stochastic operations.
+            model : Callable
+                Score model.
+            batch : Tuple[Array, Array]
+                Input data (x_1,).
+            condition_mask : Optional[Array]
+                Mask for conditioning.
+            **kwargs: Additional keyword arguments.
+
+        Returns
+        -------
+            Array
+                Computed loss.
+        """
+        (x_1,) = batch
+
+        path_sample = self.path.sample(key, x_1)
+        batch = path_sample.get_batch()
+
+        if condition_mask is not None:
+            kwargs["condition_mask"] = condition_mask
+
+        loss = self.loss_fn(
+            model, batch, condition_mask=condition_mask, model_extras=kwargs
+        )
 
         return loss  # type: ignore

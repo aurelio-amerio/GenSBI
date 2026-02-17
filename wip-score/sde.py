@@ -109,7 +109,7 @@ class BaseSDE(abc.ABC):
             # according to https://arxiv.org/abs/2101.09258 , for MLE we use g(t)**2 as weight function
             weight_fn = lambda t: self.diffusion(1.0, t) ** 2
 
-        def loss_fn(score_model, x0, loss_mask=None, *args, rng, **kwargs):
+        def loss_fn(score_model, x0, condition_mask=None, *args, rng, **kwargs):
             N_batch = x0.shape[0]
             t_shape = (N_batch,) + (1,) * (x0.ndim - 1)
             # t needs to have the same number of dimensions as x0, so we broadcast it
@@ -122,16 +122,16 @@ class BaseSDE(abc.ABC):
             std_t = self.marginal_stddev(x0, t)
             xt = mean_t + noise * std_t
 
-            # if the loss_mask is not None, we use it to mask some features, effectively conditioning on them
-            if loss_mask is not None:
-                loss_mask = loss_mask.reshape(x0.shape)
-                xt = jnp.where(loss_mask, x0, xt)
+            # if the condition_mask is not None, we use it to mask some features, effectively conditioning on them
+            if condition_mask is not None:
+                condition_mask = condition_mask.reshape(x0.shape)
+                xt = jnp.where(condition_mask, x0, xt)
 
             score_pred = score_model(xt, t, *args, **kwargs)
             score_target = -noise / std_t
             loss = (score_pred - score_target) ** 2
-            if loss_mask is not None:
-                loss = jnp.where(loss_mask, 0.0, loss)
+            if condition_mask is not None:
+                loss = jnp.where(condition_mask, 0.0, loss)
 
             loss = weight_fn(t) * jnp.sum(loss, axis=-1, keepdims=True)
             loss = jnp.mean(loss)
@@ -394,7 +394,7 @@ class R_VPSDE(ReverseSDE):
 
 
 def get_exponential_sigma_function(sigma_min, sigma_max):
-    # this is exactly the sigma(t) from the paper http://arxiv.org/abs/2011.13456
+    # this is exactly the sigma(t) from the paper http://arxiv.org/abs/2011.13456
     log_sigma_min = jnp.log(sigma_min)
     log_sigma_max = jnp.log(sigma_max)
 

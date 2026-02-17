@@ -5,24 +5,25 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 import jax.numpy as jnp
 import pytest
 
-from gensbi.flow_matching.path.scheduler import CondOTScheduler, VPScheduler
+from gensbi.flow_matching.path.scheduler import CondOTScheduler, VPEdmScheduler
 from gensbi.flow_matching.path.scheduler import ScheduleTransformedModel
+
 
 def test_schedule_transform():
 
-    def vf_model(x,t):
+    def vf_model(x, t):
         return x
-    
+
     original_scheduler = CondOTScheduler()
-    new_scheduler = VPScheduler()
-    
+    new_scheduler = VPEdmScheduler()
+
     transform = ScheduleTransformedModel(
         vf_model,
         original_scheduler,
         new_scheduler,
     )
-    x = jnp.array([[1.,2.],[3.,4.]])
-    t = jnp.array([0.,0.5])
+    x = jnp.array([[1.0, 2.0], [3.0, 4.0]])
+    t = jnp.array([0.0, 0.5])
 
     res = transform(x, t)
 

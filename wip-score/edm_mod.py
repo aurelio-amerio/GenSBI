@@ -394,11 +394,13 @@ class BaseSDE(abc.ABC):
         Returns:
             Callable: Score function.
         """
+
         def score(x: Array, u: Array, *args, **kwargs) -> Array:
             t = self.time_schedule(u)
             sigma = self.sigma(t)
-            x = x/self.s(t) # todo: check this
+            x = x / self.s(t)  # todo: check this
             return (self.denoise(F, x, sigma, *args, **kwargs) - x) / (sigma**2)
+
         return score
 
     def get_loss_fn(self) -> Callable:
@@ -424,7 +426,10 @@ class BaseSDE(abc.ABC):
         """
 
         def loss_fn(
-            F: Callable, batch: tuple, loss_mask: Any = None, model_extras: dict = {}
+            F: Callable,
+            batch: tuple,
+            condition_mask: Any = None,
+            model_extras: dict = {},
         ) -> Array:
             (x_1, x_t, sigma) = batch
 
@@ -434,9 +439,9 @@ class BaseSDE(abc.ABC):
             c_noise = self.c_noise(sigma)
             c_skip = self.c_skip(sigma)
 
-            if loss_mask is not None:
-                loss_mask = jnp.broadcast_to(loss_mask, x_1.shape)
-                x_t = jnp.where(loss_mask, x_1, x_t)
+            if condition_mask is not None:
+                condition_mask = jnp.broadcast_to(condition_mask, x_1.shape)
+                x_t = jnp.where(condition_mask, x_1, x_t)
 
             loss = (
                 lam
@@ -447,15 +452,15 @@ class BaseSDE(abc.ABC):
                 )
                 ** 2
             )
-            if loss_mask is not None:
-                loss = jnp.where(loss_mask, 0.0, loss)
+            if condition_mask is not None:
+                loss = jnp.where(condition_mask, 0.0, loss)
             # we sum the loss on any dimension that is not the batch dimentsion, and then we compute the mean over the batch dimension (the first)
             return jnp.mean(jnp.sum(loss, axis=tuple(range(1, len(x_1.shape)))))  # type: ignore
 
         return loss_fn
 
 
-class VPScheduler(BaseSDE):
+class VPEdmScheduler(BaseSDE):
     """
     Variance Preserving (VP) SDE scheduler as described in the EDM paper.
 
@@ -553,7 +558,7 @@ class VPScheduler(BaseSDE):
         return self.sigma(u)
 
 
-class VEScheduler(BaseSDE):
+class VEEdmScheduler(BaseSDE):
     """
     Variance Exploding (VE) SDE scheduler as described in the EDM paper.
 

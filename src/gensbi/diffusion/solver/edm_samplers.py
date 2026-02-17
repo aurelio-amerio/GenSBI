@@ -195,7 +195,8 @@ def edm_ablation_sampler(
         x_curr = x_next
 
         # Increase noise temporarily.
-        in_range = jnp.logical_and(t_cur >= S_min, t_cur <= S_max)
+        sigma_cur = sde.sigma(t_cur)
+        in_range = jnp.logical_and(sigma_cur >= S_min, sigma_cur <= S_max)
 
         gamma = jax.lax.cond(
             in_range,

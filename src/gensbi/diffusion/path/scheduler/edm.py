@@ -9,6 +9,7 @@ functions used during training and sampling.
 Based on the paper "Elucidating the Design Space of Diffusion-Based Generative Models"
 by Karras et al., 2022. https://arxiv.org/abs/2206.00364
 """
+
 import abc
 import jax
 import jax.numpy as jnp
@@ -421,7 +422,10 @@ class BaseSDE(abc.ABC):
         """
 
         def loss_fn(
-            F: Callable, batch: tuple, loss_mask: Any = None, model_extras: dict = {}
+            F: Callable,
+            batch: tuple,
+            condition_mask: Any = None,
+            model_extras: dict = {},
         ) -> Array:
             (x_1, x_t, sigma) = batch
 
@@ -431,9 +435,9 @@ class BaseSDE(abc.ABC):
             c_noise = self.c_noise(sigma)
             c_skip = self.c_skip(sigma)
 
-            if loss_mask is not None:
-                loss_mask = jnp.broadcast_to(loss_mask, x_1.shape)
-                x_t = jnp.where(loss_mask, x_1, x_t)
+            if condition_mask is not None:
+                condition_mask = jnp.broadcast_to(condition_mask, x_1.shape)
+                x_t = jnp.where(condition_mask, x_1, x_t)
 
             loss = (
                 lam
@@ -444,15 +448,15 @@ class BaseSDE(abc.ABC):
                 )
                 ** 2
             )
-            if loss_mask is not None:
-                loss = jnp.where(loss_mask, 0.0, loss)
+            if condition_mask is not None:
+                loss = jnp.where(condition_mask, 0.0, loss)
             # we sum the loss on any dimension that is not the batch dimentsion, and then we compute the mean over the batch dimension (the first)
             return jnp.mean(jnp.sum(loss, axis=tuple(range(1, len(x_1.shape)))))  # type: ignore
 
         return loss_fn
 
 
-class VPScheduler(BaseSDE):
+class VPEdmScheduler(BaseSDE):
     """
     Variance Preserving (VP) SDE scheduler as described in the EDM paper.
 
@@ -550,7 +554,7 @@ class VPScheduler(BaseSDE):
         return self.sigma(u)
 
 
-class VEScheduler(BaseSDE):
+class VEEdmScheduler(BaseSDE):
     """
     Variance Exploding (VE) SDE scheduler as described in the EDM paper.
 
@@ -670,7 +674,7 @@ class EDMScheduler(BaseSDE):
 
     def c_skip(self, sigma):
         # c_skip for preconditioning
-        return self.sigma_data**2 / jnp.sqrt(sigma**2 + self.sigma_data**2)
+        return self.sigma_data**2 / (sigma**2 + self.sigma_data**2)
 
     def c_out(self, sigma):
         # c_out for preconditioning
@@ -693,3 +697,9 @@ class EDMScheduler(BaseSDE):
         rnd_normal = jax.random.normal(key, shape)
         sigma = jnp.exp(rnd_normal * self.P_std + self.P_mean)
         return sigma
+
+
+# FIXME: remove these aliases once the implementation works
+# Backward-compatible aliases
+VPEdmScheduler = VPEdmScheduler
+VEEdmScheduler = VEEdmScheduler
