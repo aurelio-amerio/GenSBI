@@ -98,15 +98,19 @@ def run_sbc(
     
     # _validate_sbc_inputs(thetas, xs, num_sbc_samples, num_posterior_samples)
 
-    assert posterior_samples.shape == (
+    if posterior_samples.shape != (
         num_posterior_samples,
         num_sbc_samples,
         dim_theta,
-    ), f"Wrong posterior samples shape for SBC: {posterior_samples.shape}, expected ({num_posterior_samples}, {num_sbc_samples}, {dim_theta})"
+    ):
+        raise ValueError(
+            f"Wrong posterior samples shape for SBC: {posterior_samples.shape}, expected ({num_posterior_samples}, {num_sbc_samples}, {dim_theta})"
+        )
 
     # Take a random draw from each posterior to get data-averaged posterior samples.
     dap_samples = posterior_samples[0, :, :]
-    assert dap_samples.shape == (num_sbc_samples, thetas.shape[1]), "Wrong DAP shape."
+    if dap_samples.shape != (num_sbc_samples, thetas.shape[1]):
+        raise ValueError("Wrong DAP shape.")
 
     # Calculate ranks
     ranks = _run_sbc(thetas, xs, posterior_samples, reduce_fns, show_progress_bar)
@@ -571,17 +575,20 @@ def _sbc_rank_plot(
     if isinstance(ranks, (Array, np.ndarray)):
         ranks_list = [ranks]
     else:
-        assert isinstance(ranks, List)
+        if not isinstance(ranks, List):
+            raise TypeError("ranks must be an Array, np.ndarray, or a List of them.")
         ranks_list = ranks
     for idx, rank in enumerate(ranks_list):
-        assert isinstance(rank, (Array, np.ndarray))
+        if not isinstance(rank, (Array, np.ndarray)):
+            raise TypeError("All ranks in the list must be Arrays or np.ndarrays.")
         if isinstance(rank, Array):
             ranks_list[idx]: np.ndarray = rank.numpy()  # type: ignore
 
     plot_types = ["hist", "cdf"]
-    assert plot_type in plot_types, (
-        f"plot type {plot_type} not implemented, use one in {plot_types}."
-    )
+    if plot_type not in plot_types:
+        raise ValueError(
+            f"plot type {plot_type} not implemented, use one in {plot_types}."
+        )
 
     if legend_kwargs is None:
         legend_kwargs = dict(loc="best", handlelength=0.8)
@@ -594,9 +601,8 @@ def _sbc_rank_plot(
         params_in_subplots = True
 
     for ranki in ranks_list:
-        assert ranki.shape == ranks_list[0].shape, (
-            "all ranks in list must have the same shape."
-        )
+        if ranki.shape != ranks_list[0].shape:
+            raise ValueError("all ranks in list must have the same shape.")
 
     num_rows = int(np.ceil(num_parameters / num_cols))
     if figsize is None:
@@ -621,11 +627,14 @@ def _sbc_rank_plot(
             )
             ax = np.atleast_1d(ax)  # type: ignore
         else:
-            assert ax.size >= num_parameters, (
-                "There must be at least as many subplots as parameters."
-            )
+            if ax.size < num_parameters:
+                raise ValueError(
+                    "There must be at least as many subplots as parameters."
+                )
             num_rows = ax.shape[0] if ax.ndim > 1 else 1
-        assert ax is not None
+
+        if ax is None:
+            raise ValueError("Ax cannot be None")
 
         col_idx, row_idx = 0, 0
         for ii, ranki in enumerate(ranks_list):
