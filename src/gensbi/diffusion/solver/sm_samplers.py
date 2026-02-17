@@ -43,6 +43,17 @@ def sm_reverse_sde_sampler(
     r"""
     Sample from the reverse SDE using diffrax integration.
 
+    **Time direction convention:**
+    The forward SDE runs from ``t=0`` (clean data) to ``t=T`` (noise).
+    This reverse sampler integrates **backwards** from ``t=T`` to ``t=eps``
+    to generate samples. This is the opposite direction from flow matching,
+    which integrates ``t=0`` to ``t=1`` to go from noise to data.
+
+    **Input shape convention:**
+    All inputs must have shape ``(batch, features, channels)``.
+    If your data is 2D ``(batch, features)``, add a trailing dimension:
+    ``x = x[..., None]``.
+
     The reverse SDE is:
 
     .. math::
@@ -51,10 +62,6 @@ def sm_reverse_sde_sampler(
     where :math:`s_\theta` is the learned score model, :math:`f` is the forward drift,
     and :math:`g` is the forward diffusion coefficient.
 
-    Supports inputs of arbitrary shape beyond the batch dimension, e.g.
-    ``(batch, dim)``, ``(batch, features, channel)``, etc. Internally, the state
-    is flattened to 1D per sample for diffrax compatibility, then reshaped back.
-
     Parameters
     ----------
         sde : Any
@@ -62,7 +69,7 @@ def sm_reverse_sde_sampler(
         score_model : Callable
             The score model function, called as ``score_model(obs=x, t=t, **model_kwargs)``.
         x_init : Array
-            Initial samples from the prior, shape ``(batch_size, ...)``.
+            Initial samples from the prior, shape ``(batch_size, features, channels)``.
         key : Array
             JAX random key.
         condition_mask : Optional[Array]
@@ -83,9 +90,14 @@ def sm_reverse_sde_sampler(
     Returns
     -------
         Array
-            Sampled output. Shape ``(batch_size, ...)`` if ``return_intermediates`` is False,
-            or ``(n_steps+1, batch_size, ...)`` if True.
+            Sampled output. Shape ``(batch_size, features, channels)`` if
+            ``return_intermediates`` is False, or
+            ``(n_steps+1, batch_size, features, channels)`` if True.
     """
+    assert x_init.ndim == 3, (
+        f"x_init must have shape (batch, features, channels), got {x_init.shape}. "
+        "If your data is 2D, use x_init[..., None]."
+    )
     assert (
         condition_mask is None or condition_value is not None
     ), "Condition value must be provided if condition mask is provided"
@@ -107,9 +119,11 @@ def sm_reverse_sde_sampler(
 
     solver = solvers[method]()
 
-    t0 = sde.T
-    t1 = eps
-    dt0 = -(t0 - t1) / n_steps
+    # Time direction: reverse SDE goes from t=T (noise) to t=eps (near-clean data).
+    # This is OPPOSITE to flow matching, which goes t=0 → t=1.
+    t0 = sde.T  # start at noise time
+    t1 = eps  # stop near clean data
+    dt0 = -(t0 - t1) / n_steps  # negative dt: integrating backwards in time
 
     batch_size = x_init.shape[0]
     sample_shape = x_init.shape[1:]  # e.g. (dim,) or (features, channel)

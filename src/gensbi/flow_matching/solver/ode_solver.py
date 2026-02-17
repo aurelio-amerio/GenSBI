@@ -59,6 +59,12 @@ class ODESolver(Solver):
     ) -> Callable:
         r"""Obtain a sampler to solve the ODE with the velocity field.
 
+        **Time direction convention:**
+        In flow matching, ``t=0`` is noise and ``t=1`` is data. Sampling
+        integrates **forward** from ``t=0`` to ``t=1`` to transform noise
+        into data. This is the opposite of standard score matching (reverse
+        SDE: ``t=T→eps``) and different from EDM (which uses σ-space).
+
         Parameters
         ----------
             step_size : Optional[float]
