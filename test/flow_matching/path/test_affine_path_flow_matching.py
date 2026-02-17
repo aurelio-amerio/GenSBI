@@ -144,10 +144,13 @@ def test_cond_ot_instantiation():
         ((10, 5), (10, 5), jnp.ones((11,)), "Time t dimension must match the batch size"),
         ((11, 5), (10, 5), jnp.ones((10,)), "Time t dimension must match the batch size"),
         ((10, 5), (11, 5), jnp.ones((10,)), "Time t dimension must match the batch size"),
+        ((10, 5), (10, 4), jnp.ones((10,)), "The shapes of x_0 and x_1 must match"),
     ],
 )
-def test_assert_sample_shape_raises(affine_prob_path, x0_shape, x1_shape, t_val, expected_msg):
+def test_assert_sample_shape_raises(x0_shape, x1_shape, t_val, expected_msg):
+    path = AffineProbPath(CondOTScheduler())
     x_0 = jnp.ones(x0_shape)
     x_1 = jnp.ones(x1_shape)
+
     with pytest.raises(AssertionError, match=expected_msg):
-        affine_prob_path.assert_sample_shape(x_0, x_1, t_val)
+        path.assert_sample_shape(x_0, x_1, t_val)

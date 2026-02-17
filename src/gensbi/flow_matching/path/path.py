@@ -77,3 +77,6 @@ class ProbPath(ABC):
         assert (
             t.shape[0] == x_0.shape[0] == x_1.shape[0]
         ), f"Time t dimension must match the batch size [{x_1.shape[0]}]. Got {t.shape}"
+        assert (
+            x_0.shape == x_1.shape
+        ), f"The shapes of x_0 and x_1 must match. Got x_0={x_0.shape} and x_1={x_1.shape}."
