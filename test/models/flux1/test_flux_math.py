@@ -106,10 +106,10 @@ def test_attention_mask():
 def test_attention_pe():
     B, H, L, D = 2, 4, 10, 16
     # Use non-uniform Q, K to ensure attention weights are not uniform
-    key = jax.random.PRNGKey(0)
-    q = jax.random.normal(key, (B, H, L, D))
-    k = jax.random.normal(key, (B, H, L, D))
-    v = jax.random.normal(key, (B, H, L, D))
+    key, q_key, k_key, v_key = jax.random.split(jax.random.PRNGKey(0), 4)
+    q = jax.random.normal(q_key, (B, H, L, D))
+    k = jax.random.normal(k_key, (B, H, L, D))
+    v = jax.random.normal(v_key, (B, H, L, D))
 
     # 1. Run without PE
     out_no_pe = attention(q, k, v, pe=None)
