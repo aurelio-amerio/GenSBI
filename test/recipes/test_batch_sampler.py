@@ -144,7 +144,7 @@ def test_progress_bar_disabled(mock_sampler_fn):
         # Verify tqdm was NOT called
         mock_tqdm.assert_not_called()
 
-def test_results_concatenation(mock_sampler_fn):
+def test_results_concatenation():
     """Test that results are concatenated correctly even with multidimensional output."""
 
     # Sampler returning multidimensional array
