@@ -97,11 +97,12 @@ def test_model_wrapper_argument_passing():
     # x + t = 2.0 (since x=1, t=1)
 
     # Expected: (x + t) + 10.0 + 5.0 = 2.0 + 15.0 = 17.0
-    expected = (x[..., None] + t[..., None, None]) + 15.0
+    expected_base = (x[..., None] + t[..., None, None])
+    expected = expected_base + 15.0
 
     assert jnp.allclose(res, expected)
 
     # 3. Test without dynamic args
     res_static = vf(t, x, None)
-    expected_static = (x[..., None] + t[..., None, None]) + 10.0
+    expected_static = expected_base + 10.0
     assert jnp.allclose(res_static, expected_static)
