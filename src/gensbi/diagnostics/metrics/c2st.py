@@ -115,7 +115,7 @@ def c2st(
         X_std = jnp.std(X, axis=0)
         # Set std to 1 if it is close to zero.
         X_std = jnp.where(X_std < 1e-14, 1, X_std)
-        if jnp.any(jnp.isnan(X_mean)) or jnp.any(jnp.isnan(X_std)):
+        if not jnp.all(jnp.isfinite(X_mean)) or not jnp.all(jnp.isfinite(X_std)):
             raise ValueError("Input X contains NaNs or Infs")
         if jnp.any(jnp.isnan(Y)):
             raise ValueError("Input Y contains NaNs")
