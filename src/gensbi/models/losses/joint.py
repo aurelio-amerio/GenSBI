@@ -160,7 +160,8 @@ class JointSMLoss(nnx.Module):
             model : Callable
                 Score model.
             batch : Tuple[Array, Array]
-                Input data (x_1,).
+                Input data (x_1, t) where x_1 is the clean data and t is the
+                diffusion time. Use ``path.sample_t`` to sample t externally.
             condition_mask : Optional[Array]
                 Mask for conditioning.
             **kwargs: Additional keyword arguments.
@@ -170,9 +171,9 @@ class JointSMLoss(nnx.Module):
             Array
                 Computed loss.
         """
-        (x_1,) = batch
+        x_1, t = batch
 
-        path_sample = self.path.sample(key, x_1)
+        path_sample = self.path.sample(key, x_1, t)
         batch = path_sample.get_batch()
 
         if condition_mask is not None:

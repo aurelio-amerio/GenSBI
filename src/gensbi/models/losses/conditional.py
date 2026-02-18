@@ -194,7 +194,8 @@ class ConditionalSMLoss(nnx.Module):
             model : Callable
                 Score model.
             batch : Tuple[Array, Array]
-                Input data (x_1,).
+                Input data (x_1, t) where x_1 is the clean data and t is the
+                diffusion time. Use ``path.sample_t`` to sample t externally.
             cond : jnp.ndarray
                 The conditioning data.
             obs_ids : jnp.ndarray
@@ -207,9 +208,9 @@ class ConditionalSMLoss(nnx.Module):
             Array
                 Computed loss.
         """
-        (x_1,) = batch
+        x_1, t = batch
 
-        path_sample = self.path.sample(key, x_1)
+        path_sample = self.path.sample(key, x_1, t)
         batch = path_sample.get_batch()
 
         model_extras = {}

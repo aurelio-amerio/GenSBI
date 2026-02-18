@@ -69,7 +69,7 @@ class SMPath:
         """Returns the name of the SDE."""
         return self.sde.name
 
-    def sample(self, key: Array, x_1: Array) -> SMPathSample:
+    def sample(self, key: Array, x_1: Array, t: Array) -> SMPathSample:
         r"""
         Sample from the score matching probability path.
 
@@ -78,27 +78,24 @@ class SMPath:
         Parameters
         ----------
             key : Array
-                JAX random key.
+                JAX random key (used for noise sampling).
             x_1 : Array
                 Target data point, shape (batch_size, ...).
+            t : Array
+                Diffusion time, shape (batch_size, 1, ...).
+                Use :meth:`sample_t` to sample appropriate times.
 
         Returns
         -------
             SMPathSample
                 A sample from the SM path.
         """
-        key1, key2 = jax.random.split(key)
-
-        # Sample time
-        t_shape = (x_1.shape[0],) + (1,) * (x_1.ndim - 1)
-        t = self.sde.sample_t(key1, t_shape)
-
         # Compute marginals
         mean_coeff = self.sde.marginal_mean_coeff(t)
         std_t = self.sde.marginal_std(t)
 
         # Noise and construct x_t
-        noise = jax.random.normal(key2, x_1.shape)
+        noise = jax.random.normal(key, x_1.shape)
         x_t = mean_coeff * x_1 + std_t * noise
 
         return SMPathSample(
@@ -108,6 +105,26 @@ class SMPath:
             noise=noise,
             std_t=std_t,
         )
+
+    def sample_t(self, key: Array, shape: Any) -> Array:
+        """
+        Sample diffusion times from the SDE scheduler.
+
+        Analogous to :meth:`EDMPath.sample_sigma`.
+
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            shape : Any
+                Shape of the time samples to generate.
+
+        Returns
+        -------
+            Array
+                Sampled diffusion times.
+        """
+        return self.sde.sample_t(key, shape)
 
     def sample_prior(self, key: Array, shape: Any) -> Array:
         """

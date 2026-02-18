@@ -22,10 +22,13 @@ from .flux1joint import (
 from .losses import (
     JointCFMLoss,
     JointEDMLoss,
+    JointSMLoss,
     ConditionalCFMLoss,
     ConditionalEDMLoss,
+    ConditionalSMLoss,
     UnconditionalCFMLoss,
     UnconditionalEDMLoss,
+    UnconditionalSMLoss,
 )
 
 from .wrappers import JointWrapper, ConditionalWrapper, UnconditionalWrapper
@@ -39,10 +42,13 @@ __all__ = [
     "Flux1JointParams",
     "JointCFMLoss",
     "JointEDMLoss",
+    "JointSMLoss",
     "ConditionalCFMLoss",
     "ConditionalEDMLoss",
+    "ConditionalSMLoss",
     "UnconditionalCFMLoss",
     "UnconditionalEDMLoss",
+    "UnconditionalSMLoss",
     "JointWrapper",
     "ConditionalWrapper",
     "UnconditionalWrapper",

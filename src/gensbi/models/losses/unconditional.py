@@ -154,8 +154,8 @@ class UnconditionalSMLoss(nnx.Module):
             model : Callable
                 Score model, called as model(obs=x_t, t=t, **kwargs).
             batch : Tuple[Array, Array]
-                Input data. For SM, batch is (x_1,) — a single element tuple
-                containing the clean data. The time sampling is handled internally.
+                Input data (x_1, t) where x_1 is the clean data and t is the
+                diffusion time. Use ``path.sample_t`` to sample t externally.
             **kwargs: Additional keyword arguments.
 
         Returns
@@ -163,9 +163,9 @@ class UnconditionalSMLoss(nnx.Module):
             Array
                 Computed loss.
         """
-        (x_1,) = batch
+        x_1, t = batch
 
-        path_sample = self.path.sample(key, x_1)
+        path_sample = self.path.sample(key, x_1, t)
         batch = path_sample.get_batch()
 
         condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)

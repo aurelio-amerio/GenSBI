@@ -17,11 +17,16 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
 from gensbi.diffusion.solver import SDESolver
 
+from gensbi.diffusion.path.sm_path import SMPath
+from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
+from gensbi.diffusion.solver import SMSolver
+
 from gensbi.models import (
     UnconditionalCFMLoss,
     UnconditionalWrapper,
     UnconditionalEDMLoss,
 )
+from gensbi.models.losses import UnconditionalSMLoss
 
 from gensbi.recipes.utils import init_ids_1d
 
@@ -490,4 +495,178 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
     ):
         raise NotImplementedError(
             "Batched sampling not implemented for UnconditionalDiffusionPipeline."
+        )
+
+
+class UnconditionalSMPipeline(AbstractPipeline):
+    """
+    Score matching pipeline for training and using an Unconditional model for simulation-based inference.
+
+    Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+    Parameters
+    ----------
+    model : nnx.Module
+        The model to be trained.
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    ch_obs : int
+        Number of channels in the observation space.
+    sde_type : str
+        Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+    params : optional
+        Parameters for the model. Serves no use if a custom model is provided.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+    """
+
+    def __init__(
+        self,
+        model,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        ch_obs: int = 1,
+        sde_type: str = "VP",
+        params=None,
+        training_config=None,
+    ):
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=0,
+            ch_obs=ch_obs,
+            params=params,
+            training_config=training_config,
+        )
+
+        self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
+        self.sde_type = sde_type
+
+        if sde_type == "VP":
+            beta_min = self.training_config.get("beta_min", 0.001)
+            beta_max = self.training_config.get("beta_max", 3.0)
+            self.path = SMPath(VPSmScheduler(beta_min=beta_min, beta_max=beta_max))
+        elif sde_type == "VE":
+            sigma_min = self.training_config.get("sigma_min", 0.001)
+            sigma_max = self.training_config.get("sigma_max", 15.0)
+            self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
+        else:
+            raise ValueError(
+                f"sde_type must be one of ['VP', 'VE'], got {sde_type}."
+            )
+
+        self.loss_fn = UnconditionalSMLoss(self.path)
+
+    @classmethod
+    def init_pipeline_from_config(cls):
+        raise NotImplementedError(
+            "Initialization from config not implemented for UnconditionalSMPipeline."
+        )
+
+    def _make_model(self):
+        raise NotImplementedError(
+            "Model creation not implemented for UnconditionalSMPipeline."
+        )
+
+    @classmethod
+    def get_default_params(cls, dim_obs, ch_obs):
+        raise NotImplementedError(
+            "Default parameters not implemented for UnconditionalSMPipeline."
+        )
+
+    @classmethod
+    def get_default_training_config(cls, sde_type="VP"):
+        config = super().get_default_training_config()
+        if sde_type == "VP":
+            config.update(
+                {
+                    "beta_min": 0.001,
+                    "beta_max": 3.0,
+                }
+            )
+        elif sde_type == "VE":
+            config.update(
+                {
+                    "sigma_min": 0.001,
+                    "sigma_max": 15.0,
+                }
+            )
+        return config
+
+    def get_loss_fn(self):
+        def loss_fn(model, batch, key: jax.random.PRNGKey):
+            rng_x0, rng_t = jax.random.split(key, 2)
+
+            x_1 = batch
+            t = self.path.sample_t(rng_t, (x_1.shape[0], 1, 1))
+
+            batch = (x_1, t)
+            loss = self.loss_fn(rng_x0, model, batch, node_ids=self.obs_ids)
+            return loss
+
+        return loss_fn
+
+    def _wrap_model(self):
+        self.model_wrapped = UnconditionalWrapper(self.model)
+        self.ema_model_wrapped = UnconditionalWrapper(self.ema_model)
+        return
+
+    def get_sampler(
+        self,
+        nsteps=1000,
+        use_ema=True,
+        return_intermediates=False,
+        **model_extras,
+    ):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        solver = SMSolver(score_model=model, path=self.path)
+
+        model_extras = {"obs_ids": self.obs_ids, **model_extras}
+
+        sampler_ = solver.get_sampler(
+            nsteps=nsteps,
+            return_intermediates=return_intermediates,
+            model_extras=model_extras,
+        )
+
+        def sampler(key, nsamples):
+            key1, key2 = jax.random.split(key, 2)
+            x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
+            samples = sampler_(key2, x_init)
+            return samples
+
+        return sampler
+
+    def sample(
+        self,
+        key,
+        nsamples=10_000,
+        nsteps=1000,
+        use_ema=True,
+        return_intermediates=False,
+        **model_extras,
+    ):
+        sampler = self.get_sampler(
+            nsteps=nsteps,
+            use_ema=use_ema,
+            return_intermediates=return_intermediates,
+            **model_extras,
+        )
+        samples = sampler(key, nsamples)
+        return samples
+
+    def sample_batched(self, *args, **kwargs):
+        raise NotImplementedError(
+            "Batched sampling not implemented for UnconditionalSMPipeline."
         )

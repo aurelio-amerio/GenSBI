@@ -23,7 +23,12 @@ from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler
 from gensbi.diffusion.solver import SDESolver
 
+from gensbi.diffusion.path.sm_path import SMPath
+from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
+from gensbi.diffusion.solver import SMSolver
+
 from gensbi.models import ConditionalCFMLoss, ConditionalWrapper, ConditionalEDMLoss
+from gensbi.models.losses import ConditionalSMLoss
 
 from einops import repeat
 
@@ -662,6 +667,232 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         **model_extras,
     ):
 
+        sampler = self.get_sampler(
+            x_o,
+            nsteps=nsteps,
+            use_ema=use_ema,
+            return_intermediates=return_intermediates,
+            **model_extras,
+        )
+        return sampler(key, nsamples)
+
+
+class ConditionalSMPipeline(AbstractPipeline):
+    """
+    Score matching pipeline for training and using a Conditional model for simulation-based inference.
+
+    Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+    Parameters
+    ----------
+    model : nnx.Module
+        The model to be trained.
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int or tuple of int
+        Dimension of the parameter space (number of tokens).
+    dim_cond : int or tuple of int
+        Dimension of the observation space (number of tokens).
+    ch_obs : int, optional
+        Number of channels per token in the observation data. Default is 1.
+    ch_cond : int, optional
+        Number of channels per token in the conditional data. Default is 1.
+    sde_type : str
+        Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+    id_embedding_strategy : tuple of str, optional
+        Embedding strategy for observation and conditioning IDs.
+    params : optional
+        Parameters for the model.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+    """
+
+    def __init__(
+        self,
+        model,
+        train_dataset,
+        val_dataset,
+        dim_obs: Union[int, Tuple[int, int]],
+        dim_cond: Union[int, Tuple[int, int]],
+        ch_obs=1,
+        ch_cond=1,
+        sde_type: str = "VP",
+        id_embedding_strategy=("absolute", "absolute"),
+        params=None,
+        training_config=None,
+    ):
+
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            params=params,
+            training_config=training_config,
+        )
+
+        embeddings_1d = ["absolute", "pos1d", "rope1d"]
+        embeddings_2d = ["pos2d", "rope2d"]
+
+        if id_embedding_strategy[0] in embeddings_1d:
+            obs_ids, dim_obs = init_ids_1d(dim_obs, semantic_id=0)
+        elif id_embedding_strategy[0] in embeddings_2d:
+            obs_ids, dim_obs = init_ids_2d(dim_obs, semantic_id=0)
+        else:
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
+            )
+
+        if id_embedding_strategy[1] in embeddings_1d:
+            cond_ids, dim_cond = init_ids_1d(dim_cond, semantic_id=1)
+        elif id_embedding_strategy[1] in embeddings_2d:
+            cond_ids, dim_cond = init_ids_2d(dim_cond, semantic_id=1)
+        else:
+            raise ValueError(
+                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
+            )
+
+        self.obs_ids = obs_ids
+        self.cond_ids = cond_ids
+        self.dim_obs = dim_obs
+        self.dim_cond = dim_cond
+        self.sde_type = sde_type
+
+        if sde_type == "VP":
+            beta_min = self.training_config.get("beta_min", 0.001)
+            beta_max = self.training_config.get("beta_max", 3.0)
+            self.path = SMPath(VPSmScheduler(beta_min=beta_min, beta_max=beta_max))
+        elif sde_type == "VE":
+            sigma_min = self.training_config.get("sigma_min", 0.001)
+            sigma_max = self.training_config.get("sigma_max", 15.0)
+            self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
+        else:
+            raise ValueError(
+                f"sde_type must be one of ['VP', 'VE'], got {sde_type}."
+            )
+
+        self.loss_fn = ConditionalSMLoss(self.path)
+
+    @classmethod
+    def init_pipeline_from_config(cls):
+        raise NotImplementedError(
+            "Initialization from config not implemented for ConditionalSMPipeline."
+        )
+
+    def _make_model(self):
+        raise NotImplementedError(
+            "Model creation not implemented for ConditionalSMPipeline."
+        )
+
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
+        raise NotImplementedError(
+            "Default parameters not implemented for ConditionalSMPipeline."
+        )
+
+    @classmethod
+    def get_default_training_config(cls, sde_type="VP"):
+        config = super().get_default_training_config()
+        if sde_type == "VP":
+            config.update(
+                {
+                    "beta_min": 0.001,
+                    "beta_max": 3.0,
+                }
+            )
+        elif sde_type == "VE":
+            config.update(
+                {
+                    "sigma_min": 0.001,
+                    "sigma_max": 15.0,
+                }
+            )
+        return config
+
+    def get_loss_fn(self):
+        def loss_fn(model, batch, key: jax.random.PRNGKey):
+            obs, cond = batch
+
+            rng_x0, rng_t = jax.random.split(key, 2)
+
+            x_1 = obs
+            t = self.path.sample_t(rng_t, (x_1.shape[0], 1, 1))
+
+            obs_batch = (x_1, t)
+            loss = self.loss_fn(
+                rng_x0, model, obs_batch, cond, self.obs_ids, self.cond_ids
+            )
+            return loss
+
+        return loss_fn
+
+    def get_train_step_fn(self, loss_fn):
+        @nnx.jit
+        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
+            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
+            optimizer.update(model, grads, value=loss)
+            return loss
+
+        return train_step
+
+    def _wrap_model(self):
+        self.model_wrapped = ConditionalWrapper(self.model)
+        self.ema_model_wrapped = ConditionalWrapper(self.ema_model)
+        return
+
+    def get_sampler(
+        self,
+        x_o,
+        nsteps=1000,
+        use_ema=True,
+        return_intermediates=False,
+        **model_extras,
+    ):
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        cond = _expand_dims(x_o)
+
+        solver = SMSolver(score_model=model, path=self.path)
+
+        model_extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+            **model_extras,
+        }
+
+        sampler_ = solver.get_sampler(
+            nsteps=nsteps,
+            return_intermediates=return_intermediates,
+            model_extras=model_extras,
+        )
+
+        def sampler(key, nsamples):
+            key1, key2 = jax.random.split(key, 2)
+            x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
+            samples = sampler_(key2, x_init)
+            return samples
+
+        return sampler
+
+    def sample(
+        self,
+        key,
+        x_o,
+        nsamples=10_000,
+        nsteps=1000,
+        use_ema=True,
+        return_intermediates=False,
+        **model_extras,
+    ):
         sampler = self.get_sampler(
             x_o,
             nsteps=nsteps,
