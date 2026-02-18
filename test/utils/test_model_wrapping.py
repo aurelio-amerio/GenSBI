@@ -21,8 +21,11 @@ class DummyModel(nnx.Module):
             
         res = x + t if conditioned else x - t
 
-        res += kwargs.get("captured_arg", 0.0)
-        res += kwargs.get("dynamic_arg", 0.0)
+        if "captured_arg" in kwargs:
+            res += kwargs["captured_arg"]
+
+        if "dynamic_arg" in kwargs:
+            res += kwargs["dynamic_arg"]
 
         return res
 
