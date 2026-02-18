@@ -490,7 +490,7 @@ mermaid.initialize(
 
 window.addEventListener("load", load);</script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/diagnostics/tarp';</script>
-    <link rel="icon" href="../../../_static/logo_small.png"/>
+    <link rel="icon" href="../../../_static/logo-square-small.png"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -561,8 +561,8 @@ window.addEventListener("load", load);</script>
       
     
     
-    <img src="../../../_static/logo_small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
-    <img src="../../../_static/logo_small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+    <img src="../../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
   
   
 </a></div>
@@ -1006,11 +1006,16 @@ window.addEventListener("load", load);</script>
 
     <span class="n">num_posterior_samples</span> <span class="o">=</span> <span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="k">assert</span> <span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span>
+    <span class="n">expected_shape</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">num_posterior_samples</span><span class="p">,</span>
         <span class="n">num_tarp_samples</span><span class="p">,</span>
         <span class="n">dim_theta</span><span class="p">,</span>
-    <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Wrong posterior samples shape for TARP: </span><span class="si">{</span><span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="p">(</span><span class="n">num_posterior_samples</span><span class="p">,</span><span class="w"> </span><span class="n">num_tarp_samples</span><span class="p">,</span><span class="w"> </span><span class="n">dim_theta</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Wrong posterior samples shape for TARP: </span><span class="si">{</span><span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
 
     <span class="c1"># Generate references once for non-bootstrap; bootstrap regenerates per iteration</span>
     <span class="k">if</span> <span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">bootstrap</span><span class="p">:</span>
