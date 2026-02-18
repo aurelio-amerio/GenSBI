@@ -49,3 +49,26 @@ def test_flux_diffloss_runs():
     key = jax.random.PRNGKey(0)
     result = loss(key, vf, batch, cond, obs_ids, cond_ids)
     assert result is not None
+
+
+def test_flux_smloss_runs():
+    from gensbi.models.losses import ConditionalSMLoss
+    from gensbi.diffusion.path.sm_path import SMPath
+    from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler
+
+    sde = VPSmScheduler()
+    path = SMPath(sde)
+    loss = ConditionalSMLoss(path)
+
+    def vf(obs, obs_ids, cond, cond_ids, t, conditioned=True):
+        return obs + 1
+
+    x1 = jnp.ones((2, 2))
+    t = jnp.ones((2, 1))
+    cond = jnp.ones((2, 2))
+    obs_ids = jnp.array([0, 1])
+    cond_ids = jnp.array([2, 3])
+    batch = (x1, t)
+    key = jax.random.PRNGKey(0)
+    result = loss(key, vf, batch, cond, obs_ids, cond_ids)
+    assert result is not None

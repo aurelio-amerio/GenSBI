@@ -22,7 +22,8 @@ class TestSMPath:
         path = SMPath(sde)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
-        sample = path.sample(key, x_1)
+        t = jnp.ones((4, 1))
+        sample = path.sample(key, x_1, t)
         assert isinstance(sample, SMPathSample)
 
     def test_sample_shapes(self, sde_cls):
@@ -30,7 +31,8 @@ class TestSMPath:
         path = SMPath(sde)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
-        sample = path.sample(key, x_1)
+        t = jnp.ones((4, 1))
+        sample = path.sample(key, x_1, t)
 
         assert sample.x_1.shape == (4, 3)
         assert sample.x_t.shape == (4, 3)
@@ -56,7 +58,8 @@ class TestSMPath:
         path = SMPath(sde)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
-        sample = path.sample(key, x_1)
+        t = jnp.ones((4, 1))
+        sample = path.sample(key, x_1, t)
         batch = sample.get_batch()
         assert len(batch) == 5
         assert batch[0] is sample.x_1
@@ -72,10 +75,21 @@ class TestSMPathLoss:
         path = SMPath(sde)
         loss_fn = path.get_loss_fn()
 
+        batch_size = 4
+        x_1 = jnp.ones((batch_size, 3))
+        t = jnp.ones((batch_size, 1))
+
+        # Now we construct the batch as passed from the pipeline to the loss function
+        # The pipeline samples t and constructs batch = (x_1, t)
+        # However, the path.get_loss_fn() expects the UNPACKED sample batch: (x_1, x_t, t, noise, std_t)
+        # Wait, the pipeline calls path.sample(key, x_1, t) which returns a Sample object.
+        # The Loss class (e.g. UnconditionalSMLoss) calls path.sample(), gets the sample object,
+        # calls sample.get_batch() which returns (x_1, x_t, t, noise, std_t),
+        # and THEN passes this 5-element tuple to loss_fn.
+
         key = jax.random.PRNGKey(0)
-        x_1 = jnp.ones((4, 3))
-        sample = path.sample(key, x_1)
-        batch = sample.get_batch()
+        path_sample = path.sample(key, x_1, t)
+        batch = path_sample.get_batch()
 
         def model(obs, t, **kwargs):
             return obs + t
@@ -89,10 +103,13 @@ class TestSMPathLoss:
         path = SMPath(sde)
         loss_fn = path.get_loss_fn()
 
+        batch_size = 4
+        x_1 = jnp.ones((batch_size, 3))
+        t = jnp.ones((batch_size, 1))
+
         key = jax.random.PRNGKey(0)
-        x_1 = jnp.ones((4, 3))
-        sample = path.sample(key, x_1)
-        batch = sample.get_batch()
+        path_sample = path.sample(key, x_1, t)
+        batch = path_sample.get_batch()
 
         def model(obs, t, **kwargs):
             return obs + t
@@ -106,11 +123,15 @@ class TestSMPathLoss:
         path = SMPath(sde)
         loss_fn = path.get_loss_fn()
 
+        batch_size = 4
+        x_1 = jnp.ones((batch_size, 3))
+        t = jnp.ones((batch_size, 1))
+
         key = jax.random.PRNGKey(0)
-        x_1 = jnp.ones((4, 3))
-        sample = path.sample(key, x_1)
-        batch = sample.get_batch()
-        mask = jnp.array([[True, False, False]] * 4)
+        path_sample = path.sample(key, x_1, t)
+        batch = path_sample.get_batch()
+
+        mask = jnp.array([[True, False, False]] * batch_size)
 
         def model(obs, t, **kwargs):
             return obs + t

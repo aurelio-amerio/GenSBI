@@ -42,3 +42,23 @@ def test_simformer_diffloss_runs():
     key = jax.random.PRNGKey(0)
     result = loss(key, vf, batch)
     assert result is not None
+
+
+def test_simformer_smloss_runs():
+    from gensbi.models.losses import UnconditionalSMLoss
+    from gensbi.diffusion.path.sm_path import SMPath
+    from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler
+
+    sde = VPSmScheduler()
+    path = SMPath(sde)
+    loss = UnconditionalSMLoss(path)
+
+    def vf(obs, t, *args, **kwargs):
+        return obs + t
+
+    x1 = jnp.ones((2, 2))
+    t = jnp.ones((2, 1))
+    batch = (x1, t)
+    key = jax.random.PRNGKey(0)
+    result = loss(key, vf, batch)
+    assert result is not None
