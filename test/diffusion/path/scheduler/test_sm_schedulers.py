@@ -22,10 +22,10 @@ class TestVPSmScheduler:
         assert sde.beta_max == 3.0
 
     def test_custom_params(self):
-        sde = VPSmScheduler(beta_min=0.01, beta_max=10.0, diff_steps=500)
+        sde = VPSmScheduler(beta_min=0.01, beta_max=10.0, e_s=1e-4)
         assert sde.beta_min == 0.01
         assert sde.beta_max == 10.0
-        assert sde.diff_steps == 500
+        assert sde.e_s == 1e-4
 
     def test_beta_t(self):
         sde = VPSmScheduler()
@@ -76,7 +76,7 @@ class TestVPSmScheduler:
         key = jax.random.PRNGKey(0)
         t = sde.sample_t(key, (100,))
         assert t.shape == (100,)
-        assert jnp.all(t >= 1.0 / sde.diff_steps)
+        assert jnp.all(t >= sde.e_s)
         assert jnp.all(t <= 1.0)
 
     def test_sample_prior(self):
@@ -145,7 +145,7 @@ class TestVESmScheduler:
         key = jax.random.PRNGKey(0)
         t = sde.sample_t(key, (100,))
         assert t.shape == (100,)
-        assert jnp.all(t >= 1.0 / sde.diff_steps)
+        assert jnp.all(t >= sde.e_s)
         assert jnp.all(t <= 1.0)
 
     def test_sample_prior(self):

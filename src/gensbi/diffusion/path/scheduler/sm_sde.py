@@ -191,12 +191,12 @@ class VPSmScheduler(BaseSMSDE):
         self,
         beta_min: float = 0.001,
         beta_max: float = 3.0,
-        diff_steps: int = 1000,
+        e_s: float = 1e-3,
     ):
         super().__init__()
         self.beta_min = beta_min
         self.beta_max = beta_max
-        self.diff_steps = diff_steps
+        self.e_s = e_s
         return
 
     @property
@@ -228,8 +228,7 @@ class VPSmScheduler(BaseSMSDE):
         return jnp.sqrt(1.0 - jnp.exp(-self.alpha_t(t)))
 
     def sample_t(self, key: Array, shape: Any) -> Array:
-        t_min = 1.0 / self.diff_steps
-        return jax.random.uniform(key, shape, minval=t_min, maxval=1.0)
+        return jax.random.uniform(key, shape, minval=self.e_s, maxval=1.0)
 
 
 class VESmScheduler(BaseSMSDE):
@@ -248,20 +247,20 @@ class VESmScheduler(BaseSMSDE):
             Minimum noise level.
         sigma_max : float
             Maximum noise level.
-        diff_steps : int
-            Number of diffusion steps (determines minimum time for training).
+        e_s : float
+            Minimum time for training (replaces diff_steps).
     """
 
     def __init__(
         self,
         sigma_min: float = 1e-3,
         sigma_max: float = 15.0,
-        diff_steps: int = 1000,
+        e_s: float = 1e-3,
     ):
         super().__init__()
         self.sigma_min = sigma_min
         self.sigma_max = sigma_max
-        self.diff_steps = diff_steps
+        self.e_s = e_s
         self._log_sigma_min = jnp.log(sigma_min)
         self._log_sigma_max = jnp.log(sigma_max)
         return
@@ -293,5 +292,4 @@ class VESmScheduler(BaseSMSDE):
         return self.sigma(t)
 
     def sample_t(self, key: Array, shape: Any) -> Array:
-        t_min = 1.0 / self.diff_steps
-        return jax.random.uniform(key, shape, minval=t_min, maxval=1.0)
+        return jax.random.uniform(key, shape, minval=self.e_s, maxval=1.0)

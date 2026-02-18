@@ -13,10 +13,11 @@ from jax import Array
 from jax import numpy as jnp
 from typing import Callable, Any
 
+from gensbi.diffusion.path.path import ProbPath
 from gensbi.diffusion.path.path_sample import SMPathSample
 
 
-class SMPath:
+class SMPath(ProbPath):
     """
     Score Matching probability path.
 
@@ -27,7 +28,7 @@ class SMPath:
 
     Parameters
     ----------
-        sde: The SDE scheduler object (VPSmScheduler or VESmScheduler).
+        scheduler: The SDE scheduler object (VPSmScheduler or VESmScheduler).
 
     Example:
         .. code-block:: python
@@ -35,8 +36,8 @@ class SMPath:
             from gensbi.diffusion.path.sm_path import SMPath
             from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler
             import jax, jax.numpy as jnp
-            sde = VPSmScheduler()
-            path = SMPath(sde)
+            scheduler = VPSmScheduler()
+            path = SMPath(scheduler)
             key = jax.random.PRNGKey(0)
             x_1 = jax.random.normal(key, (32, 2))
             sample = path.sample(key, x_1)
@@ -44,30 +45,25 @@ class SMPath:
             # (32, 2)
     """
 
-    def __init__(self, sde) -> None:
+    def __init__(self, scheduler) -> None:
         """
         Initialize the SMPath with an SDE scheduler.
 
         Parameters
         ----------
-            sde: The SDE scheduler object.
+            scheduler: The SDE scheduler object.
 
         Raises
         ------
             AssertionError
-                If sde name is not one of 'SM-VP' or 'SM-VE'.
+                If scheduler name is not one of 'SM-VP' or 'SM-VE'.
         """
-        self.sde = sde
-        assert self.sde.name in [
+        self.scheduler = scheduler
+        assert self.scheduler.name in [
             "SM-VP",
             "SM-VE",
-        ], f"SDE must be one of ['SM-VP', 'SM-VE'], got {self.sde.name}."
+        ], f"SDE must be one of ['SM-VP', 'SM-VE'], got {self.scheduler.name}."
         return
-
-    @property
-    def name(self) -> str:
-        """Returns the name of the SDE."""
-        return self.sde.name
 
     def sample(self, key: Array, x_1: Array, t: Array) -> SMPathSample:
         r"""
@@ -91,8 +87,8 @@ class SMPath:
                 A sample from the SM path.
         """
         # Compute marginals
-        mean_coeff = self.sde.marginal_mean_coeff(t)
-        std_t = self.sde.marginal_std(t)
+        mean_coeff = self.scheduler.marginal_mean_coeff(t)
+        std_t = self.scheduler.marginal_std(t)
 
         # Noise and construct x_t
         noise = jax.random.normal(key, x_1.shape)
@@ -106,7 +102,7 @@ class SMPath:
             std_t=std_t,
         )
 
-    def sample_t(self, key: Array, shape: Any) -> Array:
+    def sample_t(self, key: Array, batch_size: int) -> Array:
         """
         Sample diffusion times from the SDE scheduler.
 
@@ -116,7 +112,7 @@ class SMPath:
         ----------
             key : Array
                 JAX random key.
-            shape : Any
+            batch_size : int
                 Shape of the time samples to generate.
 
         Returns
@@ -124,25 +120,8 @@ class SMPath:
             Array
                 Sampled diffusion times.
         """
-        return self.sde.sample_t(key, shape)
-
-    def sample_prior(self, key: Array, shape: Any) -> Array:
-        """
-        Sample from the prior distribution.
-
-        Parameters
-        ----------
-            key : Array
-                JAX random key.
-            shape : Any
-                Shape of the samples to generate, should be (nsamples, ndim).
-
-        Returns
-        -------
-            Array
-                Samples from the prior distribution.
-        """
-        return self.sde.sample_prior(key, shape)
+        shape = (batch_size, 1)
+        return self.scheduler.sample_t(key, shape)
 
     def get_loss_fn(self) -> Callable:
         r"""
@@ -160,7 +139,7 @@ class SMPath:
             Callable
                 Loss function.
         """
-        sde = self.sde
+        scheduler = self.scheduler
 
         def loss_fn(
             F: Callable,
@@ -174,7 +153,7 @@ class SMPath:
             score_target = -noise / std_t
 
             # Weight for MLE: g(t)^2
-            w = sde.weight(t)
+            w = scheduler.weight(t)
 
             if condition_mask is not None:
                 condition_mask = jnp.broadcast_to(condition_mask, x_1.shape)

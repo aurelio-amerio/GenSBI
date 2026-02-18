@@ -13,13 +13,14 @@ from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler, VESmScheduler
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 class TestSMPath:
     def test_initialization(self, sde_cls):
-        sde = sde_cls()
-        path = SMPath(sde)
-        assert path.name == sde.name
+        scheduler = sde_cls()
+        path = SMPath(scheduler)
+        assert path.name == scheduler.name
+        assert path.scheduler is scheduler
 
     def test_sample_returns_sm_path_sample(self, sde_cls):
-        sde = sde_cls()
-        path = SMPath(sde)
+        scheduler = sde_cls()
+        path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
         t = jnp.ones((4, 1))
@@ -27,8 +28,8 @@ class TestSMPath:
         assert isinstance(sample, SMPathSample)
 
     def test_sample_shapes(self, sde_cls):
-        sde = sde_cls()
-        path = SMPath(sde)
+        scheduler = sde_cls()
+        path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
         t = jnp.ones((4, 1))
@@ -41,21 +42,29 @@ class TestSMPath:
         assert sample.std_t.shape == (4, 1)
 
     def test_sample_prior_shape(self, sde_cls):
-        sde = sde_cls()
-        path = SMPath(sde)
+        scheduler = sde_cls()
+        path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
         prior = path.sample_prior(key, (10, 5))
         assert prior.shape == (10, 5)
 
+    def test_sample_t_batch_size(self, sde_cls):
+        scheduler = sde_cls()
+        path = SMPath(scheduler)
+        key = jax.random.PRNGKey(0)
+        batch_size = 10
+        t = path.sample_t(key, batch_size)
+        assert t.shape == (batch_size, 1)
+
     def test_get_loss_fn_callable(self, sde_cls):
-        sde = sde_cls()
-        path = SMPath(sde)
+        scheduler = sde_cls()
+        path = SMPath(scheduler)
         loss_fn = path.get_loss_fn()
         assert callable(loss_fn)
 
     def test_get_batch(self, sde_cls):
-        sde = sde_cls()
-        path = SMPath(sde)
+        scheduler = sde_cls()
+        path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
         t = jnp.ones((4, 1))
@@ -71,8 +80,8 @@ class TestSMPath:
 
 class TestSMPathLoss:
     def test_loss_runs_vp(self):
-        sde = VPSmScheduler()
-        path = SMPath(sde)
+        scheduler = VPSmScheduler()
+        path = SMPath(scheduler)
         loss_fn = path.get_loss_fn()
 
         batch_size = 4
@@ -99,8 +108,8 @@ class TestSMPathLoss:
         assert jnp.isfinite(loss)
 
     def test_loss_runs_ve(self):
-        sde = VESmScheduler()
-        path = SMPath(sde)
+        scheduler = VESmScheduler()
+        path = SMPath(scheduler)
         loss_fn = path.get_loss_fn()
 
         batch_size = 4
@@ -119,8 +128,8 @@ class TestSMPathLoss:
         assert jnp.isfinite(loss)
 
     def test_loss_with_mask(self):
-        sde = VPSmScheduler()
-        path = SMPath(sde)
+        scheduler = VPSmScheduler()
+        path = SMPath(scheduler)
         loss_fn = path.get_loss_fn()
 
         batch_size = 4
