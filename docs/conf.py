@@ -74,8 +74,8 @@ copybutton_selector = ":not(.prompt) > div.highlight pre"
 
 html_show_sourcelink = False
 html_theme = "pydata_sphinx_theme"
-html_logo = "_static/logo_small.png"
-html_favicon = "_static/logo_small.png"
+html_logo = "_static/logo-square-small.png"
+html_favicon = "_static/logo-square-small.png"
 
 html_theme_options = {
     "header_links_before_dropdown": 4,
