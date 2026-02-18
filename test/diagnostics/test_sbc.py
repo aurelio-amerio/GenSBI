@@ -83,7 +83,7 @@ def test_sbc_input_validation():
 
     # Test run_sbc assertions
     bad_posterior = posterior_samples[:, :-1, :]
-    with pytest.raises(AssertionError, match="Wrong posterior samples shape"):
+    with pytest.raises(ValueError, match="Wrong posterior samples shape"):
         run_sbc(thetas, xs, bad_posterior)
 
 
@@ -132,7 +132,7 @@ def test_sbc_plotting_detailed():
     assert isinstance(fig, plt.Figure)
     
     # Test invalid plot type
-    with pytest.raises(AssertionError, match="plot type invalid not implemented"):
+    with pytest.raises(ValueError, match="plot type invalid not implemented"):
         sbc_rank_plot(ranks, num_posterior_samples, plot_type="invalid")
         
     # Test plotting options
