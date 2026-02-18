@@ -154,11 +154,14 @@ def run_tarp(
 
     num_posterior_samples = posterior_samples.shape[0]
 
-    assert posterior_samples.shape == (
+    if posterior_samples.shape != (
         num_posterior_samples,
         num_tarp_samples,
         dim_theta,
-    ), f"Wrong posterior samples shape for TARP: {posterior_samples.shape}, expected {(num_posterior_samples, num_tarp_samples, dim_theta)}"
+    ):
+        raise ValueError(
+            f"Wrong posterior samples shape for TARP: {posterior_samples.shape}, expected {(num_posterior_samples, num_tarp_samples, dim_theta)}"
+        )
 
     # Generate references once for non-bootstrap; bootstrap regenerates per iteration
     if references is None and not bootstrap:
