@@ -4,7 +4,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import pytest
-from gensbi.diffusion.solver import SDESolver
+from gensbi.diffusion.solver import EDMSolver
 from gensbi.diffusion.path.edm_path import EDMPath
 from gensbi.diffusion.path.scheduler.edm import (
     EDMScheduler,
@@ -26,8 +26,8 @@ class DummyScoreModel(nnx.Module):
 def test_sde_solver_initialization(scheduler_cls):
     scheduler = scheduler_cls()
     path = EDMPath(scheduler=scheduler)
-    solver = SDESolver(score_model=None, path=path)
-    assert isinstance(solver, SDESolver)
+    solver = EDMSolver(score_model=None, path=path)
+    assert isinstance(solver, EDMSolver)
     assert solver.path is path
 
 
@@ -38,7 +38,7 @@ def test_sde_solver_sample_shape(scheduler_cls):
     score_model = DummyScoreModel()
     scheduler = scheduler_cls()
     path = EDMPath(scheduler=scheduler)
-    solver = SDESolver(score_model=score_model, path=path)
+    solver = EDMSolver(score_model=score_model, path=path)
     key = jax.random.PRNGKey(0)
     x_init = path.sample_prior(key, (10, 2))
 
@@ -78,7 +78,7 @@ def test_sde_solver_sample_shape(scheduler_cls):
 
 def test_sde_solver_cfg_scale_not_implemented():
     path = EDMPath(scheduler=EDMScheduler())
-    solver = SDESolver(score_model=DummyScoreModel(), path=path)
+    solver = EDMSolver(score_model=DummyScoreModel(), path=path)
     key = jax.random.PRNGKey(0)
     x_init = path.sample_prior(key, (2, 2))
     with pytest.raises(NotImplementedError) as e:

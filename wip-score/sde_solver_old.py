@@ -29,7 +29,7 @@ from gensbi.utils.model_wrapping import ModelWrapper
 # TODO: we might want add support for intermediate sampling steps
 
 
-class BaseSDESolver(Solver):
+class BaseFmSDESolver(Solver):
     """A class to solve ordinary differential equations (ODEs) using a specified velocity model.
 
     This class utilizes a velocity field model to solve ODEs over a given time grid using numerical ode solvers.
@@ -191,7 +191,7 @@ class BaseSDESolver(Solver):
         return sampler(key, nsamples)
 
 
-class ZeroEnds(BaseSDESolver):
+class ZeroEnds(BaseFmSDESolver):
     """
     ZeroEnds SDE solver.
 
@@ -238,7 +238,7 @@ class ZeroEnds(BaseSDESolver):
         return g_tilde
 
 
-class NonSingular(BaseSDESolver):
+class NonSingular(BaseFmSDESolver):
     """
     NonSingular SDE solver.
 

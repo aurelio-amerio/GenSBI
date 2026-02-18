@@ -255,7 +255,7 @@ class VESmScheduler(BaseSMSDE):
         self,
         sigma_min: float = 1e-3,
         sigma_max: float = 15.0,
-        e_s: float = 1e-3,
+        e_s: float = 0.0,
     ):
         super().__init__()
         self.sigma_min = sigma_min
@@ -293,3 +293,24 @@ class VESmScheduler(BaseSMSDE):
 
     def sample_t(self, key: Array, shape: Any) -> Array:
         return jax.random.uniform(key, shape, minval=self.e_s, maxval=1.0)
+
+    def sample_prior(self, key: Array, shape: Any) -> Array:
+        r"""
+        Sample from the VE prior distribution :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.
+
+        For the VE SDE, the marginal at :math:`t=T` has std :math:`\sigma_{\max}`,
+        so the prior is :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.
+
+        Parameters
+        ----------
+            key : Array
+                JAX random key.
+            shape : Any
+                Shape of the output.
+
+        Returns
+        -------
+            Array
+                Samples from the VE prior.
+        """
+        return self.sigma_max * jax.random.normal(key, shape)

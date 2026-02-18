@@ -18,7 +18,7 @@ from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler
-from gensbi.diffusion.solver import SDESolver
+from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.models import ConditionalCFMLoss, ConditionalWrapper, ConditionalEDMLoss
 
@@ -616,7 +616,7 @@ class ConditionalLatentDiffusionPipeline(AbstractPipeline):
         if self.vae_cond is not None:
             cond = self.vae_cond.encode(cond, key)
 
-        solver = SDESolver(score_model=model, path=self.path)
+        solver = EDMSolver(score_model=model, path=self.path)
 
         model_extras = {
             "cond": cond,

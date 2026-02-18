@@ -3,11 +3,13 @@ Abstract solver interface for diffusion models.
 
 This module defines the abstract base class for solvers used in diffusion model sampling.
 """
+
 from abc import ABC, abstractmethod
 
 from jax import Array
 
 
+# FIXME: maybe we should just remove this solver, it does nothing in practice
 class Solver(ABC):
     """Abstract base class for diffusion model solvers."""
 
@@ -15,12 +17,12 @@ class Solver(ABC):
     def sample(self, key, x_1: Array) -> Array:
         """
         Sample from the diffusion solver given target conditions.
-        
+
         Parameters
         ----------
             key: JAX random key for stochastic operations.
             x_1: Target conditions for the solver.
-            
+
         Returns
         -------
             Sampled output from the solver.

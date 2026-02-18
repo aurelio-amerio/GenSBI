@@ -19,7 +19,7 @@ from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler
-from gensbi.diffusion.solver import SDESolver
+from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
@@ -617,7 +617,7 @@ class JointDiffusionPipeline(AbstractPipeline):
 
         cond = _expand_dims(x_o)
 
-        solver = SDESolver(score_model=model, path=self.path)
+        solver = EDMSolver(score_model=model, path=self.path)
 
         model_extras = {
             "cond": cond,
@@ -733,9 +733,7 @@ class JointSMPipeline(AbstractPipeline):
             sigma_max = self.training_config.get("sigma_max", 15.0)
             self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
         else:
-            raise ValueError(
-                f"sde_type must be one of ['VP', 'VE'], got {sde_type}."
-            )
+            raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
 
         self.loss_fn = JointSMLoss(self.path)
 
@@ -758,9 +756,7 @@ class JointSMPipeline(AbstractPipeline):
         )
 
     def _make_model(self):
-        raise NotImplementedError(
-            "_make_model is not implemented for JointSMPipeline."
-        )
+        raise NotImplementedError("_make_model is not implemented for JointSMPipeline.")
 
     @classmethod
     def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):

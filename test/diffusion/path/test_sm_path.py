@@ -52,9 +52,9 @@ class TestSMPath:
         scheduler = sde_cls()
         path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
-        batch_size = 10
-        t = path.sample_t(key, batch_size)
-        assert t.shape == (batch_size, 1)
+        batch_shape = (10, 5)
+        t = path.sample_t(key, batch_shape)
+        assert t.shape == batch_shape
 
     def test_get_loss_fn_callable(self, sde_cls):
         scheduler = sde_cls()

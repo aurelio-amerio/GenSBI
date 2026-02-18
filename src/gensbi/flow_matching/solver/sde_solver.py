@@ -45,7 +45,7 @@ from gensbi.flow_matching.solver.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
-class BaseSDESolver(Solver):
+class BaseFmSDESolver(Solver):
     """Base class for flow matching SDE solvers.
 
     Uses a velocity field model to construct drift and diffusion terms for an SDE
@@ -301,7 +301,7 @@ class BaseSDESolver(Solver):
         return sampler(key, nsamples)
 
 
-class ZeroEnds(BaseSDESolver):
+class ZeroEnds(BaseFmSDESolver):
     """
     ZeroEnds SDE solver for flow matching.
 
@@ -354,7 +354,7 @@ class ZeroEnds(BaseSDESolver):
         return g_tilde
 
 
-class NonSingular(BaseSDESolver):
+class NonSingular(BaseFmSDESolver):
     """
     NonSingular SDE solver for flow matching.
 

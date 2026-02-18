@@ -105,7 +105,7 @@ class SMSolver(Solver):
         @jit
         def sample(key: Array, x_init: Array) -> Array:
             return sm_reverse_sde_sampler(
-                self.path.sde,
+                self.path.scheduler,
                 self.score_model,
                 x_init,
                 key=key,

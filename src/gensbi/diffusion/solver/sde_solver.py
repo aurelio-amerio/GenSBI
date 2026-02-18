@@ -10,7 +10,7 @@ from gensbi.diffusion.solver.edm_samplers import edm_sampler, edm_ablation_sampl
 from gensbi.diffusion.path import EDMPath
 
 
-class SDESolver(Solver):
+class EDMSolver(Solver):
     def __init__(self, score_model: Callable, path: EDMPath) -> None:
         """
         Initialize the SDE solver.
@@ -25,7 +25,7 @@ class SDESolver(Solver):
         Example:
             .. code-block:: python
 
-                from gensbi.diffusion.solver import SDESolver
+                from gensbi.diffusion.solver import EDMSolver
                 from gensbi.diffusion.path import EDMPath
                 from gensbi.diffusion.path.scheduler import EDMScheduler
                 import jax, jax.numpy as jnp
@@ -33,7 +33,7 @@ class SDESolver(Solver):
                 path = EDMPath(scheduler)
                 def score_model(x, t):
                     return x + t
-                solver = SDESolver(score_model, path)
+                solver = EDMSolver(score_model, path)
                 key = jax.random.PRNGKey(0)
                 x_init = jax.random.normal(key, (16, 2))
                 samples = solver.sample(key, x_init, nsteps=10)

@@ -15,7 +15,7 @@ from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
-from gensbi.diffusion.solver import SDESolver
+from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
@@ -451,7 +451,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         else:
             model = self.model_wrapped
 
-        solver = SDESolver(score_model=model, path=self.path)
+        solver = EDMSolver(score_model=model, path=self.path)
 
         model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
@@ -558,9 +558,7 @@ class UnconditionalSMPipeline(AbstractPipeline):
             sigma_max = self.training_config.get("sigma_max", 15.0)
             self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
         else:
-            raise ValueError(
-                f"sde_type must be one of ['VP', 'VE'], got {sde_type}."
-            )
+            raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
 
         self.loss_fn = UnconditionalSMLoss(self.path)
 

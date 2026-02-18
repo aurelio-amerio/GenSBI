@@ -14,7 +14,7 @@ from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler, VESmScheduler
 
 class DummyScoreModel(nnx.Module):
     def __call__(self, obs, t, **kwargs):
-        return jnp.zeros_like(obs)
+        return jnp.zeros_like(obs) + t
 
 
 # =========================================================

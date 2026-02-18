@@ -102,7 +102,7 @@ class SMPath(ProbPath):
             std_t=std_t,
         )
 
-    def sample_t(self, key: Array, batch_size: int) -> Array:
+    def sample_t(self, key: Array, shape) -> Array:
         """
         Sample diffusion times from the SDE scheduler.
 
@@ -112,7 +112,7 @@ class SMPath(ProbPath):
         ----------
             key : Array
                 JAX random key.
-            batch_size : int
+            shape : tuple
                 Shape of the time samples to generate.
 
         Returns
@@ -120,7 +120,6 @@ class SMPath(ProbPath):
             Array
                 Sampled diffusion times.
         """
-        shape = (batch_size, 1)
         return self.scheduler.sample_t(key, shape)
 
     def get_loss_fn(self) -> Callable:

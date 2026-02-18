@@ -143,14 +143,14 @@ def sm_reverse_sde_sampler(
         def reverse_drift(t, y_flat, args):
             # y_flat: (flat_dim,) -> reshape to sample_shape for model
             y = y_flat.reshape(sample_shape)
-            t_broadcast = jnp.broadcast_to(t, y.shape)
-            # Add batch dim for model call
+            # Add batch dim for model call; pass t as scalar (model handles expansion)
             y_batched = y[None, ...]  # (1, ...)
-            t_batched = t_broadcast[None, ...]  # (1, ...)
+            t_batched = jnp.atleast_1d(t)[None, ...]  # (1, 1)
             score = score_model(obs=y_batched, t=t_batched, **model_kwargs)
             score = jnp.squeeze(score, axis=0)  # remove batch dim
-            score_flat = score.reshape(flat_dim)
 
+            # Broadcast t to spatial shape only for SDE coefficient computations
+            t_broadcast = jnp.broadcast_to(t, y.shape)
             g_sq = sde.diffusion(t_broadcast) ** 2
             forward_drift = sde.drift(y, t_broadcast)
             result = forward_drift - g_sq * score.reshape(sample_shape)
