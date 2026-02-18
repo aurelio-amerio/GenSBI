@@ -95,16 +95,17 @@ def run_sbc(
     num_sbc_samples, dim_theta = thetas.shape
 
     num_posterior_samples = posterior_samples.shape[0]
-    
+
     # _validate_sbc_inputs(thetas, xs, num_sbc_samples, num_posterior_samples)
 
-    if posterior_samples.shape != (
+    expected_shape = (
         num_posterior_samples,
         num_sbc_samples,
         dim_theta,
-    ):
+    )
+    if posterior_samples.shape != expected_shape:
         raise ValueError(
-            f"Wrong posterior samples shape for SBC: {posterior_samples.shape}, expected ({num_posterior_samples}, {num_sbc_samples}, {dim_theta})"
+            f"Wrong posterior samples shape for SBC: {posterior_samples.shape}, expected {expected_shape}"
         )
 
     # Take a random draw from each posterior to get data-averaged posterior samples.
@@ -333,10 +334,12 @@ def check_prior_vs_dap(prior_samples: Array, dap_samples: Array) -> Array:
     if prior_samples.shape != dap_samples.shape:
         raise ValueError("Prior and DAP samples must have the same shape")
 
-    return jnp.array([
-        c2st(s1[:, None], s2[:, None])
-        for s1, s2 in zip(prior_samples.T, dap_samples.T, strict=False)
-    ])
+    return jnp.array(
+        [
+            c2st(s1[:, None], s2[:, None])
+            for s1, s2 in zip(prior_samples.T, dap_samples.T, strict=False)
+        ]
+    )
 
 
 def check_uniformity_frequentist(ranks: Array, num_posterior_samples: int) -> Array:
@@ -392,12 +395,12 @@ def check_uniformity_c2st(
         c2st_ranks: C2ST accuracy between ranks and uniform baseline,
         one for each dim_parameters.
     """
-    
+
     key = jax.random.PRNGKey(seed)
-    
+
     # Run C2ST multiple times to estimate stability
     c2st_scores = np.zeros((num_repetitions, ranks.shape[1]))
-    
+
     for rep in range(num_repetitions):
         for dim_idx, rks in enumerate(ranks.T):
             key, subkey = jax.random.split(key)
@@ -411,7 +414,6 @@ def check_uniformity_c2st(
                 rks[:, None],
                 uniform_samples[:, None],
             ).item()
-    
 
     # Use variance over repetitions to estimate robustness of C2ST
     c2st_std = c2st_scores.std(0, ddof=0 if num_repetitions == 1 else 1)
@@ -424,7 +426,6 @@ def check_uniformity_c2st(
 
     # Return the mean over repetitions as C2ST score estimate
     return c2st_scores.mean(0)
-
 
 
 # plotting utilities
@@ -881,7 +882,9 @@ def _plot_cdf_region_expected_under_uniformity(
     plt.fill_between(
         x=np.linspace(0, num_bins, num_repeats * num_bins),
         y1=np.repeat(lower / np.max(lower), num_repeats),
-        y2=np.repeat(upper / np.max(upper), num_repeats),  # pyright: ignore[reportArgumentType]
+        y2=np.repeat(
+            upper / np.max(upper), num_repeats
+        ),  # pyright: ignore[reportArgumentType]
         color=color,
         alpha=alpha,
         label="expected under uniformity",
