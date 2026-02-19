@@ -46,3 +46,5 @@ ho implementato la PF ode. Devo controllare come usarla nelle pipeline.
 Inoltre, mi piacerebbe mettere nella Flow pipeline la possibilità di usare il solver SDE.
 In modo da poter usare sia SDE che ODE sampling per sia flow che score matching.
 Dovrebbe in teoria essere solo una modifica a livello del sampler, ma devo controllare
+
+--> Implementato. Ora bisogna scrivere un notebook (avanzato) dove si mostra come fare mix and match tra SDE e ODE, e fare il sampling. Poi devo aggiornare la documentazione (capire bene come fare, magari una pagina separata). Potrei fare una sezione con "Advanced Usage" o simile. 
