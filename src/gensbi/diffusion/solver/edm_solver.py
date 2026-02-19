@@ -1,11 +1,11 @@
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union, Any
 
 import jax
 import jax.numpy as jnp
 from jax import jit
 from jax import Array
 
-from gensbi.diffusion.solver.solver import Solver
+from gensbi.solver import Solver
 from gensbi.diffusion.solver.edm_samplers import edm_sampler, edm_ablation_sampler
 from gensbi.diffusion.path import EDMPath
 
@@ -59,6 +59,7 @@ class EDMSolver(Solver):
         return_intermediates: bool = False,
         model_extras: dict = {},
         solver_params: Optional[dict] = {},
+        solver_scheduler: Optional[Any] = None,
     ) -> Callable:
         """
         Returns a sampler function for the SDE.
@@ -81,13 +82,18 @@ class EDMSolver(Solver):
                 Additional model arguments.
             solver_params : Optional[dict]
                 Additional solver parameters.
+            solver_scheduler : Optional[Any]
+                Scheduler to use for the solver. If None, the path's scheduler is used.
 
         Returns
         -------
             Callable
                 Sampler function.
         """
-        if self.path.name == "EDM":
+        if solver_scheduler is None:
+            solver_scheduler = self.path.scheduler
+
+        if solver_scheduler.name == "EDM":
             sampler_ = edm_sampler
         else:
             sampler_ = edm_ablation_sampler
@@ -105,7 +111,7 @@ class EDMSolver(Solver):
         @jit
         def sample(key: Array, x_init: Array) -> Array:
             return sampler_(
-                self.path.scheduler,
+                solver_scheduler,
                 self.score_model,
                 x_init,
                 key=key,
@@ -135,6 +141,7 @@ class EDMSolver(Solver):
         return_intermediates: bool = False,
         model_extras: dict = {},
         solver_params: Optional[dict] = {},
+        solver_scheduler: Optional[Any] = None,
     ) -> Array:
         """
         Sample from the SDE using the sampler.
@@ -161,6 +168,8 @@ class EDMSolver(Solver):
                 Additional model arguments.
             solver_params : Optional[dict]
                 Additional solver parameters.
+            solver_scheduler : Optional[Any]
+                Scheduler to use for the solver. If None, the path's scheduler is used.
 
         Returns
         -------
@@ -176,5 +185,6 @@ class EDMSolver(Solver):
             return_intermediates=return_intermediates,
             model_extras=model_extras,
             solver_params=solver_params,
+            solver_scheduler=solver_scheduler,
         )
         return sample(key, x_init)

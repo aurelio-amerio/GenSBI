@@ -7,7 +7,7 @@ from jax import Array
 import diffrax
 from diffrax import AbstractERK
 
-from gensbi.flow_matching.solver.solver import Solver
+from gensbi.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 

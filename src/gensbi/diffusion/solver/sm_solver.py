@@ -12,7 +12,7 @@ import jax.numpy as jnp
 from jax import jit
 from jax import Array
 
-from gensbi.diffusion.solver.solver import Solver
+from gensbi.solver import Solver
 from gensbi.diffusion.solver.sm_samplers import sm_reverse_sde_sampler
 from gensbi.diffusion.path.sm_path import SMPath
 

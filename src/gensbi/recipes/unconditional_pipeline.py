@@ -312,7 +312,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         dim_obs: int,
         ch_obs: int = 1,
         params=None,
-        # sde="EDM",
+        sde="EDM",
         training_config=None,
     ):
         super().__init__(
@@ -328,41 +328,40 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
 
         self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
 
-        sigma_min = self.training_config.get("sigma_min", 0.002)
-        sigma_max = self.training_config.get("sigma_max", 80.0)
-        self.path = EDMPath(
-            scheduler=EDMScheduler(
-                sigma_min=sigma_min,
-                sigma_max=sigma_max,
+        self.sde = sde
+        if sde == "EDM":
+            sigma_min = self.training_config.get("sigma_min", 0.002)
+            sigma_max = self.training_config.get("sigma_max", 80.0)
+            self.path = EDMPath(
+                scheduler=EDMScheduler(
+                    sigma_min=sigma_min,
+                    sigma_max=sigma_max,
+                )
             )
-        )
-
-        # self.sde = sde
-        # if sde == "EDM":
-        #     sigma_min = self.training_config.get("sigma_min", 0.002)
-        #     sigma_max = self.training_config.get("sigma_max", 80.0)
-        #     self.path = EDMPath(
-        #         scheduler=EDMScheduler(
-        #             sigma_min=sigma_min,
-        #             sigma_max=sigma_max,
-        #         )
-        #     )
-        # elif sde == "VE":
-        #     sigma_min = self.training_config.get("sigma_min", 0.001)
-        #     sigma_max = self.training_config.get("sigma_max", 15.0)
-        #     self.path = EDMPath(scheduler=VEEdmScheduler(
-        #         sigma_min=sigma_min,
-        #         sigma_max=sigma_max,
-        #     ))
-        # elif sde == "VP":
-        #     beta_min = self.training_config.get("beta_min", 0.1)
-        #     beta_max = self.training_config.get("beta_max", 20.0)
-        #     self.path = EDMPath(scheduler=VPEdmScheduler(
-        #         beta_min = beta_min,
-        #         beta_max = beta_max,
-        #     ))
-        # else:
-        #     raise ValueError(f"Unknown sde type: {sde}")
+        elif sde == "VE":
+            sigma_min = self.training_config.get(
+                "sigma_min", 0.02
+            )  
+            sigma_max = self.training_config.get(
+                "sigma_max", 100.0
+            )  
+            self.path = EDMPath(
+                scheduler=VEEdmScheduler(
+                    sigma_min=sigma_min,
+                    sigma_max=sigma_max,
+                )
+            )
+        elif sde == "VP":
+            beta_min = self.training_config.get("beta_min", 0.1)
+            beta_max = self.training_config.get("beta_max", 19.9) 
+            self.path = EDMPath(
+                scheduler=VPEdmScheduler(
+                    beta_min=beta_min,
+                    beta_max=beta_max,
+                )
+            )
+        else:
+            raise ValueError(f"Unknown sde type: {sde}")
 
         self.loss_fn = UnconditionalEDMLoss(self.path)
 
@@ -388,33 +387,27 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
     @classmethod
     def get_default_training_config(cls, sde="EDM"):
         config = super().get_default_training_config()
-        config.update(
-            {
-                "sigma_min": 0.002,  # from edm paper
-                "sigma_max": 80.0,
-            }
-        )
-        # if sde == "EDM":
-        #     config.update(
-        #         {
-        #             "sigma_min": 0.002,  # from edm paper
-        #             "sigma_max": 80.0,
-        #         }
-        #     )
-        # elif sde == "VE":
-        #     config.update(
-        #         {
-        #             "sigma_min": 0.001,  # from edm paper
-        #             "sigma_max": 15.0,
-        #         }
-        #     )
-        # elif sde == "VP":
-        #     config.update(
-        #         {
-        #             "beta_min": 0.1,
-        #             "beta_max": 20.0,
-        #         }
-        #     )
+        if sde == "EDM":
+            config.update(
+                {
+                    "sigma_min": 0.002,  # from edm paper
+                    "sigma_max": 80.0,
+                }
+            )
+        elif sde == "VE":
+            config.update(
+                {
+                    "sigma_min": 0.02,  # from edm paper
+                    "sigma_max": 100.0,
+                }
+            )
+        elif sde == "VP":
+            config.update(
+                {
+                    "beta_min": 0.1,
+                    "beta_max": 19.9,
+                }
+            )
         return config
 
     def get_loss_fn(
@@ -444,6 +437,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
+        solver_scheduler=None,
         **model_extras,
     ):
         if use_ema:
@@ -459,11 +453,20 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             nsteps=nsteps,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
+            solver_scheduler=solver_scheduler,
         )
 
         def sampler(key, nsamples):
             key1, key2 = jax.random.split(key, 2)
-            x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
+            if solver_scheduler is None:
+                x_init = self.path.sample_prior(
+                    key1, (nsamples, self.dim_obs, self.ch_obs)
+                )
+            else:
+                x_init = solver_scheduler.sample_prior(
+                    key1, (nsamples, self.dim_obs, self.ch_obs)
+                )
+
             samples = sampler_(key2, x_init)
             return samples
 
@@ -476,12 +479,14 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
+        solver_scheduler=None,
         **model_extras,
     ):
         sampler = self.get_sampler(
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
+            solver_scheduler=solver_scheduler,
             **model_extras,
         )
         samples = sampler(key, nsamples)

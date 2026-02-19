@@ -41,7 +41,7 @@ from diffrax import (
     SaveAt,
 )
 
-from gensbi.flow_matching.solver.solver import Solver
+from gensbi.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 

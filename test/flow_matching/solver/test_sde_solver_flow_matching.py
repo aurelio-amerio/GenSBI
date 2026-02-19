@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import pytest
 from flax import nnx
 
-from gensbi.flow_matching.solver.sde_solver import ZeroEnds, NonSingular
+from gensbi.flow_matching.solver.sde_solver_fm import ZeroEnds, NonSingular
 from gensbi.utils.model_wrapping import ModelWrapper
 
 

@@ -20,7 +20,7 @@ from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver
 
 from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
 from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
@@ -437,6 +437,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         ch_obs=1,
         ch_cond=1,
         id_embedding_strategy=("absolute", "absolute"),
+        sde="EDM",
         params=None,
         training_config=None,
     ):
@@ -452,6 +453,8 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             params=params,
             training_config=training_config,
         )
+
+        self.sde = sde
 
         # # Flux1 uses different ids for obs and cond
         # obs_ids = jnp.zeros((1, dim_obs, 2), dtype=jnp.int32)
@@ -489,12 +492,35 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
 
-        self.path = EDMPath(
-            scheduler=EDMScheduler(
-                sigma_min=self.training_config["sigma_min"],
-                sigma_max=self.training_config["sigma_max"],
+        if sde == "EDM":
+            sigma_min = self.training_config.get("sigma_min", 0.002)
+            sigma_max = self.training_config.get("sigma_max", 80.0)
+            self.path = EDMPath(
+                scheduler=EDMScheduler(
+                    sigma_min=sigma_min,
+                    sigma_max=sigma_max,
+                )
             )
-        )
+        elif sde == "VE":
+            sigma_min = self.training_config.get("sigma_min", 0.02)
+            sigma_max = self.training_config.get("sigma_max", 100.0)
+            self.path = EDMPath(
+                scheduler=VEEdmScheduler(
+                    sigma_min=sigma_min,
+                    sigma_max=sigma_max,
+                )
+            )
+        elif sde == "VP":
+            beta_min = self.training_config.get("beta_min", 0.1)
+            beta_max = self.training_config.get("beta_max", 19.9)
+            self.path = EDMPath(
+                scheduler=VPEdmScheduler(
+                    beta_min=beta_min,
+                    beta_max=beta_max,
+                )
+            )
+        else:
+            raise ValueError(f"Unknown sde type: {sde}")
 
         self.loss_fn = ConditionalEDMLoss(self.path)
 
@@ -518,14 +544,29 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         )
 
     @classmethod
-    def get_default_training_config(cls):
+    def get_default_training_config(cls, sde="EDM"):
         config = super().get_default_training_config()
-        config.update(
-            {
-                "sigma_min": 0.002,  # from edm paper
-                "sigma_max": 80.0,
-            }
-        )
+        if sde == "EDM":
+            config.update(
+                {
+                    "sigma_min": 0.002,  # from edm paper
+                    "sigma_max": 80.0,
+                }
+            )
+        elif sde == "VE":
+            config.update(
+                {
+                    "sigma_min": 0.02,
+                    "sigma_max": 100.0,
+                }
+            )
+        elif sde == "VP":
+            config.update(
+                {
+                    "beta_min": 0.1,
+                    "beta_max": 20.0,
+                }
+            )
         return config
 
     def get_loss_fn(
@@ -623,6 +664,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
+        solver_scheduler=None,
         **model_extras,
     ):
         if use_ema:
@@ -645,11 +687,20 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             nsteps=nsteps,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
+            solver_scheduler=solver_scheduler,
         )
 
         def sampler(key, nsamples):
             key1, key2 = jax.random.split(key, 2)
-            x_init = self.path.sample_prior(key1, (nsamples, self.dim_obs, self.ch_obs))
+            if solver_scheduler is None:
+                x_init = self.path.sample_prior(
+                    key1, (nsamples, self.dim_obs, self.ch_obs)
+                )
+            else:
+                x_init = solver_scheduler.sample_prior(
+                    key1, (nsamples, self.dim_obs, self.ch_obs)
+                )
+
             samples = sampler_(key2, x_init)
 
             return samples
@@ -664,6 +715,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
+        solver_scheduler=None,
         **model_extras,
     ):
 
@@ -672,6 +724,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
+            solver_scheduler=solver_scheduler,
             **model_extras,
         )
         return sampler(key, nsamples)
@@ -896,6 +949,7 @@ class ConditionalSMPipeline(AbstractPipeline):
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
+            solver_scheduler=solver_scheduler,
             **model_extras,
         )
         return sampler(key, nsamples)

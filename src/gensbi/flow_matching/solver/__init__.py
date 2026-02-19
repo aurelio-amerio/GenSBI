@@ -6,13 +6,10 @@ including adaptive and fixed-step integration methods.
 """
 
 from .ode_solver import ODESolver
-from .sde_solver import BaseFmSDESolver, ZeroEnds, NonSingular
-from .solver import Solver
+from .sde_solver_fm import ZeroEnds, NonSingular
 
 __all__ = [
     "ODESolver",
-    "Solver",
-    "BaseFmSDESolver",
     "ZeroEnds",
     "NonSingular",
 ]
