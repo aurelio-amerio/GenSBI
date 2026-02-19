@@ -1,4 +1,4 @@
-# WIP not working
+# Tests for EDM diffusion pipeline schedulers
 
 import os
 
@@ -14,9 +14,14 @@ import pytest
 
 import tempfile
 
-from gensbi.recipes import UnconditionalDiffusionPipeline
+from gensbi.recipes import (
+    UnconditionalDiffusionPipeline,
+    ConditionalDiffusionPipeline,
+    JointDiffusionPipeline,
+    ConditionalFlowPipeline,
+)
 
-from gensbi.models import Simformer, SimformerParams
+from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
 
 import grain
 import numpy as np
@@ -27,12 +32,14 @@ nsamples = 100
 key = jax.random.PRNGKey(0)
 
 dim_obs = 2
-dim_cond = 0
+dim_cond = 2
 dim_joint = dim_obs + dim_cond
 
 
 theta = jax.random.normal(key, (nsamples, dim_obs, 2))
-data = theta
+x = jax.random.normal(key, (nsamples, dim_cond, 2))
+
+data = jnp.concatenate([theta, x], axis=1)
 
 
 def split_obs_cond(data):
@@ -228,14 +235,11 @@ def test_unconditional_diffusion_solver_scheduler():
         assert sample_ve.shape == (10, dim_joint, 2)
 
 
-from gensbi.recipes import ConditionalDiffusionPipeline, JointDiffusionPipeline
-
-
 @pytest.mark.parametrize("sde_type", ["EDM", "VE", "VP"])
 def test_conditional_diffusion_sde_types(sde_type):
     pipeline_cls = ConditionalDiffusionPipeline
-    train_dataset = train_dataset_joint
-    val_dataset = val_dataset_joint
+    train_dataset = train_dataset_cond
+    val_dataset = val_dataset_cond
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
@@ -252,7 +256,7 @@ def test_conditional_diffusion_sde_types(sde_type):
             dim_obs=dim_obs,
             dim_cond=dim_cond,
             ch_obs=2,
-            ch_cond=0,
+            ch_cond=2,
             sde=sde_type,
             training_config=training_config,
         )
@@ -270,10 +274,8 @@ def test_conditional_diffusion_sde_types(sde_type):
         pipeline._wrap_model()
 
         # try sampling
-        # Conditional requires x_o (condition)
-        x_o = jax.random.normal(
-            jax.random.PRNGKey(2), (dim_cond, 0)
-        )  # dim_cond is 0 in this setup but let's be safe
+        # Conditional requires x_o (condition) — must be 3D: (nsamples, dim_cond, ch_cond)
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
 
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
@@ -324,8 +326,8 @@ def test_joint_diffusion_sde_types(sde_type):
         pipeline._wrap_model()
 
         # try sampling
-        # Joint pipeline also takes x_o for sampling
-        x_o = jax.random.normal(jax.random.PRNGKey(2), (dim_cond, 0))
+        # Joint pipeline also takes x_o for sampling — must be 3D: (nsamples, dim_cond, ch_cond)
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
 
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
