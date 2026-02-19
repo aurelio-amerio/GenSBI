@@ -26,6 +26,7 @@ from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
 import grain
 import numpy as np
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
+from gensbi.diffusion.solver import EDMSolver
 
 
 nsamples = 100
@@ -215,12 +216,12 @@ def test_unconditional_diffusion_solver_scheduler():
         # Create a custom scheduler (e.g., different parameters)
         custom_scheduler = EDMScheduler(sigma_min=0.1, sigma_max=50.0)
 
-        # Sample with the custom scheduler
+        # Sample with the custom scheduler via the solver tuple
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
             nsamples=10,
             use_ema=False,
-            solver_scheduler=custom_scheduler,
+            solver=(EDMSolver, {"solver_scheduler": custom_scheduler}),
         )
         assert sample.shape == (10, dim_joint, 2)
 
@@ -230,7 +231,7 @@ def test_unconditional_diffusion_solver_scheduler():
             jax.random.PRNGKey(1),
             nsamples=10,
             use_ema=False,
-            solver_scheduler=ve_scheduler,
+            solver=(EDMSolver, {"solver_scheduler": ve_scheduler}),
         )
         assert sample_ve.shape == (10, dim_joint, 2)
 
@@ -336,3 +337,117 @@ def test_joint_diffusion_sde_types(sde_type):
             use_ema=False,
         )
         assert sample.shape == (10, dim_obs, 2)
+
+
+def test_conditional_diffusion_solver_scheduler():
+    pipeline_cls = ConditionalDiffusionPipeline
+    train_dataset = train_dataset_cond
+    val_dataset = val_dataset_cond
+    sde_type = "EDM"
+
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        model = get_model(pipeline_cls)
+
+        pipeline = pipeline_cls(
+            model,
+            train_dataset,
+            val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=2,
+            ch_cond=2,
+            sde=sde_type,
+            training_config=training_config,
+        )
+
+        # Initialize model wrappers for testing
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
+
+        # Create a custom scheduler (e.g., different parameters)
+        custom_scheduler = EDMScheduler(sigma_min=0.1, sigma_max=50.0)
+
+        # Sample with the custom scheduler via the solver tuple
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=10,
+            use_ema=False,
+            solver=(EDMSolver, {"solver_scheduler": custom_scheduler}),
+        )
+        assert sample.shape == (10, dim_obs, 2)
+
+        # Verify that we can pass a VE scheduler to an EDM pipeline (unusual but allowed by code)
+        ve_scheduler = VEEdmScheduler(sigma_min=0.1, sigma_max=20.0)
+        sample_ve = pipeline.sample(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=10,
+            use_ema=False,
+            solver=(EDMSolver, {"solver_scheduler": ve_scheduler}),
+        )
+        assert sample_ve.shape == (10, dim_obs, 2)
+
+
+def test_joint_diffusion_solver_scheduler():
+    pipeline_cls = JointDiffusionPipeline
+    train_dataset = train_dataset_joint
+    val_dataset = val_dataset_joint
+    sde_type = "EDM"
+
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        model = get_model(pipeline_cls)
+
+        pipeline = pipeline_cls(
+            model,
+            train_dataset,
+            val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=2,
+            sde=sde_type,
+            training_config=training_config,
+            condition_mask_kind="structured",
+        )
+
+        # Initialize model wrappers for testing
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
+
+        # Create a custom scheduler (e.g., different parameters)
+        custom_scheduler = EDMScheduler(sigma_min=0.1, sigma_max=50.0)
+
+        # Sample with the custom scheduler via the solver tuple
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=10,
+            use_ema=False,
+            solver=(EDMSolver, {"solver_scheduler": custom_scheduler}),
+        )
+        assert sample.shape == (10, dim_obs, 2)
+
+        # Verify that we can pass a VE scheduler to an EDM pipeline (unusual but allowed by code)
+        ve_scheduler = VEEdmScheduler(sigma_min=0.1, sigma_max=20.0)
+        sample_ve = pipeline.sample(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=10,
+            use_ema=False,
+            solver=(EDMSolver, {"solver_scheduler": ve_scheduler}),
+        )
+        assert sample_ve.shape == (10, dim_obs, 2)

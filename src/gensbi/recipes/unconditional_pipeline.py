@@ -11,7 +11,7 @@ from numpyro import distributions as dist
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
+from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
@@ -19,7 +19,7 @@ from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
-from gensbi.diffusion.solver import SMSolver
+from gensbi.diffusion.solver import SMSolver, SMPFSolver
 
 from gensbi.models import (
     UnconditionalCFMLoss,
@@ -164,8 +164,58 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         step_size=0.01,
         use_ema=True,
         time_grid=None,
+        solver=None,
         **model_extras,
     ):
+        """Get a sampler function for the flow model.
+
+        Parameters
+        ----------
+        step_size : float, optional
+            Step size for the solver. Default is 0.01.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        time_grid : Array, optional
+            Time grid for intermediate steps. If None, uses ``[0, 1]``.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its constructor keyword arguments.
+            Defaults to ``(ODESolver, {})``.
+
+            For SDE solvers (e.g., ``ZeroEnds``, ``NonSingular``), additional
+            constructor arguments must be provided via the kwargs dict.
+            A random key is automatically passed to SDE samplers.
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Callable
+            A function ``sampler(key, nsamples)`` that generates samples.
+
+        Examples
+        --------
+        Using the default ODE solver:
+
+        >>> sampler = pipeline.get_sampler()
+        >>> samples = sampler(key, nsamples=1000)
+
+        Using the ZeroEnds SDE solver:
+
+        >>> import jax.numpy as jnp
+        >>> from gensbi.flow_matching.solver import ZeroEnds
+        >>> solver = (ZeroEnds, {
+        ...     "mu0": jnp.zeros((dim_obs, ch_obs)),
+        ...     "sigma0": jnp.ones((dim_obs, ch_obs)),
+        ...     "alpha": 1.0,
+        ... })
+        >>> sampler = pipeline.get_sampler(solver=solver)
+        >>> samples = sampler(key, nsamples=1000)
+        """
+        if solver is None:
+            solver = (ODESolver, {})
+
         if use_ema:
             vf_wrapped = self.ema_model_wrapped
         else:
@@ -178,10 +228,13 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             assert jnp.all(time_grid[:-1] <= time_grid[1:])
             return_intermediates = True
 
-        solver = ODESolver(velocity_model=vf_wrapped)
+        solver_cls, solver_kwargs = solver
+        solver_instance = solver_cls(velocity_model=vf_wrapped, **solver_kwargs)
+        pass_key = isinstance(solver_instance, BaseFmSDESolver)
+
         model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
-        sampler_ = solver.get_sampler(
+        sampler_ = solver_instance.get_sampler(
             method="Euler",
             step_size=step_size,
             return_intermediates=return_intermediates,
@@ -190,8 +243,16 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         )
 
         def sampler(key, nsamples):
-            x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
-            return sampler_(x_init)
+            key, key_init = jax.random.split(key)
+            x_init = jax.random.normal(key_init, (nsamples, self.dim_obs, self.ch_obs))
+
+            if pass_key:
+                key, key_sampler = jax.random.split(key)
+                samples = sampler_(x_init, key_sampler)
+            else:
+                samples = sampler_(x_init)
+
+            return samples
 
         return sampler
 
@@ -202,12 +263,62 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         step_size=0.01,
         use_ema=True,
         time_grid=None,
+        solver=None,
         **model_extras,
     ):
+        """Draw samples from the flow model.
+
+        Convenience method that internally calls :meth:`get_sampler` and
+        immediately evaluates the returned sampler function.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            JAX random key used for sampling.
+        nsamples : int, optional
+            Number of samples to draw. Default is 10 000.
+        step_size : float, optional
+            Step size for the solver. Default is 0.01.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        time_grid : Array, optional
+            Time grid for intermediate steps. If None, uses
+            ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its keyword arguments. Defaults to ``(ODESolver, {})``.
+
+            To use an SDE solver instead:
+
+            >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+            >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+            >>> samples = pipeline.sample(key, solver=solver)
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Array
+            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+
+        Examples
+        --------
+        Using the default ODE solver:
+
+        >>> samples = pipeline.sample(key, nsamples=1000)
+
+        Using the ZeroEnds SDE solver:
+
+        >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+        >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+        >>> samples = pipeline.sample(key, solver=solver)
+        """
         sampler = self.get_sampler(
             step_size=step_size,
             use_ema=use_ema,
             time_grid=time_grid,
+            solver=solver,
             **model_extras,
         )
         samples = sampler(key, nsamples)
@@ -433,36 +544,88 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
-        solver_scheduler=None,
+        solver=None,
         **model_extras,
     ):
+        """Get a sampler function for the diffusion model.
+
+        Parameters
+        ----------
+        nsteps : int, optional
+            Number of sampling steps. Default is 18.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its constructor keyword arguments.
+            Defaults to ``(EDMSolver, {})``.
+
+            The solver class must accept ``score_model`` and ``path`` as
+            its first two positional arguments.
+
+            EDM-specific options can be provided in the kwargs dict:
+
+            - ``solver_scheduler``: override the path's scheduler for
+              sampling (also used for ``sample_prior``).
+            - ``solver_params``: dict of EDM solver parameters
+              (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Callable
+            A function ``sampler(key, nsamples)`` that generates samples.
+
+        Examples
+        --------
+        Using the default EDM solver:
+
+        >>> sampler = pipeline.get_sampler()
+        >>> samples = sampler(key, nsamples=1000)
+
+        Using a custom scheduler:
+
+        >>> from gensbi.diffusion.solver import EDMSolver
+        >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+        >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+        >>> sampler = pipeline.get_sampler(solver=solver)
+        >>> samples = sampler(key, nsamples=1000)
+        """
+        if solver is None:
+            solver = (EDMSolver, {})
+
         if use_ema:
             model = self.ema_model_wrapped
         else:
             model = self.model_wrapped
 
-        solver = EDMSolver(score_model=model, path=self.path)
+        solver_cls, solver_kwargs = solver
+        solver_scheduler = solver_kwargs.pop("solver_scheduler", None)
+        solver_params = solver_kwargs.pop("solver_params", {})
+
+        solver_instance = solver_cls(score_model=model, path=self.path, **solver_kwargs)
 
         model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
-        sampler_ = solver.get_sampler(
+        sampler_ = solver_instance.get_sampler(
             nsteps=nsteps,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
             solver_scheduler=solver_scheduler,
+            solver_params=solver_params,
         )
+
+        prior_source = solver_scheduler if solver_scheduler is not None else self.path
 
         def sampler(key, nsamples):
             key1, key2 = jax.random.split(key, 2)
-            if solver_scheduler is None:
-                x_init = self.path.sample_prior(
-                    key1, (nsamples, self.dim_obs, self.ch_obs)
-                )
-            else:
-                x_init = solver_scheduler.sample_prior(
-                    key1, (nsamples, self.dim_obs, self.ch_obs)
-                )
-
+            x_init = prior_source.sample_prior(
+                key1, (nsamples, self.dim_obs, self.ch_obs)
+            )
             samples = sampler_(key2, x_init)
             return samples
 
@@ -475,14 +638,63 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
-        solver_scheduler=None,
+        solver=None,
         **model_extras,
     ):
+        """Draw samples from the diffusion model.
+
+        Convenience method that internally calls :meth:`get_sampler` and
+        immediately evaluates the returned sampler function.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            JAX random key used for sampling.
+        nsamples : int, optional
+            Number of samples to draw. Default is 10 000.
+        nsteps : int, optional
+            Number of sampling steps. Default is 18.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its keyword arguments. Defaults to ``(EDMSolver, {})``.
+
+            EDM-specific options can be provided in the kwargs dict:
+
+            - ``solver_scheduler``: override the path's scheduler for
+              sampling (also used for ``sample_prior``).
+            - ``solver_params``: dict of EDM solver parameters
+              (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Array
+            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+
+        Examples
+        --------
+        Using the default EDM solver:
+
+        >>> samples = pipeline.sample(key, nsamples=1000)
+
+        Using a custom scheduler:
+
+        >>> from gensbi.diffusion.solver import EDMSolver
+        >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+        >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+        >>> samples = pipeline.sample(key, solver=solver)
+        """
         sampler = self.get_sampler(
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
-            solver_scheduler=solver_scheduler,
+            solver=solver,
             **model_extras,
         )
         samples = sampler(key, nsamples)
@@ -622,18 +834,62 @@ class UnconditionalSMPipeline(AbstractPipeline):
         nsteps=1000,
         use_ema=True,
         return_intermediates=False,
+        solver=None,
         **model_extras,
     ):
+        """Get a sampler function for the score matching model.
+
+        Parameters
+        ----------
+        nsteps : int, optional
+            Number of integration steps. Default is 1000.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its constructor keyword arguments.
+            Defaults to ``(SMSolver, {})``.
+
+            The solver class must accept ``score_model`` and ``path`` as
+            its first two positional arguments.
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Callable
+            A function ``sampler(key, nsamples)`` that generates samples.
+
+        Examples
+        --------
+        Using the default reverse SDE solver:
+
+        >>> sampler = pipeline.get_sampler()
+        >>> samples = sampler(key, nsamples=1000)
+
+        Using the Probability Flow ODE solver:
+
+        >>> from gensbi.diffusion.solver import SMPFSolver
+        >>> sampler = pipeline.get_sampler(solver=(SMPFSolver, {}))
+        >>> samples = sampler(key, nsamples=1000)
+        """
+        if solver is None:
+            solver = (SMSolver, {})
+
         if use_ema:
             model = self.ema_model_wrapped
         else:
             model = self.model_wrapped
 
-        solver = SMSolver(score_model=model, path=self.path)
+        solver_cls, solver_kwargs = solver
+        solver_instance = solver_cls(score_model=model, path=self.path, **solver_kwargs)
 
         model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
-        sampler_ = solver.get_sampler(
+        sampler_ = solver_instance.get_sampler(
             nsteps=nsteps,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
@@ -654,12 +910,61 @@ class UnconditionalSMPipeline(AbstractPipeline):
         nsteps=1000,
         use_ema=True,
         return_intermediates=False,
+        solver=None,
         **model_extras,
     ):
+        """Draw samples from the score matching model.
+
+        Convenience method that internally calls :meth:`get_sampler` and
+        immediately evaluates the returned sampler function.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            JAX random key used for sampling.
+        nsamples : int, optional
+            Number of samples to draw. Default is 10 000.
+        nsteps : int, optional
+            Number of sampling steps. Default is 1000.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its keyword arguments. Defaults to ``(SMSolver, {})``.
+
+            To use the probability flow ODE solver instead:
+
+            >>> from gensbi.diffusion.solver import SMPFSolver
+            >>> solver = (SMPFSolver, {})
+            >>> samples = pipeline.sample(key, solver=solver)
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Array
+            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+
+        Examples
+        --------
+        Using the default SDE solver:
+
+        >>> samples = pipeline.sample(key, nsamples=1000)
+
+        Using the probability flow ODE solver:
+
+        >>> from gensbi.diffusion.solver import SMPFSolver
+        >>> solver = (SMPFSolver, {})
+        >>> samples = pipeline.sample(key, solver=solver)
+        """
         sampler = self.get_sampler(
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
+            solver=solver,
             **model_extras,
         )
         samples = sampler(key, nsamples)

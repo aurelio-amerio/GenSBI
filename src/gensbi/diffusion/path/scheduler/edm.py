@@ -699,7 +699,3 @@ class EDMScheduler(BaseSDE):
         return sigma
 
 
-# FIXME: remove these aliases once the implementation works
-# Backward-compatible aliases
-VPEdmScheduler = VPEdmScheduler
-VEEdmScheduler = VEEdmScheduler
