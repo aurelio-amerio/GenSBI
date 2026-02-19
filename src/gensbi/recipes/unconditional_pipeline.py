@@ -182,7 +182,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         model_extras = {"obs_ids": self.obs_ids, **model_extras}
 
         sampler_ = solver.get_sampler(
-            method="Dopri5",
+            method="Euler",
             step_size=step_size,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
@@ -250,7 +250,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
 
     #     logp_sampler = solver.get_unnormalized_logprob(
     #         time_grid=time_grid,
-    #         method="Dopri5",
+    #         method="Euler",
     #         step_size=step_size,
     #         log_p0=self.p0_obs.log_prob,
     #         model_extras=model_extras,
@@ -339,12 +339,8 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
                 )
             )
         elif sde == "VE":
-            sigma_min = self.training_config.get(
-                "sigma_min", 0.02
-            )  
-            sigma_max = self.training_config.get(
-                "sigma_max", 100.0
-            )  
+            sigma_min = self.training_config.get("sigma_min", 0.02)
+            sigma_max = self.training_config.get("sigma_max", 100.0)
             self.path = EDMPath(
                 scheduler=VEEdmScheduler(
                     sigma_min=sigma_min,
@@ -353,7 +349,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
             )
         elif sde == "VP":
             beta_min = self.training_config.get("beta_min", 0.1)
-            beta_max = self.training_config.get("beta_max", 19.9) 
+            beta_max = self.training_config.get("beta_max", 19.9)
             self.path = EDMPath(
                 scheduler=VPEdmScheduler(
                     beta_min=beta_min,

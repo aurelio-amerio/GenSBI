@@ -298,7 +298,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         }
 
         sampler_ = solver.get_sampler(
-            method="Dopri5",
+            method="Euler",
             step_size=step_size,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
@@ -370,7 +370,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     #     logp_sampler = solver.get_unnormalized_logprob(
     #         time_grid=time_grid,
-    #         method="Dopri5",
+    #         method="Euler",
     #         step_size=step_size,
     #         log_p0=self.p0_obs.log_prob,
     #         model_extras=model_extras,
