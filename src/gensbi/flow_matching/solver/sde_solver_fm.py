@@ -126,8 +126,7 @@ class BaseFmSDESolver(Solver):
         self,
         args=None,
         nsteps=300,
-        method="SEA",
-        adaptive=False,
+        method="Euler",
         return_intermediates=False,
         **kwargs,
     ) -> Callable:
@@ -141,9 +140,9 @@ class BaseFmSDESolver(Solver):
                 Number of steps for the SDE solver.
             method : str
                 Integration method. One of ``"Euler"``, ``"Heun"``, ``"SEA"``,
-                ``"ShARK"``. Defaults to ``"SEA"``.
-            adaptive : bool
-                Whether to use adaptive stepsize control (only for ShARK).
+                ``"ShARK"``. Defaults to ``"Euler"``. ``"ShARK"`` automatically
+                uses adaptive step sizing via ``PIDController``; the others use
+                fixed step size.
             return_intermediates : bool
                 Whether to return all intermediate time steps.
 
@@ -182,7 +181,7 @@ class BaseFmSDESolver(Solver):
         dtmin = min(2e-5, dt)
         tol = dtmin / 2
 
-        if method in ["ShARK"] and adaptive:
+        if method in ["ShARK"]:  # with shark, we use an adaptive solver
             stepsize_controller = diffrax.PIDController(
                 rtol=1e-5, atol=1e-5, dtmin=dtmin, dtmax=2 * dt
             )
@@ -264,8 +263,7 @@ class BaseFmSDESolver(Solver):
         key: jax.Array,
         nsamples: int,
         nsteps: int = 300,
-        method="SEA",
-        adaptive=True,
+        method="Euler",
         return_intermediates: bool = False,
         **kwargs,
     ) -> jax.Array:
@@ -281,8 +279,8 @@ class BaseFmSDESolver(Solver):
                 Number of integration steps.
             method : str
                 Integration method. One of ``"Euler"``, ``"Heun"``, ``"SEA"``, ``"ShARK"``.
-            adaptive : bool
-                Whether to use adaptive stepsize (ShARK only).
+                Defaults to ``"Euler"``. ``"ShARK"`` automatically uses adaptive
+                step sizing.
             return_intermediates : bool
                 Whether to return intermediate time steps.
 
@@ -294,7 +292,6 @@ class BaseFmSDESolver(Solver):
         sampler = self.get_sampler(
             nsteps=nsteps,
             method=method,
-            adaptive=adaptive,
             return_intermediates=return_intermediates,
             **kwargs,
         )

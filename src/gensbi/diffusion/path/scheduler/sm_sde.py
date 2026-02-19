@@ -196,6 +196,7 @@ class VPSmScheduler(BaseSMSDE):
         super().__init__()
         self.beta_min = beta_min
         self.beta_max = beta_max
+        self.beta_d = beta_max - beta_min
         self.e_s = e_s
         return
 
@@ -209,11 +210,11 @@ class VPSmScheduler(BaseSMSDE):
 
     def beta_t(self, t: Array) -> Array:
         """Linear beta schedule."""
-        return self.beta_min + (self.beta_max - self.beta_min) * t
+        return self.beta_min + self.beta_d * t
 
     def alpha_t(self, t: Array) -> Array:
         r"""Integral of beta: :math:`\alpha(t) = \beta_{\min} t + \frac{1}{2}(\beta_{\max} - \beta_{\min}) t^2`."""
-        return t * self.beta_min + 0.5 * t**2 * (self.beta_max - self.beta_min)
+        return t * self.beta_min + 0.5 * t**2 * self.beta_d
 
     def drift(self, x: Array, t: Array) -> Array:
         return -0.5 * self.beta_t(t) * x

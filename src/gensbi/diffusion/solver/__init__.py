@@ -10,9 +10,6 @@ from "Score-Based Generative Modeling through Stochastic Differential Equations"
 """
 
 from .edm_solver import EDMSolver
-from .sm_solver import SMSolver
+from .sm_solver import SMSolver, SMPFSolver
 
-__all__ = [
-    "EDMSolver",
-    "SMSolver",
-]
+__all__ = ["EDMSolver", "SMSolver", "SMPFSolver"]

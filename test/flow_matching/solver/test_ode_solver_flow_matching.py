@@ -38,7 +38,7 @@ def test_sample_shape(solver):
     sol = solver.sample(
         time_grid=time_grid,
         x_init=x_init,
-        method="Dopri5",
+        method="Euler",
         step_size=0.1,
         return_intermediates=False,
     )
@@ -57,7 +57,7 @@ def test_sample_shape(solver):
     sol = solver.sample(
         time_grid=time_grid,
         x_init=x_init,
-        method="Dopri5",
+        method="Euler",
         step_size=0.1,
         return_intermediates=True,
     )
@@ -78,7 +78,7 @@ def test_unnorm_logprob_shape(solver):
         x_1=x_1,
         log_p0=p0_cond.log_prob,
         time_grid=time_grid,
-        method="Dopri5",
+        method="Euler",
         step_size=0.01,
         return_intermediates=False,
     )
@@ -99,7 +99,7 @@ def test_unnorm_logprob_shape(solver):
         x_1=x_1,
         log_p0=p0_cond.log_prob,
         time_grid=time_grid,
-        method="Dopri5",
+        method="Euler",
         step_size=0.01,
         return_intermediates=True,
     )

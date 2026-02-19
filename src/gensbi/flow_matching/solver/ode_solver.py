@@ -50,7 +50,7 @@ class ODESolver(Solver):
     def get_sampler(
         self,
         step_size: Optional[float],
-        method: Union[str, AbstractERK] = "Dopri5",
+        method: Union[str, AbstractERK] = "Euler",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
@@ -68,9 +68,12 @@ class ODESolver(Solver):
         Parameters
         ----------
             step_size : Optional[float]
-                The step size. Must be None for adaptive step solvers.
+                The step size. Must be None when using ``"Dopri5"`` (adaptive step sizing).
             method : Union[str, AbstractERK]
-                A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+                A method supported by diffrax. Defaults to "Euler". Other commonly
+                used solvers are ``"Dopri5"`` (adaptive), ``diffrax.Heun()``, and
+                ``diffrax.Midpoint()``. ``"Dopri5"`` automatically uses adaptive
+                step sizing via ``PIDController``; the others use fixed step size.
             atol : float
                 Absolute tolerance, used for adaptive step solvers.
             rtol : float
@@ -98,7 +101,10 @@ class ODESolver(Solver):
         else:
             solver = method
 
-        if isinstance(solver, AbstractERK):
+        # Adaptive step sizing: only Dopri5 uses PIDController (high-order
+        # embedded error pair makes adaptivity worthwhile). Other solvers
+        # (Euler, Heun, Midpoint) use fixed step size.
+        if isinstance(solver, diffrax.Dopri5):
             stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
         else:
             stepsize_controller = diffrax.ConstantStepSize()
@@ -128,7 +134,7 @@ class ODESolver(Solver):
         self,
         x_init: Array,
         step_size: Optional[float],
-        method: Union[str, AbstractERK] = "Dopri5",
+        method: Union[str, AbstractERK] = "Euler",
         atol: float = 1e-5,
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
@@ -142,9 +148,12 @@ class ODESolver(Solver):
             x_init : Array
                 Initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
             step_size : Optional[float]
-                The step size. Must be None for adaptive step solvers.
+                The step size. Must be None when using ``"Dopri5"`` (adaptive step sizing).
             method : Union[str, AbstractERK]
-                A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+                A method supported by diffrax. Defaults to "Euler". Other commonly
+                used solvers are ``"Dopri5"`` (adaptive), ``diffrax.Heun()``, and
+                ``diffrax.Midpoint()``. ``"Dopri5"`` automatically uses adaptive
+                step sizing via ``PIDController``; the others use fixed step size.
             atol : float
                 Absolute tolerance, used for adaptive step solvers.
             rtol : float
@@ -241,7 +250,8 @@ class ODESolver(Solver):
         else:
             solver = method
 
-        if isinstance(solver, AbstractERK):
+        # Adaptive step sizing: only Dopri5 uses PIDController
+        if isinstance(solver, diffrax.Dopri5):
             stepsize_controller = diffrax.PIDController(rtol=rtol, atol=atol)
         else:
             stepsize_controller = diffrax.ConstantStepSize()
