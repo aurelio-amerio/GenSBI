@@ -19,7 +19,7 @@ Based on: "Improving Flow Matching by Stochastic Sampling"
 (arXiv:2410.02217)
 """
 
-from typing import Callable
+from typing import Callable, Optional, Union, Sequence, Tuple
 from functools import partial
 from abc import abstractmethod
 import math
@@ -124,33 +124,41 @@ class BaseFmSDESolver(Solver):
 
     def get_sampler(
         self,
-        args=None,
-        nsteps=300,
-        method="Euler",
-        return_intermediates=False,
-        **kwargs,
+        step_size: Optional[float],
+        method: Union[str, diffrax.AbstractERK] = "Euler",
+        atol: float = 1e-5,
+        rtol: float = 1e-5,
+        time_grid: Array = jnp.array([0.0, 1.0]),
+        return_intermediates: bool = False,
+        model_extras: dict = {},
     ) -> Callable:
         """Stochastic sampler for the SDE.
 
         Parameters
         ----------
-            args : optional
-                Additional arguments to pass to the velocity model.
-            nsteps : int
-                Number of steps for the SDE solver.
-            method : str
+            step_size : Optional[float]
+                The step size. Must be None when using ``"ShARK"`` (adaptive step sizing).
+            method : Union[str, diffrax.AbstractERK]
                 Integration method. One of ``"Euler"``, ``"Heun"``, ``"SEA"``,
                 ``"ShARK"``. Defaults to ``"Euler"``. ``"ShARK"`` automatically
                 uses adaptive step sizing via ``PIDController``; the others use
                 fixed step size.
-            return_intermediates : bool
-                Whether to return all intermediate time steps.
+            atol : float
+                Absolute tolerance, used for adaptive step solvers.
+            rtol : float
+                Relative tolerance, used for adaptive step solvers.
+            time_grid : Array
+                The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
+            return_intermediates : bool, optional
+                If True then return intermediate time steps according to time_grid. Defaults to False.
+            model_extras : dict
+                Additional input for the model.
 
         Returns
         -------
             Callable
-                A function ``sample(key, nsamples)`` that returns sampled trajectories
-                of shape ``(nsamples, features, channels)``.
+                A function ``sample(x_init, key)`` that returns sampled trajectories
+                of shape ``(batch, features, channels)``.
         """
         solvers = {
             "Euler": diffrax.Euler,
@@ -158,32 +166,40 @@ class BaseFmSDESolver(Solver):
             "SEA": diffrax.SEA,
             "ShARK": diffrax.ShARK,
         }
-        if method not in solvers:
-            raise ValueError(
-                f"Method {method} not supported. Choose from {list(solvers.keys())}."
-            )
 
-        solver = solvers[method]()
+        if isinstance(method, str):
+            if method not in solvers:
+                raise ValueError(
+                    f"Method {method} not supported. Choose from {list(solvers.keys())}."
+                )
+            solver = solvers[method]()
+        else:
+            solver = method
 
-        if method in ["Euler", "Heun"]:
+        if isinstance(solver, (diffrax.Euler, diffrax.Heun, diffrax.EulerHeun)):
             levy_area = diffrax.BrownianIncrement
         else:
             levy_area = diffrax.SpaceTimeLevyArea
 
-        drift = self.get_f_tilde(**kwargs)  # (t, x, args) -> drift
+        drift = self.get_f_tilde(**model_extras)  # (t, x, args) -> drift
         diff = self.get_g_tilde()  # (t, x, args) -> diffusion matrix
 
         # Time direction: forward, from noise (t=eps) to data (t=1)
-        t0 = self.eps0
-        t1 = 1.0
-        dt = (t1 - t0) / nsteps
+        t0 = time_grid[0]
+        t1 = time_grid[-1]
 
-        dtmin = min(2e-5, dt)
-        tol = dtmin / 2
+        # If step_size is provided, use it.
+        dt0 = step_size
 
-        if method in ["ShARK"]:  # with shark, we use an adaptive solver
+        # Adaptive step sizing
+        if isinstance(solver, diffrax.ShARK):
+            # dtmin logic:
+            dtmin = 1e-5
+            if step_size is not None:
+                dtmin = min(2e-5, step_size)
+
             stepsize_controller = diffrax.PIDController(
-                rtol=1e-5, atol=1e-5, dtmin=dtmin, dtmax=2 * dt
+                rtol=rtol, atol=atol, dtmin=dtmin
             )
         else:
             stepsize_controller = diffrax.ConstantStepSize()
@@ -193,10 +209,11 @@ class BaseFmSDESolver(Solver):
 
         def sample_one(key_i, y0_flat):
             """Integrate one sample. State is flat (flat_dim,)."""
+
             brownian_motion = VirtualBrownianTree(
                 t0,
                 t1,
-                tol=tol,
+                tol=1e-3,
                 shape=(flat_dim,),
                 key=key_i,
                 levy_area=levy_area,
@@ -220,82 +237,119 @@ class BaseFmSDESolver(Solver):
             )
 
             if return_intermediates:
-                saveat = SaveAt(ts=jnp.linspace(t0, t1, nsteps + 1))
+                saveat = diffrax.SaveAt(ts=time_grid)
             else:
-                saveat = SaveAt(t1=True)
+                saveat = diffrax.SaveAt(t1=True)
 
             sol = diffeqsolve(
                 terms,
                 solver,
                 t0,
                 t1,
-                dt0=dt,
+                dt0=dt0,
                 y0=y0_flat,
-                args=args,
+                args=None,
                 stepsize_controller=stepsize_controller,
                 saveat=saveat,
             )
-            return sol.ys  # (n_saves, flat_dim)
+            val = sol.ys  # (n_saves, flat_dim)
+            return val
 
-        @partial(jit, static_argnums=(1,))
-        def sample(key, nsamples):
-            key1, key2 = jax.random.split(key)
+        # We remove static_argnums because now nsamples is implicit in x_init shape
+        @jit
+        def sampler(x_init, key):
+            # x_init shape: (batch, features, channels)
+            nsamples = x_init.shape[0]
 
-            # Sample from prior: flat (nsamples, flat_dim)
-            y0s_flat = self.prior_distribution.sample(key1, (nsamples,))
+            # flatten x_init
+            # x_init: (B, F, C) -> (B, F*C)
+            y0s_flat = x_init.reshape(nsamples, flat_dim)
 
-            keys = jax.random.split(key2, nsamples)
+            keys = jax.random.split(key, nsamples)
             results = jax.vmap(sample_one)(keys, y0s_flat)
 
             if return_intermediates:
-                # (nsamples, n_steps+1, flat_dim) -> (n_steps+1, nsamples, features, channels)
-                results = results.reshape(nsamples, nsteps + 1, *sample_shape)
+                # results is (batch, time, flat)
+                # reshape to (batch, time, features, channels)
+                n_times = results.shape[1]
+                results = results.reshape(nsamples, n_times, *sample_shape)
+                # transpose to (time, batch, features, channels)
+                # to match ODESolver which returns (time, batch, ...) for intermediates?
+                # ODESolver: return solution.ys -> (n_steps, batch, features)
+                # (actually ODESolver vmap logic might be slightly different or implicit via diffrax batching if used,
+                # but ODESolver vmap is explicit? no, ODESolver uses diffrax.diffeqsolve inside vmap?
+                # Wait, ODESolver.get_sampler returns a jitted sampler:
+                # @jax.jit
+                # def sampler(x_init):
+                #   solution = diffrax.diffeqsolve(...)
+                #   return solution.ys
+                #
+                # If x_init is batched, diffrax.diffeqsolve might auto-batch if configured,
+                # OR ODESolver expects unbatched x_init and user vmaps it?
+                # Let's check ODESolver again.
                 perm = (1, 0) + tuple(range(2, 2 + len(sample_shape)))
                 return jnp.transpose(results, perm)
             else:
-                # (nsamples, 1, flat_dim) -> (nsamples, features, channels)
+                # results is (batch, 1, flat) -> (batch, features, channels)
+                # sample_one returns (1, flat) if not intermediate.
+                # vmap adds batch dim -> (batch, 1, flat)
                 return results.reshape(nsamples, *sample_shape)
 
-        return sample
+        return sampler
 
     def sample(
         self,
-        key: jax.Array,
-        nsamples: int,
-        nsteps: int = 300,
-        method="Euler",
+        x_init: Array,
+        step_size: Optional[float],
+        method: Union[str, diffrax.AbstractERK] = "Euler",
+        atol: float = 1e-5,
+        rtol: float = 1e-5,
+        time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        **kwargs,
-    ) -> jax.Array:
+        model_extras: dict = {},
+        key: Optional[Array] = None,
+    ) -> Array:
         """Sample from the SDE.
 
         Parameters
         ----------
-            key : Array
-                JAX random key.
-            nsamples : int
-                Number of samples to generate.
-            nsteps : int
-                Number of integration steps.
-            method : str
-                Integration method. One of ``"Euler"``, ``"Heun"``, ``"SEA"``, ``"ShARK"``.
-                Defaults to ``"Euler"``. ``"ShARK"`` automatically uses adaptive
-                step sizing.
+            x_init : Array
+                Initial conditions. Shape: [batch, features, channels].
+            step_size : Optional[float]
+                Step size.
+            method : Union[str, diffrax.AbstractERK]
+                Integration method.
+            atol : float
+                Absolute tolerance.
+            rtol : float
+                Relative tolerance.
+            time_grid : Array
+                Time grid.
             return_intermediates : bool
-                Whether to return intermediate time steps.
+                Return intermediates.
+            model_extras : dict
+                Model extras.
+            key : jax.random.PRNGKey
+                Random key. Required for SDE.
 
         Returns
         -------
             Array
-                Samples of shape ``(nsamples, features, channels)``.
+                Samples.
         """
+        if key is None:
+            raise ValueError("key is required for SDE sampling.")
+
         sampler = self.get_sampler(
-            nsteps=nsteps,
+            step_size=step_size,
             method=method,
+            atol=atol,
+            rtol=rtol,
+            time_grid=time_grid,
             return_intermediates=return_intermediates,
-            **kwargs,
+            model_extras=model_extras,
         )
-        return sampler(key, nsamples)
+        return sampler(x_init, key)
 
 
 class ZeroEnds(BaseFmSDESolver):
