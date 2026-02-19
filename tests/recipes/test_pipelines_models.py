@@ -182,12 +182,12 @@ params_flux_diff = Flux1Params(
 
 # %%
 
-config_diff_flux = "test/recipes/configs/config_diffusion_flux.yaml"
-config_flow_flux = "test/recipes/configs/config_flow_flux.yaml"
-config_diff_simformer = "test/recipes/configs/config_diffusion_simformer.yaml"
-config_flow_simformer = "test/recipes/configs/config_flow_simformer.yaml"
-config_diff_flux1joint = "test/recipes/configs/config_diffusion_flux1joint.yaml"
-config_flow_flux1joint = "test/recipes/configs/config_flow_flux1joint.yaml"
+config_diff_flux = "tests/recipes/configs/config_diffusion_flux.yaml"
+config_flow_flux = "tests/recipes/configs/config_flow_flux.yaml"
+config_diff_simformer = "tests/recipes/configs/config_diffusion_simformer.yaml"
+config_flow_simformer = "tests/recipes/configs/config_flow_simformer.yaml"
+config_diff_flux1joint = "tests/recipes/configs/config_diffusion_flux1joint.yaml"
+config_flow_flux1joint = "tests/recipes/configs/config_flow_flux1joint.yaml"
 
 
 @pytest.mark.parametrize(
@@ -290,6 +290,7 @@ def test_defaults_simformer(pipeline_cls):
         (Flux1DiffusionPipeline, params_flux_diff),
     ],
 )
+@pytest.mark.slow
 def test_model_pipeline(pipeline_cls, params):
     if pipeline_cls in [
         Flux1FlowPipeline,

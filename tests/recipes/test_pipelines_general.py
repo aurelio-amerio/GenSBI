@@ -148,6 +148,7 @@ def get_model(pipeline_cls):
         JointDiffusionPipeline,
     ],
 )
+@pytest.mark.slow
 def test_model_general_conditional(pipeline_cls):
 
     if pipeline_cls in [
@@ -351,6 +352,7 @@ def test_model_general_conditional(pipeline_cls):
         UnconditionalDiffusionPipeline,
     ],
 )
+@pytest.mark.slow
 def test_model_general_unconditional(pipeline_cls):
 
     train_dataset = train_dataset_joint

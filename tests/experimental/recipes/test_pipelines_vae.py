@@ -110,6 +110,7 @@ ae_params_2D = AutoEncoderParams(
         (VAE2DPipeline, ae_params_2D, train_dataset_2D, val_dataset_2D),
     ],
 )
+@pytest.mark.experimental
 def test_vae_pipeline(pipeline_cls, params, train_dataset, val_dataset):
 
     home = os.path.expanduser("~")

@@ -9,6 +9,8 @@ import pytest
 
 from gensbi.experimental.models.autoencoders.commons import DiagonalGaussian
 
+
+@pytest.mark.experimental
 def test_DiagonalGaussian():
     batch_size = 12
     z_channels = 4
@@ -18,11 +20,10 @@ def test_DiagonalGaussian():
     key = jax.random.PRNGKey(0)
     res = diag_gauss(latent, key)
 
-    assert res.shape == (batch_size, z_channels//2)
-    
-    
+    assert res.shape == (batch_size, z_channels // 2)
+
     diag_gauss = DiagonalGaussian(sample=False)
     res = diag_gauss(latent)
-    
-    assert res.shape == (batch_size, z_channels//2)
+
+    assert res.shape == (batch_size, z_channels // 2)
     return
