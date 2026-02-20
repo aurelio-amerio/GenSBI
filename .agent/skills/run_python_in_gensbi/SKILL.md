@@ -31,12 +31,4 @@ Use:
 mamba run -n gensbi python -m my.module
 ```
 
-### Running Tests
-Instead of:
-```bash
-pytest test/
-```
-Use:
-```bash
-mamba run -n gensbi pytest test/
-```
+
