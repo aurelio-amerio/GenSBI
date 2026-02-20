@@ -28,4 +28,4 @@ class Solver(ABC):
         Array
             Sampled output from the solver.
         """
-        ...
+        ...  # pragma: no cover
