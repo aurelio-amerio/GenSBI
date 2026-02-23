@@ -29,6 +29,61 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure, FigureBase
 
 
+def _resolve_classifier(
+    classifier: Union[str, Type[BaseEstimator]],
+    classifier_kwargs: Optional[Dict[str, Any]],
+    ndim: int,
+) -> tuple:
+    """Resolve a classifier specification into a (class, kwargs) pair.
+
+    Parameters
+    ----------
+    classifier : str or Type[BaseEstimator]
+        Classifier class or string shorthand (``"mlp"`` or ``"random_forest"``).
+    classifier_kwargs : dict or None
+        Custom kwargs for the classifier. If ``None`` and classifier is
+        ``MLPClassifier``, sensible defaults are provided.
+    ndim : int
+        Dimensionality of the parameter space (used for default MLP sizing).
+
+    Returns
+    -------
+    clf_class : Type[BaseEstimator]
+        Resolved classifier class.
+    clf_kwargs : dict
+        Keyword arguments for the classifier.
+    """
+    if isinstance(classifier, str):
+        _MAP = {"mlp": MLPClassifier, "random_forest": RandomForestClassifier}
+        key = classifier.lower()
+        if key not in _MAP:
+            raise ValueError(
+                f'Invalid classifier: "{classifier}". '
+                'Expected "mlp", "random_forest", '
+                "or a valid scikit-learn classifier class."
+            )
+        classifier = _MAP[key]
+
+    assert issubclass(
+        classifier, BaseEstimator
+    ), "classifier must either be a string or a subclass of BaseEstimator."
+
+    if classifier_kwargs is None:
+        if classifier == MLPClassifier:
+            classifier_kwargs = {
+                "activation": "relu",
+                "hidden_layer_sizes": (10 * ndim, 10 * ndim),
+                "max_iter": 1000,
+                "solver": "adam",
+                "early_stopping": True,
+                "n_iter_no_change": 50,
+            }
+        else:
+            classifier_kwargs = {}
+
+    return classifier, classifier_kwargs
+
+
 class LC2ST:
     r"""L-C2ST: Local Classifier Two-Sample Test.
 
@@ -136,36 +191,9 @@ class LC2ST:
         self.num_ensemble = num_ensemble
 
         # initialize classifier
-        if isinstance(classifier, str):
-            if classifier.lower() == "mlp":
-                classifier = MLPClassifier
-            elif classifier.lower() == "random_forest":
-                classifier = RandomForestClassifier
-            else:
-                raise ValueError(
-                    f'Invalid classifier: "{classifier}".'
-                    'Expected "mlp", "random_forest", '
-                    "or a valid scikit-learn classifier class."
-                )
-        assert issubclass(
-            classifier, BaseEstimator
-        ), "classier must either be a string or a subclass of BaseEstimator."
-        self.clf_class = classifier
-
-        # for MLPClassifier, set default parameters
-        if classifier_kwargs is None:
-            if self.clf_class == MLPClassifier:
-                ndim = thetas.shape[-1]
-                self.clf_kwargs = {
-                    "activation": "relu",
-                    "hidden_layer_sizes": (10 * ndim, 10 * ndim),
-                    "max_iter": 1000,
-                    "solver": "adam",
-                    "early_stopping": True,
-                    "n_iter_no_change": 50,
-                }
-            else:
-                self.clf_kwargs: Dict[str, Any] = {}
+        self.clf_class, self.clf_kwargs = _resolve_classifier(
+            classifier, classifier_kwargs, thetas.shape[-1]
+        )
 
         # initialize classifiers, will be set after training
         self.trained_clfs = None

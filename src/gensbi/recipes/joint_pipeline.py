@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from functools import partial
 import orbax.checkpoint as ocp
 
-from gensbi.recipes.utils import init_ids_joint
+from gensbi.recipes.utils import init_ids_joint, build_edm_path, build_sm_path
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
@@ -621,35 +621,7 @@ class JointDiffusionPipeline(AbstractPipeline):
             self.dim_obs, self.dim_cond
         )
 
-        if sde == "EDM":
-            sigma_min = self.training_config.get("sigma_min", 0.002)
-            sigma_max = self.training_config.get("sigma_max", 80.0)
-            self.path = EDMPath(
-                scheduler=EDMScheduler(
-                    sigma_min=sigma_min,
-                    sigma_max=sigma_max,
-                )
-            )
-        elif sde == "VE":
-            sigma_min = self.training_config.get("sigma_min", 0.002)
-            sigma_max = self.training_config.get("sigma_max", 100.0)
-            self.path = EDMPath(
-                scheduler=VEEdmScheduler(
-                    sigma_min=sigma_min,
-                    sigma_max=sigma_max,
-                )
-            )
-        elif sde == "VP":
-            beta_min = self.training_config.get("beta_min", 0.1)
-            beta_max = self.training_config.get("beta_max", 20.0)
-            self.path = EDMPath(
-                scheduler=VPEdmScheduler(
-                    beta_min=beta_min,
-                    beta_max=beta_max,
-                )
-            )
-        else:
-            raise ValueError(f"Unknown sde type: {sde}")
+        self.path = build_edm_path(sde, self.training_config)
 
         self.loss_fn = JointEDMLoss(self.path)
 
@@ -993,16 +965,7 @@ class JointSMPipeline(AbstractPipeline):
 
         self.sde_type = sde_type
 
-        if sde_type == "VP":
-            beta_min = self.training_config.get("beta_min", 0.001)
-            beta_max = self.training_config.get("beta_max", 3.0)
-            self.path = SMPath(VPSmScheduler(beta_min=beta_min, beta_max=beta_max))
-        elif sde_type == "VE":
-            sigma_min = self.training_config.get("sigma_min", 0.001)
-            sigma_max = self.training_config.get("sigma_max", 15.0)
-            self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
-        else:
-            raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
+        self.path = build_sm_path(sde_type, self.training_config)
 
         self.loss_fn = JointSMLoss(self.path)
 

@@ -28,7 +28,7 @@ from gensbi.models import (
 )
 from gensbi.models.losses import UnconditionalSMLoss
 
-from gensbi.recipes.utils import init_ids_1d
+from gensbi.recipes.utils import init_ids_1d, build_edm_path, build_sm_path
 
 from einops import repeat
 
@@ -440,35 +440,7 @@ class UnconditionalDiffusionPipeline(AbstractPipeline):
         self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
 
         self.sde = sde
-        if sde == "EDM":
-            sigma_min = self.training_config.get("sigma_min", 0.002)
-            sigma_max = self.training_config.get("sigma_max", 80.0)
-            self.path = EDMPath(
-                scheduler=EDMScheduler(
-                    sigma_min=sigma_min,
-                    sigma_max=sigma_max,
-                )
-            )
-        elif sde == "VE":
-            sigma_min = self.training_config.get("sigma_min", 0.02)
-            sigma_max = self.training_config.get("sigma_max", 100.0)
-            self.path = EDMPath(
-                scheduler=VEEdmScheduler(
-                    sigma_min=sigma_min,
-                    sigma_max=sigma_max,
-                )
-            )
-        elif sde == "VP":
-            beta_min = self.training_config.get("beta_min", 0.1)
-            beta_max = self.training_config.get("beta_max", 19.9)
-            self.path = EDMPath(
-                scheduler=VPEdmScheduler(
-                    beta_min=beta_min,
-                    beta_max=beta_max,
-                )
-            )
-        else:
-            raise ValueError(f"Unknown sde type: {sde}")
+        self.path = build_edm_path(sde, self.training_config)
 
         self.loss_fn = UnconditionalEDMLoss(self.path)
 
@@ -762,16 +734,7 @@ class UnconditionalSMPipeline(AbstractPipeline):
         self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
         self.sde_type = sde_type
 
-        if sde_type == "VP":
-            beta_min = self.training_config.get("beta_min", 0.001)
-            beta_max = self.training_config.get("beta_max", 3.0)
-            self.path = SMPath(VPSmScheduler(beta_min=beta_min, beta_max=beta_max))
-        elif sde_type == "VE":
-            sigma_min = self.training_config.get("sigma_min", 0.001)
-            sigma_max = self.training_config.get("sigma_max", 15.0)
-            self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
-        else:
-            raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
+        self.path = build_sm_path(sde_type, self.training_config)
 
         self.loss_fn = UnconditionalSMLoss(self.path)
 

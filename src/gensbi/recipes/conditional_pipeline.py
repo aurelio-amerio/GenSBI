@@ -46,7 +46,7 @@ import yaml
 
 from gensbi.recipes.pipeline import AbstractPipeline
 
-from gensbi.recipes.utils import init_ids_1d, init_ids_2d
+from gensbi.recipes.utils import _resolve_embedding_ids, build_edm_path, build_sm_path
 
 
 class ConditionalFlowPipeline(AbstractPipeline):
@@ -125,31 +125,12 @@ class ConditionalFlowPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        embeddings_1d = ["absolute", "pos1d", "rope1d"]
-        embeddings_2d = ["pos2d", "rope2d"]
-
-        if id_embedding_strategy[0] in embeddings_1d:
-            obs_ids, dim_obs = init_ids_1d(dim_obs, semantic_id=0)
-        elif id_embedding_strategy[0] in embeddings_2d:
-            obs_ids, dim_obs = init_ids_2d(dim_obs, semantic_id=0)
-        else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
-            )
-
-        if id_embedding_strategy[1] in embeddings_1d:
-            cond_ids, dim_cond = init_ids_1d(dim_cond, semantic_id=1)
-        elif id_embedding_strategy[1] in embeddings_2d:
-            cond_ids, dim_cond = init_ids_2d(dim_cond, semantic_id=1)
-        else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
-            )
-
-        self.obs_ids = obs_ids
-        self.cond_ids = cond_ids
-        self.dim_obs = dim_obs
-        self.dim_cond = dim_cond
+        self.obs_ids, self.dim_obs = _resolve_embedding_ids(
+            dim_obs, id_embedding_strategy[0], semantic_id=0
+        )
+        self.cond_ids, self.dim_cond = _resolve_embedding_ids(
+            dim_cond, id_embedding_strategy[1], semantic_id=1
+        )
 
         self.path = AffineProbPath(scheduler=CondOTScheduler())
 
@@ -238,32 +219,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
     #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
     #     return optimizer
 
-    # need to select the right weights to apply the updates
-    def get_train_step_fn(self, loss_fn):
-        """
-        Return the training step function, which performs a single optimization step.
 
-        Returns
-        -------
-        train_step : Callable
-            JIT-compiled training step function.
-        """
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains('sbi_model'))
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
-
-        @nnx.jit  # something bad happens here
-        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
-            # diff_state = nnx.DiffState(
-            #     0, sbi_model_params
-            # )  # filter head params of the first argument
-            # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, key
-            # )
-            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
-            optimizer.update(model, grads, value=loss)
-            return loss
-
-        return train_step
 
     def _wrap_model(self):
         self.model_wrapped = ConditionalWrapper(self.model)
@@ -581,61 +537,14 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
         #     1
         # )  # set second channel to 1 for conditioning tokens
 
-        embeddings_1d = ["absolute", "pos1d", "rope1d"]
-        embeddings_2d = ["pos2d", "rope2d"]
+        self.obs_ids, self.dim_obs = _resolve_embedding_ids(
+            dim_obs, id_embedding_strategy[0], semantic_id=0
+        )
+        self.cond_ids, self.dim_cond = _resolve_embedding_ids(
+            dim_cond, id_embedding_strategy[1], semantic_id=1
+        )
 
-        if id_embedding_strategy[0] in embeddings_1d:
-            obs_ids, dim_obs = init_ids_1d(dim_obs, semantic_id=0)
-        elif id_embedding_strategy[0] in embeddings_2d:
-            obs_ids, dim_obs = init_ids_2d(dim_obs, semantic_id=0)
-        else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
-            )
-
-        if id_embedding_strategy[1] in embeddings_1d:
-            cond_ids, dim_cond = init_ids_1d(dim_cond, semantic_id=1)
-        elif id_embedding_strategy[1] in embeddings_2d:
-            cond_ids, dim_cond = init_ids_2d(dim_cond, semantic_id=1)
-        else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
-            )
-
-        self.obs_ids = obs_ids
-        self.cond_ids = cond_ids
-        self.dim_obs = dim_obs
-        self.dim_cond = dim_cond
-
-        if sde == "EDM":
-            sigma_min = self.training_config.get("sigma_min", 0.002)
-            sigma_max = self.training_config.get("sigma_max", 80.0)
-            self.path = EDMPath(
-                scheduler=EDMScheduler(
-                    sigma_min=sigma_min,
-                    sigma_max=sigma_max,
-                )
-            )
-        elif sde == "VE":
-            sigma_min = self.training_config.get("sigma_min", 0.02)
-            sigma_max = self.training_config.get("sigma_max", 100.0)
-            self.path = EDMPath(
-                scheduler=VEEdmScheduler(
-                    sigma_min=sigma_min,
-                    sigma_max=sigma_max,
-                )
-            )
-        elif sde == "VP":
-            beta_min = self.training_config.get("beta_min", 0.1)
-            beta_max = self.training_config.get("beta_max", 19.9)
-            self.path = EDMPath(
-                scheduler=VPEdmScheduler(
-                    beta_min=beta_min,
-                    beta_max=beta_max,
-                )
-            )
-        else:
-            raise ValueError(f"Unknown sde type: {sde}")
+        self.path = build_edm_path(sde, self.training_config)
 
         self.loss_fn = ConditionalEDMLoss(self.path)
 
@@ -744,29 +653,7 @@ class ConditionalDiffusionPipeline(AbstractPipeline):
     #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
     #     return optimizer
 
-    def get_train_step_fn(self, loss_fn):
-        """
-        Return the training step function, which performs a single optimization step.
 
-        Returns
-        -------
-        train_step : Callable
-            JIT-compiled training step function.
-        """
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("sbi_model"))
-        # sbi_model_params = nnx.All(nnx.Param, nnx.PathContains("model"))
-
-        @nnx.jit
-        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
-            # diff_state = nnx.DiffState(0, sbi_model_params)
-            # loss, grads = nnx.value_and_grad(loss_fn, argnums=diff_state)(
-            #     model, batch, key
-            # )
-            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
-            optimizer.update(model, grads, value=loss)
-            return loss
-
-        return train_step
 
     def _wrap_model(self):
         self.model_wrapped = ConditionalWrapper(self.model)
@@ -1009,43 +896,15 @@ class ConditionalSMPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
-        embeddings_1d = ["absolute", "pos1d", "rope1d"]
-        embeddings_2d = ["pos2d", "rope2d"]
-
-        if id_embedding_strategy[0] in embeddings_1d:
-            obs_ids, dim_obs = init_ids_1d(dim_obs, semantic_id=0)
-        elif id_embedding_strategy[0] in embeddings_2d:
-            obs_ids, dim_obs = init_ids_2d(dim_obs, semantic_id=0)
-        else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {id_embedding_strategy[0]}"
-            )
-
-        if id_embedding_strategy[1] in embeddings_1d:
-            cond_ids, dim_cond = init_ids_1d(dim_cond, semantic_id=1)
-        elif id_embedding_strategy[1] in embeddings_2d:
-            cond_ids, dim_cond = init_ids_2d(dim_cond, semantic_id=1)
-        else:
-            raise ValueError(
-                f"Unknown id embedding strategy: {id_embedding_strategy[1]}"
-            )
-
-        self.obs_ids = obs_ids
-        self.cond_ids = cond_ids
-        self.dim_obs = dim_obs
-        self.dim_cond = dim_cond
+        self.obs_ids, self.dim_obs = _resolve_embedding_ids(
+            dim_obs, id_embedding_strategy[0], semantic_id=0
+        )
+        self.cond_ids, self.dim_cond = _resolve_embedding_ids(
+            dim_cond, id_embedding_strategy[1], semantic_id=1
+        )
         self.sde_type = sde_type
 
-        if sde_type == "VP":
-            beta_min = self.training_config.get("beta_min", 0.001)
-            beta_max = self.training_config.get("beta_max", 3.0)
-            self.path = SMPath(VPSmScheduler(beta_min=beta_min, beta_max=beta_max))
-        elif sde_type == "VE":
-            sigma_min = self.training_config.get("sigma_min", 0.001)
-            sigma_max = self.training_config.get("sigma_max", 15.0)
-            self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
-        else:
-            raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
+        self.path = build_sm_path(sde_type, self.training_config)
 
         self.loss_fn = ConditionalSMLoss(self.path)
 
@@ -1102,14 +961,7 @@ class ConditionalSMPipeline(AbstractPipeline):
 
         return loss_fn
 
-    def get_train_step_fn(self, loss_fn):
-        @nnx.jit
-        def train_step(model, optimizer, batch, key: jax.random.PRNGKey):
-            loss, grads = nnx.value_and_grad(loss_fn)(model, batch, key)
-            optimizer.update(model, grads, value=loss)
-            return loss
 
-        return train_step
 
     def _wrap_model(self):
         self.model_wrapped = ConditionalWrapper(self.model)

@@ -496,6 +496,114 @@ def sbc_rank_plot(
     )
 
 
+def _validate_and_prepare_ranks(
+    ranks: Union[Array, np.ndarray, List[Array], List[np.ndarray]],
+    plot_type: str,
+) -> List[np.ndarray]:
+    """Validate and normalize ranks into a list of numpy arrays.
+
+    Parameters
+    ----------
+    ranks : Array or List[Array]
+        Ranks to validate.
+    plot_type : str
+        Plot type (``"hist"`` or ``"cdf"``).
+
+    Returns
+    -------
+    List[np.ndarray]
+        Validated and normalized list of rank arrays.
+    """
+    if isinstance(ranks, (Array, np.ndarray)):
+        ranks_list = [ranks]
+    else:
+        if not isinstance(ranks, List):
+            raise TypeError("ranks must be an Array, np.ndarray, or a List of them.")
+        ranks_list = ranks
+
+    for idx, rank in enumerate(ranks_list):
+        if not isinstance(rank, (Array, np.ndarray)):
+            raise TypeError("All ranks in the list must be Arrays or np.ndarrays.")
+        if isinstance(rank, Array):
+            ranks_list[idx]: np.ndarray = rank.numpy()  # type: ignore
+
+    plot_types = ["hist", "cdf"]
+    if plot_type not in plot_types:
+        raise ValueError(
+            f"plot type {plot_type} not implemented, use one in {plot_types}."
+        )
+
+    for ranki in ranks_list:
+        if ranki.shape != ranks_list[0].shape:
+            raise ValueError("all ranks in list must have the same shape.")
+
+    return ranks_list
+
+
+def _create_sbc_figure(
+    num_parameters: int,
+    num_cols: int,
+    params_in_subplots: bool,
+    figsize: Optional[tuple],
+    sharey: bool,
+    fig: Optional[FigureBase],
+    ax,
+):
+    """Create or validate the figure/axes layout for the SBC rank plot.
+
+    Parameters
+    ----------
+    num_parameters : int
+        Number of parameter dimensions.
+    num_cols : int
+        Number of subplot columns.
+    params_in_subplots : bool
+        Whether each parameter gets its own subplot.
+    figsize : tuple or None
+        Figure dimensions.
+    sharey : bool
+        Whether to share y-axis across subplots.
+    fig : Figure or None
+        Existing figure to reuse.
+    ax : Axes or None
+        Existing axes to reuse.
+
+    Returns
+    -------
+    fig : Figure
+        Figure object.
+    ax : Axes
+        Axes object.
+    num_rows : int
+        Number of subplot rows.
+    """
+    num_rows = int(np.ceil(num_parameters / num_cols))
+
+    if params_in_subplots:
+        if fig is None or ax is None:
+            fig, ax = plt.subplots(
+                num_rows,
+                min(num_parameters, num_cols),
+                figsize=figsize,
+                sharey=sharey,
+            )
+            ax = np.atleast_1d(ax)  # type: ignore
+        else:
+            if ax.size < num_parameters:
+                raise ValueError(
+                    "There must be at least as many subplots as parameters."
+                )
+            num_rows = ax.shape[0] if ax.ndim > 1 else 1
+
+        if ax is None:
+            raise ValueError("Ax cannot be None")
+    else:
+        if fig is None or ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=figsize)
+
+    return fig, ax, num_rows
+
+
 def _sbc_rank_plot(
     ranks: Union[Array, np.ndarray, List[Array], List[np.ndarray]],
     num_posterior_samples: int,
@@ -573,23 +681,7 @@ def _sbc_rank_plot(
         Axis object.
     """
 
-    if isinstance(ranks, (Array, np.ndarray)):
-        ranks_list = [ranks]
-    else:
-        if not isinstance(ranks, List):
-            raise TypeError("ranks must be an Array, np.ndarray, or a List of them.")
-        ranks_list = ranks
-    for idx, rank in enumerate(ranks_list):
-        if not isinstance(rank, (Array, np.ndarray)):
-            raise TypeError("All ranks in the list must be Arrays or np.ndarrays.")
-        if isinstance(rank, Array):
-            ranks_list[idx]: np.ndarray = rank.numpy()  # type: ignore
-
-    plot_types = ["hist", "cdf"]
-    if plot_type not in plot_types:
-        raise ValueError(
-            f"plot type {plot_type} not implemented, use one in {plot_types}."
-        )
+    ranks_list = _validate_and_prepare_ranks(ranks, plot_type)
 
     if legend_kwargs is None:
         legend_kwargs = dict(loc="best", handlelength=0.8)
@@ -600,10 +692,6 @@ def _sbc_rank_plot(
     # For multiple methods, and for the hist plots plot each param in a separate subplot
     if num_ranks > 1 or plot_type == "hist":
         params_in_subplots = True
-
-    for ranki in ranks_list:
-        if ranki.shape != ranks_list[0].shape:
-            raise ValueError("all ranks in list must have the same shape.")
 
     num_rows = int(np.ceil(num_parameters / num_cols))
     if figsize is None:
@@ -617,26 +705,12 @@ def _sbc_rank_plot(
         # Recommendation from Talts et al.
         num_bins = num_sbc_runs // 20
 
+    fig, ax, num_rows = _create_sbc_figure(
+        num_parameters, num_cols, params_in_subplots, figsize, sharey, fig, ax
+    )
+
     # Plot one row subplot for each parameter, different "methods" on top of each other.
     if params_in_subplots:
-        if fig is None or ax is None:
-            fig, ax = plt.subplots(
-                num_rows,
-                min(num_parameters, num_cols),
-                figsize=figsize,
-                sharey=sharey,
-            )
-            ax = np.atleast_1d(ax)  # type: ignore
-        else:
-            if ax.size < num_parameters:
-                raise ValueError(
-                    "There must be at least as many subplots as parameters."
-                )
-            num_rows = ax.shape[0] if ax.ndim > 1 else 1
-
-        if ax is None:
-            raise ValueError("Ax cannot be None")
-
         col_idx, row_idx = 0, 0
         for ii, ranki in enumerate(ranks_list):
             for jj in range(num_parameters):
@@ -699,9 +773,6 @@ def _sbc_rank_plot(
 
     # When there is only one set of ranks show all params in a single subplot.
     else:
-        if fig is None or ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=figsize)
-
         plt.sca(ax)
         ranki = ranks_list[0]
         for jj in range(num_parameters):
