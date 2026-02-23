@@ -5,6 +5,15 @@ from typing import Union, Tuple
 from einops import repeat, rearrange
 from jax import Array
 
+from gensbi.diffusion.path import EDMPath
+from gensbi.diffusion.path.scheduler import (
+    EDMScheduler,
+    VEEdmScheduler,
+    VPEdmScheduler,
+)
+from gensbi.diffusion.path.sm_path import SMPath
+from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
+
 
 def init_ids_joint(dim_obs: int, dim_cond: int):
     dim_joint = dim_obs + dim_cond
@@ -63,3 +72,125 @@ def scale_lr(batch_size, base_lr=1e-4, reference_batch_size=256):
     import math
 
     return base_lr * math.sqrt(batch_size / reference_batch_size)
+
+
+_EMBEDDINGS_1D = {"absolute", "pos1d", "rope1d"}
+_EMBEDDINGS_2D = {"pos2d", "rope2d"}
+
+
+def _resolve_embedding_ids(dim, strategy: str, semantic_id: int):
+    """Resolve ID embeddings by strategy name.
+
+    Parameters
+    ----------
+    dim : int or tuple of int
+        Dimension specification (number of tokens, or (H, W) for 2D images).
+    strategy : str
+        Embedding strategy name (e.g., "absolute", "pos1d", "rope1d",
+        "pos2d", "rope2d").
+    semantic_id : int
+        Semantic identifier for the token group (0=obs, 1=cond).
+
+    Returns
+    -------
+    ids : Array
+        Token ID array.
+    resolved_dim : int
+        Resolved flat dimension.
+
+    Raises
+    ------
+    ValueError
+        If ``strategy`` is not recognized.
+    """
+    if strategy in _EMBEDDINGS_1D:
+        return init_ids_1d(dim, semantic_id=semantic_id)
+    elif strategy in _EMBEDDINGS_2D:
+        return init_ids_2d(dim, semantic_id=semantic_id)
+    else:
+        raise ValueError(f"Unknown id embedding strategy: {strategy}")
+
+
+def build_edm_path(sde: str, config: dict) -> EDMPath:
+    """Build an EDM-family diffusion path from an SDE type string and config.
+
+    Parameters
+    ----------
+    sde : str
+        SDE type: ``"EDM"``, ``"VE"``, or ``"VP"``.
+    config : dict
+        Training configuration dict; scheduler hyperparameters are read from
+        here with sensible defaults.
+
+    Returns
+    -------
+    EDMPath
+        Configured diffusion path.
+
+    Raises
+    ------
+    ValueError
+        If ``sde`` is not one of ``{"EDM", "VE", "VP"}``.
+    """
+    if sde == "EDM":
+        return EDMPath(
+            scheduler=EDMScheduler(
+                sigma_min=config.get("sigma_min", 0.002),
+                sigma_max=config.get("sigma_max", 80.0),
+            )
+        )
+    elif sde == "VE":
+        return EDMPath(
+            scheduler=VEEdmScheduler(
+                sigma_min=config.get("sigma_min", 0.02),
+                sigma_max=config.get("sigma_max", 100.0),
+            )
+        )
+    elif sde == "VP":
+        return EDMPath(
+            scheduler=VPEdmScheduler(
+                beta_min=config.get("beta_min", 0.1),
+                beta_max=config.get("beta_max", 19.9),
+            )
+        )
+    else:
+        raise ValueError(f"Unknown sde type: {sde}")
+
+
+def build_sm_path(sde_type: str, config: dict) -> SMPath:
+    """Build a score-matching path from an SDE type string and config.
+
+    Parameters
+    ----------
+    sde_type : str
+        SDE type: ``"VP"`` or ``"VE"``.
+    config : dict
+        Training configuration dict; scheduler hyperparameters are read from
+        here with sensible defaults.
+
+    Returns
+    -------
+    SMPath
+        Configured score-matching path.
+
+    Raises
+    ------
+    ValueError
+        If ``sde_type`` is not one of ``{"VP", "VE"}``.
+    """
+    if sde_type == "VP":
+        return SMPath(
+            VPSmScheduler(
+                beta_min=config.get("beta_min", 0.001),
+                beta_max=config.get("beta_max", 3.0),
+            )
+        )
+    elif sde_type == "VE":
+        return SMPath(
+            VESmScheduler(
+                sigma_min=config.get("sigma_min", 0.001),
+                sigma_max=config.get("sigma_max", 15.0),
+            )
+        )
+    else:
+        raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
