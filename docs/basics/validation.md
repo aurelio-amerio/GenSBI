@@ -4,8 +4,6 @@ Validating the posterior estimates is a crucial step in Simulation-Based Inferen
 
 GenSBI provides a native JAX-based `diagnostics` module. This module is inspired by and is partially a port of the diagnostics submodule of the [`sbi`](https://sbi-dev.github.io/sbi/) library.
 
-We also provide a `PosteriorWrapper` from `gensbi.diagnostics` that can be used to create a posterior object with an interface similar to an `sbi` posterior.
-
 ```{note}
 This is a JAX module. To use it with PyTorch (if desired), a compatibility layer must be employed.
 ```
