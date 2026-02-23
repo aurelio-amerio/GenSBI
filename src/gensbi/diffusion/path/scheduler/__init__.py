@@ -10,8 +10,6 @@ from .edm import (
     EDMScheduler,
     VPEdmScheduler,
     VEEdmScheduler,
-    VPEdmScheduler,
-    VEEdmScheduler,
 )
 from .sm_sde import (
     VPSmScheduler,
@@ -20,8 +18,6 @@ from .sm_sde import (
 
 __all__ = [
     "EDMScheduler",
-    "VPEdmScheduler",
-    "VEEdmScheduler",
     "VPEdmScheduler",
     "VEEdmScheduler",
     "VPSmScheduler",
