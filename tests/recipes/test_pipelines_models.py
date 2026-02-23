@@ -25,6 +25,9 @@ from gensbi.recipes import (
     Flux1FlowPipeline,
     Flux1DiffusionPipeline,
 )
+from gensbi.recipes.flux1 import Flux1SMPipeline
+from gensbi.recipes.flux1joint import Flux1JointSMPipeline
+from gensbi.recipes.simformer import SimformerSMPipeline
 
 import itertools
 
@@ -96,7 +99,7 @@ params_simf = SimformerParams(
     fourier_features=32,
     num_heads=2,
     depth=1,
-    mlp_ratio=3,
+    mlp_ratio=1,
     qkv_features=4,
     num_hidden_layers=1,
 )
@@ -104,7 +107,7 @@ params_simf = SimformerParams(
 params_flux1joint_flow = Flux1JointParams(
     in_channels=2,
     vec_in_dim=None,
-    mlp_ratio=3.0,
+    mlp_ratio=1,
     num_heads=2,
     depth_single_blocks=2,
     val_emb_dim=4,
@@ -122,7 +125,7 @@ params_flux1joint_flow = Flux1JointParams(
 params_flux1joint_diff = Flux1JointParams(
     in_channels=2,
     vec_in_dim=None,
-    mlp_ratio=3.0,
+    mlp_ratio=1,
     num_heads=2,
     depth_single_blocks=2,
     val_emb_dim=4,
@@ -178,16 +181,58 @@ params_flux_diff = Flux1Params(
     param_dtype=jnp.float32,
 )
 
+params_flux_sm = Flux1Params(
+    in_channels=2,
+    vec_in_dim=None,
+    context_in_dim=2,
+    mlp_ratio=1,
+    num_heads=2,
+    depth=2,
+    depth_single_blocks=2,
+    axes_dim=[
+        2,
+    ],
+    qkv_bias=True,
+    dim_obs=dim_obs,
+    dim_cond=dim_cond,
+    theta=20,
+    id_merge_mode="sum",
+    id_embedding_strategy=("absolute", "absolute"),
+    rngs=nnx.Rngs(default=42),
+    param_dtype=jnp.float32,
+)
+
+params_flux1joint_sm = Flux1JointParams(
+    in_channels=2,
+    vec_in_dim=None,
+    mlp_ratio=1,
+    num_heads=2,
+    depth_single_blocks=2,
+    val_emb_dim=4,
+    cond_emb_dim=2,
+    id_emb_dim=4,
+    qkv_bias=True,
+    rngs=nnx.Rngs(0),
+    dim_joint=dim_joint,
+    id_merge_mode="sum",
+    id_embedding_strategy="absolute",
+    guidance_embed=False,
+    param_dtype=jnp.float32,
+)
+
 # TODO add configuration for flux1 with concat instead of sum, maybe do it for diffusion only. do the same for flux1joint
 
 # %%
 
 config_diff_flux = "tests/recipes/configs/config_diffusion_flux.yaml"
 config_flow_flux = "tests/recipes/configs/config_flow_flux.yaml"
+config_sm_flux = "tests/recipes/configs/config_sm_flux.yaml"
 config_diff_simformer = "tests/recipes/configs/config_diffusion_simformer.yaml"
 config_flow_simformer = "tests/recipes/configs/config_flow_simformer.yaml"
+config_sm_simformer = "tests/recipes/configs/config_sm_simformer.yaml"
 config_diff_flux1joint = "tests/recipes/configs/config_diffusion_flux1joint.yaml"
 config_flow_flux1joint = "tests/recipes/configs/config_flow_flux1joint.yaml"
+config_sm_flux1joint = "tests/recipes/configs/config_sm_flux1joint.yaml"
 
 
 @pytest.mark.parametrize(
@@ -195,10 +240,13 @@ config_flow_flux1joint = "tests/recipes/configs/config_flow_flux1joint.yaml"
     [
         (SimformerFlowPipeline, config_flow_simformer),
         (SimformerDiffusionPipeline, config_diff_simformer),
+        (SimformerSMPipeline, config_sm_simformer),
         (Flux1JointFlowPipeline, config_flow_flux1joint),
         (Flux1JointDiffusionPipeline, config_diff_flux1joint),
+        (Flux1JointSMPipeline, config_sm_flux1joint),
         (Flux1FlowPipeline, config_flow_flux),
         (Flux1DiffusionPipeline, config_diff_flux),
+        (Flux1SMPipeline, config_sm_flux),
     ],
 )
 def test_load_configs(pipeline_cls, config_path):
@@ -208,6 +256,7 @@ def test_load_configs(pipeline_cls, config_path):
     if pipeline_cls in [
         Flux1FlowPipeline,
         Flux1DiffusionPipeline,
+        Flux1SMPipeline,
     ]:
         train_dataset = train_dataset_cond
         val_dataset = val_dataset_cond
@@ -236,6 +285,7 @@ def test_load_configs(pipeline_cls, config_path):
     [
         Flux1FlowPipeline,
         Flux1DiffusionPipeline,
+        Flux1SMPipeline,
     ],
 )
 def test_defaults_flux1(pipeline_cls):
@@ -252,6 +302,7 @@ def test_defaults_flux1(pipeline_cls):
     [
         Flux1JointFlowPipeline,
         Flux1JointDiffusionPipeline,
+        Flux1JointSMPipeline,
     ],
 )
 def test_defaults_flux1joint(pipeline_cls):
@@ -268,6 +319,7 @@ def test_defaults_flux1joint(pipeline_cls):
     [
         SimformerFlowPipeline,
         SimformerDiffusionPipeline,
+        SimformerSMPipeline,
     ],
 )
 def test_defaults_simformer(pipeline_cls):
@@ -284,10 +336,13 @@ def test_defaults_simformer(pipeline_cls):
     [
         (SimformerFlowPipeline, params_simf),
         (SimformerDiffusionPipeline, params_simf),
+        (SimformerSMPipeline, params_simf),
         (Flux1JointFlowPipeline, params_flux1joint_flow),
         (Flux1JointDiffusionPipeline, params_flux1joint_diff),
+        (Flux1JointSMPipeline, params_flux1joint_sm),
         (Flux1FlowPipeline, params_flux_flow),
         (Flux1DiffusionPipeline, params_flux_diff),
+        (Flux1SMPipeline, params_flux_sm),
     ],
 )
 @pytest.mark.slow
@@ -295,6 +350,7 @@ def test_model_pipeline(pipeline_cls, params):
     if pipeline_cls in [
         Flux1FlowPipeline,
         Flux1DiffusionPipeline,
+        Flux1SMPipeline,
     ]:
         train_dataset = train_dataset_cond
         val_dataset = val_dataset_cond
@@ -319,6 +375,7 @@ def test_model_pipeline(pipeline_cls, params):
         if pipeline_cls in [
             Flux1FlowPipeline,
             Flux1DiffusionPipeline,
+            Flux1SMPipeline,
         ]:
             pipeline = pipeline_cls(
                 train_dataset=train_dataset,

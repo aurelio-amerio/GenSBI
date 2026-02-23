@@ -15,10 +15,13 @@ import tempfile
 from gensbi.recipes import (
     ConditionalFlowPipeline,
     ConditionalDiffusionPipeline,
+    ConditionalSMPipeline,
     UnconditionalFlowPipeline,
     UnconditionalDiffusionPipeline,
+    UnconditionalSMPipeline,
     JointFlowPipeline,
     JointDiffusionPipeline,
+    JointSMPipeline,
 )
 
 from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
@@ -133,6 +136,7 @@ def get_model(pipeline_cls):
     if pipeline_cls in [
         ConditionalFlowPipeline,
         ConditionalDiffusionPipeline,
+        ConditionalSMPipeline,
     ]:
         return model_conditional
     else:
@@ -144,8 +148,10 @@ def get_model(pipeline_cls):
     [
         ConditionalFlowPipeline,
         ConditionalDiffusionPipeline,
+        ConditionalSMPipeline,
         JointFlowPipeline,
         JointDiffusionPipeline,
+        JointSMPipeline,
     ],
 )
 @pytest.mark.slow
@@ -154,6 +160,7 @@ def test_model_general_conditional(pipeline_cls):
     if pipeline_cls in [
         ConditionalFlowPipeline,
         ConditionalDiffusionPipeline,
+        ConditionalSMPipeline,
     ]:
         train_dataset = train_dataset_cond
         val_dataset = val_dataset_cond
@@ -173,6 +180,7 @@ def test_model_general_conditional(pipeline_cls):
         if pipeline_cls in [
             ConditionalFlowPipeline,
             ConditionalDiffusionPipeline,
+            ConditionalSMPipeline,
         ]:
             default_pipeline = pipeline_cls(
                 model=model,
@@ -200,6 +208,7 @@ def test_model_general_conditional(pipeline_cls):
         if pipeline_cls in [
             ConditionalFlowPipeline,
             ConditionalDiffusionPipeline,
+            ConditionalSMPipeline,
         ]:
             pipeline = pipeline_cls(
                 model,
@@ -258,6 +267,7 @@ def test_model_general_conditional(pipeline_cls):
     [
         UnconditionalFlowPipeline,
         UnconditionalDiffusionPipeline,
+        UnconditionalSMPipeline,
     ],
 )
 @pytest.mark.slow
