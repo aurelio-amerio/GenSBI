@@ -71,7 +71,7 @@ def test_tarp_input_validation():
 
     # Test wrong posterior samples shape
     bad_posterior = posterior_samples[:, :-1, :]  # modify num_tarp_samples dimension
-    with pytest.raises(AssertionError, match="Wrong posterior samples shape"):
+    with pytest.raises(ValueError, match="Wrong posterior samples shape"):
         run_tarp(thetas, bad_posterior)
 
     # Test wrong references shape (passed via _run_tarp implicitly if we pass references)
