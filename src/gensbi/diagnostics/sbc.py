@@ -709,6 +709,8 @@ def _sbc_rank_plot(
         num_parameters, num_cols, params_in_subplots, figsize, sharey, fig, ax
     )
 
+    plot_types = ["hist", "cdf"]
+
     # Plot one row subplot for each parameter, different "methods" on top of each other.
     if params_in_subplots:
         col_idx, row_idx = 0, 0
