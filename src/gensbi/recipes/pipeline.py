@@ -568,6 +568,84 @@ class AbstractPipeline(abc.ABC):
         """
         ...  # pragma: no cover
 
+    def _restore_best_state(self, best_state, best_state_ema):
+        """Restore the best model and EMA states (used after early stopping).
+
+        Parameters
+        ----------
+        best_state : nnx.State
+            Best model state recorded during training.
+        best_state_ema : nnx.State
+            Best EMA model state recorded during training.
+        """
+        graphdef = nnx.graphdef(self.model)
+        self.model = nnx.merge(graphdef, best_state)
+        self.ema_model = nnx.merge(graphdef, best_state_ema)
+
+    def _run_validation(self, val_step, batch_val, rng_val, min_val,
+                        best_state, best_state_ema, counter, val_error_ratio,
+                        loss_array, val_loss_array, l_train):
+        """Run a validation step and update early-stopping bookkeeping.
+
+        Parameters
+        ----------
+        val_step : Callable
+            Validation step function.
+        batch_val : Any
+            Fixed validation batch.
+        rng_val : jax.random.PRNGKey
+            Fixed validation RNG key.
+        min_val : float
+            Best validation loss seen so far.
+        best_state : nnx.State
+            Current best model state.
+        best_state_ema : nnx.State
+            Current best EMA model state.
+        counter : int
+            Early-stopping patience counter.
+        val_error_ratio : float
+            Threshold ratio for incrementing the counter.
+        loss_array : list
+            Training loss history (mutated in place).
+        val_loss_array : list
+            Validation loss history (mutated in place).
+        l_train : float
+            Current smoothed training loss.
+
+        Returns
+        -------
+        l_val : float
+            Validation loss for this step.
+        ratio : float
+            Ratio of current validation loss to best.
+        min_val : float
+            Updated best validation loss.
+        best_state : nnx.State
+            Updated best model state.
+        best_state_ema : nnx.State
+            Updated best EMA model state.
+        counter : int
+            Updated early-stopping counter.
+        """
+        # Use a fixed val batch and rng for validation, to avoid noise
+        l_val = val_step(self.model, batch_val, rng_val)
+
+        ratio = l_val / min_val
+        if ratio > val_error_ratio:
+            counter += 1
+        else:
+            counter = 0
+
+        loss_array.append(l_train)
+        val_loss_array.append(l_val)
+
+        if l_val < min_val:
+            min_val = l_val
+            best_state = nnx.state(self.model)
+            best_state_ema = nnx.state(self.ema_model)
+
+        return l_val, ratio, min_val, best_state, best_state_ema, counter
+
     def train(
         self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True
     ) -> Tuple[list, list]:
@@ -602,7 +680,7 @@ class AbstractPipeline(abc.ABC):
         batch_val = next(self.val_dataset_iter)
         min_val = val_step(self.model, batch_val, rng_val)
 
-        val_error_ratio = 1.3  # 1.1
+        val_error_ratio = 1.3
         counter = 0
         cmax = 10
 
@@ -627,10 +705,7 @@ class AbstractPipeline(abc.ABC):
         for j in pbar:
             if counter > cmax and early_stopping:
                 print("Early stopping")
-                graphdef = nnx.graphdef(self.model)
-                self.model = nnx.merge(graphdef, best_state)
-                self.ema_model = nnx.merge(graphdef, best_state_ema)
-
+                self._restore_best_state(best_state, best_state_ema)
                 break
 
             batch = next(self.train_dataset_iter)
@@ -648,25 +723,13 @@ class AbstractPipeline(abc.ABC):
                 l_train = decay * l_train + (1 - decay) * loss
 
             if j > 0 and j % val_every == 0:
-                # batch_val = next(self.val_dataset_iter)
-                # l_val = val_step(self.model, batch_val, rngs.val_step())
-                l_val = val_step(
-                    self.model, batch_val, rng_val
-                )  # we use a fixed val batch and rng for validation, to avoid noise
-
-                ratio = l_val / min_val
-                if ratio > val_error_ratio:
-                    counter += 1
-                else:
-                    counter = 0
-
-                loss_array.append(l_train)
-                val_loss_array.append(l_val)
-
-                if l_val < min_val:
-                    min_val = l_val
-                    best_state = nnx.state(self.model)
-                    best_state_ema = nnx.state(self.ema_model)
+                l_val, ratio, min_val, best_state, best_state_ema, counter = (
+                    self._run_validation(
+                        val_step, batch_val, rng_val, min_val,
+                        best_state, best_state_ema, counter, val_error_ratio,
+                        loss_array, val_loss_array, l_train,
+                    )
+                )
 
             # print stats
             if j > 0 and j % 10 == 0:
