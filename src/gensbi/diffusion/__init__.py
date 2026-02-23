@@ -15,4 +15,3 @@ Key features:
 # If you use this package, please consider citing the EDM paper and library.
 """
 
-# 100% coverage

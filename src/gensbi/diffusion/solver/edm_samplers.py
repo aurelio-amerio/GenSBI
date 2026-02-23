@@ -27,6 +27,13 @@ def edm_sampler(
     """
     EDM sampler for diffusion models.
 
+    **Time direction convention:**
+    The EDM sampler operates in **σ-space** (noise scale), not a conventional
+    time variable. It steps through a decreasing schedule ``σ_max → 0``, where
+    large σ = noisy and σ=0 = clean data. This is different from both flow
+    matching (``t: 0→1``, noise→data) and standard score matching
+    (reverse SDE: ``t: T→eps``, noise→data).
+
     Parameters
     ----------
         sde: SDE scheduler object.
@@ -195,7 +202,8 @@ def edm_ablation_sampler(
         x_curr = x_next
 
         # Increase noise temporarily.
-        in_range = jnp.logical_and(t_cur >= S_min, t_cur <= S_max)
+        sigma_cur = sde.sigma(t_cur)
+        in_range = jnp.logical_and(sigma_cur >= S_min, sigma_cur <= S_max)
 
         gamma = jax.lax.cond(
             in_range,

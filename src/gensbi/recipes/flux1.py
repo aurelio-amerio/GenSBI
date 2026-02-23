@@ -17,6 +17,7 @@ import yaml
 from gensbi.recipes.conditional_pipeline import (
     ConditionalFlowPipeline,
     ConditionalDiffusionPipeline,
+    ConditionalSMPipeline,
 )
 
 
@@ -110,7 +111,8 @@ def _flux1_config_from_path(config_path: str, dim_obs: int, dim_cond: int):
     method = strategy.get("method")
     model_type = strategy.get("model")
 
-    assert model_type == "flux", f"Model type {model_type} not supported."
+    if model_type != "flux":
+        raise ValueError(f"Model type {model_type} not supported.")
 
     params_dict = parse_flux1_params(config_path)
 
@@ -299,7 +301,8 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
             config_path, dim_obs, dim_cond
         )
 
-        assert method == "flow", f"Method {method} not supported in Flux1FlowPipeline."
+        if method != "flow":
+            raise ValueError(f"Method {method} not supported in Flux1FlowPipeline.")
 
         # add checkpoint dir to training config
         training_config["checkpoint_dir"] = checkpoint_dir
@@ -439,11 +442,139 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
             config_path, dim_obs, dim_cond
         )
 
-        assert (
-            method == "diffusion"
-        ), f"Method {method} not supported in Flux1DiffusionPipeline."
+        if method != "diffusion":
+            raise ValueError(
+                f"Method {method} not supported in Flux1DiffusionPipeline."
+            )
 
         # add checkpoint dir to training config
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            dim_obs,
+            dim_cond,
+            ch_obs=params.in_channels,
+            ch_cond=params.context_in_dim,
+            params=params,
+            training_config=training_config,
+        )
+
+        return pipeline
+
+    def _make_model(self, params):
+        """
+        Create and return the Flux1 model to be trained.
+        """
+        model = Flux1(params)
+        return model
+
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
+        """
+        Return a dictionary of default model parameters.
+        """
+        return get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
+
+
+class Flux1SMPipeline(ConditionalSMPipeline):
+    def __init__(
+        self,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs=1,
+        ch_cond=1,
+        sde_type: str = "VP",
+        params=None,
+        training_config=None,
+    ):
+        """
+        Score matching pipeline for training and using a Flux1 model for simulation-based inference.
+
+        Parameters
+        ----------
+        train_dataset : grain dataset or iterator over batches
+            Training dataset.
+        val_dataset : grain dataset or iterator over batches
+            Validation dataset.
+        dim_obs : int
+            Dimension of the parameter space.
+        dim_cond : int
+            Dimension of the observation space.
+        ch_obs : int, optional
+            Number of channels in the observation data. Default is 1.
+        ch_cond : int, optional
+            Number of channels in the conditional data. Default is 1.
+        sde_type : str
+            Type of SDE. One of ``"VP"`` or ``"VE"``.
+        params : Flux1Params, optional
+            Parameters for the Flux1 model. If None, default parameters are used.
+        training_config : dict, optional
+            Configuration for training. If None, default configuration is used.
+        """
+
+        if params is not None:
+            ch_obs = params.in_channels
+
+        if params is not None:
+            ch_cond = params.context_in_dim
+
+        self.dim_obs = dim_obs
+        self.dim_cond = dim_cond
+
+        self.ch_obs = ch_obs
+        self.ch_cond = ch_cond
+
+        if params is None:
+            params = get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
+
+        model = self._make_model(params)
+
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            ch_cond=ch_cond,
+            sde_type=sde_type,
+            params=params,
+            training_config=training_config,
+            id_embedding_strategy=params.id_embedding_strategy,
+        )
+        self.ema_model = nnx.clone(self.model)
+
+    @classmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        dim_cond: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
+        """
+        params, training_config, method = _flux1_config_from_path(
+            config_path, dim_obs, dim_cond
+        )
+
+        if method != "score_matching":
+            raise ValueError(
+                f"Method {method} not supported in Flux1SMPipeline."
+            )
+
         training_config["checkpoint_dir"] = checkpoint_dir
 
         pipeline = cls(

@@ -95,18 +95,23 @@ def run_sbc(
     num_sbc_samples, dim_theta = thetas.shape
 
     num_posterior_samples = posterior_samples.shape[0]
-    
+
     # _validate_sbc_inputs(thetas, xs, num_sbc_samples, num_posterior_samples)
 
-    assert posterior_samples.shape == (
+    expected_shape = (
         num_posterior_samples,
         num_sbc_samples,
         dim_theta,
-    ), f"Wrong posterior samples shape for SBC: {posterior_samples.shape}, expected ({num_posterior_samples}, {num_sbc_samples}, {dim_theta})"
+    )
+    if posterior_samples.shape != expected_shape:
+        raise ValueError(
+            f"Wrong posterior samples shape for SBC: {posterior_samples.shape}, expected {expected_shape}"
+        )
 
     # Take a random draw from each posterior to get data-averaged posterior samples.
     dap_samples = posterior_samples[0, :, :]
-    assert dap_samples.shape == (num_sbc_samples, thetas.shape[1]), "Wrong DAP shape."
+    if dap_samples.shape != (num_sbc_samples, thetas.shape[1]):
+        raise ValueError("Wrong DAP shape.")
 
     # Calculate ranks
     ranks = _run_sbc(thetas, xs, posterior_samples, reduce_fns, show_progress_bar)
@@ -238,7 +243,7 @@ def _prepare_reduce_functions(
                 "`reduce_fn` must either be the string `marginals` or a Callable or a "
                 "List of Callables."
             )
-        return [eval(f"lambda theta, x: theta[:, {i}]") for i in range(param_dim)]
+        return [lambda theta, _, i=i: theta[:, i] for i in range(param_dim)]
 
     if isinstance(reduce_fns, Callable):
         return [reduce_fns]
@@ -329,10 +334,12 @@ def check_prior_vs_dap(prior_samples: Array, dap_samples: Array) -> Array:
     if prior_samples.shape != dap_samples.shape:
         raise ValueError("Prior and DAP samples must have the same shape")
 
-    return jnp.array([
-        c2st(s1[:, None], s2[:, None])
-        for s1, s2 in zip(prior_samples.T, dap_samples.T, strict=False)
-    ])
+    return jnp.array(
+        [
+            c2st(s1[:, None], s2[:, None])
+            for s1, s2 in zip(prior_samples.T, dap_samples.T, strict=False)
+        ]
+    )
 
 
 def check_uniformity_frequentist(ranks: Array, num_posterior_samples: int) -> Array:
@@ -388,12 +395,12 @@ def check_uniformity_c2st(
         c2st_ranks: C2ST accuracy between ranks and uniform baseline,
         one for each dim_parameters.
     """
-    
+
     key = jax.random.PRNGKey(seed)
-    
+
     # Run C2ST multiple times to estimate stability
     c2st_scores = np.zeros((num_repetitions, ranks.shape[1]))
-    
+
     for rep in range(num_repetitions):
         for dim_idx, rks in enumerate(ranks.T):
             key, subkey = jax.random.split(key)
@@ -407,7 +414,6 @@ def check_uniformity_c2st(
                 rks[:, None],
                 uniform_samples[:, None],
             ).item()
-    
 
     # Use variance over repetitions to estimate robustness of C2ST
     c2st_std = c2st_scores.std(0, ddof=0 if num_repetitions == 1 else 1)
@@ -420,7 +426,6 @@ def check_uniformity_c2st(
 
     # Return the mean over repetitions as C2ST score estimate
     return c2st_scores.mean(0)
-
 
 
 # plotting utilities
@@ -571,17 +576,20 @@ def _sbc_rank_plot(
     if isinstance(ranks, (Array, np.ndarray)):
         ranks_list = [ranks]
     else:
-        assert isinstance(ranks, List)
+        if not isinstance(ranks, List):
+            raise TypeError("ranks must be an Array, np.ndarray, or a List of them.")
         ranks_list = ranks
     for idx, rank in enumerate(ranks_list):
-        assert isinstance(rank, (Array, np.ndarray))
+        if not isinstance(rank, (Array, np.ndarray)):
+            raise TypeError("All ranks in the list must be Arrays or np.ndarrays.")
         if isinstance(rank, Array):
             ranks_list[idx]: np.ndarray = rank.numpy()  # type: ignore
 
     plot_types = ["hist", "cdf"]
-    assert plot_type in plot_types, (
-        f"plot type {plot_type} not implemented, use one in {plot_types}."
-    )
+    if plot_type not in plot_types:
+        raise ValueError(
+            f"plot type {plot_type} not implemented, use one in {plot_types}."
+        )
 
     if legend_kwargs is None:
         legend_kwargs = dict(loc="best", handlelength=0.8)
@@ -594,9 +602,8 @@ def _sbc_rank_plot(
         params_in_subplots = True
 
     for ranki in ranks_list:
-        assert ranki.shape == ranks_list[0].shape, (
-            "all ranks in list must have the same shape."
-        )
+        if ranki.shape != ranks_list[0].shape:
+            raise ValueError("all ranks in list must have the same shape.")
 
     num_rows = int(np.ceil(num_parameters / num_cols))
     if figsize is None:
@@ -621,11 +628,14 @@ def _sbc_rank_plot(
             )
             ax = np.atleast_1d(ax)  # type: ignore
         else:
-            assert ax.size >= num_parameters, (
-                "There must be at least as many subplots as parameters."
-            )
+            if ax.size < num_parameters:
+                raise ValueError(
+                    "There must be at least as many subplots as parameters."
+                )
             num_rows = ax.shape[0] if ax.ndim > 1 else 1
-        assert ax is not None
+
+        if ax is None:
+            raise ValueError("Ax cannot be None")
 
         col_idx, row_idx = 0, 0
         for ii, ranki in enumerate(ranks_list):
@@ -872,7 +882,9 @@ def _plot_cdf_region_expected_under_uniformity(
     plt.fill_between(
         x=np.linspace(0, num_bins, num_repeats * num_bins),
         y1=np.repeat(lower / np.max(lower), num_repeats),
-        y2=np.repeat(upper / np.max(upper), num_repeats),  # pyright: ignore[reportArgumentType]
+        y2=np.repeat(
+            upper / np.max(upper), num_repeats
+        ),  # pyright: ignore[reportArgumentType]
         color=color,
         alpha=alpha,
         label="expected under uniformity",

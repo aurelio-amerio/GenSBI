@@ -2,17 +2,25 @@
 Loss functions for conditional and joint models.
 
 This module provides loss functions for training conditional, joint, and unconditional
-models using both flow matching and diffusion approaches.
+models using flow matching, EDM diffusion, and standard score matching approaches.
 """
-from .conditional import ConditionalCFMLoss, ConditionalDiffLoss
-from .joint import JointCFMLoss, JointDiffLoss
-from .unconditional import UnconditionalCFMLoss, UnconditionalDiffLoss
+
+from .conditional import ConditionalCFMLoss, ConditionalEDMLoss, ConditionalSMLoss
+from .joint import JointCFMLoss, JointEDMLoss, JointSMLoss
+from .unconditional import (
+    UnconditionalCFMLoss,
+    UnconditionalEDMLoss,
+    UnconditionalSMLoss,
+)
 
 __all__ = [
     "ConditionalCFMLoss",
-    "ConditionalDiffLoss",
+    "ConditionalEDMLoss",
+    "ConditionalSMLoss",
     "JointCFMLoss",
-    "JointDiffLoss",
+    "JointEDMLoss",
+    "JointSMLoss",
     "UnconditionalCFMLoss",
-    "UnconditionalDiffLoss",
+    "UnconditionalEDMLoss",
+    "UnconditionalSMLoss",
 ]

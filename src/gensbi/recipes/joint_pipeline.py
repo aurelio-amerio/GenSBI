@@ -15,19 +15,24 @@ from gensbi.recipes.utils import init_ids_joint
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver
+from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
 
 from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler, VEScheduler
-from gensbi.diffusion.solver import SDESolver
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
+from gensbi.diffusion.solver import EDMSolver
+
+from gensbi.diffusion.path.sm_path import SMPath
+from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
+from gensbi.diffusion.solver import SMSolver, SMPFSolver
 
 from einops import repeat
 
 from gensbi.models import (
     JointCFMLoss,
     JointWrapper,
-    JointDiffLoss,
+    JointEDMLoss,
 )
+from gensbi.models.losses import JointSMLoss
 
 import numpyro.distributions as dist
 
@@ -321,8 +326,59 @@ class JointFlowPipeline(AbstractPipeline):
         step_size=0.01,
         use_ema=True,
         time_grid=None,
+        solver=None,
         **model_extras,
     ):
+        """Get a sampler function for the flow model.
+
+        Parameters
+        ----------
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        step_size : float, optional
+            Step size for the solver. Default is 0.01.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        time_grid : Array, optional
+            Time grid for intermediate steps. If None, uses ``[0, 1]``.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its constructor keyword arguments.
+            Defaults to ``(ODESolver, {})``.
+
+            For SDE solvers (e.g., ``ZeroEnds``, ``NonSingular``), additional
+            constructor arguments must be provided via the kwargs dict.
+            A random key is automatically passed to SDE samplers.
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Callable
+            A function ``sampler(key, nsamples)`` that generates samples.
+
+        Examples
+        --------
+        Using the default ODE solver:
+
+        >>> sampler = pipeline.get_sampler(x_o)
+        >>> samples = sampler(key, nsamples=1000)
+
+        Using the ZeroEnds SDE solver:
+
+        >>> import jax.numpy as jnp
+        >>> from gensbi.flow_matching.solver import ZeroEnds
+        >>> solver = (ZeroEnds, {
+        ...     "mu0": jnp.zeros((dim_obs, ch_obs)),
+        ...     "sigma0": jnp.ones((dim_obs, ch_obs)),
+        ...     "alpha": 1.0,
+        ... })
+        >>> sampler = pipeline.get_sampler(x_o, solver=solver)
+        >>> samples = sampler(key, nsamples=1000)
+        """
+        if solver is None:
+            solver = (ODESolver, {})
 
         if use_ema:
             model = self.ema_model_wrapped
@@ -336,10 +392,11 @@ class JointFlowPipeline(AbstractPipeline):
             assert jnp.all(time_grid[:-1] <= time_grid[1:])
             return_intermediates = True
 
-        # cond = jnp.broadcast_to(x_o[..., None], (1, self.dim_cond, 1))
         cond = _expand_dims(x_o)
 
-        solver = ODESolver(velocity_model=model)
+        solver_cls, solver_kwargs = solver
+        solver_instance = solver_cls(velocity_model=model, **solver_kwargs)
+        pass_key = isinstance(solver_instance, BaseFmSDESolver)
 
         model_extras = {
             "cond": cond,
@@ -348,8 +405,8 @@ class JointFlowPipeline(AbstractPipeline):
             **model_extras,
         }
 
-        sampler_ = solver.get_sampler(
-            method="Dopri5",
+        sampler_ = solver_instance.get_sampler(
+            method="Euler",
             step_size=step_size,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
@@ -357,8 +414,15 @@ class JointFlowPipeline(AbstractPipeline):
         )
 
         def sampler(key, nsamples):
-            x_init = jax.random.normal(key, (nsamples, self.dim_obs, self.ch_obs))
-            samples = sampler_(x_init)
+            key, key_init = jax.random.split(key)
+            x_init = jax.random.normal(key_init, (nsamples, self.dim_obs, self.ch_obs))
+
+            if pass_key:
+                key, key_sampler = jax.random.split(key)
+                samples = sampler_(x_init, key_sampler)
+            else:
+                samples = sampler_(x_init)
+
             return samples
 
         return sampler
@@ -371,14 +435,66 @@ class JointFlowPipeline(AbstractPipeline):
         step_size=0.01,
         use_ema=True,
         time_grid=None,
+        solver=None,
         **model_extras,
     ):
+        """Draw samples from the flow model.
+
+        Convenience method that internally calls :meth:`get_sampler` and
+        immediately evaluates the returned sampler function.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            JAX random key used for sampling.
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        nsamples : int, optional
+            Number of samples to draw. Default is 10 000.
+        step_size : float, optional
+            Step size for the solver. Default is 0.01.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        time_grid : Array, optional
+            Time grid for intermediate steps. If None, uses
+            ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its keyword arguments. Defaults to ``(ODESolver, {})``.
+
+            To use an SDE solver instead:
+
+            >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+            >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+            >>> samples = pipeline.sample(key, x_o, solver=solver)
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Array
+            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+
+        Examples
+        --------
+        Using the default ODE solver:
+
+        >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+        Using the ZeroEnds SDE solver:
+
+        >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+        >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+        >>> samples = pipeline.sample(key, x_o, solver=solver)
+        """
 
         sampler = self.get_sampler(
             x_o,
             step_size=step_size,
             use_ema=use_ema,
             time_grid=time_grid,
+            solver=solver,
             **model_extras,
         )
 
@@ -419,7 +535,7 @@ class JointFlowPipeline(AbstractPipeline):
 
     #     logp_sampler = solver.get_unnormalized_logprob(
     #         time_grid=time_grid,
-    #         method="Dopri5",
+    #         method="Euler",
     #         step_size=step_size,
     #         log_p0=self.p0_obs.log_prob,
     #         model_extras=model_extras,
@@ -482,6 +598,7 @@ class JointDiffusionPipeline(AbstractPipeline):
         params=None,
         training_config=None,
         condition_mask_kind="structured",
+        sde="EDM",
     ):
         super().__init__(
             model=model,
@@ -494,6 +611,8 @@ class JointDiffusionPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
+        self.sde = sde
+
         # self.cond_ids = _expand_dims(self.cond_ids)
         # self.obs_ids = _expand_dims(self.obs_ids)
         # self.node_ids = _expand_dims(self.node_ids)
@@ -502,14 +621,37 @@ class JointDiffusionPipeline(AbstractPipeline):
             self.dim_obs, self.dim_cond
         )
 
-        self.path = EDMPath(
-            scheduler=EDMScheduler(
-                sigma_min=self.training_config["sigma_min"],
-                sigma_max=self.training_config["sigma_max"],
+        if sde == "EDM":
+            sigma_min = self.training_config.get("sigma_min", 0.002)
+            sigma_max = self.training_config.get("sigma_max", 80.0)
+            self.path = EDMPath(
+                scheduler=EDMScheduler(
+                    sigma_min=sigma_min,
+                    sigma_max=sigma_max,
+                )
             )
-        )
+        elif sde == "VE":
+            sigma_min = self.training_config.get("sigma_min", 0.002)
+            sigma_max = self.training_config.get("sigma_max", 100.0)
+            self.path = EDMPath(
+                scheduler=VEEdmScheduler(
+                    sigma_min=sigma_min,
+                    sigma_max=sigma_max,
+                )
+            )
+        elif sde == "VP":
+            beta_min = self.training_config.get("beta_min", 0.1)
+            beta_max = self.training_config.get("beta_max", 20.0)
+            self.path = EDMPath(
+                scheduler=VPEdmScheduler(
+                    beta_min=beta_min,
+                    beta_max=beta_max,
+                )
+            )
+        else:
+            raise ValueError(f"Unknown sde type: {sde}")
 
-        self.loss_fn = JointDiffLoss(self.path)
+        self.loss_fn = JointEDMLoss(self.path)
 
         if self.dim_cond == 0:
             raise ValueError(
@@ -543,14 +685,29 @@ class JointDiffusionPipeline(AbstractPipeline):
         )
 
     @classmethod
-    def get_default_training_config(cls):
+    def get_default_training_config(cls, sde="EDM"):
         config = super().get_default_training_config()
-        config.update(
-            {
-                "sigma_min": 0.002,  # from edm paper
-                "sigma_max": 80.0,
-            }
-        )
+        if sde == "EDM":
+            config.update(
+                {
+                    "sigma_min": 0.002,  # from edm paper
+                    "sigma_max": 80.0,
+                }
+            )
+        elif sde == "VE":
+            config.update(
+                {
+                    "sigma_min": 0.02,
+                    "sigma_max": 100.0,
+                }
+            )
+        elif sde == "VP":
+            config.update(
+                {
+                    "beta_min": 0.1,
+                    "beta_max": 19.9,
+                }
+            )
         return config
 
     def get_loss_fn(
@@ -603,8 +760,62 @@ class JointDiffusionPipeline(AbstractPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
+        solver=None,
         **model_extras,
     ):
+        """Get a sampler function for the diffusion model.
+
+        Parameters
+        ----------
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        nsteps : int, optional
+            Number of sampling steps. Default is 18.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its constructor keyword arguments.
+            Defaults to ``(EDMSolver, {})``.
+
+            The solver class must accept ``score_model`` and ``path`` as
+            its first two positional arguments.
+
+            EDM-specific options can be provided in the kwargs dict:
+
+            - ``solver_scheduler``: override the path's scheduler for
+              sampling (also used for ``sample_prior``).
+            - ``solver_params``: dict of EDM solver parameters
+              (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Callable
+            A function ``sampler(key, nsamples)`` that generates samples.
+
+        Examples
+        --------
+        Using the default EDM solver:
+
+        >>> sampler = pipeline.get_sampler(x_o)
+        >>> samples = sampler(key, nsamples=1000)
+
+        Using a custom scheduler:
+
+        >>> from gensbi.diffusion.solver import EDMSolver
+        >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+        >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+        >>> sampler = pipeline.get_sampler(x_o, solver=solver)
+        >>> samples = sampler(key, nsamples=1000)
+        """
+        if solver is None:
+            solver = (EDMSolver, {})
+
         if use_ema:
             model = self.ema_model_wrapped
         else:
@@ -612,7 +823,11 @@ class JointDiffusionPipeline(AbstractPipeline):
 
         cond = _expand_dims(x_o)
 
-        solver = SDESolver(score_model=model, path=self.path)
+        solver_cls, solver_kwargs = solver
+        solver_scheduler = solver_kwargs.pop("solver_scheduler", None)
+        solver_params = solver_kwargs.pop("solver_params", {})
+
+        solver_instance = solver_cls(score_model=model, path=self.path, **solver_kwargs)
 
         model_extras = {
             "cond": cond,
@@ -621,7 +836,331 @@ class JointDiffusionPipeline(AbstractPipeline):
             **model_extras,
         }
 
-        sampler_ = solver.get_sampler(
+        sampler_ = solver_instance.get_sampler(
+            nsteps=nsteps,
+            return_intermediates=return_intermediates,
+            model_extras=model_extras,
+            solver_scheduler=solver_scheduler,
+            solver_params=solver_params,
+        )
+
+        prior_source = solver_scheduler if solver_scheduler is not None else self.path
+
+        def sampler(key, nsamples):
+            key1, key2 = jax.random.split(key, 2)
+            x_init = prior_source.sample_prior(
+                key1, (nsamples, self.dim_obs, self.ch_obs)
+            )
+            samples = sampler_(key2, x_init)
+            return samples
+
+        return sampler
+
+    def sample(
+        self,
+        key,
+        x_o,
+        nsamples=10_000,
+        nsteps=18,
+        use_ema=True,
+        return_intermediates=False,
+        solver=None,
+        **model_extras,
+    ):
+        """Draw samples from the diffusion model.
+
+        Convenience method that internally calls :meth:`get_sampler` and
+        immediately evaluates the returned sampler function.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            JAX random key used for sampling.
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        nsamples : int, optional
+            Number of samples to draw. Default is 10 000.
+        nsteps : int, optional
+            Number of sampling steps. Default is 18.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its keyword arguments. Defaults to ``(EDMSolver, {})``.
+
+            EDM-specific options can be provided in the kwargs dict:
+
+            - ``solver_scheduler``: override the path's scheduler for
+              sampling (also used for ``sample_prior``).
+            - ``solver_params``: dict of EDM solver parameters
+              (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Array
+            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+
+        Examples
+        --------
+        Using the default EDM solver:
+
+        >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+        Using a custom scheduler:
+
+        >>> from gensbi.diffusion.solver import EDMSolver
+        >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+        >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+        >>> samples = pipeline.sample(key, x_o, solver=solver)
+        """
+        sampler = self.get_sampler(
+            x_o,
+            nsteps=nsteps,
+            use_ema=use_ema,
+            return_intermediates=return_intermediates,
+            solver=solver,
+            **model_extras,
+        )
+
+        samples = sampler(key, nsamples)
+        return samples
+
+
+class JointSMPipeline(AbstractPipeline):
+    """
+    Score matching pipeline for training and using a Joint model for simulation-based inference.
+
+    Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+    Parameters
+    ----------
+    model : nnx.Module
+        The model to be trained.
+    train_dataset : grain dataset or iterator over batches
+        Training dataset.
+    val_dataset : grain dataset or iterator over batches
+        Validation dataset.
+    dim_obs : int
+        Dimension of the parameter space.
+    dim_cond : int
+        Dimension of the observation space.
+    ch_obs : int, optional
+        Number of channels for the observation space. Default is 1.
+    sde_type : str
+        Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+    params : optional
+        Parameters for the Joint model. If None, default parameters are used.
+    training_config : dict, optional
+        Configuration for training. If None, default configuration is used.
+    condition_mask_kind : str, optional
+        Kind of condition mask to use. One of ["structured", "posterior"].
+    """
+
+    def __init__(
+        self,
+        model,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs=1,
+        sde_type: str = "VP",
+        params=None,
+        training_config=None,
+        condition_mask_kind="structured",
+    ):
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            params=params,
+            training_config=training_config,
+        )
+
+        self.dim_joint = self.dim_obs + self.dim_cond
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(
+            self.dim_obs, self.dim_cond
+        )
+
+        self.sde_type = sde_type
+
+        if sde_type == "VP":
+            beta_min = self.training_config.get("beta_min", 0.001)
+            beta_max = self.training_config.get("beta_max", 3.0)
+            self.path = SMPath(VPSmScheduler(beta_min=beta_min, beta_max=beta_max))
+        elif sde_type == "VE":
+            sigma_min = self.training_config.get("sigma_min", 0.001)
+            sigma_max = self.training_config.get("sigma_max", 15.0)
+            self.path = SMPath(VESmScheduler(sigma_min=sigma_min, sigma_max=sigma_max))
+        else:
+            raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
+
+        self.loss_fn = JointSMLoss(self.path)
+
+        if self.dim_cond == 0:
+            raise ValueError(
+                "JointSMPipeline initialized as unconditional since dim_cond=0. Please use `UnconditionalSMPipeline` instead."
+            )
+
+        self.condition_mask_kind = condition_mask_kind
+
+        if self.condition_mask_kind not in ["structured", "posterior"]:
+            raise ValueError(
+                f"condition_mask_kind must be one of ['structured', 'posterior'], got {self.condition_mask_kind}."
+            )
+
+    @classmethod
+    def init_pipeline_from_config(cls):
+        raise NotImplementedError(
+            "init_pipeline_from_config is not implemented for JointSMPipeline."
+        )
+
+    def _make_model(self):
+        raise NotImplementedError("_make_model is not implemented for JointSMPipeline.")
+
+    @classmethod
+    def get_default_params(cls, dim_obs, dim_cond, ch_obs, ch_cond):
+        raise NotImplementedError(
+            "Default parameters not implemented for JointSMPipeline."
+        )
+
+    @classmethod
+    def get_default_training_config(cls, sde_type="VP"):
+        config = super().get_default_training_config()
+        if sde_type == "VP":
+            config.update(
+                {
+                    "beta_min": 0.001,
+                    "beta_max": 3.0,
+                }
+            )
+        elif sde_type == "VE":
+            config.update(
+                {
+                    "sigma_min": 0.001,
+                    "sigma_max": 15.0,
+                }
+            )
+        return config
+
+    def get_loss_fn(self):
+        def loss_fn(
+            model,
+            x_1,
+            key: jax.random.PRNGKey,
+        ):
+            batch_size = x_1.shape[0]
+
+            rng_x0, rng_t, rng_condition = jax.random.split(key, 3)
+
+            t = self.path.sample_t(rng_t, (batch_size, 1, 1))
+
+            batch = (x_1, t)
+
+            condition_mask = sample_condition_mask(
+                rng_condition,
+                batch_size,
+                self.dim_obs,
+                self.dim_cond,
+                kind=self.condition_mask_kind,
+            )
+
+            loss = self.loss_fn(
+                rng_x0,
+                model,
+                batch,
+                condition_mask=condition_mask,
+                node_ids=self.node_ids,
+            )
+            return loss
+
+        return loss_fn
+
+    def _wrap_model(self):
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
+        return
+
+    def get_sampler(
+        self,
+        x_o,
+        nsteps=1000,
+        use_ema=True,
+        return_intermediates=False,
+        solver=None,
+        **model_extras,
+    ):
+        """Get a sampler function for the score matching model.
+
+        Parameters
+        ----------
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        nsteps : int, optional
+            Number of integration steps. Default is 1000.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its constructor keyword arguments.
+            Defaults to ``(SMSolver, {})``.
+
+            The solver class must accept ``score_model`` and ``path`` as
+            its first two positional arguments.
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Callable
+            A function ``sampler(key, nsamples)`` that generates samples.
+
+        Examples
+        --------
+        Using the default reverse SDE solver:
+
+        >>> sampler = pipeline.get_sampler(x_o)
+        >>> samples = sampler(key, nsamples=1000)
+
+        Using the Probability Flow ODE solver:
+
+        >>> from gensbi.diffusion.solver import SMPFSolver
+        >>> sampler = pipeline.get_sampler(x_o, solver=(SMPFSolver, {}))
+        >>> samples = sampler(key, nsamples=1000)
+        """
+        if solver is None:
+            solver = (SMSolver, {})
+
+        if use_ema:
+            model = self.ema_model_wrapped
+        else:
+            model = self.model_wrapped
+
+        cond = _expand_dims(x_o)
+
+        solver_cls, solver_kwargs = solver
+        solver_instance = solver_cls(score_model=model, path=self.path, **solver_kwargs)
+
+        model_extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+            **model_extras,
+        }
+
+        sampler_ = solver_instance.get_sampler(
             nsteps=nsteps,
             return_intermediates=return_intermediates,
             model_extras=model_extras,
@@ -640,16 +1179,67 @@ class JointDiffusionPipeline(AbstractPipeline):
         key,
         x_o,
         nsamples=10_000,
-        nsteps=18,
+        nsteps=1000,
         use_ema=True,
         return_intermediates=False,
+        solver=None,
         **model_extras,
     ):
+        """Draw samples from the score matching model.
+
+        Convenience method that internally calls :meth:`get_sampler` and
+        immediately evaluates the returned sampler function.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            JAX random key used for sampling.
+        x_o : array-like
+            Conditioning variable (e.g., observed data).
+        nsamples : int, optional
+            Number of samples to draw. Default is 10 000.
+        nsteps : int, optional
+            Number of sampling steps. Default is 1000.
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        return_intermediates : bool, optional
+            Whether to return intermediate steps. Default is False.
+        solver : tuple of (type, dict), optional
+            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+            class and its keyword arguments. Defaults to ``(SMSolver, {})``.
+
+            To use the probability flow ODE solver instead:
+
+            >>> from gensbi.diffusion.solver import SMPFSolver
+            >>> solver = (SMPFSolver, {})
+            >>> samples = pipeline.sample(key, x_o, solver=solver)
+
+        **model_extras : dict
+            Additional keyword arguments passed to the model.
+
+        Returns
+        -------
+        Array
+            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+
+        Examples
+        --------
+        Using the default SDE solver:
+
+        >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+        Using the probability flow ODE solver:
+
+        >>> from gensbi.diffusion.solver import SMPFSolver
+        >>> solver = (SMPFSolver, {})
+        >>> samples = pipeline.sample(key, x_o, solver=solver)
+        """
         sampler = self.get_sampler(
             x_o,
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
+            solver=solver,
             **model_extras,
         )
 

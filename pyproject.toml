@@ -1,6 +1,6 @@
 [project]
 name = "gensbi"
-version = "0.0.7"
+version = "0.1.0"
 description = "GenSBI is a library for Simulation-Based Inference using generative models in JAX."
 authors = [{ name = "Aurelio Amerio", email = "dev@gensbi.com" }]
 license = { file = "LICENSE" }
@@ -65,6 +65,7 @@ test = [
     "pytest-env",
     "genbadge[all]",
     "flake8",
+    "junitparser",
 ]
 
 [build-system]
@@ -78,9 +79,14 @@ sources = ["src"]
 allow-direct-references = true
 
 [tool.pytest.ini_options]
+addopts = "-n 2"
 env = [
     "JAX_PLATFORMS=cpu"
 ]
 testpaths = [
-    "test",
+    "tests",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "experimental: marks tests as experimental",
 ]

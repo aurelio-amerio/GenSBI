@@ -37,3 +37,16 @@ The following tasks are planned for future development:
 - [x] Update lensing and GW notebooks to work on colab, and use relative paths (no hardcoded paths), assuming the notebook is being run from its own example directory
 - [x] make examples from the Flux1 Flux1Joint and Simformer pipelines
 - [x] rerun the examples from the example directory in gensbi, not only gensbi-examples
+
+
+
+
+
+ho implementato la PF ode. Devo controllare come usarla nelle pipeline. 
+Inoltre, mi piacerebbe mettere nella Flow pipeline la possibilità di usare il solver SDE.
+In modo da poter usare sia SDE che ODE sampling per sia flow che score matching.
+Dovrebbe in teoria essere solo una modifica a livello del sampler, ma devo controllare
+
+--> Implementato. Ora bisogna scrivere un notebook (avanzato) dove si mostra come fare mix and match tra SDE e ODE, e fare il sampling. Poi devo aggiornare la documentazione (capire bene come fare, magari una pagina separata). Potrei fare una sezione con "Advanced Usage" o simile. 
+
+NOTA: bisogna scrivere dei nuovi coverage tests per le nuove funzionalità (il coverage è diminuito). 

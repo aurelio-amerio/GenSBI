@@ -41,3 +41,25 @@ def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0):
 @jax.jit
 def patchify_2d(x: Array):
     return rearrange(x, "b (h ph) (w pw) c -> b (h w) (c ph pw)", ph=2, pw=2)
+
+
+def scale_lr(batch_size, base_lr=1e-4, reference_batch_size=256):
+    """Scale learning rate based on batch size using square root scaling.
+
+    Parameters
+    ----------
+        batch_size : int
+            The current batch size.
+        base_lr : float
+            The base learning rate for the reference batch size.
+        reference_batch_size : int, optional
+            The reference batch size. Defaults to 256.
+
+    Returns
+    -------
+        float
+            The adjusted learning rate.
+    """
+    import math
+
+    return base_lr * math.sqrt(batch_size / reference_batch_size)

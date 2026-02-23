@@ -122,7 +122,7 @@ class ConvexScheduler(Scheduler):
 class CondOTScheduler(ConvexScheduler):
     """
     Conditional Optimal Transport (CondOT) Scheduler.
-    
+
     This scheduler provides a linear interpolation path with alpha_t = t and sigma_t = 1 - t,
     which is optimal for conditional optimal transport flow matching.
     """
@@ -130,11 +130,11 @@ class CondOTScheduler(ConvexScheduler):
     def __call__(self, t: Array) -> SchedulerOutput:
         """
         Compute scheduler outputs for given times.
-        
+
         Parameters
         ----------
             t: Times in [0,1], shape (...).
-            
+
         Returns
         -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
@@ -149,11 +149,11 @@ class CondOTScheduler(ConvexScheduler):
     def kappa_inverse(self, kappa: Array) -> Array:
         """
         Compute t from kappa.
-        
+
         Parameters
         ----------
             kappa: Kappa values, shape (...).
-            
+
         Returns
         -------
             Time values, shape (...).
@@ -164,9 +164,9 @@ class CondOTScheduler(ConvexScheduler):
 class PolynomialConvexScheduler(ConvexScheduler):
     """
     Polynomial Convex Scheduler.
-    
+
     This scheduler uses polynomial interpolation with alpha_t = t^n and sigma_t = 1 - t^n.
-    
+
     Parameters
     ----------
         n: The polynomial degree, must be positive.
@@ -175,11 +175,11 @@ class PolynomialConvexScheduler(ConvexScheduler):
     def __init__(self, n: Union[float, int]) -> None:
         """
         Initialize the polynomial convex scheduler.
-        
+
         Parameters
         ----------
             n: Polynomial degree, must be a positive float or int.
-            
+
         Raises
         ------
             AssertionError
@@ -194,11 +194,11 @@ class PolynomialConvexScheduler(ConvexScheduler):
     def __call__(self, t: Array) -> SchedulerOutput:
         """
         Compute scheduler outputs for given times.
-        
+
         Parameters
         ----------
             t: Times in [0,1], shape (...).
-            
+
         Returns
         -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
@@ -213,11 +213,11 @@ class PolynomialConvexScheduler(ConvexScheduler):
     def kappa_inverse(self, kappa: Array) -> Array:
         """
         Compute t from kappa.
-        
+
         Parameters
         ----------
             kappa: Kappa values, shape (...).
-            
+
         Returns
         -------
             Time values, shape (...).
@@ -225,13 +225,13 @@ class PolynomialConvexScheduler(ConvexScheduler):
         return jnp.power(kappa, 1.0 / self.n)
 
 
-class VPScheduler(Scheduler):
+class VPEdmScheduler(Scheduler):
     """
     Variance Preserving (VP) Scheduler.
-    
+
     This scheduler follows the variance-preserving SDE formulation commonly used in
     diffusion models, with configurable beta_min and beta_max parameters.
-    
+
     Parameters
     ----------
         beta_min: Minimum beta value. Defaults to 0.1.
@@ -241,7 +241,7 @@ class VPScheduler(Scheduler):
     def __init__(self, beta_min: float = 0.1, beta_max: float = 20.0) -> None:
         """
         Initialize the VP scheduler.
-        
+
         Parameters
         ----------
             beta_min: Minimum beta value.
@@ -254,11 +254,11 @@ class VPScheduler(Scheduler):
     def __call__(self, t: Array) -> SchedulerOutput:
         """
         Compute scheduler outputs for given times.
-        
+
         Parameters
         ----------
             t: Times in [0,1], shape (...).
-            
+
         Returns
         -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
@@ -278,11 +278,11 @@ class VPScheduler(Scheduler):
     def snr_inverse(self, snr: Array) -> Array:
         """
         Compute t from signal-to-noise ratio.
-        
+
         Parameters
         ----------
             snr: The signal-to-noise ratio, shape (...).
-            
+
         Returns
         -------
             Time values, shape (...).
@@ -297,18 +297,18 @@ class VPScheduler(Scheduler):
 class LinearVPScheduler(Scheduler):
     """
     Linear Variance Preserving Scheduler.
-    
+
     A linear variance-preserving scheduler where alpha_t = t and sigma_t = sqrt(1 - t^2).
     """
 
     def __call__(self, t: Array) -> SchedulerOutput:
         """
         Compute scheduler outputs for given times.
-        
+
         Parameters
         ----------
             t: Times in [0,1], shape (...).
-            
+
         Returns
         -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
@@ -323,11 +323,11 @@ class LinearVPScheduler(Scheduler):
     def snr_inverse(self, snr: Array) -> Array:
         """
         Compute t from signal-to-noise ratio.
-        
+
         Parameters
         ----------
             snr: The signal-to-noise ratio, shape (...).
-            
+
         Returns
         -------
             Time values, shape (...).
@@ -338,7 +338,7 @@ class LinearVPScheduler(Scheduler):
 class CosineScheduler(Scheduler):
     """
     Cosine Scheduler.
-    
+
     A cosine-based scheduler where alpha_t = sin(pi/2 * t) and sigma_t = cos(pi/2 * t).
     This provides a smooth interpolation between distributions.
     """
@@ -346,11 +346,11 @@ class CosineScheduler(Scheduler):
     def __call__(self, t: Array) -> SchedulerOutput:
         """
         Compute scheduler outputs for given times.
-        
+
         Parameters
         ----------
             t: Times in [0,1], shape (...).
-            
+
         Returns
         -------
             Scheduler output containing alpha_t, sigma_t, and their derivatives.
@@ -365,11 +365,11 @@ class CosineScheduler(Scheduler):
     def snr_inverse(self, snr: Array) -> Array:
         """
         Compute t from signal-to-noise ratio.
-        
+
         Parameters
         ----------
             snr: The signal-to-noise ratio, shape (...).
-            
+
         Returns
         -------
             Time values, shape (...).

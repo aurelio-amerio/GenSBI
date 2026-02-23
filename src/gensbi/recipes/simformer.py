@@ -15,7 +15,7 @@ from gensbi.models import (
 )
 
 
-from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline
+from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline, JointSMPipeline
 
 
 def parse_simformer_params(config_path: str):
@@ -343,6 +343,152 @@ class SimformerFlowPipeline(JointFlowPipeline):
     #         time_grid=time_grid,
     #         **model_extras,
     #     )
+
+
+class SimformerSMPipeline(JointSMPipeline):
+    def __init__(
+        self,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        dim_cond: int,
+        ch_obs: int = 1,
+        sde_type: str = "VP",
+        params=None,
+        training_config=None,
+        edge_mask=None,
+        condition_mask_kind="structured",
+    ):
+        """
+        Score matching pipeline for training and using a Simformer model for simulation-based inference.
+
+        Parameters
+        ----------
+        train_dataset : grain dataset or iterator over batches
+            Training dataset.
+        val_dataset : grain dataset or iterator over batches
+            Validation dataset.
+        dim_obs : int
+            Dimension of the parameter space.
+        dim_cond : int
+            Dimension of the observation space.
+        ch_obs : int
+            Number of channels in the observation data.
+        sde_type : str
+            Type of SDE. One of ``"VP"`` or ``"VE"``.
+        params : SimformerParams, optional
+            Parameters for the Simformer model. If None, default parameters are used.
+        training_config : dict, optional
+            Configuration for training. If None, default configuration is used.
+        edge_mask : jnp.ndarray, optional
+            Edge mask for the Simformer model. If None, no mask is applied.
+        condition_mask_kind : str, optional
+            Kind of condition mask to use. One of ["structured", "posterior"].
+        """
+
+        self.dim_joint = dim_obs + dim_cond
+
+        self.ch_obs = ch_obs
+
+        if params is None:
+            params = get_default_simformer_params(self.dim_joint, self.ch_obs)
+
+        model = self._make_model(params)
+
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            sde_type=sde_type,
+            params=params,
+            training_config=training_config,
+            condition_mask_kind=condition_mask_kind,
+        )
+
+        self.ema_model = nnx.clone(self.model)
+
+        self.edge_mask = edge_mask
+
+    @classmethod
+    def init_pipeline_from_config(
+        cls,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        dim_cond: int,
+        config_path: str,
+        checkpoint_dir: str,
+    ):
+        """
+        Initialize the pipeline from a configuration file.
+
+        Parameters
+        ----------
+        config_path : str
+            Path to the configuration file.
+        """
+        params, training_config, method = _simformer_config_from_path(
+            config_path, dim_obs + dim_cond
+        )
+
+        assert (
+            method == "score_matching"
+        ), f"Method {method} not supported in SimformerSMPipeline."
+
+        training_config["checkpoint_dir"] = checkpoint_dir
+
+        pipeline = cls(
+            train_dataset,
+            val_dataset,
+            dim_obs,
+            dim_cond,
+            ch_obs=params.in_channels,
+            params=params,
+            training_config=training_config,
+        )
+
+        return pipeline
+
+    def _make_model(self, params):
+        """
+        Create and return the Simformer model to be trained.
+        """
+        model = Simformer(params)
+        return model
+
+    @classmethod
+    def get_default_params(cls, dim_joint, in_channels):
+        """
+        Return a dictionary of default model parameters.
+        """
+        return get_default_simformer_params(dim_joint, in_channels)
+
+    def sample(
+        self,
+        key,
+        x_o,
+        nsamples=10_000,
+        nsteps=1000,
+        use_ema=True,
+        return_intermediates=False,
+    ):
+
+        model_extras = {
+            "edge_mask": self.edge_mask,
+        }
+
+        return super().sample(
+            key,
+            x_o,
+            nsamples=nsamples,
+            nsteps=nsteps,
+            use_ema=use_ema,
+            return_intermediates=return_intermediates,
+            **model_extras,
+        )
 
 
 class SimformerDiffusionPipeline(JointDiffusionPipeline):

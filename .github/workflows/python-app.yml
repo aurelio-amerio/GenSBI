@@ -5,75 +5,140 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
   contents: write
 
 jobs:
-  build:
-
+  lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
-
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          
+          python-version: "3.11"
+          cache: "pip"
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends pandoc
           python -m pip install --upgrade pip
-          pip install .[test,docs]
+          pip install .[test]
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Test with pytest
-        run: |
-          pytest --junitxml=reports/junit/junit.xml --cov=gensbi --cov-report=xml:reports/coverage/coverage.xml --cov-report=term-missing
-          # Generate coverage badge
-          genbadge coverage --input-file reports/coverage/coverage.xml --output-file reports/badges/coverage.svg
-          # Generate test results badge
-          genbadge tests --input-file reports/junit/junit.xml --output-file reports/badges/tests.svg
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pandoc
+          python -m pip install --upgrade pip
+          pip install .[test]
+      - name: Run fast tests
+        run: |
+          pytest -m "not slow and not experimental" -n auto --junitxml=reports/junit/junit-fast.xml --cov=gensbi --cov-report=term-missing
+      - name: Run slow tests
+        run: |
+          pytest -m "slow" -n auto --junitxml=reports/junit/junit-slow.xml --cov=gensbi --cov-append --cov-report=term-missing
+      - name: Run experimental tests
+        run: |
+          pytest -m "experimental" -n auto --junitxml=reports/junit/junit-experimental.xml --cov=gensbi --cov-append --cov-report=xml:reports/coverage/coverage.xml --cov-report=term-missing
+      - name: Merge Test Reports
+        run: |
+          python -m junitparser merge reports/junit/junit-fast.xml reports/junit/junit-slow.xml reports/junit/junit-experimental.xml reports/junit/junit.xml
+      - name: Generate Badges
+        run: |
+          genbadge coverage --input-file reports/coverage/coverage.xml --output-file reports/badges/coverage.svg
+          genbadge tests --input-file reports/junit/junit.xml --output-file reports/badges/tests.svg
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: reports/
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pandoc
+          python -m pip install --upgrade pip
+          pip install .[docs]
       - name: Build documentation
         run: |
           cd docs
           make html
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-html
+          path: docs/_build/html
 
-      - name: Copy badges to img/badges
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  publish-badges:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Test Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: test-reports
+          path: reports
+      - name: Prepare Badges
         run: |
           mkdir -p img/badges
-          cp reports/badges/*.svg img/badges/
-
-      - name: Commit and push badges to main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          cp -r reports/badges/*.svg img/badges/
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ICON_DEPLOY_APP_ID }}
+          private-key: ${{ secrets.ICON_DEPLOY_PRIVATE_KEY }}
+      - name: Commit and push badges
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "Update badges [skip ci]"
           branch: main
           file_pattern: img/badges/*.svg
+          token: ${{ steps.app-token.outputs.token }}
 
-      - name: Deploy docs to GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  deploy-docs:
+    needs: docs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-html
+          path: docs/_build/html
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/_build/html
           publish_branch: gh-pages
           cname: gensbi.com
-
-
-

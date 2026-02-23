@@ -293,43 +293,6 @@ class AbstractPipeline(abc.ABC):
         ema_optimizer = ModelEMA(self.ema_model, ema_tx)
         return ema_optimizer
 
-    # def _get_optimizer(self):
-    #     """
-    #     Construct the optimizer for training, including learning rate scheduling and gradient clipping.
-
-    #     Returns
-    #     -------
-    #     optimizer : nnx.Optimizer
-    #         The optimizer instance for the model.
-    #     """
-    #     warmup_steps = self.training_config["warmup_steps"] * self.training_config["multistep"]
-    #     max_lr = self.training_config["max_lr"]
-    #     schedule = optax.join_schedules(
-    #         schedules=[
-    #             optax.linear_schedule(init_value=0, end_value=max_lr, transition_steps=warmup_steps),
-    #             optax.constant_schedule(value=max_lr)
-    #         ],
-    #         boundaries=[warmup_steps]
-    #     )
-
-    #     opt = optax.chain(
-    #         optax.adaptive_grad_clip(10.0),
-    #         optax.adamw(schedule),
-    #         reduce_on_plateau(
-    #             patience=self.training_config["patience"],
-    #             cooldown=self.training_config["cooldown"],
-    #             factor=self.training_config["factor"],
-    #             rtol=self.training_config["rtol"],
-    #             accumulation_size=self.training_config["accumulation_size"],
-    #             min_scale=self.training_config["min_scale"],
-    #         ),
-    #     )
-    #     if self.training_config["multistep"] > 1:
-    #         opt = optax.MultiSteps(opt, self.training_config["multistep"])
-
-    #     optimizer = nnx.Optimizer(self.model, opt, wrt=nnx.Param)
-    #     return optimizer
-
     def _get_optimizer(self):
         """
         Construct the optimizer for training, including learning rate scheduling and gradient clipping.
@@ -345,13 +308,6 @@ class AbstractPipeline(abc.ABC):
         nsteps = self.training_config["nsteps"]
         max_lr = self.training_config["max_lr"]
         min_lr = self.training_config["min_lr"]
-        # schedule = optax.warmup_cosine_decay_schedule(
-        #     init_value=1e-7,  # Start tiny
-        #     peak_value=max_lr,  # Peak
-        #     warmup_steps=warmup_steps,
-        #     decay_steps=nsteps - warmup_steps,
-        #     end_value=min_lr,  # 1% of Peak
-        # )
 
         # we define the following schedule using join schedules: warmup for warmup_steps, then constant LR until 90% of the training steps, then cosine decay to min_lr
         decay_transition = self.training_config["decay_transition"]
