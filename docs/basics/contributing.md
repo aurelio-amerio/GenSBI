@@ -46,8 +46,7 @@ GenSBI/
 │   │   ├── joint_pipeline.py
 │   │   ├── flux1.py
 │   │   ├── flux1joint.py
-│   │   ├── simformer.py
-│   │   └── config_examples/ # Example configuration files
+│   │   └── simformer.py
 │   ├── flow_matching/       # Flow matching implementation
 │   │   ├── path/            # Interpolation paths
 │   │   ├── solver/          # ODE solvers
@@ -79,6 +78,7 @@ GenSBI/
 │   ├── getting_started/     # Installation & quick start
 │   ├── theoretical_overview/# Theory behind flow & diffusion models
 │   ├── examples/            # Example pipeline scripts
+│   │   └── config_examples/ # Example YAML configuration files
 │   ├── notebooks/           # Tutorial notebooks
 │   └── conf.py              # Sphinx configuration
 └── pyproject.toml           # Package configuration

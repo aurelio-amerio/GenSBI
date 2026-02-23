@@ -226,6 +226,21 @@ pipeline = Flux1FlowPipeline(
 )
 ```
 
+### Example Configuration Files
+
+GenSBI ships with example YAML configuration files that demonstrate complete setups for different model and strategy combinations. These can be found in the [`docs/examples/config_examples/`](https://github.com/aurelio-amerio/GenSBI/tree/main/docs/examples/config_examples) directory:
+
+| File | Model | Strategy |
+|---|---|---|
+| `config_flow_flux.yaml` | Flux1 | Flow Matching |
+| `config_flow_flux1joint.yaml` | Flux1Joint | Flow Matching |
+| `config_flow_simformer.yaml` | Simformer | Flow Matching |
+| `config_diffusion_flux.yaml` | Flux1 | Diffusion (EDM) |
+| `config_diffusion_flux1joint.yaml` | Flux1Joint | Diffusion (EDM) |
+| `config_diffusion_simformer.yaml` | Simformer | Diffusion (EDM) |
+
+Each file includes model architecture parameters, optimizer settings, and training hyperparameters. Use them as a starting point when configuring your own pipelines.
+
 ## Best Practices
 
 ### 1. Prefer Flow Matching over Diffusion
