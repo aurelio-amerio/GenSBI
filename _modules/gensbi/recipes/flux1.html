@@ -834,6 +834,7 @@ window.addEventListener("load", load);</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.conditional_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ConditionalFlowPipeline</span><span class="p">,</span>
     <span class="n">ConditionalDiffusionPipeline</span><span class="p">,</span>
+    <span class="n">ConditionalSMPipeline</span><span class="p">,</span>
 <span class="p">)</span>
 
 
@@ -1351,6 +1352,160 @@ window.addEventListener("load", load);</script>
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Flux1DiffusionPipeline.get_default_params">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.get_default_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">,</span> <span class="n">ch_cond</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dictionary of default model parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_default_flux1_params</span><span class="p">(</span><span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">,</span> <span class="n">ch_cond</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Flux1SMPipeline">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1.Flux1SMPipeline">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Flux1SMPipeline</span><span class="p">(</span><span class="n">ConditionalSMPipeline</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ch_obs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">ch_cond</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">sde_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VP&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Score matching pipeline for training and using a Flux1 model for simulation-based inference.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        train_dataset : grain dataset or iterator over batches</span>
+<span class="sd">            Training dataset.</span>
+<span class="sd">        val_dataset : grain dataset or iterator over batches</span>
+<span class="sd">            Validation dataset.</span>
+<span class="sd">        dim_obs : int</span>
+<span class="sd">            Dimension of the parameter space.</span>
+<span class="sd">        dim_cond : int</span>
+<span class="sd">            Dimension of the observation space.</span>
+<span class="sd">        ch_obs : int, optional</span>
+<span class="sd">            Number of channels in the observation data. Default is 1.</span>
+<span class="sd">        ch_cond : int, optional</span>
+<span class="sd">            Number of channels in the conditional data. Default is 1.</span>
+<span class="sd">        sde_type : str</span>
+<span class="sd">            Type of SDE. One of ``&quot;VP&quot;`` or ``&quot;VE&quot;``.</span>
+<span class="sd">        params : Flux1Params, optional</span>
+<span class="sd">            Parameters for the Flux1 model. If None, default parameters are used.</span>
+<span class="sd">        training_config : dict, optional</span>
+<span class="sd">            Configuration for training. If None, default configuration is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ch_obs</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">in_channels</span>
+
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ch_cond</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">context_in_dim</span>
+
+<div class="viewcode-block" id="Flux1SMPipeline.dim_obs">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1SMPipeline.dim_obs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span> <span class="o">=</span> <span class="n">dim_obs</span></div>
+
+<div class="viewcode-block" id="Flux1SMPipeline.dim_cond">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1SMPipeline.dim_cond">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_cond</span> <span class="o">=</span> <span class="n">dim_cond</span></div>
+
+
+<div class="viewcode-block" id="Flux1SMPipeline.ch_obs">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1SMPipeline.ch_obs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span> <span class="o">=</span> <span class="n">ch_obs</span></div>
+
+<div class="viewcode-block" id="Flux1SMPipeline.ch_cond">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1SMPipeline.ch_cond">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch_cond</span> <span class="o">=</span> <span class="n">ch_cond</span></div>
+
+
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">get_default_flux1_params</span><span class="p">(</span><span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">,</span> <span class="n">ch_cond</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
+            <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
+            <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+            <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
+            <span class="n">ch_cond</span><span class="o">=</span><span class="n">ch_cond</span><span class="p">,</span>
+            <span class="n">sde_type</span><span class="o">=</span><span class="n">sde_type</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
+            <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">,</span>
+        <span class="p">)</span>
+<div class="viewcode-block" id="Flux1SMPipeline.ema_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1SMPipeline.ema_model">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Flux1SMPipeline.init_pipeline_from_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1.Flux1SMPipeline.init_pipeline_from_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the pipeline from a configuration file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        config_path : str</span>
+<span class="sd">            Path to the configuration file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">,</span> <span class="n">training_config</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">_flux1_config_from_path</span><span class="p">(</span>
+            <span class="n">config_path</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">&quot;score_matching&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Method </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> not supported in Flux1SMPipeline.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
+
+        <span class="n">pipeline</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">train_dataset</span><span class="p">,</span>
+            <span class="n">val_dataset</span><span class="p">,</span>
+            <span class="n">dim_obs</span><span class="p">,</span>
+            <span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">ch_obs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">ch_cond</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">context_in_dim</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pipeline</span></div>
+
+
+<div class="viewcode-block" id="Flux1SMPipeline._make_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1.Flux1SMPipeline._make_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create and return the Flux1 model to be trained.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Flux1SMPipeline.get_default_params">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1.Flux1SMPipeline.get_default_params">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">,</span> <span class="n">ch_cond</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a dictionary of default model parameters.</span>

@@ -1,7 +1,7 @@
-gensbi.diffusion.solver.sde_solver
+gensbi.diffusion.solver.edm_solver
 ==================================
 
-.. py:module:: gensbi.diffusion.solver.sde_solver
+.. py:module:: gensbi.diffusion.solver.edm_solver
 
 
 Classes
@@ -9,19 +9,19 @@ Classes
 
 .. autoapisummary::
 
-   gensbi.diffusion.solver.sde_solver.SDESolver
+   gensbi.diffusion.solver.edm_solver.EDMSolver
 
 
 Module Contents
 ---------------
 
-.. py:class:: SDESolver(score_model, path)
+.. py:class:: EDMSolver(score_model, path)
 
-   Bases: :py:obj:`gensbi.diffusion.solver.solver.Solver`
+   Bases: :py:obj:`gensbi.solver.Solver`
 
 
    
-   Abstract base class for diffusion model solvers.
+   Abstract base class for generative model solvers.
 
 
 
@@ -41,7 +41,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, model_extras = {}, solver_params = {})
+   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, model_extras = {}, solver_params = {}, solver_scheduler = None)
 
       
       Returns a sampler function for the SDE.
@@ -62,6 +62,8 @@ Module Contents
       :type model_extras: dict
       :param solver_params: Additional solver parameters.
       :type solver_params: Optional[dict]
+      :param solver_scheduler: Scheduler to use for the solver. If None, the path's scheduler is used.
+      :type solver_scheduler: Optional[Any]
 
       :returns: Sampler function.
       :rtype: Callable
@@ -84,7 +86,7 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_init, condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, model_extras = {}, solver_params = {})
+   .. py:method:: sample(key, x_init, condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, model_extras = {}, solver_params = {}, solver_scheduler = None)
 
       
       Sample from the SDE using the sampler.
@@ -109,6 +111,8 @@ Module Contents
       :type model_extras: dict
       :param solver_params: Additional solver parameters.
       :type solver_params: Optional[dict]
+      :param solver_scheduler: Scheduler to use for the solver. If None, the path's scheduler is used.
+      :type solver_scheduler: Optional[Any]
 
       :returns: Sampled output.
       :rtype: Array

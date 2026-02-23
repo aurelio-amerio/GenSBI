@@ -18,6 +18,7 @@ Classes
 
    gensbi.recipes.flux1.Flux1DiffusionPipeline
    gensbi.recipes.flux1.Flux1FlowPipeline
+   gensbi.recipes.flux1.Flux1SMPipeline
 
 
 Functions
@@ -237,6 +238,153 @@ Module Contents
 
    .. note::
        Sampling in the latent space (latent diffusion/flow) is not currently supported.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model(params)
+
+      
+      Create and return the Flux1 model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(dim_obs, dim_cond, ch_obs, ch_cond)
+      :classmethod:
+
+
+      
+      Return a dictionary of default model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config(train_dataset, val_dataset, dim_obs, dim_cond, config_path, checkpoint_dir)
+      :classmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch_cond
+      :value: 1
+
+
+
+   .. py:attribute:: ch_obs
+      :value: 1
+
+
+
+   .. py:attribute:: dim_cond
+
+
+   .. py:attribute:: dim_obs
+
+
+   .. py:attribute:: ema_model
+
+
+.. py:class:: Flux1SMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, sde_type = 'VP', params=None, training_config=None)
+
+   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalSMPipeline`
+
+
+   
+   Score matching pipeline for training and using a Conditional model for simulation-based inference.
+
+   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space (number of tokens).
+   :type dim_obs: int or tuple of int
+   :param dim_cond: Dimension of the observation space (number of tokens).
+   :type dim_cond: int or tuple of int
+   :param ch_obs: Number of channels per token in the observation data. Default is 1.
+   :type ch_obs: int, optional
+   :param ch_cond: Number of channels per token in the conditional data. Default is 1.
+   :type ch_cond: int, optional
+   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+   :type sde_type: str
+   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
+   :type id_embedding_strategy: tuple of str, optional
+   :param params: Parameters for the model.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
 
 
 

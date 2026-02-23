@@ -886,11 +886,11 @@ window.addEventListener("load", load);</script>
 
 
 
-<div class="viewcode-block" id="UnconditionalDiffLoss">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalDiffLoss">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalDiffLoss</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalEDMLoss">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalEDMLoss">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalEDMLoss</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    UnconditionalDiffLoss is a class that computes the diffusion score matching loss for the Unconditional model.</span>
+<span class="sd">    UnconditionalEDMLoss is a class that computes the diffusion score matching loss for the Unconditional model.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -898,18 +898,18 @@ window.addEventListener("load", load);</script>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-<div class="viewcode-block" id="UnconditionalDiffLoss.path">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalDiffLoss.path">[docs]</a>
+<div class="viewcode-block" id="UnconditionalEDMLoss.path">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalEDMLoss.path">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalDiffLoss.loss_fn">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalDiffLoss.loss_fn">[docs]</a>
+<div class="viewcode-block" id="UnconditionalEDMLoss.loss_fn">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalEDMLoss.loss_fn">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_loss_fn</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalDiffLoss.__call__">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalDiffLoss.__call__">[docs]</a>
+<div class="viewcode-block" id="UnconditionalEDMLoss.__call__">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalEDMLoss.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">,</span>
@@ -947,7 +947,78 @@ window.addEventListener("load", load);</script>
         <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;condition_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">condition_mask</span>
 
-        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">loss_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">kwargs</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">loss</span>  <span class="c1"># type: ignore</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="UnconditionalSMLoss">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalSMLoss">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalSMLoss</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    UnconditionalSMLoss computes the standard score matching loss for the Unconditional model.</span>
+
+<span class="sd">    This loss uses the denoising score matching objective where the model</span>
+<span class="sd">    predicts the score (gradient of log density) of the noised distribution.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        path: SMPath probability path for training.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalSMLoss.path">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalSMLoss.path">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
+
+<div class="viewcode-block" id="UnconditionalSMLoss.loss_fn">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalSMLoss.loss_fn">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_loss_fn</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="UnconditionalSMLoss.__call__">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/unconditional/index.html#gensbi.models.UnconditionalSMLoss.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">],</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the score matching loss.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            key : jax.random.PRNGKey</span>
+<span class="sd">                Random key for stochastic operations.</span>
+<span class="sd">            model : Callable</span>
+<span class="sd">                Score model, called as model(obs=x_t, t=t, **kwargs).</span>
+<span class="sd">            batch : Tuple[Array, Array]</span>
+<span class="sd">                Input data (x_1, t) where x_1 is the clean data and t is the</span>
+<span class="sd">                diffusion time. Use ``path.sample_t`` to sample t externally.</span>
+<span class="sd">            **kwargs: Additional keyword arguments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Computed loss.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">batch</span>
+
+        <span class="n">path_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">get_batch</span><span class="p">()</span>
+
+        <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;condition_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">condition_mask</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">kwargs</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">loss</span>  <span class="c1"># type: ignore</span></div>
 </div>

@@ -17,7 +17,7 @@ Module Contents
 
 .. py:class:: ODESolver(velocity_model)
 
-   Bases: :py:obj:`gensbi.flow_matching.solver.solver.Solver`
+   Bases: :py:obj:`gensbi.solver.Solver`
 
 
    
@@ -67,14 +67,23 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_sampler(step_size, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
+   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
 
       
       Obtain a sampler to solve the ODE with the velocity field.
 
-      :param step_size: The step size. Must be None for adaptive step solvers.
+      **Time direction convention:**
+      In flow matching, ``t=0`` is noise and ``t=1`` is data. Sampling
+      integrates **forward** from ``t=0`` to ``t=1`` to transform noise
+      into data. This is the opposite of standard score matching (reverse
+      SDE: ``t=T→eps``) and different from EDM (which uses σ-space).
+
+      :param step_size: The step size. Must be None when using ``"Dopri5"`` (adaptive step sizing).
       :type step_size: Optional[float]
-      :param method: A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+      :param method: A method supported by diffrax. Defaults to "Euler". Other commonly
+                     used solvers are ``"Dopri5"`` (adaptive), ``diffrax.Heun()``, and
+                     ``diffrax.Midpoint()``. ``"Dopri5"`` automatically uses adaptive
+                     step sizing via ``PIDController``; the others use fixed step size.
       :type method: Union[str, AbstractERK]
       :param atol: Absolute tolerance, used for adaptive step solvers.
       :type atol: float
@@ -155,16 +164,19 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(x_init, step_size, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
+   .. py:method:: sample(x_init, step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
 
       
       Sample from the ODE defined by the velocity field.
 
       :param x_init: Initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
       :type x_init: Array
-      :param step_size: The step size. Must be None for adaptive step solvers.
+      :param step_size: The step size. Must be None when using ``"Dopri5"`` (adaptive step sizing).
       :type step_size: Optional[float]
-      :param method: A method supported by diffrax. Defaults to "Dopri5". Other commonly used solvers are "Euler", diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.
+      :param method: A method supported by diffrax. Defaults to "Euler". Other commonly
+                     used solvers are ``"Dopri5"`` (adaptive), ``diffrax.Heun()``, and
+                     ``diffrax.Midpoint()``. ``"Dopri5"`` automatically uses adaptive
+                     step sizing via ``PIDController``; the others use fixed step size.
       :type method: Union[str, AbstractERK]
       :param atol: Absolute tolerance, used for adaptive step solvers.
       :type atol: float

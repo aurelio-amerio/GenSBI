@@ -9,7 +9,8 @@ gensbi.diffusion.path.path_sample
 
    This module defines data structures for representing samples along the diffusion
    probability path, including EDM path samples from "Elucidating the Design Space
-   of Diffusion-Based Generative Models" (Karras et al., 2022).
+   of Diffusion-Based Generative Models" (Karras et al., 2022) and standard score
+   matching path samples.
 
    ..
        !! processed by numpydoc !!
@@ -21,6 +22,7 @@ Classes
 .. autoapisummary::
 
    gensbi.diffusion.path.path_sample.EDMPathSample
+   gensbi.diffusion.path.path_sample.SMPathSample
 
 
 Module Contents
@@ -93,6 +95,106 @@ Module Contents
 
 
    .. py:attribute:: sigma
+      :type:  jax.Array
+
+
+   .. py:attribute:: x_1
+      :type:  jax.Array
+
+
+   .. py:attribute:: x_t
+      :type:  jax.Array
+
+
+.. py:class:: SMPathSample
+
+   
+   Represents a sample from a standard score matching probability path.
+
+   The noising process is: :math:`x_t = \mu(t) x_1 + \sigma(t) \epsilon`
+
+   .. attribute:: x_1
+
+      the clean target sample, shape (batch_size, ...).
+
+      :type: Array
+
+   .. attribute:: x_t
+
+      the noised sample, shape (batch_size, ...).
+
+      :type: Array
+
+   .. attribute:: t
+
+      the diffusion time, shape (batch_size, ...).
+
+      :type: Array
+
+   .. attribute:: noise
+
+      the Gaussian noise epsilon used for noising, shape (batch_size, ...).
+
+      :type: Array
+
+   .. attribute:: std_t
+
+      the marginal standard deviation at time t, shape (batch_size, ...).
+
+      :type: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_batch()
+
+      
+      Returns the batch as a tuple (x_1, x_t, t, noise, std_t).
+
+      :returns: The clean sample, noised sample, time, noise, and marginal std.
+      :rtype: Tuple[Array, Array, Array, Array, Array]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: noise
+      :type:  jax.Array
+
+
+   .. py:attribute:: std_t
+      :type:  jax.Array
+
+
+   .. py:attribute:: t
       :type:  jax.Array
 
 

@@ -832,7 +832,7 @@ window.addEventListener("load", load);</script>
 <span class="p">)</span>
 
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.joint_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">JointFlowPipeline</span><span class="p">,</span> <span class="n">JointDiffusionPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.joint_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">JointFlowPipeline</span><span class="p">,</span> <span class="n">JointDiffusionPipeline</span><span class="p">,</span> <span class="n">JointSMPipeline</span>
 
 
 <div class="viewcode-block" id="parse_simformer_params">
@@ -1199,6 +1199,179 @@ window.addEventListener("load", load);</script>
     <span class="c1">#         time_grid=time_grid,</span>
     <span class="c1">#         **model_extras,</span>
     <span class="c1">#     )</span>
+
+
+<div class="viewcode-block" id="SimformerSMPipeline">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimformerSMPipeline</span><span class="p">(</span><span class="n">JointSMPipeline</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ch_obs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">sde_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VP&quot;</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">edge_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">&quot;structured&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Score matching pipeline for training and using a Simformer model for simulation-based inference.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        train_dataset : grain dataset or iterator over batches</span>
+<span class="sd">            Training dataset.</span>
+<span class="sd">        val_dataset : grain dataset or iterator over batches</span>
+<span class="sd">            Validation dataset.</span>
+<span class="sd">        dim_obs : int</span>
+<span class="sd">            Dimension of the parameter space.</span>
+<span class="sd">        dim_cond : int</span>
+<span class="sd">            Dimension of the observation space.</span>
+<span class="sd">        ch_obs : int</span>
+<span class="sd">            Number of channels in the observation data.</span>
+<span class="sd">        sde_type : str</span>
+<span class="sd">            Type of SDE. One of ``&quot;VP&quot;`` or ``&quot;VE&quot;``.</span>
+<span class="sd">        params : SimformerParams, optional</span>
+<span class="sd">            Parameters for the Simformer model. If None, default parameters are used.</span>
+<span class="sd">        training_config : dict, optional</span>
+<span class="sd">            Configuration for training. If None, default configuration is used.</span>
+<span class="sd">        edge_mask : jnp.ndarray, optional</span>
+<span class="sd">            Edge mask for the Simformer model. If None, no mask is applied.</span>
+<span class="sd">        condition_mask_kind : str, optional</span>
+<span class="sd">            Kind of condition mask to use. One of [&quot;structured&quot;, &quot;posterior&quot;].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SimformerSMPipeline.dim_joint">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline.dim_joint">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span></div>
+
+
+<div class="viewcode-block" id="SimformerSMPipeline.ch_obs">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline.ch_obs">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span> <span class="o">=</span> <span class="n">ch_obs</span></div>
+
+
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">get_default_simformer_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
+            <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
+            <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+            <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
+            <span class="n">sde_type</span><span class="o">=</span><span class="n">sde_type</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
+            <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="SimformerSMPipeline.ema_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline.ema_model">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimformerSMPipeline.edge_mask">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline.edge_mask">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span> <span class="o">=</span> <span class="n">edge_mask</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="SimformerSMPipeline.init_pipeline_from_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline.init_pipeline_from_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">val_dataset</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the pipeline from a configuration file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        config_path : str</span>
+<span class="sd">            Path to the configuration file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">,</span> <span class="n">training_config</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">_simformer_config_from_path</span><span class="p">(</span>
+            <span class="n">config_path</span><span class="p">,</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span>
+        <span class="p">)</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;score_matching&quot;</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Method </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> not supported in SimformerSMPipeline.&quot;</span>
+
+        <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
+
+        <span class="n">pipeline</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">train_dataset</span><span class="p">,</span>
+            <span class="n">val_dataset</span><span class="p">,</span>
+            <span class="n">dim_obs</span><span class="p">,</span>
+            <span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">ch_obs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pipeline</span></div>
+
+
+<div class="viewcode-block" id="SimformerSMPipeline._make_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline._make_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create and return the Simformer model to be trained.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Simformer</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="SimformerSMPipeline.get_default_params">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline.get_default_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dim_joint</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dictionary of default model parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_default_simformer_params</span><span class="p">(</span><span class="n">dim_joint</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimformerSMPipeline.sample">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline.sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">,</span>
+        <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
+        <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">x_o</span><span class="p">,</span>
+            <span class="n">nsamples</span><span class="o">=</span><span class="n">nsamples</span><span class="p">,</span>
+            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
+            <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
+            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
 
 
 <div class="viewcode-block" id="SimformerDiffusionPipeline">

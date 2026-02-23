@@ -870,6 +870,31 @@ window.addEventListener("load", load);</script>
 <span class="k">def</span><span class="w"> </span><span class="nf">patchify_2d</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;b (h ph) (w pw) c -&gt; b (h w) (c ph pw)&quot;</span><span class="p">,</span> <span class="n">ph</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
 
+
+
+<div class="viewcode-block" id="scale_lr">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.scale_lr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scale_lr</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">base_lr</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">reference_batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scale learning rate based on batch size using square root scaling.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        batch_size : int</span>
+<span class="sd">            The current batch size.</span>
+<span class="sd">        base_lr : float</span>
+<span class="sd">            The base learning rate for the reference batch size.</span>
+<span class="sd">        reference_batch_size : int, optional</span>
+<span class="sd">            The reference batch size. Defaults to 256.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        float</span>
+<span class="sd">            The adjusted learning rate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+    <span class="k">return</span> <span class="n">base_lr</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">batch_size</span> <span class="o">/</span> <span class="n">reference_batch_size</span><span class="p">)</span></div>
+
 </pre></div>
 
                 </article>

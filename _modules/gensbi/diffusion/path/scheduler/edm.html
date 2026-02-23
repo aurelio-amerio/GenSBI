@@ -826,6 +826,7 @@ window.addEventListener("load", load);</script>
 <span class="sd">Based on the paper &quot;Elucidating the Design Space of Diffusion-Based Generative Models&quot;</span>
 <span class="sd">by Karras et al., 2022. https://arxiv.org/abs/2206.00364</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -1299,7 +1300,10 @@ window.addEventListener("load", load);</script>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span>
-            <span class="n">F</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">loss_mask</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">F</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+            <span class="n">batch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span>
+            <span class="n">condition_mask</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
             <span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span> <span class="o">=</span> <span class="n">batch</span>
 
@@ -1309,9 +1313,9 @@ window.addEventListener("load", load);</script>
             <span class="n">c_noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_noise</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
             <span class="n">c_skip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_skip</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">loss_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">loss_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">loss_mask</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-                <span class="n">x_t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">loss_mask</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">x_t</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">condition_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="n">x_t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">x_t</span><span class="p">)</span>
 
             <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">lam</span>
@@ -1322,8 +1326,8 @@ window.addEventListener("load", load);</script>
                 <span class="p">)</span>
                 <span class="o">**</span> <span class="mi">2</span>
             <span class="p">)</span>
-            <span class="k">if</span> <span class="n">loss_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">loss_mask</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">condition_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition_mask</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
             <span class="c1"># we sum the loss on any dimension that is not the batch dimentsion, and then we compute the mean over the batch dimension (the first)</span>
             <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)))))</span>  <span class="c1"># type: ignore</span>
 
@@ -1332,9 +1336,9 @@ window.addEventListener("load", load);</script>
 
 
 
-<div class="viewcode-block" id="VPScheduler">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">VPScheduler</span><span class="p">(</span><span class="n">BaseSDE</span><span class="p">):</span>
+<div class="viewcode-block" id="VPEdmScheduler">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VPEdmScheduler</span><span class="p">(</span><span class="n">BaseSDE</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Variance Preserving (VP) SDE scheduler as described in the EDM paper.</span>
 
@@ -1358,54 +1362,54 @@ window.addEventListener("load", load);</script>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beta_min</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">beta_max</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">e_s</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">e_t</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-<div class="viewcode-block" id="VPScheduler.beta_min">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.beta_min">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.beta_min">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.beta_min">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">beta_min</span> <span class="o">=</span> <span class="n">beta_min</span></div>
 
-<div class="viewcode-block" id="VPScheduler.beta_max">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.beta_max">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.beta_max">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.beta_max">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">beta_max</span> <span class="o">=</span> <span class="n">beta_max</span></div>
 
-<div class="viewcode-block" id="VPScheduler.beta_d">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.beta_d">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.beta_d">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.beta_d">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">beta_d</span> <span class="o">=</span> <span class="n">beta_max</span> <span class="o">-</span> <span class="n">beta_min</span></div>
 
-<div class="viewcode-block" id="VPScheduler.e_s">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.e_s">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.e_s">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.e_s">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_s</span> <span class="o">=</span> <span class="n">e_s</span></div>
 
-<div class="viewcode-block" id="VPScheduler.e_t">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.e_t">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.e_t">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.e_t">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_t</span> <span class="o">=</span> <span class="n">e_t</span></div>
 
-<div class="viewcode-block" id="VPScheduler.M">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.M">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.M">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.M">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">M</span></div>
 
         <span class="k">return</span>
 
     <span class="nd">@property</span>
-<div class="viewcode-block" id="VPScheduler.name">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.name">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.name">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.name">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;EDM-VP&quot;</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.time_schedule">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.time_schedule">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.time_schedule">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.time_schedule">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">time_schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">u</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_s</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.sigma">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.sigma">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.sigma">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.sigma">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sigma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># also known as the schedule, as in tab 1 of EDM paper</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_d</span> <span class="o">*</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_min</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.sigma_inv">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.sigma_inv">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.sigma_inv">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.sigma_inv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sigma_inv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_min</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_d</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
@@ -1413,8 +1417,8 @@ window.addEventListener("load", load);</script>
         <span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_d</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.sigma_deriv">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.sigma_deriv">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.sigma_deriv">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.sigma_deriv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sigma_deriv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># also known as the schedule derivative</span>
         <span class="k">return</span> <span class="p">(</span>
@@ -1424,70 +1428,70 @@ window.addEventListener("load", load);</script>
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.s">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.s">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.s">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.s">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">s</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># also known as scaling, as in tab 1 of EDM paper</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_d</span> <span class="o">*</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_min</span> <span class="o">*</span> <span class="n">t</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.s_deriv">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.s_deriv">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.s_deriv">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.s_deriv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">s_deriv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># also known as scaling derivative</span>
         <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_deriv</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.f">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.f">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.f">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.f">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># f(x, sigma) in the SDE, also known as drift term for the forward diffusion process</span>
         <span class="k">return</span> <span class="o">-</span><span class="n">x</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_min</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_d</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.g">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.g">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.g">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.g">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">g</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># g(sigma) in the SDE, also known as diffusion term for the forward diffusion process</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_min</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_d</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.c_skip">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.c_skip">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.c_skip">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.c_skip">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_skip for preconditioning</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.c_out">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.c_out">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.c_out">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.c_out">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_out for preconditioning</span>
         <span class="k">return</span> <span class="o">-</span><span class="n">sigma</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.c_in">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.c_in">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.c_in">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.c_in">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_in for preconditioning</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.c_noise">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.c_noise">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.c_noise">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.c_noise">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_noise for preconditioning</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_inv</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.loss_weight">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.loss_weight">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.loss_weight">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.loss_weight">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">loss_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span></div>
 
 
-<div class="viewcode-block" id="VPScheduler.sample_sigma">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPScheduler.sample_sigma">[docs]</a>
+<div class="viewcode-block" id="VPEdmScheduler.sample_sigma">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VPEdmScheduler.sample_sigma">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample_sigma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
         <span class="c1"># sample sigma from the prior noise distribution</span>
         <span class="n">u</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">minval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">e_t</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -1496,9 +1500,9 @@ window.addEventListener("load", load);</script>
 
 
 
-<div class="viewcode-block" id="VEScheduler">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">VEScheduler</span><span class="p">(</span><span class="n">BaseSDE</span><span class="p">):</span>
+<div class="viewcode-block" id="VEEdmScheduler">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VEEdmScheduler</span><span class="p">(</span><span class="n">BaseSDE</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Variance Exploding (VE) SDE scheduler as described in the EDM paper.</span>
 
@@ -1512,98 +1516,98 @@ window.addEventListener("load", load);</script>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma_min</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">sigma_max</span><span class="o">=</span><span class="mf">15.0</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-<div class="viewcode-block" id="VEScheduler.sigma_min">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.sigma_min">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.sigma_min">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.sigma_min">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">sigma_min</span> <span class="o">=</span> <span class="n">sigma_min</span></div>
 
-<div class="viewcode-block" id="VEScheduler.sigma_max">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.sigma_max">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.sigma_max">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.sigma_max">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">sigma_max</span> <span class="o">=</span> <span class="n">sigma_max</span></div>
 
         <span class="k">return</span>
 
     <span class="nd">@property</span>
-<div class="viewcode-block" id="VEScheduler.name">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.name">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.name">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.name">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;EDM-VE&quot;</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.time_schedule">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.time_schedule">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.time_schedule">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.time_schedule">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">time_schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_max</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_min</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_max</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">u</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.sigma">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.sigma">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.sigma">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.sigma">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sigma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># also known as the schedule, as in tab 1 of EDM paper</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">t</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.sigma_inv">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.sigma_inv">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.sigma_inv">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.sigma_inv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sigma_inv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.sigma_deriv">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.sigma_deriv">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.sigma_deriv">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.sigma_deriv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sigma_deriv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">t</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.s">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.s">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.s">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.s">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">s</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># also known as scaling, as in tab 1 of EDM paper</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">t</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.s_deriv">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.s_deriv">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.s_deriv">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.s_deriv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">s_deriv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="c1"># also known as scaling derivative</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">t</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.c_skip">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.c_skip">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.c_skip">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.c_skip">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_skip for preconditioning</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.c_out">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.c_out">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.c_out">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.c_out">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_out for preconditioning</span>
         <span class="k">return</span> <span class="n">sigma</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.c_in">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.c_in">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.c_in">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.c_in">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_in for preconditioning</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.c_noise">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.c_noise">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.c_noise">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.c_noise">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_noise for preconditioning</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.loss_weight">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.loss_weight">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.loss_weight">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.loss_weight">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">loss_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span></div>
 
 
-<div class="viewcode-block" id="VEScheduler.sample_sigma">
-<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEScheduler.sample_sigma">[docs]</a>
+<div class="viewcode-block" id="VEEdmScheduler.sample_sigma">
+<a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.VEEdmScheduler.sample_sigma">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample_sigma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
         <span class="c1"># sample sigma from the prior noise distribution</span>
         <span class="n">log_sigma</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
@@ -1707,7 +1711,7 @@ window.addEventListener("load", load);</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.edm.EDMScheduler.c_skip">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">c_skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="c1"># c_skip for preconditioning</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_data</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_data</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_data</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_data</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="EDMScheduler.c_out">
@@ -1746,6 +1750,8 @@ window.addEventListener("load", load);</script>
         <span class="n">sigma</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">rnd_normal</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_std</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_mean</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">sigma</span></div>
 </div>
+
+
 
 </pre></div>
 

@@ -819,9 +819,11 @@ window.addEventListener("load", load);</script>
 <span class="sd">Path sample data structures for diffusion models.</span>
 
 <span class="sd">This module defines data structures for representing samples along the diffusion</span>
-<span class="sd">probability path, including EDM path samples from &quot;Elucidating the Design Space </span>
-<span class="sd">of Diffusion-Based Generative Models&quot; (Karras et al., 2022).</span>
+<span class="sd">probability path, including EDM path samples from &quot;Elucidating the Design Space</span>
+<span class="sd">of Diffusion-Based Generative Models&quot; (Karras et al., 2022) and standard score</span>
+<span class="sd">matching path samples.</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span>
@@ -865,6 +867,61 @@ window.addEventListener("load", load);</script>
 <span class="sd">            Tuple[Array, Array, Array]: The target sample, the noisy sample, and the noise scale.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span></div>
+</div>
+
+
+
+<span class="nd">@dataclass</span>
+<div class="viewcode-block" id="SMPathSample">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SMPathSample</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Represents a sample from a standard score matching probability path.</span>
+
+<span class="sd">    The noising process is: :math:`x_t = \mu(t) x_1 + \sigma(t) \epsilon`</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        x_1 (Array): the clean target sample, shape (batch_size, ...).</span>
+<span class="sd">        x_t (Array): the noised sample, shape (batch_size, ...).</span>
+<span class="sd">        t (Array): the diffusion time, shape (batch_size, ...).</span>
+<span class="sd">        noise (Array): the Gaussian noise epsilon used for noising, shape (batch_size, ...).</span>
+<span class="sd">        std_t (Array): the marginal standard deviation at time t, shape (batch_size, ...).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SMPathSample.x_1">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.x_1">[docs]</a>
+    <span class="n">x_1</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;clean target samples X_1 (batch_size, ...).&quot;</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="SMPathSample.x_t">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.x_t">[docs]</a>
+    <span class="n">x_t</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;noised samples x_t, shape (batch_size, ...).&quot;</span><span class="p">}</span>
+    <span class="p">)</span></div>
+
+<div class="viewcode-block" id="SMPathSample.t">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.t">[docs]</a>
+    <span class="n">t</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;diffusion time t (batch_size, ...).&quot;</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="SMPathSample.noise">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.noise">[docs]</a>
+    <span class="n">noise</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;Gaussian noise epsilon (batch_size, ...).&quot;</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="SMPathSample.std_t">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.std_t">[docs]</a>
+    <span class="n">std_t</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;marginal std at time t (batch_size, ...).&quot;</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="SMPathSample.get_batch">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.get_batch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the batch as a tuple (x_1, x_t, t, noise, std_t).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Tuple[Array, Array, Array, Array, Array]:</span>
+<span class="sd">                The clean sample, noised sample, time, noise, and marginal std.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">noise</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">std_t</span></div>
 </div>
 
 </pre></div>

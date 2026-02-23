@@ -50,19 +50,22 @@ Classes
 .. autoapisummary::
 
    gensbi.models.ConditionalCFMLoss
-   gensbi.models.ConditionalDiffLoss
+   gensbi.models.ConditionalEDMLoss
+   gensbi.models.ConditionalSMLoss
    gensbi.models.ConditionalWrapper
    gensbi.models.Flux1
    gensbi.models.Flux1Joint
    gensbi.models.Flux1JointParams
    gensbi.models.Flux1Params
    gensbi.models.JointCFMLoss
-   gensbi.models.JointDiffLoss
+   gensbi.models.JointEDMLoss
+   gensbi.models.JointSMLoss
    gensbi.models.JointWrapper
    gensbi.models.Simformer
    gensbi.models.SimformerParams
    gensbi.models.UnconditionalCFMLoss
-   gensbi.models.UnconditionalDiffLoss
+   gensbi.models.UnconditionalEDMLoss
+   gensbi.models.UnconditionalSMLoss
    gensbi.models.UnconditionalWrapper
 
 
@@ -141,13 +144,13 @@ Package Contents
 
 
 
-.. py:class:: ConditionalDiffLoss(path)
+.. py:class:: ConditionalEDMLoss(path)
 
    Bases: :py:obj:`flax.nnx.Module`
 
 
    
-   ConditionalDiffLoss is a class that computes the diffusion score matching loss for the Conditional model.
+   ConditionalEDMLoss is a class that computes the diffusion score matching loss for the Conditional model.
 
    :param path:
    :type path: Probability path for training.
@@ -180,6 +183,80 @@ Package Contents
       :type model: Callable
       :param batch: Input data (x_1, sigma).
       :type batch: Tuple[Array, Array, Array]
+      :param cond: The conditioning data.
+      :type cond: jnp.ndarray
+      :param obs_ids: The observation IDs.
+      :type obs_ids: jnp.ndarray
+      :param cond_ids: The conditioning IDs.
+      :type cond_ids: jnp.ndarray
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: ConditionalSMLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   ConditionalSMLoss computes the standard score matching loss for the Conditional model.
+
+   :param path:
+   :type path: SMPath probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, cond, obs_ids, cond_ids)
+
+      
+      Evaluate the score matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: Score model.
+      :type model: Callable
+      :param batch: Input data (x_1, t) where x_1 is the clean data and t is the
+                    diffusion time. Use ``path.sample_t`` to sample t externally.
+      :type batch: Tuple[Array, Array]
       :param cond: The conditioning data.
       :type cond: jnp.ndarray
       :param obs_ids: The observation IDs.
@@ -817,13 +894,13 @@ Package Contents
           !! processed by numpydoc !!
 
 
-.. py:class:: JointDiffLoss(path)
+.. py:class:: JointEDMLoss(path)
 
    Bases: :py:obj:`flax.nnx.Module`
 
 
    
-   JointDiffLoss is a class that computes the diffusion score matching loss for the Joint model.
+   JointEDMLoss is a class that computes the diffusion score matching loss for the Joint model.
 
    :param path:
    :type path: Probability path for training.
@@ -858,6 +935,78 @@ Package Contents
       :type batch: Tuple[Array, Array, Array]
       :param args: Additional arguments.
       :type args: Optional[dict]
+      :param condition_mask: Mask for conditioning.
+      :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: JointSMLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   JointSMLoss computes the standard score matching loss for the Joint model.
+
+   :param path:
+   :type path: SMPath probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, condition_mask = None, **kwargs)
+
+      
+      Evaluate the score matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: Score model.
+      :type model: Callable
+      :param batch: Input data (x_1, t) where x_1 is the clean data and t is the
+                    diffusion time. Use ``path.sample_t`` to sample t externally.
+      :type batch: Tuple[Array, Array]
       :param condition_mask: Mask for conditioning.
       :type condition_mask: Optional[Array]
       :param \*\*kwargs:
@@ -1322,13 +1471,13 @@ Package Contents
           !! processed by numpydoc !!
 
 
-.. py:class:: UnconditionalDiffLoss(path)
+.. py:class:: UnconditionalEDMLoss(path)
 
    Bases: :py:obj:`flax.nnx.Module`
 
 
    
-   UnconditionalDiffLoss is a class that computes the diffusion score matching loss for the Unconditional model.
+   UnconditionalEDMLoss is a class that computes the diffusion score matching loss for the Unconditional model.
 
    :param path:
    :type path: Probability path for training.
@@ -1365,6 +1514,79 @@ Package Contents
       :type args: Optional[dict]
       :param condition_mask: Mask for conditioning.
       :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: UnconditionalSMLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   UnconditionalSMLoss computes the standard score matching loss for the Unconditional model.
+
+   This loss uses the denoising score matching objective where the model
+   predicts the score (gradient of log density) of the noised distribution.
+
+   :param path:
+   :type path: SMPath probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, **kwargs)
+
+      
+      Evaluate the score matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: Score model, called as model(obs=x_t, t=t, **kwargs).
+      :type model: Callable
+      :param batch: Input data (x_1, t) where x_1 is the clean data and t is the
+                    diffusion time. Use ``path.sample_t`` to sample t externally.
+      :type batch: Tuple[Array, Array]
       :param \*\*kwargs:
       :type \*\*kwargs: Additional keyword arguments.
 

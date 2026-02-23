@@ -846,6 +846,13 @@ window.addEventListener("load", load);</script>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    EDM sampler for diffusion models.</span>
 
+<span class="sd">    **Time direction convention:**</span>
+<span class="sd">    The EDM sampler operates in **σ-space** (noise scale), not a conventional</span>
+<span class="sd">    time variable. It steps through a decreasing schedule ``σ_max → 0``, where</span>
+<span class="sd">    large σ = noisy and σ=0 = clean data. This is different from both flow</span>
+<span class="sd">    matching (``t: 0→1``, noise→data) and standard score matching</span>
+<span class="sd">    (reverse SDE: ``t: T→eps``, noise→data).</span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        sde: SDE scheduler object.</span>
@@ -1017,7 +1024,8 @@ window.addEventListener("load", load);</script>
         <span class="n">x_curr</span> <span class="o">=</span> <span class="n">x_next</span>
 
         <span class="c1"># Increase noise temporarily.</span>
-        <span class="n">in_range</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">t_cur</span> <span class="o">&gt;=</span> <span class="n">S_min</span><span class="p">,</span> <span class="n">t_cur</span> <span class="o">&lt;=</span> <span class="n">S_max</span><span class="p">)</span>
+        <span class="n">sigma_cur</span> <span class="o">=</span> <span class="n">sde</span><span class="o">.</span><span class="n">sigma</span><span class="p">(</span><span class="n">t_cur</span><span class="p">)</span>
+        <span class="n">in_range</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">sigma_cur</span> <span class="o">&gt;=</span> <span class="n">S_min</span><span class="p">,</span> <span class="n">sigma_cur</span> <span class="o">&lt;=</span> <span class="n">S_max</span><span class="p">)</span>
 
         <span class="n">gamma</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span>
             <span class="n">in_range</span><span class="p">,</span>

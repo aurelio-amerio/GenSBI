@@ -10,7 +10,8 @@ Classes
 .. autoapisummary::
 
    gensbi.models.losses.unconditional.UnconditionalCFMLoss
-   gensbi.models.losses.unconditional.UnconditionalDiffLoss
+   gensbi.models.losses.unconditional.UnconditionalEDMLoss
+   gensbi.models.losses.unconditional.UnconditionalSMLoss
 
 
 Module Contents
@@ -81,13 +82,13 @@ Module Contents
           !! processed by numpydoc !!
 
 
-.. py:class:: UnconditionalDiffLoss(path)
+.. py:class:: UnconditionalEDMLoss(path)
 
    Bases: :py:obj:`flax.nnx.Module`
 
 
    
-   UnconditionalDiffLoss is a class that computes the diffusion score matching loss for the Unconditional model.
+   UnconditionalEDMLoss is a class that computes the diffusion score matching loss for the Unconditional model.
 
    :param path:
    :type path: Probability path for training.
@@ -124,6 +125,79 @@ Module Contents
       :type args: Optional[dict]
       :param condition_mask: Mask for conditioning.
       :type condition_mask: Optional[Array]
+      :param \*\*kwargs:
+      :type \*\*kwargs: Additional keyword arguments.
+
+      :returns: Computed loss.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: UnconditionalSMLoss(path)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   UnconditionalSMLoss computes the standard score matching loss for the Unconditional model.
+
+   This loss uses the denoising score matching objective where the model
+   predicts the score (gradient of log density) of the noised distribution.
+
+   :param path:
+   :type path: SMPath probability path for training.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(key, model, batch, **kwargs)
+
+      
+      Evaluate the score matching loss.
+
+      :param key: Random key for stochastic operations.
+      :type key: jax.random.PRNGKey
+      :param model: Score model, called as model(obs=x_t, t=t, **kwargs).
+      :type model: Callable
+      :param batch: Input data (x_1, t) where x_1 is the clean data and t is the
+                    diffusion time. Use ``path.sample_t`` to sample t externally.
+      :type batch: Tuple[Array, Array]
       :param \*\*kwargs:
       :type \*\*kwargs: Additional keyword arguments.
 

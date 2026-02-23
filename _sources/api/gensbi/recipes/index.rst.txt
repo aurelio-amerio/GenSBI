@@ -50,22 +50,28 @@ Classes
 
    gensbi.recipes.ConditionalDiffusionPipeline
    gensbi.recipes.ConditionalFlowPipeline
+   gensbi.recipes.ConditionalSMPipeline
    gensbi.recipes.Flux1DiffusionPipeline
    gensbi.recipes.Flux1FlowPipeline
    gensbi.recipes.Flux1JointDiffusionPipeline
    gensbi.recipes.Flux1JointFlowPipeline
+   gensbi.recipes.Flux1JointSMPipeline
+   gensbi.recipes.Flux1SMPipeline
    gensbi.recipes.JointDiffusionPipeline
    gensbi.recipes.JointFlowPipeline
+   gensbi.recipes.JointSMPipeline
    gensbi.recipes.SimformerDiffusionPipeline
    gensbi.recipes.SimformerFlowPipeline
+   gensbi.recipes.SimformerSMPipeline
    gensbi.recipes.UnconditionalDiffusionPipeline
    gensbi.recipes.UnconditionalFlowPipeline
+   gensbi.recipes.UnconditionalSMPipeline
 
 
 Package Contents
 ----------------
 
-.. py:class:: ConditionalDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), params=None, training_config=None)
+.. py:class:: ConditionalDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), sde='EDM', params=None, training_config=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -181,7 +187,7 @@ Package Contents
 
 
 
-   .. py:method:: get_default_training_config()
+   .. py:method:: get_default_training_config(sde='EDM')
       :classmethod:
 
 
@@ -233,26 +239,53 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_sampler(x_o, nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+   .. py:method:: get_sampler(x_o, nsteps=18, use_ema=True, return_intermediates=False, solver=None, **model_extras)
 
       
-      Get a sampler function for generating samples from the trained model.
+      Get a sampler function for the diffusion model.
 
-      :param key: Random number generator key.
-      :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable.
+      :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param step_size: Step size for the sampler.
-      :type step_size: float, optional
-      :param use_ema: Whether to use the EMA model for sampling.
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param time_grid: Time grid for the sampler (if applicable).
-      :type time_grid: array-like, optional
-      :param model_extras: Additional model-specific parameters.
-      :type model_extras: dict, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(EDMSolver, {})``.
 
-      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
-      :rtype: Callable: key, nsamples -> samples
+                     The solver class must accept ``score_model`` and ``path`` as
+                     its first two positional arguments.
+
+                     EDM-specific options can be provided in the kwargs dict:
+
+                     - ``solver_scheduler``: override the path's scheduler for
+                       sampling (also used for ``sample_prior``).
+                     - ``solver_params``: dict of EDM solver parameters
+                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default EDM solver:
+
+      >>> sampler = pipeline.get_sampler(x_o)
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using a custom scheduler:
+
+      >>> from gensbi.diffusion.solver import EDMSolver
+      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+      >>> sampler = pipeline.get_sampler(x_o, solver=solver)
+      >>> samples = sampler(key, nsamples=1000)
 
 
 
@@ -341,20 +374,54 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, solver=None, **model_extras)
 
       
-      Generate samples from the trained model.
+      Draw samples from the diffusion model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
       :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(EDMSolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     EDM-specific options can be provided in the kwargs dict:
+
+                     - ``solver_scheduler``: override the path's scheduler for
+                       sampling (also used for ``sample_prior``).
+                     - ``solver_params``: dict of EDM solver parameters
+                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default EDM solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using a custom scheduler:
+
+      >>> from gensbi.diffusion.solver import EDMSolver
+      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -389,7 +456,9 @@ Package Contents
    .. py:attribute:: obs_ids
 
 
-   .. py:attribute:: path
+   .. py:attribute:: sde
+      :value: 'EDM'
+
 
 
 .. py:class:: ConditionalFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), params=None, training_config=None)
@@ -538,26 +607,51 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_sampler(x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+   .. py:method:: get_sampler(x_o, step_size=0.01, use_ema=True, time_grid=None, solver=None, **model_extras)
 
       
-      Get a sampler function for generating samples from the trained model.
+      Get a sampler function for the flow model.
 
-      :param key: Random number generator key.
-      :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable.
+      :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param step_size: Step size for the sampler.
+      :param step_size: Step size for the solver. Default is 0.01.
       :type step_size: float, optional
-      :param use_ema: Whether to use the EMA model for sampling.
+      :param use_ema: Whether to use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param time_grid: Time grid for the sampler (if applicable).
-      :type time_grid: array-like, optional
-      :param model_extras: Additional model-specific parameters.
-      :type model_extras: dict, optional
+      :param time_grid: Time grid for intermediate steps. If None, uses ``[0, 1]``.
+      :type time_grid: Array, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(ODESolver, {})``.
 
-      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
-      :rtype: Callable: key, nsamples -> samples
+                     For SDE solvers (e.g., ``ZeroEnds``, ``NonSingular``), additional
+                     constructor arguments must be provided via the kwargs dict.
+                     A random key is automatically passed to SDE samplers.
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default ODE solver:
+
+      >>> sampler = pipeline.get_sampler(x_o)
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using the ZeroEnds SDE solver:
+
+      >>> import jax.numpy as jnp
+      >>> from gensbi.flow_matching.solver import ZeroEnds
+      >>> solver = (ZeroEnds, {
+      ...     "mu0": jnp.zeros((dim_obs, ch_obs)),
+      ...     "sigma0": jnp.ones((dim_obs, ch_obs)),
+      ...     "alpha": 1.0,
+      ... })
+      >>> sampler = pipeline.get_sampler(x_o, solver=solver)
+      >>> samples = sampler(key, nsamples=1000)
 
 
 
@@ -646,20 +740,53 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, solver=None, **model_extras)
 
       
-      Generate samples from the trained model.
+      Draw samples from the flow model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
       :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param step_size: Step size for the solver. Default is 0.01.
+      :type step_size: float, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param time_grid: Time grid for intermediate steps. If None, uses
+                        ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.
+      :type time_grid: Array, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(ODESolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     To use an SDE solver instead:
+
+                     >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+                     >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+                     >>> samples = pipeline.sample(key, x_o, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default ODE solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using the ZeroEnds SDE solver:
+
+      >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+      >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -695,6 +822,376 @@ Package Contents
 
 
    .. py:attribute:: path
+
+
+.. py:class:: ConditionalSMPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, sde_type = 'VP', id_embedding_strategy=('absolute', 'absolute'), params=None, training_config=None)
+
+   Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
+
+
+   
+   Score matching pipeline for training and using a Conditional model for simulation-based inference.
+
+   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space (number of tokens).
+   :type dim_obs: int or tuple of int
+   :param dim_cond: Dimension of the observation space (number of tokens).
+   :type dim_cond: int or tuple of int
+   :param ch_obs: Number of channels per token in the observation data. Default is 1.
+   :type ch_obs: int, optional
+   :param ch_cond: Number of channels per token in the conditional data. Default is 1.
+   :type ch_cond: int, optional
+   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+   :type sde_type: str
+   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
+   :type id_embedding_strategy: tuple of str, optional
+   :param params: Parameters for the model.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model()
+      :abstractmethod:
+
+
+      
+      Create and return the model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _wrap_model()
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(dim_obs, dim_cond, ch_obs, ch_cond)
+      :classmethod:
+
+      :abstractmethod:
+
+
+
+   .. py:method:: get_default_training_config(sde_type='VP')
+      :classmethod:
+
+
+      
+      Return a dictionary of default training configuration parameters.
+
+      :returns: **training_config** -- Default training configuration.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_loss_fn()
+
+      
+      Return the loss function for training/validation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(x_o, nsteps=1000, use_ema=True, return_intermediates=False, solver=None, **model_extras)
+
+      
+      Get a sampler function for the score matching model.
+
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsteps: Number of integration steps. Default is 1000.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(SMSolver, {})``.
+
+                     The solver class must accept ``score_model`` and ``path`` as
+                     its first two positional arguments.
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default reverse SDE solver:
+
+      >>> sampler = pipeline.get_sampler(x_o)
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using the Probability Flow ODE solver:
+
+      >>> from gensbi.diffusion.solver import SMPFSolver
+      >>> sampler = pipeline.get_sampler(x_o, solver=(SMPFSolver, {}))
+      >>> samples = sampler(key, nsamples=1000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_train_step_fn(loss_fn)
+
+      
+      Return the training step function, which performs a single optimization step.
+
+      :returns: **train_step** -- JIT-compiled training step function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config()
+      :classmethod:
+
+      :abstractmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param train_dataset: Training dataset.
+      :type train_dataset: iterable
+      :param val_dataset: Validation dataset.
+      :type val_dataset: iterable
+      :param dim_obs: Dimensionality of the parameter (theta) space.
+      :type dim_obs: int
+      :param dim_cond: Dimensionality of the observation (x) space.
+      :type dim_cond: int
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+      :param checkpoint_dir: Directory for saving checkpoints.
+      :type checkpoint_dir: str
+
+      :returns: **pipeline** -- An instance of the pipeline initialized from the configuration.
+      :rtype: AbstractPipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=1000, use_ema=True, return_intermediates=False, solver=None, **model_extras)
+
+      
+      Draw samples from the score matching model.
+
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to draw. Default is 10 000.
+      :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 1000.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(SMSolver, {})``.
+
+                     To use the probability flow ODE solver instead:
+
+                     >>> from gensbi.diffusion.solver import SMPFSolver
+                     >>> solver = (SMPFSolver, {})
+                     >>> samples = pipeline.sample(key, x_o, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default SDE solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using the probability flow ODE solver:
+
+      >>> from gensbi.diffusion.solver import SMPFSolver
+      >>> solver = (SMPFSolver, {})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cond_ids
+
+
+   .. py:attribute:: dim_cond
+
+
+   .. py:attribute:: dim_obs
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: obs_ids
+
+
+   .. py:attribute:: sde_type
+      :value: 'VP'
+
 
 
 .. py:class:: Flux1DiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
@@ -1309,7 +1806,291 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: JointDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, params=None, training_config=None, condition_mask_kind='structured')
+.. py:class:: Flux1JointSMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, sde_type = 'VP', params=None, training_config=None, condition_mask_kind='structured')
+
+   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointSMPipeline`
+
+
+   
+   Score matching pipeline for training and using a Joint model for simulation-based inference.
+
+   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param dim_cond: Dimension of the observation space.
+   :type dim_cond: int
+   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :type ch_obs: int, optional
+   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+   :type sde_type: str
+   :param params: Parameters for the Joint model. If None, default parameters are used.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :type condition_mask_kind: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model(params)
+
+      
+      Create and return the Flux1Joint model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(dim_joint, in_channels)
+      :classmethod:
+
+
+      
+      Return a dictionary of default model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config(train_dataset, val_dataset, dim_obs, dim_cond, config_path, checkpoint_dir)
+      :classmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch_obs
+      :value: 1
+
+
+
+   .. py:attribute:: dim_joint
+
+
+   .. py:attribute:: ema_model
+
+
+.. py:class:: Flux1SMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, sde_type = 'VP', params=None, training_config=None)
+
+   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalSMPipeline`
+
+
+   
+   Score matching pipeline for training and using a Conditional model for simulation-based inference.
+
+   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space (number of tokens).
+   :type dim_obs: int or tuple of int
+   :param dim_cond: Dimension of the observation space (number of tokens).
+   :type dim_cond: int or tuple of int
+   :param ch_obs: Number of channels per token in the observation data. Default is 1.
+   :type ch_obs: int, optional
+   :param ch_cond: Number of channels per token in the conditional data. Default is 1.
+   :type ch_cond: int, optional
+   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+   :type sde_type: str
+   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
+   :type id_embedding_strategy: tuple of str, optional
+   :param params: Parameters for the model.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model(params)
+
+      
+      Create and return the Flux1 model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(dim_obs, dim_cond, ch_obs, ch_cond)
+      :classmethod:
+
+
+      
+      Return a dictionary of default model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config(train_dataset, val_dataset, dim_obs, dim_cond, config_path, checkpoint_dir)
+      :classmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch_cond
+      :value: 1
+
+
+
+   .. py:attribute:: ch_obs
+      :value: 1
+
+
+
+   .. py:attribute:: dim_cond
+
+
+   .. py:attribute:: dim_obs
+
+
+   .. py:attribute:: ema_model
+
+
+.. py:class:: JointDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, params=None, training_config=None, condition_mask_kind='structured', sde='EDM')
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -1424,7 +2205,7 @@ Package Contents
 
 
 
-   .. py:method:: get_default_training_config()
+   .. py:method:: get_default_training_config(sde='EDM')
       :classmethod:
 
 
@@ -1476,26 +2257,53 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_sampler(x_o, nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+   .. py:method:: get_sampler(x_o, nsteps=18, use_ema=True, return_intermediates=False, solver=None, **model_extras)
 
       
-      Get a sampler function for generating samples from the trained model.
+      Get a sampler function for the diffusion model.
 
-      :param key: Random number generator key.
-      :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable.
+      :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param step_size: Step size for the sampler.
-      :type step_size: float, optional
-      :param use_ema: Whether to use the EMA model for sampling.
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param time_grid: Time grid for the sampler (if applicable).
-      :type time_grid: array-like, optional
-      :param model_extras: Additional model-specific parameters.
-      :type model_extras: dict, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(EDMSolver, {})``.
 
-      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
-      :rtype: Callable: key, nsamples -> samples
+                     The solver class must accept ``score_model`` and ``path`` as
+                     its first two positional arguments.
+
+                     EDM-specific options can be provided in the kwargs dict:
+
+                     - ``solver_scheduler``: override the path's scheduler for
+                       sampling (also used for ``sample_prior``).
+                     - ``solver_params``: dict of EDM solver parameters
+                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default EDM solver:
+
+      >>> sampler = pipeline.get_sampler(x_o)
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using a custom scheduler:
+
+      >>> from gensbi.diffusion.solver import EDMSolver
+      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+      >>> sampler = pipeline.get_sampler(x_o, solver=solver)
+      >>> samples = sampler(key, nsamples=1000)
 
 
 
@@ -1558,20 +2366,54 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, solver=None, **model_extras)
 
       
-      Generate samples from the trained model.
+      Draw samples from the diffusion model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
       :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(EDMSolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     EDM-specific options can be provided in the kwargs dict:
+
+                     - ``solver_scheduler``: override the path's scheduler for
+                       sampling (also used for ``sample_prior``).
+                     - ``solver_params``: dict of EDM solver parameters
+                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default EDM solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using a custom scheduler:
+
+      >>> from gensbi.diffusion.solver import EDMSolver
+      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -1599,7 +2441,9 @@ Package Contents
    .. py:attribute:: loss_fn
 
 
-   .. py:attribute:: path
+   .. py:attribute:: sde
+      :value: 'EDM'
+
 
 
 .. py:class:: JointFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, params=None, training_config=None, condition_mask_kind='structured')
@@ -1741,26 +2585,51 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_sampler(x_o, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+   .. py:method:: get_sampler(x_o, step_size=0.01, use_ema=True, time_grid=None, solver=None, **model_extras)
 
       
-      Get a sampler function for generating samples from the trained model.
+      Get a sampler function for the flow model.
 
-      :param key: Random number generator key.
-      :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable.
+      :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param step_size: Step size for the sampler.
+      :param step_size: Step size for the solver. Default is 0.01.
       :type step_size: float, optional
-      :param use_ema: Whether to use the EMA model for sampling.
+      :param use_ema: Whether to use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param time_grid: Time grid for the sampler (if applicable).
-      :type time_grid: array-like, optional
-      :param model_extras: Additional model-specific parameters.
-      :type model_extras: dict, optional
+      :param time_grid: Time grid for intermediate steps. If None, uses ``[0, 1]``.
+      :type time_grid: Array, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(ODESolver, {})``.
 
-      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
-      :rtype: Callable: key, nsamples -> samples
+                     For SDE solvers (e.g., ``ZeroEnds``, ``NonSingular``), additional
+                     constructor arguments must be provided via the kwargs dict.
+                     A random key is automatically passed to SDE samplers.
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default ODE solver:
+
+      >>> sampler = pipeline.get_sampler(x_o)
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using the ZeroEnds SDE solver:
+
+      >>> import jax.numpy as jnp
+      >>> from gensbi.flow_matching.solver import ZeroEnds
+      >>> solver = (ZeroEnds, {
+      ...     "mu0": jnp.zeros((dim_obs, ch_obs)),
+      ...     "sigma0": jnp.ones((dim_obs, ch_obs)),
+      ...     "alpha": 1.0,
+      ... })
+      >>> sampler = pipeline.get_sampler(x_o, solver=solver)
+      >>> samples = sampler(key, nsamples=1000)
 
 
 
@@ -1823,20 +2692,53 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, solver=None, **model_extras)
 
       
-      Generate samples from the trained model.
+      Draw samples from the flow model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
       :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param step_size: Step size for the solver. Default is 0.01.
+      :type step_size: float, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param time_grid: Time grid for intermediate steps. If None, uses
+                        ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.
+      :type time_grid: Array, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(ODESolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     To use an SDE solver instead:
+
+                     >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+                     >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+                     >>> samples = pipeline.sample(key, x_o, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default ODE solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using the ZeroEnds SDE solver:
+
+      >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+      >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -1874,6 +2776,344 @@ Package Contents
 
 
    .. py:attribute:: path
+
+
+.. py:class:: JointSMPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, sde_type = 'VP', params=None, training_config=None, condition_mask_kind='structured')
+
+   Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
+
+
+   
+   Score matching pipeline for training and using a Joint model for simulation-based inference.
+
+   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param dim_cond: Dimension of the observation space.
+   :type dim_cond: int
+   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :type ch_obs: int, optional
+   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+   :type sde_type: str
+   :param params: Parameters for the Joint model. If None, default parameters are used.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :type condition_mask_kind: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model()
+      :abstractmethod:
+
+
+      
+      Create and return the model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _wrap_model()
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(dim_obs, dim_cond, ch_obs, ch_cond)
+      :classmethod:
+
+      :abstractmethod:
+
+
+
+   .. py:method:: get_default_training_config(sde_type='VP')
+      :classmethod:
+
+
+      
+      Return a dictionary of default training configuration parameters.
+
+      :returns: **training_config** -- Default training configuration.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_loss_fn()
+
+      
+      Return the loss function for training/validation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(x_o, nsteps=1000, use_ema=True, return_intermediates=False, solver=None, **model_extras)
+
+      
+      Get a sampler function for the score matching model.
+
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsteps: Number of integration steps. Default is 1000.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(SMSolver, {})``.
+
+                     The solver class must accept ``score_model`` and ``path`` as
+                     its first two positional arguments.
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default reverse SDE solver:
+
+      >>> sampler = pipeline.get_sampler(x_o)
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using the Probability Flow ODE solver:
+
+      >>> from gensbi.diffusion.solver import SMPFSolver
+      >>> sampler = pipeline.get_sampler(x_o, solver=(SMPFSolver, {}))
+      >>> samples = sampler(key, nsamples=1000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config()
+      :classmethod:
+
+      :abstractmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param train_dataset: Training dataset.
+      :type train_dataset: iterable
+      :param val_dataset: Validation dataset.
+      :type val_dataset: iterable
+      :param dim_obs: Dimensionality of the parameter (theta) space.
+      :type dim_obs: int
+      :param dim_cond: Dimensionality of the observation (x) space.
+      :type dim_cond: int
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+      :param checkpoint_dir: Directory for saving checkpoints.
+      :type checkpoint_dir: str
+
+      :returns: **pipeline** -- An instance of the pipeline initialized from the configuration.
+      :rtype: AbstractPipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=1000, use_ema=True, return_intermediates=False, solver=None, **model_extras)
+
+      
+      Draw samples from the score matching model.
+
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to draw. Default is 10 000.
+      :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 1000.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(SMSolver, {})``.
+
+                     To use the probability flow ODE solver instead:
+
+                     >>> from gensbi.diffusion.solver import SMPFSolver
+                     >>> solver = (SMPFSolver, {})
+                     >>> samples = pipeline.sample(key, x_o, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default SDE solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using the probability flow ODE solver:
+
+      >>> from gensbi.diffusion.solver import SMPFSolver
+      >>> solver = (SMPFSolver, {})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: condition_mask_kind
+      :value: 'structured'
+
+
+
+   .. py:attribute:: dim_joint
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: sde_type
+      :value: 'VP'
+
 
 
 .. py:class:: SimformerDiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
@@ -2015,17 +3255,51 @@ Package Contents
    .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False)
 
       
-      Generate samples from the trained model.
+      Draw samples from the diffusion model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
       :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(EDMSolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     EDM-specific options can be provided in the kwargs dict:
+
+                     - ``solver_scheduler``: override the path's scheduler for
+                       sampling (also used for ``sample_prior``).
+                     - ``solver_params``: dict of EDM solver parameters
+                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default EDM solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using a custom scheduler:
+
+      >>> from gensbi.diffusion.solver import EDMSolver
+      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -2200,17 +3474,50 @@ Package Contents
    .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None)
 
       
-      Generate samples from the trained model.
+      Draw samples from the flow model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
       :param x_o: Conditioning variable (e.g., observed data).
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param step_size: Step size for the solver. Default is 0.01.
+      :type step_size: float, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param time_grid: Time grid for intermediate steps. If None, uses
+                        ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.
+      :type time_grid: Array, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(ODESolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     To use an SDE solver instead:
+
+                     >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+                     >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+                     >>> samples = pipeline.sample(key, x_o, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default ODE solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using the ZeroEnds SDE solver:
+
+      >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+      >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -2246,7 +3553,214 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: UnconditionalDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, ch_obs = 1, params=None, training_config=None)
+.. py:class:: SimformerSMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, sde_type = 'VP', params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
+
+   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointSMPipeline`
+
+
+   
+   Score matching pipeline for training and using a Joint model for simulation-based inference.
+
+   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param dim_cond: Dimension of the observation space.
+   :type dim_cond: int
+   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :type ch_obs: int, optional
+   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+   :type sde_type: str
+   :param params: Parameters for the Joint model. If None, default parameters are used.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :type condition_mask_kind: str, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model(params)
+
+      
+      Create and return the Simformer model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(dim_joint, in_channels)
+      :classmethod:
+
+
+      
+      Return a dictionary of default model parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config(train_dataset, val_dataset, dim_obs, dim_cond, config_path, checkpoint_dir)
+      :classmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=1000, use_ema=True, return_intermediates=False)
+
+      
+      Draw samples from the score matching model.
+
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to draw. Default is 10 000.
+      :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 1000.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(SMSolver, {})``.
+
+                     To use the probability flow ODE solver instead:
+
+                     >>> from gensbi.diffusion.solver import SMPFSolver
+                     >>> solver = (SMPFSolver, {})
+                     >>> samples = pipeline.sample(key, x_o, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default SDE solver:
+
+      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
+
+      Using the probability flow ODE solver:
+
+      >>> from gensbi.diffusion.solver import SMPFSolver
+      >>> solver = (SMPFSolver, {})
+      >>> samples = pipeline.sample(key, x_o, solver=solver)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: ch_obs
+      :value: 1
+
+
+
+   .. py:attribute:: dim_joint
+
+
+   .. py:attribute:: edge_mask
+      :value: None
+
+
+
+   .. py:attribute:: ema_model
+
+
+.. py:class:: UnconditionalDiffusionPipeline(model, train_dataset, val_dataset, dim_obs, ch_obs = 1, params=None, sde='EDM', training_config=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -2411,26 +3925,51 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_sampler(nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+   .. py:method:: get_sampler(nsteps=18, use_ema=True, return_intermediates=False, solver=None, **model_extras)
 
       
-      Get a sampler function for generating samples from the trained model.
+      Get a sampler function for the diffusion model.
 
-      :param key: Random number generator key.
-      :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable.
-      :type x_o: array-like
-      :param step_size: Step size for the sampler.
-      :type step_size: float, optional
-      :param use_ema: Whether to use the EMA model for sampling.
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param time_grid: Time grid for the sampler (if applicable).
-      :type time_grid: array-like, optional
-      :param model_extras: Additional model-specific parameters.
-      :type model_extras: dict, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(EDMSolver, {})``.
 
-      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
-      :rtype: Callable: key, nsamples -> samples
+                     The solver class must accept ``score_model`` and ``path`` as
+                     its first two positional arguments.
+
+                     EDM-specific options can be provided in the kwargs dict:
+
+                     - ``solver_scheduler``: override the path's scheduler for
+                       sampling (also used for ``sample_prior``).
+                     - ``solver_params``: dict of EDM solver parameters
+                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default EDM solver:
+
+      >>> sampler = pipeline.get_sampler()
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using a custom scheduler:
+
+      >>> from gensbi.diffusion.solver import EDMSolver
+      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+      >>> sampler = pipeline.get_sampler(solver=solver)
+      >>> samples = sampler(key, nsamples=1000)
 
 
 
@@ -2493,20 +4032,52 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, **model_extras)
+   .. py:method:: sample(key, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, solver=None, **model_extras)
 
       
-      Generate samples from the trained model.
+      Draw samples from the diffusion model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
-      :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(EDMSolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     EDM-specific options can be provided in the kwargs dict:
+
+                     - ``solver_scheduler``: override the path's scheduler for
+                       sampling (also used for ``sample_prior``).
+                     - ``solver_params``: dict of EDM solver parameters
+                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default EDM solver:
+
+      >>> samples = pipeline.sample(key, nsamples=1000)
+
+      Using a custom scheduler:
+
+      >>> from gensbi.diffusion.solver import EDMSolver
+      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
+      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
+      >>> samples = pipeline.sample(key, solver=solver)
 
 
 
@@ -2572,7 +4143,9 @@ Package Contents
    .. py:attribute:: loss_fn
 
 
-   .. py:attribute:: path
+   .. py:attribute:: sde
+      :value: 'EDM'
+
 
 
 .. py:class:: UnconditionalFlowPipeline(model, train_dataset, val_dataset, dim_obs, ch_obs = 1, params=None, training_config=None)
@@ -2712,26 +4285,49 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_sampler(step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+   .. py:method:: get_sampler(step_size=0.01, use_ema=True, time_grid=None, solver=None, **model_extras)
 
       
-      Get a sampler function for generating samples from the trained model.
+      Get a sampler function for the flow model.
 
-      :param key: Random number generator key.
-      :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable.
-      :type x_o: array-like
-      :param step_size: Step size for the sampler.
+      :param step_size: Step size for the solver. Default is 0.01.
       :type step_size: float, optional
-      :param use_ema: Whether to use the EMA model for sampling.
+      :param use_ema: Whether to use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param time_grid: Time grid for the sampler (if applicable).
-      :type time_grid: array-like, optional
-      :param model_extras: Additional model-specific parameters.
-      :type model_extras: dict, optional
+      :param time_grid: Time grid for intermediate steps. If None, uses ``[0, 1]``.
+      :type time_grid: Array, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(ODESolver, {})``.
 
-      :returns: **sampler** -- A function that generates samples when called with a random key and number of samples.
-      :rtype: Callable: key, nsamples -> samples
+                     For SDE solvers (e.g., ``ZeroEnds``, ``NonSingular``), additional
+                     constructor arguments must be provided via the kwargs dict.
+                     A random key is automatically passed to SDE samplers.
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default ODE solver:
+
+      >>> sampler = pipeline.get_sampler()
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using the ZeroEnds SDE solver:
+
+      >>> import jax.numpy as jnp
+      >>> from gensbi.flow_matching.solver import ZeroEnds
+      >>> solver = (ZeroEnds, {
+      ...     "mu0": jnp.zeros((dim_obs, ch_obs)),
+      ...     "sigma0": jnp.ones((dim_obs, ch_obs)),
+      ...     "alpha": 1.0,
+      ... })
+      >>> sampler = pipeline.get_sampler(solver=solver)
+      >>> samples = sampler(key, nsamples=1000)
 
 
 
@@ -2794,20 +4390,51 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, **model_extras)
+   .. py:method:: sample(key, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, solver=None, **model_extras)
 
       
-      Generate samples from the trained model.
+      Draw samples from the flow model.
 
-      :param key: Random number generator key.
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
-      :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to draw. Default is 10 000.
       :type nsamples: int, optional
+      :param step_size: Step size for the solver. Default is 0.01.
+      :type step_size: float, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param time_grid: Time grid for intermediate steps. If None, uses
+                        ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.
+      :type time_grid: Array, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(ODESolver, {})``.
 
-      :returns: **samples** -- Generated samples of size (nsamples, dim_obs, ch_obs).
-      :rtype: array-like
+                     To use an SDE solver instead:
+
+                     >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+                     >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+                     >>> samples = pipeline.sample(key, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default ODE solver:
+
+      >>> samples = pipeline.sample(key, nsamples=1000)
+
+      Using the ZeroEnds SDE solver:
+
+      >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+      >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
+      >>> samples = pipeline.sample(key, solver=solver)
 
 
 
@@ -2877,5 +4504,370 @@ Package Contents
 
 
    .. py:attribute:: path
+
+
+.. py:class:: UnconditionalSMPipeline(model, train_dataset, val_dataset, dim_obs, ch_obs = 1, sde_type = 'VP', params=None, training_config=None)
+
+   Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
+
+
+   
+   Score matching pipeline for training and using an Unconditional model for simulation-based inference.
+
+   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset.
+   :type train_dataset: grain dataset or iterator over batches
+   :param val_dataset: Validation dataset.
+   :type val_dataset: grain dataset or iterator over batches
+   :param dim_obs: Dimension of the parameter space.
+   :type dim_obs: int
+   :param ch_obs: Number of channels in the observation space.
+   :type ch_obs: int
+   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
+   :type sde_type: str
+   :param params: Parameters for the model. Serves no use if a custom model is provided.
+   :type params: optional
+   :param training_config: Configuration for training. If None, default configuration is used.
+   :type training_config: dict, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model()
+      :abstractmethod:
+
+
+      
+      Create and return the model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _wrap_model()
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(dim_obs, ch_obs)
+      :classmethod:
+
+      :abstractmethod:
+
+
+
+   .. py:method:: get_default_training_config(sde_type='VP')
+      :classmethod:
+
+
+      
+      Return a dictionary of default training configuration parameters.
+
+      :returns: **training_config** -- Default training configuration.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_loss_fn()
+
+      
+      Return the loss function for training/validation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(nsteps=1000, use_ema=True, return_intermediates=False, solver=None, **model_extras)
+
+      
+      Get a sampler function for the score matching model.
+
+      :param nsteps: Number of integration steps. Default is 1000.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its constructor keyword arguments.
+                     Defaults to ``(SMSolver, {})``.
+
+                     The solver class must accept ``score_model`` and ``path`` as
+                     its first two positional arguments.
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: A function ``sampler(key, nsamples)`` that generates samples.
+      :rtype: Callable
+
+      .. rubric:: Examples
+
+      Using the default reverse SDE solver:
+
+      >>> sampler = pipeline.get_sampler()
+      >>> samples = sampler(key, nsamples=1000)
+
+      Using the Probability Flow ODE solver:
+
+      >>> from gensbi.diffusion.solver import SMPFSolver
+      >>> sampler = pipeline.get_sampler(solver=(SMPFSolver, {}))
+      >>> samples = sampler(key, nsamples=1000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config()
+      :classmethod:
+
+      :abstractmethod:
+
+
+      
+      Initialize the pipeline from a configuration file.
+
+      :param train_dataset: Training dataset.
+      :type train_dataset: iterable
+      :param val_dataset: Validation dataset.
+      :type val_dataset: iterable
+      :param dim_obs: Dimensionality of the parameter (theta) space.
+      :type dim_obs: int
+      :param dim_cond: Dimensionality of the observation (x) space.
+      :type dim_cond: int
+      :param config_path: Path to the configuration file.
+      :type config_path: str
+      :param checkpoint_dir: Directory for saving checkpoints.
+      :type checkpoint_dir: str
+
+      :returns: **pipeline** -- An instance of the pipeline initialized from the configuration.
+      :rtype: AbstractPipeline
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, nsamples=10000, nsteps=1000, use_ema=True, return_intermediates=False, solver=None, **model_extras)
+
+      
+      Draw samples from the score matching model.
+
+      Convenience method that internally calls :meth:`get_sampler` and
+      immediately evaluates the returned sampler function.
+
+      :param key: JAX random key used for sampling.
+      :type key: jax.random.PRNGKey
+      :param nsamples: Number of samples to draw. Default is 10 000.
+      :type nsamples: int, optional
+      :param nsteps: Number of sampling steps. Default is 1000.
+      :type nsteps: int, optional
+      :param use_ema: Whether to use the EMA model. Default is True.
+      :type use_ema: bool, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
+                     class and its keyword arguments. Defaults to ``(SMSolver, {})``.
+
+                     To use the probability flow ODE solver instead:
+
+                     >>> from gensbi.diffusion.solver import SMPFSolver
+                     >>> solver = (SMPFSolver, {})
+                     >>> samples = pipeline.sample(key, solver=solver)
+      :type solver: tuple of (type, dict), optional
+      :param \*\*model_extras: Additional keyword arguments passed to the model.
+      :type \*\*model_extras: dict
+
+      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :rtype: Array
+
+      .. rubric:: Examples
+
+      Using the default SDE solver:
+
+      >>> samples = pipeline.sample(key, nsamples=1000)
+
+      Using the probability flow ODE solver:
+
+      >>> from gensbi.diffusion.solver import SMPFSolver
+      >>> solver = (SMPFSolver, {})
+      >>> samples = pipeline.sample(key, solver=solver)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_batched(*args, **kwargs)
+      :abstractmethod:
+
+
+      
+      Generate samples from the trained model in batches.
+
+      :param key: Random number generator key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Conditioning variable (e.g., observed data).
+      :type x_o: array-like
+      :param nsamples: Number of samples to generate.
+      :type nsamples: int
+      :param chunk_size: Size of each batch for sampling. Default is 50.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Whether to display progress bars during sampling. Default is True.
+      :type show_progress_bars: bool, optional
+      :param args: Additional positional arguments for the sampler.
+      :type args: tuple
+      :param kwargs: Additional keyword arguments for the sampler.
+      :type kwargs: dict
+
+      :returns: **samples** -- Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
+      :rtype: array-like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: loss_fn
+
+
+   .. py:attribute:: sde_type
+      :value: 'VP'
+
 
 

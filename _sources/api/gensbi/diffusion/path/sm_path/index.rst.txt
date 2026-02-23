@@ -1,0 +1,183 @@
+gensbi.diffusion.path.sm_path
+=============================
+
+.. py:module:: gensbi.diffusion.path.sm_path
+
+.. autoapi-nested-parse::
+
+   Standard score matching probability path implementation.
+
+   This module implements the probability path for standard score matching diffusion
+   models, supporting VP and VE SDE formulations.
+
+   Based on "Score-Based Generative Modeling through Stochastic Differential Equations"
+   by Song et al., 2021. https://arxiv.org/abs/2011.13456
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diffusion.path.sm_path.SMPath
+
+
+Module Contents
+---------------
+
+.. py:class:: SMPath(scheduler)
+
+   Bases: :py:obj:`gensbi.diffusion.path.path.ProbPath`
+
+
+   
+   Score Matching probability path.
+
+   This class constructs noised samples for standard score matching training
+   using the forward SDE's marginal distributions.
+
+   The noising is: x_t = mean_coeff(t) * x_1 + std(t) * epsilon
+
+   :param scheduler:
+   :type scheduler: The SDE scheduler object (VPSmScheduler or VESmScheduler).
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gensbi.diffusion.path.sm_path import SMPath
+       from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler
+       import jax, jax.numpy as jnp
+       scheduler = VPSmScheduler()
+       path = SMPath(scheduler)
+       key = jax.random.PRNGKey(0)
+       x_1 = jax.random.normal(key, (32, 2))
+       sample = path.sample(key, x_1)
+       print(sample.x_t.shape)
+       # (32, 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_loss_fn()
+
+      
+      Returns the loss function for score matching training.
+
+      The loss is the denoising score matching objective:
+
+      .. math::
+          g(t)^2 \left\| s_\theta(x_t, t) - \left(-\frac{\epsilon}{\sigma(t)}\right) \right\|^2
+
+      where :math:`-\epsilon / \sigma(t)` is the true score :math:`\nabla_x \log p(x_t | x_0)`.
+
+      :returns: Loss function.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_1, t)
+
+      
+      Sample from the score matching probability path.
+
+      Constructs x_t = mean_coeff(t) * x_1 + std(t) * epsilon.
+
+      :param key: JAX random key (used for noise sampling).
+      :type key: Array
+      :param x_1: Target data point, shape (batch_size, ...).
+      :type x_1: Array
+      :param t: Diffusion time, shape (batch_size, 1, ...).
+                Use :meth:`sample_t` to sample appropriate times.
+      :type t: Array
+
+      :returns: A sample from the SM path.
+      :rtype: SMPathSample
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_t(key, shape)
+
+      
+      Sample diffusion times from the SDE scheduler.
+
+      Analogous to :meth:`EDMPath.sample_sigma`.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param shape: Shape of the time samples to generate.
+      :type shape: tuple
+
+      :returns: Sampled diffusion times.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: scheduler
+
+

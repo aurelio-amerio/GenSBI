@@ -824,7 +824,7 @@ window.addEventListener("load", load);</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">diffrax</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">diffrax</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractERK</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.model_wrapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelWrapper</span>
 
 
@@ -874,7 +874,7 @@ window.addEventListener("load", load);</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">step_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
-        <span class="n">method</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AbstractERK</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dopri5&quot;</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AbstractERK</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
         <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">time_grid</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span>
@@ -883,12 +883,21 @@ window.addEventListener("load", load);</script>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Obtain a sampler to solve the ODE with the velocity field.</span>
 
+<span class="sd">        **Time direction convention:**</span>
+<span class="sd">        In flow matching, ``t=0`` is noise and ``t=1`` is data. Sampling</span>
+<span class="sd">        integrates **forward** from ``t=0`` to ``t=1`` to transform noise</span>
+<span class="sd">        into data. This is the opposite of standard score matching (reverse</span>
+<span class="sd">        SDE: ``t=T→eps``) and different from EDM (which uses σ-space).</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            step_size : Optional[float]</span>
-<span class="sd">                The step size. Must be None for adaptive step solvers.</span>
+<span class="sd">                The step size. Must be None when using ``&quot;Dopri5&quot;`` (adaptive step sizing).</span>
 <span class="sd">            method : Union[str, AbstractERK]</span>
-<span class="sd">                A method supported by diffrax. Defaults to &quot;Dopri5&quot;. Other commonly used solvers are &quot;Euler&quot;, diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.</span>
+<span class="sd">                A method supported by diffrax. Defaults to &quot;Euler&quot;. Other commonly</span>
+<span class="sd">                used solvers are ``&quot;Dopri5&quot;`` (adaptive), ``diffrax.Heun()``, and</span>
+<span class="sd">                ``diffrax.Midpoint()``. ``&quot;Dopri5&quot;`` automatically uses adaptive</span>
+<span class="sd">                step sizing via ``PIDController``; the others use fixed step size.</span>
 <span class="sd">            atol : float</span>
 <span class="sd">                Absolute tolerance, used for adaptive step solvers.</span>
 <span class="sd">            rtol : float</span>
@@ -916,7 +925,10 @@ window.addEventListener("load", load);</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="n">method</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">AbstractERK</span><span class="p">):</span>
+        <span class="c1"># Adaptive step sizing: only Dopri5 uses PIDController (high-order</span>
+        <span class="c1"># embedded error pair makes adaptivity worthwhile). Other solvers</span>
+        <span class="c1"># (Euler, Heun, Midpoint) use fixed step size.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">Dopri5</span><span class="p">):</span>
             <span class="n">stepsize_controller</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">PIDController</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">stepsize_controller</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">ConstantStepSize</span><span class="p">()</span>
@@ -949,7 +961,7 @@ window.addEventListener("load", load);</script>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
         <span class="n">step_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
-        <span class="n">method</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AbstractERK</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Dopri5&quot;</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AbstractERK</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
         <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">time_grid</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span>
@@ -963,9 +975,12 @@ window.addEventListener("load", load);</script>
 <span class="sd">            x_init : Array</span>
 <span class="sd">                Initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].</span>
 <span class="sd">            step_size : Optional[float]</span>
-<span class="sd">                The step size. Must be None for adaptive step solvers.</span>
+<span class="sd">                The step size. Must be None when using ``&quot;Dopri5&quot;`` (adaptive step sizing).</span>
 <span class="sd">            method : Union[str, AbstractERK]</span>
-<span class="sd">                A method supported by diffrax. Defaults to &quot;Dopri5&quot;. Other commonly used solvers are &quot;Euler&quot;, diffrax.Heun(), and diffrax.Midpoint(). For a complete list, see diffrax documentation.</span>
+<span class="sd">                A method supported by diffrax. Defaults to &quot;Euler&quot;. Other commonly</span>
+<span class="sd">                used solvers are ``&quot;Dopri5&quot;`` (adaptive), ``diffrax.Heun()``, and</span>
+<span class="sd">                ``diffrax.Midpoint()``. ``&quot;Dopri5&quot;`` automatically uses adaptive</span>
+<span class="sd">                step sizing via ``PIDController``; the others use fixed step size.</span>
 <span class="sd">            atol : float</span>
 <span class="sd">                Absolute tolerance, used for adaptive step solvers.</span>
 <span class="sd">            rtol : float</span>
@@ -1065,7 +1080,8 @@ window.addEventListener("load", load);</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="n">method</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">AbstractERK</span><span class="p">):</span>
+        <span class="c1"># Adaptive step sizing: only Dopri5 uses PIDController</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">Dopri5</span><span class="p">):</span>
             <span class="n">stepsize_controller</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">PIDController</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">stepsize_controller</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">ConstantStepSize</span><span class="p">()</span>

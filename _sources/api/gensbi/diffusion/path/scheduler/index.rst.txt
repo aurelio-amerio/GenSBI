@@ -9,7 +9,8 @@ gensbi.diffusion.path.scheduler
    Schedulers for diffusion models.
 
    This module provides noise schedulers for EDM-based diffusion models,
-   including variance-preserving and variance-exploding schedules.
+   including variance-preserving and variance-exploding schedules, as well
+   as standard score matching SDE schedulers.
 
 
 
@@ -36,6 +37,7 @@ Submodules
    :maxdepth: 1
 
    /api/gensbi/diffusion/path/scheduler/edm/index
+   /api/gensbi/diffusion/path/scheduler/sm_sde/index
 
 
 Classes
@@ -44,8 +46,10 @@ Classes
 .. autoapisummary::
 
    gensbi.diffusion.path.scheduler.EDMScheduler
-   gensbi.diffusion.path.scheduler.VEScheduler
-   gensbi.diffusion.path.scheduler.VPScheduler
+   gensbi.diffusion.path.scheduler.VEEdmScheduler
+   gensbi.diffusion.path.scheduler.VESmScheduler
+   gensbi.diffusion.path.scheduler.VPEdmScheduler
+   gensbi.diffusion.path.scheduler.VPSmScheduler
 
 
 Package Contents
@@ -482,7 +486,7 @@ Package Contents
 
 
 
-.. py:class:: VEScheduler(sigma_min=0.001, sigma_max=15.0)
+.. py:class:: VEEdmScheduler(sigma_min=0.001, sigma_max=15.0)
 
    Bases: :py:obj:`BaseSDE`
 
@@ -896,7 +900,327 @@ Package Contents
 
 
 
-.. py:class:: VPScheduler(beta_min=0.1, beta_max=20.0, e_s=0.001, e_t=1e-05, M=1000)
+.. py:class:: VESmScheduler(sigma_min = 0.001, sigma_max = 15.0, e_s = 0.0)
+
+   Bases: :py:obj:`BaseSMSDE`
+
+
+   
+   Variance Exploding (VE) SDE for standard score matching.
+
+   Forward SDE: :math:`dx = \sigma(t) \sqrt{2 \ln(\sigma_{\max}/\sigma_{\min})} \, dW`
+
+   where :math:`\sigma(t) = \sigma_{\min} (\sigma_{\max}/\sigma_{\min})^t`.
+
+   Marginal distribution: :math:`x_t = x_0 + \sigma(t) \epsilon`.
+
+   :param sigma_min: Minimum noise level.
+   :type sigma_min: float
+   :param sigma_max: Maximum noise level.
+   :type sigma_max: float
+   :param e_s: Minimum time for training (replaces diff_steps).
+   :type e_s: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: diffusion(t)
+
+      
+      Diffusion coefficient g(t) of the forward SDE: dx = f(x,t)dt + g(t)dW.
+
+      :param t: Time, shape (batch_size, ...).
+      :type t: Array
+
+      :returns: Diffusion coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: drift(x, t)
+
+      
+      Drift function f(x, t) of the forward SDE: dx = f(x,t)dt + g(t)dW.
+
+      :param x: Input data, shape (batch_size, ...).
+      :type x: Array
+      :param t: Time, shape (batch_size, ...).
+      :type t: Array
+
+      :returns: Drift term, same shape as x.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: marginal_mean_coeff(t)
+
+      
+      Mean coefficient of the marginal distribution: :math:`\mu(t)` such that
+      :math:`\mathbb{E}[x_t | x_0] = \mu(t) x_0`.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Mean coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: marginal_std(t)
+
+      
+      Standard deviation of the marginal distribution at time t.
+      :math:`\text{Std}[x_t | x_0] = \sigma(t)`.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Standard deviation.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_prior(key, shape)
+
+      
+      Sample from the VE prior distribution :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.
+
+      For the VE SDE, the marginal at :math:`t=T` has std :math:`\sigma_{\max}`,
+      so the prior is :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param shape: Shape of the output.
+      :type shape: Any
+
+      :returns: Samples from the VE prior.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_t(key, shape)
+
+      
+      Sample diffusion time for training.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param shape: Shape of the output.
+      :type shape: Any
+
+      :returns: Sampled times.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sigma(t)
+
+      
+      Noise level: :math:`\sigma(t) = \sigma_{\min} (\sigma_{\max}/\sigma_{\min})^t`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: T
+      :type: float
+
+
+      
+      End time of the forward SDE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: _log_sigma_max
+
+
+   .. py:attribute:: _log_sigma_min
+
+
+   .. py:attribute:: e_s
+      :value: 0.0
+
+
+
+   .. py:property:: name
+      :type: str
+
+
+      
+      Returns the name of the SDE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sigma_max
+      :value: 15.0
+
+
+
+   .. py:attribute:: sigma_min
+      :value: 0.001
+
+
+
+.. py:class:: VPEdmScheduler(beta_min=0.1, beta_max=20.0, e_s=0.001, e_t=1e-05, M=1000)
 
    Bases: :py:obj:`BaseSDE`
 
@@ -1386,6 +1710,315 @@ Package Contents
 
       
       Returns the name of the SDE scheduler.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: VPSmScheduler(beta_min = 0.001, beta_max = 3.0, e_s = 0.001)
+
+   Bases: :py:obj:`BaseSMSDE`
+
+
+   
+   Variance Preserving (VP) SDE for standard score matching.
+
+   Forward SDE: :math:`dx = -\frac{1}{2} \beta(t) x \, dt + \sqrt{\beta(t)} \, dW`
+
+   Marginal distribution: :math:`x_t = e^{-\frac{1}{2} \alpha(t)} x_0 + \sqrt{1 - e^{-\alpha(t)}} \epsilon`
+
+   where :math:`\alpha(t) = \int_0^t \beta(s) ds = \beta_{\min} t + \frac{1}{2}(\beta_{\max} - \beta_{\min}) t^2`.
+
+   :param beta_min: Minimum value of the beta schedule.
+   :type beta_min: float
+   :param beta_max: Maximum value of the beta schedule.
+   :type beta_max: float
+   :param diff_steps: Number of diffusion steps (determines minimum time for training).
+   :type diff_steps: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: alpha_t(t)
+
+      
+      Integral of beta: :math:`\alpha(t) = \beta_{\min} t + \frac{1}{2}(\beta_{\max} - \beta_{\min}) t^2`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: beta_t(t)
+
+      
+      Linear beta schedule.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: diffusion(t)
+
+      
+      Diffusion coefficient g(t) of the forward SDE: dx = f(x,t)dt + g(t)dW.
+
+      :param t: Time, shape (batch_size, ...).
+      :type t: Array
+
+      :returns: Diffusion coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: drift(x, t)
+
+      
+      Drift function f(x, t) of the forward SDE: dx = f(x,t)dt + g(t)dW.
+
+      :param x: Input data, shape (batch_size, ...).
+      :type x: Array
+      :param t: Time, shape (batch_size, ...).
+      :type t: Array
+
+      :returns: Drift term, same shape as x.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: marginal_mean_coeff(t)
+
+      
+      Mean coefficient of the marginal distribution: :math:`\mu(t)` such that
+      :math:`\mathbb{E}[x_t | x_0] = \mu(t) x_0`.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Mean coefficient.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: marginal_std(t)
+
+      
+      Standard deviation of the marginal distribution at time t.
+      :math:`\text{Std}[x_t | x_0] = \sigma(t)`.
+
+      :param t: Time.
+      :type t: Array
+
+      :returns: Standard deviation.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_t(key, shape)
+
+      
+      Sample diffusion time for training.
+
+      :param key: JAX random key.
+      :type key: Array
+      :param shape: Shape of the output.
+      :type shape: Any
+
+      :returns: Sampled times.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: T
+      :type: float
+
+
+      
+      End time of the forward SDE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: beta_d
+      :value: 2.999
+
+
+
+   .. py:attribute:: beta_max
+      :value: 3.0
+
+
+
+   .. py:attribute:: beta_min
+      :value: 0.001
+
+
+
+   .. py:attribute:: e_s
+      :value: 0.001
+
+
+
+   .. py:property:: name
+      :type: str
+
+
+      
+      Returns the name of the SDE.
 
 
 

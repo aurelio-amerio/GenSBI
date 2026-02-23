@@ -1,0 +1,185 @@
+gensbi.diffusion.solver.sm_samplers
+===================================
+
+.. py:module:: gensbi.diffusion.solver.sm_samplers
+
+.. autoapi-nested-parse::
+
+   Score matching SDE samplers.
+
+   This module implements reverse SDE sampling for standard score matching models
+   using diffrax for numerical integration.
+
+   Based on "Score-Based Generative Modeling through Stochastic Differential Equations"
+   by Song et al., 2021. https://arxiv.org/abs/2011.13456
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.diffusion.solver.sm_samplers.sm_reverse_ode_sampler
+   gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler
+
+
+Module Contents
+---------------
+
+.. py:function:: sm_reverse_ode_sampler(sde, score_model, x_init, *, key, condition_mask = None, condition_value = None, return_intermediates = False, n_steps = 1000, eps = 0.001, method = 'Euler', atol = 1e-05, rtol = 1e-05, model_kwargs = {})
+
+   
+   Sample from the probability flow ODE (PF-ODE) using diffrax integration.
+
+   Implements the deterministic sampler based on the Probability Flow ODE
+   from section 4.3 of "Score-Based Generative Modeling through Stochastic
+   Differential Equations" by Song et al., 2021.
+   See https://arxiv.org/abs/2011.13456.
+
+   Unlike the reverse SDE sampler, this ODE has no stochastic (diffusion)
+   term, making it fully deterministic for a given ``x_init``. This
+   enables exact likelihood computation.
+
+   **Time direction convention:**
+   The forward SDE runs from ``t=0`` (clean data) to ``t=T`` (noise).
+   This sampler integrates **backwards** from ``t=T`` to ``t=eps``
+   to generate samples.
+
+   **Input shape convention:**
+   All inputs must have shape ``(batch, features, channels)``.
+   If your data is 2D ``(batch, features)``, add a trailing dimension:
+   ``x = x[..., None]``.
+
+   The PF-ODE is:
+
+   .. math::
+       dx = \left[ f(x,t) - \frac{1}{2} g(t)^2 s_\theta(x, t) \right] dt
+
+   where :math:`s_\theta` is the learned score model, :math:`f` is the
+   forward drift, and :math:`g` is the forward diffusion coefficient.
+   Compared to the reverse SDE, the diffusion coefficient is halved and
+   the Brownian noise term is removed.
+
+   :param sde: The forward SDE scheduler (VPSmScheduler or VESmScheduler).
+   :type sde: Any
+   :param score_model: The score model function, called as ``score_model(obs=x, t=t, **model_kwargs)``.
+   :type score_model: Callable
+   :param x_init: Initial samples from the prior, shape ``(batch_size, features, channels)``.
+   :type x_init: Array
+   :param key: JAX random key (unused by the ODE itself, kept for API consistency).
+   :type key: Array
+   :param condition_mask: Boolean mask for conditioning (True for conditioned dimensions).
+   :type condition_mask: Optional[Array]
+   :param condition_value: Values for conditioned dimensions.
+   :type condition_value: Optional[Array]
+   :param return_intermediates: Whether to return all intermediate steps.
+   :type return_intermediates: bool
+   :param n_steps: Number of integration steps.
+   :type n_steps: int
+   :param eps: Minimum time (to avoid singularities near t=0).
+   :type eps: float
+   :param method: Integration method. One of ``"Euler"``, ``"Heun"``, ``"Dopri5"``.
+                  ``"Dopri5"`` automatically uses adaptive step sizing via
+                  ``PIDController``; the others use fixed step size.
+   :type method: str
+   :param atol: Absolute tolerance for adaptive step solvers.
+   :type atol: float
+   :param rtol: Relative tolerance for adaptive step solvers.
+   :type rtol: float
+   :param model_kwargs: Additional keyword arguments passed to the score model.
+   :type model_kwargs: dict
+
+   :returns: Sampled output. Shape ``(batch_size, features, channels)`` if
+             ``return_intermediates`` is False, or
+             ``(n_steps+1, batch_size, features, channels)`` if True.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: sm_reverse_sde_sampler(sde, score_model, x_init, *, key, condition_mask = None, condition_value = None, return_intermediates = False, n_steps = 1000, eps = 0.001, method = 'Euler', model_kwargs = {})
+
+   
+   Sample from the reverse SDE using diffrax integration.
+
+   **Time direction convention:**
+   The forward SDE runs from ``t=0`` (clean data) to ``t=T`` (noise).
+   This reverse sampler integrates **backwards** from ``t=T`` to ``t=eps``
+   to generate samples. This is the opposite direction from flow matching,
+   which integrates ``t=0`` to ``t=1`` to go from noise to data.
+
+   **Input shape convention:**
+   All inputs must have shape ``(batch, features, channels)``.
+   If your data is 2D ``(batch, features)``, add a trailing dimension:
+   ``x = x[..., None]``.
+
+   The reverse SDE is:
+
+   .. math::
+       dx = \left[ f(x,t) - g(t)^2 s_\theta(x, t) \right] dt + g(t) d\bar{W}
+
+   where :math:`s_\theta` is the learned score model, :math:`f` is the forward drift,
+   and :math:`g` is the forward diffusion coefficient.
+
+   :param sde: The forward SDE scheduler (VPSmScheduler or VESmScheduler).
+   :type sde: Any
+   :param score_model: The score model function, called as ``score_model(obs=x, t=t, **model_kwargs)``.
+   :type score_model: Callable
+   :param x_init: Initial samples from the prior, shape ``(batch_size, features, channels)``.
+   :type x_init: Array
+   :param key: JAX random key.
+   :type key: Array
+   :param condition_mask: Boolean mask for conditioning (True for conditioned dimensions).
+   :type condition_mask: Optional[Array]
+   :param condition_value: Values for conditioned dimensions.
+   :type condition_value: Optional[Array]
+   :param return_intermediates: Whether to return all intermediate steps.
+   :type return_intermediates: bool
+   :param n_steps: Number of integration steps.
+   :type n_steps: int
+   :param eps: Minimum time (to avoid singularities near t=0).
+   :type eps: float
+   :param method: Integration method. One of ``"Euler"``, ``Heun``, ``"SEA"``, ``"ShARK"``.
+   :type method: str
+   :param model_kwargs: Additional keyword arguments passed to the score model.
+   :type model_kwargs: dict
+
+   :returns: Sampled output. Shape ``(batch_size, features, channels)`` if
+             ``return_intermediates`` is False, or
+             ``(n_steps+1, batch_size, features, channels)`` if True.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

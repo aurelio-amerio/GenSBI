@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>gensbi.diffusion.solver.solver &#8212; GenSBI  documentation</title>
+    <title>gensbi.diffusion.solver.edm_solver &#8212; GenSBI  documentation</title>
   
   
   
@@ -489,7 +489,7 @@ mermaid.initialize(
 );
 
 window.addEventListener("load", load);</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/diffusion/solver/solver';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/diffusion/solver/edm_solver';</script>
     <link rel="icon" href="../../../../_static/logo-square-small.png"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -797,7 +797,7 @@ window.addEventListener("load", load);</script>
     
     <li class="breadcrumb-item"><a href="../../../gensbi.html" class="nav-link">gensbi</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.diffusion.solver.solver</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.diffusion.solver.edm_solver</span></li>
   </ul>
 </nav>
 </div>
@@ -814,39 +814,210 @@ window.addEventListener("load", load);</script>
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for gensbi.diffusion.solver.solver</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Abstract solver interface for diffusion models.</span>
+  <h1>Source code for gensbi.diffusion.solver.edm_solver</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span>
 
-<span class="sd">This module defines the abstract base class for solvers used in diffusion model sampling.</span>
-<span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">jit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver.edm_samplers</span><span class="w"> </span><span class="kn">import</span> <span class="n">edm_sampler</span><span class="p">,</span> <span class="n">edm_ablation_sampler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDMPath</span>
 
-<div class="viewcode-block" id="Solver">
-<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/solver/index.html#gensbi.diffusion.solver.Solver">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Solver</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for diffusion model solvers.&quot;&quot;&quot;</span>
 
-    <span class="nd">@abstractmethod</span>
-<div class="viewcode-block" id="Solver.sample">
-<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/solver/index.html#gensbi.diffusion.solver.Solver.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<div class="viewcode-block" id="EDMSolver">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/index.html#gensbi.diffusion.solver.edm_solver.EDMSolver">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EDMSolver</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score_model</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">EDMPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Sample from the diffusion solver given target conditions.</span>
-<span class="sd">        </span>
+<span class="sd">        Initialize the SDE solver.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            key: JAX random key for stochastic operations.</span>
-<span class="sd">            x_1: Target conditions for the solver.</span>
-<span class="sd">            </span>
+<span class="sd">            score_model : Callable</span>
+<span class="sd">                The score model function.</span>
+<span class="sd">            path : EDMPath</span>
+<span class="sd">                The EDMPath object.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                from gensbi.diffusion.solver import EDMSolver</span>
+<span class="sd">                from gensbi.diffusion.path import EDMPath</span>
+<span class="sd">                from gensbi.diffusion.path.scheduler import EDMScheduler</span>
+<span class="sd">                import jax, jax.numpy as jnp</span>
+<span class="sd">                scheduler = EDMScheduler()</span>
+<span class="sd">                path = EDMPath(scheduler)</span>
+<span class="sd">                def score_model(x, t):</span>
+<span class="sd">                    return x + t</span>
+<span class="sd">                solver = EDMSolver(score_model, path)</span>
+<span class="sd">                key = jax.random.PRNGKey(0)</span>
+<span class="sd">                x_init = jax.random.normal(key, (16, 2))</span>
+<span class="sd">                samples = solver.sample(key, x_init, nsteps=10)</span>
+<span class="sd">                print(samples.shape)</span>
+<span class="sd">                # (10, 16, 2)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="EDMSolver.score_model">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/edm_solver/index.html#gensbi.diffusion.solver.edm_solver.EDMSolver.score_model">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score_model</span> <span class="o">=</span> <span class="n">score_model</span></div>
+
+<div class="viewcode-block" id="EDMSolver.path">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/edm_solver/index.html#gensbi.diffusion.solver.edm_solver.EDMSolver.path">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;EDM&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;EDM-VP&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;EDM-VE&quot;</span><span class="p">,</span>
+        <span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;Path must be one of [&#39;EDM&#39;, &#39;EDM-VP&#39;, &#39;EDM-VE&#39;], got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span>
+
+<div class="viewcode-block" id="EDMSolver.get_sampler">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/index.html#gensbi.diffusion.solver.edm_solver.EDMSolver.get_sampler">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">condition_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">condition_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cfg_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nsteps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Heun&quot;</span><span class="p">,</span>
+        <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">solver_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">solver_scheduler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a sampler function for the SDE.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            condition_mask : Optional[Array]</span>
+<span class="sd">                Mask for conditioning.</span>
+<span class="sd">            condition_value : Optional[Array]</span>
+<span class="sd">                Value for conditioning.</span>
+<span class="sd">            cfg_scale : Optional[float]</span>
+<span class="sd">                Classifier-free guidance scale (not implemented).</span>
+<span class="sd">            nsteps : int</span>
+<span class="sd">                Number of steps.</span>
+<span class="sd">            method : str</span>
+<span class="sd">                Integration method.</span>
+<span class="sd">            return_intermediates : bool</span>
+<span class="sd">                Whether to return intermediate steps.</span>
+<span class="sd">            model_extras : dict</span>
+<span class="sd">                Additional model arguments.</span>
+<span class="sd">            solver_params : Optional[dict]</span>
+<span class="sd">                Additional solver parameters.</span>
+<span class="sd">            solver_scheduler : Optional[Any]</span>
+<span class="sd">                Scheduler to use for the solver. If None, the path&#39;s scheduler is used.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">            Sampled output from the solver.</span>
+<span class="sd">            Callable</span>
+<span class="sd">                Sampler function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+        <span class="k">if</span> <span class="n">solver_scheduler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">solver_scheduler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span>
+
+        <span class="k">if</span> <span class="n">solver_scheduler</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;EDM&quot;</span><span class="p">:</span>
+            <span class="n">sampler_</span> <span class="o">=</span> <span class="n">edm_sampler</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sampler_</span> <span class="o">=</span> <span class="n">edm_ablation_sampler</span>
+
+        <span class="k">if</span> <span class="n">cfg_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;CFG scale is not implemented for EDM samplers yet.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">S_churn</span> <span class="o">=</span> <span class="n">solver_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;S_churn&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">S_min</span> <span class="o">=</span> <span class="n">solver_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;S_min&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">S_max</span> <span class="o">=</span> <span class="n">solver_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;S_max&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">))</span>  <span class="c1"># type: ignore</span>
+        <span class="n">S_noise</span> <span class="o">=</span> <span class="n">solver_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;S_noise&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="nd">@jit</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sampler_</span><span class="p">(</span>
+                <span class="n">solver_scheduler</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">score_model</span><span class="p">,</span>
+                <span class="n">x_init</span><span class="p">,</span>
+                <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+                <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span>
+                <span class="n">condition_value</span><span class="o">=</span><span class="n">condition_value</span><span class="p">,</span>
+                <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
+                <span class="n">n_steps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
+                <span class="n">S_churn</span><span class="o">=</span><span class="n">S_churn</span><span class="p">,</span>
+                <span class="n">S_min</span><span class="o">=</span><span class="n">S_min</span><span class="p">,</span>
+                <span class="n">S_max</span><span class="o">=</span><span class="n">S_max</span><span class="p">,</span>
+                <span class="n">S_noise</span><span class="o">=</span><span class="n">S_noise</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+                <span class="n">model_kwargs</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sample</span></div>
+
+
+<div class="viewcode-block" id="EDMSolver.sample">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/index.html#gensbi.diffusion.solver.edm_solver.EDMSolver.sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">condition_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">condition_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cfg_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nsteps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Heun&quot;</span><span class="p">,</span>
+        <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">solver_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">solver_scheduler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample from the SDE using the sampler.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            key : Array</span>
+<span class="sd">                JAX random key.</span>
+<span class="sd">            x_init : Array</span>
+<span class="sd">                Initial value.</span>
+<span class="sd">            condition_mask : Optional[Array]</span>
+<span class="sd">                Mask for conditioning.</span>
+<span class="sd">            condition_value : Optional[Array]</span>
+<span class="sd">                Value for conditioning.</span>
+<span class="sd">            cfg_scale : Optional[float]</span>
+<span class="sd">                Classifier-free guidance scale (not implemented).</span>
+<span class="sd">            nsteps : int</span>
+<span class="sd">                Number of steps.</span>
+<span class="sd">            method : str</span>
+<span class="sd">                Integration method.</span>
+<span class="sd">            return_intermediates : bool</span>
+<span class="sd">                Whether to return intermediate steps.</span>
+<span class="sd">            model_extras : dict</span>
+<span class="sd">                Additional model arguments.</span>
+<span class="sd">            solver_params : Optional[dict]</span>
+<span class="sd">                Additional solver parameters.</span>
+<span class="sd">            solver_scheduler : Optional[Any]</span>
+<span class="sd">                Scheduler to use for the solver. If None, the path&#39;s scheduler is used.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Array</span>
+<span class="sd">                Sampled output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
+            <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span>
+            <span class="n">condition_value</span><span class="o">=</span><span class="n">condition_value</span><span class="p">,</span>
+            <span class="n">cfg_scale</span><span class="o">=</span><span class="n">cfg_scale</span><span class="p">,</span>
+            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+            <span class="n">solver_params</span><span class="o">=</span><span class="n">solver_params</span><span class="p">,</span>
+            <span class="n">solver_scheduler</span><span class="o">=</span><span class="n">solver_scheduler</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">)</span></div>
 </div>
 
 </pre></div>
