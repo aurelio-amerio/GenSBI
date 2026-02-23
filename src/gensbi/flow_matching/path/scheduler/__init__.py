@@ -5,6 +5,7 @@ This module provides various schedulers that define the time-dependent parameter
 for probability paths in flow matching, including conditional optimal transport,
 variance-preserving, and cosine schedules.
 """
+
 from .schedule_transform import ScheduleTransformedModel
 from .scheduler import (
     CondOTScheduler,
@@ -14,7 +15,7 @@ from .scheduler import (
     PolynomialConvexScheduler,
     Scheduler,
     SchedulerOutput,
-    VPScheduler,
+    VPEdmScheduler,
 )
 
 __all__ = [
@@ -25,6 +26,6 @@ __all__ = [
     "PolynomialConvexScheduler",
     "Scheduler",
     "SchedulerOutput",
-    "VPScheduler",
+    "VPEdmScheduler",
     "ScheduleTransformedModel",
 ]

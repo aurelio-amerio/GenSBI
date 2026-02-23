@@ -10,7 +10,7 @@ Provides tools for probabilistic modeling, simulation, and training of generativ
 See the documentation for details and usage examples.
 """
 
-__version__ = "0.0.7"
+__version__ = "0.1.0"
 
 import warnings
 
@@ -19,10 +19,3 @@ warnings.filterwarnings(
     "ignore", category=UserWarning, module="google.protobuf.runtime_version"
 )
 
-
-# coverage report:
-# diffusion: 100%
-# flow_matching: 100%
-# recipes: 97%
-# models: 87%
-# utils: 100%
