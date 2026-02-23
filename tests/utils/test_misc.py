@@ -5,7 +5,8 @@ import jax.numpy as jnp
 import jax
 import pytest
 
-from gensbi.utils.misc import get_colored_value, scale_lr
+from gensbi.utils.misc import get_colored_value
+from gensbi.recipes.utils import scale_lr
 
 
 def test_get_colored_value():

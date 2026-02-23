@@ -36,4 +36,3 @@ __all__ = [
     "VAE2DPipeline",
 ]
 
-# 97% coverage, need to improve pipeline to hit some branches

@@ -273,3 +273,53 @@ def test_sm_pf_solver_dopri5(sde_cls):
 
     samples = solver.sample(key, x_init, nsteps=5, method="Dopri5")
     assert samples.shape == (5, 3, 4)
+
+
+# =========================================================
+# Condition mask tests (covers conditioning branches)
+# =========================================================
+
+
+@pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
+def test_sm_solver_with_condition_mask(sde_cls):
+    """Test SDE sampler with condition_mask and condition_value."""
+    score_model = DummyScoreModel()
+    sde = sde_cls()
+    path = SMPath(sde)
+    solver = SMSolver(score_model=score_model, path=path)
+    key = jax.random.PRNGKey(0)
+
+    x_init = path.sample_prior(key, (3, 4, 1))
+    condition_mask = jnp.zeros((3, 4, 1))
+    condition_mask = condition_mask.at[:, 0:2, :].set(1.0)
+    condition_value = jnp.ones((3, 4, 1)) * 2.0
+
+    samples = solver.sample(
+        key, x_init, nsteps=5,
+        condition_mask=condition_mask,
+        condition_value=condition_value,
+    )
+    assert samples.shape == (3, 4, 1)
+
+
+@pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
+def test_sm_pf_solver_with_condition_mask(sde_cls):
+    """Test ODE sampler with condition_mask and condition_value."""
+    score_model = DummyScoreModel()
+    sde = sde_cls()
+    path = SMPath(sde)
+    solver = SMPFSolver(score_model=score_model, path=path)
+    key = jax.random.PRNGKey(0)
+
+    x_init = path.sample_prior(key, (3, 4, 1))
+    condition_mask = jnp.zeros((3, 4, 1))
+    condition_mask = condition_mask.at[:, 0:2, :].set(1.0)
+    condition_value = jnp.ones((3, 4, 1)) * 2.0
+
+    samples = solver.sample(
+        key, x_init, nsteps=5,
+        condition_mask=condition_mask,
+        condition_value=condition_value,
+    )
+    assert samples.shape == (3, 4, 1)
+

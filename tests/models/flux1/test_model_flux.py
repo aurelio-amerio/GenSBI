@@ -363,3 +363,162 @@ def test_flux_param_dtype_propagation(model_fn):
     assert (
         model.final_layer.linear.kernel[...].dtype == jnp.bfloat16
     ), "final_layer linear layer dtype not propagated correctly."
+
+
+# %%
+# Coverage improvement tests
+
+
+def test_flux_params_missing_axes_dim():
+    """axes_dim=None with id_merge_mode='sum' should raise ValueError."""
+    with pytest.raises(ValueError, match="axes_dim required"):
+        Flux1Params(
+            in_channels=1,
+            vec_in_dim=None,
+            context_in_dim=1,
+            mlp_ratio=4,
+            num_heads=4,
+            depth=1,
+            depth_single_blocks=2,
+            axes_dim=None,
+            dim_obs=2,
+            dim_cond=2,
+            qkv_bias=True,
+            rngs=get_rngs(),
+            id_merge_mode="sum",
+        )
+
+
+def test_flux_params_missing_concat_dims():
+    """Missing val_emb_dim/id_emb_dim with concat should raise ValueError."""
+    with pytest.raises(ValueError, match="val_emb_dim and id_emb_dim required"):
+        Flux1Params(
+            in_channels=1,
+            vec_in_dim=None,
+            context_in_dim=1,
+            mlp_ratio=4,
+            num_heads=4,
+            depth=1,
+            depth_single_blocks=2,
+            dim_obs=2,
+            dim_cond=2,
+            qkv_bias=True,
+            rngs=get_rngs(),
+            id_merge_mode="concat",
+            val_emb_dim=None,
+            id_emb_dim=None,
+        )
+
+
+def test_flux_params_unknown_strategy():
+    """Unknown id_merge_mode should raise ValueError."""
+    with pytest.raises(ValueError, match="Unknown strategy"):
+        Flux1Params(
+            in_channels=1,
+            vec_in_dim=None,
+            context_in_dim=1,
+            mlp_ratio=4,
+            num_heads=4,
+            depth=1,
+            depth_single_blocks=2,
+            dim_obs=2,
+            dim_cond=2,
+            qkv_bias=True,
+            rngs=get_rngs(),
+            id_merge_mode="invalid",
+        )
+
+
+
+def test_flux_ndim_error():
+    """Passing 2D input tensors should raise ValueError."""
+    model = init_test_model_standard()
+    obs = jnp.ones((4, 3))  # 2D, should be 3D
+    cond = jnp.ones((4, 5))
+    obs_ids = jnp.zeros((1, 3, 2), dtype=jnp.int32)
+    cond_ids = jnp.zeros((1, 5, 2), dtype=jnp.int32)
+    t = jnp.ones((4,))
+
+    with pytest.raises(ValueError, match="3 dimensions"):
+        model(t=t, obs=obs, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids)
+
+
+def test_flux_guidance_embed():
+    """Test model with guidance_embed=True."""
+    params = Flux1Params(
+        in_channels=1,
+        vec_in_dim=4,
+        context_in_dim=1,
+        mlp_ratio=4,
+        num_heads=4,
+        depth=1,
+        depth_single_blocks=2,
+        axes_dim=[4],
+        dim_obs=3,
+        dim_cond=5,
+        qkv_bias=True,
+        guidance_embed=True,
+        rngs=get_rngs(),
+        param_dtype=jnp.bfloat16,
+    )
+    model = Flux1(params)
+
+    obs = jnp.ones((2, 3, 1))
+    cond = jnp.ones((2, 5, 1))
+    obs_ids = jnp.zeros((1, 3, 2), dtype=jnp.int32)
+    cond_ids = jnp.zeros((1, 5, 2), dtype=jnp.int32)
+    t = jnp.ones((2,))
+    guidance = jnp.ones((2, 4))
+
+    out = model(t=t, obs=obs, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids, guidance=guidance)
+    assert out.shape == (2, 3, 1)
+
+    # Without guidance should raise ValueError
+    with pytest.raises(ValueError, match="guidance strength"):
+        model(t=t, obs=obs, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids, guidance=None)
+
+
+def test_flux_cond_broadcast():
+    """Test that cond with batch=1 is broadcast to match obs batch size."""
+    model = init_test_model_standard()
+
+    obs = jnp.ones((4, 3, 1))
+    cond = jnp.ones((1, 5, 1))  # batch=1
+    obs_ids = jnp.zeros((1, 3, 2), dtype=jnp.int32)
+    cond_ids = jnp.zeros((1, 5, 2), dtype=jnp.int32)
+    t = jnp.ones((4,))
+
+    out = model(t=t, obs=obs, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids)
+    assert out.shape == (4, 3, 1)
+
+
+def test_identity_layer():
+    """Test the Identity layer from flux1.layers."""
+    from gensbi.models.flux1.layers import Identity
+
+    identity = Identity()
+    x = jnp.ones((2, 3))
+    out = identity(x)
+    assert jnp.allclose(out, x)
+
+
+def test_timestep_embedding_odd_dim():
+    """Test timestep_embedding with odd dimension (triggers padding branch)."""
+    from gensbi.models.flux1.layers import timestep_embedding
+
+    t = jnp.array([0.5, 1.0])
+    emb = timestep_embedding(t, dim=7)  # odd dim
+    assert emb.shape == (2, 7)
+
+
+def test_self_attention_default_qkv():
+    """Test SelfAttention with qkv_features=None (default)."""
+    from gensbi.models.flux1.layers import SelfAttention
+
+    rngs = get_rngs()
+    dim = 16
+    attn = SelfAttention(dim=dim, rngs=rngs, num_heads=2)
+    x = jnp.ones((1, 4, dim))
+    pe = None
+    out = attn(x, pe=pe)
+    assert out.shape == (1, 4, dim)

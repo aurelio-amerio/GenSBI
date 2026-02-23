@@ -143,3 +143,86 @@ def test_simformer_param_dtype_propagation():
         model.transformer.attention_blocks[0].attn.query.kernel[...].dtype
         == jnp.bfloat16
     )
+
+
+# Coverage improvement tests
+
+
+def test_simformer_default_qkv_features():
+    """Test SimformerParams with qkv_features=None (default calculated)."""
+    params = SimformerParams(
+        rngs=get_rngs(),
+        in_channels=1,
+        val_emb_dim=2,
+        id_emb_dim=2,
+        cond_emb_dim=2,
+        dim_joint=4,
+        fourier_features=8,
+        num_heads=2,
+        depth=2,
+        mlp_ratio=2,
+        qkv_features=None,  # should default to val+id+cond = 6
+        num_hidden_layers=1,
+    )
+    assert params.qkv_features == 6  # 2 + 2 + 2
+
+
+def test_simformer_custom_embedding_net():
+    """Test Simformer with a custom embedding_net_value."""
+    from gensbi.models.embedding import MLPEmbedder
+
+    params = get_params()
+    custom_emb = MLPEmbedder(
+        in_dim=1,
+        hidden_dim=params.val_emb_dim,
+        rngs=get_rngs(),
+        param_dtype=params.param_dtype,
+    )
+    model = Simformer(params, embedding_net_value=custom_emb)
+
+    x = jnp.ones((1, 4, 1))
+    t = jnp.ones((1, 1))
+    node_ids = jnp.arange(4).reshape(1, 4)
+    condition_mask = jnp.zeros((1, 4, 1))
+    out = model(t, x, node_ids=node_ids, condition_mask=condition_mask)
+    assert out.shape == (1, 4, 1)
+
+
+def test_simformer_node_ids_1d():
+    """Test Simformer with 1D node_ids (should be auto-reshaped)."""
+    params = get_params()
+    model = Simformer(params)
+
+    x = jnp.ones((1, 4, 1))
+    t = jnp.ones((1, 1))
+    node_ids = jnp.arange(4)  # 1D
+    condition_mask = jnp.zeros((1, 4, 1))
+    out = model(t, x, node_ids=node_ids, condition_mask=condition_mask)
+    assert out.shape == (1, 4, 1)
+
+
+def test_simformer_node_ids_3d():
+    """Test Simformer with 3D node_ids (shape (-1, seq_len, 1))."""
+    params = get_params()
+    model = Simformer(params)
+
+    x = jnp.ones((1, 4, 1))
+    t = jnp.ones((1, 1))
+    node_ids = jnp.arange(4).reshape(1, 4, 1)  # 3D
+    condition_mask = jnp.zeros((1, 4, 1))
+    out = model(t, x, node_ids=node_ids, condition_mask=condition_mask)
+    assert out.shape == (1, 4, 1)
+
+
+def test_simformer_node_ids_invalid_ndim():
+    """Test Simformer with 4D node_ids should raise ValueError."""
+    params = get_params()
+    model = Simformer(params)
+
+    x = jnp.ones((1, 4, 1))
+    t = jnp.ones((1, 1))
+    node_ids = jnp.arange(4).reshape(1, 1, 4, 1)  # 4D — invalid
+    condition_mask = jnp.zeros((1, 4, 1))
+    with pytest.raises(ValueError, match="ndim"):
+        model(t, x, node_ids=node_ids, condition_mask=condition_mask)
+

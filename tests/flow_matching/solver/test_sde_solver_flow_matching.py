@@ -178,3 +178,58 @@ def test_invalid_method(solver_cls):
     solver = make_solver(solver_cls)
     with pytest.raises(ValueError, match="not supported"):
         solver.get_sampler(step_size=0.1, method="InvalidMethod")
+
+
+# =========================================================
+# Coverage improvement tests
+# =========================================================
+
+
+@pytest.mark.parametrize("solver_cls", [ZeroEnds, NonSingular])
+def test_custom_solver_instance(solver_cls):
+    """Pass a diffrax solver instance instead of a string."""
+    import diffrax
+
+    solver = make_solver(solver_cls, features=3, channels=2)
+    key = jax.random.PRNGKey(0)
+    key_init, key_sample = jax.random.split(key)
+
+    nsamples = 3
+    x_init = solver.prior_distribution.sample(key_init, (nsamples,))
+    x_init = x_init.reshape(nsamples, 3, 2)
+
+    # Pass Euler instance directly instead of string
+    samples = solver.sample(
+        x_init, step_size=0.2, method=diffrax.Euler(), key=key_sample
+    )
+    assert samples.shape == (3, 3, 2)
+
+
+@pytest.mark.parametrize("solver_cls", [ZeroEnds, NonSingular])
+def test_shark_method(solver_cls):
+    """Test with ShARK method (adaptive step sizing via PIDController)."""
+    solver = make_solver(solver_cls, features=3, channels=2)
+    key = jax.random.PRNGKey(0)
+    key_init, key_sample = jax.random.split(key)
+
+    nsamples = 3
+    x_init = solver.prior_distribution.sample(key_init, (nsamples,))
+    x_init = x_init.reshape(nsamples, 3, 2)
+
+    samples = solver.sample(
+        x_init, step_size=0.2, method="ShARK", key=key_sample
+    )
+    assert samples.shape == (3, 3, 2)
+
+
+@pytest.mark.parametrize("solver_cls", [ZeroEnds, NonSingular])
+def test_sample_key_none_error(solver_cls):
+    """Calling sample with key=None should raise ValueError."""
+    solver = make_solver(solver_cls)
+    key = jax.random.PRNGKey(0)
+    x_init = solver.prior_distribution.sample(key, (2,))
+    x_init = x_init.reshape(2, 3, 2)
+
+    with pytest.raises(ValueError, match="key is required"):
+        solver.sample(x_init, step_size=0.2, method="Euler", key=None)
+

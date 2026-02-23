@@ -129,4 +129,73 @@ def test_flux1joint_param_dtype_propagation(model_fn):
     assert model.final_layer.linear.kernel[...].dtype == jnp.bfloat16
 
 
+
 # %%
+
+# Coverage improvement tests
+
+
+def test_flux1joint_ndim_error():
+    """Passing 2D input tensors should raise ValueError."""
+    model = init_test_model_joint_sum()
+    x = jnp.ones((1, 4))  # 2D, should be 3D
+    t = jnp.ones((1, 1))
+    node_ids = jnp.arange(4).reshape(1, -1, 1)
+    condition_mask = jnp.zeros((1, 4, 1))
+
+    with pytest.raises(ValueError):
+        model(t=t, obs=x, node_ids=node_ids, condition_mask=condition_mask)
+
+
+def test_flux1joint_guidance_embed():
+    """Test model with guidance_embed=True."""
+    params = Flux1JointParams(
+        in_channels=1,
+        vec_in_dim=4,
+        mlp_ratio=3.0,
+        num_heads=2,
+        depth_single_blocks=2,
+        val_emb_dim=4,
+        cond_emb_dim=2,
+        id_emb_dim=4,
+        qkv_bias=True,
+        rngs=nnx.Rngs(0),
+        dim_joint=4,
+        id_merge_mode="concat",
+        id_embedding_strategy="absolute",
+        guidance_embed=True,
+        param_dtype=jnp.bfloat16,
+    )
+    model = Flux1Joint(params)
+
+    x = jnp.ones((2, 4, 1))
+    t = jnp.ones((2, 1))
+    node_ids = jnp.arange(4).reshape(1, -1, 1)
+    condition_mask = jnp.zeros((1, 4, 1))
+    guidance = jnp.ones((2, 4))
+
+    out = model(t=t, obs=x, node_ids=node_ids, condition_mask=condition_mask, guidance=guidance)
+    assert out.shape == (2, 4, 1)
+
+    # Without guidance should raise ValueError
+    with pytest.raises(ValueError, match="guidance strength"):
+        model(t=t, obs=x, node_ids=node_ids, condition_mask=condition_mask, guidance=None)
+
+
+def test_flux1joint_params_unknown_merge_mode():
+    """Unknown id_merge_mode should raise AssertionError."""
+    with pytest.raises(AssertionError, match="Unknown combining strategy"):
+        Flux1JointParams(
+            in_channels=1,
+            vec_in_dim=None,
+            mlp_ratio=3.0,
+            num_heads=2,
+            depth_single_blocks=2,
+            val_emb_dim=4,
+            cond_emb_dim=2,
+            id_emb_dim=4,
+            qkv_bias=True,
+            rngs=nnx.Rngs(0),
+            dim_joint=4,
+            id_merge_mode="invalid",
+        )
