@@ -31,6 +31,7 @@ The following tasks are planned for future development:
 - [x] Implement RoPE embedding with the 0-out trick
 - [x] For the Flux1Joint, add the possibility to concatenate the embedding ids, instead of just summing them
 - [ ] The theoretical overview is very basic currently, we will need to expand it
+- [ ] Move concrete Path/Solver/Loss imports in pipeline files to lazy imports or dependency injection to reduce module-load time and decouple the dependency graph
 - [x] Update two moons example with full diagnostics, 
 - [x] Make notebooks for all the examples with link to colab and github
 - [x] Include plots from the img directory (so users have a reference plot even when they do their own experiments with the notebook)
