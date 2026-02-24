@@ -75,10 +75,11 @@ class FlowMatchingMethod(GenerativeMethod):
 
         Returns
         -------
-        ContinuousFMLoss
-            The flow matching training loss.
+        _FMLoss
+            A loss callable with uniform interface
+            ``(model, batch, condition_mask=None, model_extras=None) -> loss``.
         """
-        return ContinuousFMLoss(path, reduction="mean")
+        return _FMLoss(path)
 
     def prepare_batch(self, key, x_1, path):
         """Sample from the prior and time for a flow matching training batch.
@@ -211,3 +212,46 @@ class FlowMatchingMethod(GenerativeMethod):
             return sampler_(x_init)
 
         return sampler_fn
+
+
+class _FMLoss:
+    """Thin wrapper around ``ContinuousFMLoss`` for a uniform interface.
+
+    Normalizes the ``ContinuousFMLoss(vf, batch, **kwargs)`` signature to
+    ``(model, batch, condition_mask=None, model_extras=None)`` matching
+    ``_EDMLoss`` and ``_SMLoss``.
+
+    Parameters
+    ----------
+    path : AffineProbPath
+        The probability path.
+    """
+
+    def __init__(self, path):
+        self.loss = ContinuousFMLoss(path, reduction="mean")
+
+    def __call__(self, model, batch, condition_mask=None, model_extras=None):
+        """Evaluate the flow matching loss.
+
+        Parameters
+        ----------
+        model : Callable
+            The velocity field model.
+        batch : tuple
+            ``(x_0, x_1, t)`` — source noise, target data, and time.
+        condition_mask : Array, optional
+            Conditioning mask (forwarded as kwarg if not None).
+        model_extras : dict, optional
+            Additional model keyword arguments.
+
+        Returns
+        -------
+        Array
+            Scalar loss.
+        """
+        kwargs = {}
+        if model_extras is not None:
+            kwargs.update(model_extras)
+        if condition_mask is not None:
+            kwargs["condition_mask"] = condition_mask
+        return self.loss(model, batch, **kwargs)

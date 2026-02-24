@@ -97,11 +97,11 @@ class TestFlowMatchingMethod:
         assert isinstance(path, AffineProbPath)
 
     def test_build_loss(self, method):
-        from gensbi.flow_matching.loss import ContinuousFMLoss
+        from gensbi.core.flow_matching import _FMLoss
 
         path = method.build_path({})
         loss = method.build_loss(path)
-        assert isinstance(loss, ContinuousFMLoss)
+        assert isinstance(loss, _FMLoss)
 
     def test_prepare_batch_shapes(self, method, key, x_1):
         path = method.build_path({})
