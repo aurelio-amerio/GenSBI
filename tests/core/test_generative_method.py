@@ -97,11 +97,11 @@ class TestFlowMatchingMethod:
         assert isinstance(path, AffineProbPath)
 
     def test_build_loss(self, method):
-        from gensbi.core.flow_matching import _FMLoss
+        from gensbi.flow_matching.loss import FMLoss
 
         path = method.build_path({})
         loss = method.build_loss(path)
-        assert isinstance(loss, _FMLoss)
+        assert isinstance(loss, FMLoss)
 
     def test_prepare_batch_shapes(self, method, key, x_1):
         path = method.build_path({})
@@ -147,12 +147,12 @@ class TestDiffusionEDMMethod:
         assert isinstance(path, EDMPath)
 
     def test_build_loss(self, method):
-        from gensbi.core.diffusion_edm import _EDMLoss
+        from gensbi.diffusion.loss import EDMLoss
 
         config = method.get_extra_training_config()
         path = method.build_path(config)
         loss = method.build_loss(path)
-        assert isinstance(loss, _EDMLoss)
+        assert isinstance(loss, EDMLoss)
 
     def test_prepare_batch_shapes(self, method, key, x_1):
         config = method.get_extra_training_config()
@@ -208,12 +208,12 @@ class TestScoreMatchingMethod:
         assert isinstance(path, SMPath)
 
     def test_build_loss(self, method):
-        from gensbi.core.score_matching import _SMLoss
+        from gensbi.diffusion.loss import SMLoss
 
         config = method.get_extra_training_config()
         path = method.build_path(config)
         loss = method.build_loss(path)
-        assert isinstance(loss, _SMLoss)
+        assert isinstance(loss, SMLoss)
 
     def test_prepare_batch_shapes(self, method, key, x_1):
         config = method.get_extra_training_config()

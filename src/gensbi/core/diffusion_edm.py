@@ -71,11 +71,11 @@ class DiffusionEDMMethod(GenerativeMethod):
 
         Returns
         -------
-        _EDMLoss
+        EDMLoss
             A loss callable with signature
             ``(key, model, batch, condition_mask=None, model_extras={}) -> loss``.
         """
-        return _EDMLoss(path)
+        return EDMLoss(path)
 
     def prepare_batch(self, key, x_1, path):
         """Sample noise and sigma for an EDM training batch.
@@ -225,48 +225,4 @@ class DiffusionEDMMethod(GenerativeMethod):
         return {}
 
 
-class _EDMLoss:
-    """Thin wrapper around ``EDMPath.get_loss_fn()`` for a uniform interface.
-
-    Parameters
-    ----------
-    path : EDMPath
-        The diffusion path.
-    """
-
-    def __init__(self, path):
-        self.path = path
-        self.loss_fn = path.get_loss_fn()
-
-    def __call__(self, model, batch, condition_mask=None, model_extras=None):
-        """Evaluate the EDM denoising loss.
-
-        Parameters
-        ----------
-        model : Callable
-            The score model.
-        batch : tuple
-            ``(x_0, x_1, sigma)`` — standard normal noise, clean data,
-            and noise level.
-        condition_mask : Array, optional
-            Conditioning mask (for joint models).
-        model_extras : dict, optional
-            Additional model keyword arguments.
-
-        Returns
-        -------
-        Array
-            Scalar loss.
-        """
-        if model_extras is None:
-            model_extras = {}
-
-        x_0, x_1, sigma = batch
-        path_sample = self.path.sample(x_0, x_1, sigma)
-        loss_batch = path_sample.get_batch()
-
-        return self.loss_fn(
-            model, loss_batch,
-            condition_mask=condition_mask,
-            model_extras=model_extras,
-        )
+from gensbi.diffusion.loss import EDMLoss  # noqa: E402

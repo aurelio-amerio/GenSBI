@@ -1208,3 +1208,227 @@ class JointSMPipeline(AbstractPipeline):
 
         samples = sampler(key, nsamples)
         return samples
+
+
+# ---------------------------------------------------------------------------
+# Unified JointPipeline (Phase 2)
+# ---------------------------------------------------------------------------
+
+from gensbi.core.generative_method import GenerativeMethod
+
+
+class JointPipeline(AbstractPipeline):
+    """Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.
+
+    Unlike the method-specific classes above (``JointFlowPipeline``,
+    ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with
+    **any** generative method and **any** user-provided model that conforms
+    to the ``JointWrapper`` interface.
+
+    Parameters
+    ----------
+    model : nnx.Module
+        The model to be trained.
+    train_dataset : iterable
+        Training dataset yielding concatenated ``x_1`` batches
+        (obs and cond concatenated along the token dimension).
+    val_dataset : iterable
+        Validation dataset.
+    dim_obs : int
+        Dimension of the observation/parameter space.
+    dim_cond : int
+        Dimension of the conditioning space.
+    method : GenerativeMethod
+        Strategy object (e.g. ``FlowMatchingMethod()``,
+        ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).
+    ch_obs : int, optional
+        Number of channels per token. Default is 1.
+    condition_mask_kind : str, optional
+        Kind of condition mask. One of ``"structured"`` or ``"posterior"``.
+        Default is ``"structured"``.
+    params : optional
+        Model parameters (stored but not used directly).
+    training_config : dict, optional
+        Training configuration.
+
+    Examples
+    --------
+    >>> from gensbi.core import FlowMatchingMethod
+    >>> pipeline = JointPipeline(
+    ...     model=my_model,
+    ...     train_dataset=train_ds,
+    ...     val_dataset=val_ds,
+    ...     dim_obs=2, dim_cond=7,
+    ...     method=FlowMatchingMethod(),
+    ... )
+    """
+
+    def __init__(
+        self,
+        model,
+        train_dataset,
+        val_dataset,
+        dim_obs: int,
+        dim_cond: int,
+        method: GenerativeMethod,
+        ch_obs=1,
+        condition_mask_kind="structured",
+        params=None,
+        training_config=None,
+    ):
+        self.method = method
+
+        if training_config is None:
+            training_config = self.get_default_training_config()
+        extra = method.get_extra_training_config()
+        for k, v in extra.items():
+            training_config.setdefault(k, v)
+
+        super().__init__(
+            model=model,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            ch_obs=ch_obs,
+            params=params,
+            training_config=training_config,
+        )
+
+        self.dim_joint = self.dim_obs + self.dim_cond
+
+        self.node_ids, self.obs_ids, self.cond_ids = init_ids_joint(
+            self.dim_obs, self.dim_cond
+        )
+
+        self.path = method.build_path(self.training_config)
+        self.loss_obj = method.build_loss(self.path)
+
+        if self.dim_cond == 0:
+            raise ValueError(
+                "JointPipeline initialized with dim_cond=0. "
+                "Use UnconditionalPipeline instead."
+            )
+
+        if condition_mask_kind not in ("structured", "posterior"):
+            raise ValueError(
+                f"condition_mask_kind must be one of ['structured', 'posterior'], "
+                f"got {condition_mask_kind}."
+            )
+        self.condition_mask_kind = condition_mask_kind
+
+    # -- Factory stubs ------------------------------------------------------
+
+    @classmethod
+    def init_pipeline_from_config(cls, *args, **kwargs):
+        raise NotImplementedError(
+            "JointPipeline is model-agnostic. "
+            "Use model-specific pipelines for config init."
+        )
+
+    def _make_model(self):
+        raise NotImplementedError(
+            "JointPipeline is model-agnostic — the user provides the model."
+        )
+
+    @classmethod
+    def get_default_params(cls, *args, **kwargs):
+        raise NotImplementedError(
+            "JointPipeline is model-agnostic — the user provides model params."
+        )
+
+    # -- Core pipeline methods ----------------------------------------------
+
+    def get_loss_fn(self):
+        def loss_fn(model, x_1, key):
+            batch_size = x_1.shape[0]
+            rng_batch, rng_condition = jax.random.split(key)
+
+            prepared = self.method.prepare_batch(rng_batch, x_1, self.path)
+
+            condition_mask = sample_condition_mask(
+                rng_condition,
+                batch_size,
+                self.dim_obs,
+                self.dim_cond,
+                kind=self.condition_mask_kind,
+            )
+
+            model_extras = {
+                "node_ids": self.node_ids,
+                "condition_mask": condition_mask,
+            }
+            return self.loss_obj(
+                model, prepared,
+                condition_mask=condition_mask,
+                model_extras=model_extras,
+            )
+
+        return loss_fn
+
+    def _wrap_model(self):
+        self.model_wrapped = JointWrapper(self.model)
+        self.ema_model_wrapped = JointWrapper(self.ema_model)
+
+    def get_sampler(self, x_o, use_ema=True, **sampler_kwargs):
+        """Get a sampler function.
+
+        Parameters
+        ----------
+        x_o : array-like
+            Conditioning variable (observed data).
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        **sampler_kwargs
+            Forwarded to ``method.build_sampler_fn``.
+
+        Returns
+        -------
+        Callable
+            ``sampler(key, nsamples) -> samples``
+        """
+        model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
+
+        cond = _expand_dims(x_o)
+        model_extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+        }
+
+        sampler_fn = self.method.build_sampler_fn(
+            model_wrapped, self.path, model_extras, **sampler_kwargs,
+        )
+
+        def sampler(key, nsamples):
+            key, key_init = jax.random.split(key)
+            x_init = self.method.sample_init(
+                key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
+            )
+            return sampler_fn(key, x_init)
+
+        return sampler
+
+    def sample(self, key, x_o, nsamples=10_000, use_ema=True, **sampler_kwargs):
+        """Draw samples from the model.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key.
+        x_o : array-like
+            Conditioning variable.
+        nsamples : int, optional
+            Number of samples. Default is 10 000.
+        use_ema : bool, optional
+            Use the EMA model. Default is True.
+        **sampler_kwargs
+            Forwarded to :meth:`get_sampler`.
+
+        Returns
+        -------
+        Array
+            Samples of shape ``(nsamples, dim_obs, ch_obs)``.
+        """
+        sampler = self.get_sampler(x_o, use_ema=use_ema, **sampler_kwargs)
+        return sampler(key, nsamples)
