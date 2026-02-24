@@ -116,7 +116,9 @@ class JointEDMLoss(nnx.Module):
         """
         x_1, sigma = batch
 
-        path_sample = self.path.sample(key, x_1, sigma)
+        path_sample = self.path.sample(
+            jax.random.normal(key, x_1.shape), x_1, sigma
+        )
         batch = path_sample.get_batch()
 
         if condition_mask is not None:
@@ -173,7 +175,9 @@ class JointSMLoss(nnx.Module):
         """
         x_1, t = batch
 
-        path_sample = self.path.sample(key, x_1, t)
+        path_sample = self.path.sample(
+            jax.random.normal(key, x_1.shape), x_1, t
+        )
         batch = path_sample.get_batch()
 
         if condition_mask is not None:

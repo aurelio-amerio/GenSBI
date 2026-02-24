@@ -108,7 +108,9 @@ class UnconditionalEDMLoss(nnx.Module):
         """
         x_1, sigma = batch
 
-        path_sample = self.path.sample(key, x_1, sigma)
+        path_sample = self.path.sample(
+            jax.random.normal(key, x_1.shape), x_1, sigma
+        )
         batch = path_sample.get_batch()
 
         condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)
@@ -165,7 +167,9 @@ class UnconditionalSMLoss(nnx.Module):
         """
         x_1, t = batch
 
-        path_sample = self.path.sample(key, x_1, t)
+        path_sample = self.path.sample(
+            jax.random.normal(key, x_1.shape), x_1, t
+        )
         batch = path_sample.get_batch()
 
         condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)

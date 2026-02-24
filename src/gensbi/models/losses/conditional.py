@@ -135,7 +135,9 @@ class ConditionalEDMLoss(nnx.Module):
         """
         x_1, sigma = batch
 
-        path_sample = self.path.sample(key, x_1, sigma)
+        path_sample = self.path.sample(
+            jax.random.normal(key, x_1.shape), x_1, sigma
+        )
         batch = path_sample.get_batch()
 
         # def F_model(x, sigma, obs_ids, cond, cond_ids, **model_extras):
@@ -210,7 +212,9 @@ class ConditionalSMLoss(nnx.Module):
         """
         x_1, t = batch
 
-        path_sample = self.path.sample(key, x_1, t)
+        path_sample = self.path.sample(
+            jax.random.normal(key, x_1.shape), x_1, t
+        )
         batch = path_sample.get_batch()
 
         model_extras = {}
