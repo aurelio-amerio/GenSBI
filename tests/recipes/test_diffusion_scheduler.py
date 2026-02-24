@@ -1,4 +1,4 @@
-# Tests for EDM diffusion pipeline schedulers
+# Tests for EDM diffusion pipeline schedulers (unified pipelines)
 
 import os
 
@@ -15,11 +15,12 @@ import pytest
 import tempfile
 
 from gensbi.recipes import (
-    UnconditionalDiffusionPipeline,
-    ConditionalDiffusionPipeline,
-    JointDiffusionPipeline,
-    ConditionalFlowPipeline,
+    UnconditionalPipeline,
+    ConditionalPipeline,
+    JointPipeline,
 )
+
+from gensbi.core import DiffusionEDMMethod
 
 from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
 
@@ -73,7 +74,6 @@ train_dataset_cond = (
     .to_iter_dataset()
     .batch(32)
     .map(split_obs_cond)
-    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 val_dataset_cond = (
@@ -83,10 +83,9 @@ val_dataset_cond = (
     .to_iter_dataset()
     .batch(32)
     .map(split_obs_cond)
-    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
-# we define a conditional and a joint model for testing
 
+# we define a conditional and a joint model for testing
 
 params_simf = SimformerParams(
     rngs=nnx.Rngs(0),
@@ -130,41 +129,31 @@ params = Flux1Params(
 model_conditional = Flux1(params)
 
 
-def get_model(pipeline_cls):
-    if pipeline_cls in [
-        ConditionalFlowPipeline,
-        ConditionalDiffusionPipeline,
-    ]:
-        return model_conditional
-    else:
-        return model_joint
-
-
 @pytest.mark.parametrize("sde_type", ["EDM", "VE", "VP"])
 def test_unconditional_diffusion_sde_types(sde_type):
-    pipeline_cls = UnconditionalDiffusionPipeline
     train_dataset = train_dataset_joint
     val_dataset = val_dataset_joint
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        method = DiffusionEDMMethod(sde=sde_type)
+        training_config = UnconditionalPipeline.get_default_training_config()
+        extra = method.get_extra_training_config()
+        for k, v in extra.items():
+            training_config.setdefault(k, v)
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        model = get_model(pipeline_cls)
-
-        pipeline = pipeline_cls(
-            model,
+        pipeline = UnconditionalPipeline(
+            model_joint,
             train_dataset,
             val_dataset,
             dim_joint,
+            method=method,
             ch_obs=2,
-            sde=sde_type,
             training_config=training_config,
         )
 
-        assert pipeline.sde == sde_type
         if sde_type == "EDM":
             assert isinstance(pipeline.path.scheduler, EDMScheduler)
         elif sde_type == "VE":
@@ -186,26 +175,27 @@ def test_unconditional_diffusion_sde_types(sde_type):
 
 
 def test_unconditional_diffusion_solver_scheduler():
-    pipeline_cls = UnconditionalDiffusionPipeline
     train_dataset = train_dataset_joint
     val_dataset = val_dataset_joint
     sde_type = "EDM"
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        method = DiffusionEDMMethod(sde=sde_type)
+        training_config = UnconditionalPipeline.get_default_training_config()
+        extra = method.get_extra_training_config()
+        for k, v in extra.items():
+            training_config.setdefault(k, v)
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        model = get_model(pipeline_cls)
-
-        pipeline = pipeline_cls(
-            model,
+        pipeline = UnconditionalPipeline(
+            model_joint,
             train_dataset,
             val_dataset,
             dim_joint,
+            method=method,
             ch_obs=2,
-            sde=sde_type,
             training_config=training_config,
         )
 
@@ -238,31 +228,31 @@ def test_unconditional_diffusion_solver_scheduler():
 
 @pytest.mark.parametrize("sde_type", ["EDM", "VE", "VP"])
 def test_conditional_diffusion_sde_types(sde_type):
-    pipeline_cls = ConditionalDiffusionPipeline
     train_dataset = train_dataset_cond
     val_dataset = val_dataset_cond
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        method = DiffusionEDMMethod(sde=sde_type)
+        training_config = ConditionalPipeline.get_default_training_config()
+        extra = method.get_extra_training_config()
+        for k, v in extra.items():
+            training_config.setdefault(k, v)
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        model = get_model(pipeline_cls)
-
-        pipeline = pipeline_cls(
-            model,
+        pipeline = ConditionalPipeline(
+            model_conditional,
             train_dataset,
             val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=method,
             ch_obs=2,
             ch_cond=2,
-            sde=sde_type,
             training_config=training_config,
         )
 
-        assert pipeline.sde == sde_type
         if sde_type == "EDM":
             assert isinstance(pipeline.path.scheduler, EDMScheduler)
         elif sde_type == "VE":
@@ -275,7 +265,6 @@ def test_conditional_diffusion_sde_types(sde_type):
         pipeline._wrap_model()
 
         # try sampling
-        # Conditional requires x_o (condition) — must be 3D: (nsamples, dim_cond, ch_cond)
         x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
 
         sample = pipeline.sample(
@@ -289,32 +278,32 @@ def test_conditional_diffusion_sde_types(sde_type):
 
 @pytest.mark.parametrize("sde_type", ["EDM", "VE", "VP"])
 def test_joint_diffusion_sde_types(sde_type):
-    pipeline_cls = JointDiffusionPipeline
     train_dataset = train_dataset_joint
     val_dataset = val_dataset_joint
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        method = DiffusionEDMMethod(sde=sde_type)
+        training_config = JointPipeline.get_default_training_config()
+        extra = method.get_extra_training_config()
+        for k, v in extra.items():
+            training_config.setdefault(k, v)
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        model = get_model(pipeline_cls)
-
         # Joint pipeline needs condition_mask_kind
-        pipeline = pipeline_cls(
-            model,
+        pipeline = JointPipeline(
+            model_joint,
             train_dataset,
             val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=method,
             ch_obs=2,
-            sde=sde_type,
             training_config=training_config,
             condition_mask_kind="structured",
         )
 
-        assert pipeline.sde == sde_type
         if sde_type == "EDM":
             assert isinstance(pipeline.path.scheduler, EDMScheduler)
         elif sde_type == "VE":
@@ -327,7 +316,6 @@ def test_joint_diffusion_sde_types(sde_type):
         pipeline._wrap_model()
 
         # try sampling
-        # Joint pipeline also takes x_o for sampling — must be 3D: (nsamples, dim_cond, ch_cond)
         x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
 
         sample = pipeline.sample(
@@ -340,28 +328,29 @@ def test_joint_diffusion_sde_types(sde_type):
 
 
 def test_conditional_diffusion_solver_scheduler():
-    pipeline_cls = ConditionalDiffusionPipeline
     train_dataset = train_dataset_cond
     val_dataset = val_dataset_cond
     sde_type = "EDM"
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        method = DiffusionEDMMethod(sde=sde_type)
+        training_config = ConditionalPipeline.get_default_training_config()
+        extra = method.get_extra_training_config()
+        for k, v in extra.items():
+            training_config.setdefault(k, v)
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        model = get_model(pipeline_cls)
-
-        pipeline = pipeline_cls(
-            model,
+        pipeline = ConditionalPipeline(
+            model_conditional,
             train_dataset,
             val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=method,
             ch_obs=2,
             ch_cond=2,
-            sde=sde_type,
             training_config=training_config,
         )
 
@@ -397,27 +386,28 @@ def test_conditional_diffusion_solver_scheduler():
 
 
 def test_joint_diffusion_solver_scheduler():
-    pipeline_cls = JointDiffusionPipeline
     train_dataset = train_dataset_joint
     val_dataset = val_dataset_joint
     sde_type = "EDM"
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config(sde=sde_type)
+        method = DiffusionEDMMethod(sde=sde_type)
+        training_config = JointPipeline.get_default_training_config()
+        extra = method.get_extra_training_config()
+        for k, v in extra.items():
+            training_config.setdefault(k, v)
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        model = get_model(pipeline_cls)
-
-        pipeline = pipeline_cls(
-            model,
+        pipeline = JointPipeline(
+            model_joint,
             train_dataset,
             val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=method,
             ch_obs=2,
-            sde=sde_type,
             training_config=training_config,
             condition_mask_kind="structured",
         )

@@ -13,16 +13,12 @@ import pytest
 import tempfile
 
 from gensbi.recipes import (
-    ConditionalFlowPipeline,
-    ConditionalDiffusionPipeline,
-    ConditionalSMPipeline,
-    UnconditionalFlowPipeline,
-    UnconditionalDiffusionPipeline,
-    UnconditionalSMPipeline,
-    JointFlowPipeline,
-    JointDiffusionPipeline,
-    JointSMPipeline,
+    ConditionalPipeline,
+    JointPipeline,
+    UnconditionalPipeline,
 )
+
+from gensbi.core import FlowMatchingMethod, DiffusionEDMMethod, ScoreMatchingMethod
 
 from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
 
@@ -74,7 +70,6 @@ train_dataset_cond = (
     .to_iter_dataset()
     .batch(32)
     .map(split_obs_cond)
-    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 val_dataset_cond = (
@@ -84,10 +79,9 @@ val_dataset_cond = (
     .to_iter_dataset()
     .batch(32)
     .map(split_obs_cond)
-    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
-# we define a conditional and a joint model for testing
 
+# Simformer model for joint/unconditional tests
 params_simf = SimformerParams(
     rngs=nnx.Rngs(0),
     in_channels=2,
@@ -105,6 +99,7 @@ params_simf = SimformerParams(
 
 model_joint = Simformer(params_simf)
 
+# Flux1 model for conditional tests
 params = Flux1Params(
     in_channels=2,
     vec_in_dim=None,
@@ -129,104 +124,82 @@ params = Flux1Params(
 model_conditional = Flux1(params)
 
 
-# %%
-
-
-def get_model(pipeline_cls):
-    if pipeline_cls in [
-        ConditionalFlowPipeline,
-        ConditionalDiffusionPipeline,
-        ConditionalSMPipeline,
-    ]:
-        return model_conditional
-    else:
-        return model_joint
-
-
+# Parametrize by (method, is_conditional) to test all unified pipeline combinations
 @pytest.mark.parametrize(
-    "pipeline_cls",
+    "method, is_conditional",
     [
-        ConditionalFlowPipeline,
-        ConditionalDiffusionPipeline,
-        ConditionalSMPipeline,
-        JointFlowPipeline,
-        JointDiffusionPipeline,
-        JointSMPipeline,
+        (FlowMatchingMethod(), True),
+        (DiffusionEDMMethod(), True),
+        (ScoreMatchingMethod(), True),
+        (FlowMatchingMethod(), False),
+        (DiffusionEDMMethod(), False),
+        (ScoreMatchingMethod(), False),
     ],
 )
 @pytest.mark.slow
-def test_model_general_conditional(pipeline_cls):
+def test_model_general_conditional(method, is_conditional):
 
-    if pipeline_cls in [
-        ConditionalFlowPipeline,
-        ConditionalDiffusionPipeline,
-        ConditionalSMPipeline,
-    ]:
+    if is_conditional:
+        model = model_conditional
         train_dataset = train_dataset_cond
         val_dataset = val_dataset_cond
+        PipelineCls = ConditionalPipeline
     else:
+        model = model_joint
         train_dataset = train_dataset_joint
         val_dataset = val_dataset_joint
+        PipelineCls = JointPipeline
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config()
+        training_config = PipelineCls.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 
-        model = get_model(pipeline_cls)
-
-        # first we try to initialize a default pipeline, to make sure it works
-        if pipeline_cls in [
-            ConditionalFlowPipeline,
-            ConditionalDiffusionPipeline,
-            ConditionalSMPipeline,
-        ]:
-            default_pipeline = pipeline_cls(
+        if is_conditional:
+            default_pipeline = PipelineCls(
                 model=model,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
                 dim_obs=dim_obs,
                 dim_cond=dim_cond,
+                method=method,
                 ch_obs=2,
                 ch_cond=2,
             )
         else:
-            default_pipeline = pipeline_cls(
+            default_pipeline = PipelineCls(
                 model=model,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
                 dim_obs=dim_obs,
                 dim_cond=dim_cond,
+                method=method,
                 ch_obs=2,
             )
 
-        assert isinstance(
-            default_pipeline, pipeline_cls
-        ), f"Expected {pipeline_cls}, got {type(default_pipeline)}"
+        assert isinstance(default_pipeline, PipelineCls)
 
-        if pipeline_cls in [
-            ConditionalFlowPipeline,
-            ConditionalDiffusionPipeline,
-            ConditionalSMPipeline,
-        ]:
-            pipeline = pipeline_cls(
+        if is_conditional:
+            pipeline = PipelineCls(
                 model,
                 train_dataset,
                 val_dataset,
                 dim_obs,
                 dim_cond,
+                method=method,
                 ch_obs=2,
                 ch_cond=2,
                 training_config=training_config,
             )
         else:
-            pipeline = pipeline_cls(
+            pipeline = PipelineCls(
                 model,
                 train_dataset,
                 val_dataset,
                 dim_obs,
                 dim_cond,
+                method=method,
                 ch_obs=2,
                 training_config=training_config,
             )
@@ -263,42 +236,39 @@ def test_model_general_conditional(pipeline_cls):
 
 
 @pytest.mark.parametrize(
-    "pipeline_cls",
+    "method",
     [
-        UnconditionalFlowPipeline,
-        UnconditionalDiffusionPipeline,
-        UnconditionalSMPipeline,
+        FlowMatchingMethod(),
+        DiffusionEDMMethod(),
+        ScoreMatchingMethod(),
     ],
 )
 @pytest.mark.slow
-def test_model_general_unconditional(pipeline_cls):
+def test_model_general_unconditional(method):
 
     train_dataset = train_dataset_joint
     val_dataset = val_dataset_joint
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = pipeline_cls.get_default_training_config()
+        training_config = UnconditionalPipeline.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 
-        model = get_model(pipeline_cls)
+        model = model_joint
 
-        # first we try to initialize a default pipeline, to make sure it works
+        default_pipeline = UnconditionalPipeline(
+            model, train_dataset, val_dataset, dim_joint, method=method
+        )
 
-        default_pipeline = pipeline_cls(model, train_dataset, val_dataset, dim_joint)
+        assert isinstance(default_pipeline, UnconditionalPipeline)
 
-        assert isinstance(
-            default_pipeline, pipeline_cls
-        ), f"Expected {pipeline_cls}, got {type(default_pipeline)}"
-
-        # then we use a real pipeline
-
-        pipeline = pipeline_cls(
+        pipeline = UnconditionalPipeline(
             model,
             train_dataset,
             val_dataset,
             dim_joint,
+            method=method,
             ch_obs=2,
             training_config=training_config,
         )

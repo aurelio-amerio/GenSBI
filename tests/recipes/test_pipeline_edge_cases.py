@@ -20,10 +20,10 @@ sys.path.append(str(Path(__file__).parent))
 from mock_models import MockJointModel, MockConditionalModel
 
 from gensbi.recipes import (
-    JointFlowPipeline,
-    JointDiffusionPipeline,
-    ConditionalFlowPipeline,
+    ConditionalPipeline,
+    JointPipeline,
 )
+from gensbi.core import FlowMatchingMethod, DiffusionEDMMethod, ScoreMatchingMethod
 
 nsamples = 1000
 key = jax.random.PRNGKey(0)
@@ -123,55 +123,59 @@ def test_condition_mask_invalid_kind():
         )
 
 
-# --- Tests for JointFlowPipeline validation errors ---
+# --- Tests for JointPipeline validation errors ---
 
 
 def test_joint_flow_dim_cond_zero():
-    """Test that dim_cond=0 raises ValueError for JointFlowPipeline."""
+    """Test that dim_cond=0 raises ValueError for JointPipeline."""
     with pytest.raises(ValueError, match="dim_cond=0"):
-        JointFlowPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_joint,
             dim_cond=0,
+            method=FlowMatchingMethod(),
         )
 
 
 def test_joint_flow_invalid_condition_mask_kind():
     """Test that invalid condition_mask_kind raises ValueError."""
     with pytest.raises(ValueError, match="condition_mask_kind"):
-        JointFlowPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             condition_mask_kind="invalid_kind",
         )
 
 
 def test_joint_diffusion_dim_cond_zero():
-    """Test that dim_cond=0 raises ValueError for JointDiffusionPipeline."""
+    """Test that dim_cond=0 raises ValueError for JointPipeline with DiffusionEDMMethod."""
     with pytest.raises(ValueError, match="dim_cond=0"):
-        JointDiffusionPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_joint,
             dim_cond=0,
+            method=DiffusionEDMMethod(),
         )
 
 
 def test_joint_diffusion_invalid_condition_mask_kind():
     """Test that invalid condition_mask_kind raises ValueError."""
     with pytest.raises(ValueError, match="condition_mask_kind"):
-        JointDiffusionPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=DiffusionEDMMethod(),
             condition_mask_kind="invalid_kind",
         )
 
@@ -181,12 +185,13 @@ def test_joint_diffusion_invalid_condition_mask_kind():
 
 def test_update_training_config():
     """Test update_training_config correctly updates and recalculates min_scale."""
-    pipeline = JointFlowPipeline(
+    pipeline = JointPipeline(
         model=MockJointModel(),
         train_dataset=train_dataset_joint,
         val_dataset=val_dataset_joint,
         dim_obs=dim_obs,
         dim_cond=dim_cond,
+        method=FlowMatchingMethod(),
     )
     new_config = {"max_lr": 1e-3, "min_lr": 1e-5}
     pipeline.update_training_config(new_config)
@@ -198,12 +203,13 @@ def test_update_training_config():
 
 def test_update_training_config_zero_max_lr():
     """Test update_training_config handles max_lr=0 without division error."""
-    pipeline = JointFlowPipeline(
+    pipeline = JointPipeline(
         model=MockJointModel(),
         train_dataset=train_dataset_joint,
         val_dataset=val_dataset_joint,
         dim_obs=dim_obs,
         dim_cond=dim_cond,
+        method=FlowMatchingMethod(),
     )
     new_config = {"max_lr": 0.0, "min_lr": 0.0}
     pipeline.update_training_config(new_config)
@@ -216,16 +222,17 @@ def test_batch_sampler_with_progress_bars():
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = JointFlowPipeline.get_default_training_config()
+        training_config = JointPipeline.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        pipeline = JointFlowPipeline(
+        pipeline = JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             ch_obs=2,
             training_config=training_config,
         )
@@ -251,17 +258,18 @@ def test_multistep_optimizer():
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = JointFlowPipeline.get_default_training_config()
+        training_config = JointPipeline.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
         training_config["multistep"] = 2  # cover multistep > 1 branch
 
-        pipeline = JointFlowPipeline(
+        pipeline = JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             ch_obs=2,
             training_config=training_config,
         )
@@ -269,119 +277,135 @@ def test_multistep_optimizer():
         pipeline.train(nnx.Rngs(0), nsteps=4, save_model=False)
 
 
-# --- Tests for conditional_pipeline.py SDE branches ---
+# --- Tests for ConditionalPipeline edge cases ---
 
 
 def test_conditional_sm_ve_sde():
-    """Test ConditionalSMPipeline with VE SDE type to cover VE branch."""
-    from gensbi.recipes import ConditionalSMPipeline
-
-    pipeline = ConditionalSMPipeline(
+    """Test ConditionalPipeline with ScoreMatchingMethod VE SDE type."""
+    pipeline = ConditionalPipeline(
         model=MockConditionalModel(),
         train_dataset=train_dataset_cond,
         val_dataset=val_dataset_cond,
         dim_obs=dim_obs,
         dim_cond=dim_cond,
-        sde_type="VE",
+        method=ScoreMatchingMethod(sde_type="VE"),
     )
-    assert isinstance(pipeline, ConditionalSMPipeline)
-    assert pipeline.sde_type == "VE"
+    assert isinstance(pipeline, ConditionalPipeline)
 
 
 def test_conditional_sm_invalid_sde():
-    """Test ConditionalSMPipeline with invalid SDE type raises ValueError."""
-    from gensbi.recipes import ConditionalSMPipeline
-
-    with pytest.raises(ValueError, match="sde_type"):
-        ConditionalSMPipeline(
-            model=MockConditionalModel(),
-            train_dataset=train_dataset_cond,
-            val_dataset=val_dataset_cond,
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            sde_type="INVALID",
-        )
-
-
-def test_conditional_sm_default_config_ve():
-    """Test get_default_training_config with VE SDE type."""
-    from gensbi.recipes import ConditionalSMPipeline
-
-    config = ConditionalSMPipeline.get_default_training_config(sde_type="VE")
-    assert "sigma_min" in config
-    assert "sigma_max" in config
-
-
-def test_conditional_diffusion_invalid_sde():
-    """Test ConditionalDiffusionPipeline with invalid SDE type raises ValueError."""
-    from gensbi.recipes import ConditionalDiffusionPipeline
-
-    with pytest.raises(ValueError, match="Unknown sde type"):
-        ConditionalDiffusionPipeline(
-            model=MockConditionalModel(),
-            train_dataset=train_dataset_cond,
-            val_dataset=val_dataset_cond,
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            sde="INVALID",
-        )
-
-
-def test_conditional_diffusion_default_config_ve():
-    """Test get_default_training_config with VE and VP SDE types."""
-    from gensbi.recipes import ConditionalDiffusionPipeline
-
-    config_ve = ConditionalDiffusionPipeline.get_default_training_config(sde="VE")
-    assert "sigma_min" in config_ve
-    config_vp = ConditionalDiffusionPipeline.get_default_training_config(sde="VP")
-    assert "beta_min" in config_vp
+    """Test ScoreMatchingMethod with invalid SDE type raises ValueError."""
+    with pytest.raises(ValueError, match="sde_type must be one of"):
+        ScoreMatchingMethod(sde_type="INVALID")
 
 
 def test_conditional_flow_invalid_id_embedding_obs():
-    """Test ConditionalFlowPipeline with invalid obs id embedding strategy."""
+    """Test ConditionalPipeline with invalid obs id embedding strategy."""
     with pytest.raises(ValueError, match="Unknown id embedding strategy"):
-        ConditionalFlowPipeline(
+        ConditionalPipeline(
             model=MockConditionalModel(),
             train_dataset=train_dataset_cond,
             val_dataset=val_dataset_cond,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             id_embedding_strategy=("invalid", "absolute"),
         )
 
 
 def test_conditional_flow_invalid_id_embedding_cond():
-    """Test ConditionalFlowPipeline with invalid cond id embedding strategy."""
+    """Test ConditionalPipeline with invalid cond id embedding strategy."""
     with pytest.raises(ValueError, match="Unknown id embedding strategy"):
-        ConditionalFlowPipeline(
+        ConditionalPipeline(
             model=MockConditionalModel(),
             train_dataset=train_dataset_cond,
             val_dataset=val_dataset_cond,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             id_embedding_strategy=("absolute", "invalid"),
         )
 
 
-# --- Tests for joint_pipeline.py SDE branches ---
+# --- Tests for JointPipeline SDE branches ---
 
 
 def test_joint_diffusion_invalid_sde():
-    """Test JointDiffusionPipeline with invalid SDE type raises ValueError."""
-    with pytest.raises(ValueError, match="Unknown sde type"):
-        JointDiffusionPipeline(
-            model=MockJointModel(),
-            train_dataset=train_dataset_joint,
-            val_dataset=val_dataset_joint,
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            sde="INVALID",
-        )
+    """Test DiffusionEDMMethod with invalid SDE type raises ValueError."""
+    with pytest.raises(ValueError, match="sde must be one of"):
+        DiffusionEDMMethod(sde="INVALID")
 
 
-def test_joint_diffusion_default_config_ve():
-    """Test JointDiffusionPipeline.get_default_training_config with VE and VP SDE types."""
-    config_ve = JointDiffusionPipeline.get_default_training_config(sde="VE")
-    assert "sigma_min" in config_ve
-    config_vp = JointDiffusionPipeline.get_default_training_config(sde="VP")
-    assert "beta_min" in config_vp
+# --- Tests for deprecated pipeline stubs ---
+
+
+def test_deprecated_conditional_pipelines():
+    """Test that deprecated conditional pipeline classes raise RuntimeError."""
+    from gensbi.recipes import (
+        ConditionalFlowPipeline,
+        ConditionalDiffusionPipeline,
+        ConditionalSMPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalFlowPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalDiffusionPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalSMPipeline()
+
+
+def test_deprecated_joint_pipelines():
+    """Test that deprecated joint pipeline classes raise RuntimeError."""
+    from gensbi.recipes import (
+        JointFlowPipeline,
+        JointDiffusionPipeline,
+        JointSMPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointFlowPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointDiffusionPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointSMPipeline()
+
+
+def test_deprecated_unconditional_pipelines():
+    """Test that deprecated unconditional pipeline classes raise RuntimeError."""
+    from gensbi.recipes import (
+        UnconditionalFlowPipeline,
+        UnconditionalDiffusionPipeline,
+        UnconditionalSMPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalFlowPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalDiffusionPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalSMPipeline()
+
+
+def test_deprecated_pipelines_get_default_training_config():
+    """Test that get_default_training_config on deprecated classes raises RuntimeError."""
+    from gensbi.recipes import (
+        ConditionalFlowPipeline,
+        JointFlowPipeline,
+        UnconditionalFlowPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalFlowPipeline.get_default_training_config()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointFlowPipeline.get_default_training_config()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalFlowPipeline.get_default_training_config()
