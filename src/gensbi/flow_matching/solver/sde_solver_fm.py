@@ -352,7 +352,7 @@ class BaseFmSDESolver(Solver):
         return sampler(x_init, key)
 
 
-class ZeroEnds(BaseFmSDESolver):
+class ZeroEndsSolver(BaseFmSDESolver):
     """
     ZeroEnds SDE solver for flow matching.
 
@@ -405,7 +405,7 @@ class ZeroEnds(BaseFmSDESolver):
         return g_tilde
 
 
-class NonSingular(BaseFmSDESolver):
+class NonSingularSolver(BaseFmSDESolver):
     """
     NonSingular SDE solver for flow matching.
 

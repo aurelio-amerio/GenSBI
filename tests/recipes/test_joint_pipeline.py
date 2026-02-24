@@ -160,10 +160,10 @@ def test_joint_pipeline_methods(pipeline_cls):
 
         # get_sampler advanced args testing
         if isinstance(pipeline, JointFlowPipeline):
-            from gensbi.flow_matching.solver import ZeroEnds
+            from gensbi.flow_matching.solver import ZeroEndsSolver
 
             solver = (
-                ZeroEnds,
+                ZeroEndsSolver,
                 {
                     "mu0": jnp.zeros((dim_obs, 2)),
                     "sigma0": jnp.ones((dim_obs, 2)),

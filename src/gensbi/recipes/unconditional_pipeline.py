@@ -182,7 +182,7 @@ class UnconditionalFlowPipeline(AbstractPipeline):
             class and its constructor keyword arguments.
             Defaults to ``(ODESolver, {})``.
 
-            For SDE solvers (e.g., ``ZeroEnds``, ``NonSingular``), additional
+            For SDE solvers (e.g., ``ZeroEndsSolver``, ``NonSingularSolver``), additional
             constructor arguments must be provided via the kwargs dict.
             A random key is automatically passed to SDE samplers.
 
@@ -204,8 +204,8 @@ class UnconditionalFlowPipeline(AbstractPipeline):
         Using the ZeroEnds SDE solver:
 
         >>> import jax.numpy as jnp
-        >>> from gensbi.flow_matching.solver import ZeroEnds
-        >>> solver = (ZeroEnds, {
+        >>> from gensbi.flow_matching.solver import ZeroEndsSolver
+        >>> solver = (ZeroEndsSolver, {
         ...     "mu0": jnp.zeros((dim_obs, ch_obs)),
         ...     "sigma0": jnp.ones((dim_obs, ch_obs)),
         ...     "alpha": 1.0,
