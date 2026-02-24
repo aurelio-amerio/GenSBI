@@ -51,7 +51,7 @@ graph TD
 | **No generic method subclasses** | `ConditionalFlowPipeline` etc. are removed. Users use `ConditionalPipeline(method=FlowMatchingMethod())` directly |
 | **Model-specific thin subclasses kept** | `Flux1FlowPipeline`, `SimformerDiffusionPipeline` etc. remain classes for `isinstance`, checkpoint naming, per-model logic |
 | **`GenerativeMethod` in `core/`** | Separate from `flow_matching/` and `diffusion/` for clean modularity |
-| **Losses owned by strategies** | `_EDMLoss`/`_SMLoss` live in `core/`, created via `method.build_loss(path)`. No separate public loss classes needed |
+| **Losses in canonical locations** | `FMLoss` in `flow_matching/loss/`, `EDMLoss`/`SMLoss` in `diffusion/loss/`. Strategies import and return these via `method.build_loss(path)` |
 | **Uniform batch format** | All methods return `(x_0, x_1, t_or_sigma)` from `prepare_batch`. All `path.sample` take `(x_0, x_1, ...)` |
 | **No `prior_source`** | `build_sampler_fn` returns just `sampler_fn`. Pipelines use `method.sample_init(key, shape, path)` for initial noise |
 | **Custom prior support** | `FlowMatchingMethod(prior=...)` accepts any object with `.sample(key, shape)`. Defaults to `N(0, I)` |
@@ -162,7 +162,7 @@ loss(model, batch)  →  scalar loss
 **Changes made:**
 - `EDMPath.sample(x_0, x_1, σ)` and `SMPath.sample(x_0, x_1, t)` now take noise directly
 - All `prepare_batch` methods return `(x_0, x_1, t_or_sigma)`
-- `_EDMLoss`/`_SMLoss` are keyless — call `path.sample(x_0, ...)` directly
+- `EDMLoss`/`SMLoss` are keyless — call `path.sample(x_0, ...)` directly
 - Updated 6 callers in `models/losses/` and all related tests
 
 ---
@@ -176,26 +176,14 @@ loss(model, batch)  →  scalar loss
 
 ---
 
-## Phase 2: Create 3 Unified Pipelines
+## Phase 2: Create 3 Unified Pipelines ✅
 
-**Scope:** Add `ConditionalPipeline`, `JointPipeline`, `UnconditionalPipeline` — each parameterized by a `GenerativeMethod` strategy.
+**Status: DONE.** Added `ConditionalPipeline`, `JointPipeline`, `UnconditionalPipeline` — each parameterized by a `GenerativeMethod` strategy. 30 new parameterized tests.
 
-> [!IMPORTANT]
-> **Model-agnostic design.** The unified pipelines accept **any user-provided model** as long as it conforms to the expected interface (e.g., `ConditionalWrapper`'s call signature). Users no longer need to pick a method-specific pipeline class — they pick a pipeline *mode* (conditional/joint/unconditional) and a *method* (flow/diffusion/SM).
-
-> [!NOTE]
-> The old classes (`ConditionalFlowPipeline` etc.) are **kept alongside** during this phase, because model-specific pipelines (`Flux1FlowPipeline` etc.) still inherit from them. They will be replaced with deprecation stubs in Phase 4, after the model-specific pipelines are migrated.
-
-### Key prerequisite: uniform loss interface (`_FMLoss`)
-
-The three strategies' `build_loss(path)` methods must return objects with the same call signature:
-
-```python
-loss_obj(model, batch, condition_mask=None, model_extras=None) → scalar
-```
-
-`_EDMLoss` and `_SMLoss` already use this. `ContinuousFMLoss` uses `(vf, batch, **kwargs)`.
-A thin `_FMLoss` wrapper in `core/flow_matching.py` normalizes the FM interface to match.
+Key implementation details:
+- `FMLoss` (was `_FMLoss`) computes path sample directly and calls model with named args `model(obs=x_t, t=t, **model_extras)` — avoids positional arg order bugs with `ContinuousFMLoss`
+- `condition_mask` must be in `model_extras` for joint models (the model needs it as input, not just for x_t masking)
+- Unconditional pipeline passes `condition_mask=None` (zero mask is a no-op)
 
 ### [MODIFY] [conditional_pipeline.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/conditional_pipeline.py)
 
@@ -254,44 +242,21 @@ python -m pytest tests/recipes/test_unified_conditional_pipeline.py -x --tb=shor
 
 ---
 
-## Phase 3: Simplify Losses
+## Phase 2B: Promote Loss Classes ✅
 
-**Scope:** Remove 9 mode-specific loss wrappers from `models/losses/`. Core losses are already handled by the strategies.
+**Status: DONE.** Moved private loss wrappers to first-class citizens:
 
-> [!NOTE]
-> Since Phase 1B, the strategies own their losses via `method.build_loss(path)` which returns `_EDMLoss`/`_SMLoss` (in `core/`) or `ContinuousFMLoss` (in `flow_matching/loss/`). There is **no need** for separate public `EDMLoss`/`SMLoss` classes in `diffusion/losses/` — users never interact with loss objects directly.
+| Old Name | New Name | New Location |
+|---|---|---|
+| `_FMLoss` | `FMLoss` | `flow_matching/loss/fm_loss.py` |
+| `_EDMLoss` | `EDMLoss` | `diffusion/loss/edm_loss.py` |
+| `_SMLoss` | `SMLoss` | `diffusion/loss/sm_loss.py` |
 
-### What changes
-
-| Component | Action |
-|---|---|
-| `models/losses/conditional.py` | Replace 3 classes with deprecation stubs |
-| `models/losses/joint.py` | Replace 3 classes with deprecation stubs |
-| `models/losses/unconditional.py` | Replace 3 classes with deprecation stubs |
-
-### Deprecation stub target
-
-All 9 stubs point users to the strategy API:
-
-```python
-class ConditionalEDMLoss:
-    def __init__(self, *a, **kw):
-        raise DeprecationError(
-            "ConditionalEDMLoss has been removed. "
-            "Use DiffusionEDMMethod().build_loss(path) or "
-            "ConditionalPipeline(method=DiffusionEDMMethod(), ...) instead."
-        )
-```
-
-### Verification
-
-```bash
-python -m pytest tests/models/losses/ tests/recipes/ -x -v --tb=short
-```
+Core strategy modules import from canonical locations. No backward-compat aliases.
 
 ---
 
-## Phase 4: Simplify Model-Specific Pipelines & Deprecate Old Classes
+## Phase 3: Simplify Model-Specific Pipelines & Deprecate Old Classes
 
 **Scope:** Migrate model-specific pipelines to inherit from the new unified classes. **Then** replace old generic classes with deprecation stubs. Deduplicate `parse_training_config`.
 
@@ -360,7 +325,44 @@ Update exports: remove old generic pipeline names, add `ConditionalPipeline`, `J
 
 ```bash
 # Ensure correct env: mamba deactivate && mamba deactivate && mamba activate gensbi
-mamba run -n gensbi python -m pytest tests/ -x -v --tb=short
+pytest tests/ -x -v --tb=short
+```
+
+---
+
+## Phase 4: Simplify Losses
+
+**Scope:** Remove 9 mode-specific loss wrappers from `models/losses/`. Core losses are now in canonical locations (`flow_matching/loss/` and `diffusion/loss/`).
+
+> [!NOTE]
+> The old loss classes in `models/losses/` are only used by the old pipeline classes. Once Phase 3 retires those pipelines, `ContinuousFMLoss` (base class for the old FM losses) can also be removed.
+
+### What changes
+
+| Component | Action |
+|---|---|
+| `models/losses/conditional.py` | Replace 3 classes with deprecation stubs |
+| `models/losses/joint.py` | Replace 3 classes with deprecation stubs |
+| `models/losses/unconditional.py` | Replace 3 classes with deprecation stubs |
+
+### Deprecation stub target
+
+All 9 stubs point users to the strategy API:
+
+```python
+class ConditionalEDMLoss:
+    def __init__(self, *a, **kw):
+        raise DeprecationError(
+            "ConditionalEDMLoss has been removed. "
+            "Use DiffusionEDMMethod().build_loss(path) or "
+            "ConditionalPipeline(method=DiffusionEDMMethod(), ...) instead."
+        )
+```
+
+### Verification
+
+```bash
+pytest tests/models/losses/ tests/recipes/ -x -v --tb=short
 ```
 
 ---

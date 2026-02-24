@@ -1,93 +1,151 @@
-# Phase 3: Simplify Losses
+# Phase 3: Simplify Model-Specific Pipelines & Deprecate Old Classes
 
 ## Goal
 
-Remove 9 mode-specific loss wrappers from `models/losses/`. Core losses are already handled by the `GenerativeMethod` strategies via `method.build_loss(path)`.
+1. Migrate model-specific pipelines to inherit from the new unified classes
+2. Replace old generic pipeline classes with deprecation stubs
+3. Deduplicate `parse_training_config` into shared utility
 
 ---
 
-## Current state
+## Current inheritance
 
-After Phase 2B, each strategy returns a first-class loss object:
+```
+Flux1FlowPipeline          → ConditionalFlowPipeline
+Flux1DiffusionPipeline     → ConditionalDiffusionPipeline
+Flux1SMPipeline            → ConditionalSMPipeline
 
-| Strategy | `build_loss(path)` returns | Location |
-|---|---|---|
-| `FlowMatchingMethod` | `FMLoss(path)` | `flow_matching/loss/fm_loss.py` |
-| `DiffusionEDMMethod` | `EDMLoss(path)` | `diffusion/loss/edm_loss.py` |
-| `ScoreMatchingMethod` | `SMLoss(path)` | `diffusion/loss/sm_loss.py` |
+Flux1JointFlowPipeline     → JointFlowPipeline
+Flux1JointDiffusionPipeline → JointDiffusionPipeline
+Flux1JointSMPipeline       → JointSMPipeline
 
-The old loss classes in `models/losses/` are **only used by the old pipeline classes** (which remain until Phase 4). Therefore Phase 3 can only happen **after Phase 4** migrates all pipelines to use the new unified classes.
+SimformerFlowPipeline      → JointFlowPipeline
+SimformerSMPipeline        → JointSMPipeline
+SimformerDiffusionPipeline → JointDiffusionPipeline
+```
 
-> [!WARNING]
-> This phase depends on Phase 4 completing first, or can be combined with Phase 4.
+## Target inheritance
 
----
+All model-specific pipelines become thin subclasses that:
+1. Create the appropriate model
+2. Choose the right `GenerativeMethod`
+3. Call `super().__init__(..., method=Method(), ...)`
 
-## Files to modify
+```
+Flux1FlowPipeline          → ConditionalPipeline(method=FlowMatchingMethod())
+Flux1DiffusionPipeline     → ConditionalPipeline(method=DiffusionEDMMethod(sde=...))
+Flux1SMPipeline            → ConditionalPipeline(method=ScoreMatchingMethod(sde_type=...))
 
-### [models/losses/conditional.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/models/losses/conditional.py)
+Flux1JointFlowPipeline     → JointPipeline(method=FlowMatchingMethod())
+Flux1JointDiffusionPipeline → JointPipeline(method=DiffusionEDMMethod(sde=...))
+Flux1JointSMPipeline       → JointPipeline(method=ScoreMatchingMethod(sde_type=...))
 
-Replace 3 classes with deprecation stubs:
-
-| Class | Replacement |
-|---|---|
-| `ConditionalCFMLoss` | `FlowMatchingMethod().build_loss(path)` |
-| `ConditionalEDMLoss` | `DiffusionEDMMethod().build_loss(path)` |
-| `ConditionalSMLoss` | `ScoreMatchingMethod().build_loss(path)` |
-
-### [models/losses/joint.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/models/losses/joint.py)
-
-Replace 3 classes:
-
-| Class | Replacement |
-|---|---|
-| `JointCFMLoss` | `FlowMatchingMethod().build_loss(path)` |
-| `JointEDMLoss` | `DiffusionEDMMethod().build_loss(path)` |
-| `JointSMLoss` | `ScoreMatchingMethod().build_loss(path)` |
-
-### [models/losses/unconditional.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/models/losses/unconditional.py)
-
-Replace 3 classes:
-
-| Class | Replacement |
-|---|---|
-| `UnconditionalCFMLoss` | `FlowMatchingMethod().build_loss(path)` |
-| `UnconditionalEDMLoss` | `DiffusionEDMMethod().build_loss(path)` |
-| `UnconditionalSMLoss` | `ScoreMatchingMethod().build_loss(path)` |
+SimformerFlowPipeline      → JointPipeline(method=FlowMatchingMethod())
+SimformerSMPipeline        → JointPipeline(method=ScoreMatchingMethod(sde_type=...))
+SimformerDiffusionPipeline → JointPipeline(method=DiffusionEDMMethod(sde=...))
+```
 
 ---
 
-## Stub pattern
+## File changes
+
+### [flux1.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/flux1.py)
+
+Collapse 3 classes into thin subclasses of `ConditionalPipeline`. Each class:
+- Creates default `Flux1Params` if not provided
+- Creates a `Flux1` model
+- Picks the right `GenerativeMethod`
+- Calls `super().__init__(..., method=..., id_embedding_strategy=params.id_embedding_strategy, ...)`
+- Provides `init_pipeline_from_config` classmethod
+- Provides `get_default_params` classmethod
 
 ```python
-class ConditionalEDMLoss:
-    """Deprecated. Use ``DiffusionEDMMethod().build_loss(path)`` or
-    ``ConditionalPipeline(method=DiffusionEDMMethod(), ...)`` instead."""
+from gensbi.core import FlowMatchingMethod, DiffusionEDMMethod, ScoreMatchingMethod
+from .conditional_pipeline import ConditionalPipeline
 
-    def __init__(self, *args, **kwargs):
+class Flux1FlowPipeline(ConditionalPipeline):
+    def __init__(self, train_dataset, val_dataset, dim_obs, dim_cond,
+                 ch_obs=1, ch_cond=1, params=None, training_config=None):
+        if params is None:
+            params = Flux1Params(...)
+        model = Flux1(params)
+        super().__init__(
+            model=model, ...,
+            method=FlowMatchingMethod(),
+            id_embedding_strategy=(params.id_embedding_kind, params.id_embedding_kind),
+        )
+
+class Flux1DiffusionPipeline(ConditionalPipeline):
+    def __init__(self, ..., sde="EDM", ...):
+        ...
+        super().__init__(..., method=DiffusionEDMMethod(sde=sde), ...)
+
+class Flux1SMPipeline(ConditionalPipeline):
+    def __init__(self, ..., sde_type="VP", ...):
+        ...
+        super().__init__(..., method=ScoreMatchingMethod(sde_type=sde_type), ...)
+```
+
+### [flux1joint.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/flux1joint.py)
+
+Same pattern → subclasses of `JointPipeline`. 3 classes.
+
+### [simformer.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/simformer.py)
+
+Same pattern → subclasses of `JointPipeline`. 3 classes.
+
+> [!IMPORTANT]
+> Simformer has `edge_mask` in `__init__` and passes it as a `model_extra` in `get_sampler`/`get_loss_fn`. This may require either:
+> - Overriding `get_sampler` to add `edge_mask` to `model_extras`
+> - Storing `edge_mask` and having the unified `JointPipeline` support extra model kwargs
+
+---
+
+## Deprecation stubs
+
+After migration, replace old generic pipeline classes with stubs:
+
+### [conditional_pipeline.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/conditional_pipeline.py)
+
+Replace `ConditionalFlowPipeline`, `ConditionalDiffusionPipeline`, `ConditionalSMPipeline`:
+
+```python
+class ConditionalFlowPipeline:
+    def __init__(self, *a, **kw):
         raise DeprecationError(
-            "ConditionalEDMLoss has been removed. "
-            "Use DiffusionEDMMethod().build_loss(path) or "
-            "ConditionalPipeline(method=DiffusionEDMMethod(), ...) instead."
+            "Use ConditionalPipeline(method=FlowMatchingMethod(), ...) instead."
         )
 ```
+
+### [joint_pipeline.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/joint_pipeline.py)
+
+Replace `JointFlowPipeline`, `JointDiffusionPipeline`, `JointSMPipeline`.
+
+### [unconditional_pipeline.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/unconditional_pipeline.py)
+
+Replace `UnconditionalFlowPipeline`, `UnconditionalDiffusionPipeline`, `UnconditionalSMPipeline`.
+
+> [!NOTE]
+> Once old generic pipeline classes are deprecated, Phase 4 can proceed to remove
+> the old mode-specific loss classes in `models/losses/` and `ContinuousFMLoss`
+> from `flow_matching/loss/continuous_loss.py`.
+
+---
+
+## Deduplication: `parse_training_config`
+
+Each model-specific file currently has a `parse_training_config` function with near-identical logic. Extract into [recipes/utils.py](file:///data/users/Aurelio/Github/GenSBI/src/gensbi/recipes/utils.py).
 
 ---
 
 ## Tests
 
-Update `tests/models/losses/` to test that old names raise `DeprecationError` on instantiation.
-
-## Extra: Remove `ContinuousFMLoss`
-
-> [!IMPORTANT]
-> After all old loss subclasses (`ConditionalCFMLoss`, `JointCFMLoss`, `UnconditionalCFMLoss`) are
-> removed (this phase), `ContinuousFMLoss` in `flow_matching/loss/continuous_loss.py` becomes unused.
-> Delete `continuous_loss.py`, remove its export from `flow_matching/loss/__init__.py`, and update
-> `tests/flow_matching/loss/test_continuous_loss.py` accordingly.
+- All existing pipeline tests must pass (public API unchanged)
+- Model-specific pipeline tests must pass (same behavior, different inheritance)
+- Old generic class names raise `DeprecationError`
 
 ## Verification
 
 ```bash
-python -m pytest tests/models/losses/ tests/recipes/ -x --tb=short
+python -m pytest tests/recipes/ tests/core/ -x --tb=short
 ```

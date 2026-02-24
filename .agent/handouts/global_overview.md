@@ -19,10 +19,10 @@ The GenSBI codebase has a **combinatorial explosion** of pipeline and loss class
 ### Phase dependency graph
 
 ```
-Phase 1 (DONE) → Phase 2 → Phase 4 → Phase 3
-                             ↑
-                    (must migrate Flux1/Simformer
-                     before deprecating old classes)
+Phase 1 (DONE) → Phase 2 (DONE) → Phase 2B (DONE) → Phase 3 → Phase 4
+                                                       ↑
+                                              (must migrate Flux1/Simformer
+                                               before removing old losses)
 ```
 
 ### Phase 1 (DONE): Core module
@@ -34,17 +34,27 @@ Created `GenerativeMethod` ABC and 3 strategies in `src/gensbi/core/`. Each stra
 - `build_sampler_fn(model, path, extras, **kwargs)` — builds inference sampler
 - `sample_init(key, shape, path)` — samples initial noise
 
-### Phase 2: Create unified pipelines
+### Phase 2 (DONE): Create unified pipelines
 
-Add `ConditionalPipeline`, `JointPipeline`, `UnconditionalPipeline` **alongside** old classes. Each is model-agnostic — users supply any conforming model + a `method` argument. See `phase2_handout.md`.
+Added `ConditionalPipeline`, `JointPipeline`, `UnconditionalPipeline` **alongside** old classes. Each is model-agnostic — users supply any conforming model + a `method` argument. 30 parameterized tests added.
 
-### Phase 4: Migrate model-specific pipelines, then deprecate
+### Phase 2B (DONE): Promote loss classes
 
-Migrate `Flux1FlowPipeline` etc. from inheriting `ConditionalFlowPipeline` to inheriting `ConditionalPipeline(method=FlowMatchingMethod())`. Once done, old generic classes become deprecation stubs. See `phase4_handout.md`.
+Moved private loss wrappers to first-class citizens in canonical locations:
 
-### Phase 3: Stub out loss wrappers
+| Class | Location |
+|---|---|
+| `FMLoss` | `flow_matching/loss/fm_loss.py` |
+| `EDMLoss` | `diffusion/loss/edm_loss.py` |
+| `SMLoss` | `diffusion/loss/sm_loss.py` |
 
-Now that nothing uses the old loss classes, replace them with deprecation stubs. See `phase3_handout.md`.
+### Phase 3: Migrate model-specific pipelines, then deprecate
+
+Migrate `Flux1FlowPipeline` etc. from inheriting `ConditionalFlowPipeline` to inheriting `ConditionalPipeline(method=FlowMatchingMethod())`. Once done, old generic classes become deprecation stubs. See `phase3_handout.md`.
+
+### Phase 4: Stub out loss wrappers
+
+Now that nothing uses the old loss classes, replace them with deprecation stubs. See `phase4_handout.md`.
 
 ---
 
@@ -56,7 +66,7 @@ Now that nothing uses the old loss classes, replace them with deprecation stubs.
 
 3. **Old classes stay until consumers migrate.** Model-specific pipelines (Flux1, Simformer) inherit from the old generic classes. We can't deprecate the old classes until Phase 4 migrates them to the new base.
 
-4. **Uniform loss interface.** All `build_loss(path)` return objects with identical signature: `(model, batch, condition_mask=None, model_extras=None) → scalar`. This required adding `_FMLoss` wrapper since `ContinuousFMLoss` uses `**kwargs`.
+4. **Uniform loss interface.** All `build_loss(path)` return objects with identical signature: `(model, batch, condition_mask=None, model_extras=None) → scalar`. `FMLoss`, `EDMLoss`, `SMLoss` all live in their canonical `loss/` subpackages.
 
 5. **Uniform batch format.** All `prepare_batch` return `(x_0, x_1, t_or_sigma)`. All `path.sample` take `(x_0, x_1, t_or_sigma)`. No key-passing to loss functions.
 
@@ -74,11 +84,23 @@ Now that nothing uses the old loss classes, replace them with deprecation stubs.
 
 ### 2. Loss interface mismatch
 
-**What happened:** `ContinuousFMLoss.__call__(vf, batch, **kwargs)` has a fundamentally different signature from `_EDMLoss.__call__(model, batch, condition_mask, model_extras)`. The unified pipeline needs to call all losses the same way.
+**What happened:** `ContinuousFMLoss.__call__(vf, batch, **kwargs)` has a fundamentally different signature from `EDMLoss.__call__(model, batch, condition_mask, model_extras)`. The unified pipeline needs to call all losses the same way.
 
 **Lesson:** When creating strategy patterns, ensure all strategy implementations expose the same interface. Wrapper adapters are cheap.
 
-**Fixed approach:** `_FMLoss` adapter wraps `ContinuousFMLoss` with the uniform interface.
+**Fixed approach:** `FMLoss` (in `flow_matching/loss/fm_loss.py`) implements the loss directly rather than wrapping `ContinuousFMLoss`.
+
+### 2b. Model calling convention: named args matter
+
+**What happened:** `ContinuousFMLoss` calls `vf(x_t, t, **kwargs)` — positional args with `x_t` first. But model wrappers (`ConditionalWrapper`, etc.) expect `(t, obs, ...)` — `t` first. This caused a shape mismatch `(1, 32, 1)` vs `(32, 2, 2)` that was hard to debug.
+
+**Lesson:** When losses call models, always use **named arguments** `model(obs=x_t, t=t, **model_extras)`. This matches the convention used by the EDM/SM scheduler loss functions and avoids positional arg order bugs.
+
+### 2c. `condition_mask` serves double duty in joint models
+
+**What happened:** Joint models need `condition_mask` both for (1) masking `x_t` (setting conditioned variables to clean data) and (2) as a model input. The `_FMLoss` initially only did the x_t masking but didn't pass the mask to the model, causing `missing argument` errors.
+
+**Lesson:** `condition_mask` must be included in `model_extras` so it gets passed through to the model. The EDM/SM scheduler loss functions pass `**model_extras` to the model, so if `condition_mask` isn't in there, the model never sees it.
 
 ### 3. Mode-specific differences are subtle
 
@@ -114,20 +136,27 @@ Then run `pytest` directly. This applies to **all** test verification.
 
 ---
 
-## Current Codebase State (as of Phase 1C completion)
+## Current Codebase State (as of Phase 2B completion)
 
-All Phase 1/1B/1C changes are **committed**. The codebase is clean. Key files created:
+All Phase 1/1B/1C/2/2B changes are **committed**. The codebase is clean. Key files:
 
-- `src/gensbi/core/__init__.py`
-- `src/gensbi/core/generative_method.py` — `GenerativeMethod` ABC
-- `src/gensbi/core/flow_matching.py` — `FlowMatchingMethod`
-- `src/gensbi/core/diffusion_edm.py` — `DiffusionEDMMethod`
-- `src/gensbi/core/score_matching.py` — `ScoreMatchingMethod`
-- `tests/core/test_generative_method.py`
+**Core strategies (`src/gensbi/core/`):**
+- `generative_method.py` — `GenerativeMethod` ABC
+- `flow_matching.py` — `FlowMatchingMethod` (imports `FMLoss`)
+- `diffusion_edm.py` — `DiffusionEDMMethod` (imports `EDMLoss`)
+- `score_matching.py` — `ScoreMatchingMethod` (imports `SMLoss`)
 
-Key modifications:
-- `src/gensbi/diffusion/path/edm_path.py` — `EDMPath.sample(x_0, x_1, sigma)` takes noise directly
-- `src/gensbi/diffusion/path/sm_path.py` — `SMPath.sample(x_0, x_1, t)` takes noise directly
+**Canonical loss classes:**
+- `src/gensbi/flow_matching/loss/fm_loss.py` — `FMLoss`
+- `src/gensbi/diffusion/loss/edm_loss.py` — `EDMLoss`
+- `src/gensbi/diffusion/loss/sm_loss.py` — `SMLoss`
+
+**Unified pipelines (appended to existing files):**
+- `src/gensbi/recipes/conditional_pipeline.py` — `ConditionalPipeline`
+- `src/gensbi/recipes/joint_pipeline.py` — `JointPipeline`
+- `src/gensbi/recipes/unconditional_pipeline.py` — `UnconditionalPipeline`
+
+**Tests:** 514 passing (30 new unified pipeline tests + original suite).
 
 ---
 
@@ -135,6 +164,8 @@ Key modifications:
 
 ```bash
 # Always use this pattern for tests:
-eval "$(conda shell.bash hook)" && conda deactivate && conda deactivate && conda activate gensbi
+mamba deactivate && mamba deactivate && mamba activate gensbi
 pytest tests/ -x --tb=short -q
 ```
+
+See `.agent/handouts/best_practices.md` for more details.
