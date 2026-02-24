@@ -15,7 +15,8 @@ from gensbi.models import (
 )
 
 
-from gensbi.recipes.joint_pipeline import JointFlowPipeline, JointDiffusionPipeline, JointSMPipeline
+from gensbi.recipes.joint_pipeline import JointPipeline
+from gensbi.recipes.utils import parse_training_config
 
 
 def parse_simformer_params(config_path: str):
@@ -116,67 +117,7 @@ def _simformer_config_from_path(config_path: str, dim_joint: int):
     return params, training_config, method
 
 
-def parse_training_config(config_path: str):
-    """
-    Parse a training configuration file.
-
-    Parameters
-    ----------
-    config_path : str
-        Path to the configuration file.
-
-    Returns
-    -------
-    config : dict
-        Parsed configuration dictionary.
-
-    """
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-
-    # Training parameters
-    train_params = config.get("training", {})
-    multistep = train_params.get("multistep", 1)
-    experiment_id = train_params.get("experiment_id", 1)
-    early_stopping = train_params.get("early_stopping", True)
-    nsteps = train_params.get("nsteps", 30000) * multistep
-    val_every = train_params.get("val_every", 100) * multistep
-    sigma_min = train_params.get("sigma_min", 0.002)
-    sigma_max = train_params.get("sigma_max", 80.0)
-
-    # Optimizer parameters
-    opt_params = config.get("optimizer", {})
-
-    MAX_LR = opt_params.get("max_lr", 1e-3)
-    MIN_LR = opt_params.get("min_lr", 0.0)
-    MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
-
-    ema_decay = opt_params.get("ema_decay", 0.999)
-    decay_transition = opt_params.get("decay_transition", 0.85)
-
-    warmup_steps = opt_params.get("warmup_steps", 500)
-
-    training_config = {}
-    # overwrite the defaults with the config file values
-    training_config["nsteps"] = nsteps
-    training_config["ema_decay"] = ema_decay
-    training_config["decay_transition"] = decay_transition
-
-    training_config["max_lr"] = MAX_LR
-    training_config["min_lr"] = MIN_LR
-    training_config["min_scale"] = MIN_SCALE
-    training_config["val_every"] = val_every
-    training_config["early_stopping"] = early_stopping
-    training_config["experiment_id"] = experiment_id
-    training_config["multistep"] = multistep
-    training_config["warmup_steps"] = warmup_steps
-    training_config["sigma_min"] = sigma_min
-    training_config["sigma_max"] = sigma_max
-
-    return training_config
-
-
-class SimformerFlowPipeline(JointFlowPipeline):
+class SimformerFlowPipeline(JointPipeline):
     def __init__(
         self,
         train_dataset,
@@ -239,12 +180,15 @@ class SimformerFlowPipeline(JointFlowPipeline):
 
         model = self._make_model(params)
 
+        from gensbi.core import FlowMatchingMethod
+
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             ch_obs=ch_obs,
             params=params,
             training_config=training_config,
@@ -314,10 +258,6 @@ class SimformerFlowPipeline(JointFlowPipeline):
     def sample(
         self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
     ):
-        model_extras = {
-            "edge_mask": self.edge_mask,
-        }
-
         return super().sample(
             key,
             x_o,
@@ -325,27 +265,11 @@ class SimformerFlowPipeline(JointFlowPipeline):
             step_size=step_size,
             use_ema=use_ema,
             time_grid=time_grid,
-            **model_extras,
+            model_extras={"edge_mask": self.edge_mask},
         )
 
-    # def compute_unnorm_logprob(
-    #     self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None
-    # ):
-    #     model_extras = {
-    #         "edge_mask": self.edge_mask,
-    #     }
 
-    #     return super().compute_unnorm_logprob(
-    #         x_1,
-    #         x_o,
-    #         step_size=step_size,
-    #         use_ema=use_ema,
-    #         time_grid=time_grid,
-    #         **model_extras,
-    #     )
-
-
-class SimformerSMPipeline(JointSMPipeline):
+class SimformerSMPipeline(JointPipeline):
     def __init__(
         self,
         train_dataset,
@@ -395,14 +319,15 @@ class SimformerSMPipeline(JointSMPipeline):
 
         model = self._make_model(params)
 
+        from gensbi.core import ScoreMatchingMethod
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=ScoreMatchingMethod(sde_type=sde_type),
             ch_obs=ch_obs,
-            sde_type=sde_type,
             params=params,
             training_config=training_config,
             condition_mask_kind=condition_mask_kind,
@@ -475,11 +400,6 @@ class SimformerSMPipeline(JointSMPipeline):
         use_ema=True,
         return_intermediates=False,
     ):
-
-        model_extras = {
-            "edge_mask": self.edge_mask,
-        }
-
         return super().sample(
             key,
             x_o,
@@ -487,11 +407,11 @@ class SimformerSMPipeline(JointSMPipeline):
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
-            **model_extras,
+            model_extras={"edge_mask": self.edge_mask},
         )
 
 
-class SimformerDiffusionPipeline(JointDiffusionPipeline):
+class SimformerDiffusionPipeline(JointPipeline):
     def __init__(
         self,
         train_dataset,
@@ -553,12 +473,14 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
 
         model = self._make_model(params)
 
+        from gensbi.core import DiffusionEDMMethod
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=DiffusionEDMMethod(),
             ch_obs=ch_obs,
             params=params,
             training_config=training_config,
@@ -634,11 +556,6 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
         use_ema=True,
         return_intermediates=False,
     ):
-
-        model_extras = {
-            "edge_mask": self.edge_mask,
-        }
-
         return super().sample(
             key,
             x_o,
@@ -646,5 +563,5 @@ class SimformerDiffusionPipeline(JointDiffusionPipeline):
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
-            **model_extras,
+            model_extras={"edge_mask": self.edge_mask},
         )
