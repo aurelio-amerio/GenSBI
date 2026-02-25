@@ -19,7 +19,7 @@ The GenSBI codebase has a **combinatorial explosion** of pipeline and loss class
 ### Phase dependency graph
 
 ```
-Phase 1 (DONE) → Phase 2 (DONE) → Phase 2B (DONE) → Phase 3 (DONE) → Phase 4
+Phase 1 (DONE) → Phase 2 (DONE) → Phase 2B (DONE) → Phase 3 (DONE) → Phase 4 (DONE)
 ```
 
 ### Phase 1 (DONE): Core module
@@ -49,9 +49,9 @@ Moved private loss wrappers to first-class citizens in canonical locations:
 
 Migrated `Flux1FlowPipeline` etc. from inheriting `ConditionalFlowPipeline` to inheriting `ConditionalPipeline(method=FlowMatchingMethod())`. Old generic classes are now deprecation stubs that raise `RuntimeError`. Fixed `node_ids` bug in `UnconditionalPipeline.get_loss_fn()`. Tests reorganized: pipeline tests use mock models, model integration tests split into 3 files. See `phase3_handout.md`.
 
-### Phase 4: Stub out loss wrappers
+### Phase 4 (DONE): Stub out loss wrappers
 
-Now that nothing uses the old loss classes, replace them with deprecation stubs. See `phase4_handout.md`.
+Replaced 9 mode-specific loss classes (`ConditionalCFMLoss`, `JointCFMLoss`, etc.) with `RuntimeError` deprecation stubs. Removed stale loss imports from pipeline files. Moved `ContinuousFMLoss` to `old/` and removed it from `flow_matching/loss/__init__.py`. Tests updated to verify stubs raise `RuntimeError`. 479 tests passing.
 
 ---
 
@@ -159,7 +159,7 @@ All Phase 1/1B/1C/2/2B/3 changes are applied. Key files:
 - `src/gensbi/recipes/flux1joint.py` — `Flux1JointFlowPipeline(JointPipeline)`
 - `src/gensbi/recipes/simformer.py` — `SimformerFlowPipeline(JointPipeline)`
 
-**Tests:** 481 passing.
+**Tests:** 479 passing.
 
 ---
 

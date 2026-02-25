@@ -1,8 +1,12 @@
-# Phase 4: Simplify Losses
+# Phase 4: Simplify Losses ✅ DONE
 
 ## Goal
 
 Remove 9 mode-specific loss wrappers from `models/losses/`. Core losses are already handled by the `GenerativeMethod` strategies via `method.build_loss(path)`.
+
+## Status
+
+**DONE.** Replaced all 9 loss classes with `RuntimeError` deprecation stubs following the Phase 3 pattern. Cleaned up stale loss imports from pipeline files. Moved `ContinuousFMLoss` to `old/` and removed its export from `flow_matching/loss/__init__.py`. Tests updated to verify stubs raise `RuntimeError` and `ContinuousFMLoss` is no longer importable. 479 tests passing.
 
 ---
 

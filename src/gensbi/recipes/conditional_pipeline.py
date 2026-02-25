@@ -32,8 +32,7 @@ from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
 from gensbi.diffusion.solver import SMSolver, SMPFSolver
 
-from gensbi.models import ConditionalCFMLoss, ConditionalWrapper, ConditionalEDMLoss
-from gensbi.models.losses import ConditionalSMLoss
+from gensbi.models import ConditionalWrapper
 
 from einops import repeat
 

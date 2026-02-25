@@ -27,12 +27,7 @@ from gensbi.diffusion.solver import SMSolver, SMPFSolver
 
 from einops import repeat
 
-from gensbi.models import (
-    JointCFMLoss,
-    JointWrapper,
-    JointEDMLoss,
-)
-from gensbi.models.losses import JointSMLoss
+from gensbi.models import JointWrapper
 
 import numpyro.distributions as dist
 

@@ -21,12 +21,7 @@ from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
 from gensbi.diffusion.solver import SMSolver, SMPFSolver
 
-from gensbi.models import (
-    UnconditionalCFMLoss,
-    UnconditionalWrapper,
-    UnconditionalEDMLoss,
-)
-from gensbi.models.losses import UnconditionalSMLoss
+from gensbi.models import UnconditionalWrapper
 
 from gensbi.recipes.utils import init_ids_1d, build_edm_path, build_sm_path
 

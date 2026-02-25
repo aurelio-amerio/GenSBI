@@ -332,7 +332,9 @@ pytest tests/ -x -v --tb=short
 
 ---
 
-## Phase 4: Simplify Losses
+## Phase 4: Simplify Losses ✅
+
+**Status: DONE.** Replaced 9 mode-specific loss wrappers with `RuntimeError` deprecation stubs. Cleaned stale loss imports from pipeline files. Moved `ContinuousFMLoss` to `old/`. 479 tests passing.
 
 **Scope:** Remove 9 mode-specific loss wrappers from `models/losses/`. Core losses are now in canonical locations (`flow_matching/loss/` and `diffusion/loss/`).
 

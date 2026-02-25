@@ -3,11 +3,9 @@ Loss functions for flow matching.
 
 This module provides loss functions for training continuous flow matching models.
 """
-from .continuous_loss import ContinuousFMLoss
 from .fm_loss import FMLoss
 
 
 __all__ = [
-    "ContinuousFMLoss",
     "FMLoss",
 ]
