@@ -109,6 +109,16 @@ def test_unified_joint_train_and_sample(method):
         pipeline.train(nnx.Rngs(0), nsteps=2, save_model=False)
         pipeline._wrap_model()
 
+        # Direct model evaluation
+        batch_size = 3
+        t = jnp.linspace(0, 1, batch_size)
+        obs = jnp.zeros((batch_size, dim_obs, 2))
+        cond_eval = jnp.zeros((batch_size, dim_cond, 2))
+        out = pipeline.model_wrapped(t, obs, pipeline.obs_ids, cond_eval, pipeline.cond_ids)
+        assert out.shape == (batch_size, dim_obs, 2)
+        out_ema = pipeline.ema_model_wrapped(t, obs, pipeline.obs_ids, cond_eval, pipeline.cond_ids)
+        assert out_ema.shape == (batch_size, dim_obs, 2)
+
         # Sample
         cond_single = jnp.zeros((1, dim_cond, 2))
         sample = pipeline.sample(

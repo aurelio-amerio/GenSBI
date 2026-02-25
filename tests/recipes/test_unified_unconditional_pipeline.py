@@ -100,6 +100,15 @@ def test_unified_unconditional_train_and_sample(method):
         pipeline.train(nnx.Rngs(0), nsteps=2, save_model=False)
         pipeline._wrap_model()
 
+        # Direct model evaluation
+        batch_size = 3
+        t = jnp.linspace(0, 1, batch_size)
+        obs = jnp.zeros((batch_size, dim_joint, 2))
+        out = pipeline.model_wrapped(t, obs, pipeline.obs_ids)
+        assert out.shape == (batch_size, dim_joint, 2)
+        out_ema = pipeline.ema_model_wrapped(t, obs, pipeline.obs_ids)
+        assert out_ema.shape == (batch_size, dim_joint, 2)
+
         # Sample (no x_o for unconditional)
         sample = pipeline.sample(jax.random.PRNGKey(1), nsamples=32, use_ema=False)
         assert sample.shape == (32, dim_joint, 2)

@@ -28,6 +28,7 @@ from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
 from gensbi.diffusion.solver import EDMSolver, SMSolver, SMPFSolver
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.sm_path import SMPath
+from gensbi.utils.model_wrapping import ModelWrapper
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +126,50 @@ class TestFlowMatchingMethod:
 
     def test_extra_training_config_empty(self, method):
         assert method.get_extra_training_config() == {}
+
+    def test_build_sampler_fn_with_custom_time_grid(self, method, dummy_model):
+        """Custom time_grid triggers return_intermediates=True (L197)."""
+        path = method.build_path({})
+        wrapped = ModelWrapper(dummy_model)
+        time_grid = jnp.array([0.0, 0.5, 1.0])
+        sampler_fn = method.build_sampler_fn(
+            wrapped, path, model_extras={},
+            time_grid=time_grid,
+        )
+        key = jax.random.PRNGKey(99)
+        x_init = jax.random.normal(key, SHAPE)
+        result = sampler_fn(key, x_init)
+        assert result is not None
+
+    def test_build_sampler_fn_with_sde_solver(self, method, dummy_model):
+        """SDE solver triggers pass_key branch (L209-210)."""
+        from unittest.mock import MagicMock
+        path = method.build_path({})
+
+        mock_solver = MagicMock(spec=BaseFmSDESolver)
+        mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
+        mock_solver.get_sampler.return_value = mock_sampler
+
+        original_build_solver = method.build_solver
+        method.build_solver = lambda *a, **kw: mock_solver
+
+        try:
+            sampler_fn = method.build_sampler_fn(
+                dummy_model, path, model_extras={},
+            )
+            key = jax.random.PRNGKey(99)
+            x_init = jax.random.normal(key, SHAPE)
+            result = sampler_fn(key, x_init)
+            assert mock_sampler.called
+            assert len(mock_sampler.call_args[0]) == 2  # (x_init, key_sampler)
+        finally:
+            method.build_solver = original_build_solver
+
+    def test_build_solver_default_fallback(self, method, dummy_model):
+        """build_solver with solver=None falls back to get_default_solver."""
+        wrapped = ModelWrapper(dummy_model)
+        solver = method.build_solver(wrapped, path=None, solver=None)
+        assert isinstance(solver, ODESolver)
 
 
 # ---------------------------------------------------------------------------

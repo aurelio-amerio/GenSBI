@@ -64,4 +64,60 @@ def test_init_ids_joint():
     assert node_ids.shape == (1, 7, 1)
     assert obs_ids.shape == (1, 3, 1)
     assert cond_ids.shape == (1, 4, 1)
-    return
+
+
+# ---------------------------------------------------------------------------
+# Tests for uncovered lines in recipes/utils.py
+# ---------------------------------------------------------------------------
+
+from gensbi.recipes.utils import (
+    patchify_2d,
+    _resolve_embedding_ids,
+    build_edm_path,
+    build_sm_path,
+    parse_training_config,
+)
+
+
+def test_patchify_2d():
+    """patchify_2d rearranges (B, H, W, C) -> (B, H*W/4, C*4)."""
+    x = jnp.ones((2, 4, 6, 3))
+    out = patchify_2d(x)
+    # ph=pw=2, so patches are 2x2, H/2=2, W/2=3 -> (2, 2*3, 3*4)
+    assert out.shape == (2, 6, 12)
+
+
+def test_resolve_embedding_ids_unknown_strategy():
+    """Unknown strategy raises ValueError."""
+    with pytest.raises(ValueError, match="Unknown id embedding strategy"):
+        _resolve_embedding_ids("invalid_strategy", 5, semantic_id=0)
+
+
+def test_build_edm_path_invalid_sde():
+    """Invalid SDE type raises ValueError."""
+    with pytest.raises(ValueError, match="Unknown sde type"):
+        build_edm_path("INVALID", {})
+
+
+def test_build_sm_path_invalid_sde():
+    """Invalid SDE type raises ValueError."""
+    with pytest.raises(ValueError, match="sde_type must be"):
+        build_sm_path("INVALID", {})
+
+
+def test_parse_training_config_ema_decay_in_optimizer():
+    """ema_decay in optimizer section overrides default (backward compat)."""
+    import tempfile
+    import yaml
+
+    config = {
+        "training": {"nsteps": 100},
+        "optimizer": {"ema_decay": 0.123, "max_lr": 1e-3},
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.dump(config, f)
+        f.flush()
+        result = parse_training_config(f.name)
+
+    assert result["ema_decay"] == 0.123
+
