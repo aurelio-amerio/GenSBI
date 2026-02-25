@@ -256,7 +256,9 @@ Core strategy modules import from canonical locations. No backward-compat aliase
 
 ---
 
-## Phase 3: Simplify Model-Specific Pipelines & Deprecate Old Classes
+## Phase 3: Simplify Model-Specific Pipelines & Deprecate Old Classes ✅
+
+**Status: DONE.** Migrated model-specific pipelines to inherit from unified classes. Old generic classes are deprecation stubs raising `RuntimeError`. Fixed `node_ids` bug in `UnconditionalPipeline.get_loss_fn()`. Tests reorganized: pipeline tests use mock models, model integration tests split into 3 files. 481 tests passing.
 
 **Scope:** Migrate model-specific pipelines to inherit from the new unified classes. **Then** replace old generic classes with deprecation stubs. Deduplicate `parse_training_config`.
 

@@ -19,10 +19,7 @@ The GenSBI codebase has a **combinatorial explosion** of pipeline and loss class
 ### Phase dependency graph
 
 ```
-Phase 1 (DONE) → Phase 2 (DONE) → Phase 2B (DONE) → Phase 3 → Phase 4
-                                                       ↑
-                                              (must migrate Flux1/Simformer
-                                               before removing old losses)
+Phase 1 (DONE) → Phase 2 (DONE) → Phase 2B (DONE) → Phase 3 (DONE) → Phase 4
 ```
 
 ### Phase 1 (DONE): Core module
@@ -48,9 +45,9 @@ Moved private loss wrappers to first-class citizens in canonical locations:
 | `EDMLoss` | `diffusion/loss/edm_loss.py` |
 | `SMLoss` | `diffusion/loss/sm_loss.py` |
 
-### Phase 3: Migrate model-specific pipelines, then deprecate
+### Phase 3 (DONE): Migrate model-specific pipelines, then deprecate
 
-Migrate `Flux1FlowPipeline` etc. from inheriting `ConditionalFlowPipeline` to inheriting `ConditionalPipeline(method=FlowMatchingMethod())`. Once done, old generic classes become deprecation stubs. See `phase3_handout.md`.
+Migrated `Flux1FlowPipeline` etc. from inheriting `ConditionalFlowPipeline` to inheriting `ConditionalPipeline(method=FlowMatchingMethod())`. Old generic classes are now deprecation stubs that raise `RuntimeError`. Fixed `node_ids` bug in `UnconditionalPipeline.get_loss_fn()`. Tests reorganized: pipeline tests use mock models, model integration tests split into 3 files. See `phase3_handout.md`.
 
 ### Phase 4: Stub out loss wrappers
 
@@ -111,7 +108,8 @@ The three pipeline modes (conditional/joint/unconditional) differ in non-obvious
 | `batch` from dataset | `(obs, cond)` tuple | `x_1` (concatenated) | `obs` (not a tuple) |
 | IDs | `obs_ids`, `cond_ids` | `node_ids`, `obs_ids`, `cond_ids` | `obs_ids` only |
 | `condition_mask` in loss | not used | sampled per batch | `zeros` (always) |
-| `model_extras` in loss | `{cond, obs_ids, cond_ids}` | `{node_ids}` | `{obs_ids}` |
+| `model_extras` in loss | `{cond, obs_ids, cond_ids}` | `{node_ids}` | `{node_ids}` |
+| `model_extras` in sampler | `{cond, obs_ids, cond_ids}` | `{cond, obs_ids, cond_ids}` | `{obs_ids}` |
 | `x_init` shape in sampler | `(n, dim_obs, ch)` | `(n, dim_obs, ch)` | `(n, dim_obs, ch)` |
 | `get_sampler` takes `x_o`? | yes | yes | no |
 | Wrapper | `ConditionalWrapper` | `JointWrapper` | `UnconditionalWrapper` |
@@ -136,9 +134,9 @@ Then run `pytest` directly. This applies to **all** test verification.
 
 ---
 
-## Current Codebase State (as of Phase 2B completion)
+## Current Codebase State (as of Phase 3 completion)
 
-All Phase 1/1B/1C/2/2B changes are **committed**. The codebase is clean. Key files:
+All Phase 1/1B/1C/2/2B/3 changes are applied. Key files:
 
 **Core strategies (`src/gensbi/core/`):**
 - `generative_method.py` — `GenerativeMethod` ABC
@@ -151,12 +149,17 @@ All Phase 1/1B/1C/2/2B changes are **committed**. The codebase is clean. Key fil
 - `src/gensbi/diffusion/loss/edm_loss.py` — `EDMLoss`
 - `src/gensbi/diffusion/loss/sm_loss.py` — `SMLoss`
 
-**Unified pipelines (appended to existing files):**
-- `src/gensbi/recipes/conditional_pipeline.py` — `ConditionalPipeline`
-- `src/gensbi/recipes/joint_pipeline.py` — `JointPipeline`
-- `src/gensbi/recipes/unconditional_pipeline.py` — `UnconditionalPipeline`
+**Unified pipelines (old generic classes are deprecation stubs):**
+- `src/gensbi/recipes/conditional_pipeline.py` — `ConditionalPipeline` + 3 stubs
+- `src/gensbi/recipes/joint_pipeline.py` — `JointPipeline` + 3 stubs
+- `src/gensbi/recipes/unconditional_pipeline.py` — `UnconditionalPipeline` + 3 stubs
 
-**Tests:** 514 passing (30 new unified pipeline tests + original suite).
+**Model-specific pipelines (migrated to unified base):**
+- `src/gensbi/recipes/flux1.py` — `Flux1FlowPipeline(ConditionalPipeline)`
+- `src/gensbi/recipes/flux1joint.py` — `Flux1JointFlowPipeline(JointPipeline)`
+- `src/gensbi/recipes/simformer.py` — `SimformerFlowPipeline(JointPipeline)`
+
+**Tests:** 481 passing.
 
 ---
 

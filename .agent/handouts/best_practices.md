@@ -99,3 +99,21 @@ grep -r "OldClassName" src/ tests/
 ```
 
 Check both source AND test files — isinstance checks and inline imports are easy to miss.
+
+### `model_extras` keys: loss vs sampler
+
+The loss function calls the **raw model** but the sampler calls the **wrapped model**. Their parameter names differ:
+
+| Path | Calls | Unconditional key | Joint key |
+|---|---|---|---|
+| `get_loss_fn()` | **raw model** | `node_ids` | `node_ids` |
+| `get_sampler()` | **wrapped model** | `obs_ids` | `obs_ids`, `cond_ids` |
+
+The wrapper translates: `UnconditionalWrapper` maps `obs_ids` → `node_ids`, `JointWrapper` concatenates `obs_ids + cond_ids` → `node_ids`.
+
+### Test file naming with pytest-xdist
+
+When using pytest-xdist (`-n 2`), test module basenames must be **globally unique** across the entire test suite. If `tests/models/test_model_simformer.py` and `tests/recipes/test_model_simformer.py` both exist, pytest raises "import file mismatch".
+
+Fix: Use unique basenames (e.g., `test_pipeline_simformer.py` for recipes).
+
