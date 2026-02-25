@@ -29,6 +29,12 @@ import numpy as np
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
 from gensbi.diffusion.solver import EDMSolver
 
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent))
+from mock_models import MockUnconditionalModel
+
 
 nsamples = 100
 key = jax.random.PRNGKey(0)
@@ -145,7 +151,7 @@ def test_unconditional_diffusion_sde_types(sde_type):
         training_config["val_every"] = 1
 
         pipeline = UnconditionalPipeline(
-            model_joint,
+            MockUnconditionalModel(),
             train_dataset,
             val_dataset,
             dim_joint,
@@ -190,7 +196,7 @@ def test_unconditional_diffusion_solver_scheduler():
         training_config["val_every"] = 1
 
         pipeline = UnconditionalPipeline(
-            model_joint,
+            MockUnconditionalModel(),
             train_dataset,
             val_dataset,
             dim_joint,
@@ -211,7 +217,7 @@ def test_unconditional_diffusion_solver_scheduler():
             jax.random.PRNGKey(1),
             nsamples=10,
             use_ema=False,
-            solver=(EDMSolver, {"solver_scheduler": custom_scheduler}),
+            solver_scheduler=custom_scheduler,
         )
         assert sample.shape == (10, dim_joint, 2)
 
@@ -221,7 +227,7 @@ def test_unconditional_diffusion_solver_scheduler():
             jax.random.PRNGKey(1),
             nsamples=10,
             use_ema=False,
-            solver=(EDMSolver, {"solver_scheduler": ve_scheduler}),
+            solver_scheduler=ve_scheduler,
         )
         assert sample_ve.shape == (10, dim_joint, 2)
 
@@ -369,7 +375,7 @@ def test_conditional_diffusion_solver_scheduler():
             x_o=x_o,
             nsamples=10,
             use_ema=False,
-            solver=(EDMSolver, {"solver_scheduler": custom_scheduler}),
+            solver_scheduler=custom_scheduler,
         )
         assert sample.shape == (10, dim_obs, 2)
 
@@ -380,7 +386,7 @@ def test_conditional_diffusion_solver_scheduler():
             x_o=x_o,
             nsamples=10,
             use_ema=False,
-            solver=(EDMSolver, {"solver_scheduler": ve_scheduler}),
+            solver_scheduler=ve_scheduler,
         )
         assert sample_ve.shape == (10, dim_obs, 2)
 
@@ -427,7 +433,7 @@ def test_joint_diffusion_solver_scheduler():
             x_o=x_o,
             nsamples=10,
             use_ema=False,
-            solver=(EDMSolver, {"solver_scheduler": custom_scheduler}),
+            solver_scheduler=custom_scheduler,
         )
         assert sample.shape == (10, dim_obs, 2)
 
@@ -438,6 +444,6 @@ def test_joint_diffusion_solver_scheduler():
             x_o=x_o,
             nsamples=10,
             use_ema=False,
-            solver=(EDMSolver, {"solver_scheduler": ve_scheduler}),
+            solver_scheduler=ve_scheduler,
         )
         assert sample_ve.shape == (10, dim_obs, 2)

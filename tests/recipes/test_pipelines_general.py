@@ -18,6 +18,12 @@ from gensbi.recipes import (
     UnconditionalPipeline,
 )
 
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent))
+from mock_models import MockUnconditionalModel
+
 from gensbi.core import FlowMatchingMethod, DiffusionEDMMethod, ScoreMatchingMethod
 
 from gensbi.models import Simformer, SimformerParams, Flux1, Flux1Params
@@ -255,7 +261,7 @@ def test_model_general_unconditional(method):
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1  # validate every epoch
 
-        model = model_joint
+        model = MockUnconditionalModel()
 
         default_pipeline = UnconditionalPipeline(
             model, train_dataset, val_dataset, dim_joint, method=method
@@ -263,8 +269,9 @@ def test_model_general_unconditional(method):
 
         assert isinstance(default_pipeline, UnconditionalPipeline)
 
+        model2 = MockUnconditionalModel()
         pipeline = UnconditionalPipeline(
-            model,
+            model2,
             train_dataset,
             val_dataset,
             dim_joint,

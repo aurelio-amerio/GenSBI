@@ -184,7 +184,7 @@ class UnconditionalPipeline(AbstractPipeline):
         def loss_fn(model, batch, key):
             x_1 = batch
             prepared = self.method.prepare_batch(key, x_1, self.path)
-            model_extras = {"obs_ids": self.obs_ids}
+            model_extras = {"node_ids": self.obs_ids}
             return self.loss_obj(
                 model, prepared,
                 condition_mask=None,

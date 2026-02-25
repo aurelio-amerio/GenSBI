@@ -139,5 +139,5 @@ def test_unified_unconditional_loss_fn(method):
 
     loss_fn = pipeline.get_loss_fn()
     mock_batch = jnp.zeros((32, dim_joint, 2))
-    loss = loss_fn(pipeline.model_wrapped, mock_batch, key=jax.random.PRNGKey(1))
+    loss = loss_fn(pipeline.model, mock_batch, key=jax.random.PRNGKey(1))
     assert loss.shape == ()
