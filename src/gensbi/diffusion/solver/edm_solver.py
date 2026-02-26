@@ -57,7 +57,7 @@ class EDMSolver(Solver):
         nsteps: int = 18,
         method: str = "Heun",
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        static_model_kwargs: dict = {},
         solver_params: Optional[dict] = {},
         solver_scheduler: Optional[Any] = None,
     ) -> Callable:
@@ -78,8 +78,10 @@ class EDMSolver(Solver):
                 Integration method.
             return_intermediates : bool
                 Whether to return intermediate steps.
-            model_extras : dict
-                Additional model arguments.
+            static_model_kwargs : dict
+                Static model arguments baked into the sampler.
+                Condition-dependent data should be passed at call time
+                via ``model_extras``.
             solver_params : Optional[dict]
                 Additional solver parameters.
             solver_scheduler : Optional[Any]
@@ -88,7 +90,7 @@ class EDMSolver(Solver):
         Returns
         -------
             Callable
-                Sampler function.
+                ``sample(key, x_init, model_extras={})`` sampler function.
         """
         if solver_scheduler is None:
             solver_scheduler = self.path.scheduler
@@ -109,7 +111,7 @@ class EDMSolver(Solver):
         S_noise = solver_params.get("S_noise", 1)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array) -> Array:
+        def sample(key: Array, x_init: Array, model_extras={}) -> Array:
             return sampler_(
                 solver_scheduler,
                 self.score_model,
@@ -124,7 +126,7 @@ class EDMSolver(Solver):
                 S_max=S_max,
                 S_noise=S_noise,
                 method=method,
-                model_kwargs=model_extras,
+                model_kwargs={**static_model_kwargs, **model_extras},
             )
 
         return sample
@@ -165,7 +167,7 @@ class EDMSolver(Solver):
             return_intermediates : bool
                 Whether to return intermediate steps.
             model_extras : dict
-                Additional model arguments.
+                Runtime model extras (e.g. ``cond``, ``obs_ids``).
             solver_params : Optional[dict]
                 Additional solver parameters.
             solver_scheduler : Optional[Any]
@@ -183,8 +185,7 @@ class EDMSolver(Solver):
             nsteps=nsteps,
             method=method,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
             solver_params=solver_params,
             solver_scheduler=solver_scheduler,
         )
-        return sample(key, x_init)
+        return sample(key, x_init, model_extras=model_extras)

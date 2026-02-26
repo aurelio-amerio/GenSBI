@@ -198,13 +198,12 @@ class DiffusionEDMMethod(GenerativeMethod):
         sampler_ = solver_instance.get_sampler(
             nsteps=nsteps,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
             solver_scheduler=solver_scheduler,
             solver_params=solver_params,
         )
 
-        def sampler_fn(key, x_init, model_extras=model_extras):
-            return sampler_(key, x_init)
+        def sampler_fn(key, x_init, model_extras={}):
+            return sampler_(key, x_init, model_extras=model_extras)
 
         return sampler_fn
 

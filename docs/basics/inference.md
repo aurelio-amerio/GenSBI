@@ -52,6 +52,25 @@ samples1 = sampler_fn(jax.random.PRNGKey(1), nsamples=5000)
 samples2 = sampler_fn(jax.random.PRNGKey(2), nsamples=5000)
 ```
 
+### Dynamic Model Extras
+
+Samplers accept `model_extras` at **call time**, which means the sampler can be compiled once and reused for different conditions without recompilation. The pipeline methods (`sample`, `sample_batched`) handle this automatically, but if you are building custom sampling loops, you can pass extras directly:
+
+```python
+sampler = pipeline.get_sampler(x_observed_1)
+
+# Reuse the same compiled sampler with different conditioning:
+samples_1 = sampler(jax.random.PRNGKey(1), nsamples=5000)
+samples_2 = sampler(
+    jax.random.PRNGKey(2), nsamples=5000,
+    model_extras={"cond": x_observed_2, "obs_ids": obs_ids, "cond_ids": cond_ids},
+)
+```
+
+```{tip}
+This is exactly how `sample_batched` works internally: it compiles the sampler once using the first condition, then loops over all conditions, passing different `model_extras` for each.
+```
+
 ## Batched Inference
 To perform inference efficiently on a batch of different observations (e.g., $N$ diverse inputs), use the `sample_batched` method. This handles internal batching and chunking to manage memory usage.
 

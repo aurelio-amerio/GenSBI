@@ -200,15 +200,14 @@ class FlowMatchingMethod(GenerativeMethod):
             method="Euler",
             step_size=step_size,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
             time_grid=time_grid,
         )
 
-        def sampler_fn(key, x_init, model_extras=model_extras):
+        def sampler_fn(key, x_init, model_extras={}):
             if pass_key:
                 key, key_sampler = jax.random.split(key)
-                return sampler_(x_init, key_sampler, model_extras)
-            return sampler_(x_init)
+                return sampler_(x_init, key_sampler, model_extras=model_extras)
+            return sampler_(x_init, model_extras=model_extras)
 
         return sampler_fn
 

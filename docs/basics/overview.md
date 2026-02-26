@@ -54,8 +54,9 @@ Three types of wrappers exist:
 
 The wrapper provides:
 - Standardized calling interface for solvers
-- `get_vector_field()` method for ODE/SDE solution (used for Flow and Diffusion models)
-- `get_divergence()` method when needed for likelihood computation
+- `get_vector_field(**static_kwargs)` method for ODE/SDE solution — accepts **static keyword arguments** that are baked into the vector field at creation time
+- `get_divergence(**static_kwargs)` method when needed for likelihood computation
+- Runtime `model_extras` (e.g., conditioning data) are passed dynamically via `diffeqsolve(args=model_extras)`, allowing a compiled sampler to be reused across different conditions without recompilation
 
 **Note**: Wrappers are only used during sampling/inference. During training, the unwrapped model is called directly.
 
@@ -149,12 +150,13 @@ During inference:
    - Wrap the model to provide standard interface for the solver
    - Start with Gaussian noise
    - Use the wrapped model's `get_vector_field()` method with an ODE solver
+   - Condition-dependent data (e.g., `cond`, `obs_ids`) flows as runtime `model_extras` through `diffeqsolve(args=...)`
    - Result: samples from the posterior distribution
 
 2. **Iterative Denoising** (Diffusion):
-   - Wrap the model for the SDE sampler
+   - Wrap the model for the SDE/discrete sampler
    - Start with pure noise (sampled according to the SDE prior distribution)
-   - Iteratively denoise using the learned denoiser
+   - Iteratively denoise using the learned denoiser, with `model_extras` passed at each step
    - Result: samples from the posterior distribution
 
 ## File Organization

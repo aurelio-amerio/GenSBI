@@ -220,7 +220,7 @@ class UnconditionalPipeline(AbstractPipeline):
             x_init = self.method.sample_init(
                 key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
             )
-            return sampler_fn(key, x_init)
+            return sampler_fn(key, x_init, model_extras)
 
         return sampler
 

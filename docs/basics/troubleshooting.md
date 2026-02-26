@@ -225,9 +225,11 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 1. **Use JIT compilation**: Call `get_sampler()` once and reuse the function:
 
    ```python
-   sampler_fn = pipeline.get_sampler(x_observed)
-   samples = sampler_fn(jax.random.PRNGKey(42), num_samples=10_000)
+   sampler = pipeline.get_sampler(x_observed)
+   samples = sampler(jax.random.PRNGKey(42), nsamples=10_000)
    ```
+
+   The returned sampler accepts `model_extras` at call time, so it can be reused for different conditions without recompilation.
 
 2. **Batch sampling**: Generate samples in batches rather than one at a time. This is particularly useful for large batch sizes, or if memory is limited.
 
