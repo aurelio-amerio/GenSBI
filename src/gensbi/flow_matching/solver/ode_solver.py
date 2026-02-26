@@ -55,7 +55,7 @@ class ODESolver(Solver):
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        static_model_kwargs: dict = {},
     ) -> Callable:
         r"""Obtain a sampler to solve the ODE with the velocity field.
 
@@ -82,16 +82,21 @@ class ODESolver(Solver):
                 The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
             return_intermediates : bool, optional
                 If True then return intermediate time steps according to time_grid. Defaults to False.
-            model_extras : dict
-                Additional input for the model.
+            static_model_kwargs : dict
+                Static keyword arguments baked into the vector field at
+                creation time.  Use for genuinely static configuration;
+                condition-dependent data should be passed at call time
+                via the ``model_extras`` argument of the returned sampler.
 
         Returns
         -------
             Callable
-                A function that takes initial conditions and returns the solution at final time or intermediate times.
+                ``sampler(x_init, model_extras={})`` — a function that
+                takes initial conditions and runtime model extras, and
+                returns the solution at final time or intermediate times.
         """
 
-        term = diffrax.ODETerm(self.velocity_model.get_vector_field(**model_extras))
+        term = diffrax.ODETerm(self.velocity_model.get_vector_field(**static_model_kwargs))
 
         if isinstance(method, str):
             solver = {
@@ -110,7 +115,7 @@ class ODESolver(Solver):
             stepsize_controller = diffrax.ConstantStepSize()
 
         @jax.jit
-        def sampler(x_init):
+        def sampler(x_init, model_extras={}):
 
             solution = diffrax.diffeqsolve(
                 term,
@@ -119,6 +124,7 @@ class ODESolver(Solver):
                 t1=time_grid[-1],
                 dt0=step_size,
                 y0=x_init,
+                args=model_extras,
                 saveat=(
                     diffrax.SaveAt(ts=time_grid)
                     if return_intermediates
@@ -163,7 +169,7 @@ class ODESolver(Solver):
             return_intermediates : bool, optional
                 If True then return intermediate time steps according to time_grid. Defaults to False.
             model_extras : dict
-                Additional input for the model.
+                Runtime model extras (e.g. ``cond``, ``obs_ids``).
 
         Returns
         -------
@@ -178,10 +184,9 @@ class ODESolver(Solver):
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
         )
 
-        solution = sampler(x_init)
+        solution = sampler(x_init, model_extras=model_extras)
 
         return solution
 
@@ -197,7 +202,7 @@ class ODESolver(Solver):
         # exact_divergence: bool = True,
         *,
         # key: jax.random.PRNGKey = None,
-        model_extras: dict = {},
+        static_model_kwargs: dict = {},
     ) -> Callable:
         r"""Solve for log likelihood given a target sample at :math:`t=0`.
 
@@ -221,7 +226,8 @@ class ODESolver(Solver):
                 Whether to return intermediate steps.
             exact_divergence : bool
                 Use exact divergence vs Hutchinson estimator.
-            **model_extras: Additional model inputs.
+            static_model_kwargs : dict
+                Static keyword arguments baked into the vector field.
 
         Returns
         -------
@@ -231,8 +237,8 @@ class ODESolver(Solver):
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
-        vector_field = self.velocity_model.get_vector_field(**model_extras)
-        divergence = self.velocity_model.get_divergence(**model_extras)
+        vector_field = self.velocity_model.get_vector_field(**static_model_kwargs)
+        divergence = self.velocity_model.get_divergence(**static_model_kwargs)
 
         def dynamics_func(t, states, args):
             xt, _ = states
@@ -256,8 +262,7 @@ class ODESolver(Solver):
         else:
             stepsize_controller = diffrax.ConstantStepSize()
 
-        def sampler(x_1):
-            # y_init = (x_1, jnp.ones(x_1.shape)) # the divergence is a scalar, so it has one less dimension than the vector field
+        def sampler(x_1, model_extras={}):
             y_init = (
                 x_1,
                 jnp.zeros(x_1.shape[0]),
@@ -269,6 +274,7 @@ class ODESolver(Solver):
                 t1=time_grid[-1],
                 dt0=-step_size,
                 y0=y_init,
+                args=model_extras,
                 saveat=(
                     diffrax.SaveAt(ts=time_grid)
                     if return_intermediates
@@ -309,7 +315,6 @@ class ODESolver(Solver):
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
         )
-        solution = sampler(x_1)
+        solution = sampler(x_1, model_extras=model_extras)
         return solution

@@ -2,7 +2,6 @@
 Pipeline for training and using a Flux1 model for simulation-based inference.
 """
 
-import jax
 import jax.numpy as jnp
 from flax import nnx
 
@@ -14,11 +13,8 @@ from gensbi.models import (
 
 import yaml
 
-from gensbi.recipes.conditional_pipeline import (
-    ConditionalFlowPipeline,
-    ConditionalDiffusionPipeline,
-    ConditionalSMPipeline,
-)
+from gensbi.recipes.conditional_pipeline import ConditionalPipeline
+from gensbi.recipes.utils import parse_training_config
 
 
 def parse_flux1_params(config_path: str):
@@ -133,68 +129,7 @@ def _flux1_config_from_path(config_path: str, dim_obs: int, dim_cond: int):
     return params, training_config, method
 
 
-def parse_training_config(config_path: str):
-    """
-    Parse a training configuration file.
-
-    Parameters
-    ----------
-    config_path : str
-        Path to the configuration file.
-
-    Returns
-    -------
-    config : dict
-        Parsed configuration dictionary.
-
-    """
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-
-    # Training parameters
-    train_params = config.get("training", {})
-    multistep = train_params.get("multistep", 1)
-    experiment_id = train_params.get("experiment_id", 1)
-    early_stopping = train_params.get("early_stopping", True)
-    nsteps = train_params.get("nsteps", 30000) * multistep
-    val_every = train_params.get("val_every", 100) * multistep
-    sigma_min = train_params.get("sigma_min", 0.002)
-    sigma_max = train_params.get("sigma_max", 80.0)
-
-    # Optimizer parameters
-    opt_params = config.get("optimizer", {})
-
-    MAX_LR = opt_params.get("max_lr", 1e-3)
-    MIN_LR = opt_params.get("min_lr", 0.0)
-    MIN_SCALE = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
-
-    warmup_steps = opt_params.get("warmup_steps", 500)
-
-    ema_decay = opt_params.get("ema_decay", 0.999)
-
-    decay_transition = opt_params.get("decay_transition", 0.85)
-
-    training_config = {}
-    # overwrite the defaults with the config file values
-    training_config["nsteps"] = nsteps
-    training_config["ema_decay"] = ema_decay
-    training_config["decay_transition"] = decay_transition
-
-    training_config["max_lr"] = MAX_LR
-    training_config["min_lr"] = MIN_LR
-    training_config["min_scale"] = MIN_SCALE
-    training_config["val_every"] = val_every
-    training_config["early_stopping"] = early_stopping
-    training_config["experiment_id"] = experiment_id
-    training_config["multistep"] = multistep
-    training_config["warmup_steps"] = warmup_steps
-    training_config["sigma_min"] = sigma_min
-    training_config["sigma_max"] = sigma_max
-
-    return training_config
-
-
-class Flux1FlowPipeline(ConditionalFlowPipeline):
+class Flux1FlowPipeline(ConditionalPipeline):
     def __init__(
         self,
         train_dataset,
@@ -252,23 +187,19 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         if params is not None:
             ch_cond = params.context_in_dim
 
-        self.dim_obs = dim_obs
-        self.dim_cond = dim_cond
-
-        self.ch_obs = ch_obs
-        self.ch_cond = ch_cond
-
         if params is None:
             params = get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
         model = self._make_model(params)
 
+        from gensbi.core import FlowMatchingMethod
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             ch_obs=ch_obs,
             ch_cond=ch_cond,
             params=params,
@@ -277,7 +208,6 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         )
         self.ema_model = nnx.clone(self.model)
 
-    # TODO: check how to implement the in channels and cond channels properly, we may need to modify something here
     @classmethod
     def init_pipeline_from_config(
         cls,
@@ -335,7 +265,7 @@ class Flux1FlowPipeline(ConditionalFlowPipeline):
         return get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
 
-class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
+class Flux1DiffusionPipeline(ConditionalPipeline):
     def __init__(
         self,
         train_dataset,
@@ -393,23 +323,19 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         if params is not None:
             ch_cond = params.context_in_dim
 
-        self.dim_obs = dim_obs
-        self.dim_cond = dim_cond
-
-        self.ch_obs = ch_obs
-        self.ch_cond = ch_cond
-
         if params is None:
             params = get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
         model = self._make_model(params)
 
+        from gensbi.core import DiffusionEDMMethod
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=DiffusionEDMMethod(),
             ch_obs=ch_obs,
             ch_cond=ch_cond,
             params=params,
@@ -418,7 +344,6 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         )
         self.ema_model = nnx.clone(self.model)
 
-    # TODO: need to update this too
     @classmethod
     def init_pipeline_from_config(
         cls,
@@ -478,7 +403,7 @@ class Flux1DiffusionPipeline(ConditionalDiffusionPipeline):
         return get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
 
-class Flux1SMPipeline(ConditionalSMPipeline):
+class Flux1SMPipeline(ConditionalPipeline):
     def __init__(
         self,
         train_dataset,
@@ -522,26 +447,21 @@ class Flux1SMPipeline(ConditionalSMPipeline):
         if params is not None:
             ch_cond = params.context_in_dim
 
-        self.dim_obs = dim_obs
-        self.dim_cond = dim_cond
-
-        self.ch_obs = ch_obs
-        self.ch_cond = ch_cond
-
         if params is None:
             params = get_default_flux1_params(dim_obs, dim_cond, ch_obs, ch_cond)
 
         model = self._make_model(params)
 
+        from gensbi.core import ScoreMatchingMethod
         super().__init__(
             model=model,
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=ScoreMatchingMethod(sde_type=sde_type),
             ch_obs=ch_obs,
             ch_cond=ch_cond,
-            sde_type=sde_type,
             params=params,
             training_config=training_config,
             id_embedding_strategy=params.id_embedding_strategy,

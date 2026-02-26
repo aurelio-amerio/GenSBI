@@ -194,3 +194,59 @@ def build_sm_path(sde_type: str, config: dict) -> SMPath:
         )
     else:
         raise ValueError(f"sde_type must be one of ['VP', 'VE'], got {sde_type}.")
+
+
+def parse_training_config(config_path: str):
+    """Parse training and optimizer configuration from a YAML config file.
+
+    Reads the ``training`` and ``optimizer`` sections of the config and
+    returns a flat dictionary consumed by :class:`AbstractPipeline`.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the YAML configuration file.
+
+    Returns
+    -------
+    training_config : dict
+        Parsed training configuration dictionary.
+    """
+    import yaml
+
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    # Training parameters
+    train_params = config.get("training", {})
+    multistep = train_params.get("multistep", 1)
+
+    training_config = {
+        "nsteps": train_params.get("nsteps", 30000) * multistep,
+        "ema_decay": train_params.get("ema_decay", 0.999),
+        "multistep": multistep,
+        "experiment_id": train_params.get("experiment_id", 1),
+        "early_stopping": train_params.get("early_stopping", True),
+        "val_every": train_params.get("val_every", 100) * multistep,
+        # Optional method-specific parameters (override strategy defaults)
+        "sigma_min": train_params.get("sigma_min", 0.002),
+        "sigma_max": train_params.get("sigma_max", 80.0),
+    }
+
+    # Optimizer parameters
+    opt_params = config.get("optimizer", {})
+
+    MAX_LR = opt_params.get("max_lr", 1e-3)
+    MIN_LR = opt_params.get("min_lr", 0.0)
+
+    training_config["max_lr"] = MAX_LR
+    training_config["min_lr"] = MIN_LR
+    training_config["min_scale"] = MIN_LR / MAX_LR if MAX_LR > 0 else 0.0
+    training_config["warmup_steps"] = opt_params.get("warmup_steps", 500)
+    training_config["decay_transition"] = opt_params.get("decay_transition", 0.85)
+
+    # ema_decay can also be specified in optimizer section (backward compat)
+    if "ema_decay" in opt_params:
+        training_config["ema_decay"] = opt_params["ema_decay"]
+
+    return training_config

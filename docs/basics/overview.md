@@ -7,7 +7,7 @@ This page explains the core concepts and architecture of GenSBI to help you unde
 GenSBI is built upon three core abstractions:
 
 - Models: Neural architectures such as Flux1 and Simformer.
-- Sampling Algorithms: Primarily Flow Matching and Diffusion. Each abstraction defines its own ODE/SDE formulations and implements the corresponding solvers.
+- Sampling Algorithms: Flow Matching and Diffusion (including both EDM and Score Matching variants). Each abstraction defines its own ODE/SDE formulations and implements the corresponding solvers.
 - Pipelines: Workflows that orchestrate the end-to-end process of training, validation, and sampling.
 
 ```{image} ../_static/pipeline_graph.png
@@ -54,8 +54,9 @@ Three types of wrappers exist:
 
 The wrapper provides:
 - Standardized calling interface for solvers
-- `get_vector_field()` method for ODE/SDE solution (used for Flow and Diffusion models)
-- `get_divergence()` method when needed for likelihood computation
+- `get_vector_field(**static_kwargs)` method for ODE/SDE solution — accepts **static keyword arguments** that are baked into the vector field at creation time
+- `get_divergence(**static_kwargs)` method when needed for likelihood computation
+- Runtime `model_extras` (e.g., conditioning data) are passed dynamically via `diffeqsolve(args=model_extras)`, allowing a compiled sampler to be reused across different conditions without recompilation
 
 **Note**: Wrappers are only used during sampling/inference. During training, the unwrapped model is called directly.
 
@@ -75,13 +76,19 @@ Currently, GenSBI provides two main recipes:
 - Exponential Moving Average (EMA) of weights
 - Model wrapping for sampling
 
-**Key SBI Pipelines:**
-- `Flux1FlowPipeline`: Flow matching with Flux1 model
-- `SimformerFlowPipeline`: Flow matching with Simformer model
-- `Flux1JointFlowPipeline`: Flow matching with Flux1Joint model
-- Similar diffusion variants exist
+**Model-specific Pipelines** (convenience wrappers with sensible defaults):
+- `Flux1FlowPipeline`, `Flux1DiffusionPipeline`, `Flux1SMPipeline`
+- `SimformerFlowPipeline`, `SimformerDiffusionPipeline`, `SimformerSMPipeline`
+- `Flux1JointFlowPipeline`, `Flux1JointDiffusionPipeline`, `Flux1JointSMPipeline`
 
-**Example:**
+**Unified Pipelines** (model-agnostic, parameterized by a `GenerativeMethod`):
+- `ConditionalPipeline`: For conditional inference (standard SBI)
+- `JointPipeline`: For joint inference
+- `UnconditionalPipeline`: For unconditional density estimation
+
+These unified pipelines accept **any model** that follows the standard interface, and are parameterized by a `GenerativeMethod` (`FlowMatchingMethod`, `DiffusionEDMMethod`, or `ScoreMatchingMethod`). See [Custom Models](/advanced/custom_models) for details.
+
+**Example** (model-specific pipeline):
 ```python
 from gensbi.recipes import Flux1FlowPipeline
 
@@ -93,12 +100,20 @@ pipeline = Flux1FlowPipeline(
     params=flux1_params,
 )
 
-# Train
 pipeline.train(rngs=nnx.Rngs(0))
-
-# Sample from posterior p(theta|x_o)
-# x_o is the observed measurement data used to condition the density estimation
 samples = pipeline.sample(key=key, x_o=x_observed, nsamples=10_000)
+```
+
+**Example** (unified pipeline with custom method):
+```python
+from gensbi.recipes import ConditionalPipeline
+from gensbi.core import FlowMatchingMethod
+
+pipeline = ConditionalPipeline(
+    model, train_ds, val_ds,
+    dim_obs=3, dim_cond=5,
+    method=FlowMatchingMethod(),
+)
 ```
 
 ### 4. Flow Matching vs. Diffusion
@@ -112,14 +127,22 @@ GenSBI supports two approaches for generative modeling:
 - **Why it's better**: Flow matching generally offers **faster training** and **faster sampling** than diffusion. The vector field with Optimal Transport paths behaves better than the score function, leading to straighter sampling trajectories that require fewer steps to solve.
 
 #### Diffusion
-- **Concept**: Learn to reverse a stochastic process that gradually adds noise to the data.
-- **Training**: The model learns the **score function** $\nabla \log p_t(x)$ (or equivalently predicts the noise) at different noise levels to reverse the corruption process.
-- **Sampling**: Solve a Stochastic Differential Equation (SDE) or ODE to iteratively denoise the samples.
-- **Pros/Cons**: Diffusion models can sometimes offer greater **sample diversity** due to the stochastic nature of SDEs. However, the score function can be harder to learn (singularities at small noise), and the non-linear reverse paths typically require more sampling steps.
 
-**Flow Matching is the recommended default in GenSBI.**
+Diffusion models learn to reverse a stochastic process that gradually adds noise to the data. GenSBI provides **two diffusion implementations**:
 
-**For a deeper mathematical dive, see the [Theoretical Overview](/theoretical_overview/index).**
+**EDM Diffusion** (Karras et al., 2022) — *Recommended for diffusion*
+- **Concept**: The model learns a **denoiser** $D_\theta(x; \sigma)$ that directly predicts the clean signal from noisy input, rather than learning the score function.
+- **Training**: Uses a carefully designed preconditioning and noise schedule in $\sigma$-space, which improves training stability.
+- **Sampling**: Iterates through a decreasing noise schedule, applying the denoiser at each step. Supports EDM, VP, and VE schedulers.
+
+**Score Matching** (Song et al., 2021) — *Classical approach*
+- **Concept**: The model learns the **score function** $\nabla \log p_t(x)$ at different noise levels to reverse the corruption process.
+- **Training**: Directly regresses the score function. Supports VP (Variance Preserving) and VE (Variance Exploding) SDEs.
+- **Sampling**: Solves the reverse SDE from $t{=}T$ to $t{=}\varepsilon$ for stochastic samples, or the equivalent probability flow ODE for deterministic samples.
+
+**Flow Matching is the recommended default in GenSBI.** Within diffusion, EDM is preferred over Score Matching for its improved training stability and sampling speed.
+
+**For a deeper mathematical dive, see the [Theoretical Overview](/theoretical_overview/index).** For available solvers and how to customize sampling, see [Samplers and Solvers](/advanced/samplers).
 
 ## How Components Work Together
 
@@ -149,12 +172,13 @@ During inference:
    - Wrap the model to provide standard interface for the solver
    - Start with Gaussian noise
    - Use the wrapped model's `get_vector_field()` method with an ODE solver
+   - Condition-dependent data (e.g., `cond`, `obs_ids`) flows as runtime `model_extras` through `diffeqsolve(args=...)`
    - Result: samples from the posterior distribution
 
 2. **Iterative Denoising** (Diffusion):
-   - Wrap the model for the SDE sampler
+   - Wrap the model for the SDE/discrete sampler
    - Start with pure noise (sampled according to the SDE prior distribution)
-   - Iteratively denoise using the learned denoiser
+   - Iteratively denoise using the learned denoiser, with `model_extras` passed at each step
    - Result: samples from the posterior distribution
 
 ## File Organization

@@ -68,7 +68,7 @@ class SMSolver(Solver):
         nsteps: int = 1000,
         method: str = "Euler",
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        static_model_kwargs: dict = {},
         solver_params: Optional[dict] = {},
     ) -> Callable:
         """
@@ -88,15 +88,17 @@ class SMSolver(Solver):
                 Integration method. One of "Euler", "Heun", "SEA", "ShARK".
             return_intermediates : bool
                 Whether to return intermediate steps.
-            model_extras : dict
-                Additional model arguments.
+            static_model_kwargs : dict
+                Static model arguments baked into the sampler.
+                Condition-dependent data should be passed at call time
+                via ``model_extras``.
             solver_params : Optional[dict]
                 Additional solver parameters.
 
         Returns
         -------
             Callable
-                Sampler function.
+                ``sample(key, x_init, model_extras={})`` sampler function.
         """
         if cfg_scale is not None:
             raise NotImplementedError(
@@ -106,7 +108,7 @@ class SMSolver(Solver):
         eps = solver_params.get("eps", 1e-3)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array) -> Array:
+        def sample(key: Array, x_init: Array, model_extras={}) -> Array:
             return sm_reverse_sde_sampler(
                 self.path.scheduler,
                 self.score_model,
@@ -118,7 +120,7 @@ class SMSolver(Solver):
                 n_steps=nsteps,
                 eps=eps,
                 method=method,
-                model_kwargs=model_extras,
+                model_kwargs={**static_model_kwargs, **model_extras},
             )
 
         return sample
@@ -174,10 +176,9 @@ class SMSolver(Solver):
             nsteps=nsteps,
             method=method,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
             solver_params=solver_params,
         )
-        return sample(key, x_init)
+        return sample(key, x_init, model_extras=model_extras)
 
 
 class SMPFSolver(SMSolver):
@@ -232,7 +233,7 @@ class SMPFSolver(SMSolver):
         nsteps: int = 1000,
         method: str = "Euler",
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        static_model_kwargs: dict = {},
         solver_params: Optional[dict] = {},
         atol: float = 1e-5,
         rtol: float = 1e-5,
@@ -256,8 +257,10 @@ class SMPFSolver(SMSolver):
                 ``PIDController``; the others use fixed step size.
             return_intermediates : bool
                 Whether to return intermediate steps.
-            model_extras : dict
-                Additional model arguments.
+            static_model_kwargs : dict
+                Static model arguments baked into the sampler.
+                Condition-dependent data should be passed at call time
+                via ``model_extras``.
             solver_params : Optional[dict]
                 Additional solver parameters.
             atol : float
@@ -268,7 +271,7 @@ class SMPFSolver(SMSolver):
         Returns
         -------
             Callable
-                Sampler function.
+                ``sample(key, x_init, model_extras={})`` sampler function.
         """
         if cfg_scale is not None:
             raise NotImplementedError(
@@ -278,7 +281,7 @@ class SMPFSolver(SMSolver):
         eps = solver_params.get("eps", 1e-3)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array) -> Array:
+        def sample(key: Array, x_init: Array, model_extras={}) -> Array:
             return sm_reverse_ode_sampler(
                 self.path.scheduler,
                 self.score_model,
@@ -292,7 +295,7 @@ class SMPFSolver(SMSolver):
                 method=method,
                 atol=atol,
                 rtol=rtol,
-                model_kwargs=model_extras,
+                model_kwargs={**static_model_kwargs, **model_extras},
             )
 
         return sample

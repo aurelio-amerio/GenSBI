@@ -2,63 +2,20 @@ import os
 
 os.environ["JAX_PLATFORMS"] = "cpu"
 
-import jax
-import jax.numpy as jnp
-from gensbi.models.losses import JointCFMLoss, JointEDMLoss
-
-from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.path import AffineProbPath
-
-from gensbi.diffusion.path import EDMPath
-from gensbi.diffusion.path.scheduler import EDMScheduler
+import pytest
+from gensbi.models.losses import JointCFMLoss, JointEDMLoss, JointSMLoss
 
 
-def test_simformer_cfmloss_runs():
-    path = AffineProbPath(scheduler=CondOTScheduler())
-    loss = JointCFMLoss(path)
-
-    def vf(obs, t, *args, **kwargs):
-        return obs + t
-
-    x0 = jnp.ones((2, 2))
-    x1 = jnp.ones((2, 2))
-    t = jnp.ones((2,))
-    batch = (x0, x1, t)
-    result = loss(vf, batch)
-    assert result is not None
+def test_joint_cfm_loss_raises():
+    with pytest.raises(RuntimeError, match="JointCFMLoss has been removed"):
+        JointCFMLoss("dummy_path")
 
 
-def test_simformer_diffloss_runs():
-    scheduler = EDMScheduler()
-    path = EDMPath(scheduler=scheduler)
-    loss = JointEDMLoss(path)
-
-    def vf(obs, t, *args, **kwargs):
-        return obs + t
-
-    x1 = jnp.ones((2, 2))
-    t = jnp.ones((2,))
-    batch = (x1, t)
-    key = jax.random.PRNGKey(0)
-    result = loss(key, vf, batch)
-    assert result is not None
+def test_joint_edm_loss_raises():
+    with pytest.raises(RuntimeError, match="JointEDMLoss has been removed"):
+        JointEDMLoss("dummy_path")
 
 
-def test_simformer_smloss_runs():
-    from gensbi.models.losses import JointSMLoss
-    from gensbi.diffusion.path.sm_path import SMPath
-    from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler
-
-    sde = VPSmScheduler()
-    path = SMPath(sde)
-    loss = JointSMLoss(path)
-
-    def vf(obs, t, *args, **kwargs):
-        return obs + t
-
-    x1 = jnp.ones((2, 2))
-    t = jnp.ones((2, 1))
-    batch = (x1, t)
-    key = jax.random.PRNGKey(0)
-    result = loss(key, vf, batch)
-    assert result is not None
+def test_joint_sm_loss_raises():
+    with pytest.raises(RuntimeError, match="JointSMLoss has been removed"):
+        JointSMLoss("dummy_path")
