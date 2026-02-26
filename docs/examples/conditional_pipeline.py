@@ -189,13 +189,15 @@ plt.show()
 from gensbi.flow_matching.solver import ZeroEndsSolver
 
 solver_kwargs = {
-    "mu0": jnp.zeros((dim_obs, 1)),    # prior mean (data is normalized)
+    "mu0": jnp.zeros((dim_obs, 1)),  # prior mean (data is normalized)
     "sigma0": jnp.ones((dim_obs, 1)),  # prior std
-    "alpha": 1.0,                       # diffusion strength
+    "alpha": 0.2,  # diffusion strength
 }
 
 samples_sde = pipeline.sample(
-    rngs.sample(), x_o, nsamples=100_000,
+    rngs.sample(),
+    x_o,
+    nsamples=100_000,
     solver=(ZeroEndsSolver, solver_kwargs),
 )
 samples_sde = unnormalize(samples_sde, means[:dim_obs], stds[:dim_obs])
