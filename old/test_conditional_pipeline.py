@@ -170,7 +170,7 @@ def test_conditional_pipeline_methods(pipeline_cls):
         out_restored = pipeline2.model_wrapped(t, obs, obs_ids, cond, cond_ids)
         assert jnp.allclose(out, out_restored), "Restored model output discrepancy"
 
-        cond = jnp.zeros((32, dim_cond, 2))
+        cond = jnp.zeros((1, dim_cond, 2))
         sample = pipeline.sample(
             jax.random.PRNGKey(1), cond, nsamples=32, use_ema=False
         )
