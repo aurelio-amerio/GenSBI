@@ -14,6 +14,10 @@ class MockConditionalModel(nnx.Module):
         self.dummy = nnx.Param(jnp.zeros(1))
 
     def __call__(self, t, obs, obs_ids, cond, cond_ids, *args, **kwargs):
+        # Mimic real models: broadcast cond to obs batch dim.
+        # This will fail if cond.shape[0] > obs.shape[0], catching
+        # batch semantics bugs early (e.g. SDE solvers expect B=1).
+        cond = jnp.broadcast_to(cond, (obs.shape[0], *cond.shape[1:]))
         return jnp.zeros_like(obs)
 
 

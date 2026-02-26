@@ -106,7 +106,7 @@ class SMSolver(Solver):
         eps = solver_params.get("eps", 1e-3)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array) -> Array:
+        def sample(key: Array, x_init: Array, model_extras=model_extras) -> Array:
             return sm_reverse_sde_sampler(
                 self.path.scheduler,
                 self.score_model,
@@ -278,7 +278,7 @@ class SMPFSolver(SMSolver):
         eps = solver_params.get("eps", 1e-3)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array) -> Array:
+        def sample(key: Array, x_init: Array, model_extras=model_extras) -> Array:
             return sm_reverse_ode_sampler(
                 self.path.scheduler,
                 self.score_model,

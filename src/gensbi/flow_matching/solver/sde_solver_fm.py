@@ -181,7 +181,7 @@ class BaseFmSDESolver(Solver):
         else:
             levy_area = diffrax.SpaceTimeLevyArea
 
-        drift = self.get_f_tilde(**model_extras)  # (t, x, args) -> drift
+        drift = self.get_f_tilde()  # (t, x, args) -> drift; no extras baked in
         diff = self.get_g_tilde()  # (t, x, args) -> diffusion matrix
 
         # Time direction: forward, from noise (t=eps) to data (t=1)
@@ -248,7 +248,7 @@ class BaseFmSDESolver(Solver):
                 t1,
                 dt0=dt0,
                 y0=y0_flat,
-                args=None,
+                args=model_extras,
                 stepsize_controller=stepsize_controller,
                 saveat=saveat,
             )
@@ -257,7 +257,7 @@ class BaseFmSDESolver(Solver):
 
         # We remove static_argnums because now nsamples is implicit in x_init shape
         @jit
-        def sampler(x_init, key):
+        def sampler(x_init, key, model_extras=model_extras):
             # x_init shape: (batch, features, channels)
             nsamples = x_init.shape[0]
 

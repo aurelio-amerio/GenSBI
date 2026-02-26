@@ -47,6 +47,7 @@ from gensbi.recipes.pipeline import AbstractPipeline
 
 from gensbi.recipes.utils import _resolve_embedding_ids, build_edm_path, build_sm_path
 
+import warnings
 
 # ---------------------------------------------------------------------------
 # Deprecated pipeline classes (replaced by ConditionalPipeline)
@@ -275,12 +276,13 @@ class ConditionalPipeline(AbstractPipeline):
             model_wrapped, self.path, extras, **sampler_kwargs,
         )
 
-        def sampler(key, nsamples):
+        def sampler(key, nsamples, model_extras=None):
+            _extras = model_extras if model_extras is not None else extras
             key, key_init = jax.random.split(key)
             x_init = self.method.sample_init(
                 key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
             )
-            return sampler_fn(key, x_init)
+            return sampler_fn(key, x_init, _extras)
 
         return sampler
 
@@ -305,5 +307,15 @@ class ConditionalPipeline(AbstractPipeline):
         Array
             Samples of shape ``(nsamples, dim_obs, ch_obs)``.
         """
+
+        x_o_shape = x_o.shape[0] if hasattr(x_o, "shape") else len(x_o)
+        if x_o_shape > 1:
+            warnings.warn(
+                f"x_o has batch dimension {x_o_shape} > 1. "
+                "sample() draws all samples for a single condition. "
+                "To sample for multiple conditions, use sample_batched() instead.",
+                UserWarning,
+                stacklevel=2,
+            )
         sampler = self.get_sampler(x_o, use_ema=use_ema, **sampler_kwargs)
         return sampler(key, nsamples)

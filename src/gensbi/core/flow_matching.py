@@ -204,10 +204,10 @@ class FlowMatchingMethod(GenerativeMethod):
             time_grid=time_grid,
         )
 
-        def sampler_fn(key, x_init):
+        def sampler_fn(key, x_init, model_extras=model_extras):
             if pass_key:
                 key, key_sampler = jax.random.split(key)
-                return sampler_(x_init, key_sampler)
+                return sampler_(x_init, key_sampler, model_extras)
             return sampler_(x_init)
 
         return sampler_fn

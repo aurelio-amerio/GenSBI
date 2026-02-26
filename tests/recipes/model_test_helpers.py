@@ -128,6 +128,13 @@ def run_model_pipeline_test(pipeline_cls, params, is_conditional):
         )
         assert samples.shape == (3, dim_obs, 2)
 
+        # Sample batched with multiple conditions
+        x_o_batched = cond[:3]  # 3 conditioning observations
+        samples_batched = pipeline.sample_batched(
+            jax.random.PRNGKey(2), x_o_batched, nsamples=4, use_ema=False
+        )
+        assert samples_batched.shape == (4, 3, dim_obs, 2)
+
 
 def run_load_config_test(pipeline_cls, config_path, is_conditional):
     """Shared config loading test."""

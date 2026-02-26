@@ -271,7 +271,7 @@ def test_conditional_diffusion_sde_types(sde_type):
         pipeline._wrap_model()
 
         # try sampling
-        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
 
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
@@ -322,7 +322,7 @@ def test_joint_diffusion_sde_types(sde_type):
         pipeline._wrap_model()
 
         # try sampling
-        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
 
         sample = pipeline.sample(
             jax.random.PRNGKey(1),
@@ -364,7 +364,7 @@ def test_conditional_diffusion_solver_scheduler():
         pipeline.ema_model = pipeline.model
         pipeline._wrap_model()
 
-        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
 
         # Create a custom scheduler (e.g., different parameters)
         custom_scheduler = EDMScheduler(sigma_min=0.1, sigma_max=50.0)
@@ -422,7 +422,7 @@ def test_joint_diffusion_solver_scheduler():
         pipeline.ema_model = pipeline.model
         pipeline._wrap_model()
 
-        x_o = jax.random.normal(jax.random.PRNGKey(2), (10, dim_cond, 2))
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
 
         # Create a custom scheduler (e.g., different parameters)
         custom_scheduler = EDMScheduler(sigma_min=0.1, sigma_max=50.0)

@@ -203,7 +203,7 @@ class DiffusionEDMMethod(GenerativeMethod):
             solver_params=solver_params,
         )
 
-        def sampler_fn(key, x_init):
+        def sampler_fn(key, x_init, model_extras=model_extras):
             return sampler_(key, x_init)
 
         return sampler_fn

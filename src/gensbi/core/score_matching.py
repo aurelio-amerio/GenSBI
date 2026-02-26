@@ -192,8 +192,8 @@ class ScoreMatchingMethod(GenerativeMethod):
             model_extras=model_extras,
         )
 
-        def sampler_fn(key, x_init):
-            return sampler_(key, x_init)
+        def sampler_fn(key, x_init, model_extras=model_extras):
+            return sampler_(key, x_init, model_extras)
 
         return sampler_fn
 

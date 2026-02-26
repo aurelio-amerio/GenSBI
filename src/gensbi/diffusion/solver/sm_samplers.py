@@ -156,7 +156,7 @@ def sm_reverse_sde_sampler(
             # Add batch dim for model call; pass t as scalar (model handles expansion)
             y_batched = y[None, ...]  # (1, ...)
             t_batched = jnp.atleast_1d(t)[None, ...]  # (1, 1)
-            score = score_model(obs=y_batched, t=t_batched, **model_kwargs)
+            score = score_model(obs=y_batched, t=t_batched, **args)
             score = jnp.squeeze(score, axis=0)  # remove batch dim
 
             # Broadcast t to spatial shape only for SDE coefficient computations
@@ -215,6 +215,7 @@ def sm_reverse_sde_sampler(
             t1,
             dt0=dt0,
             y0=y0_flat,
+            args=model_kwargs,
             saveat=saveat,
             stepsize_controller=stepsize_controller,
         )
@@ -388,7 +389,7 @@ def sm_reverse_ode_sampler(
             # Add batch dim for model call; pass t as scalar (model handles expansion)
             y_batched = y[None, ...]  # (1, ...)
             t_batched = jnp.atleast_1d(t)[None, ...]  # (1, 1)
-            score = score_model(obs=y_batched, t=t_batched, **model_kwargs)
+            score = score_model(obs=y_batched, t=t_batched, **args)
             score = jnp.squeeze(score, axis=0)  # remove batch dim
 
             # Broadcast t to spatial shape only for SDE coefficient computations
@@ -419,6 +420,7 @@ def sm_reverse_ode_sampler(
             t1,
             dt0=dt0,
             y0=y0_flat,
+            args=model_kwargs,
             saveat=saveat,
             stepsize_controller=stepsize_controller,
         )

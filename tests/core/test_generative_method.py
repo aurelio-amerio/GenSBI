@@ -161,7 +161,7 @@ class TestFlowMatchingMethod:
             x_init = jax.random.normal(key, SHAPE)
             result = sampler_fn(key, x_init)
             assert mock_sampler.called
-            assert len(mock_sampler.call_args[0]) == 2  # (x_init, key_sampler)
+            assert len(mock_sampler.call_args[0]) == 3  # (x_init, key_sampler, model_extras)
         finally:
             method.build_solver = original_build_solver
 

@@ -128,7 +128,7 @@ def test_unified_conditional_train_and_sample(method):
         assert out_ema.shape == (batch_size, dim_obs, 2)
 
         # Sample
-        cond = jnp.zeros((32, dim_cond, 2))
+        cond = jnp.zeros((1, dim_cond, 2))
         sample = pipeline.sample(
             jax.random.PRNGKey(1), cond, nsamples=32, use_ema=False
         )
