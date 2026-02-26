@@ -1,178 +1,34 @@
-import jax
-import jax.numpy as jnp
-from flax import nnx
-from typing import Callable, Tuple, Optional
-from jax.numpy import ndarray as Array
+"""
+Deprecated unconditional loss classes.
 
-from gensbi.flow_matching.loss import ContinuousFMLoss
-
-
-class UnconditionalCFMLoss(ContinuousFMLoss):
-    """
-    UnconditionalCFMLoss is a class that computes the continuous flow matching loss for the Unconditional model.
-
-    Parameters
-    ----------
-        path: Probability path for training.
-        reduction : str
-            Reduction method ('none', 'mean', 'sum').
-    """
-
-    def __init__(self, path, reduction: str = "mean"):
-        super().__init__(path, reduction)
-
-    def __call__(
-        self,
-        vf: Callable,
-        batch: Tuple[Array, Array, Array],
-        *args,
-        **kwargs,
-    ) -> Array:
-        """
-        Evaluate the continuous flow matching loss.
-
-        Parameters
-        ----------
-            vf : Callable
-                Vector field model.
-            batch : Tuple[Array, Array, Array]
-                Input data (x_0, x_1, t).
-            args : Optional[dict]
-                Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns
-        -------
-            Array
-                Computed loss.
-        """
-        _, x_1, _ = batch
-        path_sample = self.path.sample(*batch)
-
-        condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)
-        kwargs["condition_mask"] = condition_mask
-
-        x_t = path_sample.x_t
-
-        model_output = vf(path_sample.t, x_t, *args, **kwargs)
-
-        loss = model_output - path_sample.dx_t
-        if condition_mask is not None:
-            loss = jnp.where(condition_mask, 0.0, loss)
-
-        return self.reduction(jnp.square(loss))  # type: ignore
+These classes have been replaced by the canonical loss classes
+(:class:`~gensbi.flow_matching.loss.FMLoss`,
+:class:`~gensbi.diffusion.loss.EDMLoss`,
+:class:`~gensbi.diffusion.loss.SMLoss`) accessed via the strategy API
+(``method.build_loss(path)``).
+"""
+from gensbi.models.losses.conditional import _DeprecatedLoss
 
 
-class UnconditionalEDMLoss(nnx.Module):
-    """
-    UnconditionalEDMLoss is a class that computes the diffusion score matching loss for the Unconditional model.
-
-    Parameters
-    ----------
-        path: Probability path for training.
-    """
-
-    def __init__(self, path):
-        self.path = path
-
-        self.loss_fn = self.path.get_loss_fn()
-
-    def __call__(
-        self,
-        key: jax.random.PRNGKey,
-        model: Callable,
-        batch: Tuple[Array, Array, Array],
-        **kwargs,
-    ) -> Array:
-        """
-        Evaluate the continuous flow matching loss.
-
-        Parameters
-        ----------
-            key : jax.random.PRNGKey
-                Random key for stochastic operations.
-            model : Callable
-                F model.
-            batch : Tuple[Array, Array, Array]
-                Input data (x_1, sigma).
-            args : Optional[dict]
-                Additional arguments.
-            condition_mask : Optional[Array]
-                Mask for conditioning.
-            **kwargs: Additional keyword arguments.
-
-        Returns
-        -------
-            Array
-                Computed loss.
-        """
-        x_1, sigma = batch
-
-        path_sample = self.path.sample(key, x_1, sigma)
-        batch = path_sample.get_batch()
-
-        condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)
-        kwargs["condition_mask"] = condition_mask
-
-        loss = self.loss_fn(
-            model, batch, condition_mask=condition_mask, model_extras=kwargs
-        )
-
-        return loss  # type: ignore
+class UnconditionalCFMLoss(_DeprecatedLoss):
+    _message = (
+        "UnconditionalCFMLoss has been removed. "
+        "Use FlowMatchingMethod().build_loss(path) or "
+        "UnconditionalPipeline(method=FlowMatchingMethod(), ...) instead."
+    )
 
 
-class UnconditionalSMLoss(nnx.Module):
-    """
-    UnconditionalSMLoss computes the standard score matching loss for the Unconditional model.
+class UnconditionalEDMLoss(_DeprecatedLoss):
+    _message = (
+        "UnconditionalEDMLoss has been removed. "
+        "Use DiffusionEDMMethod().build_loss(path) or "
+        "UnconditionalPipeline(method=DiffusionEDMMethod(), ...) instead."
+    )
 
-    This loss uses the denoising score matching objective where the model
-    predicts the score (gradient of log density) of the noised distribution.
 
-    Parameters
-    ----------
-        path: SMPath probability path for training.
-    """
-
-    def __init__(self, path):
-        self.path = path
-        self.loss_fn = self.path.get_loss_fn()
-
-    def __call__(
-        self,
-        key: jax.random.PRNGKey,
-        model: Callable,
-        batch: Tuple[Array, Array],
-        **kwargs,
-    ) -> Array:
-        """
-        Evaluate the score matching loss.
-
-        Parameters
-        ----------
-            key : jax.random.PRNGKey
-                Random key for stochastic operations.
-            model : Callable
-                Score model, called as model(obs=x_t, t=t, **kwargs).
-            batch : Tuple[Array, Array]
-                Input data (x_1, t) where x_1 is the clean data and t is the
-                diffusion time. Use ``path.sample_t`` to sample t externally.
-            **kwargs: Additional keyword arguments.
-
-        Returns
-        -------
-            Array
-                Computed loss.
-        """
-        x_1, t = batch
-
-        path_sample = self.path.sample(key, x_1, t)
-        batch = path_sample.get_batch()
-
-        condition_mask = jnp.zeros(x_1.shape, dtype=jnp.bool_)
-        kwargs["condition_mask"] = condition_mask
-
-        loss = self.loss_fn(
-            model, batch, condition_mask=condition_mask, model_extras=kwargs
-        )
-
-        return loss  # type: ignore
+class UnconditionalSMLoss(_DeprecatedLoss):
+    _message = (
+        "UnconditionalSMLoss has been removed. "
+        "Use ScoreMatchingMethod().build_loss(path) or "
+        "UnconditionalPipeline(method=ScoreMatchingMethod(), ...) instead."
+    )

@@ -41,8 +41,9 @@ class EDMPath(ProbPath):
             path = EDMPath(scheduler)
             key = jax.random.PRNGKey(0)
             x_1 = jax.random.normal(key, (32, 2))
+            x_0 = jax.random.normal(jax.random.PRNGKey(1), (32, 2))
             sigma = jnp.ones((32, 1))
-            sample = path.sample(key, x_1, sigma)
+            sample = path.sample(x_0, x_1, sigma)
             print(sample.x_t.shape)
             # (32, 2)
     """
@@ -72,14 +73,17 @@ class EDMPath(ProbPath):
             )
         return
 
-    def sample(self, key: Array, x_1: Array, sigma: Array) -> EDMPathSample:
+    def sample(self, x_0: Array, x_1: Array, sigma: Array) -> EDMPathSample:
         r"""
         Sample from the EDM probability path.
 
+        Constructs ``x_t = x_1 + sigma * x_0`` where ``x_0`` is standard
+        normal noise.
+
         Parameters
         ----------
-            key : Array
-                JAX random key.
+            x_0 : Array
+                Source noise sample from N(0, 1), shape (batch_size, ...).
             x_1 : Array
                 Target data point, shape (batch_size, ...).
             sigma : Array
@@ -87,10 +91,10 @@ class EDMPath(ProbPath):
 
         Returns
         -------
-            PathSample
+            EDMPathSample
                 A sample from the EDM path.
         """
-        noise = self.scheduler.sample_noise(key, x_1.shape, sigma)
+        noise = sigma * x_0
         x_t = x_1 + noise
         return EDMPathSample(
             x_1=x_1,

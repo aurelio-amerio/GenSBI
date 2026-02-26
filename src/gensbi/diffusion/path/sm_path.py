@@ -40,9 +40,9 @@ class SMPath(ProbPath):
             path = SMPath(scheduler)
             key = jax.random.PRNGKey(0)
             x_1 = jax.random.normal(key, (32, 2))
-            sample = path.sample(key, x_1)
-            print(sample.x_t.shape)
-            # (32, 2)
+            x_0 = jax.random.normal(jax.random.PRNGKey(1), (32, 2))
+            t = jnp.ones((32, 1, 1)) * 0.5
+            sample = path.sample(x_0, x_1, t)
     """
 
     def __init__(self, scheduler) -> None:
@@ -65,16 +65,17 @@ class SMPath(ProbPath):
         ], f"SDE must be one of ['SM-VP', 'SM-VE'], got {self.scheduler.name}."
         return
 
-    def sample(self, key: Array, x_1: Array, t: Array) -> SMPathSample:
+    def sample(self, x_0: Array, x_1: Array, t: Array) -> SMPathSample:
         r"""
         Sample from the score matching probability path.
 
-        Constructs x_t = mean_coeff(t) * x_1 + std(t) * epsilon.
+        Constructs ``x_t = mean_coeff(t) * x_1 + std(t) * x_0`` where
+        ``x_0`` is standard normal noise.
 
         Parameters
         ----------
-            key : Array
-                JAX random key (used for noise sampling).
+            x_0 : Array
+                Source noise sample from N(0, 1), shape (batch_size, ...).
             x_1 : Array
                 Target data point, shape (batch_size, ...).
             t : Array
@@ -90,15 +91,14 @@ class SMPath(ProbPath):
         mean_coeff = self.scheduler.marginal_mean_coeff(t)
         std_t = self.scheduler.marginal_std(t)
 
-        # Noise and construct x_t
-        noise = jax.random.normal(key, x_1.shape)
-        x_t = mean_coeff * x_1 + std_t * noise
+        # Construct x_t from pre-sampled noise x_0
+        x_t = mean_coeff * x_1 + std_t * x_0
 
         return SMPathSample(
             x_1=x_1,
             x_t=x_t,
             t=t,
-            noise=noise,
+            noise=x_0,
             std_t=std_t,
         )
 

@@ -17,6 +17,11 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 - **[Validation Guide](/basics/validation)** - Validate results with SBC, TARP, and L-C2ST
 - **[Troubleshooting](/basics/troubleshooting)** - Solve common issues and FAQs
 - **[Theoretical Overview](/theoretical_overview/index)** - Understand the theory behind Flow and Diffusion models
+
+### ⚙️ Advanced Topics
+- **[Samplers and Solvers](/advanced/samplers)** - Generative methods, solvers, and how to override them
+- **[Custom Models](/advanced/custom_models)** - Use your own model with the unified pipelines
+
 ### 💡 Examples & Tutorials
 - **[Examples Overview](/examples)** - All notebooks and scripts
 - **[GenSBI-examples Repository](https://github.com/aurelio-amerio/GenSBI-examples)** - Complete examples with Colab links
@@ -40,6 +45,7 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 Installation </getting_started/installation>
 Quick Start </getting_started/index>
 Basics </basics/index>
+Advanced Topics </advanced/index>
 Theoretical Overview </theoretical_overview/index>
 API Documentation </api/gensbi/index>
 ```

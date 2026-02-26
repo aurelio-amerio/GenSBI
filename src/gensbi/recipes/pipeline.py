@@ -17,6 +17,7 @@ from typing import Any, Callable, Optional, Tuple
 from jax import Array
 
 from numpyro import distributions as dist
+from gensbi.utils.math import _expand_dims
 
 import abc
 from functools import partial
@@ -842,18 +843,26 @@ class AbstractPipeline(abc.ABC):
             Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
         """
 
-        # TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder
-        # Possibly fixed by passing the kwargs, which should include the encoder_key
-        sampler = self.get_sampler(x_o, *args, **kwargs)
-        batched_sampler = _get_batch_sampler(
-            sampler,
-            ncond=x_o.shape[0],
-            chunk_size=chunk_size,
-            show_progress_bars=show_progress_bars,
-        )
+        # Build the sampler once using the first condition for shape.
+        # The sampler's JIT compilation traces model_extras by shape/dtype,
+        # so calling it with different cond values (same shape) reuses the
+        # compiled function — no recompilation per condition.
+        sampler = self.get_sampler(x_o[0:1], *args, **kwargs)
 
-        keys = jax.random.split(key, nsamples)
+        # Retrieve the default extras that get_sampler baked in, then swap
+        # cond for each condition in the loop below.
+        B = x_o.shape[0]
+        keys_per_cond = jax.random.split(key, B)
 
-        res = batched_sampler(keys)
+        results = []
+        for i in range(B):
+            cond_i = _expand_dims(x_o[i : i + 1])
+            extras_i = {
+                "cond": cond_i,
+                "obs_ids": self.obs_ids,
+                "cond_ids": self.cond_ids,
+            }
+            samples_i = sampler(keys_per_cond[i], nsamples, model_extras=extras_i)
+            results.append(samples_i)
 
-        return res  # shape (nsamples, batch_size_cond, dim_obs, ch_obs)
+        return jnp.stack(results, axis=1)  # (nsamples, B, dim_obs, ch_obs)
