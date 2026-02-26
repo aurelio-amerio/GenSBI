@@ -161,6 +161,76 @@ def test_unconditional_fm_sde_solver(solver_cls):
         assert sample.shape == (5, dim_joint, 2)
 
 
+def test_conditional_fm_ode_sample_batched():
+    """sample_batched with multiple conditions for ConditionalPipeline + ODE solver."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        method = FlowMatchingMethod()
+        training_config = ConditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = ConditionalPipeline(
+            MockConditionalModel(),
+            train_dataset_cond,
+            val_dataset_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=method,
+            ch_obs=2,
+            ch_cond=2,
+            training_config=training_config,
+        )
+
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (3, dim_cond, 2))
+
+        samples = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=5,
+            use_ema=False,
+        )
+        assert samples.shape == (5, 3, dim_obs, 2)
+
+
+def test_joint_fm_ode_sample_batched():
+    """sample_batched with multiple conditions for JointPipeline + ODE solver."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        method = FlowMatchingMethod()
+        training_config = JointPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = JointPipeline(
+            MockJointModel(),
+            train_dataset_joint,
+            val_dataset_joint,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=method,
+            ch_obs=2,
+            training_config=training_config,
+            condition_mask_kind="structured",
+        )
+
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (3, dim_cond, 2))
+
+        samples = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=5,
+            use_ema=False,
+        )
+        assert samples.shape == (5, 3, dim_obs, 2)
+
+
 @pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_conditional_fm_sde_solver(solver_cls):
     home = os.path.expanduser("~")

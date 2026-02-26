@@ -291,3 +291,155 @@ def test_joint_sm_pf_solver(sde_type):
             solver=(SMPFSolver, {}),
         )
         assert sample.shape == (5, dim_obs, 2)
+
+
+# --- sample_batched tests (default SMSolver) ---
+
+
+@pytest.mark.parametrize("sde_type", ["VP", "VE"])
+def test_conditional_sm_sample_batched(sde_type):
+    """sample_batched with multiple conditions for ConditionalPipeline + SM."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        method = ScoreMatchingMethod(sde_type=sde_type)
+        training_config = ConditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = ConditionalPipeline(
+            MockConditionalModel(),
+            train_dataset_cond,
+            val_dataset_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=method,
+            ch_obs=2,
+            ch_cond=2,
+            training_config=training_config,
+        )
+
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (3, dim_cond, 2))
+
+        samples = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=5,
+            use_ema=False,
+        )
+        assert samples.shape == (5, 3, dim_obs, 2)
+
+
+@pytest.mark.parametrize("sde_type", ["VP", "VE"])
+def test_joint_sm_sample_batched(sde_type):
+    """sample_batched with multiple conditions for JointPipeline + SM."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        method = ScoreMatchingMethod(sde_type=sde_type)
+        training_config = JointPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = JointPipeline(
+            MockJointModel(),
+            train_dataset_joint,
+            val_dataset_joint,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=method,
+            ch_obs=2,
+            training_config=training_config,
+            condition_mask_kind="structured",
+        )
+
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (3, dim_cond, 2))
+
+        samples = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=5,
+            use_ema=False,
+        )
+        assert samples.shape == (5, 3, dim_obs, 2)
+
+
+# --- sample_batched tests (SMPFSolver) ---
+
+
+@pytest.mark.parametrize("sde_type", ["VP", "VE"])
+def test_conditional_sm_pf_sample_batched(sde_type):
+    """sample_batched with multiple conditions for ConditionalPipeline + SMPF."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        method = ScoreMatchingMethod(sde_type=sde_type)
+        training_config = ConditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = ConditionalPipeline(
+            MockConditionalModel(),
+            train_dataset_cond,
+            val_dataset_cond,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=method,
+            ch_obs=2,
+            ch_cond=2,
+            training_config=training_config,
+        )
+
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (3, dim_cond, 2))
+
+        samples = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=5,
+            use_ema=False,
+            solver=(SMPFSolver, {}),
+        )
+        assert samples.shape == (5, 3, dim_obs, 2)
+
+
+@pytest.mark.parametrize("sde_type", ["VP", "VE"])
+def test_joint_sm_pf_sample_batched(sde_type):
+    """sample_batched with multiple conditions for JointPipeline + SMPF."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        method = ScoreMatchingMethod(sde_type=sde_type)
+        training_config = JointPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = JointPipeline(
+            MockJointModel(),
+            train_dataset_joint,
+            val_dataset_joint,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=method,
+            ch_obs=2,
+            training_config=training_config,
+            condition_mask_kind="structured",
+        )
+
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        x_o = jax.random.normal(jax.random.PRNGKey(2), (3, dim_cond, 2))
+
+        samples = pipeline.sample_batched(
+            jax.random.PRNGKey(1),
+            x_o=x_o,
+            nsamples=5,
+            use_ema=False,
+            solver=(SMPFSolver, {}),
+        )
+        assert samples.shape == (5, 3, dim_obs, 2)
