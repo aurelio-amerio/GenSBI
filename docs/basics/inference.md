@@ -4,7 +4,7 @@ Once your model is trained, the primary goal of Simulation-Based Inference is to
 
 ## Basic Sampling
 
-The `AbstractPipeline` provides a unified `sample` method for both Flow Matching and Diffusion models.
+The `AbstractPipeline` provides a unified `sample` method for all generative methods — Flow Matching, EDM Diffusion, and Score Matching.
 
 ```python
 import jax
@@ -38,6 +38,22 @@ The numerical integration requires discretizing the time interval $[0, 1]$. You 
 
 ```{tip}
 By default, the pipeline uses a robust solver configuration (e.g., `step_size=0.01` or an adaptive solver). Reducing the number of steps by increasing the `step_size` will speed up inference but may reduce the accuracy of the posterior density.
+```
+
+## Understanding Diffusion Inference
+
+GenSBI provides two diffusion implementations. Both use the same `pipeline.sample()` interface, but the underlying process differs.
+
+### EDM Diffusion (Recommended)
+
+If you are using an EDM model (e.g., `Flux1DiffusionPipeline`), the model has learned a **denoiser** $D_\theta(x; \sigma)$ that predicts the clean signal from noisy input. Sampling iterates through a decreasing noise schedule in $\sigma$-space, applying the denoiser at each step.
+
+### Score Matching (Classical)
+
+If you are using a Score Matching model (e.g., `Flux1SMPipeline`), the model has learned the **score function** $\nabla \log p_t(x)$. Sampling solves the reverse SDE from $t{=}T$ to $t{=}\varepsilon$ for stochastic samples (default `SMSolver`), or the probability flow ODE for deterministic samples (`SMPFSolver`).
+
+```{tip}
+You can override the solver at sample time without retraining. For details on available solvers and how to pass custom ones, see [Samplers and Solvers](/advanced/samplers).
 ```
 
 ## Efficient Sampling

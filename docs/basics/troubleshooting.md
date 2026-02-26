@@ -242,7 +242,7 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
             show_progress_bars=True)
    ```
 
-3. **Consider Flow Matching**: Flow matching learns straighter trajectories than diffusion, often allowing for fewer integration steps (faster sampling) without sacrificing quality.
+3. **Consider Flow Matching**: Flow matching learns straighter trajectories than diffusion, often allowing for fewer integration steps (faster sampling) without sacrificing quality. Within diffusion, EDM is generally faster than Score Matching. See [Samplers and Solvers](/advanced/samplers) for solver options.
 
 ## Validation Issues
 

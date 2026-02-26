@@ -11,7 +11,7 @@ from jax import numpy as jnp
 from numpyro import distributions as dist
 from flax import nnx
 
-from gensbi.recipes import Flux1FlowPipeline
+from gensbi.recipes import Flux1SMPipeline
 from gensbi.models import Flux1, Flux1Params
 
 from gensbi.utils.plotting import plot_marginals
@@ -39,7 +39,7 @@ def simulator(key, nsamples):
     thetas = thetas[..., None]
     xs = xs[..., None]
 
-    # when making a dataset for the joint pipeline, thetas need to come first
+    # when making a dataset for the conditional pipeline, thetas need to come first
     data = jnp.concatenate([thetas, xs], axis=1)
 
     return data
@@ -99,7 +99,9 @@ train_dataset_grain = (
 
 val_dataset_grain = (
     grain.MapDataset.source(np.array(val_data))
-    .shuffle(42)
+    .shuffle(
+        42
+    )  # Use a different seed/strategy for validation if needed, but shuffling is fine
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
@@ -124,20 +126,20 @@ params = Flux1Params(
     qkv_bias=True,
     dim_obs=dim_obs,
     dim_cond=dim_cond,
-    theta=10 * dim_joint,
     id_embedding_strategy=("absolute", "absolute"),
+    theta=10 * dim_joint,
     rngs=nnx.Rngs(default=42),
     param_dtype=jnp.float32,
 )
 
-
 # %% Instantiate the pipeline
-# The Flux1FlowPipeline handles the training loop and sampling.
+# The Flux1SMPipeline handles the training loop and sampling using score matching.
+# By default, it uses the VP (variance-preserving) SDE formulation.
 # We configure it with the model parameters, datasets, dimensions using a default training configuration.
-training_config = Flux1FlowPipeline.get_default_training_config()
+training_config = Flux1SMPipeline.get_default_training_config()
 training_config["nsteps"] = 10000
 
-pipeline = Flux1FlowPipeline(
+pipeline = Flux1SMPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
@@ -153,7 +155,8 @@ pipeline.train(
     rngs, save_model=False
 )  # if you want to save the model, set save_model=True
 
-# %% Sample from the posterior
+# %% Sample from the posterior (default: reverse SDE solver)
+# The default solver for score matching is the reverse SDE (SMSolver), which is stochastic.
 # To generate samples, we first need an observation (and its corresponding condition).
 # We generate a new sample from the simulator, normalize it, and extract the condition x_o.
 
@@ -169,43 +172,34 @@ samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
 samples = unnormalize(samples, means[:dim_obs], stds[:dim_obs])
 
 # %% Plot the samples
-# We verify the model's performance by plotting the marginal distributions of the generated samples
-# against the true parameters.
 plot_marginals(
     np.array(samples[..., 0]),
     gridsize=30,
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("flux1_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+
+plt.savefig("flux1_sm_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
-# %% Alternative: sample with ZeroEndsSolver (SDE-based flow matching sampler)
-# Instead of the default deterministic ODE solver, you can use the ZeroEndsSolver
-# for stochastic sampling in flow matching. This can sometimes improve sample diversity.
-# The SDE solver requires mu0 (prior mean) and sigma0 (prior std) matching the
-# data shape, plus an alpha parameter controlling diffusion strength.
-from gensbi.flow_matching.solver import ZeroEndsSolver
+# %% Alternative: sample with SMPFSolver (probability flow ODE)
+# The default solver is the reverse SDE (SMSolver, stochastic). You can alternatively
+# use the probability flow ODE (SMPFSolver), which gives deterministic samples.
+from gensbi.diffusion.solver import SMPFSolver
 
-solver_kwargs = {
-    "mu0": jnp.zeros((dim_obs, 1)),    # prior mean (data is normalized)
-    "sigma0": jnp.ones((dim_obs, 1)),  # prior std
-    "alpha": 1.0,                       # diffusion strength
-}
-
-samples_sde = pipeline.sample(
+samples_pf = pipeline.sample(
     rngs.sample(), x_o, nsamples=100_000,
-    solver=(ZeroEndsSolver, solver_kwargs),
+    solver=(SMPFSolver, {}),
 )
-samples_sde = unnormalize(samples_sde, means[:dim_obs], stds[:dim_obs])
+samples_pf = unnormalize(samples_pf, means[:dim_obs], stds[:dim_obs])
 
 plot_marginals(
-    np.array(samples_sde[..., 0]),
+    np.array(samples_pf[..., 0]),
     gridsize=30,
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("flux1_flow_pipeline_sde_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("flux1_sm_pipeline_pf_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

@@ -11,8 +11,8 @@ from jax import numpy as jnp
 from numpyro import distributions as dist
 from flax import nnx
 
-from gensbi.recipes import Flux1FlowPipeline
-from gensbi.models import Flux1, Flux1Params
+from gensbi.recipes import SimformerSMPipeline
+from gensbi.models import Simformer, SimformerParams
 
 from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
@@ -52,7 +52,6 @@ def simulator(key, nsamples):
 train_data = simulator(jax.random.PRNGKey(0), 100_000)
 val_data = simulator(jax.random.PRNGKey(1), 2000)
 
-
 # %% Normalize the dataset
 # It is important to normalize the data to have zero mean and unit variance.
 # This helps the model training process.
@@ -69,14 +68,9 @@ def unnormalize(data, means, stds):
 
 
 # %% Prepare the data for the pipeline
-# The pipeline expects the data to be split into observations and conditions.
-# We also apply normalization at this stage.
-def split_obs_cond(data):
-    data = normalize(data, means, stds)
-    return (
-        data[:, :dim_obs],
-        data[:, dim_obs:],
-    )  # assuming first dim_obs are obs, last dim_cond are cond
+# The pipeline expects the data to be normalized but not split (for joint pipelines).
+def process_data(data):
+    return normalize(data, means, stds)
 
 
 # %%
@@ -84,7 +78,7 @@ def split_obs_cond(data):
 # %% Create the input pipeline using Grain
 # We use Grain to create an efficient input pipeline.
 # This involves shuffling, repeating for multiple epochs, and batching the data.
-# We also map the split_obs_cond function to prepare the data for the model.
+# We also map the process_data function to prepare (normalize) the data for the model.
 batch_size = 256
 
 train_dataset_grain = (
@@ -93,56 +87,55 @@ train_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
-    .map(split_obs_cond)
+    .map(process_data)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 val_dataset_grain = (
     grain.MapDataset.source(np.array(val_data))
-    .shuffle(42)
+    .shuffle(
+        42
+    )  # Use a different seed/strategy for validation if needed, but shuffling is fine
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
-    .map(split_obs_cond)
+    .map(process_data)
     # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
 )
 
 # %% Define your model
 # specific model parameters are defined here.
-# For Flux1, we need to specify dimensions, embedding strategies, and other architecture details.
-params = Flux1Params(
+# For Simformer, we need to specify dimensions, embedding strategies, and other architecture details.
+params = SimformerParams(
+    rngs=nnx.Rngs(0),
     in_channels=1,
-    vec_in_dim=None,
-    context_in_dim=1,
-    mlp_ratio=3,
-    num_heads=2,
-    depth=4,
-    depth_single_blocks=8,
-    axes_dim=[
-        10,
-    ],
-    qkv_bias=True,
-    dim_obs=dim_obs,
-    dim_cond=dim_cond,
-    theta=10 * dim_joint,
-    id_embedding_strategy=("absolute", "absolute"),
-    rngs=nnx.Rngs(default=42),
-    param_dtype=jnp.float32,
+    val_emb_dim=20,
+    id_emb_dim=10,
+    cond_emb_dim=10,
+    dim_joint=dim_joint,
+    fourier_features=128,
+    num_heads=4,
+    num_layers=6,
+    widening_factor=3,
+    qkv_features=40,
+    num_hidden_layers=1,
 )
 
-
 # %% Instantiate the pipeline
-# The Flux1FlowPipeline handles the training loop and sampling.
+# The SimformerSMPipeline handles the training loop and sampling using score matching.
+# By default, it uses the VP (variance-preserving) SDE formulation.
 # We configure it with the model parameters, datasets, dimensions using a default training configuration.
-training_config = Flux1FlowPipeline.get_default_training_config()
+# We also specify the condition_mask_kind, which determines how conditioning is handled during training.
+training_config = SimformerSMPipeline.get_default_training_config()
 training_config["nsteps"] = 10000
 
-pipeline = Flux1FlowPipeline(
+pipeline = SimformerSMPipeline(
     train_dataset_grain,
     val_dataset_grain,
     dim_obs,
     dim_cond,
     params=params,
+    condition_mask_kind="posterior",
     training_config=training_config,
 )
 
@@ -153,7 +146,8 @@ pipeline.train(
     rngs, save_model=False
 )  # if you want to save the model, set save_model=True
 
-# %% Sample from the posterior
+# %% Sample from the posterior (default: reverse SDE solver)
+# The default solver for score matching is the reverse SDE (SMSolver), which is stochastic.
 # To generate samples, we first need an observation (and its corresponding condition).
 # We generate a new sample from the simulator, normalize it, and extract the condition x_o.
 
@@ -177,35 +171,27 @@ plot_marginals(
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("flux1_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("simformer_sm_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
-# %% Alternative: sample with ZeroEndsSolver (SDE-based flow matching sampler)
-# Instead of the default deterministic ODE solver, you can use the ZeroEndsSolver
-# for stochastic sampling in flow matching. This can sometimes improve sample diversity.
-# The SDE solver requires mu0 (prior mean) and sigma0 (prior std) matching the
-# data shape, plus an alpha parameter controlling diffusion strength.
-from gensbi.flow_matching.solver import ZeroEndsSolver
+# %% Alternative: sample with SMPFSolver (probability flow ODE)
+# The default solver is the reverse SDE (SMSolver, stochastic). You can alternatively
+# use the probability flow ODE (SMPFSolver), which gives deterministic samples.
+from gensbi.diffusion.solver import SMPFSolver
 
-solver_kwargs = {
-    "mu0": jnp.zeros((dim_obs, 1)),    # prior mean (data is normalized)
-    "sigma0": jnp.ones((dim_obs, 1)),  # prior std
-    "alpha": 1.0,                       # diffusion strength
-}
-
-samples_sde = pipeline.sample(
+samples_pf = pipeline.sample(
     rngs.sample(), x_o, nsamples=100_000,
-    solver=(ZeroEndsSolver, solver_kwargs),
+    solver=(SMPFSolver, {}),
 )
-samples_sde = unnormalize(samples_sde, means[:dim_obs], stds[:dim_obs])
+samples_pf = unnormalize(samples_pf, means[:dim_obs], stds[:dim_obs])
 
 plot_marginals(
-    np.array(samples_sde[..., 0]),
+    np.array(samples_pf[..., 0]),
     gridsize=30,
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("flux1_flow_pipeline_sde_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("simformer_sm_pipeline_pf_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%

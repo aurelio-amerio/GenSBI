@@ -1,6 +1,6 @@
 # Training Guide
 
-This guide details how the training pipeline works in `GenSBI`, best practices for training flow and diffusion models, and how to customize the training loop.
+This guide details how the training pipeline works in `GenSBI`, best practices for training flow matching and diffusion models, and how to customize the training loop.
 
 ## Training 101
 
@@ -49,7 +49,9 @@ See [Troubleshooting: Shape Mismatch Errors](/basics/troubleshooting#shape-misma
 
 ## Pipeline Overview
 
-The default training pipeline (e.g., `Flux1FlowPipeline`, `SimformerFlowPipeline`) is built on the `AbstractPipeline` class. It manages the entire training lifecycle. For the default `Flux1` model, use the `Flux1FlowPipeline`. GenSBI also provides `SimformerFlowPipeline` (for low-dim) and `Flux1JointFlowPipeline`. See [Model Cards](/basics/model_cards) for details.
+The default training pipelines (e.g., `Flux1FlowPipeline`, `SimformerFlowPipeline`) are built on the `AbstractPipeline` class. It manages the entire training lifecycle. For the default `Flux1` model, use the `Flux1FlowPipeline`. GenSBI also provides `SimformerFlowPipeline` (for low-dim) and `Flux1JointFlowPipeline`. Diffusion variants (`*DiffusionPipeline`) and Score Matching variants (`*SMPipeline`) are also available for each model. See [Model Cards](/basics/model_cards) for details.
+
+For advanced use cases, you can use the unified pipelines (`ConditionalPipeline`, `JointPipeline`, `UnconditionalPipeline`) with any custom model and generative method. See [Custom Models](/advanced/custom_models).
 
 - **State Management**: Uses **Flax NNX** for managing model parameters and optimizer states.
 - **Steps vs. Epochs**: Training runs for a fixed number of steps (`nsteps`), not epochs. This is common in generative modeling where datasets (like simulation outputs) might be effectively infinite.
@@ -245,7 +247,9 @@ Each file includes model architecture parameters, optimizer settings, and traini
 
 ### 1. Prefer Flow Matching over Diffusion
 
-**Flow Matching models are the recommended default in GenSBI.** While the library supports standard Diffusion, Flow Matching models are generally easier to train (straighter paths in latent space) and faster to sample from. Use `Flux1FlowPipeline` or similar classes unless you have a specific research need for Diffusion.
+**Flow Matching models are the recommended default in GenSBI.** While the library supports both EDM Diffusion and Score Matching, Flow Matching models are generally easier to train (straighter paths in latent space) and faster to sample from. Use `Flux1FlowPipeline` or similar classes unless you have a specific research need for Diffusion.
+
+Within diffusion, **EDM is preferred over Score Matching** for its improved training stability (the denoiser-based parameterization avoids score singularities at low noise levels).
 
 ### 2. Use Large Effective Batch Sizes
 

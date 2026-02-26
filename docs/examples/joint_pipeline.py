@@ -11,8 +11,13 @@ from jax import numpy as jnp
 from numpyro import distributions as dist
 from flax import nnx
 
-from gensbi.recipes import Flux1FlowPipeline
-from gensbi.models import Flux1, Flux1Params
+# Import the unified JointPipeline and the generative method
+from gensbi.recipes import JointPipeline
+from gensbi.core import FlowMatchingMethod
+
+# We use the Simformer model, but any model with the correct interface works.
+# See docs/advanced/custom_models.md for how to use a custom model.
+from gensbi.models import Simformer, SimformerParams
 
 from gensbi.utils.plotting import plot_marginals
 import matplotlib.pyplot as plt
@@ -46,16 +51,11 @@ def simulator(key, nsamples):
 
 
 # %% Define your training and validation datasets.
-# We generate a training dataset and a validation dataset using the simulator.
-# The simulator is a simple function that generates parameters (theta) and data (x).
-# In this example, we use a simple Gaussian simulator.
 train_data = simulator(jax.random.PRNGKey(0), 100_000)
 val_data = simulator(jax.random.PRNGKey(1), 2000)
 
 
 # %% Normalize the dataset
-# It is important to normalize the data to have zero mean and unit variance.
-# This helps the model training process.
 means = jnp.mean(train_data, axis=0)
 stds = jnp.std(train_data, axis=0)
 
@@ -69,22 +69,12 @@ def unnormalize(data, means, stds):
 
 
 # %% Prepare the data for the pipeline
-# The pipeline expects the data to be split into observations and conditions.
-# We also apply normalization at this stage.
-def split_obs_cond(data):
-    data = normalize(data, means, stds)
-    return (
-        data[:, :dim_obs],
-        data[:, dim_obs:],
-    )  # assuming first dim_obs are obs, last dim_cond are cond
+# The joint pipeline expects the full joint data (not split), normalized.
+def process_data(data):
+    return normalize(data, means, stds)
 
-
-# %%
 
 # %% Create the input pipeline using Grain
-# We use Grain to create an efficient input pipeline.
-# This involves shuffling, repeating for multiple epochs, and batching the data.
-# We also map the split_obs_cond function to prepare the data for the model.
 batch_size = 256
 
 train_dataset_grain = (
@@ -93,8 +83,7 @@ train_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
-    .map(split_obs_cond)
-    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+    .map(process_data)
 )
 
 val_dataset_grain = (
@@ -103,88 +92,92 @@ val_dataset_grain = (
     .repeat()
     .to_iter_dataset()
     .batch(batch_size)
-    .map(split_obs_cond)
-    # .mp_prefetch() # Uncomment if you want to use multiprocessing prefetching
+    .map(process_data)
 )
 
-# %% Define your model
-# specific model parameters are defined here.
-# For Flux1, we need to specify dimensions, embedding strategies, and other architecture details.
-params = Flux1Params(
+# %% Define the model
+# We use Simformer as our neural network architecture.
+params = SimformerParams(
+    rngs=nnx.Rngs(0),
     in_channels=1,
-    vec_in_dim=None,
-    context_in_dim=1,
-    mlp_ratio=3,
-    num_heads=2,
-    depth=4,
-    depth_single_blocks=8,
-    axes_dim=[
-        10,
-    ],
-    qkv_bias=True,
-    dim_obs=dim_obs,
-    dim_cond=dim_cond,
-    theta=10 * dim_joint,
-    id_embedding_strategy=("absolute", "absolute"),
-    rngs=nnx.Rngs(default=42),
-    param_dtype=jnp.float32,
+    val_emb_dim=20,
+    id_emb_dim=10,
+    cond_emb_dim=10,
+    dim_joint=dim_joint,
+    fourier_features=128,
+    num_heads=4,
+    num_layers=6,
+    widening_factor=3,
+    qkv_features=40,
+    num_hidden_layers=1,
 )
 
+model = Simformer(params)
+
+# %% Choose the generative method
+# The unified JointPipeline is parameterized by a GenerativeMethod.
+# Here we use FlowMatchingMethod (recommended).
+method = FlowMatchingMethod()
+
+# Alternative methods (uncomment to use):
+# from gensbi.core import DiffusionEDMMethod
+# method = DiffusionEDMMethod()             # EDM diffusion (default EDM scheduler)
+# method = DiffusionEDMMethod(sde="VP")     # EDM with VP scheduler
+# method = DiffusionEDMMethod(sde="VE")     # EDM with VE scheduler
+#
+# from gensbi.core import ScoreMatchingMethod
+# method = ScoreMatchingMethod()             # Score matching (default VP SDE)
+# method = ScoreMatchingMethod(sde_type="VE")  # Score matching with VE SDE
 
 # %% Instantiate the pipeline
-# The Flux1FlowPipeline handles the training loop and sampling.
-# We configure it with the model parameters, datasets, dimensions using a default training configuration.
-training_config = Flux1FlowPipeline.get_default_training_config()
+# The JointPipeline is model-agnostic: it works with any model that follows
+# the standard interface (see docs/advanced/custom_models.md).
+training_config = JointPipeline.get_default_training_config()
 training_config["nsteps"] = 10000
 
-pipeline = Flux1FlowPipeline(
+pipeline = JointPipeline(
+    model,
     train_dataset_grain,
     val_dataset_grain,
-    dim_obs,
-    dim_cond,
-    params=params,
+    dim_obs=dim_obs,
+    dim_cond=dim_cond,
+    method=method,
+    condition_mask_kind="posterior",
     training_config=training_config,
 )
 
 # %% Train the model
-# We create a random key for training and start the training process.
 rngs = nnx.Rngs(42)
 pipeline.train(
     rngs, save_model=False
 )  # if you want to save the model, set save_model=True
 
-# %% Sample from the posterior
-# To generate samples, we first need an observation (and its corresponding condition).
-# We generate a new sample from the simulator, normalize it, and extract the condition x_o.
-
+# %% Sample from the posterior (default ODE solver)
 new_sample = simulator(jax.random.PRNGKey(20), 1)
-true_theta = new_sample[:, :dim_obs, :]  # extract observation from the joint sample
+true_theta = new_sample[:, :dim_obs, :]
 
 new_sample = normalize(new_sample, means, stds)
-x_o = new_sample[:, dim_obs:, :]  # extract condition from the joint sample
+x_o = new_sample[:, dim_obs:, :]
 
-# Then we invoke the pipeline's sample method.
 samples = pipeline.sample(rngs.sample(), x_o, nsamples=100_000)
-# Finally, we unnormalize the samples to get them back to the original scale.
 samples = unnormalize(samples, means[:dim_obs], stds[:dim_obs])
 
 # %% Plot the samples
-# We verify the model's performance by plotting the marginal distributions of the generated samples
-# against the true parameters.
 plot_marginals(
     np.array(samples[..., 0]),
     gridsize=30,
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("flux1_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("joint_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %% Alternative: sample with ZeroEndsSolver (SDE-based flow matching sampler)
 # Instead of the default deterministic ODE solver, you can use the ZeroEndsSolver
-# for stochastic sampling in flow matching. This can sometimes improve sample diversity.
+# for stochastic sampling. This can sometimes improve sample diversity.
 # The SDE solver requires mu0 (prior mean) and sigma0 (prior std) matching the
 # data shape, plus an alpha parameter controlling diffusion strength.
+# For a full list of available solvers, see docs/advanced/samplers.md.
 from gensbi.flow_matching.solver import ZeroEndsSolver
 
 solver_kwargs = {
@@ -205,7 +198,7 @@ plot_marginals(
     true_param=np.array(true_theta[0, :, 0]),
     range=[(1, 3), (1, 3), (-0.6, 0.5)],
 )
-plt.savefig("flux1_flow_pipeline_sde_marginals.png", dpi=100, bbox_inches="tight")
+plt.savefig("joint_pipeline_sde_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
 # %%
