@@ -1,4 +1,6 @@
-# Tests for FlowMatching solver variations (mirror test_diffusion_scheduler.py)
+# Tests for FlowMatching solver variations across all pipeline types.
+# Covers both the default ODE solver and alternative SDE solvers
+# (ZeroEndsSolver, NonSingularSolver), plus sample_batched for dynamic extras.
 
 import os
 
@@ -6,7 +8,6 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-from flax import nnx
 
 import pytest
 import tempfile
@@ -84,19 +85,20 @@ val_dataset_cond = (
 )
 
 
-# --- Helper to build SDE solver kwargs ---
-
 def _sde_solver_kwargs(dim_obs, ch=2):
-    """Build mu0/sigma0/alpha kwargs for FM SDE solvers."""
+    """Build mu0/sigma0/alpha kwargs required by FM SDE solvers."""
     mu0 = jnp.zeros((dim_obs, ch))
     sigma0 = jnp.ones((dim_obs, ch))
     return {"mu0": mu0, "sigma0": sigma0, "alpha": 1.0}
 
 
-# --- ODESolver with custom time_grid ---
+# ---------------------------------------------------------------------------
+# ODE solver: sample (default solver)
+# ---------------------------------------------------------------------------
 
 
-def test_unconditional_fm_ode_custom_time_grid():
+def test_unconditional_fm_ode_sample():
+    """Unconditional sampling with the default ODE solver."""
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         method = FlowMatchingMethod()
@@ -125,44 +127,13 @@ def test_unconditional_fm_ode_custom_time_grid():
         assert sample.shape == (10, dim_joint, 2)
 
 
-# --- ZeroEndsSolver tests ---
-
-
-@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
-def test_unconditional_fm_sde_solver(solver_cls):
-    home = os.path.expanduser("~")
-    with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        method = FlowMatchingMethod()
-        training_config = UnconditionalPipeline.get_default_training_config()
-        training_config["checkpoint_dir"] = model_dir
-        training_config["val_every"] = 1
-
-        pipeline = UnconditionalPipeline(
-            MockUnconditionalModel(),
-            train_dataset_joint,
-            val_dataset_joint,
-            dim_joint,
-            method=method,
-            ch_obs=2,
-            training_config=training_config,
-        )
-
-        pipeline.ema_model = pipeline.model
-        pipeline._wrap_model()
-
-        solver_kwargs = _sde_solver_kwargs(dim_joint, ch=2)
-
-        sample = pipeline.sample(
-            jax.random.PRNGKey(1),
-            nsamples=5,
-            use_ema=False,
-            solver=(solver_cls, solver_kwargs),
-        )
-        assert sample.shape == (5, dim_joint, 2)
+# ---------------------------------------------------------------------------
+# ODE solver: sample_batched (dynamic model_extras)
+# ---------------------------------------------------------------------------
 
 
 def test_conditional_fm_ode_sample_batched():
-    """sample_batched with multiple conditions for ConditionalPipeline + ODE solver."""
+    """Batched conditional sampling with ODE — model_extras must change per condition."""
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         method = FlowMatchingMethod()
@@ -197,7 +168,7 @@ def test_conditional_fm_ode_sample_batched():
 
 
 def test_joint_fm_ode_sample_batched():
-    """sample_batched with multiple conditions for JointPipeline + ODE solver."""
+    """Batched joint sampling with ODE — model_extras must change per condition."""
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         method = FlowMatchingMethod()
@@ -231,8 +202,48 @@ def test_joint_fm_ode_sample_batched():
         assert samples.shape == (5, 3, dim_obs, 2)
 
 
+# ---------------------------------------------------------------------------
+# SDE solvers: sample (ZeroEndsSolver, NonSingularSolver)
+# ---------------------------------------------------------------------------
+
+
 @pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
-def test_conditional_fm_sde_solver(solver_cls):
+def test_unconditional_fm_sde_sample(solver_cls):
+    """Unconditional sampling with an alternative SDE solver."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        method = FlowMatchingMethod()
+        training_config = UnconditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = UnconditionalPipeline(
+            MockUnconditionalModel(),
+            train_dataset_joint,
+            val_dataset_joint,
+            dim_joint,
+            method=method,
+            ch_obs=2,
+            training_config=training_config,
+        )
+
+        pipeline.ema_model = pipeline.model
+        pipeline._wrap_model()
+
+        solver_kwargs = _sde_solver_kwargs(dim_joint, ch=2)
+
+        sample = pipeline.sample(
+            jax.random.PRNGKey(1),
+            nsamples=5,
+            use_ema=False,
+            solver=(solver_cls, solver_kwargs),
+        )
+        assert sample.shape == (5, dim_joint, 2)
+
+
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
+def test_conditional_fm_sde_sample(solver_cls):
+    """Conditional sampling with an alternative SDE solver."""
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         method = FlowMatchingMethod()
@@ -269,7 +280,8 @@ def test_conditional_fm_sde_solver(solver_cls):
 
 
 @pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
-def test_joint_fm_sde_solver(solver_cls):
+def test_joint_fm_sde_sample(solver_cls):
+    """Joint sampling with an alternative SDE solver."""
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         method = FlowMatchingMethod()
@@ -305,9 +317,14 @@ def test_joint_fm_sde_solver(solver_cls):
         assert sample.shape == (5, dim_obs, 2)
 
 
+# ---------------------------------------------------------------------------
+# SDE solvers: sample_batched (dynamic model_extras)
+# ---------------------------------------------------------------------------
+
+
 @pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_conditional_fm_sde_sample_batched(solver_cls):
-    """sample_batched with multiple conditions should compile once and produce correct shape."""
+    """Batched conditional sampling with SDE — model_extras must change per condition."""
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         method = FlowMatchingMethod()
@@ -345,7 +362,7 @@ def test_conditional_fm_sde_sample_batched(solver_cls):
 
 @pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_joint_fm_sde_sample_batched(solver_cls):
-    """sample_batched with multiple conditions for JointPipeline."""
+    """Batched joint sampling with SDE — model_extras must change per condition."""
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         method = FlowMatchingMethod()
