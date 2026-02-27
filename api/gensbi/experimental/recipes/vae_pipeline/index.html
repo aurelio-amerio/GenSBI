@@ -1,0 +1,1039 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>gensbi.experimental.recipes.vae_pipeline &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/gensbi/experimental/recipes/vae_pipeline/index';</script>
+    <link rel="icon" href="../../../../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <link rel="next" title="gensbi.flow_matching" href="../../../flow_matching/index.html" />
+    <link rel="prev" title="gensbi.experimental.recipes" href="../index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../getting_started/index.html">Quick Start</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/quick_start.html">15-minute quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../notebooks/my_first_model.html">My First Model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../basics/index.html">Basics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/overview.html">Conceptual Overview: How GenSBI is Structured</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/data_and_embeddings.html">Data, IDs, and Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/model_cards.html">Model Cards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/training.html">Training Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/inference.html">Inference Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/validation.html">Validation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/contributing.html">Contributing to GenSBI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../advanced/index.html">Advanced Topics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../advanced/samplers.html">Samplers and Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../advanced/custom_models.html">Custom Models</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../theoretical_overview/index.html">Theoretical Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../theoretical_overview/flow.html">Flow Matching: A Short Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../theoretical_overview/diffusion.html">EDM Diffusion Models: A Short Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../../index.html">API Documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../core/index.html">gensbi.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/diffusion_edm/index.html">gensbi.core.diffusion_edm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/flow_matching/index.html">gensbi.core.flow_matching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/generative_method/index.html">gensbi.core.generative_method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/score_matching/index.html">gensbi.core.score_matching</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/lc2st/index.html">gensbi.diagnostics.lc2st</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/marginal_coverage/index.html">gensbi.diagnostics.marginal_coverage</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../diagnostics/metrics/index.html">gensbi.diagnostics.metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../diagnostics/metrics/c2st/index.html">gensbi.diagnostics.metrics.c2st</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diagnostics/metrics/l1_l2/index.html">gensbi.diagnostics.metrics.l1_l2</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/sbc/index.html">gensbi.diagnostics.sbc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/tarp/index.html">gensbi.diagnostics.tarp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/utils/index.html">gensbi.diagnostics.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../diffusion/index.html">gensbi.diffusion</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../diffusion/loss/index.html">gensbi.diffusion.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/loss/edm_loss/index.html">gensbi.diffusion.loss.edm_loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/loss/sm_loss/index.html">gensbi.diffusion.loss.sm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../diffusion/path/index.html">gensbi.diffusion.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/path/edm_path/index.html">gensbi.diffusion.path.edm_path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/path/path/index.html">gensbi.diffusion.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/path/path_sample/index.html">gensbi.diffusion.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/path/scheduler/index.html">gensbi.diffusion.path.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/path/sm_path/index.html">gensbi.diffusion.path.sm_path</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../diffusion/solver/index.html">gensbi.diffusion.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/solver/edm_samplers/index.html">gensbi.diffusion.solver.edm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/solver/edm_solver/index.html">gensbi.diffusion.solver.edm_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/solver/sm_samplers/index.html">gensbi.diffusion.solver.sm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diffusion/solver/sm_solver/index.html">gensbi.diffusion.solver.sm_solver</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../../index.html">gensbi.experimental</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../models/index.html">gensbi.experimental.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../models/autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../index.html">gensbi.experimental.recipes</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">gensbi.experimental.recipes.vae_pipeline</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../flow_matching/index.html">gensbi.flow_matching</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/loss/index.html">gensbi.flow_matching.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/loss/fm_loss/index.html">gensbi.flow_matching.loss.fm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/path/index.html">gensbi.flow_matching.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/affine/index.html">gensbi.flow_matching.path.affine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/path/index.html">gensbi.flow_matching.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/path_sample/index.html">gensbi.flow_matching.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/scheduler/index.html">gensbi.flow_matching.path.scheduler</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/solver/index.html">gensbi.flow_matching.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/solver/ode_solver/index.html">gensbi.flow_matching.solver.ode_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/solver/sde_solver_fm/index.html">gensbi.flow_matching.solver.sde_solver_fm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/utils/index.html">gensbi.flow_matching.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/utils/utils/index.html">gensbi.flow_matching.utils.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../models/index.html">gensbi.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/embedding/index.html">gensbi.models.embedding</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/embedding/embedding/index.html">gensbi.models.embedding.embedding</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/flux1/index.html">gensbi.models.flux1</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1/layers/index.html">gensbi.models.flux1.layers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1/math/index.html">gensbi.models.flux1.math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1/model/index.html">gensbi.models.flux1.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/flux1joint/index.html">gensbi.models.flux1joint</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1joint/model/index.html">gensbi.models.flux1joint.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/losses/index.html">gensbi.models.losses</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/losses/conditional/index.html">gensbi.models.losses.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/losses/joint/index.html">gensbi.models.losses.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/losses/unconditional/index.html">gensbi.models.losses.unconditional</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/simformer/index.html">gensbi.models.simformer</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/simformer/model/index.html">gensbi.models.simformer.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/simformer/transformer/index.html">gensbi.models.simformer.transformer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/wrappers/conditional/index.html">gensbi.models.wrappers.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/wrappers/joint/index.html">gensbi.models.wrappers.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/wrappers/unconditional/index.html">gensbi.models.wrappers.unconditional</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../recipes/index.html">gensbi.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/conditional_pipeline/index.html">gensbi.recipes.conditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/flux1/index.html">gensbi.recipes.flux1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/pipeline/index.html">gensbi.recipes.pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/simformer/index.html">gensbi.recipes.simformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/unconditional_pipeline/index.html">gensbi.recipes.unconditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/utils/index.html">gensbi.recipes.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../solver/index.html">gensbi.solver</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../utils/index.html">gensbi.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/math/index.html">gensbi.utils.math</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/misc/index.html">gensbi.utils.misc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/model_wrapping/index.html">gensbi.utils.model_wrapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/plotting/index.html">gensbi.utils.plotting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../../../documentation/index.html" class="nav-link">Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">gensbi</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">gensbi.experimental</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">gensbi.experimental.recipes</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.experimental.recipes.vae_pipeline</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-gensbi.experimental.recipes.vae_pipeline">
+<span id="gensbi-experimental-recipes-vae-pipeline"></span><h1>gensbi.experimental.recipes.vae_pipeline<a class="headerlink" href="#module-gensbi.experimental.recipes.vae_pipeline" title="Link to this heading">#</a></h1>
+<p>VAE Pipeline module for GenSBI.</p>
+<p>This module provides an abstract pipeline class and concrete implementations for training and evaluating Variational Autoencoders (VAEs)
+within the GenSBI framework. It manages model instantiation, training and validation loops, optimizer and EMA setup, checkpointing,
+and utility functions for saving and restoring models.</p>
+<p>The <cite>AbstractVAEPipeline</cite> class defines the general workflow for VAE-based models, including optimizer configuration, KL annealing,
+and early stopping. Subclasses such as <cite>VAE1DPipeline</cite> and <cite>VAE2DPipeline</cite> implement pipelines for 1D and 2D autoencoder architectures, respectively.</p>
+<p>Typical usage involves subclassing or instantiating the provided pipelines with appropriate datasets, model parameters, and (optionally) training configurations.</p>
+<p>Key features:
+- Model and EMA initialization
+- Training and validation step functions (JIT-compiled)
+- Learning rate scheduling and gradient clipping
+- Early stopping and checkpoint management
+- Support for custom training configurations</p>
+<p>See the <cite>VAE1DPipeline</cite> and <cite>VAE2DPipeline</cite> classes for concrete examples.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline" title="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AbstractVAEPipeline</span></code></a></p></td>
+<td><p>Abstract pipeline for training and evaluating Variational Autoencoders (VAEs) in GenSBI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.experimental.recipes.vae_pipeline.VAE1DPipeline" title="gensbi.experimental.recipes.vae_pipeline.VAE1DPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VAE1DPipeline</span></code></a></p></td>
+<td><p>Pipeline for training and evaluating 1D Variational Autoencoders (VAE1D) in GenSBI.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.experimental.recipes.vae_pipeline.VAE2DPipeline" title="gensbi.experimental.recipes.vae_pipeline.VAE2DPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VAE2DPipeline</span></code></a></p></td>
+<td><p>Pipeline for training and evaluating 2D Variational Autoencoders (VAE2D) in GenSBI.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.experimental.recipes.vae_pipeline.parse_autoencoder_params" title="gensbi.experimental.recipes.vae_pipeline.parse_autoencoder_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_autoencoder_params</span></code></a>(config_path)</p></td>
+<td><p>Parse a VAE configuration file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.experimental.recipes.vae_pipeline.parse_training_config" title="gensbi.experimental.recipes.vae_pipeline.parse_training_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_training_config</span></code></a>(config_path)</p></td>
+<td><p>Parse a training configuration file.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.experimental.recipes.vae_pipeline.</span></span><span class="sig-name descname"><span class="pre">AbstractVAEPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline" title="Link to this definition">#</a></dt>
+<dd><p>Abstract pipeline for training and evaluating Variational Autoencoders (VAEs) in GenSBI.</p>
+<p>This class manages model creation, optimizer and EMA setup, training and validation loops, checkpointing,
+and utility functions. It is designed to be subclassed for specific VAE architectures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> (<a class="reference internal" href="../../models/autoencoders/index.html#gensbi.experimental.models.autoencoders.AutoEncoderParams" title="gensbi.experimental.models.autoencoders.AutoEncoderParams"><em>gensbi.experimental.models.autoencoders.AutoEncoderParams</em></a>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_ema_optimizer">
+<span class="sig-name descname"><span class="pre">_get_ema_optimizer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline._get_ema_optimizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_ema_optimizer" title="Link to this definition">#</a></dt>
+<dd><p>Construct the EMA optimizer for maintaining an exponential moving average of model parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ema_optimizer</strong> – The EMA optimizer instance.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../../../recipes/pipeline/index.html#gensbi.recipes.pipeline.ModelEMA" title="gensbi.recipes.pipeline.ModelEMA">ModelEMA</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_kl_schedule">
+<span class="sig-name descname"><span class="pre">_get_kl_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nsteps</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline._get_kl_schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_kl_schedule" title="Link to this definition">#</a></dt>
+<dd><p>Construct a KL annealing schedule for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>nsteps</strong> (<em>int</em>) – Number of training steps.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>schedule</strong> – KL weight schedule function.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_optimizer">
+<span class="sig-name descname"><span class="pre">_get_optimizer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline._get_optimizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_optimizer" title="Link to this definition">#</a></dt>
+<dd><p>Construct the optimizer for training, including learning rate scheduling and gradient clipping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>optimizer</strong> – The optimizer instance for the model.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>nnx.Optimizer</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_default_training_config">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_default_training_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.get_default_training_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_default_training_config" title="Link to this definition">#</a></dt>
+<dd><p>Return a dictionary of default training configuration parameters for VAE training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>training_config</strong> – Default training configuration.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_train_step_fn">
+<span class="sig-name descname"><span class="pre">get_train_step_fn</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.get_train_step_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_train_step_fn" title="Link to this definition">#</a></dt>
+<dd><p>Return the training step function, which performs a single optimization step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>train_step</strong> – JIT-compiled training step function.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_val_step_fn">
+<span class="sig-name descname"><span class="pre">get_val_step_fn</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.get_val_step_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_val_step_fn" title="Link to this definition">#</a></dt>
+<dd><p>Return the validation step function, which computes the loss on a validation batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val_step</strong> – JIT-compiled validation step function.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.init_pipeline_from_config">
+<span class="sig-name descname"><span class="pre">init_pipeline_from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_cond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_dir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.init_pipeline_from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.init_pipeline_from_config" title="Link to this definition">#</a></dt>
+<dd><p>Initialize the pipeline from a configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config_path</strong> (<em>str</em>) – Path to the configuration file.</p></li>
+<li><p><strong>dim_obs</strong> (<em>int</em>)</p></li>
+<li><p><strong>dim_cond</strong> (<em>int</em>)</p></li>
+<li><p><strong>checkpoint_dir</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.restore_model">
+<span class="sig-name descname"><span class="pre">restore_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.restore_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.restore_model" title="Link to this definition">#</a></dt>
+<dd><p>Restore the model and EMA model from checkpoint directories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>experiment_id</strong> (<em>int</em><em>, </em><em>optional</em>) – Identifier for the experiment/checkpoint. If None, uses the current training config value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.save_model">
+<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.save_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.save_model" title="Link to this definition">#</a></dt>
+<dd><p>Save the current model and EMA model to checkpoint directories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>experiment_id</strong> (<em>int</em><em>, </em><em>optional</em>) – Identifier for the experiment/checkpoint. If None, uses the current training config value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsteps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train" title="Link to this definition">#</a></dt>
+<dd><p>Run the training loop for the VAE model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rngs</strong> (<em>nnx.Rngs</em>) – Random number generators for training/validation steps.</p></li>
+<li><p><strong>nsteps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of training steps. If None, uses the value from training config.</p></li>
+<li><p><strong>save_model</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to save the model after training.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>loss_array</strong> (<em>list</em>) – List of training losses.</p></li>
+<li><p><strong>val_loss_array</strong> (<em>list</em>) – List of validation losses.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[list, list]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.update_training_config">
+<span class="sig-name descname"><span class="pre">update_training_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.update_training_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.update_training_config" title="Link to this definition">#</a></dt>
+<dd><p>Update the training configuration with new parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_config</strong> (<em>dict</em>) – New training configuration parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.ema_model">
+<span class="sig-name descname"><span class="pre">ema_model</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.ema_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.ema_model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.loss_fn">
+<span class="sig-name descname"><span class="pre">loss_fn</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.loss_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.loss_fn" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.model">
+<span class="sig-name descname"><span class="pre">model</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.params">
+<span class="sig-name descname"><span class="pre">params</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.params" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train_dataset">
+<span class="sig-name descname"><span class="pre">train_dataset</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.train_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train_dataset" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train_dataset_iter">
+<span class="sig-name descname"><span class="pre">train_dataset_iter</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.train_dataset_iter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train_dataset_iter" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.training_config">
+<span class="sig-name descname"><span class="pre">training_config</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.training_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.training_config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset">
+<span class="sig-name descname"><span class="pre">val_dataset</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.val_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset_iter">
+<span class="sig-name descname"><span class="pre">val_dataset_iter</span></span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#AbstractVAEPipeline.val_dataset_iter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset_iter" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.VAE1DPipeline">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.experimental.recipes.vae_pipeline.</span></span><span class="sig-name descname"><span class="pre">VAE1DPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#VAE1DPipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.VAE1DPipeline" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline" title="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AbstractVAEPipeline</span></code></a></p>
+<p>Pipeline for training and evaluating 1D Variational Autoencoders (VAE1D) in GenSBI.</p>
+<p>Inherits from AbstractVAEPipeline and uses the AutoEncoder1D model class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> (<a class="reference internal" href="../../models/autoencoders/index.html#gensbi.experimental.models.autoencoders.AutoEncoderParams" title="gensbi.experimental.models.autoencoders.AutoEncoderParams"><em>gensbi.experimental.models.autoencoders.AutoEncoderParams</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.VAE2DPipeline">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.experimental.recipes.vae_pipeline.</span></span><span class="sig-name descname"><span class="pre">VAE2DPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#VAE2DPipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.VAE2DPipeline" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline" title="gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AbstractVAEPipeline</span></code></a></p>
+<p>Pipeline for training and evaluating 2D Variational Autoencoders (VAE2D) in GenSBI.</p>
+<p>Inherits from AbstractVAEPipeline and uses the AutoEncoder2D model class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> (<a class="reference internal" href="../../models/autoencoders/index.html#gensbi.experimental.models.autoencoders.AutoEncoderParams" title="gensbi.experimental.models.autoencoders.AutoEncoderParams"><em>gensbi.experimental.models.autoencoders.AutoEncoderParams</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.parse_autoencoder_params">
+<span class="sig-prename descclassname"><span class="pre">gensbi.experimental.recipes.vae_pipeline.</span></span><span class="sig-name descname"><span class="pre">parse_autoencoder_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#parse_autoencoder_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.parse_autoencoder_params" title="Link to this definition">#</a></dt>
+<dd><p>Parse a VAE configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_path</strong> (<em>str</em>) – Path to the configuration file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>config</strong> – Parsed configuration dictionary.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.experimental.recipes.vae_pipeline.parse_training_config">
+<span class="sig-prename descclassname"><span class="pre">gensbi.experimental.recipes.vae_pipeline.</span></span><span class="sig-name descname"><span class="pre">parse_training_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/experimental/recipes/vae_pipeline.html#parse_training_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.recipes.vae_pipeline.parse_training_config" title="Link to this definition">#</a></dt>
+<dd><p>Parse a training configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_path</strong> (<em>str</em>) – Path to the configuration file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>config</strong> – Parsed configuration dictionary.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">gensbi.experimental.recipes</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../../../flow_matching/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">gensbi.flow_matching</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_ema_optimizer"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline._get_ema_optimizer()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_kl_schedule"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline._get_kl_schedule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline._get_optimizer"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline._get_optimizer()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_default_training_config"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.get_default_training_config()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_train_step_fn"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.get_train_step_fn()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.get_val_step_fn"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.get_val_step_fn()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.init_pipeline_from_config"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.init_pipeline_from_config()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.restore_model"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.restore_model()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.save_model"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.save_model()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.train()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.update_training_config"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.update_training_config()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.ema_model"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.ema_model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.loss_fn"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.loss_fn</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.model"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.params"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.params</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train_dataset"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.train_dataset</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train_dataset_iter"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.train_dataset_iter</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.training_config"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.training_config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.val_dataset</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.val_dataset_iter"><code class="docutils literal notranslate"><span class="pre">AbstractVAEPipeline.val_dataset_iter</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.VAE1DPipeline"><code class="docutils literal notranslate"><span class="pre">VAE1DPipeline</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.VAE2DPipeline"><code class="docutils literal notranslate"><span class="pre">VAE2DPipeline</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.parse_autoencoder_params"><code class="docutils literal notranslate"><span class="pre">parse_autoencoder_params()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.recipes.vae_pipeline.parse_training_config"><code class="docutils literal notranslate"><span class="pre">parse_training_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

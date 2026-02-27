@@ -1,0 +1,1997 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>gensbi.diffusion.path.scheduler &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/gensbi/diffusion/path/scheduler/index';</script>
+    <link rel="icon" href="../../../../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <link rel="next" title="gensbi.diffusion.path.scheduler.edm" href="edm/index.html" />
+    <link rel="prev" title="gensbi.diffusion.path.path_sample" href="../path_sample/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../getting_started/index.html">Quick Start</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/quick_start.html">15-minute quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../notebooks/my_first_model.html">My First Model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../basics/index.html">Basics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/overview.html">Conceptual Overview: How GenSBI is Structured</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/data_and_embeddings.html">Data, IDs, and Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/model_cards.html">Model Cards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/training.html">Training Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/inference.html">Inference Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/validation.html">Validation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../basics/contributing.html">Contributing to GenSBI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../advanced/index.html">Advanced Topics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../advanced/samplers.html">Samplers and Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../advanced/custom_models.html">Custom Models</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../theoretical_overview/index.html">Theoretical Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../theoretical_overview/flow.html">Flow Matching: A Short Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../theoretical_overview/diffusion.html">EDM Diffusion Models: A Short Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../../index.html">API Documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../core/index.html">gensbi.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/diffusion_edm/index.html">gensbi.core.diffusion_edm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/flow_matching/index.html">gensbi.core.flow_matching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/generative_method/index.html">gensbi.core.generative_method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../core/score_matching/index.html">gensbi.core.score_matching</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/lc2st/index.html">gensbi.diagnostics.lc2st</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/marginal_coverage/index.html">gensbi.diagnostics.marginal_coverage</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../diagnostics/metrics/index.html">gensbi.diagnostics.metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../diagnostics/metrics/c2st/index.html">gensbi.diagnostics.metrics.c2st</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../diagnostics/metrics/l1_l2/index.html">gensbi.diagnostics.metrics.l1_l2</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/sbc/index.html">gensbi.diagnostics.sbc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/tarp/index.html">gensbi.diagnostics.tarp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../diagnostics/utils/index.html">gensbi.diagnostics.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../../index.html">gensbi.diffusion</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../loss/index.html">gensbi.diffusion.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../loss/edm_loss/index.html">gensbi.diffusion.loss.edm_loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../loss/sm_loss/index.html">gensbi.diffusion.loss.sm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../index.html">gensbi.diffusion.path</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../edm_path/index.html">gensbi.diffusion.path.edm_path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../path/index.html">gensbi.diffusion.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../path_sample/index.html">gensbi.diffusion.path.path_sample</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">gensbi.diffusion.path.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../sm_path/index.html">gensbi.diffusion.path.sm_path</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../solver/index.html">gensbi.diffusion.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../solver/edm_samplers/index.html">gensbi.diffusion.solver.edm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../solver/edm_solver/index.html">gensbi.diffusion.solver.edm_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../solver/sm_samplers/index.html">gensbi.diffusion.solver.sm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../solver/sm_solver/index.html">gensbi.diffusion.solver.sm_solver</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../experimental/index.html">gensbi.experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../experimental/models/index.html">gensbi.experimental.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../experimental/models/autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../experimental/recipes/index.html">gensbi.experimental.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../experimental/recipes/vae_pipeline/index.html">gensbi.experimental.recipes.vae_pipeline</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../flow_matching/index.html">gensbi.flow_matching</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/loss/index.html">gensbi.flow_matching.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/loss/fm_loss/index.html">gensbi.flow_matching.loss.fm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/path/index.html">gensbi.flow_matching.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/affine/index.html">gensbi.flow_matching.path.affine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/path/index.html">gensbi.flow_matching.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/path_sample/index.html">gensbi.flow_matching.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/path/scheduler/index.html">gensbi.flow_matching.path.scheduler</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/solver/index.html">gensbi.flow_matching.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/solver/ode_solver/index.html">gensbi.flow_matching.solver.ode_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/solver/sde_solver_fm/index.html">gensbi.flow_matching.solver.sde_solver_fm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../flow_matching/utils/index.html">gensbi.flow_matching.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../flow_matching/utils/utils/index.html">gensbi.flow_matching.utils.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../models/index.html">gensbi.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/embedding/index.html">gensbi.models.embedding</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/embedding/embedding/index.html">gensbi.models.embedding.embedding</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/flux1/index.html">gensbi.models.flux1</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1/layers/index.html">gensbi.models.flux1.layers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1/math/index.html">gensbi.models.flux1.math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1/model/index.html">gensbi.models.flux1.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/flux1joint/index.html">gensbi.models.flux1joint</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/flux1joint/model/index.html">gensbi.models.flux1joint.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/losses/index.html">gensbi.models.losses</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/losses/conditional/index.html">gensbi.models.losses.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/losses/joint/index.html">gensbi.models.losses.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/losses/unconditional/index.html">gensbi.models.losses.unconditional</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/simformer/index.html">gensbi.models.simformer</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/simformer/model/index.html">gensbi.models.simformer.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/simformer/transformer/index.html">gensbi.models.simformer.transformer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../models/wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/wrappers/conditional/index.html">gensbi.models.wrappers.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/wrappers/joint/index.html">gensbi.models.wrappers.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../models/wrappers/unconditional/index.html">gensbi.models.wrappers.unconditional</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../recipes/index.html">gensbi.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/conditional_pipeline/index.html">gensbi.recipes.conditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/flux1/index.html">gensbi.recipes.flux1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/pipeline/index.html">gensbi.recipes.pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/simformer/index.html">gensbi.recipes.simformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/unconditional_pipeline/index.html">gensbi.recipes.unconditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../recipes/utils/index.html">gensbi.recipes.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../solver/index.html">gensbi.solver</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../utils/index.html">gensbi.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/math/index.html">gensbi.utils.math</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/misc/index.html">gensbi.utils.misc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/model_wrapping/index.html">gensbi.utils.model_wrapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../utils/plotting/index.html">gensbi.utils.plotting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../../../documentation/index.html" class="nav-link">Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">gensbi</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">gensbi.diffusion</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">gensbi.diffusion.path</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.diffusion.path.scheduler</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-gensbi.diffusion.path.scheduler">
+<span id="gensbi-diffusion-path-scheduler"></span><h1>gensbi.diffusion.path.scheduler<a class="headerlink" href="#module-gensbi.diffusion.path.scheduler" title="Link to this heading">#</a></h1>
+<p>Schedulers for diffusion models.</p>
+<p>This module provides noise schedulers for EDM-based diffusion models,
+including variance-preserving and variance-exploding schedules, as well
+as standard score matching SDE schedulers.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="edm/index.html">gensbi.diffusion.path.scheduler.edm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sm_sde/index.html">gensbi.diffusion.path.scheduler.sm_sde</a></li>
+</ul>
+</div>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diffusion.path.scheduler.EDMScheduler" title="gensbi.diffusion.path.scheduler.EDMScheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EDMScheduler</span></code></a></p></td>
+<td><p>Helper class that provides a standard way to create an ABC using</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler" title="gensbi.diffusion.path.scheduler.VEEdmScheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VEEdmScheduler</span></code></a></p></td>
+<td><p>Variance Exploding (VE) SDE scheduler as described in the EDM paper.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diffusion.path.scheduler.VESmScheduler" title="gensbi.diffusion.path.scheduler.VESmScheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VESmScheduler</span></code></a></p></td>
+<td><p>Variance Exploding (VE) SDE for standard score matching.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler" title="gensbi.diffusion.path.scheduler.VPEdmScheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VPEdmScheduler</span></code></a></p></td>
+<td><p>Variance Preserving (VP) SDE scheduler as described in the EDM paper.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diffusion.path.scheduler.VPSmScheduler" title="gensbi.diffusion.path.scheduler.VPSmScheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VPSmScheduler</span></code></a></p></td>
+<td><p>Variance Preserving (VP) SDE for standard score matching.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.diffusion.path.scheduler.</span></span><span class="sig-name descname"><span class="pre">EDMScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.002</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">80.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_std</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseSDE</span></code></p>
+<p>Helper class that provides a standard way to create an ABC using
+inheritance.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.c_in">
+<span class="sig-name descname"><span class="pre">c_in</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.c_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_in" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning input coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Input coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.c_noise">
+<span class="sig-name descname"><span class="pre">c_noise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.c_noise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_noise" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning noise coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Noise coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.c_out">
+<span class="sig-name descname"><span class="pre">c_out</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.c_out"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_out" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning output coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Output coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.c_skip">
+<span class="sig-name descname"><span class="pre">c_skip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.c_skip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_skip" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning skip connection coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Skip coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.loss_weight">
+<span class="sig-name descname"><span class="pre">loss_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.loss_weight"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.loss_weight" title="Link to this definition">#</a></dt>
+<dd><p>Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loss weight.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.s">
+<span class="sig-name descname"><span class="pre">s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.s"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.s" title="Link to this definition">#</a></dt>
+<dd><p>Scaling function as in EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Scaling value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.s_deriv">
+<span class="sig-name descname"><span class="pre">s_deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.s_deriv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.s_deriv" title="Link to this definition">#</a></dt>
+<dd><p>Derivative of the scaling function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Derivative of scaling.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.sample_sigma">
+<span class="sig-name descname"><span class="pre">sample_sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.sample_sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sample_sigma" title="Link to this definition">#</a></dt>
+<dd><p>Sample sigma from the prior noise distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Array</em>) – JAX random key.</p></li>
+<li><p><strong>shape</strong> (<em>Any</em>) – Shape of the output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sampled sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.sigma">
+<span class="sig-name descname"><span class="pre">sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma" title="Link to this definition">#</a></dt>
+<dd><p>Returns the noise scale (schedule) at time t.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Noise scale.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.sigma_deriv">
+<span class="sig-name descname"><span class="pre">sigma_deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.sigma_deriv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_deriv" title="Link to this definition">#</a></dt>
+<dd><p>Derivative of the noise scale with respect to time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Derivative of sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.sigma_inv">
+<span class="sig-name descname"><span class="pre">sigma_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.sigma_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_inv" title="Link to this definition">#</a></dt>
+<dd><p>Inverse of the noise scale function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Time corresponding to the given sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.time_schedule">
+<span class="sig-name descname"><span class="pre">time_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#EDMScheduler.time_schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.time_schedule" title="Link to this definition">#</a></dt>
+<dd><p>Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>Array</em>) – Uniform random variable in [0, 1].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Time in the schedule.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.P_mean">
+<span class="sig-name descname"><span class="pre">P_mean</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-1.2</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.P_mean" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.P_std">
+<span class="sig-name descname"><span class="pre">P_std</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.2</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.P_std" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.name" title="Link to this definition">#</a></dt>
+<dd><p>Returns the name of the SDE scheduler.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.rho">
+<span class="sig-name descname"><span class="pre">rho</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.rho" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.sigma_data">
+<span class="sig-name descname"><span class="pre">sigma_data</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_data" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.sigma_max">
+<span class="sig-name descname"><span class="pre">sigma_max</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">80.0</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_max" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.EDMScheduler.sigma_min">
+<span class="sig-name descname"><span class="pre">sigma_min</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.002</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.diffusion.path.scheduler.</span></span><span class="sig-name descname"><span class="pre">VEEdmScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseSDE</span></code></p>
+<p>Variance Exploding (VE) SDE scheduler as described in the EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma_min</strong> (<em>float</em>) – Minimum sigma value.</p></li>
+<li><p><strong>sigma_max</strong> (<em>float</em>) – Maximum sigma value.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.c_in">
+<span class="sig-name descname"><span class="pre">c_in</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.c_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_in" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning input coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Input coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.c_noise">
+<span class="sig-name descname"><span class="pre">c_noise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.c_noise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_noise" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning noise coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Noise coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.c_out">
+<span class="sig-name descname"><span class="pre">c_out</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.c_out"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_out" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning output coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Output coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.c_skip">
+<span class="sig-name descname"><span class="pre">c_skip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.c_skip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_skip" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning skip connection coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Skip coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.loss_weight">
+<span class="sig-name descname"><span class="pre">loss_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.loss_weight"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.loss_weight" title="Link to this definition">#</a></dt>
+<dd><p>Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loss weight.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.s">
+<span class="sig-name descname"><span class="pre">s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.s"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.s" title="Link to this definition">#</a></dt>
+<dd><p>Scaling function as in EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Scaling value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.s_deriv">
+<span class="sig-name descname"><span class="pre">s_deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.s_deriv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.s_deriv" title="Link to this definition">#</a></dt>
+<dd><p>Derivative of the scaling function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Derivative of scaling.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.sample_sigma">
+<span class="sig-name descname"><span class="pre">sample_sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.sample_sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sample_sigma" title="Link to this definition">#</a></dt>
+<dd><p>Sample sigma from the prior noise distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Array</em>) – JAX random key.</p></li>
+<li><p><strong>shape</strong> (<em>Any</em>) – Shape of the output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sampled sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma">
+<span class="sig-name descname"><span class="pre">sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma" title="Link to this definition">#</a></dt>
+<dd><p>Returns the noise scale (schedule) at time t.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Noise scale.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_deriv">
+<span class="sig-name descname"><span class="pre">sigma_deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.sigma_deriv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_deriv" title="Link to this definition">#</a></dt>
+<dd><p>Derivative of the noise scale with respect to time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Derivative of sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_inv">
+<span class="sig-name descname"><span class="pre">sigma_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.sigma_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_inv" title="Link to this definition">#</a></dt>
+<dd><p>Inverse of the noise scale function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Time corresponding to the given sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.time_schedule">
+<span class="sig-name descname"><span class="pre">time_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VEEdmScheduler.time_schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.time_schedule" title="Link to this definition">#</a></dt>
+<dd><p>Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>Array</em>) – Uniform random variable in [0, 1].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Time in the schedule.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.name" title="Link to this definition">#</a></dt>
+<dd><p>Returns the name of the SDE scheduler.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_max">
+<span class="sig-name descname"><span class="pre">sigma_max</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15.0</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_max" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_min">
+<span class="sig-name descname"><span class="pre">sigma_min</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.diffusion.path.scheduler.</span></span><span class="sig-name descname"><span class="pre">VESmScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseSMSDE</span></code></p>
+<p>Variance Exploding (VE) SDE for standard score matching.</p>
+<p>Forward SDE: <span class="math notranslate nohighlight">\(dx = \sigma(t) \sqrt{2 \ln(\sigma_{\max}/\sigma_{\min})} \, dW\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(\sigma(t) = \sigma_{\min} (\sigma_{\max}/\sigma_{\min})^t\)</span>.</p>
+<p>Marginal distribution: <span class="math notranslate nohighlight">\(x_t = x_0 + \sigma(t) \epsilon\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma_min</strong> (<em>float</em>) – Minimum noise level.</p></li>
+<li><p><strong>sigma_max</strong> (<em>float</em>) – Maximum noise level.</p></li>
+<li><p><strong>e_s</strong> (<em>float</em>) – Minimum time for training (replaces diff_steps).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.diffusion">
+<span class="sig-name descname"><span class="pre">diffusion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler.diffusion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.diffusion" title="Link to this definition">#</a></dt>
+<dd><p>Diffusion coefficient g(t) of the forward SDE: dx = f(x,t)dt + g(t)dW.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time, shape (batch_size, …).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Diffusion coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.drift">
+<span class="sig-name descname"><span class="pre">drift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler.drift"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.drift" title="Link to this definition">#</a></dt>
+<dd><p>Drift function f(x, t) of the forward SDE: dx = f(x,t)dt + g(t)dW.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Input data, shape (batch_size, …).</p></li>
+<li><p><strong>t</strong> (<em>Array</em>) – Time, shape (batch_size, …).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Drift term, same shape as x.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.marginal_mean_coeff">
+<span class="sig-name descname"><span class="pre">marginal_mean_coeff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler.marginal_mean_coeff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.marginal_mean_coeff" title="Link to this definition">#</a></dt>
+<dd><p>Mean coefficient of the marginal distribution: <span class="math notranslate nohighlight">\(\mu(t)\)</span> such that
+<span class="math notranslate nohighlight">\(\mathbb{E}[x_t | x_0] = \mu(t) x_0\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mean coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.marginal_std">
+<span class="sig-name descname"><span class="pre">marginal_std</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler.marginal_std"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.marginal_std" title="Link to this definition">#</a></dt>
+<dd><p>Standard deviation of the marginal distribution at time t.
+<span class="math notranslate nohighlight">\(\text{Std}[x_t | x_0] = \sigma(t)\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Standard deviation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.sample_prior">
+<span class="sig-name descname"><span class="pre">sample_prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler.sample_prior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sample_prior" title="Link to this definition">#</a></dt>
+<dd><p>Sample from the VE prior distribution <span class="math notranslate nohighlight">\(\mathcal{N}(0, \sigma_{\max}^2 I)\)</span>.</p>
+<p>For the VE SDE, the marginal at <span class="math notranslate nohighlight">\(t=T\)</span> has std <span class="math notranslate nohighlight">\(\sigma_{\max}\)</span>,
+so the prior is <span class="math notranslate nohighlight">\(\mathcal{N}(0, \sigma_{\max}^2 I)\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Array</em>) – JAX random key.</p></li>
+<li><p><strong>shape</strong> (<em>Any</em>) – Shape of the output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Samples from the VE prior.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.sample_t">
+<span class="sig-name descname"><span class="pre">sample_t</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler.sample_t"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sample_t" title="Link to this definition">#</a></dt>
+<dd><p>Sample diffusion time for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Array</em>) – JAX random key.</p></li>
+<li><p><strong>shape</strong> (<em>Any</em>) – Shape of the output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sampled times.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.sigma">
+<span class="sig-name descname"><span class="pre">sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VESmScheduler.sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sigma" title="Link to this definition">#</a></dt>
+<dd><p>Noise level: <span class="math notranslate nohighlight">\(\sigma(t) = \sigma_{\min} (\sigma_{\max}/\sigma_{\min})^t\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>jax.Array</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.T">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">T</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.T" title="Link to this definition">#</a></dt>
+<dd><p>End time of the forward SDE.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler._log_sigma_max">
+<span class="sig-name descname"><span class="pre">_log_sigma_max</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler._log_sigma_max" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler._log_sigma_min">
+<span class="sig-name descname"><span class="pre">_log_sigma_min</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler._log_sigma_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.e_s">
+<span class="sig-name descname"><span class="pre">e_s</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.e_s" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.name" title="Link to this definition">#</a></dt>
+<dd><p>Returns the name of the SDE.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.sigma_max">
+<span class="sig-name descname"><span class="pre">sigma_max</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15.0</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sigma_max" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VESmScheduler.sigma_min">
+<span class="sig-name descname"><span class="pre">sigma_min</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sigma_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.diffusion.path.scheduler.</span></span><span class="sig-name descname"><span class="pre">VPEdmScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">beta_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseSDE</span></code></p>
+<p>Variance Preserving (VP) SDE scheduler as described in the EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>beta_min</strong> (<em>float</em>) – Minimum beta value.</p></li>
+<li><p><strong>beta_max</strong> (<em>float</em>) – Maximum beta value.</p></li>
+<li><p><strong>e_s</strong> (<em>float</em>) – Starting epsilon value for time schedule.</p></li>
+<li><p><strong>e_t</strong> (<em>float</em>) – Ending epsilon value for time schedule.</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – Scaling factor for noise preconditioning.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p>Karras, Tero, et al. “Elucidating the design space of diffusion-based generative models.” <a class="reference external" href="https://arxiv.org/abs/2206.00364">arXiv:2206.00364</a></p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.c_in">
+<span class="sig-name descname"><span class="pre">c_in</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.c_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_in" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning input coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Input coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.c_noise">
+<span class="sig-name descname"><span class="pre">c_noise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.c_noise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_noise" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning noise coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Noise coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.c_out">
+<span class="sig-name descname"><span class="pre">c_out</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.c_out"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_out" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning output coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Output coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.c_skip">
+<span class="sig-name descname"><span class="pre">c_skip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.c_skip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_skip" title="Link to this definition">#</a></dt>
+<dd><p>Preconditioning skip connection coefficient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Skip coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.f">
+<span class="sig-name descname"><span class="pre">f</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.f"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.f" title="Link to this definition">#</a></dt>
+<dd><p>Drift term for the forward diffusion process.</p>
+<p>Computes the drift term <span class="math notranslate nohighlight">\(f(x, t) = x \frac{ds}{dt} / s(t)\)</span> as used in the SDE formulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Input data.</p></li>
+<li><p><strong>t</strong> (<em>Array</em>) – Time.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Drift term.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.g">
+<span class="sig-name descname"><span class="pre">g</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.g"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.g" title="Link to this definition">#</a></dt>
+<dd><p>Diffusion term for the forward diffusion process.</p>
+<p>Computes the diffusion term <span class="math notranslate nohighlight">\(g(x, t) = s(t) \sqrt{2 \frac{d\sigma}{dt} \sigma(t)}\)</span> as used in the SDE formulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Input data.</p></li>
+<li><p><strong>t</strong> (<em>Array</em>) – Time.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Diffusion term.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.loss_weight">
+<span class="sig-name descname"><span class="pre">loss_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.loss_weight"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.loss_weight" title="Link to this definition">#</a></dt>
+<dd><p>Weight for the loss function, for MLE estimation, also known as λ(σ) in the EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loss weight.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.s">
+<span class="sig-name descname"><span class="pre">s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.s"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.s" title="Link to this definition">#</a></dt>
+<dd><p>Scaling function as in EDM paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Scaling value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.s_deriv">
+<span class="sig-name descname"><span class="pre">s_deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.s_deriv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.s_deriv" title="Link to this definition">#</a></dt>
+<dd><p>Derivative of the scaling function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Derivative of scaling.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.sample_sigma">
+<span class="sig-name descname"><span class="pre">sample_sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.sample_sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sample_sigma" title="Link to this definition">#</a></dt>
+<dd><p>Sample sigma from the prior noise distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Array</em>) – JAX random key.</p></li>
+<li><p><strong>shape</strong> (<em>Any</em>) – Shape of the output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sampled sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma">
+<span class="sig-name descname"><span class="pre">sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma" title="Link to this definition">#</a></dt>
+<dd><p>Returns the noise scale (schedule) at time t.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Noise scale.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma_deriv">
+<span class="sig-name descname"><span class="pre">sigma_deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.sigma_deriv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma_deriv" title="Link to this definition">#</a></dt>
+<dd><p>Derivative of the noise scale with respect to time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Derivative of sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma_inv">
+<span class="sig-name descname"><span class="pre">sigma_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.sigma_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma_inv" title="Link to this definition">#</a></dt>
+<dd><p>Inverse of the noise scale function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sigma</strong> (<em>Array</em>) – Noise scale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Time corresponding to the given sigma.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.time_schedule">
+<span class="sig-name descname"><span class="pre">time_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/edm.html#VPEdmScheduler.time_schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.time_schedule" title="Link to this definition">#</a></dt>
+<dd><p>Given the value of the random uniform variable u ~ U(0,1), return the time t in the schedule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>Array</em>) – Uniform random variable in [0, 1].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Time in the schedule.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.M">
+<span class="sig-name descname"><span class="pre">M</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.M" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_d">
+<span class="sig-name descname"><span class="pre">beta_d</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">19.9</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_max">
+<span class="sig-name descname"><span class="pre">beta_max</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">20.0</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_max" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_min">
+<span class="sig-name descname"><span class="pre">beta_min</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.1</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.e_s">
+<span class="sig-name descname"><span class="pre">e_s</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.e_s" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.e_t">
+<span class="sig-name descname"><span class="pre">e_t</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1e-05</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.e_t" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPEdmScheduler.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.name" title="Link to this definition">#</a></dt>
+<dd><p>Returns the name of the SDE scheduler.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.diffusion.path.scheduler.</span></span><span class="sig-name descname"><span class="pre">VPSmScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">beta_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseSMSDE</span></code></p>
+<p>Variance Preserving (VP) SDE for standard score matching.</p>
+<p>Forward SDE: <span class="math notranslate nohighlight">\(dx = -\frac{1}{2} \beta(t) x \, dt + \sqrt{\beta(t)} \, dW\)</span></p>
+<p>Marginal distribution: <span class="math notranslate nohighlight">\(x_t = e^{-\frac{1}{2} \alpha(t)} x_0 + \sqrt{1 - e^{-\alpha(t)}} \epsilon\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(\alpha(t) = \int_0^t \beta(s) ds = \beta_{\min} t + \frac{1}{2}(\beta_{\max} - \beta_{\min}) t^2\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>beta_min</strong> (<em>float</em>) – Minimum value of the beta schedule.</p></li>
+<li><p><strong>beta_max</strong> (<em>float</em>) – Maximum value of the beta schedule.</p></li>
+<li><p><strong>diff_steps</strong> (<em>int</em>) – Number of diffusion steps (determines minimum time for training).</p></li>
+<li><p><strong>e_s</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.alpha_t">
+<span class="sig-name descname"><span class="pre">alpha_t</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler.alpha_t"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.alpha_t" title="Link to this definition">#</a></dt>
+<dd><p>Integral of beta: <span class="math notranslate nohighlight">\(\alpha(t) = \beta_{\min} t + \frac{1}{2}(\beta_{\max} - \beta_{\min}) t^2\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>jax.Array</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.beta_t">
+<span class="sig-name descname"><span class="pre">beta_t</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler.beta_t"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_t" title="Link to this definition">#</a></dt>
+<dd><p>Linear beta schedule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>jax.Array</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.diffusion">
+<span class="sig-name descname"><span class="pre">diffusion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler.diffusion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.diffusion" title="Link to this definition">#</a></dt>
+<dd><p>Diffusion coefficient g(t) of the forward SDE: dx = f(x,t)dt + g(t)dW.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time, shape (batch_size, …).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Diffusion coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.drift">
+<span class="sig-name descname"><span class="pre">drift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler.drift"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.drift" title="Link to this definition">#</a></dt>
+<dd><p>Drift function f(x, t) of the forward SDE: dx = f(x,t)dt + g(t)dW.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Input data, shape (batch_size, …).</p></li>
+<li><p><strong>t</strong> (<em>Array</em>) – Time, shape (batch_size, …).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Drift term, same shape as x.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.marginal_mean_coeff">
+<span class="sig-name descname"><span class="pre">marginal_mean_coeff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler.marginal_mean_coeff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.marginal_mean_coeff" title="Link to this definition">#</a></dt>
+<dd><p>Mean coefficient of the marginal distribution: <span class="math notranslate nohighlight">\(\mu(t)\)</span> such that
+<span class="math notranslate nohighlight">\(\mathbb{E}[x_t | x_0] = \mu(t) x_0\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mean coefficient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.marginal_std">
+<span class="sig-name descname"><span class="pre">marginal_std</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler.marginal_std"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.marginal_std" title="Link to this definition">#</a></dt>
+<dd><p>Standard deviation of the marginal distribution at time t.
+<span class="math notranslate nohighlight">\(\text{Std}[x_t | x_0] = \sigma(t)\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<em>Array</em>) – Time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Standard deviation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.sample_t">
+<span class="sig-name descname"><span class="pre">sample_t</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/path/scheduler/sm_sde.html#VPSmScheduler.sample_t"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.sample_t" title="Link to this definition">#</a></dt>
+<dd><p>Sample diffusion time for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>Array</em>) – JAX random key.</p></li>
+<li><p><strong>shape</strong> (<em>Any</em>) – Shape of the output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sampled times.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.T">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">T</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.T" title="Link to this definition">#</a></dt>
+<dd><p>End time of the forward SDE.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.beta_d">
+<span class="sig-name descname"><span class="pre">beta_d</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2.999</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.beta_max">
+<span class="sig-name descname"><span class="pre">beta_max</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3.0</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_max" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.beta_min">
+<span class="sig-name descname"><span class="pre">beta_min</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.e_s">
+<span class="sig-name descname"><span class="pre">e_s</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.e_s" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.diffusion.path.scheduler.VPSmScheduler.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.name" title="Link to this definition">#</a></dt>
+<dd><p>Returns the name of the SDE.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../path_sample/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">gensbi.diffusion.path.path_sample</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="edm/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">gensbi.diffusion.path.scheduler.edm</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#package-contents">Package Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler"><code class="docutils literal notranslate"><span class="pre">EDMScheduler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_in"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.c_in()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_noise"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.c_noise()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_out"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.c_out()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.c_skip"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.c_skip()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.loss_weight"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.loss_weight()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.s"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.s()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.s_deriv"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.s_deriv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sample_sigma"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.sample_sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_deriv"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.sigma_deriv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_inv"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.sigma_inv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.time_schedule"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.time_schedule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.P_mean"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.P_mean</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.P_std"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.P_std</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.name"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.rho"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.rho</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_data"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.sigma_data</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_max"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.sigma_max</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.EDMScheduler.sigma_min"><code class="docutils literal notranslate"><span class="pre">EDMScheduler.sigma_min</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_in"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.c_in()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_noise"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.c_noise()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_out"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.c_out()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.c_skip"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.c_skip()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.loss_weight"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.loss_weight()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.s"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.s()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.s_deriv"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.s_deriv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sample_sigma"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.sample_sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_deriv"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.sigma_deriv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_inv"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.sigma_inv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.time_schedule"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.time_schedule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.name"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_max"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.sigma_max</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VEEdmScheduler.sigma_min"><code class="docutils literal notranslate"><span class="pre">VEEdmScheduler.sigma_min</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler"><code class="docutils literal notranslate"><span class="pre">VESmScheduler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.diffusion"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.diffusion()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.drift"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.drift()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.marginal_mean_coeff"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.marginal_mean_coeff()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.marginal_std"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.marginal_std()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sample_prior"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.sample_prior()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sample_t"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.sample_t()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sigma"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.T"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.T</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler._log_sigma_max"><code class="docutils literal notranslate"><span class="pre">VESmScheduler._log_sigma_max</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler._log_sigma_min"><code class="docutils literal notranslate"><span class="pre">VESmScheduler._log_sigma_min</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.e_s"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.e_s</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.name"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sigma_max"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.sigma_max</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VESmScheduler.sigma_min"><code class="docutils literal notranslate"><span class="pre">VESmScheduler.sigma_min</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_in"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.c_in()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_noise"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.c_noise()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_out"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.c_out()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.c_skip"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.c_skip()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.f"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.f()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.g"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.g()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.loss_weight"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.loss_weight()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.s"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.s()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.s_deriv"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.s_deriv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sample_sigma"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.sample_sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma_deriv"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.sigma_deriv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.sigma_inv"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.sigma_inv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.time_schedule"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.time_schedule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.M"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.M</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_d"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.beta_d</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_max"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.beta_max</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.beta_min"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.beta_min</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.e_s"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.e_s</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.e_t"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.e_t</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPEdmScheduler.name"><code class="docutils literal notranslate"><span class="pre">VPEdmScheduler.name</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.alpha_t"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.alpha_t()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_t"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.beta_t()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.diffusion"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.diffusion()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.drift"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.drift()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.marginal_mean_coeff"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.marginal_mean_coeff()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.marginal_std"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.marginal_std()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.sample_t"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.sample_t()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.T"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.T</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_d"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.beta_d</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_max"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.beta_max</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_min"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.beta_min</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.e_s"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.e_s</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.path.scheduler.VPSmScheduler.name"><code class="docutils literal notranslate"><span class="pre">VPSmScheduler.name</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
