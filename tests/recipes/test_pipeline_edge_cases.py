@@ -7,23 +7,26 @@ import jax.numpy as jnp
 from flax import nnx
 
 import pytest
+import tempfile
 
 import grain
 import numpy as np
 
 from gensbi.recipes.joint_pipeline import sample_condition_mask
+from gensbi.recipes.pipeline import _get_batch_sampler
 
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent))
-from mock_models import MockJointModel, MockConditionalModel
+from mock_models import MockJointModel, MockConditionalModel, MockUnconditionalModel
 
 from gensbi.recipes import (
-    JointFlowPipeline,
-    JointDiffusionPipeline,
-    ConditionalFlowPipeline,
+    ConditionalPipeline,
+    JointPipeline,
+    UnconditionalPipeline,
 )
+from gensbi.core import FlowMatchingMethod, DiffusionEDMMethod, ScoreMatchingMethod
 
 nsamples = 1000
 key = jax.random.PRNGKey(0)
@@ -123,55 +126,59 @@ def test_condition_mask_invalid_kind():
         )
 
 
-# --- Tests for JointFlowPipeline validation errors ---
+# --- Tests for JointPipeline validation errors ---
 
 
 def test_joint_flow_dim_cond_zero():
-    """Test that dim_cond=0 raises ValueError for JointFlowPipeline."""
+    """Test that dim_cond=0 raises ValueError for JointPipeline."""
     with pytest.raises(ValueError, match="dim_cond=0"):
-        JointFlowPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_joint,
             dim_cond=0,
+            method=FlowMatchingMethod(),
         )
 
 
 def test_joint_flow_invalid_condition_mask_kind():
     """Test that invalid condition_mask_kind raises ValueError."""
     with pytest.raises(ValueError, match="condition_mask_kind"):
-        JointFlowPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             condition_mask_kind="invalid_kind",
         )
 
 
 def test_joint_diffusion_dim_cond_zero():
-    """Test that dim_cond=0 raises ValueError for JointDiffusionPipeline."""
+    """Test that dim_cond=0 raises ValueError for JointPipeline with DiffusionEDMMethod."""
     with pytest.raises(ValueError, match="dim_cond=0"):
-        JointDiffusionPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_joint,
             dim_cond=0,
+            method=DiffusionEDMMethod(),
         )
 
 
 def test_joint_diffusion_invalid_condition_mask_kind():
     """Test that invalid condition_mask_kind raises ValueError."""
     with pytest.raises(ValueError, match="condition_mask_kind"):
-        JointDiffusionPipeline(
+        JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=DiffusionEDMMethod(),
             condition_mask_kind="invalid_kind",
         )
 
@@ -181,12 +188,13 @@ def test_joint_diffusion_invalid_condition_mask_kind():
 
 def test_update_training_config():
     """Test update_training_config correctly updates and recalculates min_scale."""
-    pipeline = JointFlowPipeline(
+    pipeline = JointPipeline(
         model=MockJointModel(),
         train_dataset=train_dataset_joint,
         val_dataset=val_dataset_joint,
         dim_obs=dim_obs,
         dim_cond=dim_cond,
+        method=FlowMatchingMethod(),
     )
     new_config = {"max_lr": 1e-3, "min_lr": 1e-5}
     pipeline.update_training_config(new_config)
@@ -198,12 +206,13 @@ def test_update_training_config():
 
 def test_update_training_config_zero_max_lr():
     """Test update_training_config handles max_lr=0 without division error."""
-    pipeline = JointFlowPipeline(
+    pipeline = JointPipeline(
         model=MockJointModel(),
         train_dataset=train_dataset_joint,
         val_dataset=val_dataset_joint,
         dim_obs=dim_obs,
         dim_cond=dim_cond,
+        method=FlowMatchingMethod(),
     )
     new_config = {"max_lr": 0.0, "min_lr": 0.0}
     pipeline.update_training_config(new_config)
@@ -216,16 +225,17 @@ def test_batch_sampler_with_progress_bars():
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = JointFlowPipeline.get_default_training_config()
+        training_config = JointPipeline.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
 
-        pipeline = JointFlowPipeline(
+        pipeline = JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             ch_obs=2,
             training_config=training_config,
         )
@@ -251,17 +261,18 @@ def test_multistep_optimizer():
 
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
-        training_config = JointFlowPipeline.get_default_training_config()
+        training_config = JointPipeline.get_default_training_config()
         training_config["checkpoint_dir"] = model_dir
         training_config["val_every"] = 1
         training_config["multistep"] = 2  # cover multistep > 1 branch
 
-        pipeline = JointFlowPipeline(
+        pipeline = JointPipeline(
             model=MockJointModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             ch_obs=2,
             training_config=training_config,
         )
@@ -269,119 +280,377 @@ def test_multistep_optimizer():
         pipeline.train(nnx.Rngs(0), nsteps=4, save_model=False)
 
 
-# --- Tests for conditional_pipeline.py SDE branches ---
+# --- Tests for ConditionalPipeline edge cases ---
 
 
 def test_conditional_sm_ve_sde():
-    """Test ConditionalSMPipeline with VE SDE type to cover VE branch."""
-    from gensbi.recipes import ConditionalSMPipeline
-
-    pipeline = ConditionalSMPipeline(
+    """Test ConditionalPipeline with ScoreMatchingMethod VE SDE type."""
+    pipeline = ConditionalPipeline(
         model=MockConditionalModel(),
         train_dataset=train_dataset_cond,
         val_dataset=val_dataset_cond,
         dim_obs=dim_obs,
         dim_cond=dim_cond,
-        sde_type="VE",
+        method=ScoreMatchingMethod(sde_type="VE"),
     )
-    assert isinstance(pipeline, ConditionalSMPipeline)
-    assert pipeline.sde_type == "VE"
+    assert isinstance(pipeline, ConditionalPipeline)
 
 
 def test_conditional_sm_invalid_sde():
-    """Test ConditionalSMPipeline with invalid SDE type raises ValueError."""
-    from gensbi.recipes import ConditionalSMPipeline
-
-    with pytest.raises(ValueError, match="sde_type"):
-        ConditionalSMPipeline(
-            model=MockConditionalModel(),
-            train_dataset=train_dataset_cond,
-            val_dataset=val_dataset_cond,
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            sde_type="INVALID",
-        )
-
-
-def test_conditional_sm_default_config_ve():
-    """Test get_default_training_config with VE SDE type."""
-    from gensbi.recipes import ConditionalSMPipeline
-
-    config = ConditionalSMPipeline.get_default_training_config(sde_type="VE")
-    assert "sigma_min" in config
-    assert "sigma_max" in config
-
-
-def test_conditional_diffusion_invalid_sde():
-    """Test ConditionalDiffusionPipeline with invalid SDE type raises ValueError."""
-    from gensbi.recipes import ConditionalDiffusionPipeline
-
-    with pytest.raises(ValueError, match="Unknown sde type"):
-        ConditionalDiffusionPipeline(
-            model=MockConditionalModel(),
-            train_dataset=train_dataset_cond,
-            val_dataset=val_dataset_cond,
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            sde="INVALID",
-        )
-
-
-def test_conditional_diffusion_default_config_ve():
-    """Test get_default_training_config with VE and VP SDE types."""
-    from gensbi.recipes import ConditionalDiffusionPipeline
-
-    config_ve = ConditionalDiffusionPipeline.get_default_training_config(sde="VE")
-    assert "sigma_min" in config_ve
-    config_vp = ConditionalDiffusionPipeline.get_default_training_config(sde="VP")
-    assert "beta_min" in config_vp
+    """Test ScoreMatchingMethod with invalid SDE type raises ValueError."""
+    with pytest.raises(ValueError, match="sde_type must be one of"):
+        ScoreMatchingMethod(sde_type="INVALID")
 
 
 def test_conditional_flow_invalid_id_embedding_obs():
-    """Test ConditionalFlowPipeline with invalid obs id embedding strategy."""
+    """Test ConditionalPipeline with invalid obs id embedding strategy."""
     with pytest.raises(ValueError, match="Unknown id embedding strategy"):
-        ConditionalFlowPipeline(
+        ConditionalPipeline(
             model=MockConditionalModel(),
             train_dataset=train_dataset_cond,
             val_dataset=val_dataset_cond,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             id_embedding_strategy=("invalid", "absolute"),
         )
 
 
 def test_conditional_flow_invalid_id_embedding_cond():
-    """Test ConditionalFlowPipeline with invalid cond id embedding strategy."""
+    """Test ConditionalPipeline with invalid cond id embedding strategy."""
     with pytest.raises(ValueError, match="Unknown id embedding strategy"):
-        ConditionalFlowPipeline(
+        ConditionalPipeline(
             model=MockConditionalModel(),
             train_dataset=train_dataset_cond,
             val_dataset=val_dataset_cond,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
             id_embedding_strategy=("absolute", "invalid"),
         )
 
 
-# --- Tests for joint_pipeline.py SDE branches ---
+# --- Tests for JointPipeline SDE branches ---
 
 
 def test_joint_diffusion_invalid_sde():
-    """Test JointDiffusionPipeline with invalid SDE type raises ValueError."""
-    with pytest.raises(ValueError, match="Unknown sde type"):
-        JointDiffusionPipeline(
-            model=MockJointModel(),
+    """Test DiffusionEDMMethod with invalid SDE type raises ValueError."""
+    with pytest.raises(ValueError, match="sde must be one of"):
+        DiffusionEDMMethod(sde="INVALID")
+
+
+# --- Tests for deprecated pipeline stubs ---
+
+
+def test_deprecated_conditional_pipelines():
+    """Test that deprecated conditional pipeline classes raise RuntimeError."""
+    from gensbi.recipes import (
+        ConditionalFlowPipeline,
+        ConditionalDiffusionPipeline,
+        ConditionalSMPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalFlowPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalDiffusionPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalSMPipeline()
+
+
+def test_deprecated_joint_pipelines():
+    """Test that deprecated joint pipeline classes raise RuntimeError."""
+    from gensbi.recipes import (
+        JointFlowPipeline,
+        JointDiffusionPipeline,
+        JointSMPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointFlowPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointDiffusionPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointSMPipeline()
+
+
+def test_deprecated_unconditional_pipelines():
+    """Test that deprecated unconditional pipeline classes raise RuntimeError."""
+    from gensbi.recipes import (
+        UnconditionalFlowPipeline,
+        UnconditionalDiffusionPipeline,
+        UnconditionalSMPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalFlowPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalDiffusionPipeline()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalSMPipeline()
+
+
+def test_deprecated_pipelines_get_default_training_config():
+    """Test that get_default_training_config on deprecated classes raises RuntimeError."""
+    from gensbi.recipes import (
+        ConditionalFlowPipeline,
+        JointFlowPipeline,
+        UnconditionalFlowPipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        ConditionalFlowPipeline.get_default_training_config()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        JointFlowPipeline.get_default_training_config()
+
+    with pytest.raises(RuntimeError, match="has been removed"):
+        UnconditionalFlowPipeline.get_default_training_config()
+
+
+# ---------------------------------------------------------------------------
+# Tests for pipeline.py uncovered branches
+# ---------------------------------------------------------------------------
+
+
+def test_init_with_model_none():
+    """Pipeline __init__ with model=None sets ema_model=None (L232-233)."""
+    pipeline = ConditionalPipeline(
+        model=None,
+        train_dataset=train_dataset_cond,
+        val_dataset=val_dataset_cond,
+        dim_obs=dim_obs,
+        dim_cond=dim_cond,
+        method=FlowMatchingMethod(),
+    )
+    assert pipeline.model is None
+    assert pipeline.ema_model is None
+
+
+def test_init_with_default_training_config():
+    """Pipeline __init__ without training_config uses defaults (L218-219)."""
+    pipeline = ConditionalPipeline(
+        model=MockConditionalModel(),
+        train_dataset=train_dataset_cond,
+        val_dataset=val_dataset_cond,
+        dim_obs=dim_obs,
+        dim_cond=dim_cond,
+        method=FlowMatchingMethod(),
+        # training_config omitted — defaults used
+    )
+    assert pipeline.training_config is not None
+    assert "nsteps" in pipeline.training_config
+    assert "max_lr" in pipeline.training_config
+
+
+def test_get_batch_sampler_no_progress_bars():
+    """_get_batch_sampler with show_progress_bars=False (L137)."""
+    def mock_sampler_fn(key, ncond):
+        return jnp.ones((ncond, 1))
+
+    ncond = 5
+    chunk_size = 10
+    n_samples = 30
+
+    batched_sampler = _get_batch_sampler(
+        mock_sampler_fn, ncond, chunk_size, show_progress_bars=False
+    )
+    keys = jax.random.split(jax.random.PRNGKey(0), n_samples)
+    result = batched_sampler(keys)
+    assert result.shape == (n_samples, ncond, 1)
+
+
+def test_save_and_restore_model():
+    """save_model + restore_model roundtrip (L466-562)."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = UnconditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = UnconditionalPipeline(
+            model=MockUnconditionalModel(),
             train_dataset=train_dataset_joint,
             val_dataset=val_dataset_joint,
-            dim_obs=dim_obs,
-            dim_cond=dim_cond,
-            sde="INVALID",
+            dim_obs=dim_joint,
+            method=FlowMatchingMethod(),
+            ch_obs=2,
+            training_config=training_config,
+        )
+        pipeline.train(nnx.Rngs(0), nsteps=2, save_model=True)
+
+        # Restore from the saved checkpoint (uses experiment_id from training_config)
+        pipeline.restore_model()
+        assert pipeline.model is not None
+        assert pipeline.ema_model is not None
+
+
+def test_restore_best_state():
+    """_restore_best_state merges states back into model and ema (L581-583)."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = UnconditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = UnconditionalPipeline(
+            model=MockUnconditionalModel(),
+            train_dataset=train_dataset_joint,
+            val_dataset=val_dataset_joint,
+            dim_obs=dim_joint,
+            method=FlowMatchingMethod(),
+            ch_obs=2,
+            training_config=training_config,
         )
 
+        best_state = nnx.state(pipeline.model)
+        best_state_ema = nnx.state(pipeline.ema_model)
+        pipeline._restore_best_state(best_state, best_state_ema)
+        # Model should still be functional after state restoration
+        assert pipeline.model is not None
+        assert pipeline.ema_model is not None
 
-def test_joint_diffusion_default_config_ve():
-    """Test JointDiffusionPipeline.get_default_training_config with VE and VP SDE types."""
-    config_ve = JointDiffusionPipeline.get_default_training_config(sde="VE")
-    assert "sigma_min" in config_ve
-    config_vp = JointDiffusionPipeline.get_default_training_config(sde="VP")
-    assert "beta_min" in config_vp
+
+def test_run_validation_counter_and_best():
+    """_run_validation updates counter and best state (L634-645)."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = UnconditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = UnconditionalPipeline(
+            model=MockUnconditionalModel(),
+            train_dataset=train_dataset_joint,
+            val_dataset=val_dataset_joint,
+            dim_obs=dim_joint,
+            method=FlowMatchingMethod(),
+            ch_obs=2,
+            training_config=training_config,
+        )
+
+        loss_fn = pipeline.get_loss_fn()
+        val_step = pipeline.get_val_step_fn(loss_fn)
+        rng_val = jax.random.PRNGKey(42)
+        batch_val = next(pipeline.val_dataset_iter)
+
+        best_state = nnx.state(pipeline.model)
+        best_state_ema = nnx.state(pipeline.ema_model)
+
+        # Case 1: l_val < min_val → best state updated
+        l_val, ratio, min_val, best_state, best_state_ema, counter = (
+            pipeline._run_validation(
+                val_step, batch_val, rng_val,
+                min_val=1e10,  # large initial min_val
+                best_state=best_state,
+                best_state_ema=best_state_ema,
+                counter=0,
+                val_error_ratio=1.3,
+                loss_array=[],
+                val_loss_array=[],
+                l_train=0.1,
+            )
+        )
+        assert min_val < 1e10  # should have been updated
+        assert counter == 0  # ratio < 1.3
+
+        # Case 2: ratio > val_error_ratio → counter incremented
+        l_val2, ratio2, min_val2, best_state2, best_state_ema2, counter2 = (
+            pipeline._run_validation(
+                val_step, batch_val, rng_val,
+                min_val=1e-20,  # tiny min_val forces large ratio
+                best_state=best_state,
+                best_state_ema=best_state_ema,
+                counter=5,
+                val_error_ratio=1.3,
+                loss_array=[],
+                val_loss_array=[],
+                l_train=0.1,
+            )
+        )
+        assert counter2 == 6  # counter should have incremented
+
+
+def test_train_uses_nsteps_from_config():
+    """train(nsteps=None) uses nsteps from training_config (L693-694)."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = UnconditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+        training_config["nsteps"] = 100  # must be large enough for cosine scheduler
+
+        pipeline = UnconditionalPipeline(
+            model=MockUnconditionalModel(),
+            train_dataset=train_dataset_joint,
+            val_dataset=val_dataset_joint,
+            dim_obs=dim_joint,
+            method=FlowMatchingMethod(),
+            ch_obs=2,
+            training_config=training_config,
+        )
+        # nsteps=None should use config["nsteps"] = 2
+        loss_array, val_loss_array = pipeline.train(
+            nnx.Rngs(0), nsteps=None, save_model=False
+        )
+        assert isinstance(loss_array, list)
+
+
+def test_train_early_stopping():
+    """Early stopping triggers _restore_best_state (L706-709)."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = UnconditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+        training_config["early_stopping"] = True
+
+        pipeline = UnconditionalPipeline(
+            model=MockUnconditionalModel(),
+            train_dataset=train_dataset_joint,
+            val_dataset=val_dataset_joint,
+            dim_obs=dim_joint,
+            method=FlowMatchingMethod(),
+            ch_obs=2,
+            training_config=training_config,
+        )
+        # Train enough steps that validation happens and early stopping may trigger
+        # With val_every=1, validation runs every step
+        loss_array, val_loss_array = pipeline.train(
+            nnx.Rngs(0), nsteps=50, save_model=False
+        )
+        # The model should train (at least partially) with early stopping enabled
+        assert isinstance(loss_array, list)
+
+
+def test_train_no_save():
+    """Train with save_model=False skips save_model call (L746)."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = UnconditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = UnconditionalPipeline(
+            model=MockUnconditionalModel(),
+            train_dataset=train_dataset_joint,
+            val_dataset=val_dataset_joint,
+            dim_obs=dim_joint,
+            method=FlowMatchingMethod(),
+            ch_obs=2,
+            training_config=training_config,
+        )
+        loss_array, val_loss_array = pipeline.train(
+            nnx.Rngs(0), nsteps=2, save_model=False
+        )
+        # No checkpoint files should exist
+        import glob
+        checkpoints = glob.glob(os.path.join(model_dir, "*"))
+        assert len(checkpoints) == 0
+

@@ -179,3 +179,35 @@ plot_marginals(
 )
 plt.savefig("simformer_flow_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
+
+# %% Alternative: sample with ZeroEndsSolver (SDE-based flow matching sampler)
+# Instead of the default deterministic ODE solver, you can use the ZeroEndsSolver
+# for stochastic sampling in flow matching. This can sometimes improve sample diversity.
+# The SDE solver requires mu0 (prior mean) and sigma0 (prior std) matching the
+# data shape, plus an alpha parameter controlling diffusion strength.
+from gensbi.flow_matching.solver import ZeroEndsSolver
+
+solver_kwargs = {
+    "mu0": jnp.zeros((dim_obs, 1)),  # prior mean (data is normalized)
+    "sigma0": jnp.ones((dim_obs, 1)),  # prior std
+    "alpha": 0.2,  # diffusion strength
+}
+
+samples_sde = pipeline.sample(
+    rngs.sample(),
+    x_o,
+    nsamples=100_000,
+    solver=(ZeroEndsSolver, solver_kwargs),
+)
+samples_sde = unnormalize(samples_sde, means[:dim_obs], stds[:dim_obs])
+
+plot_marginals(
+    np.array(samples_sde[..., 0]),
+    gridsize=30,
+    true_param=np.array(true_theta[0, :, 0]),
+    range=[(1, 3), (1, 3), (-0.6, 0.5)],
+)
+plt.savefig("simformer_flow_pipeline_sde_marginals.png", dpi=100, bbox_inches="tight")
+plt.show()
+
+# %%

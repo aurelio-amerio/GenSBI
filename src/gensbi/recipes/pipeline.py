@@ -17,6 +17,7 @@ from typing import Any, Callable, Optional, Tuple
 from jax import Array
 
 from numpyro import distributions as dist
+from gensbi.utils.math import _expand_dims
 
 import abc
 from functools import partial
@@ -568,6 +569,84 @@ class AbstractPipeline(abc.ABC):
         """
         ...  # pragma: no cover
 
+    def _restore_best_state(self, best_state, best_state_ema):
+        """Restore the best model and EMA states (used after early stopping).
+
+        Parameters
+        ----------
+        best_state : nnx.State
+            Best model state recorded during training.
+        best_state_ema : nnx.State
+            Best EMA model state recorded during training.
+        """
+        graphdef = nnx.graphdef(self.model)
+        self.model = nnx.merge(graphdef, best_state)
+        self.ema_model = nnx.merge(graphdef, best_state_ema)
+
+    def _run_validation(self, val_step, batch_val, rng_val, min_val,
+                        best_state, best_state_ema, counter, val_error_ratio,
+                        loss_array, val_loss_array, l_train):
+        """Run a validation step and update early-stopping bookkeeping.
+
+        Parameters
+        ----------
+        val_step : Callable
+            Validation step function.
+        batch_val : Any
+            Fixed validation batch.
+        rng_val : jax.random.PRNGKey
+            Fixed validation RNG key.
+        min_val : float
+            Best validation loss seen so far.
+        best_state : nnx.State
+            Current best model state.
+        best_state_ema : nnx.State
+            Current best EMA model state.
+        counter : int
+            Early-stopping patience counter.
+        val_error_ratio : float
+            Threshold ratio for incrementing the counter.
+        loss_array : list
+            Training loss history (mutated in place).
+        val_loss_array : list
+            Validation loss history (mutated in place).
+        l_train : float
+            Current smoothed training loss.
+
+        Returns
+        -------
+        l_val : float
+            Validation loss for this step.
+        ratio : float
+            Ratio of current validation loss to best.
+        min_val : float
+            Updated best validation loss.
+        best_state : nnx.State
+            Updated best model state.
+        best_state_ema : nnx.State
+            Updated best EMA model state.
+        counter : int
+            Updated early-stopping counter.
+        """
+        # Use a fixed val batch and rng for validation, to avoid noise
+        l_val = val_step(self.model, batch_val, rng_val)
+
+        ratio = l_val / min_val
+        if ratio > val_error_ratio:
+            counter += 1
+        else:
+            counter = 0
+
+        loss_array.append(l_train)
+        val_loss_array.append(l_val)
+
+        if l_val < min_val:
+            min_val = l_val
+            best_state = nnx.state(self.model)
+            best_state_ema = nnx.state(self.ema_model)
+
+        return l_val, ratio, min_val, best_state, best_state_ema, counter
+
     def train(
         self, rngs: nnx.Rngs, nsteps: Optional[int] = None, save_model=True
     ) -> Tuple[list, list]:
@@ -602,7 +681,7 @@ class AbstractPipeline(abc.ABC):
         batch_val = next(self.val_dataset_iter)
         min_val = val_step(self.model, batch_val, rng_val)
 
-        val_error_ratio = 1.3  # 1.1
+        val_error_ratio = 1.3
         counter = 0
         cmax = 10
 
@@ -627,10 +706,7 @@ class AbstractPipeline(abc.ABC):
         for j in pbar:
             if counter > cmax and early_stopping:
                 print("Early stopping")
-                graphdef = nnx.graphdef(self.model)
-                self.model = nnx.merge(graphdef, best_state)
-                self.ema_model = nnx.merge(graphdef, best_state_ema)
-
+                self._restore_best_state(best_state, best_state_ema)
                 break
 
             batch = next(self.train_dataset_iter)
@@ -648,25 +724,13 @@ class AbstractPipeline(abc.ABC):
                 l_train = decay * l_train + (1 - decay) * loss
 
             if j > 0 and j % val_every == 0:
-                # batch_val = next(self.val_dataset_iter)
-                # l_val = val_step(self.model, batch_val, rngs.val_step())
-                l_val = val_step(
-                    self.model, batch_val, rng_val
-                )  # we use a fixed val batch and rng for validation, to avoid noise
-
-                ratio = l_val / min_val
-                if ratio > val_error_ratio:
-                    counter += 1
-                else:
-                    counter = 0
-
-                loss_array.append(l_train)
-                val_loss_array.append(l_val)
-
-                if l_val < min_val:
-                    min_val = l_val
-                    best_state = nnx.state(self.model)
-                    best_state_ema = nnx.state(self.ema_model)
+                l_val, ratio, min_val, best_state, best_state_ema, counter = (
+                    self._run_validation(
+                        val_step, batch_val, rng_val, min_val,
+                        best_state, best_state_ema, counter, val_error_ratio,
+                        loss_array, val_loss_array, l_train,
+                    )
+                )
 
             # print stats
             if j > 0 and j % 10 == 0:
@@ -779,18 +843,26 @@ class AbstractPipeline(abc.ABC):
             Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
         """
 
-        # TODO: we will have to implement a seed in the get sampler method once we enable latent diffusion, as it is needed for the encoder
-        # Possibly fixed by passing the kwargs, which should include the encoder_key
-        sampler = self.get_sampler(x_o, *args, **kwargs)
-        batched_sampler = _get_batch_sampler(
-            sampler,
-            ncond=x_o.shape[0],
-            chunk_size=chunk_size,
-            show_progress_bars=show_progress_bars,
-        )
+        # Build the sampler once using the first condition for shape.
+        # The sampler's JIT compilation traces model_extras by shape/dtype,
+        # so calling it with different cond values (same shape) reuses the
+        # compiled function — no recompilation per condition.
+        sampler = self.get_sampler(x_o[0:1], *args, **kwargs)
 
-        keys = jax.random.split(key, nsamples)
+        # Retrieve the default extras that get_sampler baked in, then swap
+        # cond for each condition in the loop below.
+        B = x_o.shape[0]
+        keys_per_cond = jax.random.split(key, B)
 
-        res = batched_sampler(keys)
+        results = []
+        for i in range(B):
+            cond_i = _expand_dims(x_o[i : i + 1])
+            extras_i = {
+                "cond": cond_i,
+                "obs_ids": self.obs_ids,
+                "cond_ids": self.cond_ids,
+            }
+            samples_i = sampler(keys_per_cond[i], nsamples, model_extras=extras_i)
+            results.append(samples_i)
 
-        return res  # shape (nsamples, batch_size_cond, dim_obs, ch_obs)
+        return jnp.stack(results, axis=1)  # (nsamples, B, dim_obs, ch_obs)

@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable, Optional, Sequence, Tuple, Union, Any
 
 import jax
@@ -57,7 +58,7 @@ class EDMSolver(Solver):
         nsteps: int = 18,
         method: str = "Heun",
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        static_model_kwargs: dict = {},
         solver_params: Optional[dict] = {},
         solver_scheduler: Optional[Any] = None,
     ) -> Callable:
@@ -78,8 +79,10 @@ class EDMSolver(Solver):
                 Integration method.
             return_intermediates : bool
                 Whether to return intermediate steps.
-            model_extras : dict
-                Additional model arguments.
+            static_model_kwargs : dict
+                Static model arguments baked into the sampler.
+                Condition-dependent data should be passed at call time
+                via ``model_extras``.
             solver_params : Optional[dict]
                 Additional solver parameters.
             solver_scheduler : Optional[Any]
@@ -88,7 +91,7 @@ class EDMSolver(Solver):
         Returns
         -------
             Callable
-                Sampler function.
+                ``sample(key, x_init, model_extras={})`` sampler function.
         """
         if solver_scheduler is None:
             solver_scheduler = self.path.scheduler
@@ -96,7 +99,15 @@ class EDMSolver(Solver):
         if solver_scheduler.name == "EDM":
             sampler_ = edm_sampler
         else:
-            sampler_ = edm_ablation_sampler
+            # Bind the training scheduler as denoise_scheduler so the model
+            # is always called with the preconditioning it was trained with.
+            # Use a lambda (not partial) to insert denoise_scheduler in the
+            # correct positional slot while keeping the same call signature
+            # as edm_sampler: (sched, model, x_1, **kw).
+            _denoise_sched = self.path.scheduler
+            sampler_ = lambda sched, model, x_1, **kw: edm_ablation_sampler(
+                sched, _denoise_sched, model, x_1, **kw
+            )
 
         if cfg_scale is not None:
             raise NotImplementedError(
@@ -109,7 +120,7 @@ class EDMSolver(Solver):
         S_noise = solver_params.get("S_noise", 1)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array) -> Array:
+        def sample(key: Array, x_init: Array, model_extras={}) -> Array:
             return sampler_(
                 solver_scheduler,
                 self.score_model,
@@ -124,7 +135,7 @@ class EDMSolver(Solver):
                 S_max=S_max,
                 S_noise=S_noise,
                 method=method,
-                model_kwargs=model_extras,
+                model_kwargs={**static_model_kwargs, **model_extras},
             )
 
         return sample
@@ -165,7 +176,7 @@ class EDMSolver(Solver):
             return_intermediates : bool
                 Whether to return intermediate steps.
             model_extras : dict
-                Additional model arguments.
+                Runtime model extras (e.g. ``cond``, ``obs_ids``).
             solver_params : Optional[dict]
                 Additional solver parameters.
             solver_scheduler : Optional[Any]
@@ -183,8 +194,7 @@ class EDMSolver(Solver):
             nsteps=nsteps,
             method=method,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
             solver_params=solver_params,
             solver_scheduler=solver_scheduler,
         )
-        return sample(key, x_init)
+        return sample(key, x_init, model_extras=model_extras)

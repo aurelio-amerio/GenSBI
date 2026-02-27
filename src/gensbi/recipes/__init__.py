@@ -10,6 +10,11 @@ from .joint_pipeline import JointDiffusionPipeline, JointFlowPipeline, JointSMPi
 from .conditional_pipeline import ConditionalFlowPipeline, ConditionalDiffusionPipeline, ConditionalSMPipeline
 from .unconditional_pipeline import UnconditionalFlowPipeline, UnconditionalDiffusionPipeline, UnconditionalSMPipeline
 
+# Unified pipelines (Phase 2)
+from .conditional_pipeline import ConditionalPipeline
+from .joint_pipeline import JointPipeline
+from .unconditional_pipeline import UnconditionalPipeline
+
 
 __all__ = [
     "SimformerFlowPipeline",
@@ -31,6 +36,11 @@ __all__ = [
     "UnconditionalFlowPipeline",
     "UnconditionalDiffusionPipeline",
     "UnconditionalSMPipeline",
+
+    # Unified pipelines (Phase 2)
+    "ConditionalPipeline",
+    "JointPipeline",
+    "UnconditionalPipeline",
 
     "VAE1DPipeline",
     "VAE2DPipeline",

@@ -331,53 +331,11 @@ def _parse_range(range_arg, ndim):
 #     return fig, axes
 
 
-def _plot_marginals_seaborn(
-    data,
-    plot_levels=True,
-    labels=None,
-    gridsize=15,
-    range=None,
-    hexbin_kwargs={},
-    histplot_kwargs={},
-    true_param=None,
+def _plot_lower_triangle(
+    axes, data, ndim, gridsize, cmap, color, axis_ranges,
+    plot_levels, true_param, hexbin_kwargs, fontsize, labels,
 ):
-    data = np.array(data)
-    if true_param is not None:
-        true_param = np.array(true_param)
-
-    ndim = data.shape[1]
-    fontsize = 12
-
-    if labels is None:
-        labels = [f"$\\theta_{{{i}}}$" for i in np.arange(1, data.shape[1] + 1)]
-    axis_ranges = _parse_range(range, ndim)
-    cmap = hexbin_kwargs.pop("cmap", transparent_cmap)
-    color = hexbin_kwargs.pop("color", [0, 0, 0, 0])
-    bins = histplot_kwargs.pop("bins", gridsize)
-    fill = histplot_kwargs.pop("fill", True)
-    color_hist = histplot_kwargs.pop("color", hist_color)
-
-    grid_kw = {}
-    if ndim == 2:
-        grid_kw = {"width_ratios": [6, 1], "height_ratios": [1, 6]}
-
-    fig, axes = plt.subplots(
-        ndim, ndim, figsize=(2.5 * ndim, 2.5 * ndim), gridspec_kw=grid_kw
-    )
-
-    # Hide upper triangle and set axis properties
-    for i in np.arange(ndim):
-        for j in np.arange(ndim):
-            if i < j:
-                axes[i, j].set_visible(False)
-            if i != ndim - 1:
-                axes[i, j].set_xticklabels([])
-                axes[i, j].set_xlabel("")
-            if j != 0 and j != i:
-                axes[i, j].set_yticklabels([])
-                axes[i, j].set_ylabel("")
-
-    # Lower triangle: hexbin and kde
+    """Plot hexbin + KDE contours on the lower-triangle axes."""
     for i in np.arange(1, ndim):
         for j in np.arange(i):
             ax = axes[i, j]
@@ -438,16 +396,20 @@ def _plot_marginals_seaborn(
             if j == 0:
                 ax.set_ylabel(labels[i], fontsize=fontsize)
 
-    # diagonal: histograms
+
+def _plot_diagonal_histograms(
+    axes, data, ndim, bins, color_hist, fill, axis_ranges,
+    true_param, histplot_kwargs, fontsize, labels,
+):
+    """Plot marginal histograms along the diagonal axes."""
     for i in np.arange(ndim):
         ax = axes[i, i]
         x_data = data[:, i]
         binrange = axis_ranges[i] if axis_ranges[i] else None
 
-        # 1. Determine orientation once
+        # Determine orientation: for 2D case, bottom-right diagonal is rotated
         is_rotated = ndim == 2 and i == 1
 
-        # 2. Set plot parameters based on orientation
         hist_params = {
             "bins": bins,
             "color": color_hist,
@@ -461,10 +423,8 @@ def _plot_marginals_seaborn(
         else:
             hist_params["x"] = x_data
 
-        # 3. Make a single, clean plot call
         sns.histplot(ax=ax, **hist_params)
 
-        # 4. Handle limits and true values based on orientation
         if is_rotated:
             if true_param is not None:
                 ax.axhline(
@@ -482,12 +442,11 @@ def _plot_marginals_seaborn(
                 ax.set_xlim(axis_ranges[i])
             ax.autoscale(enable=True, axis="y", tight=False)
 
-        # 5. Handle labels with simplified logic
+        # Label handling
         ax.set_xlabel("")
-        ax.set_ylabel("")  # Default: no labels
+        ax.set_ylabel("")
         ax.set_yticklabels([])
         if ndim > 2:
-            # if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)
             if i == ndim - 1:
                 ax.set_xlabel(labels[i], fontsize=fontsize)
         if i != ndim - 1:
@@ -501,8 +460,64 @@ def _plot_marginals_seaborn(
             ax.set_xlabel("")
             ax.set_xticklabels([])
 
-    if ndim == 2:
 
+def _plot_marginals_seaborn(
+    data,
+    plot_levels=True,
+    labels=None,
+    gridsize=15,
+    range=None,
+    hexbin_kwargs={},
+    histplot_kwargs={},
+    true_param=None,
+):
+    data = np.array(data)
+    if true_param is not None:
+        true_param = np.array(true_param)
+
+    ndim = data.shape[1]
+    fontsize = 12
+
+    if labels is None:
+        labels = [f"$\\theta_{{{i}}}$" for i in np.arange(1, data.shape[1] + 1)]
+    axis_ranges = _parse_range(range, ndim)
+    cmap = hexbin_kwargs.pop("cmap", transparent_cmap)
+    color = hexbin_kwargs.pop("color", [0, 0, 0, 0])
+    bins = histplot_kwargs.pop("bins", gridsize)
+    fill = histplot_kwargs.pop("fill", True)
+    color_hist = histplot_kwargs.pop("color", hist_color)
+
+    grid_kw = {}
+    if ndim == 2:
+        grid_kw = {"width_ratios": [6, 1], "height_ratios": [1, 6]}
+
+    fig, axes = plt.subplots(
+        ndim, ndim, figsize=(2.5 * ndim, 2.5 * ndim), gridspec_kw=grid_kw
+    )
+
+    # Hide upper triangle and set axis properties
+    for i in np.arange(ndim):
+        for j in np.arange(ndim):
+            if i < j:
+                axes[i, j].set_visible(False)
+            if i != ndim - 1:
+                axes[i, j].set_xticklabels([])
+                axes[i, j].set_xlabel("")
+            if j != 0 and j != i:
+                axes[i, j].set_yticklabels([])
+                axes[i, j].set_ylabel("")
+
+    _plot_lower_triangle(
+        axes, data, ndim, gridsize, cmap, color, axis_ranges,
+        plot_levels, true_param, hexbin_kwargs, fontsize, labels,
+    )
+
+    _plot_diagonal_histograms(
+        axes, data, ndim, bins, color_hist, fill, axis_ranges,
+        true_param, histplot_kwargs, fontsize, labels,
+    )
+
+    if ndim == 2:
         y_ticks = axes[0, 0].get_yticks()
         y_ticks = y_ticks[y_ticks > 0]
         axes[0, 0].set_yticks(y_ticks)

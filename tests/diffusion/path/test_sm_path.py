@@ -23,8 +23,9 @@ class TestSMPath:
         path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
+        x_0 = jax.random.normal(key, x_1.shape)
         t = jnp.ones((4, 1))
-        sample = path.sample(key, x_1, t)
+        sample = path.sample(x_0, x_1, t)
         assert isinstance(sample, SMPathSample)
 
     def test_sample_shapes(self, sde_cls):
@@ -32,8 +33,9 @@ class TestSMPath:
         path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
+        x_0 = jax.random.normal(key, x_1.shape)
         t = jnp.ones((4, 1))
-        sample = path.sample(key, x_1, t)
+        sample = path.sample(x_0, x_1, t)
 
         assert sample.x_1.shape == (4, 3)
         assert sample.x_t.shape == (4, 3)
@@ -67,8 +69,9 @@ class TestSMPath:
         path = SMPath(scheduler)
         key = jax.random.PRNGKey(0)
         x_1 = jnp.ones((4, 3))
+        x_0 = jax.random.normal(key, x_1.shape)
         t = jnp.ones((4, 1))
-        sample = path.sample(key, x_1, t)
+        sample = path.sample(x_0, x_1, t)
         batch = sample.get_batch()
         assert len(batch) == 5
         assert batch[0] is sample.x_1
@@ -97,7 +100,8 @@ class TestSMPathLoss:
         # and THEN passes this 5-element tuple to loss_fn.
 
         key = jax.random.PRNGKey(0)
-        path_sample = path.sample(key, x_1, t)
+        x_0 = jax.random.normal(key, x_1.shape)
+        path_sample = path.sample(x_0, x_1, t)
         batch = path_sample.get_batch()
 
         def model(obs, t, **kwargs):
@@ -117,7 +121,8 @@ class TestSMPathLoss:
         t = jnp.ones((batch_size, 1))
 
         key = jax.random.PRNGKey(0)
-        path_sample = path.sample(key, x_1, t)
+        x_0 = jax.random.normal(key, x_1.shape)
+        path_sample = path.sample(x_0, x_1, t)
         batch = path_sample.get_batch()
 
         def model(obs, t, **kwargs):
@@ -137,7 +142,8 @@ class TestSMPathLoss:
         t = jnp.ones((batch_size, 1))
 
         key = jax.random.PRNGKey(0)
-        path_sample = path.sample(key, x_1, t)
+        x_0 = jax.random.normal(key, x_1.shape)
+        path_sample = path.sample(x_0, x_1, t)
         batch = path_sample.get_batch()
 
         mask = jnp.array([[True, False, False]] * batch_size)

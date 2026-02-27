@@ -5,29 +5,34 @@ description: Instructions for running pytest inside the gensbi mamba environment
 
 # Running Tests in GenSBI Environment
 
-When you need to run tests in this workspace, you MUST use `pytest` prefixed with `mamba run -n gensbi`. 
+When you need to run tests in this workspace, follow this two-step approach:
 
-By default, we use `pytest-xdist` to run tests in parallel. Use the `-n 2` flag to automatically detect the number of available CPUs.
+## Preferred: `mamba run`
 
-## Usage
+Try this first. By default, tests run in parallel via `pytest-xdist` (`-n 2` in `pyproject.toml`):
 
-### Running All Tests
 ```bash
-mamba run -n gensbi pytest -n 2
+mamba run -n gensbi pytest tests/ -x --tb=short
+mamba run -n gensbi pytest tests/test_file.py -x --tb=short
 ```
 
-### Running a Specific Test File
+## Fallback: explicit activation
+
+If `mamba run` fails (e.g. unrecognized arguments, wrong env), deactivate any nested environments and activate explicitly:
+
 ```bash
-mamba run -n gensbi pytest -n 2 tests/test_file.py
+mamba deactivate && mamba deactivate && mamba activate gensbi
+pytest tests/ -x --tb=short
 ```
 
-### Running with Coverage
-```bash
-mamba run -n gensbi pytest -n 2 --cov=src
-```
+This is less formally correct but always works.
 
-### When to Disable Parallelism
-If you need to debug a test or see stdout more clearly, you can omit `-n 2`:
+## Other options
+
 ```bash
-mamba run -n gensbi pytest tests/test_file.py -s
+# With coverage
+pytest --cov=src tests/
+
+# Debug mode (no parallelism, see stdout)
+pytest tests/test_file.py -s
 ```

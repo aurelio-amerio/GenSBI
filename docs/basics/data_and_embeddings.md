@@ -76,7 +76,7 @@ GenSBI supports several embedding strategies via the `id_embedding_strategy` par
 
 ### Initialization Example
 
-When using one of the default pipelines, like the `ConditionalFlowPipeline`, **ID initialization is handled automatically** based on your `dims` and `id_embedding_strategy`.
+When using one of the default pipelines, like the `ConditionalPipeline`, **ID initialization is handled automatically** based on your `dims` and `id_embedding_strategy`.
 
 However, if you are using the models directly or need custom handling, here is how to initialize the IDs for both observations and conditions.
 
@@ -108,13 +108,14 @@ print(f"Cond IDs shape: {cond_ids.shape}")
 
 ### Automatic Pipeline Handling
 
-If you use the recipes (e.g., `ConditionalFlowPipeline`), you simply specify the structure:
+If you use the recipes (e.g., `ConditionalPipeline`), you simply specify the structure:
 
 ```python
-pipeline = ConditionalFlowPipeline(
+pipeline = ConditionalPipeline(
     model=...,
     dim_obs=5,                     # 5 tokens
     dim_cond=(64, 64),             # Image dimensions
+    method = FlowMatchingMethod(), # Flow Matching
     id_embedding_strategy=("absolute", "rope2d"), # Obs=Absolute, Cond=RoPE 2D
     ...
 )

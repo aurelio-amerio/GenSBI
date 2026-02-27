@@ -1,9 +1,9 @@
-
 import pytest
 import jax
 import jax.numpy as jnp
 from flax import nnx
-from gensbi.diffusion.solver.edm_samplers import edm_sampler
+from gensbi.diffusion.solver.edm_samplers import edm_sampler, edm_ablation_sampler
+from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
 
 
 class MockSDE:
@@ -143,7 +143,9 @@ def test_edm_sampler_conditioning(mock_sde, mock_model):
     masked_out = out * mask
     expected_masked = value * mask
 
-    assert jnp.allclose(masked_out, expected_masked), "Conditioned values do not match expected values"
+    assert jnp.allclose(
+        masked_out, expected_masked
+    ), "Conditioned values do not match expected values"
 
     # Check unmasked positions are not all equal to condition_value (sanity check)
     # Since model returns input, and we add noise, unmasked values should drift
@@ -151,4 +153,145 @@ def test_edm_sampler_conditioning(mock_sde, mock_model):
     # Then noise added.
     unmasked_out = out * (1 - mask)
     # It shouldn't be all zeros either because of noise
-    assert not jnp.allclose(unmasked_out, 0.0), "Unmasked values should not be zero due to noise"
+    assert not jnp.allclose(
+        unmasked_out, 0.0
+    ), "Unmasked values should not be zero due to noise"
+
+
+# ---------------------------------------------------------------------------
+# edm_ablation_sampler tests
+# ---------------------------------------------------------------------------
+
+
+class MockDenoiseModel(nnx.Module):
+    """Mock model compatible with BaseSDE.denoise preconditioning."""
+
+    def __call__(self, *, obs, t, **kwargs):
+        return obs
+
+
+@pytest.fixture
+def mock_denoise_model():
+    return MockDenoiseModel()
+
+
+@pytest.mark.parametrize(
+    "sampling_scheduler_cls",
+    [VEEdmScheduler, VPEdmScheduler, EDMScheduler],
+)
+def test_ablation_sampler_runs(sampling_scheduler_cls, mock_denoise_model):
+    """Test that edm_ablation_sampler runs with each scheduler for sampling
+    dynamics while using EDMScheduler for denoising (preconditioning)."""
+    sampling_scheduler = sampling_scheduler_cls()
+    denoise_scheduler = EDMScheduler()
+
+    x_1 = jnp.ones((4, 3))
+    key = jax.random.PRNGKey(0)
+
+    out = edm_ablation_sampler(
+        sampling_scheduler,
+        denoise_scheduler,
+        mock_denoise_model,
+        x_1,
+        key=key,
+        n_steps=5,
+        S_churn=0,
+        method="Heun",
+    )
+    assert out.shape == x_1.shape
+
+
+@pytest.mark.parametrize(
+    "sampling_scheduler_cls",
+    [VEEdmScheduler, VPEdmScheduler],
+)
+def test_ablation_sampler_deterministic(sampling_scheduler_cls, mock_denoise_model):
+    """Ablation sampler is deterministic when S_churn=0."""
+    sampling_scheduler = sampling_scheduler_cls()
+    denoise_scheduler = EDMScheduler()
+
+    x_1 = jnp.ones((4, 3))
+
+    out1 = edm_ablation_sampler(
+        sampling_scheduler,
+        denoise_scheduler,
+        mock_denoise_model,
+        x_1,
+        key=jax.random.PRNGKey(0),
+        n_steps=5,
+        S_churn=0,
+        S_noise=1,
+    )
+    out2 = edm_ablation_sampler(
+        sampling_scheduler,
+        denoise_scheduler,
+        mock_denoise_model,
+        x_1,
+        key=jax.random.PRNGKey(1),
+        n_steps=5,
+        S_churn=0,
+        S_noise=1,
+    )
+    assert jnp.isclose(
+        out1, out2, rtol=1e-5
+    ).all(), f"Expected deterministic output, got diff {jnp.max(jnp.abs((out1 - out2)/out1))}"
+
+
+@pytest.mark.parametrize(
+    "sampling_scheduler_cls",
+    [VEEdmScheduler, VPEdmScheduler],
+)
+def test_ablation_sampler_stochastic(sampling_scheduler_cls, mock_denoise_model):
+    """Ablation sampler is stochastic when S_churn > 0."""
+    sampling_scheduler = sampling_scheduler_cls()
+    denoise_scheduler = EDMScheduler()
+
+    x_1 = jnp.ones((4, 3))
+
+    out1 = edm_ablation_sampler(
+        sampling_scheduler,
+        denoise_scheduler,
+        mock_denoise_model,
+        x_1,
+        key=jax.random.PRNGKey(0),
+        n_steps=5,
+        S_churn=10.0,
+        S_min=0.0,
+        S_max=200.0,
+        S_noise=1.0,
+    )
+    out2 = edm_ablation_sampler(
+        sampling_scheduler,
+        denoise_scheduler,
+        mock_denoise_model,
+        x_1,
+        key=jax.random.PRNGKey(1),
+        n_steps=5,
+        S_churn=10.0,
+        S_min=0.0,
+        S_max=200.0,
+        S_noise=1.0,
+    )
+    diff = jnp.max(jnp.abs(out1 - out2))
+    assert diff > 1e-3, f"Expected stochastic output, got diff {diff}"
+
+
+def test_ablation_sampler_euler(mock_denoise_model):
+    """Ablation sampler works with Euler method."""
+    sampling_scheduler = VEEdmScheduler()
+    denoise_scheduler = EDMScheduler()
+
+    x_1 = jnp.ones((4, 3))
+    key = jax.random.PRNGKey(0)
+
+    out = edm_ablation_sampler(
+        sampling_scheduler,
+        denoise_scheduler,
+        mock_denoise_model,
+        x_1,
+        key=key,
+        n_steps=5,
+        S_churn=0,
+        method="Euler",
+    )
+    assert out.shape == x_1.shape

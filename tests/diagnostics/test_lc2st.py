@@ -109,7 +109,7 @@ def test_lc2st_init_validation():
         LC2ST(thetas, xs, posterior_samples, classifier="invalid_clf")
         
     # Test validation of classifier class
-    with pytest.raises(AssertionError, match="classier must either be a string or a subclass"):
+    with pytest.raises(AssertionError, match="classifier must either be a string or a subclass"):
         LC2ST(thetas, xs, posterior_samples, classifier=dict) # type: ignore
 
 

@@ -130,7 +130,7 @@ class BaseFmSDESolver(Solver):
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        static_model_kwargs: dict = {},
     ) -> Callable:
         """Stochastic sampler for the SDE.
 
@@ -151,14 +151,16 @@ class BaseFmSDESolver(Solver):
                 The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
             return_intermediates : bool, optional
                 If True then return intermediate time steps according to time_grid. Defaults to False.
-            model_extras : dict
-                Additional input for the model.
+            static_model_kwargs : dict
+                Static keyword arguments baked into the drift/diffusion
+                at creation time.  Condition-dependent data should be
+                passed at call time via ``model_extras``.
 
         Returns
         -------
             Callable
-                A function ``sample(x_init, key)`` that returns sampled trajectories
-                of shape ``(batch, features, channels)``.
+                ``sampler(x_init, key, model_extras={})`` that returns
+                sampled trajectories of shape ``(batch, features, channels)``.
         """
         solvers = {
             "Euler": diffrax.Euler,
@@ -181,7 +183,7 @@ class BaseFmSDESolver(Solver):
         else:
             levy_area = diffrax.SpaceTimeLevyArea
 
-        drift = self.get_f_tilde(**model_extras)  # (t, x, args) -> drift
+        drift = self.get_f_tilde()  # (t, x, args) -> drift; no extras baked in
         diff = self.get_g_tilde()  # (t, x, args) -> diffusion matrix
 
         # Time direction: forward, from noise (t=eps) to data (t=1)
@@ -207,59 +209,59 @@ class BaseFmSDESolver(Solver):
         flat_dim = self.flat_dim
         sample_shape = self.sample_shape
 
-        def sample_one(key_i, y0_flat):
-            """Integrate one sample. State is flat (flat_dim,)."""
-
-            brownian_motion = VirtualBrownianTree(
-                t0,
-                t1,
-                tol=1e-3,
-                shape=(flat_dim,),
-                key=key_i,
-                levy_area=levy_area,
-            )
-
-            # Wrap drift: unflatten state, add batch dim for model, reflatten
-            def drift_flat(t, y_flat, drift_args):
-                y = y_flat.reshape(sample_shape)
-                y_batched = y[None, ...]  # (1, features, channels)
-                result = drift(t, y_batched, drift_args)
-                result = jnp.squeeze(result, axis=0)  # (features, channels)
-                return result.reshape(flat_dim)
-
-            # Wrap diffusion: returns (flat_dim, flat_dim) diagonal matrix
-            def diff_flat(t, y_flat, diff_args):
-                return diff(t, y_flat, diff_args)
-
-            terms = MultiTerm(
-                ODETerm(drift_flat),
-                ControlTerm(diff_flat, brownian_motion),
-            )
-
-            if return_intermediates:
-                saveat = diffrax.SaveAt(ts=time_grid)
-            else:
-                saveat = diffrax.SaveAt(t1=True)
-
-            sol = diffeqsolve(
-                terms,
-                solver,
-                t0,
-                t1,
-                dt0=dt0,
-                y0=y0_flat,
-                args=None,
-                stepsize_controller=stepsize_controller,
-                saveat=saveat,
-            )
-            val = sol.ys  # (n_saves, flat_dim)
-            return val
-
         # We remove static_argnums because now nsamples is implicit in x_init shape
         @jit
-        def sampler(x_init, key):
+        def sampler(x_init, key, model_extras={}):
             # x_init shape: (batch, features, channels)
             nsamples = x_init.shape[0]
+
+            def sample_one(key_i, y0_flat):
+                """Integrate one sample. State is flat (flat_dim,)."""
+
+                brownian_motion = VirtualBrownianTree(
+                    t0,
+                    t1,
+                    tol=1e-3,
+                    shape=(flat_dim,),
+                    key=key_i,
+                    levy_area=levy_area,
+                )
+
+                # Wrap drift: unflatten state, add batch dim for model, reflatten
+                def drift_flat(t, y_flat, drift_args):
+                    y = y_flat.reshape(sample_shape)
+                    y_batched = y[None, ...]  # (1, features, channels)
+                    result = drift(t, y_batched, drift_args)
+                    result = jnp.squeeze(result, axis=0)  # (features, channels)
+                    return result.reshape(flat_dim)
+
+                # Wrap diffusion: returns (flat_dim, flat_dim) diagonal matrix
+                def diff_flat(t, y_flat, diff_args):
+                    return diff(t, y_flat, diff_args)
+
+                terms = MultiTerm(
+                    ODETerm(drift_flat),
+                    ControlTerm(diff_flat, brownian_motion),
+                )
+
+                if return_intermediates:
+                    saveat = diffrax.SaveAt(ts=time_grid)
+                else:
+                    saveat = diffrax.SaveAt(t1=True)
+
+                sol = diffeqsolve(
+                    terms,
+                    solver,
+                    t0,
+                    t1,
+                    dt0=dt0,
+                    y0=y0_flat,
+                    args=model_extras,
+                    stepsize_controller=stepsize_controller,
+                    saveat=saveat,
+                )
+                val = sol.ys  # (n_saves, flat_dim)
+                return val
 
             # flatten x_init
             # x_init: (B, F, C) -> (B, F*C)
@@ -328,7 +330,7 @@ class BaseFmSDESolver(Solver):
             return_intermediates : bool
                 Return intermediates.
             model_extras : dict
-                Model extras.
+                Runtime model extras (e.g. ``cond``, ``obs_ids``).
             key : jax.random.PRNGKey
                 Random key. Required for SDE.
 
@@ -347,12 +349,11 @@ class BaseFmSDESolver(Solver):
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
-            model_extras=model_extras,
         )
-        return sampler(x_init, key)
+        return sampler(x_init, key, model_extras=model_extras)
 
 
-class ZeroEnds(BaseFmSDESolver):
+class ZeroEndsSolver(BaseFmSDESolver):
     """
     ZeroEnds SDE solver for flow matching.
 
@@ -405,7 +406,7 @@ class ZeroEnds(BaseFmSDESolver):
         return g_tilde
 
 
-class NonSingular(BaseFmSDESolver):
+class NonSingularSolver(BaseFmSDESolver):
     """
     NonSingular SDE solver for flow matching.
 

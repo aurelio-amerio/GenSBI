@@ -158,7 +158,8 @@ def edm_sampler(
 
 
 def edm_ablation_sampler(
-    sde,
+    sampling_scheduler,
+    denoise_scheduler,
     model,
     x_1,
     *,
@@ -174,6 +175,54 @@ def edm_ablation_sampler(
     method="Heun",
     model_kwargs={},
 ):
+    """Generalized ablation sampler for EDM diffusion models.
+
+    Decouples the **sampling schedule** (time discretization, scaling) from
+    the **preconditioning** (denoiser wrapper).  This allows sampling an
+    EDM-trained model using VP or VE noise schedules without changing the
+    model's internal preconditioning.
+
+    Parameters
+    ----------
+    sampling_scheduler
+        Scheduler that controls the sampling dynamics: ``sigma``, ``s``,
+        ``sigma_deriv``, ``s_deriv``, ``sigma_inv``, and ``timesteps``.
+    denoise_scheduler
+        Scheduler that provides the ``denoise`` method (preconditioning:
+        ``c_skip``, ``c_in``, ``c_out``, ``c_noise``).  This must match
+        the scheduler used during training.
+    model : Callable
+        Model function (raw network, without preconditioning).
+    x_1 : Array
+        Initial latent noise.
+    key : Array
+        JAX random key.
+    condition_mask : Optional[Array]
+        Mask for conditioning.
+    condition_value : Optional[Array]
+        Value for conditioning.
+    return_intermediates : bool
+        Whether to return intermediate steps.
+    n_steps : int
+        Number of sampling steps.
+    S_churn : float
+        Stochasticity strength.
+    S_min : float
+        Minimum sigma for stochastic noise injection.
+    S_max : float
+        Maximum sigma for stochastic noise injection.
+    S_noise : float
+        Noise inflation factor.
+    method : str
+        Integration method (``"Euler"`` or ``"Heun"``).
+    model_kwargs : dict
+        Additional model arguments.
+
+    Returns
+    -------
+    Array
+        Sampled output.
+    """
 
     assert method in ["Euler", "Heun"], f"Unknown method: {method}"
     if condition_mask is not None:
@@ -186,6 +235,8 @@ def edm_ablation_sampler(
 
     # Time step discretization.
     step_indices = jnp.arange(n_steps)
+
+    sde = sampling_scheduler
 
     t_steps = sde.timesteps(step_indices, n_steps)
     t_steps = jnp.append(t_steps, 0)
@@ -210,11 +261,13 @@ def edm_ablation_sampler(
             lambda: jnp.minimum(S_churn / n_steps, jnp.sqrt(2) - 1),
             lambda: 0.0,
         )
-        t_hat = sde.sigma_inv(
-            sde.sigma(t_cur) + gamma * sde.sigma(t_cur)
-        )  # sigma at the specific time step
-        sqrt_arg = jnp.clip(
-            sde.sigma(t_hat) ** 2 - sde.sigma(t_cur) ** 2, min=0, max=None
+        t_hat = jnp.where(
+            gamma > 0, sde.sigma_inv(sde.sigma(t_cur) + gamma * sde.sigma(t_cur)), t_cur
+        )
+        sqrt_arg = jnp.where(
+            gamma > 0,
+            jnp.clip(sde.sigma(t_hat) ** 2 - sde.sigma(t_cur) ** 2, min=0, max=None),
+            0.0,
         )
         x_hat = sde.s(t_hat) / sde.s(t_cur) * x_curr + jnp.sqrt(sqrt_arg) * sde.s(
             t_hat
@@ -224,8 +277,11 @@ def edm_ablation_sampler(
         )  # Apply conditioning.
         # Euler step.
         h = t_next - t_hat
-        denoised = sde.denoise(
-            model, x_hat / sde.s(t_hat), sde.sigma(t_hat)[..., None], **model_kwargs
+        denoised = denoise_scheduler.denoise(
+            model,
+            x_hat / sde.s(t_hat),
+            sde.sigma(t_hat)[..., None],
+            **model_kwargs,
         )
         d_cur = (
             sde.sigma_deriv(t_hat) / sde.sigma(t_hat)
@@ -240,7 +296,7 @@ def edm_ablation_sampler(
         if method == "Heun":
             # Apply 2nd order correction.
             def apply_2nd_order_correction():  # Function for i < (n_steps - 1)
-                denoised = sde.denoise(
+                denoised = denoise_scheduler.denoise(
                     model,
                     x_prime / sde.s(t_prime),
                     sde.sigma(t_prime)[..., None],
@@ -272,14 +328,9 @@ def edm_ablation_sampler(
             return (x_next, key), ()
 
     i = jnp.arange(n_steps)
-    # return one_step, x_next
 
     carry, x_scan = jax.lax.scan(one_step, (x_next, key), i)
     if return_intermediates:
         return x_scan
     else:
-        # if condition_mask is not None:
-        #     carry = jnp.where(condition_mask, condition_value, carry[0])
-        # else:
-        #     carry = carry[0]
         return carry[0]
