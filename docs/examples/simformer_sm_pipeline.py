@@ -127,7 +127,7 @@ params = SimformerParams(
 # We configure it with the model parameters, datasets, dimensions using a default training configuration.
 # We also specify the condition_mask_kind, which determines how conditioning is handled during training.
 training_config = SimformerSMPipeline.get_default_training_config()
-training_config["nsteps"] = 10000
+training_config["nsteps"] = 50000
 
 pipeline = SimformerSMPipeline(
     train_dataset_grain,

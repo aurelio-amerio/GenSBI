@@ -129,7 +129,7 @@ params = Flux1JointParams(
 # We configure it with the model parameters, datasets, dimensions using a default training configuration.
 # We also specify the condition_mask_kind, which determines how conditioning is handled during training.
 training_config = Flux1JointSMPipeline.get_default_training_config()
-training_config["nsteps"] = 10000
+training_config["nsteps"] = 50000
 
 pipeline = Flux1JointSMPipeline(
     train_dataset_grain,
@@ -182,7 +182,9 @@ plt.show()
 from gensbi.diffusion.solver import SMPFSolver
 
 samples_pf = pipeline.sample(
-    rngs.sample(), x_o, nsamples=100_000,
+    rngs.sample(),
+    x_o,
+    nsamples=100_000,
     solver=(SMPFSolver, {}),
 )
 samples_pf = unnormalize(samples_pf, means[:dim_obs], stds[:dim_obs])
