@@ -137,7 +137,7 @@ params = Flux1Params(
 # By default, it uses the VP (variance-preserving) SDE formulation.
 # We configure it with the model parameters, datasets, dimensions using a default training configuration.
 training_config = Flux1SMPipeline.get_default_training_config()
-training_config["nsteps"] = 10000
+training_config["nsteps"] = 50000
 
 pipeline = Flux1SMPipeline(
     train_dataset_grain,
@@ -188,7 +188,9 @@ plt.show()
 from gensbi.diffusion.solver import SMPFSolver
 
 samples_pf = pipeline.sample(
-    rngs.sample(), x_o, nsamples=100_000,
+    rngs.sample(),
+    x_o,
+    nsamples=100_000,
     solver=(SMPFSolver, {}),
 )
 samples_pf = unnormalize(samples_pf, means[:dim_obs], stds[:dim_obs])
