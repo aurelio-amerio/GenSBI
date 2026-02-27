@@ -91,12 +91,15 @@ download:
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_flux1joint/two_moons_flow_flux1joint.ipynb
 	curl -L -o notebooks/two_moons_flow_simformer.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/two_moons_flow_simformer.ipynb
-
+	curl -L -o notebooks/methods_and_samplers.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/methods_and_samplers.ipynb
+	
 	@echo "Downloading images to _static ..."
 	curl -L -o _static/animated_plot_samples_simformer.gif \
 		https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true
 	curl -L -o _static/animated_plot_posterior_simformer.gif \
 		https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_posterior_simformer.gif?raw=true
+
 
 	@echo "Done."
 

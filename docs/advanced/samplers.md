@@ -2,6 +2,10 @@
 
 GenSBI supports **Flow Matching** and **Diffusion** as generative methods. Diffusion comes in two flavors: **EDM** (modern, learns a denoiser) and **Score Matching** (classical, learns the score function). Each has its own set of solvers. This page explains how to choose between them and how to override the default solver when sampling.
 
+```{seealso}
+For a hands-on walkthrough that trains all three methods and compares every available solver, see the [Methods and Samplers notebook](/notebooks/methods_and_samplers).
+```
+
 ## Generative Methods
 
 A `GenerativeMethod` encapsulates the mathematical framework (path, loss, solver) used by a pipeline. You pass it when creating a unified pipeline:
@@ -33,6 +37,10 @@ pipeline = ConditionalPipeline(
 ## Solvers per Method
 
 Each method has a default solver and one or more alternatives. You can override the solver at sample time without retraining.
+
+```{tip}
+The [Methods and Samplers notebook](/notebooks/methods_and_samplers) demonstrates mixing and matching all the methods and solvers listed below on the same problem.
+```
 
 ### Flow Matching Solvers
 
@@ -72,7 +80,7 @@ EDM and Score Matching are both diffusion-based methods, but use different solve
 |--------|------|----------|-------------|
 | `EDMSolver` | Deterministic | ✅ Yes | Stochastic denoising sampler from Karras et al., 2022. |
 
-The EDM solver is always used for `DiffusionEDMMethod`. The scheduler variant (EDM, VP, VE) is set at **pipeline creation time** via `DiffusionEDMMethod(sde=...)`, not at sample time.
+The EDM solver is always used for `DiffusionEDMMethod`. The scheduler variant (EDM, VP, VE) is set at **pipeline creation time** via `DiffusionEDMMethod(sde=...)`. It is formally possible to sample with a different scheduler, but it is not currently recommended.
 
 ### Score Matching Solvers
 
@@ -104,7 +112,7 @@ from gensbi.flow_matching.solver import ZeroEndsSolver
 solver_kwargs = {
     "mu0": jnp.zeros((dim_obs, 1)),
     "sigma0": jnp.ones((dim_obs, 1)),
-    "alpha": 1.0,
+    "alpha": 0.2,
 }
 samples = pipeline.sample(key, x_o, nsamples=10_000, solver=(ZeroEndsSolver, solver_kwargs))
 
@@ -129,6 +137,7 @@ The solver override only affects sampling — it does **not** require retraining
 | `ScoreMatchingMethod` | `SMSolver` (reverse SDE) | `SMPFSolver` (probability flow ODE) |
 
 For working examples demonstrating these solvers, see:
-- [Flow Matching examples](../examples/flux1_flow_pipeline.py) — includes `ZeroEndsSolver` section
+<!-- - [Flow Matching examples](../examples/flux1_flow_pipeline.py) — includes `ZeroEndsSolver` section
 - [Score Matching examples](../examples/flux1_sm_pipeline.py) — includes `SMPFSolver` section
-- [Unified pipeline examples](../examples/conditional_pipeline.py) — shows method + solver selection
+- [Unified pipeline examples](../examples/conditional_pipeline.py) — shows method + solver selection -->
+- [Methods and Samplers notebook](/notebooks/methods_and_samplers) — interactive notebook covering all three methods and their solvers.
