@@ -533,7 +533,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.flux1</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_flux1_params</span><span class="p">,</span> <span class="n">parse_training_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1Params</span><span class="p">,</span> <span class="n">Flux1</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConditionalFlowPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConditionalPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi_examples.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">GravitationalWaves</span>
 
@@ -756,14 +757,15 @@
 
 <span class="c1"># the ConditionalFlowPipeline supports an arbitrary model (with the right interface), </span>
 <span class="c1"># so we can pass it our composite model</span>
-<span class="n">pipeline_latent</span> <span class="o">=</span> <span class="n">ConditionalFlowPipeline</span><span class="p">(</span>
+<span class="n">pipeline_latent</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
     <span class="n">model</span><span class="p">,</span>
     <span class="n">train_dataset_npe</span><span class="p">,</span>
     <span class="n">val_dataset_npe</span><span class="p">,</span>
     <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
-    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond_latent</span><span class="p">,</span>  <span class="c1"># Latent length</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond_latent</span><span class="p">,</span>       <span class="c1"># Latent length</span>
     <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
-    <span class="n">ch_cond</span><span class="o">=</span><span class="n">z_ch</span><span class="p">,</span>  <span class="c1"># Latent channels</span>
+    <span class="n">ch_cond</span><span class="o">=</span><span class="n">z_ch</span><span class="p">,</span>                   <span class="c1"># Latent channels</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">(),</span>  <span class="c1"># use flow matching</span>
     <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
 <span class="p">)</span>
 

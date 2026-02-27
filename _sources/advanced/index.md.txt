@@ -7,4 +7,5 @@ This section covers advanced usage patterns and customization options for GenSBI
 
 samplers
 custom_models
+/notebooks/methods_and_samplers
 ```

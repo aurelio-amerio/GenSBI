@@ -528,7 +528,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="c1"># gensbi</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConditionalFlowPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConditionalPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.flux1</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_flux1_params</span><span class="p">,</span> <span class="n">parse_training_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">patchify_2d</span>
 
@@ -759,7 +760,7 @@
 <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_dir</span><span class="p">,</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">)</span>
 <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
 
-<span class="n">pipeline_latent</span> <span class="o">=</span> <span class="n">ConditionalFlowPipeline</span><span class="p">(</span>
+<span class="n">pipeline_latent</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
     <span class="n">model</span><span class="p">,</span>
     <span class="n">train_dataset_npe</span><span class="p">,</span>
     <span class="n">val_dataset_npe</span><span class="p">,</span>
@@ -770,6 +771,7 @@
     <span class="p">),</span>  <span class="c1"># we are workin in the latent space of the vae</span>
     <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
     <span class="n">ch_cond</span><span class="o">=</span><span class="n">ch_cond_latent</span><span class="p">,</span>  <span class="c1"># conditioning is now in the latent space</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">(),</span> <span class="c1"># use flow matching</span>
     <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
     <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;rope2d&quot;</span><span class="p">),</span>
 <span class="p">)</span>

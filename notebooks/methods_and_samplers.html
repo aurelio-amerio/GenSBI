@@ -1,0 +1,1374 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Methods and Samplers in GenSBI &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/methods_and_samplers';</script>
+    <link rel="icon" href="../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Theoretical Overview" href="../theoretical_overview/index.html" />
+    <link rel="prev" title="Custom Models" href="../advanced/custom_models.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../getting_started/index.html">Quick Start</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/quick_start.html">15-minute quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="my_first_model.html">My First Model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../basics/index.html">Basics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../basics/overview.html">Conceptual Overview: How GenSBI is Structured</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/data_and_embeddings.html">Data, IDs, and Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/model_cards.html">Model Cards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/training.html">Training Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/inference.html">Inference Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/validation.html">Validation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basics/contributing.html">Contributing to GenSBI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../advanced/index.html">Advanced Topics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../advanced/samplers.html">Samplers and Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/custom_models.html">Custom Models</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Methods and Samplers in GenSBI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../theoretical_overview/index.html">Theoretical Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../theoretical_overview/flow.html">Flow Matching: A Short Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theoretical_overview/diffusion.html">EDM Diffusion Models: A Short Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/gensbi/index.html">API Documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/core/index.html">gensbi.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/core/diffusion_edm/index.html">gensbi.core.diffusion_edm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/core/flow_matching/index.html">gensbi.core.flow_matching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/core/generative_method/index.html">gensbi.core.generative_method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/core/score_matching/index.html">gensbi.core.score_matching</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/lc2st/index.html">gensbi.diagnostics.lc2st</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/marginal_coverage/index.html">gensbi.diagnostics.marginal_coverage</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/index.html">gensbi.diagnostics.metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/c2st/index.html">gensbi.diagnostics.metrics.c2st</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diagnostics/metrics/l1_l2/index.html">gensbi.diagnostics.metrics.l1_l2</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/sbc/index.html">gensbi.diagnostics.sbc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/tarp/index.html">gensbi.diagnostics.tarp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/diagnostics/utils/index.html">gensbi.diagnostics.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/diffusion/index.html">gensbi.diffusion</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diffusion/loss/index.html">gensbi.diffusion.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/loss/edm_loss/index.html">gensbi.diffusion.loss.edm_loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/loss/sm_loss/index.html">gensbi.diffusion.loss.sm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diffusion/path/index.html">gensbi.diffusion.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/edm_path/index.html">gensbi.diffusion.path.edm_path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/path/index.html">gensbi.diffusion.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/path_sample/index.html">gensbi.diffusion.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/scheduler/index.html">gensbi.diffusion.path.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/path/sm_path/index.html">gensbi.diffusion.path.sm_path</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/diffusion/solver/index.html">gensbi.diffusion.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/solver/edm_samplers/index.html">gensbi.diffusion.solver.edm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/solver/edm_solver/index.html">gensbi.diffusion.solver.edm_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/solver/sm_samplers/index.html">gensbi.diffusion.solver.sm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/diffusion/solver/sm_solver/index.html">gensbi.diffusion.solver.sm_solver</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/experimental/index.html">gensbi.experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/experimental/models/index.html">gensbi.experimental.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/experimental/models/autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/experimental/recipes/index.html">gensbi.experimental.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/experimental/recipes/vae_pipeline/index.html">gensbi.experimental.recipes.vae_pipeline</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/index.html">gensbi.flow_matching</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/loss/index.html">gensbi.flow_matching.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/loss/fm_loss/index.html">gensbi.flow_matching.loss.fm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/path/index.html">gensbi.flow_matching.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/affine/index.html">gensbi.flow_matching.path.affine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/path/index.html">gensbi.flow_matching.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/path_sample/index.html">gensbi.flow_matching.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/path/scheduler/index.html">gensbi.flow_matching.path.scheduler</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/solver/index.html">gensbi.flow_matching.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/solver/ode_solver/index.html">gensbi.flow_matching.solver.ode_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/solver/sde_solver_fm/index.html">gensbi.flow_matching.solver.sde_solver_fm</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/flow_matching/utils/index.html">gensbi.flow_matching.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/flow_matching/utils/utils/index.html">gensbi.flow_matching.utils.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/models/index.html">gensbi.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/embedding/index.html">gensbi.models.embedding</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/embedding/embedding/index.html">gensbi.models.embedding.embedding</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/flux1/index.html">gensbi.models.flux1</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1/layers/index.html">gensbi.models.flux1.layers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1/math/index.html">gensbi.models.flux1.math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1/model/index.html">gensbi.models.flux1.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/flux1joint/index.html">gensbi.models.flux1joint</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/flux1joint/model/index.html">gensbi.models.flux1joint.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/losses/index.html">gensbi.models.losses</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/losses/conditional/index.html">gensbi.models.losses.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/losses/joint/index.html">gensbi.models.losses.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/losses/unconditional/index.html">gensbi.models.losses.unconditional</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/simformer/index.html">gensbi.models.simformer</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/simformer/model/index.html">gensbi.models.simformer.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/simformer/transformer/index.html">gensbi.models.simformer.transformer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/wrappers/conditional/index.html">gensbi.models.wrappers.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/wrappers/joint/index.html">gensbi.models.wrappers.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/wrappers/unconditional/index.html">gensbi.models.wrappers.unconditional</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/recipes/index.html">gensbi.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/conditional_pipeline/index.html">gensbi.recipes.conditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/flux1/index.html">gensbi.recipes.flux1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/pipeline/index.html">gensbi.recipes.pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/simformer/index.html">gensbi.recipes.simformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/unconditional_pipeline/index.html">gensbi.recipes.unconditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/recipes/utils/index.html">gensbi.recipes.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/gensbi/solver/index.html">gensbi.solver</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../api/gensbi/utils/index.html">gensbi.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/math/index.html">gensbi.utils.math</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/misc/index.html">gensbi.utils.misc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/model_wrapping/index.html">gensbi.utils.model_wrapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/gensbi/utils/plotting/index.html">gensbi.utils.plotting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../documentation/index.html" class="nav-link">Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../advanced/index.html" class="nav-link">Advanced Topics</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Methods and Samplers in GenSBI</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="methods-and-samplers-in-gensbi">
+<h1>Methods and Samplers in GenSBI<a class="headerlink" href="#methods-and-samplers-in-gensbi" title="Link to this heading">#</a></h1>
+<p>GenSBI supports three generative methods for simulation-based inference:</p>
+<ol class="arabic simple">
+<li><p><strong>Flow Matching</strong> — learns a velocity field and integrates an ODE from noise to data.</p></li>
+<li><p><strong>EDM Diffusion</strong> — learns a denoiser in σ-space (Karras et al., 2022).</p></li>
+<li><p><strong>Score Matching</strong> — learns the score function ∇ log p_t(x) (Song et al., 2021).</p></li>
+</ol>
+<p>Each method has a default solver and one or more alternatives that can be swapped
+at <strong>sample time</strong> without retraining. This example trains one model per method and
+demonstrates all available sampling strategies.</p>
+<p>We use the unified <code class="docutils literal notranslate"><span class="pre">ConditionalPipeline</span></code> API throughout, which is model-agnostic
+and parameterized by a <code class="docutils literal notranslate"><span class="pre">GenerativeMethod</span></code> object.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># automatically install dependencies if using Colab</span>
+<span class="k">try</span><span class="p">:</span> <span class="c1">#check if we are using colab, if so install all the required software</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>
+    <span class="n">colab</span><span class="o">=</span><span class="kc">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">colab</span><span class="o">=</span><span class="kc">False</span>
+
+<span class="k">if</span> <span class="n">colab</span><span class="p">:</span> <span class="c1"># you may have to restart the runtime after installing the packages</span>
+    <span class="o">%</span><span class="k">pip</span> install --quiet &quot;gensbi[cuda12, examples] @ git+https://github.com/aurelio-amerio/GenSBI&quot;
+    <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/aurelio-amerio/GenSBI-examples
+    <span class="o">%</span><span class="k">cd</span> GenSBI-examples/examples/methods_and_samplers
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Installing build dependencies ... ?25l?25hdone
+  Getting requirements to build wheel ... ?25l?25hdone
+  Preparing metadata (pyproject.toml) ... ?25l?25hdone
+fatal: destination path &#39;GenSBI-examples&#39; already exists and is not an empty directory.
+/content/GenSBI-examples/examples/methods_and_samplers
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="c1"># Set JAX backend (use &#39;cuda&#39; for GPU, &#39;cpu&#39; otherwise)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">grain</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpyro</span><span class="w"> </span><span class="kn">import</span> <span class="n">distributions</span> <span class="k">as</span> <span class="n">dist</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="c1"># Unified pipeline and generative methods</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConditionalPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span><span class="p">,</span> <span class="n">DiffusionEDMMethod</span><span class="p">,</span> <span class="n">ScoreMatchingMethod</span>
+
+<span class="c1"># Model</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1</span><span class="p">,</span> <span class="n">Flux1Params</span>
+
+<span class="c1"># Plotting</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="shared-setup">
+<h2>Shared Setup<a class="headerlink" href="#shared-setup" title="Link to this heading">#</a></h2>
+<p>We use a simple 3D toy problem throughout: the simulator draws parameters θ from a
+uniform prior and produces observations x = θ + 1 + noise. This is identical to the
+<code class="docutils literal notranslate"><span class="pre">conditional_pipeline.py</span></code> example, so we can focus on the methods and samplers.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">theta_prior</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span>
+    <span class="n">low</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">2.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.0</span><span class="p">]),</span> <span class="n">high</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">])</span>
+<span class="p">)</span>
+
+<span class="n">dim_obs</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">dim_cond</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">simulator</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
+    <span class="n">theta_key</span><span class="p">,</span> <span class="n">sample_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">thetas</span> <span class="o">=</span> <span class="n">theta_prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">theta_key</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,))</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">thetas</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">sample_key</span><span class="p">,</span> <span class="n">thetas</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span>
+
+    <span class="n">thetas</span> <span class="o">=</span> <span class="n">thetas</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">xs</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+
+    <span class="c1"># For the conditional pipeline, thetas (observations) come first</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">thetas</span><span class="p">,</span> <span class="n">xs</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train_data</span> <span class="o">=</span> <span class="n">simulator</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="mi">100_000</span><span class="p">)</span>
+<span class="n">val_data</span> <span class="o">=</span> <span class="n">simulator</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2000</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Normalizing the data to zero mean and unit variance is important for stable training.</span>
+<span class="n">means</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">stds</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">means</span><span class="p">)</span> <span class="o">/</span> <span class="n">stds</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">unnormalize</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">data</span> <span class="o">*</span> <span class="n">stds</span> <span class="o">+</span> <span class="n">means</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The conditional pipeline expects each batch to be a tuple of (observations, conditions).</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">split_obs_cond</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">data</span><span class="p">[:,</span> <span class="p">:</span><span class="n">dim_obs</span><span class="p">],</span>
+        <span class="n">data</span><span class="p">[:,</span> <span class="n">dim_obs</span><span class="p">:],</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">256</span>
+
+<span class="n">train_dataset_grain</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">grain</span><span class="o">.</span><span class="n">MapDataset</span><span class="o">.</span><span class="n">source</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">train_data</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">to_iter_dataset</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">split_obs_cond</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">val_dataset_grain</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">grain</span><span class="o">.</span><span class="n">MapDataset</span><span class="o">.</span><span class="n">source</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">val_data</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">to_iter_dataset</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">split_obs_cond</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We generate one observation from the simulator and extract the true parameters</span>
+<span class="c1"># and the conditioning data x_o. This will be reused across all methods.</span>
+<span class="n">new_sample</span> <span class="o">=</span> <span class="n">simulator</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">true_theta</span> <span class="o">=</span> <span class="n">new_sample</span><span class="p">[:,</span> <span class="p">:</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:]</span>
+
+<span class="n">new_sample_norm</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">new_sample</span><span class="p">,</span> <span class="n">means</span><span class="p">,</span> <span class="n">stds</span><span class="p">)</span>
+<span class="n">x_o</span> <span class="o">=</span> <span class="n">new_sample_norm</span><span class="p">[:,</span> <span class="n">dim_obs</span><span class="p">:,</span> <span class="p">:]</span>
+
+<span class="c1"># Plotting range (same for all methods)</span>
+<span class="n">plot_range</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="section-1-flow-matching">
+<h2>Section 1: Flow Matching<a class="headerlink" href="#section-1-flow-matching" title="Link to this heading">#</a></h2>
+<p><strong>Flow Matching</strong> learns a velocity field <span class="math notranslate nohighlight">\(v_\theta(t, x)\)</span> that transports samples
+from a simple prior (Gaussian noise at <span class="math notranslate nohighlight">\(t=0\)</span>) to the data distribution (at <span class="math notranslate nohighlight">\(t=1\)</span>)
+via an ordinary differential equation (ODE).</p>
+<ul class="simple">
+<li><p><strong>Default solver</strong>: <code class="docutils literal notranslate"><span class="pre">ODESolver</span></code> — deterministic ODE integration (Euler or Dopri5).</p></li>
+<li><p><strong>Alternative solvers</strong> (SDE-based, stochastic):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZeroEndsSolver</span></code> — diffusion vanishes at both time endpoints (arXiv:2410.02217).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NonSingularSolver</span></code> — non-singular diffusion coefficient (arXiv:2410.02217).</p></li>
+</ul>
+</li>
+</ul>
+<p>The SDE solvers can sometimes improve sample diversity at the cost of
+additional stochasticity. They require prior statistics (<code class="docutils literal notranslate"><span class="pre">mu0</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma0</span></code>) and a
+diffusion strength parameter <code class="docutils literal notranslate"><span class="pre">alpha</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params_fm</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
+    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span>
+    <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
+    <span class="n">theta</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">dim_joint</span><span class="p">,</span>
+    <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span>
+    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">model_fm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params_fm</span><span class="p">)</span>
+
+<span class="n">method_fm</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">()</span>
+
+<span class="n">training_config_fm</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
+<span class="n">training_config_fm</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">training_config_fm</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">,</span> <span class="s2">&quot;flow&quot;</span><span class="p">)</span>
+
+<span class="n">pipeline_fm</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
+    <span class="n">model_fm</span><span class="p">,</span>
+    <span class="n">train_dataset_grain</span><span class="p">,</span>
+    <span class="n">val_dataset_grain</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="n">method_fm</span><span class="p">,</span>
+    <span class="n">training_config</span><span class="o">=</span><span class="n">training_config_fm</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Uncomment the following lines to train the model.</span>
+<span class="c1"># Once trained, the model is saved to checkpoints/flow and can be restored below.</span>
+<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="c1"># pipeline_fm.train(rngs, save_model=True)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline_fm</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/flow
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/flow/ema
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The default solver for flow matching is the ODESolver, which performs deterministic</span>
+<span class="c1"># ODE integration from noise (t=0) to data (t=1).</span>
+<span class="n">samples_fm</span> <span class="o">=</span> <span class="n">pipeline_fm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
+<span class="n">samples_fm</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_fm</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">samples_fm</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Flow Matching — ODE Solver (default)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;fm_ode_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
+</pre></div>
+</div>
+<img alt="../_images/a110edea36339a72930517289c9e062de50e632e4693c0f2e6659948e5bac677.png" src="../_images/a110edea36339a72930517289c9e062de50e632e4693c0f2e6659948e5bac677.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The ZeroEndsSolver adds stochastic noise during sampling. The diffusion coefficient</span>
+<span class="c1"># vanishes at both t=0 and t=1, ensuring clean endpoints.</span>
+<span class="c1"># Required kwargs: mu0 (prior mean), sigma0 (prior std), alpha (diffusion strength).</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZeroEndsSolver</span>
+
+<span class="n">solver_kwargs_ze</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;mu0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>  <span class="c1"># prior mean (data is normalized)</span>
+    <span class="s2">&quot;sigma0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>  <span class="c1"># prior std</span>
+    <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># diffusion strength</span>
+<span class="p">}</span>
+
+<span class="n">samples_fm_ze</span> <span class="o">=</span> <span class="n">pipeline_fm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+    <span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span>
+    <span class="n">x_o</span><span class="p">,</span>
+    <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span>
+    <span class="n">solver</span><span class="o">=</span><span class="p">(</span><span class="n">ZeroEndsSolver</span><span class="p">,</span> <span class="n">solver_kwargs_ze</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">samples_fm_ze</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_fm_ze</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">samples_fm_ze</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Flow Matching — ZeroEndsSolver (SDE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;fm_zeroends_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
+</pre></div>
+</div>
+<img alt="../_images/8a8ea214909d6bd530a2918bb1e197363f010de8caeb076a22908bf6019753a3.png" src="../_images/8a8ea214909d6bd530a2918bb1e197363f010de8caeb076a22908bf6019753a3.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The NonSingularSolver uses a non-singular diffusion coefficient, which can provide</span>
+<span class="c1"># different sample quality characteristics compared to ZeroEndsSolver.</span>
+<span class="c1"># It takes the same kwargs as ZeroEndsSolver.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">NonSingularSolver</span>
+
+<span class="n">solver_kwargs_ns</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;mu0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="s2">&quot;sigma0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">samples_fm_ns</span> <span class="o">=</span> <span class="n">pipeline_fm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+    <span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span>
+    <span class="n">x_o</span><span class="p">,</span>
+    <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span>
+    <span class="n">solver</span><span class="o">=</span><span class="p">(</span><span class="n">NonSingularSolver</span><span class="p">,</span> <span class="n">solver_kwargs_ns</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">samples_fm_ns</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_fm_ns</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">samples_fm_ns</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Flow Matching — NonSingularSolver (SDE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;fm_nonsingular_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
+</pre></div>
+</div>
+<img alt="../_images/7d7d963f201e0136d5b1d3eea28da05c9a67a72bf4f84c29f2ecb5a7ca92c016.png" src="../_images/7d7d963f201e0136d5b1d3eea28da05c9a67a72bf4f84c29f2ecb5a7ca92c016.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">del</span> <span class="n">model_fm</span><span class="p">,</span> <span class="n">pipeline_fm</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="section-2-edm-diffusion">
+<h2>Section 2: EDM Diffusion<a class="headerlink" href="#section-2-edm-diffusion" title="Link to this heading">#</a></h2>
+<p><strong>EDM Diffusion</strong> (Karras et al., 2022) learns a denoiser <span class="math notranslate nohighlight">\(D_\theta(x; \sigma)\)</span> in
+<span class="math notranslate nohighlight">\(\sigma\)</span>-space. The training noise schedule can use one of three prescriptions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod()</span></code> — default EDM scheduler (<strong>recommended</strong>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod(sde=&quot;VP&quot;)</span></code> — Variance Preserving scheduler</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod(sde=&quot;VE&quot;)</span></code> — Variance Exploding scheduler</p></li>
+</ul>
+<p>The model can be trained with any of these three prescriptions, and then sampled
+using any of the three as well. However, the <strong>EDM scheduler is recommended</strong> for
+both training and sampling. The scheduler variants are training-time choices that
+affect the noise schedule used during the diffusion process.</p>
+<p><strong>Solver</strong>: <code class="docutils literal notranslate"><span class="pre">EDMSolver</span></code> is the only available solver for EDM. It implements the
+stochastic denoising sampler from Karras et al., 2022.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params_edm</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
+    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span>
+    <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
+    <span class="n">theta</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">dim_joint</span><span class="p">,</span>
+    <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span>
+    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">model_edm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params_edm</span><span class="p">)</span>
+
+<span class="c1"># Default EDM scheduler (recommended for both training and sampling)</span>
+<span class="n">method_edm</span> <span class="o">=</span> <span class="n">DiffusionEDMMethod</span><span class="p">()</span>
+<span class="c1"># Alternative training schedulers (uncomment to use):</span>
+<span class="c1"># method_edm = DiffusionEDMMethod(sde=&quot;VP&quot;)  # Variance Preserving</span>
+<span class="c1"># method_edm = DiffusionEDMMethod(sde=&quot;VE&quot;)  # Variance Exploding</span>
+
+<span class="n">training_config_edm</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
+<span class="n">training_config_edm</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">training_config_edm</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">,</span> <span class="s2">&quot;edm&quot;</span><span class="p">)</span>
+
+<span class="n">pipeline_edm</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
+    <span class="n">model_edm</span><span class="p">,</span>
+    <span class="n">train_dataset_grain</span><span class="p">,</span>
+    <span class="n">val_dataset_grain</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="n">method_edm</span><span class="p">,</span>
+    <span class="n">training_config</span><span class="o">=</span><span class="n">training_config_edm</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Uncomment the following lines to train the model.</span>
+<span class="c1"># Once trained, the model is saved to checkpoints/edm and can be restored below.</span>
+<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="c1"># pipeline_edm.train(rngs, save_model=True)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline_edm</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/edm
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/edm/ema
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The EDMSolver implements the stochastic denoising sampler from Karras et al., 2022.</span>
+<span class="c1"># It progressively denoises samples following a noise schedule from high to low sigma.</span>
+<span class="n">samples_edm</span> <span class="o">=</span> <span class="n">pipeline_edm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
+<span class="n">samples_edm</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_edm</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">samples_edm</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;EDM Diffusion — EDMSolver (default)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;edm_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
+</pre></div>
+</div>
+<img alt="../_images/82b6a3b1a499d34014f425b6a4c6913502ea14b54719f3a73232ebc6da4596aa.png" src="../_images/82b6a3b1a499d34014f425b6a4c6913502ea14b54719f3a73232ebc6da4596aa.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">del</span> <span class="n">model_edm</span><span class="p">,</span> <span class="n">pipeline_edm</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="section-3-score-matching">
+<h2>Section 3: Score Matching<a class="headerlink" href="#section-3-score-matching" title="Link to this heading">#</a></h2>
+<p><strong>Score Matching</strong> (Song et al., 2021) learns the score function
+<span class="math notranslate nohighlight">\(\nabla \log p_t(x)\)</span>, which points toward regions of higher data density.
+Samples are generated by running a <strong>reverse-time SDE</strong> from noise back to data.</p>
+<p>The SDE formulation can be either:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod()</span></code> — Variance Preserving (VP) SDE (<strong>default</strong>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod(sde_type=&quot;VE&quot;)</span></code> — Variance Exploding (VE) SDE</p></li>
+</ul>
+<p><strong>Solvers</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SMSolver</span></code> (<strong>default</strong>) — reverse-time SDE, generates stochastic samples.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code> — probability flow ODE, generates deterministic samples from the
+same learned score function. Useful when reproducibility or lower variance is
+desired.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params_sm</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
+    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span>
+    <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
+    <span class="n">theta</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">dim_joint</span><span class="p">,</span>
+    <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span>
+    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">model_sm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params_sm</span><span class="p">)</span>
+
+<span class="c1"># Default: Variance Preserving (VP) SDE</span>
+<span class="n">method_sm</span> <span class="o">=</span> <span class="n">ScoreMatchingMethod</span><span class="p">()</span>
+<span class="c1"># Alternative: Variance Exploding (VE) SDE (uncomment to use)</span>
+<span class="c1"># method_sm = ScoreMatchingMethod(sde_type=&quot;VE&quot;)</span>
+
+<span class="n">training_config_sm</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
+<span class="n">training_config_sm</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50000</span>
+<span class="n">training_config_sm</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">,</span> <span class="s2">&quot;sm&quot;</span><span class="p">)</span>
+
+<span class="n">pipeline_sm</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
+    <span class="n">model_sm</span><span class="p">,</span>
+    <span class="n">train_dataset_grain</span><span class="p">,</span>
+    <span class="n">val_dataset_grain</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="n">method_sm</span><span class="p">,</span>
+    <span class="n">training_config</span><span class="o">=</span><span class="n">training_config_sm</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Uncomment the following lines to train the model.</span>
+<span class="c1"># Once trained, the model is saved to checkpoints/sm and can be restored below.</span>
+<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="c1"># pipeline_sm.train(rngs, save_model=True)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline_sm</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/sm
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/sm/ema
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The default solver for score matching generates stochastic samples by running the</span>
+<span class="c1"># reverse-time SDE. Each call with a different key produces a different set of samples.</span>
+<span class="n">samples_sm</span> <span class="o">=</span> <span class="n">pipeline_sm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
+<span class="n">samples_sm</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_sm</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">samples_sm</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Score Matching — SMSolver (default, reverse SDE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;sm_sde_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
+</pre></div>
+</div>
+<img alt="../_images/f894b63dd6f9455c97bfcf87ff33c88fb0831a1f6a88273810d5008a80419455.png" src="../_images/f894b63dd6f9455c97bfcf87ff33c88fb0831a1f6a88273810d5008a80419455.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The probability flow ODE produces deterministic samples from the same learned score</span>
+<span class="c1"># function. This can be useful when you want reproducible results or lower variance.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMPFSolver</span>
+
+<span class="n">samples_sm_pf</span> <span class="o">=</span> <span class="n">pipeline_sm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+    <span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span>
+    <span class="n">x_o</span><span class="p">,</span>
+    <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span>
+    <span class="n">solver</span><span class="o">=</span><span class="p">(</span><span class="n">SMPFSolver</span><span class="p">,</span> <span class="p">{}),</span>
+<span class="p">)</span>
+<span class="n">samples_sm_pf</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_sm_pf</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">samples_sm_pf</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Score Matching — SMPFSolver (probability flow ODE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;sm_pf_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
+</pre></div>
+</div>
+<img alt="../_images/97aa417410c133d61b644e592457251d4b99698d7a78a31941fe7c3a5890fa0b.png" src="../_images/97aa417410c133d61b644e592457251d4b99698d7a78a31941fe7c3a5890fa0b.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">del</span> <span class="n">model_sm</span><span class="p">,</span> <span class="n">pipeline_sm</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../advanced/custom_models.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Custom Models</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../theoretical_overview/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Theoretical Overview</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-setup">Shared Setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-1-flow-matching">Section 1: Flow Matching</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-2-edm-diffusion">Section 2: EDM Diffusion</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-3-score-matching">Section 3: Score Matching</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
