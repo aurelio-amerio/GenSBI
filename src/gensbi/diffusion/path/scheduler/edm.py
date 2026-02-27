@@ -566,7 +566,7 @@ class VEEdmScheduler(BaseSDE):
             Maximum sigma value.
     """
 
-    def __init__(self, sigma_min=1e-3, sigma_max=15.0):
+    def __init__(self, sigma_min=0.02, sigma_max=100.0):
         super().__init__()
         self.sigma_min = sigma_min
         self.sigma_max = sigma_max
