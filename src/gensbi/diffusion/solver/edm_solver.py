@@ -101,8 +101,12 @@ class EDMSolver(Solver):
         else:
             # Bind the training scheduler as denoise_scheduler so the model
             # is always called with the preconditioning it was trained with.
-            sampler_ = partial(
-                edm_ablation_sampler, denoise_scheduler=self.path.scheduler
+            # Use a lambda (not partial) to insert denoise_scheduler in the
+            # correct positional slot while keeping the same call signature
+            # as edm_sampler: (sched, model, x_1, **kw).
+            _denoise_sched = self.path.scheduler
+            sampler_ = lambda sched, model, x_1, **kw: edm_ablation_sampler(
+                sched, _denoise_sched, model, x_1, **kw
             )
 
         if cfg_scale is not None:
