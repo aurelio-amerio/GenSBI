@@ -13,6 +13,6 @@ GenSBI is in early development, please report any issues you may encounter.
 
 installation
 quick_start
-/notebooks/my_first_model
+my_first_model
 
 ```

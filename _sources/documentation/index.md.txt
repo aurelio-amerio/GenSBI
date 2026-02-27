@@ -20,6 +20,7 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 
 ### ⚙️ Advanced Topics
 - **[Samplers and Solvers](/advanced/samplers)** - Generative methods, solvers, and how to override them
+- **[Methods and Samplers](/advanced/methods_and_samplers)** - A practical example of using different samplers and solvers
 - **[Custom Models](/advanced/custom_models)** - Use your own model with the unified pipelines
 
 ### 💡 Examples & Tutorials
