@@ -33,9 +33,7 @@ download:
 	@echo "Downloading example notebooks to notebooks ..."
 	@mkdir -p notebooks
 	@rm -rf notebooks/*
-	curl -L -o notebooks/my_first_model.ipynb \
-		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/my_first_model.ipynb
-
+	
 	# NDE
 	curl -L -o notebooks/diffusion_2d_unconditional.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/diffusion_2d_unconditional.ipynb
@@ -91,9 +89,15 @@ download:
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_flux1joint/two_moons_flow_flux1joint.ipynb
 	curl -L -o notebooks/two_moons_flow_simformer.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/two_moons_flow_simformer.ipynb
-	curl -L -o notebooks/methods_and_samplers.ipynb \
-		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/methods_and_samplers.ipynb
 	
+	
+	@echo "Special notebooks"
+	curl -L -o advanced/methods_and_samplers.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/methods_and_samplers.ipynb
+	curl -L -o getting_started/my_first_model.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/my_first_model.ipynb
+
+
 	@echo "Downloading images to _static ..."
 	curl -L -o _static/animated_plot_samples_simformer.gif \
 		https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/animated_plot_samples_simformer.gif?raw=true
