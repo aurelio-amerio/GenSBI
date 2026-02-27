@@ -29,7 +29,6 @@ Functions
    gensbi.recipes.flux1._flux1_config_from_path
    gensbi.recipes.flux1.get_default_flux1_params
    gensbi.recipes.flux1.parse_flux1_params
-   gensbi.recipes.flux1.parse_training_config
 
 
 Module Contents
@@ -37,45 +36,53 @@ Module Contents
 
 .. py:class:: Flux1DiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
 
-   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalDiffusionPipeline`
+   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalPipeline`
 
 
    
-   Diffusion pipeline for training and using a Conditional model for simulation-based inference.
+   Model-agnostic conditional pipeline parameterized by a ``GenerativeMethod``.
 
-   :param train_dataset: Training dataset.
-   :type train_dataset: grain dataset or iterator over batches
-   :param val_dataset: Validation dataset.
-   :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space (number of tokens).
-                   Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   Unlike the method-specific classes above (``ConditionalFlowPipeline``,
+   ``ConditionalDiffusionPipeline``, ``ConditionalSMPipeline``), this class
+   works with **any** generative method and **any** user-provided model that
+   conforms to the ``ConditionalWrapper`` interface.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset yielding ``(obs, cond)`` batches.
+   :type train_dataset: iterable
+   :param val_dataset: Validation dataset yielding ``(obs, cond)`` batches.
+   :type val_dataset: iterable
+   :param dim_obs: Dimension of the observation/parameter space.
    :type dim_obs: int or tuple of int
-   :param dim_cond: Dimension of the observation space (number of tokens).
-                    Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :param dim_cond: Dimension of the conditioning space.
    :type dim_cond: int or tuple of int
-   :param params: Parameters for the Conditional model. If None, default parameters are used.
-   :type params: ConditionalParams, optional
-   :param training_config: Configuration for training. If None, default configuration is used.
+   :param method: Strategy object (e.g. ``FlowMatchingMethod()``,
+                  ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).
+   :type method: GenerativeMethod
+   :param ch_obs: Number of channels per observation token. Default is 1.
+   :type ch_obs: int, optional
+   :param ch_cond: Number of channels per conditioning token. Default is 1.
+   :type ch_cond: int, optional
+   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
+                                 Default is ``("absolute", "absolute")``.
+   :type id_embedding_strategy: tuple of str, optional
+   :param params: Model parameters (stored but not used directly).
+   :type params: optional
+   :param training_config: Training configuration. If ``None``, uses defaults augmented
+                           by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
 
    .. rubric:: Examples
 
-   Minimal example on how to instantiate and use the ConditionalDiffusionPipeline:
-
-   .. literalinclude:: /examples/conditional_diffusion_pipeline.py
-       :language: python
-       :linenos:
-
-   .. image:: /examples/conditional_diffusion_pipeline_marginals.png
-       :width: 600
-
-   .. note::
-       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
-       in a ``if __name__ == "__main__":`` guard.
-       See https://docs.python.org/3/library/multiprocessing.html
-
-   .. note::
-       Sampling in the latent space (latent diffusion/flow) is not currently supported.
+   >>> from gensbi.core import FlowMatchingMethod
+   >>> pipeline = ConditionalPipeline(
+   ...     model=my_model,
+   ...     train_dataset=train_ds,
+   ...     val_dataset=val_ds,
+   ...     dim_obs=5, dim_cond=3,
+   ...     method=FlowMatchingMethod(),
+   ... )
 
 
 
@@ -170,22 +177,6 @@ Module Contents
 
       ..
           !! processed by numpydoc !!
-
-
-   .. py:attribute:: ch_cond
-      :value: 1
-
-
-
-   .. py:attribute:: ch_obs
-      :value: 1
-
-
-
-   .. py:attribute:: dim_cond
-
-
-   .. py:attribute:: dim_obs
 
 
    .. py:attribute:: ema_model
@@ -193,51 +184,53 @@ Module Contents
 
 .. py:class:: Flux1FlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
 
-   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalFlowPipeline`
+   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalPipeline`
 
 
    
-   Flow pipeline for training and using a Conditional model for simulation-based inference.
+   Model-agnostic conditional pipeline parameterized by a ``GenerativeMethod``.
+
+   Unlike the method-specific classes above (``ConditionalFlowPipeline``,
+   ``ConditionalDiffusionPipeline``, ``ConditionalSMPipeline``), this class
+   works with **any** generative method and **any** user-provided model that
+   conforms to the ``ConditionalWrapper`` interface.
 
    :param model: The model to be trained.
    :type model: nnx.Module
-   :param train_dataset: Training dataset.
-   :type train_dataset: grain dataset or iterator over batches
-   :param val_dataset: Validation dataset.
-   :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space (number of tokens).
-                   Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :param train_dataset: Training dataset yielding ``(obs, cond)`` batches.
+   :type train_dataset: iterable
+   :param val_dataset: Validation dataset yielding ``(obs, cond)`` batches.
+   :type val_dataset: iterable
+   :param dim_obs: Dimension of the observation/parameter space.
    :type dim_obs: int or tuple of int
-   :param dim_cond: Dimension of the observation space (number of tokens).
-                    Can represent unstructured data, time-series, or patchified 2D images. For images, provide a tuple (height, width).
+   :param dim_cond: Dimension of the conditioning space.
    :type dim_cond: int or tuple of int
-   :param ch_obs: Number of channels per token in the observation data. Default is 1.
+   :param method: Strategy object (e.g. ``FlowMatchingMethod()``,
+                  ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).
+   :type method: GenerativeMethod
+   :param ch_obs: Number of channels per observation token. Default is 1.
    :type ch_obs: int, optional
-   :param ch_cond: Number of channels per token in the conditional data. Default is 1.
+   :param ch_cond: Number of channels per conditioning token. Default is 1.
    :type ch_cond: int, optional
-   :param params: Parameters for the Conditional model. If None, default parameters are used.
-   :type params: ConditionalParams, optional
-   :param training_config: Configuration for training. If None, default configuration is used.
+   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
+                                 Default is ``("absolute", "absolute")``.
+   :type id_embedding_strategy: tuple of str, optional
+   :param params: Model parameters (stored but not used directly).
+   :type params: optional
+   :param training_config: Training configuration. If ``None``, uses defaults augmented
+                           by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
 
    .. rubric:: Examples
 
-   Minimal example on how to instantiate and use the ConditionalFlowPipeline:
-
-   .. literalinclude:: /examples/conditional_flow_pipeline.py
-       :language: python
-       :linenos:
-
-   .. image:: /examples/conditional_flow_pipeline_marginals.png
-       :width: 600
-
-   .. note::
-       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
-       in a ``if __name__ == "__main__":`` guard.
-       See https://docs.python.org/3/library/multiprocessing.html
-
-   .. note::
-       Sampling in the latent space (latent diffusion/flow) is not currently supported.
+   >>> from gensbi.core import FlowMatchingMethod
+   >>> pipeline = ConditionalPipeline(
+   ...     model=my_model,
+   ...     train_dataset=train_ds,
+   ...     val_dataset=val_ds,
+   ...     dim_obs=5, dim_cond=3,
+   ...     method=FlowMatchingMethod(),
+   ... )
 
 
 
@@ -332,22 +325,6 @@ Module Contents
 
       ..
           !! processed by numpydoc !!
-
-
-   .. py:attribute:: ch_cond
-      :value: 1
-
-
-
-   .. py:attribute:: ch_obs
-      :value: 1
-
-
-
-   .. py:attribute:: dim_cond
-
-
-   .. py:attribute:: dim_obs
 
 
    .. py:attribute:: ema_model
@@ -355,36 +332,53 @@ Module Contents
 
 .. py:class:: Flux1SMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, sde_type = 'VP', params=None, training_config=None)
 
-   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalSMPipeline`
+   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalPipeline`
 
 
    
-   Score matching pipeline for training and using a Conditional model for simulation-based inference.
+   Model-agnostic conditional pipeline parameterized by a ``GenerativeMethod``.
 
-   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+   Unlike the method-specific classes above (``ConditionalFlowPipeline``,
+   ``ConditionalDiffusionPipeline``, ``ConditionalSMPipeline``), this class
+   works with **any** generative method and **any** user-provided model that
+   conforms to the ``ConditionalWrapper`` interface.
 
    :param model: The model to be trained.
    :type model: nnx.Module
-   :param train_dataset: Training dataset.
-   :type train_dataset: grain dataset or iterator over batches
-   :param val_dataset: Validation dataset.
-   :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space (number of tokens).
+   :param train_dataset: Training dataset yielding ``(obs, cond)`` batches.
+   :type train_dataset: iterable
+   :param val_dataset: Validation dataset yielding ``(obs, cond)`` batches.
+   :type val_dataset: iterable
+   :param dim_obs: Dimension of the observation/parameter space.
    :type dim_obs: int or tuple of int
-   :param dim_cond: Dimension of the observation space (number of tokens).
+   :param dim_cond: Dimension of the conditioning space.
    :type dim_cond: int or tuple of int
-   :param ch_obs: Number of channels per token in the observation data. Default is 1.
+   :param method: Strategy object (e.g. ``FlowMatchingMethod()``,
+                  ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).
+   :type method: GenerativeMethod
+   :param ch_obs: Number of channels per observation token. Default is 1.
    :type ch_obs: int, optional
-   :param ch_cond: Number of channels per token in the conditional data. Default is 1.
+   :param ch_cond: Number of channels per conditioning token. Default is 1.
    :type ch_cond: int, optional
-   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
-   :type sde_type: str
    :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
+                                 Default is ``("absolute", "absolute")``.
    :type id_embedding_strategy: tuple of str, optional
-   :param params: Parameters for the model.
+   :param params: Model parameters (stored but not used directly).
    :type params: optional
-   :param training_config: Configuration for training. If None, default configuration is used.
+   :param training_config: Training configuration. If ``None``, uses defaults augmented
+                           by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
+
+   .. rubric:: Examples
+
+   >>> from gensbi.core import FlowMatchingMethod
+   >>> pipeline = ConditionalPipeline(
+   ...     model=my_model,
+   ...     train_dataset=train_ds,
+   ...     val_dataset=val_ds,
+   ...     dim_obs=5, dim_cond=3,
+   ...     method=FlowMatchingMethod(),
+   ... )
 
 
 
@@ -479,22 +473,6 @@ Module Contents
 
       ..
           !! processed by numpydoc !!
-
-
-   .. py:attribute:: ch_cond
-      :value: 1
-
-
-
-   .. py:attribute:: ch_obs
-      :value: 1
-
-
-
-   .. py:attribute:: dim_cond
-
-
-   .. py:attribute:: dim_obs
 
 
    .. py:attribute:: ema_model
@@ -553,34 +531,6 @@ Module Contents
 
    
    Parse a Flux1 configuration file.
-
-   :param config_path: Path to the configuration file.
-   :type config_path: str
-
-   :returns: **config** -- Parsed configuration dictionary.
-   :rtype: dict
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: parse_training_config(config_path)
-
-   
-   Parse a training configuration file.
 
    :param config_path: Path to the configuration file.
    :type config_path: str

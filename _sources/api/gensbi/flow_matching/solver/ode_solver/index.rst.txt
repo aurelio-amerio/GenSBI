@@ -67,7 +67,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
+   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, static_model_kwargs = {})
 
       
       Obtain a sampler to solve the ODE with the velocity field.
@@ -93,10 +93,15 @@ Module Contents
       :type time_grid: Array
       :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
       :type return_intermediates: bool, optional
-      :param model_extras: Additional input for the model.
-      :type model_extras: dict
+      :param static_model_kwargs: Static keyword arguments baked into the vector field at
+                                  creation time.  Use for genuinely static configuration;
+                                  condition-dependent data should be passed at call time
+                                  via the ``model_extras`` argument of the returned sampler.
+      :type static_model_kwargs: dict
 
-      :returns: A function that takes initial conditions and returns the solution at final time or intermediate times.
+      :returns: ``sampler(x_init, model_extras={})`` — a function that
+                takes initial conditions and runtime model extras, and
+                returns the solution at final time or intermediate times.
       :rtype: Callable
 
 
@@ -117,7 +122,7 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_unnormalized_logprob(log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid=[1.0, 0.0], return_intermediates = False, *, model_extras = {})
+   .. py:method:: get_unnormalized_logprob(log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid=[1.0, 0.0], return_intermediates = False, *, static_model_kwargs = {})
 
       
       Solve for log likelihood given a target sample at :math:`t=0`.
@@ -140,8 +145,8 @@ Module Contents
       :type return_intermediates: bool
       :param exact_divergence: Use exact divergence vs Hutchinson estimator.
       :type exact_divergence: bool
-      :param \*\*model_extras:
-      :type \*\*model_extras: Additional model inputs.
+      :param static_model_kwargs: Static keyword arguments baked into the vector field.
+      :type static_model_kwargs: dict
 
       :returns: **Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]**
       :rtype: Samples and log likelihood values.
@@ -186,7 +191,7 @@ Module Contents
       :type time_grid: Array
       :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
       :type return_intermediates: bool, optional
-      :param model_extras: Additional input for the model.
+      :param model_extras: Runtime model extras (e.g. ``cond``, ``obs_ids``).
       :type model_extras: dict
 
       :returns: The final state or the states at all intermediate time steps.

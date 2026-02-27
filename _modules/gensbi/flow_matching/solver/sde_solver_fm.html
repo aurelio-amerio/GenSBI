@@ -981,7 +981,7 @@ window.addEventListener("load", load);</script>
         <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">time_grid</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span>
         <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stochastic sampler for the SDE.</span>
 
@@ -1002,14 +1002,16 @@ window.addEventListener("load", load);</script>
 <span class="sd">                The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).</span>
 <span class="sd">            return_intermediates : bool, optional</span>
 <span class="sd">                If True then return intermediate time steps according to time_grid. Defaults to False.</span>
-<span class="sd">            model_extras : dict</span>
-<span class="sd">                Additional input for the model.</span>
+<span class="sd">            static_model_kwargs : dict</span>
+<span class="sd">                Static keyword arguments baked into the drift/diffusion</span>
+<span class="sd">                at creation time.  Condition-dependent data should be</span>
+<span class="sd">                passed at call time via ``model_extras``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Callable</span>
-<span class="sd">                A function ``sample(x_init, key)`` that returns sampled trajectories</span>
-<span class="sd">                of shape ``(batch, features, channels)``.</span>
+<span class="sd">                ``sampler(x_init, key, model_extras={})`` that returns</span>
+<span class="sd">                sampled trajectories of shape ``(batch, features, channels)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">solvers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;Euler&quot;</span><span class="p">:</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">Euler</span><span class="p">,</span>
@@ -1032,7 +1034,7 @@ window.addEventListener("load", load);</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">levy_area</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">SpaceTimeLevyArea</span>
 
-        <span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_f_tilde</span><span class="p">(</span><span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>  <span class="c1"># (t, x, args) -&gt; drift</span>
+        <span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_f_tilde</span><span class="p">()</span>  <span class="c1"># (t, x, args) -&gt; drift; no extras baked in</span>
         <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_g_tilde</span><span class="p">()</span>  <span class="c1"># (t, x, args) -&gt; diffusion matrix</span>
 
         <span class="c1"># Time direction: forward, from noise (t=eps) to data (t=1)</span>
@@ -1058,59 +1060,59 @@ window.addEventListener("load", load);</script>
         <span class="n">flat_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flat_dim</span>
         <span class="n">sample_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_shape</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">sample_one</span><span class="p">(</span><span class="n">key_i</span><span class="p">,</span> <span class="n">y0_flat</span><span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Integrate one sample. State is flat (flat_dim,).&quot;&quot;&quot;</span>
-
-            <span class="n">brownian_motion</span> <span class="o">=</span> <span class="n">VirtualBrownianTree</span><span class="p">(</span>
-                <span class="n">t0</span><span class="p">,</span>
-                <span class="n">t1</span><span class="p">,</span>
-                <span class="n">tol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
-                <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">,),</span>
-                <span class="n">key</span><span class="o">=</span><span class="n">key_i</span><span class="p">,</span>
-                <span class="n">levy_area</span><span class="o">=</span><span class="n">levy_area</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="c1"># Wrap drift: unflatten state, add batch dim for model, reflatten</span>
-            <span class="k">def</span><span class="w"> </span><span class="nf">drift_flat</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_flat</span><span class="p">,</span> <span class="n">drift_args</span><span class="p">):</span>
-                <span class="n">y</span> <span class="o">=</span> <span class="n">y_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">)</span>
-                <span class="n">y_batched</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>  <span class="c1"># (1, features, channels)</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="n">drift</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_batched</span><span class="p">,</span> <span class="n">drift_args</span><span class="p">)</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (features, channels)</span>
-                <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">)</span>
-
-            <span class="c1"># Wrap diffusion: returns (flat_dim, flat_dim) diagonal matrix</span>
-            <span class="k">def</span><span class="w"> </span><span class="nf">diff_flat</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_flat</span><span class="p">,</span> <span class="n">diff_args</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">diff</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_flat</span><span class="p">,</span> <span class="n">diff_args</span><span class="p">)</span>
-
-            <span class="n">terms</span> <span class="o">=</span> <span class="n">MultiTerm</span><span class="p">(</span>
-                <span class="n">ODETerm</span><span class="p">(</span><span class="n">drift_flat</span><span class="p">),</span>
-                <span class="n">ControlTerm</span><span class="p">(</span><span class="n">diff_flat</span><span class="p">,</span> <span class="n">brownian_motion</span><span class="p">),</span>
-            <span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">return_intermediates</span><span class="p">:</span>
-                <span class="n">saveat</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">SaveAt</span><span class="p">(</span><span class="n">ts</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">saveat</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">SaveAt</span><span class="p">(</span><span class="n">t1</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-            <span class="n">sol</span> <span class="o">=</span> <span class="n">diffeqsolve</span><span class="p">(</span>
-                <span class="n">terms</span><span class="p">,</span>
-                <span class="n">solver</span><span class="p">,</span>
-                <span class="n">t0</span><span class="p">,</span>
-                <span class="n">t1</span><span class="p">,</span>
-                <span class="n">dt0</span><span class="o">=</span><span class="n">dt0</span><span class="p">,</span>
-                <span class="n">y0</span><span class="o">=</span><span class="n">y0_flat</span><span class="p">,</span>
-                <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">stepsize_controller</span><span class="o">=</span><span class="n">stepsize_controller</span><span class="p">,</span>
-                <span class="n">saveat</span><span class="o">=</span><span class="n">saveat</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="n">sol</span><span class="o">.</span><span class="n">ys</span>  <span class="c1"># (n_saves, flat_dim)</span>
-            <span class="k">return</span> <span class="n">val</span>
-
         <span class="c1"># We remove static_argnums because now nsamples is implicit in x_init shape</span>
         <span class="nd">@jit</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="p">{}):</span>
             <span class="c1"># x_init shape: (batch, features, channels)</span>
             <span class="n">nsamples</span> <span class="o">=</span> <span class="n">x_init</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">sample_one</span><span class="p">(</span><span class="n">key_i</span><span class="p">,</span> <span class="n">y0_flat</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Integrate one sample. State is flat (flat_dim,).&quot;&quot;&quot;</span>
+
+                <span class="n">brownian_motion</span> <span class="o">=</span> <span class="n">VirtualBrownianTree</span><span class="p">(</span>
+                    <span class="n">t0</span><span class="p">,</span>
+                    <span class="n">t1</span><span class="p">,</span>
+                    <span class="n">tol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+                    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">,),</span>
+                    <span class="n">key</span><span class="o">=</span><span class="n">key_i</span><span class="p">,</span>
+                    <span class="n">levy_area</span><span class="o">=</span><span class="n">levy_area</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Wrap drift: unflatten state, add batch dim for model, reflatten</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">drift_flat</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_flat</span><span class="p">,</span> <span class="n">drift_args</span><span class="p">):</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">y_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sample_shape</span><span class="p">)</span>
+                    <span class="n">y_batched</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>  <span class="c1"># (1, features, channels)</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">drift</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_batched</span><span class="p">,</span> <span class="n">drift_args</span><span class="p">)</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (features, channels)</span>
+                    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">)</span>
+
+                <span class="c1"># Wrap diffusion: returns (flat_dim, flat_dim) diagonal matrix</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">diff_flat</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_flat</span><span class="p">,</span> <span class="n">diff_args</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">diff</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y_flat</span><span class="p">,</span> <span class="n">diff_args</span><span class="p">)</span>
+
+                <span class="n">terms</span> <span class="o">=</span> <span class="n">MultiTerm</span><span class="p">(</span>
+                    <span class="n">ODETerm</span><span class="p">(</span><span class="n">drift_flat</span><span class="p">),</span>
+                    <span class="n">ControlTerm</span><span class="p">(</span><span class="n">diff_flat</span><span class="p">,</span> <span class="n">brownian_motion</span><span class="p">),</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">return_intermediates</span><span class="p">:</span>
+                    <span class="n">saveat</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">SaveAt</span><span class="p">(</span><span class="n">ts</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">saveat</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">SaveAt</span><span class="p">(</span><span class="n">t1</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="n">sol</span> <span class="o">=</span> <span class="n">diffeqsolve</span><span class="p">(</span>
+                    <span class="n">terms</span><span class="p">,</span>
+                    <span class="n">solver</span><span class="p">,</span>
+                    <span class="n">t0</span><span class="p">,</span>
+                    <span class="n">t1</span><span class="p">,</span>
+                    <span class="n">dt0</span><span class="o">=</span><span class="n">dt0</span><span class="p">,</span>
+                    <span class="n">y0</span><span class="o">=</span><span class="n">y0_flat</span><span class="p">,</span>
+                    <span class="n">args</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+                    <span class="n">stepsize_controller</span><span class="o">=</span><span class="n">stepsize_controller</span><span class="p">,</span>
+                    <span class="n">saveat</span><span class="o">=</span><span class="n">saveat</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">sol</span><span class="o">.</span><span class="n">ys</span>  <span class="c1"># (n_saves, flat_dim)</span>
+                <span class="k">return</span> <span class="n">val</span>
 
             <span class="c1"># flatten x_init</span>
             <span class="c1"># x_init: (B, F, C) -&gt; (B, F*C)</span>
@@ -1182,7 +1184,7 @@ window.addEventListener("load", load);</script>
 <span class="sd">            return_intermediates : bool</span>
 <span class="sd">                Return intermediates.</span>
 <span class="sd">            model_extras : dict</span>
-<span class="sd">                Model extras.</span>
+<span class="sd">                Runtime model extras (e.g. ``cond``, ``obs_ids``).</span>
 <span class="sd">            key : jax.random.PRNGKey</span>
 <span class="sd">                Random key. Required for SDE.</span>
 
@@ -1201,16 +1203,15 @@ window.addEventListener("load", load);</script>
             <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
             <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
             <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span></div>
 </div>
 
 
 
-<div class="viewcode-block" id="ZeroEnds">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEnds">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ZeroEnds</span><span class="p">(</span><span class="n">BaseFmSDESolver</span><span class="p">):</span>
+<div class="viewcode-block" id="ZeroEndsSolver">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEndsSolver">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ZeroEndsSolver</span><span class="p">(</span><span class="n">BaseFmSDESolver</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    ZeroEnds SDE solver for flow matching.</span>
 
@@ -1240,13 +1241,13 @@ window.addEventListener("load", load);</script>
         <span class="n">eps0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">velocity_model</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">sigma0</span><span class="p">,</span> <span class="n">eps0</span><span class="o">=</span><span class="n">eps0</span><span class="p">)</span>
-<div class="viewcode-block" id="ZeroEnds.alpha">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEnds.alpha">[docs]</a>
+<div class="viewcode-block" id="ZeroEndsSolver.alpha">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEndsSolver.alpha">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span></div>
 
 
-<div class="viewcode-block" id="ZeroEnds.get_f_tilde">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEnds.get_f_tilde">[docs]</a>
+<div class="viewcode-block" id="ZeroEndsSolver.get_f_tilde">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEndsSolver.get_f_tilde">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_f_tilde</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
         <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -1258,8 +1259,8 @@ window.addEventListener("load", load);</script>
         <span class="k">return</span> <span class="n">f_tilde</span></div>
 
 
-<div class="viewcode-block" id="ZeroEnds.get_g_tilde">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEnds.get_g_tilde">[docs]</a>
+<div class="viewcode-block" id="ZeroEndsSolver.get_g_tilde">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.ZeroEndsSolver.get_g_tilde">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_g_tilde</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
         <span class="n">flat_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flat_dim</span>
 
@@ -1273,9 +1274,9 @@ window.addEventListener("load", load);</script>
 
 
 
-<div class="viewcode-block" id="NonSingular">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingular">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">NonSingular</span><span class="p">(</span><span class="n">BaseFmSDESolver</span><span class="p">):</span>
+<div class="viewcode-block" id="NonSingularSolver">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingularSolver">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NonSingularSolver</span><span class="p">(</span><span class="n">BaseFmSDESolver</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    NonSingular SDE solver for flow matching.</span>
 
@@ -1298,13 +1299,13 @@ window.addEventListener("load", load);</script>
         <span class="bp">self</span><span class="p">,</span> <span class="n">velocity_model</span><span class="p">:</span> <span class="n">ModelWrapper</span><span class="p">,</span> <span class="n">mu0</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">sigma0</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">velocity_model</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">sigma0</span><span class="p">)</span>
-<div class="viewcode-block" id="NonSingular.alpha">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingular.alpha">[docs]</a>
+<div class="viewcode-block" id="NonSingularSolver.alpha">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingularSolver.alpha">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span></div>
 
 
-<div class="viewcode-block" id="NonSingular.get_f_tilde">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingular.get_f_tilde">[docs]</a>
+<div class="viewcode-block" id="NonSingularSolver.get_f_tilde">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingularSolver.get_f_tilde">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_f_tilde</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
         <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -1315,8 +1316,8 @@ window.addEventListener("load", load);</script>
         <span class="k">return</span> <span class="n">f_tilde</span></div>
 
 
-<div class="viewcode-block" id="NonSingular.get_g_tilde">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingular.get_g_tilde">[docs]</a>
+<div class="viewcode-block" id="NonSingularSolver.get_g_tilde">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/solver/sde_solver_fm/index.html#gensbi.flow_matching.solver.NonSingularSolver.get_g_tilde">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_g_tilde</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
         <span class="n">flat_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flat_dim</span>
 

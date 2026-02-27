@@ -846,6 +846,64 @@ window.addEventListener("load", load);</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Figure</span><span class="p">,</span> <span class="n">FigureBase</span>
 
 
+<div class="viewcode-block" id="_resolve_classifier">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics._resolve_classifier">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_classifier</span><span class="p">(</span>
+    <span class="n">classifier</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseEstimator</span><span class="p">]],</span>
+    <span class="n">classifier_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">ndim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a classifier specification into a (class, kwargs) pair.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    classifier : str or Type[BaseEstimator]</span>
+<span class="sd">        Classifier class or string shorthand (``&quot;mlp&quot;`` or ``&quot;random_forest&quot;``).</span>
+<span class="sd">    classifier_kwargs : dict or None</span>
+<span class="sd">        Custom kwargs for the classifier. If ``None`` and classifier is</span>
+<span class="sd">        ``MLPClassifier``, sensible defaults are provided.</span>
+<span class="sd">    ndim : int</span>
+<span class="sd">        Dimensionality of the parameter space (used for default MLP sizing).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    clf_class : Type[BaseEstimator]</span>
+<span class="sd">        Resolved classifier class.</span>
+<span class="sd">    clf_kwargs : dict</span>
+<span class="sd">        Keyword arguments for the classifier.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classifier</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">_MAP</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mlp&quot;</span><span class="p">:</span> <span class="n">MLPClassifier</span><span class="p">,</span> <span class="s2">&quot;random_forest&quot;</span><span class="p">:</span> <span class="n">RandomForestClassifier</span><span class="p">}</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_MAP</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Invalid classifier: &quot;</span><span class="si">{</span><span class="n">classifier</span><span class="si">}</span><span class="s1">&quot;. &#39;</span>
+                <span class="s1">&#39;Expected &quot;mlp&quot;, &quot;random_forest&quot;, &#39;</span>
+                <span class="s2">&quot;or a valid scikit-learn classifier class.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">classifier</span> <span class="o">=</span> <span class="n">_MAP</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span>
+        <span class="n">classifier</span><span class="p">,</span> <span class="n">BaseEstimator</span>
+    <span class="p">),</span> <span class="s2">&quot;classifier must either be a string or a subclass of BaseEstimator.&quot;</span>
+
+    <span class="k">if</span> <span class="n">classifier_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">classifier</span> <span class="o">==</span> <span class="n">MLPClassifier</span><span class="p">:</span>
+            <span class="n">classifier_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;activation&quot;</span><span class="p">:</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;hidden_layer_sizes&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">),</span>
+                <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+                <span class="s2">&quot;solver&quot;</span><span class="p">:</span> <span class="s2">&quot;adam&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;early_stopping&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;n_iter_no_change&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">classifier_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">return</span> <span class="n">classifier</span><span class="p">,</span> <span class="n">classifier_kwargs</span></div>
+
+
+
 <div class="viewcode-block" id="LC2ST">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LC2ST</span><span class="p">:</span>
@@ -994,39 +1052,9 @@ window.addEventListener("load", load);</script>
 
 
         <span class="c1"># initialize classifier</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classifier</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">classifier</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;mlp&quot;</span><span class="p">:</span>
-                <span class="n">classifier</span> <span class="o">=</span> <span class="n">MLPClassifier</span>
-            <span class="k">elif</span> <span class="n">classifier</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;random_forest&quot;</span><span class="p">:</span>
-                <span class="n">classifier</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s1">&#39;Invalid classifier: &quot;</span><span class="si">{</span><span class="n">classifier</span><span class="si">}</span><span class="s1">&quot;.&#39;</span>
-                    <span class="s1">&#39;Expected &quot;mlp&quot;, &quot;random_forest&quot;, &#39;</span>
-                    <span class="s2">&quot;or a valid scikit-learn classifier class.&quot;</span>
-                <span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span>
-            <span class="n">classifier</span><span class="p">,</span> <span class="n">BaseEstimator</span>
-        <span class="p">),</span> <span class="s2">&quot;classier must either be a string or a subclass of BaseEstimator.&quot;</span>
-<div class="viewcode-block" id="LC2ST.clf_class">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.clf_class">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">clf_class</span> <span class="o">=</span> <span class="n">classifier</span></div>
-
-
-        <span class="c1"># for MLPClassifier, set default parameters</span>
-        <span class="k">if</span> <span class="n">classifier_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clf_class</span> <span class="o">==</span> <span class="n">MLPClassifier</span><span class="p">:</span>
-                <span class="n">ndim</span> <span class="o">=</span> <span class="n">thetas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="s2">&quot;activation&quot;</span><span class="p">:</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;hidden_layer_sizes&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">),</span>
-                    <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
-                    <span class="s2">&quot;solver&quot;</span><span class="p">:</span> <span class="s2">&quot;adam&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;early_stopping&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="s2">&quot;n_iter_no_change&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clf_class</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span> <span class="o">=</span> <span class="n">_resolve_classifier</span><span class="p">(</span>
+            <span class="n">classifier</span><span class="p">,</span> <span class="n">classifier_kwargs</span><span class="p">,</span> <span class="n">thetas</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
 
         <span class="c1"># initialize classifiers, will be set after training</span>
 <div class="viewcode-block" id="LC2ST.trained_clfs">

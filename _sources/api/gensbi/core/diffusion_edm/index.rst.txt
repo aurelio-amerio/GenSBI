@@ -1,0 +1,338 @@
+gensbi.core.diffusion_edm
+=========================
+
+.. py:module:: gensbi.core.diffusion_edm
+
+.. autoapi-nested-parse::
+
+   EDM diffusion generative method strategy.
+
+   Implements :class:`~gensbi.core.generative_method.GenerativeMethod` using
+   Elucidated Diffusion Models (EDM) with support for EDM, VP, and VE
+   SDE formulations.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.core.diffusion_edm.DiffusionEDMMethod
+
+
+Module Contents
+---------------
+
+.. py:class:: DiffusionEDMMethod(sde='EDM')
+
+   Bases: :py:obj:`gensbi.core.generative_method.GenerativeMethod`
+
+
+   
+   EDM diffusion strategy.
+
+   Supports three SDE formulations via the ``sde`` parameter:
+
+   - ``"EDM"`` — standard EDM schedule (default)
+   - ``"VP"`` — variance-preserving schedule
+   - ``"VE"`` — variance-exploding schedule
+
+   :param sde: SDE type. One of ``"EDM"``, ``"VP"``, ``"VE"``. Default is ``"EDM"``.
+   :type sde: str, optional
+
+   .. rubric:: Examples
+
+   >>> method = DiffusionEDMMethod(sde="EDM")
+   >>> path = method.build_path(config={"sigma_min": 0.002, "sigma_max": 80.0})
+   >>> loss = method.build_loss(path)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_loss(path)
+
+      
+      Build the EDM denoising loss.
+
+      Wraps ``path.get_loss_fn()`` into a callable object.
+
+      :param path: The diffusion path.
+      :type path: EDMPath
+
+      :returns: A loss callable with signature
+                ``(key, model, batch, condition_mask=None, model_extras={}) -> loss``.
+      :rtype: EDMLoss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_path(config)
+
+      
+      Build an EDM diffusion path.
+
+      :param config: Training configuration. Reads scheduler hyperparameters
+                     (``sigma_min``, ``sigma_max``, ``beta_min``, ``beta_max``)
+                     with sensible defaults.
+      :type config: dict
+
+      :returns: The configured diffusion path.
+      :rtype: EDMPath
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_sampler_fn(model_wrapped, path, model_extras, nsteps=18, return_intermediates=False, solver=None, solver_scheduler=None, solver_params=None, **kwargs)
+
+      
+      Build a sampler closure for EDM diffusion.
+
+      Supports ``EDMSolver`` with EDM, VP, and VE schedulers.
+      The ``solver_scheduler`` can override the path's scheduler for
+      sampling (also used for ``sample_prior``).
+
+      :param model_wrapped: The wrapped score model.
+      :param path: The diffusion path.
+      :type path: EDMPath
+      :param model_extras: Mode-specific extras (``cond``, ``obs_ids``, etc.).
+      :type model_extras: dict
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(EDMSolver, {})``.
+      :type solver: tuple of (type, dict), optional
+      :param solver_scheduler: Override scheduler for the solver. If ``None``, uses the
+                               path's scheduler.
+      :type solver_scheduler: optional
+      :param solver_params: EDM solver parameters (``S_churn``, ``S_min``, ``S_max``,
+                            ``S_noise``).
+      :type solver_params: dict, optional
+
+      :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_solver(model_wrapped, path, solver=None)
+
+      
+      Instantiate an EDM solver.
+
+      The solver class must accept ``score_model`` and ``path`` as
+      its first two positional arguments.
+
+      :param model_wrapped: The wrapped score model.
+      :param path: The diffusion path.
+      :type path: EDMPath
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(EDMSolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: An instantiated solver.
+      :rtype: solver_instance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_solver()
+
+      
+      Return the default EDM solver.
+
+      :returns: ``(EDMSolver, {})``
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_extra_training_config()
+
+      
+      Return EDM-specific training config defaults.
+
+      :returns: Scheduler defaults for the selected SDE type.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: prepare_batch(key, x_1, path)
+
+      
+      Sample noise and sigma for an EDM training batch.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_1: Clean data of shape ``(batch_size, dim, ch)``.
+      :type x_1: Array
+      :param path: The diffusion path.
+      :type path: EDMPath
+
+      :returns: ``(x_0, x_1, sigma)`` where ``x_0`` is standard normal noise
+                and ``sigma`` has shape ``(batch_size, 1, 1)``.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_init(key, shape, path)
+
+      
+      Sample from the diffusion prior.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param shape: Shape of the initial sample.
+      :type shape: tuple
+      :param path: The diffusion path (provides ``sample_prior``).
+      :type path: EDMPath
+
+      :returns: Sample from the prior.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sde
+      :value: 'EDM'
+
+
+

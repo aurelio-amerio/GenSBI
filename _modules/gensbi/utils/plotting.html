@@ -1172,55 +1172,13 @@ window.addEventListener("load", load);</script>
 <span class="c1">#     return fig, axes</span>
 
 
-<div class="viewcode-block" id="_plot_marginals_seaborn">
-<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_marginals_seaborn">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">_plot_marginals_seaborn</span><span class="p">(</span>
-    <span class="n">data</span><span class="p">,</span>
-    <span class="n">plot_levels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">gridsize</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
-    <span class="nb">range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">hexbin_kwargs</span><span class="o">=</span><span class="p">{},</span>
-    <span class="n">histplot_kwargs</span><span class="o">=</span><span class="p">{},</span>
-    <span class="n">true_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="_plot_lower_triangle">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_lower_triangle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_lower_triangle</span><span class="p">(</span>
+    <span class="n">axes</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">gridsize</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">axis_ranges</span><span class="p">,</span>
+    <span class="n">plot_levels</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">hexbin_kwargs</span><span class="p">,</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">true_param</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_param</span><span class="p">)</span>
-
-    <span class="n">ndim</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">12</span>
-
-    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;$</span><span class="se">\\</span><span class="s2">theta_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">}}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-    <span class="n">axis_ranges</span> <span class="o">=</span> <span class="n">_parse_range</span><span class="p">(</span><span class="nb">range</span><span class="p">,</span> <span class="n">ndim</span><span class="p">)</span>
-    <span class="n">cmap</span> <span class="o">=</span> <span class="n">hexbin_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cmap&quot;</span><span class="p">,</span> <span class="n">transparent_cmap</span><span class="p">)</span>
-    <span class="n">color</span> <span class="o">=</span> <span class="n">hexbin_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
-    <span class="n">bins</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;bins&quot;</span><span class="p">,</span> <span class="n">gridsize</span><span class="p">)</span>
-    <span class="n">fill</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fill&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-    <span class="n">color_hist</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="n">hist_color</span><span class="p">)</span>
-
-    <span class="n">grid_kw</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="n">grid_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;width_ratios&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;height_ratios&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">]}</span>
-
-    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
-        <span class="n">ndim</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">,</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">),</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="n">grid_kw</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Hide upper triangle and set axis properties</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">:</span>
-                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span>
-                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
-                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
-                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Lower triangle: hexbin and kde</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot hexbin + KDE contours on the lower-triangle axes.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ndim</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
@@ -1279,18 +1237,25 @@ window.addEventListener("load", load);</script>
             <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span></div>
 
-    <span class="c1"># diagonal: histograms</span>
+
+
+<div class="viewcode-block" id="_plot_diagonal_histograms">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_diagonal_histograms">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_diagonal_histograms</span><span class="p">(</span>
+    <span class="n">axes</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">color_hist</span><span class="p">,</span> <span class="n">fill</span><span class="p">,</span> <span class="n">axis_ranges</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="p">,</span> <span class="n">histplot_kwargs</span><span class="p">,</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot marginal histograms along the diagonal axes.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
         <span class="n">x_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
         <span class="n">binrange</span> <span class="o">=</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
 
-        <span class="c1"># 1. Determine orientation once</span>
+        <span class="c1"># Determine orientation: for 2D case, bottom-right diagonal is rotated</span>
         <span class="n">is_rotated</span> <span class="o">=</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span>
 
-        <span class="c1"># 2. Set plot parameters based on orientation</span>
         <span class="n">hist_params</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;bins&quot;</span><span class="p">:</span> <span class="n">bins</span><span class="p">,</span>
             <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">color_hist</span><span class="p">,</span>
@@ -1304,10 +1269,8 @@ window.addEventListener("load", load);</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">hist_params</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_data</span>
 
-        <span class="c1"># 3. Make a single, clean plot call</span>
         <span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">hist_params</span><span class="p">)</span>
 
-        <span class="c1"># 4. Handle limits and true values based on orientation</span>
         <span class="k">if</span> <span class="n">is_rotated</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
@@ -1325,12 +1288,11 @@ window.addEventListener("load", load);</script>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">axis_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">tight</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="c1"># 5. Handle labels with simplified logic</span>
+        <span class="c1"># Label handling</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># Default: no labels</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
         <span class="k">if</span> <span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="c1"># if i == 0: ax.set_ylabel(labels[i], fontsize=fontsize)</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
@@ -1342,10 +1304,69 @@ window.addEventListener("load", load);</script>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span></div>
+
+
+
+<div class="viewcode-block" id="_plot_marginals_seaborn">
+<a class="viewcode-back" href="../../../api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._plot_marginals_seaborn">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_marginals_seaborn</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">plot_levels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+    <span class="nb">range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">hexbin_kwargs</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">histplot_kwargs</span><span class="o">=</span><span class="p">{},</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">true_param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">true_param</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_param</span><span class="p">)</span>
+
+    <span class="n">ndim</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">12</span>
+
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;$</span><span class="se">\\</span><span class="s2">theta_</span><span class="se">{{</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="se">}}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="n">axis_ranges</span> <span class="o">=</span> <span class="n">_parse_range</span><span class="p">(</span><span class="nb">range</span><span class="p">,</span> <span class="n">ndim</span><span class="p">)</span>
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">hexbin_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cmap&quot;</span><span class="p">,</span> <span class="n">transparent_cmap</span><span class="p">)</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="n">hexbin_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">bins</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;bins&quot;</span><span class="p">,</span> <span class="n">gridsize</span><span class="p">)</span>
+    <span class="n">fill</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fill&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">color_hist</span> <span class="o">=</span> <span class="n">histplot_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="n">hist_color</span><span class="p">)</span>
+
+    <span class="n">grid_kw</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">grid_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;width_ratios&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;height_ratios&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">]}</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+        <span class="n">ndim</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">,</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">ndim</span><span class="p">),</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="n">grid_kw</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Hide upper triangle and set axis properties</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ndim</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">:</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+                <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">_plot_lower_triangle</span><span class="p">(</span>
+        <span class="n">axes</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">gridsize</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">axis_ranges</span><span class="p">,</span>
+        <span class="n">plot_levels</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">hexbin_kwargs</span><span class="p">,</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">_plot_diagonal_histograms</span><span class="p">(</span>
+        <span class="n">axes</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">color_hist</span><span class="p">,</span> <span class="n">fill</span><span class="p">,</span> <span class="n">axis_ranges</span><span class="p">,</span>
+        <span class="n">true_param</span><span class="p">,</span> <span class="n">histplot_kwargs</span><span class="p">,</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-
         <span class="n">y_ticks</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_yticks</span><span class="p">()</span>
         <span class="n">y_ticks</span> <span class="o">=</span> <span class="n">y_ticks</span><span class="p">[</span><span class="n">y_ticks</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">y_ticks</span><span class="p">)</span>

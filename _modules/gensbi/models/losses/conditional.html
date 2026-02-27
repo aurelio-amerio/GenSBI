@@ -815,262 +815,70 @@ window.addEventListener("load", load);</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.models.losses.conditional</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Deprecated conditional loss classes.</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span> <span class="k">as</span> <span class="n">Array</span>
+<span class="sd">These classes have been replaced by the canonical loss classes</span>
+<span class="sd">(:class:`~gensbi.flow_matching.loss.FMLoss`,</span>
+<span class="sd">:class:`~gensbi.diffusion.loss.EDMLoss`,</span>
+<span class="sd">:class:`~gensbi.diffusion.loss.SMLoss`) accessed via the strategy API</span>
+<span class="sd">(``method.build_loss(path)``).</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContinuousFMLoss</span>
+
+<div class="viewcode-block" id="_DeprecatedLoss">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models._DeprecatedLoss">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">_DeprecatedLoss</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base for deprecated loss stubs — raises on instantiation.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="_DeprecatedLoss._message">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models._DeprecatedLoss._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="ConditionalCFMLoss">
 <a class="viewcode-back" href="../../../../api/gensbi/models/losses/index.html#gensbi.models.ConditionalCFMLoss">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ConditionalCFMLoss</span><span class="p">(</span><span class="n">ContinuousFMLoss</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    ConditionalCFMLoss is a class that computes the continuous flow matching loss for the Conditional model.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">        path: Probability path (x-prediction training).</span>
-<span class="sd">        reduction : str, optional</span>
-<span class="sd">            Specify the reduction to apply to the output ``&#39;none&#39;`` | ``&#39;mean&#39;`` | ``&#39;sum&#39;``. ``&#39;none&#39;``: no reduction is applied to the output, ``&#39;mean&#39;``: the output is reduced by mean over sequence elements, ``&#39;sum&#39;``: the output is reduced by sum over sequence elements. Defaults to &#39;mean&#39;.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="n">cfg_scale</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># self.path = path</span>
-        <span class="c1"># if reduction not in [&quot;None&quot;, &quot;mean&quot;, &quot;sum&quot;]:</span>
-        <span class="c1">#     raise ValueError(f&quot;{reduction} is not a valid value for reduction&quot;)</span>
-
-        <span class="c1"># if reduction == &quot;mean&quot;:</span>
-        <span class="c1">#     self.reduction = jnp.mean</span>
-        <span class="c1"># elif reduction == &quot;sum&quot;:</span>
-        <span class="c1">#     self.reduction = jnp.sum</span>
-        <span class="c1"># else:</span>
-        <span class="c1">#     self.reduction = lambda x: x</span>
-
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">reduction</span><span class="p">)</span>
-
-<div class="viewcode-block" id="ConditionalCFMLoss.cfg_scale">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalCFMLoss.cfg_scale">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cfg_scale</span> <span class="o">=</span> <span class="n">cfg_scale</span></div>
-
-
-<div class="viewcode-block" id="ConditionalCFMLoss.__call__">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/index.html#gensbi.models.ConditionalCFMLoss.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vf</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">obs_ids</span><span class="p">,</span> <span class="n">cond_ids</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Evaluates the continuous flow matching loss.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            vf : callable</span>
-<span class="sd">                The vector field model to evaluate.</span>
-<span class="sd">            batch : tuple</span>
-<span class="sd">                A tuple containing the input data (x_0, x_1, t).</span>
-<span class="sd">            cond : jnp.ndarray</span>
-<span class="sd">                The conditioning data.</span>
-<span class="sd">            obs_ids : jnp.ndarray</span>
-<span class="sd">                The observation IDs.</span>
-<span class="sd">            cond_ids : jnp.ndarray</span>
-<span class="sd">                The conditioning IDs.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            jnp.ndarray: The computed loss.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">path_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
-
-        <span class="n">x_t</span> <span class="o">=</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">x_t</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="s2">&quot;cfg_scale is not implemented for ConditionalCFMLoss&quot;</span>
-            <span class="p">)</span>
-            <span class="c1"># key = jax.random.PRNGKey(0)</span>
-            <span class="c1"># conditioned = jax.random.bernoulli(</span>
-            <span class="c1">#     key, p=self.cfg_scale, shape=(x_t.shape[0],)</span>
-            <span class="c1"># )</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">conditioned</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">x_t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
-
-        <span class="n">model_output</span> <span class="o">=</span> <span class="n">vf</span><span class="p">(</span>
-            <span class="n">t</span><span class="o">=</span><span class="n">path_sample</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
-            <span class="n">obs</span><span class="o">=</span><span class="n">x_t</span><span class="p">,</span>
-            <span class="n">obs_ids</span><span class="o">=</span><span class="n">obs_ids</span><span class="p">,</span>
-            <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">,</span>
-            <span class="n">cond_ids</span><span class="o">=</span><span class="n">cond_ids</span><span class="p">,</span>
-            <span class="n">conditioned</span><span class="o">=</span><span class="n">conditioned</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">loss</span> <span class="o">=</span> <span class="n">model_output</span> <span class="o">-</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">dx_t</span>
-        <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span></div>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConditionalCFMLoss</span><span class="p">(</span><span class="n">_DeprecatedLoss</span><span class="p">):</span>
+<div class="viewcode-block" id="ConditionalCFMLoss._message">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalCFMLoss._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;ConditionalCFMLoss has been removed. &quot;</span>
+        <span class="s2">&quot;Use FlowMatchingMethod().build_loss(path) or &quot;</span>
+        <span class="s2">&quot;ConditionalPipeline(method=FlowMatchingMethod(), ...) instead.&quot;</span>
+    <span class="p">)</span></div>
 </div>
 
 
 
-<span class="c1"># TODO: WIP</span>
 <div class="viewcode-block" id="ConditionalEDMLoss">
 <a class="viewcode-back" href="../../../../api/gensbi/models/losses/index.html#gensbi.models.ConditionalEDMLoss">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ConditionalEDMLoss</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    ConditionalEDMLoss is a class that computes the diffusion score matching loss for the Conditional model.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">        path: Probability path for training.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-<div class="viewcode-block" id="ConditionalEDMLoss.path">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalEDMLoss.path">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
-
-
-<div class="viewcode-block" id="ConditionalEDMLoss.loss_fn">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalEDMLoss.loss_fn">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_loss_fn</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="ConditionalEDMLoss.__call__">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/index.html#gensbi.models.ConditionalEDMLoss.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
-        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">],</span>
-        <span class="n">cond</span><span class="p">,</span>
-        <span class="n">obs_ids</span><span class="p">,</span>
-        <span class="n">cond_ids</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Evaluate the continuous flow matching loss.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            key : jax.random.PRNGKey</span>
-<span class="sd">                Random key for stochastic operations.</span>
-<span class="sd">            model : Callable</span>
-<span class="sd">                F model.</span>
-<span class="sd">            batch : Tuple[Array, Array, Array]</span>
-<span class="sd">                Input data (x_1, sigma).</span>
-<span class="sd">            cond : jnp.ndarray</span>
-<span class="sd">                The conditioning data.</span>
-<span class="sd">            obs_ids : jnp.ndarray</span>
-<span class="sd">                The observation IDs.</span>
-<span class="sd">            cond_ids : jnp.ndarray</span>
-<span class="sd">                The conditioning IDs.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            Array</span>
-<span class="sd">                Computed loss.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">x_1</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">batch</span>
-
-        <span class="n">path_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-        <span class="n">batch</span> <span class="o">=</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">get_batch</span><span class="p">()</span>
-
-        <span class="c1"># def F_model(x, sigma, obs_ids, cond, cond_ids, **model_extras):</span>
-        <span class="c1">#     if sigma.ndim == 1:</span>
-        <span class="c1">#         sigma = sigma[..., None, None]</span>
-        <span class="c1">#     return model(</span>
-        <span class="c1">#         t=sigma,</span>
-        <span class="c1">#         obs=x,</span>
-        <span class="c1">#         obs_ids=obs_ids,</span>
-        <span class="c1">#         cond=cond,</span>
-        <span class="c1">#         cond_ids=cond_ids,</span>
-        <span class="c1">#         **model_extras,</span>
-        <span class="c1">#     )</span>
-
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">model_extras</span><span class="p">[</span><span class="s2">&quot;cond&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cond</span>
-        <span class="n">model_extras</span><span class="p">[</span><span class="s2">&quot;obs_ids&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obs_ids</span>
-        <span class="n">model_extras</span><span class="p">[</span><span class="s2">&quot;cond_ids&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cond_ids</span>
-
-        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span>
-            <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">condition_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">loss</span>  <span class="c1"># type: ignore</span></div>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConditionalEDMLoss</span><span class="p">(</span><span class="n">_DeprecatedLoss</span><span class="p">):</span>
+<div class="viewcode-block" id="ConditionalEDMLoss._message">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalEDMLoss._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;ConditionalEDMLoss has been removed. &quot;</span>
+        <span class="s2">&quot;Use DiffusionEDMMethod().build_loss(path) or &quot;</span>
+        <span class="s2">&quot;ConditionalPipeline(method=DiffusionEDMMethod(), ...) instead.&quot;</span>
+    <span class="p">)</span></div>
 </div>
 
 
 
 <div class="viewcode-block" id="ConditionalSMLoss">
 <a class="viewcode-back" href="../../../../api/gensbi/models/losses/index.html#gensbi.models.ConditionalSMLoss">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ConditionalSMLoss</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    ConditionalSMLoss computes the standard score matching loss for the Conditional model.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">        path: SMPath probability path for training.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-<div class="viewcode-block" id="ConditionalSMLoss.path">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalSMLoss.path">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
-
-<div class="viewcode-block" id="ConditionalSMLoss.loss_fn">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalSMLoss.loss_fn">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_loss_fn</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="ConditionalSMLoss.__call__">
-<a class="viewcode-back" href="../../../../api/gensbi/models/losses/index.html#gensbi.models.ConditionalSMLoss.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
-        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">],</span>
-        <span class="n">cond</span><span class="p">,</span>
-        <span class="n">obs_ids</span><span class="p">,</span>
-        <span class="n">cond_ids</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Evaluate the score matching loss.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            key : jax.random.PRNGKey</span>
-<span class="sd">                Random key for stochastic operations.</span>
-<span class="sd">            model : Callable</span>
-<span class="sd">                Score model.</span>
-<span class="sd">            batch : Tuple[Array, Array]</span>
-<span class="sd">                Input data (x_1, t) where x_1 is the clean data and t is the</span>
-<span class="sd">                diffusion time. Use ``path.sample_t`` to sample t externally.</span>
-<span class="sd">            cond : jnp.ndarray</span>
-<span class="sd">                The conditioning data.</span>
-<span class="sd">            obs_ids : jnp.ndarray</span>
-<span class="sd">                The observation IDs.</span>
-<span class="sd">            cond_ids : jnp.ndarray</span>
-<span class="sd">                The conditioning IDs.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            Array</span>
-<span class="sd">                Computed loss.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">batch</span>
-
-        <span class="n">path_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-        <span class="n">batch</span> <span class="o">=</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">get_batch</span><span class="p">()</span>
-
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">model_extras</span><span class="p">[</span><span class="s2">&quot;cond&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cond</span>
-        <span class="n">model_extras</span><span class="p">[</span><span class="s2">&quot;obs_ids&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obs_ids</span>
-        <span class="n">model_extras</span><span class="p">[</span><span class="s2">&quot;cond_ids&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cond_ids</span>
-
-        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span>
-            <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">condition_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">loss</span>  <span class="c1"># type: ignore</span></div>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConditionalSMLoss</span><span class="p">(</span><span class="n">_DeprecatedLoss</span><span class="p">):</span>
+<div class="viewcode-block" id="ConditionalSMLoss._message">
+<a class="viewcode-back" href="../../../../api/gensbi/models/losses/conditional/index.html#gensbi.models.ConditionalSMLoss._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;ConditionalSMLoss has been removed. &quot;</span>
+        <span class="s2">&quot;Use ScoreMatchingMethod().build_loss(path) or &quot;</span>
+        <span class="s2">&quot;ConditionalPipeline(method=ScoreMatchingMethod(), ...) instead.&quot;</span>
+    <span class="p">)</span></div>
 </div>
 
 </pre></div>

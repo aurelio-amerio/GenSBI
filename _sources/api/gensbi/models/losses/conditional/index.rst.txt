@@ -3,6 +3,19 @@ gensbi.models.losses.conditional
 
 .. py:module:: gensbi.models.losses.conditional
 
+.. autoapi-nested-parse::
+
+   Deprecated conditional loss classes.
+
+   These classes have been replaced by the canonical loss classes
+   (:class:`~gensbi.flow_matching.loss.FMLoss`,
+   :class:`~gensbi.diffusion.loss.EDMLoss`,
+   :class:`~gensbi.diffusion.loss.SMLoss`) accessed via the strategy API
+   (``method.build_loss(path)``).
+
+   ..
+       !! processed by numpydoc !!
+
 
 Classes
 -------
@@ -12,23 +25,20 @@ Classes
    gensbi.models.losses.conditional.ConditionalCFMLoss
    gensbi.models.losses.conditional.ConditionalEDMLoss
    gensbi.models.losses.conditional.ConditionalSMLoss
+   gensbi.models.losses.conditional._DeprecatedLoss
 
 
 Module Contents
 ---------------
 
-.. py:class:: ConditionalCFMLoss(path, reduction='mean', cfg_scale=None)
+.. py:class:: ConditionalCFMLoss(*args, **kwargs)
 
-   Bases: :py:obj:`gensbi.flow_matching.loss.ContinuousFMLoss`
+   Bases: :py:obj:`_DeprecatedLoss`
 
 
    
-   ConditionalCFMLoss is a class that computes the continuous flow matching loss for the Conditional model.
+   Base for deprecated loss stubs — raises on instantiation.
 
-   :param path:
-   :type path: Probability path (x-prediction training).
-   :param reduction: Specify the reduction to apply to the output ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction is applied to the output, ``'mean'``: the output is reduced by mean over sequence elements, ``'sum'``: the output is reduced by sum over sequence elements. Defaults to 'mean'.
-   :type reduction: str, optional
 
 
 
@@ -47,58 +57,19 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: __call__(vf, batch, cond, obs_ids, cond_ids)
-
-      
-      Evaluates the continuous flow matching loss.
-
-      :param vf: The vector field model to evaluate.
-      :type vf: callable
-      :param batch: A tuple containing the input data (x_0, x_1, t).
-      :type batch: tuple
-      :param cond: The conditioning data.
-      :type cond: jnp.ndarray
-      :param obs_ids: The observation IDs.
-      :type obs_ids: jnp.ndarray
-      :param cond_ids: The conditioning IDs.
-      :type cond_ids: jnp.ndarray
-
-      :returns: **jnp.ndarray**
-      :rtype: The computed loss.
+   .. py:attribute:: _message
+      :value: 'ConditionalCFMLoss has been removed. Use FlowMatchingMethod().build_loss(path) or...
 
 
 
+.. py:class:: ConditionalEDMLoss(*args, **kwargs)
 
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:attribute:: cfg_scale
-      :value: None
-
-
-
-.. py:class:: ConditionalEDMLoss(path)
-
-   Bases: :py:obj:`flax.nnx.Module`
+   Bases: :py:obj:`_DeprecatedLoss`
 
 
    
-   ConditionalEDMLoss is a class that computes the diffusion score matching loss for the Conditional model.
+   Base for deprecated loss stubs — raises on instantiation.
 
-   :param path:
-   :type path: Probability path for training.
 
 
 
@@ -117,61 +88,19 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: __call__(key, model, batch, cond, obs_ids, cond_ids)
-
-      
-      Evaluate the continuous flow matching loss.
-
-      :param key: Random key for stochastic operations.
-      :type key: jax.random.PRNGKey
-      :param model: F model.
-      :type model: Callable
-      :param batch: Input data (x_1, sigma).
-      :type batch: Tuple[Array, Array, Array]
-      :param cond: The conditioning data.
-      :type cond: jnp.ndarray
-      :param obs_ids: The observation IDs.
-      :type obs_ids: jnp.ndarray
-      :param cond_ids: The conditioning IDs.
-      :type cond_ids: jnp.ndarray
-
-      :returns: Computed loss.
-      :rtype: Array
+   .. py:attribute:: _message
+      :value: 'ConditionalEDMLoss has been removed. Use DiffusionEDMMethod().build_loss(path) or...
 
 
 
+.. py:class:: ConditionalSMLoss(*args, **kwargs)
 
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:attribute:: loss_fn
-
-
-   .. py:attribute:: path
-
-
-.. py:class:: ConditionalSMLoss(path)
-
-   Bases: :py:obj:`flax.nnx.Module`
+   Bases: :py:obj:`_DeprecatedLoss`
 
 
    
-   ConditionalSMLoss computes the standard score matching loss for the Conditional model.
+   Base for deprecated loss stubs — raises on instantiation.
 
-   :param path:
-   :type path: SMPath probability path for training.
 
 
 
@@ -190,27 +119,15 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: __call__(key, model, batch, cond, obs_ids, cond_ids)
+   .. py:attribute:: _message
+      :value: 'ConditionalSMLoss has been removed. Use ScoreMatchingMethod().build_loss(path) or...
 
-      
-      Evaluate the score matching loss.
 
-      :param key: Random key for stochastic operations.
-      :type key: jax.random.PRNGKey
-      :param model: Score model.
-      :type model: Callable
-      :param batch: Input data (x_1, t) where x_1 is the clean data and t is the
-                    diffusion time. Use ``path.sample_t`` to sample t externally.
-      :type batch: Tuple[Array, Array]
-      :param cond: The conditioning data.
-      :type cond: jnp.ndarray
-      :param obs_ids: The observation IDs.
-      :type obs_ids: jnp.ndarray
-      :param cond_ids: The conditioning IDs.
-      :type cond_ids: jnp.ndarray
 
-      :returns: Computed loss.
-      :rtype: Array
+.. py:class:: _DeprecatedLoss(*args, **kwargs)
+
+   
+   Base for deprecated loss stubs — raises on instantiation.
 
 
 
@@ -226,13 +143,12 @@ Module Contents
 
 
 
-      ..
-          !! processed by numpydoc !!
 
+   ..
+       !! processed by numpydoc !!
 
-   .. py:attribute:: loss_fn
+   .. py:attribute:: _message
+      :value: ''
 
-
-   .. py:attribute:: path
 
 

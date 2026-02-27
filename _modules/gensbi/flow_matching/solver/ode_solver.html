@@ -879,7 +879,7 @@ window.addEventListener("load", load);</script>
         <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">time_grid</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span>
         <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Obtain a sampler to solve the ODE with the velocity field.</span>
 
@@ -906,16 +906,21 @@ window.addEventListener("load", load);</script>
 <span class="sd">                The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).</span>
 <span class="sd">            return_intermediates : bool, optional</span>
 <span class="sd">                If True then return intermediate time steps according to time_grid. Defaults to False.</span>
-<span class="sd">            model_extras : dict</span>
-<span class="sd">                Additional input for the model.</span>
+<span class="sd">            static_model_kwargs : dict</span>
+<span class="sd">                Static keyword arguments baked into the vector field at</span>
+<span class="sd">                creation time.  Use for genuinely static configuration;</span>
+<span class="sd">                condition-dependent data should be passed at call time</span>
+<span class="sd">                via the ``model_extras`` argument of the returned sampler.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Callable</span>
-<span class="sd">                A function that takes initial conditions and returns the solution at final time or intermediate times.</span>
+<span class="sd">                ``sampler(x_init, model_extras={})`` — a function that</span>
+<span class="sd">                takes initial conditions and runtime model extras, and</span>
+<span class="sd">                returns the solution at final time or intermediate times.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">term</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">ODETerm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">model_extras</span><span class="p">))</span>
+        <span class="n">term</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">ODETerm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">static_model_kwargs</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="p">{</span>
@@ -934,7 +939,7 @@ window.addEventListener("load", load);</script>
             <span class="n">stepsize_controller</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">ConstantStepSize</span><span class="p">()</span>
 
         <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="p">{}):</span>
 
             <span class="n">solution</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">diffeqsolve</span><span class="p">(</span>
                 <span class="n">term</span><span class="p">,</span>
@@ -943,6 +948,7 @@ window.addEventListener("load", load);</script>
                 <span class="n">t1</span><span class="o">=</span><span class="n">time_grid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
                 <span class="n">dt0</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
                 <span class="n">y0</span><span class="o">=</span><span class="n">x_init</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
                 <span class="n">saveat</span><span class="o">=</span><span class="p">(</span>
                     <span class="n">diffrax</span><span class="o">.</span><span class="n">SaveAt</span><span class="p">(</span><span class="n">ts</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">return_intermediates</span>
@@ -990,7 +996,7 @@ window.addEventListener("load", load);</script>
 <span class="sd">            return_intermediates : bool, optional</span>
 <span class="sd">                If True then return intermediate time steps according to time_grid. Defaults to False.</span>
 <span class="sd">            model_extras : dict</span>
-<span class="sd">                Additional input for the model.</span>
+<span class="sd">                Runtime model extras (e.g. ``cond``, ``obs_ids``).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1005,10 +1011,9 @@ window.addEventListener("load", load);</script>
             <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
             <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
             <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">solution</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">)</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">solution</span></div>
 
@@ -1027,7 +1032,7 @@ window.addEventListener("load", load);</script>
         <span class="c1"># exact_divergence: bool = True,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="c1"># key: jax.random.PRNGKey = None,</span>
-        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Solve for log likelihood given a target sample at :math:`t=0`.</span>
 
@@ -1051,7 +1056,8 @@ window.addEventListener("load", load);</script>
 <span class="sd">                Whether to return intermediate steps.</span>
 <span class="sd">            exact_divergence : bool</span>
 <span class="sd">                Use exact divergence vs Hutchinson estimator.</span>
-<span class="sd">            **model_extras: Additional model inputs.</span>
+<span class="sd">            static_model_kwargs : dict</span>
+<span class="sd">                Static keyword arguments baked into the vector field.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1061,8 +1067,8 @@ window.addEventListener("load", load);</script>
             <span class="n">time_grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mf">1.0</span> <span class="ow">and</span> <span class="n">time_grid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mf">0.0</span>
         <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Time grid must start at 1.0 and end at 0.0. Got </span><span class="si">{</span><span class="n">time_grid</span><span class="si">}</span><span class="s2">&quot;</span>
 
-        <span class="n">vector_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
-        <span class="n">divergence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_divergence</span><span class="p">(</span><span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
+        <span class="n">vector_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">static_model_kwargs</span><span class="p">)</span>
+        <span class="n">divergence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity_model</span><span class="o">.</span><span class="n">get_divergence</span><span class="p">(</span><span class="o">**</span><span class="n">static_model_kwargs</span><span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">dynamics_func</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
             <span class="n">xt</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">states</span>
@@ -1086,8 +1092,7 @@ window.addEventListener("load", load);</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">stepsize_controller</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">ConstantStepSize</span><span class="p">()</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_1</span><span class="p">):</span>
-            <span class="c1"># y_init = (x_1, jnp.ones(x_1.shape)) # the divergence is a scalar, so it has one less dimension than the vector field</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="p">{}):</span>
             <span class="n">y_init</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">x_1</span><span class="p">,</span>
                 <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
@@ -1099,6 +1104,7 @@ window.addEventListener("load", load);</script>
                 <span class="n">t1</span><span class="o">=</span><span class="n">time_grid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
                 <span class="n">dt0</span><span class="o">=-</span><span class="n">step_size</span><span class="p">,</span>
                 <span class="n">y0</span><span class="o">=</span><span class="n">y_init</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
                 <span class="n">saveat</span><span class="o">=</span><span class="p">(</span>
                     <span class="n">diffrax</span><span class="o">.</span><span class="n">SaveAt</span><span class="p">(</span><span class="n">ts</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">return_intermediates</span>
@@ -1142,9 +1148,8 @@ window.addEventListener("load", load);</script>
             <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
             <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
             <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">solution</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">x_1</span><span class="p">)</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">solution</span></div>
 </div>
 

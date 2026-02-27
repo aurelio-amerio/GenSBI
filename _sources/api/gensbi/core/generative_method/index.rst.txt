@@ -1,0 +1,324 @@
+gensbi.core.generative_method
+=============================
+
+.. py:module:: gensbi.core.generative_method
+
+.. autoapi-nested-parse::
+
+   Abstract base class for generative method strategies.
+
+   A ``GenerativeMethod`` encapsulates the mathematical framework used for
+   training and sampling (e.g., flow matching, EDM diffusion, or score matching).
+   It is composed into mode-specific pipelines (Conditional, Joint, Unconditional)
+   via the strategy pattern.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.core.generative_method.GenerativeMethod
+
+
+Module Contents
+---------------
+
+.. py:class:: GenerativeMethod
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Strategy that encapsulates a generative framework.
+
+   Concrete implementations handle:
+
+   - **Path construction** — the probability path defining the forward process
+   - **Loss creation** — the training objective
+   - **Batch preparation** — sampling noise / time for training batches
+   - **Solver construction** — building the sampler for inference
+   - **Initial sample generation** — drawing from the prior
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_loss(path)
+      :abstractmethod:
+
+
+      
+      Create the loss callable for this method.
+
+      :param path: The probability path returned by :meth:`build_path`.
+
+      :returns: A loss object whose ``__call__`` computes the training loss.
+      :rtype: loss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_path(config)
+      :abstractmethod:
+
+
+      
+      Create the probability path from training config.
+
+      :param config: Training configuration dictionary (may contain scheduler
+                     hyperparameters such as ``sigma_min``, ``sigma_max``).
+      :type config: dict
+
+      :returns: A probability path object (e.g. ``AffineProbPath``, ``EDMPath``,
+                ``SMPath``).
+      :rtype: path
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_sampler_fn(model_wrapped, path, model_extras, **kwargs)
+      :abstractmethod:
+
+
+      
+      Build a sampler closure for inference.
+
+      The pipeline should use :meth:`sample_init` to generate the
+      initial noise ``x_init`` before calling the returned sampler.
+
+      :param model_wrapped: The wrapped model.
+      :param path: The probability path.
+      :param model_extras: Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).
+      :type model_extras: dict
+      :param \*\*kwargs: Method-specific sampler arguments (``step_size``, ``nsteps``,
+                         ``time_grid``, ``solver``, etc.).
+
+      :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_solver(model_wrapped, path, solver=None)
+      :abstractmethod:
+
+
+      
+      Instantiate a solver.
+
+      :param model_wrapped: The wrapped model (velocity field or score model).
+      :param path: The probability path.
+      :param solver: ``(SolverClass, kwargs)`` override. If ``None``, uses
+                     :meth:`get_default_solver`.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: An instantiated solver.
+      :rtype: solver_instance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_solver()
+      :abstractmethod:
+
+
+      
+      Return the default ``(SolverClass, kwargs)`` for this method.
+
+      :returns: **solver** -- A ``(SolverClass, default_kwargs)`` pair.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_extra_training_config()
+
+      
+      Return method-specific training config defaults.
+
+      Override in subclasses to supply extra defaults (e.g. ``sigma_min``).
+
+      :returns: Extra configuration parameters.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: prepare_batch(key, x_1, path)
+      :abstractmethod:
+
+
+      
+      Prepare a training batch from clean data.
+
+      All methods return a uniform ``(x_0, x_1, t_or_sigma)`` tuple
+      where ``x_0`` is noise sampled from the prior.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_1: Clean data batch of shape ``(batch_size, dim, ch)``.
+      :type x_1: Array
+      :param path: The probability path.
+
+      :returns: **batch** -- ``(x_0, x_1, t_or_sigma)`` prepared training batch.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_init(key, shape, path)
+      :abstractmethod:
+
+
+      
+      Sample initial noise for the generative process.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param shape: Shape of the initial sample, e.g. ``(nsamples, dim, ch)``.
+      :type shape: tuple
+      :param path: The probability path (needed for ``sample_prior`` in diffusion/SM).
+
+      :returns: **x_init** -- Initial noise sample.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

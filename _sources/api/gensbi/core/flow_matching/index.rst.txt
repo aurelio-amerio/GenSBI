@@ -1,0 +1,330 @@
+gensbi.core.flow_matching
+=========================
+
+.. py:module:: gensbi.core.flow_matching
+
+.. autoapi-nested-parse::
+
+   Flow matching generative method strategy.
+
+   Implements :class:`~gensbi.core.generative_method.GenerativeMethod` using
+   optimal-transport conditional flow matching with an affine probability path.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.core.flow_matching.FlowMatchingMethod
+   gensbi.core.flow_matching._StandardNormal
+
+
+Module Contents
+---------------
+
+.. py:class:: FlowMatchingMethod(prior=None)
+
+   Bases: :py:obj:`gensbi.core.generative_method.GenerativeMethod`
+
+
+   
+   Flow matching strategy using affine probability paths.
+
+   Uses the conditional optimal-transport scheduler and an ODE or SDE
+   solver for sampling.
+
+   :param prior: Source distribution for noise sampling. Must implement
+                 ``sample(key, shape) -> Array``. Defaults to standard normal
+                 ``N(0, I)``.
+   :type prior: object, optional
+
+   .. rubric:: Examples
+
+   >>> method = FlowMatchingMethod()
+   >>> path = method.build_path(config={})
+   >>> loss = method.build_loss(path)
+
+   Using a custom prior:
+
+   >>> from numpyro.distributions import Uniform
+   >>> method = FlowMatchingMethod(prior=Uniform(low=-1.0, high=1.0))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_loss(path)
+
+      
+      Build the continuous flow matching loss.
+
+      :param path: The probability path.
+      :type path: AffineProbPath
+
+      :returns: A loss callable with uniform interface
+                ``(model, batch, condition_mask=None, model_extras=None) -> loss``.
+      :rtype: FMLoss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_path(config)
+
+      
+      Build an affine probability path with the CondOT scheduler.
+
+      :param config: Training configuration (unused for flow matching).
+      :type config: dict
+
+      :returns: The probability path.
+      :rtype: AffineProbPath
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_sampler_fn(model_wrapped, path, model_extras, step_size=0.01, time_grid=None, solver=None, **kwargs)
+
+      
+      Build a sampler closure for flow matching.
+
+      Supports ODE solvers (deterministic) and SDE solvers (stochastic;
+      ``ZeroEndsSolver``, ``NonSingularSolver``). When an SDE solver is
+      used, the sampler function accepts and splits an extra random key.
+
+      :param model_wrapped: The wrapped velocity field model.
+      :param path: The probability path.
+      :param model_extras: Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).
+      :type model_extras: dict
+      :param step_size: Step size for fixed-step solvers. Default is 0.01.
+      :type step_size: float, optional
+      :param time_grid: Time grid for integration. If ``None``, uses ``[0, 1]``.
+      :type time_grid: Array, optional
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_solver(model_wrapped, path, solver=None)
+
+      
+      Instantiate a flow matching solver.
+
+      Supports both ODE solvers (``ODESolver``) and SDE solvers
+      (``ZeroEndsSolver``, ``NonSingularSolver``).
+
+      :param model_wrapped: The wrapped velocity field model.
+      :param path: The probability path (unused by ODE solver, but may be
+                   needed by SDE solvers).
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: An instantiated solver.
+      :rtype: solver_instance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_solver()
+
+      
+      Return the default ODE solver.
+
+      :returns: ``(ODESolver, {})``
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: prepare_batch(key, x_1, path)
+
+      
+      Sample from the prior and time for a flow matching training batch.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_1: Clean data of shape ``(batch_size, dim, ch)``.
+      :type x_1: Array
+      :param path: The probability path (unused, kept for interface consistency).
+      :type path: AffineProbPath
+
+      :returns: ``(x_0, x_1, t)`` where ``x_0`` is drawn from the prior and
+                ``t`` is uniform in ``[0, 1)``.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_init(key, shape, path)
+
+      
+      Sample from the prior distribution.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param shape: Shape of the initial sample.
+      :type shape: tuple
+      :param path: The probability path (unused).
+
+      :returns: Sample from the prior.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: prior
+      :value: None
+
+
+
+.. py:class:: _StandardNormal
+
+   
+   Default prior: standard normal distribution.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: sample(key, shape)
+
+

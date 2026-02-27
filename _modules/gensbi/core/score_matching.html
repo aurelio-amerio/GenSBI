@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>gensbi.diagnostics.distribution_wrapper &#8212; GenSBI  documentation</title>
+    <title>gensbi.core.score_matching &#8212; GenSBI  documentation</title>
   
   
   
@@ -489,7 +489,7 @@ mermaid.initialize(
 );
 
 window.addEventListener("load", load);</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/diagnostics/distribution_wrapper';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/core/score_matching';</script>
     <link rel="icon" href="../../../_static/logo-square-small.png"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -797,7 +797,7 @@ window.addEventListener("load", load);</script>
     
     <li class="breadcrumb-item"><a href="../../gensbi.html" class="nav-link">gensbi</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.diagnostics.distribution_wrapper</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.core.score_matching</span></li>
   </ul>
 </nav>
 </div>
@@ -814,209 +814,251 @@ window.addEventListener("load", load);</script>
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for gensbi.diagnostics.distribution_wrapper</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+  <h1>Source code for gensbi.core.score_matching</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Score matching generative method strategy.</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="sd">Implements :class:`~gensbi.core.generative_method.GenerativeMethod` using</span>
+<span class="sd">standard score matching diffusion with reverse SDE or probability flow ODE</span>
+<span class="sd">solvers and support for VP and VE SDE formulations.</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">rearrange</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.generative_method</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeMethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_sm_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMSolver</span>
 
 
-<div class="viewcode-block" id="PosteriorWrapper">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">PosteriorWrapper</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrap a GenSBI pipeline into a distribution compatible with `sbi`.</span>
+<div class="viewcode-block" id="ScoreMatchingMethod">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ScoreMatchingMethod</span><span class="p">(</span><span class="n">GenerativeMethod</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score matching strategy.</span>
+
+<span class="sd">    Supports two SDE formulations via the ``sde_type`` parameter:</span>
+
+<span class="sd">    - ``&quot;VP&quot;`` — variance-preserving (default)</span>
+<span class="sd">    - ``&quot;VE&quot;`` — variance-exploding</span>
+
+<span class="sd">    Sampling can use either the reverse SDE (``SMSolver``, default) or</span>
+<span class="sd">    the probability flow ODE (``SMPFSolver``).</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">        pipeline: An instance of a Pipeline from GenSBI.</span>
-<span class="sd">        rngs: A nnx.Rngs instance for random number generation.</span>
-<span class="sd">        theta_shape: Optional shape of the parameters (theta) to be sampled.</span>
-<span class="sd">        x_shape: Optional shape of the observations (x) to condition on.</span>
-<span class="sd">        *args, **kwargs: Additional arguments to be passed to the pipeline during sampling.</span>
+<span class="sd">    sde_type : str, optional</span>
+<span class="sd">        SDE type. One of ``&quot;VP&quot;`` or ``&quot;VE&quot;``. Default is ``&quot;VP&quot;``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; method = ScoreMatchingMethod(sde_type=&quot;VP&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; path = method.build_path(config={&quot;beta_min&quot;: 0.001, &quot;beta_max&quot;: 3.0})</span>
+<span class="sd">    &gt;&gt;&gt; loss = method.build_loss(path)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">pipeline</span><span class="p">:</span> <span class="n">AbstractPipeline</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-        <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">theta_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">x_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">):</span>
-
-<div class="viewcode-block" id="PosteriorWrapper.pipeline">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.pipeline">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">pipeline</span></div>
-
-<div class="viewcode-block" id="PosteriorWrapper.args">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.args">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span></div>
-
-<div class="viewcode-block" id="PosteriorWrapper.kwargs">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.kwargs">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span></div>
-
-<div class="viewcode-block" id="PosteriorWrapper.default_x">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.default_x">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">default_x</span> <span class="o">=</span> <span class="kc">None</span></div>
-
-<div class="viewcode-block" id="PosteriorWrapper.rngs">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/distribution_wrapper/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.rngs">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">rngs</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sde_type</span><span class="o">=</span><span class="s2">&quot;VP&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">sde_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;VP&quot;</span><span class="p">,</span> <span class="s2">&quot;VE&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;sde_type must be one of &#39;VP&#39;, &#39;VE&#39;, got &#39;</span><span class="si">{</span><span class="n">sde_type</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="p">)</span>
+<div class="viewcode-block" id="ScoreMatchingMethod.sde_type">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.sde_type">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">=</span> <span class="n">sde_type</span></div>
 
 
-        <span class="k">if</span> <span class="n">theta_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dim_theta</span> <span class="o">=</span> <span class="n">theta_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ch_theta</span> <span class="o">=</span> <span class="n">theta_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ch_theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">ch_obs</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dim_theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">dim_obs</span>
-
-        <span class="k">if</span> <span class="n">x_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dim_x</span> <span class="o">=</span> <span class="n">x_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ch_x</span> <span class="o">=</span> <span class="n">x_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">ch_cond</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ch_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_theta</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ch_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">ch_cond</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dim_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">dim_cond</span>
-
-<div class="viewcode-block" id="PosteriorWrapper._ravel">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._ravel">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_ravel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="PosteriorWrapper._unravel_theta">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._unravel_theta">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_unravel_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_theta</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="PosteriorWrapper._unravel_xs">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._unravel_xs">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_unravel_xs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_x</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="PosteriorWrapper._process_x">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper._process_x">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_process_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="s2">&quot;x must be of shape (batch, dim) or (batch, dim, ch)&quot;</span>
-
-        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="p">(</span>
-                <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_x</span>
-            <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Wrong number of channels, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ch_x</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-
-        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unravel_xs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ravel</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="PosteriorWrapper.set_default_x">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.set_default_x">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">set_default_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">default_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_x</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="PosteriorWrapper.sample">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">sample_shape</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>  <span class="c1"># does nothing, for compatibility</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Sample from the posterior distribution conditioned on x.</span>
+<div class="viewcode-block" id="ScoreMatchingMethod.build_path">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.build_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a score matching path.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            sample_shape : Tuple</span>
-<span class="sd">                Shape of the samples to be drawn.</span>
-<span class="sd">            x : Array</span>
-<span class="sd">                Optional tensor of observations to condition on. If None, uses the default_x.</span>
-<span class="sd">            </span>
+<span class="sd">        config : dict</span>
+<span class="sd">            Training configuration. Reads scheduler hyperparameters</span>
+<span class="sd">            (``beta_min``, ``beta_max`` for VP; ``sigma_min``, ``sigma_max``</span>
+<span class="sd">            for VE) with sensible defaults.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">            Array</span>
-<span class="sd">                Samples from the posterior distribution of shape (sample_shape, dim_theta * ch_theta).</span>
+<span class="sd">        SMPath</span>
+<span class="sd">            The configured score matching path.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_x</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="n">x</span>
-
-        <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unravel_xs</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
-
-        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
-            <span class="n">key</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">sample_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span>
-        <span class="p">)</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ravel</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">res</span></div>
+        <span class="k">return</span> <span class="n">build_sm_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="PosteriorWrapper.sample_batched">
-<a class="viewcode-back" href="../../../api/gensbi/diagnostics/index.html#gensbi.diagnostics.distribution_wrapper.PosteriorWrapper.sample_batched">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">sample_shape</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-        <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>  <span class="c1"># does nothing, for compatibility</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Sample from the posterior distribution conditioned on x.</span>
+<div class="viewcode-block" id="ScoreMatchingMethod.build_loss">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.build_loss">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the score matching loss.</span>
+
+<span class="sd">        Wraps ``path.get_loss_fn()`` into a callable object.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            sample_shape : Tuple</span>
-<span class="sd">                Shape of the samples to be drawn.</span>
-<span class="sd">            x : Array</span>
-<span class="sd">                Optional tensor of observations to condition on. If None, uses the default_x.</span>
-<span class="sd">            chunk_size : int</span>
-<span class="sd">                Size of the chunks to use for batched sampling.</span>
-<span class="sd">            show_progress_bars : bool</span>
-<span class="sd">                Whether to show progress bars during sampling.</span>
+<span class="sd">        path : SMPath</span>
+<span class="sd">            The score matching path.</span>
 
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        SMLoss</span>
+<span class="sd">            A loss callable with signature</span>
+<span class="sd">            ``(key, model, batch, condition_mask=None, model_extras={}) -&gt; loss``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_x</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="n">SMLoss</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
 
-        <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unravel_xs</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
 
-        <span class="n">chunk_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;chunk_size&quot;</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">)</span>
+<div class="viewcode-block" id="ScoreMatchingMethod.prepare_batch">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.prepare_batch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample noise and diffusion time for a score matching training batch.</span>
 
-        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
-        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span>
-            <span class="n">key</span><span class="p">,</span>
-            <span class="n">cond</span><span class="p">,</span>
-            <span class="n">sample_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
-            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
-            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        x_1 : Array</span>
+<span class="sd">            Clean data of shape ``(batch_size, dim, ch)``.</span>
+<span class="sd">        path : SMPath</span>
+<span class="sd">            The score matching path.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            ``(x_0, x_1, t)`` where ``x_0`` is standard normal noise</span>
+<span class="sd">            and ``t`` has shape ``(batch_size, 1, 1)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rng_x0</span><span class="p">,</span> <span class="n">rng_t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">x_0</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rng_x0</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">sample_t</span><span class="p">(</span><span class="n">rng_t</span><span class="p">,</span> <span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ScoreMatchingMethod.get_default_solver">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.get_default_solver">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the default reverse SDE solver.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            ``(SMSolver, {})``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">SMSolver</span><span class="p">,</span> <span class="p">{})</span></div>
+
+
+<div class="viewcode-block" id="ScoreMatchingMethod.build_solver">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.build_solver">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate a score matching solver.</span>
+
+<span class="sd">        Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``</span>
+<span class="sd">        (probability flow ODE).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_wrapped</span>
+<span class="sd">            The wrapped score model.</span>
+<span class="sd">        path : SMPath</span>
+<span class="sd">            The score matching path.</span>
+<span class="sd">        solver : tuple of (type, dict), optional</span>
+<span class="sd">            ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        solver_instance</span>
+<span class="sd">            An instantiated solver.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">solver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_solver</span><span class="p">()</span>
+        <span class="n">solver_cls</span><span class="p">,</span> <span class="n">solver_kwargs</span> <span class="o">=</span> <span class="n">solver</span>
+        <span class="k">return</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">score_model</span><span class="o">=</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ScoreMatchingMethod.sample_init">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.sample_init">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the score matching prior.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        shape : tuple</span>
+<span class="sd">            Shape of the initial sample.</span>
+<span class="sd">        path : SMPath</span>
+<span class="sd">            The score matching path (provides ``sample_prior``).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array</span>
+<span class="sd">            Sample from the prior.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">sample_prior</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ScoreMatchingMethod.build_sampler_fn">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.build_sampler_fn">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_sampler_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span>
+                         <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                         <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a sampler closure for score matching.</span>
+
+<span class="sd">        Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``</span>
+<span class="sd">        (probability flow ODE).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_wrapped</span>
+<span class="sd">            The wrapped score model.</span>
+<span class="sd">        path : SMPath</span>
+<span class="sd">            The score matching path.</span>
+<span class="sd">        model_extras : dict</span>
+<span class="sd">            Mode-specific extras (``cond``, ``obs_ids``, etc.).</span>
+<span class="sd">        nsteps : int, optional</span>
+<span class="sd">            Number of integration steps. Default is 1000.</span>
+<span class="sd">        return_intermediates : bool, optional</span>
+<span class="sd">            Whether to return intermediate steps. Default is False.</span>
+<span class="sd">        solver : tuple of (type, dict), optional</span>
+<span class="sd">            ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        sampler_fn : Callable</span>
+<span class="sd">            A function ``(key, x_init) -&gt; samples``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">solver_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_solver</span><span class="p">(</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span>
+
+        <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
+            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
+            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">res</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="s2">&quot;... f c -&gt; ... (f c)&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">res</span></div>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="p">{}):</span>
+            <span class="k">return</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sampler_fn</span></div>
+
+
+<div class="viewcode-block" id="ScoreMatchingMethod.get_extra_training_config">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.get_extra_training_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_extra_training_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return SM-specific training config defaults.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Scheduler defaults for the selected SDE type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;beta_min&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;beta_max&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;sigma_max&quot;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
 </div>
 
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMLoss</span>  <span class="c1"># noqa: E402</span>
 </pre></div>
 
                 </article>

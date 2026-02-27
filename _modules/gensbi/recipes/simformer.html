@@ -832,7 +832,8 @@ window.addEventListener("load", load);</script>
 <span class="p">)</span>
 
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.joint_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">JointFlowPipeline</span><span class="p">,</span> <span class="n">JointDiffusionPipeline</span><span class="p">,</span> <span class="n">JointSMPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.joint_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">JointPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_training_config</span>
 
 
 <div class="viewcode-block" id="parse_simformer_params">
@@ -942,72 +943,9 @@ window.addEventListener("load", load);</script>
 
 
 
-<div class="viewcode-block" id="parse_training_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.parse_training_config">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">parse_training_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Parse a training configuration file.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    config_path : str</span>
-<span class="sd">        Path to the configuration file.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    config : dict</span>
-<span class="sd">        Parsed configuration dictionary.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-    <span class="c1"># Training parameters</span>
-    <span class="n">train_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;training&quot;</span><span class="p">,</span> <span class="p">{})</span>
-    <span class="n">multistep</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;multistep&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">early_stopping</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-    <span class="n">nsteps</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nsteps&quot;</span><span class="p">,</span> <span class="mi">30000</span><span class="p">)</span> <span class="o">*</span> <span class="n">multistep</span>
-    <span class="n">val_every</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;val_every&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="n">multistep</span>
-    <span class="n">sigma_min</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">)</span>
-    <span class="n">sigma_max</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_max&quot;</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">)</span>
-
-    <span class="c1"># Optimizer parameters</span>
-    <span class="n">opt_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">,</span> <span class="p">{})</span>
-
-    <span class="n">MAX_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_lr&quot;</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>
-    <span class="n">MIN_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_lr&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-    <span class="n">MIN_SCALE</span> <span class="o">=</span> <span class="n">MIN_LR</span> <span class="o">/</span> <span class="n">MAX_LR</span> <span class="k">if</span> <span class="n">MAX_LR</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
-
-    <span class="n">ema_decay</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span>
-    <span class="n">decay_transition</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">)</span>
-
-    <span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
-
-    <span class="n">training_config</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="c1"># overwrite the defaults with the config file values</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nsteps</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ema_decay</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">decay_transition</span>
-
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LR</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_LR</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_SCALE</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val_every</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">early_stopping</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">experiment_id</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">multistep</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">warmup_steps</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma_min</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;sigma_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma_max</span>
-
-    <span class="k">return</span> <span class="n">training_config</span></div>
-
-
-
 <div class="viewcode-block" id="SimformerFlowPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerFlowPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">SimformerFlowPipeline</span><span class="p">(</span><span class="n">JointFlowPipeline</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimformerFlowPipeline</span><span class="p">(</span><span class="n">JointPipeline</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">train_dataset</span><span class="p">,</span>
@@ -1076,12 +1014,15 @@ window.addEventListener("load", load);</script>
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
             <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
@@ -1168,10 +1109,6 @@ window.addEventListener("load", load);</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">,</span>
-        <span class="p">}</span>
-
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
             <span class="n">key</span><span class="p">,</span>
             <span class="n">x_o</span><span class="p">,</span>
@@ -1179,31 +1116,15 @@ window.addEventListener("load", load);</script>
             <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
             <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
             <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">},</span>
         <span class="p">)</span></div>
 </div>
 
 
-    <span class="c1"># def compute_unnorm_logprob(</span>
-    <span class="c1">#     self, x_1, x_o, step_size=0.01, use_ema=True, time_grid=None</span>
-    <span class="c1"># ):</span>
-    <span class="c1">#     model_extras = {</span>
-    <span class="c1">#         &quot;edge_mask&quot;: self.edge_mask,</span>
-    <span class="c1">#     }</span>
-
-    <span class="c1">#     return super().compute_unnorm_logprob(</span>
-    <span class="c1">#         x_1,</span>
-    <span class="c1">#         x_o,</span>
-    <span class="c1">#         step_size=step_size,</span>
-    <span class="c1">#         use_ema=use_ema,</span>
-    <span class="c1">#         time_grid=time_grid,</span>
-    <span class="c1">#         **model_extras,</span>
-    <span class="c1">#     )</span>
-
 
 <div class="viewcode-block" id="SimformerSMPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerSMPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">SimformerSMPipeline</span><span class="p">(</span><span class="n">JointSMPipeline</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimformerSMPipeline</span><span class="p">(</span><span class="n">JointPipeline</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">train_dataset</span><span class="p">,</span>
@@ -1259,14 +1180,15 @@ window.addEventListener("load", load);</script>
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreMatchingMethod</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">ScoreMatchingMethod</span><span class="p">(</span><span class="n">sde_type</span><span class="o">=</span><span class="n">sde_type</span><span class="p">),</span>
             <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
-            <span class="n">sde_type</span><span class="o">=</span><span class="n">sde_type</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
@@ -1356,11 +1278,6 @@ window.addEventListener("load", load);</script>
         <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">,</span>
-        <span class="p">}</span>
-
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
             <span class="n">key</span><span class="p">,</span>
             <span class="n">x_o</span><span class="p">,</span>
@@ -1368,7 +1285,7 @@ window.addEventListener("load", load);</script>
             <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
             <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
             <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">},</span>
         <span class="p">)</span></div>
 </div>
 
@@ -1376,7 +1293,7 @@ window.addEventListener("load", load);</script>
 
 <div class="viewcode-block" id="SimformerDiffusionPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/simformer/index.html#gensbi.recipes.SimformerDiffusionPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">SimformerDiffusionPipeline</span><span class="p">(</span><span class="n">JointDiffusionPipeline</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimformerDiffusionPipeline</span><span class="p">(</span><span class="n">JointPipeline</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">train_dataset</span><span class="p">,</span>
@@ -1444,12 +1361,14 @@ window.addEventListener("load", load);</script>
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiffusionEDMMethod</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">DiffusionEDMMethod</span><span class="p">(),</span>
             <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
@@ -1542,11 +1461,6 @@ window.addEventListener("load", load);</script>
         <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">,</span>
-        <span class="p">}</span>
-
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
             <span class="n">key</span><span class="p">,</span>
             <span class="n">x_o</span><span class="p">,</span>
@@ -1554,7 +1468,7 @@ window.addEventListener("load", load);</script>
             <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
             <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
             <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">},</span>
         <span class="p">)</span></div>
 </div>
 

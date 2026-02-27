@@ -838,14 +838,9 @@ window.addEventListener("load", load);</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">VPSmScheduler</span><span class="p">,</span> <span class="n">VESmScheduler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMSolver</span><span class="p">,</span> <span class="n">SMPFSolver</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">UnconditionalCFMLoss</span><span class="p">,</span>
-    <span class="n">UnconditionalWrapper</span><span class="p">,</span>
-    <span class="n">UnconditionalEDMLoss</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.losses</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalSMLoss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalWrapper</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_ids_1d</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_ids_1d</span><span class="p">,</span> <span class="n">build_edm_path</span><span class="p">,</span> <span class="n">build_sm_path</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">repeat</span>
 
@@ -854,778 +849,119 @@ window.addEventListener("load", load);</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span>
 
 
-<div class="viewcode-block" id="UnconditionalFlowPipeline">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalFlowPipeline</span><span class="p">(</span><span class="n">AbstractPipeline</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Flow pipeline for training and using an Unconditional model for simulation-based inference.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    model : nnx.Module</span>
-<span class="sd">        The model to be trained.</span>
-<span class="sd">    train_dataset : grain dataset or iterator over batches</span>
-<span class="sd">        Training dataset.</span>
-<span class="sd">    val_dataset : grain dataset or iterator over batches</span>
-<span class="sd">        Validation dataset.</span>
-<span class="sd">    dim_obs : int</span>
-<span class="sd">        Dimension of the parameter space.</span>
-<span class="sd">    ch_obs : int</span>
-<span class="sd">        Number of channels in the observation space.</span>
-<span class="sd">    params : optional</span>
-<span class="sd">        Parameters for the model. Serves no use if a custom model is provided.</span>
-<span class="sd">    training_config : dict, optional</span>
-<span class="sd">        Configuration for training. If None, default configuration is used.</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    Minimal example on how to instantiate and use the UnconditionalFlowPipeline:</span>
-
-<span class="sd">    .. literalinclude:: /examples/unconditional_flow_pipeline.py</span>
-<span class="sd">        :language: python</span>
-<span class="sd">        :linenos:</span>
-
-<span class="sd">    .. image:: /examples/unconditional_flow_samples.png</span>
-<span class="sd">        :width: 600</span>
-
-<span class="sd">    .. note::</span>
-<span class="sd">        If you plan on using multiprocessing prefetching, ensure that your script is wrapped</span>
-<span class="sd">        in a ``if __name__ == &quot;__main__&quot;:`` guard.</span>
-<span class="sd">        See https://docs.python.org/3/library/multiprocessing.html</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">,</span>
-        <span class="n">train_dataset</span><span class="p">,</span>
-        <span class="n">val_dataset</span><span class="p">,</span>
-        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">ch_obs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-            <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
-            <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
-            <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
-            <span class="n">dim_cond</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-            <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-            <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">)</span>
-
-<div class="viewcode-block" id="UnconditionalFlowPipeline.path">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.path">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">AffineProbPath</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="n">CondOTScheduler</span><span class="p">())</span></div>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Deprecated pipeline classes (replaced by UnconditionalPipeline)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
 
 
-<div class="viewcode-block" id="UnconditionalFlowPipeline.loss_fn">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.loss_fn">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">UnconditionalCFMLoss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+<div class="viewcode-block" id="_DeprecatedUnconditionalPipeline">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes._DeprecatedUnconditionalPipeline">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">_DeprecatedUnconditionalPipeline</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base for deprecated unconditional pipeline stubs.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="_DeprecatedUnconditionalPipeline._message">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes._DeprecatedUnconditionalPipeline._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalFlowPipeline.p0_obs">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.p0_obs">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">p0_obs</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">Independent</span><span class="p">(</span>
-            <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span>
-                <span class="n">loc</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">)),</span>
-                <span class="n">scale</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">)),</span>
-            <span class="p">),</span>
-            <span class="n">reinterpreted_batch_ndims</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalFlowPipeline.init_pipeline_from_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.init_pipeline_from_config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span>
-        <span class="bp">cls</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Initialization from config not implemented for UnconditionalFlowPipeline.&quot;</span>
-        <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalFlowPipeline._make_model">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline._make_model">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_make_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Model creation not implemented for UnconditionalFlowPipeline.&quot;</span>
-        <span class="p">)</span></div>
-
-
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalFlowPipeline.get_default_params">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.get_default_params">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Default parameters not implemented for UnconditionalFlowPipeline.&quot;</span>
-        <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalFlowPipeline.get_loss_fn">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.get_loss_fn">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_loss_fn</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">):</span>
-            <span class="n">obs</span> <span class="o">=</span> <span class="n">batch</span>
-
-            <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-            <span class="n">rng_x0</span><span class="p">,</span> <span class="n">rng_t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-            <span class="n">x_1</span> <span class="o">=</span> <span class="n">obs</span>
-            <span class="c1"># x_0 = self.p0_obs.sample(rng_x0, (batch_size,))</span>
-            <span class="n">x_0</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rng_x0</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">))</span>
-            <span class="n">t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">rng_t</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-
-            <span class="n">batch</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-            <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="o">*</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
-
-            <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span>
-                <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">node_ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="n">loss</span>
-
-        <span class="k">return</span> <span class="n">loss_fn</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalFlowPipeline._wrap_model">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline._wrap_model">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span> <span class="o">=</span> <span class="n">UnconditionalWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="o">=</span> <span class="n">UnconditionalWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
-        <span class="k">return</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalFlowPipeline.get_sampler">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.get_sampler">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
-        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a sampler function for the flow model.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        step_size : float, optional</span>
-<span class="sd">            Step size for the solver. Default is 0.01.</span>
-<span class="sd">        use_ema : bool, optional</span>
-<span class="sd">            Whether to use the EMA model. Default is True.</span>
-<span class="sd">        time_grid : Array, optional</span>
-<span class="sd">            Time grid for intermediate steps. If None, uses ``[0, 1]``.</span>
-<span class="sd">        solver : tuple of (type, dict), optional</span>
-<span class="sd">            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver</span>
-<span class="sd">            class and its constructor keyword arguments.</span>
-<span class="sd">            Defaults to ``(ODESolver, {})``.</span>
-
-<span class="sd">            For SDE solvers (e.g., ``ZeroEnds``, ``NonSingular``), additional</span>
-<span class="sd">            constructor arguments must be provided via the kwargs dict.</span>
-<span class="sd">            A random key is automatically passed to SDE samplers.</span>
-
-<span class="sd">        **model_extras : dict</span>
-<span class="sd">            Additional keyword arguments passed to the model.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Callable</span>
-<span class="sd">            A function ``sampler(key, nsamples)`` that generates samples.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Using the default ODE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; sampler = pipeline.get_sampler()</span>
-<span class="sd">        &gt;&gt;&gt; samples = sampler(key, nsamples=1000)</span>
-
-<span class="sd">        Using the ZeroEnds SDE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; import jax.numpy as jnp</span>
-<span class="sd">        &gt;&gt;&gt; from gensbi.flow_matching.solver import ZeroEnds</span>
-<span class="sd">        &gt;&gt;&gt; solver = (ZeroEnds, {</span>
-<span class="sd">        ...     &quot;mu0&quot;: jnp.zeros((dim_obs, ch_obs)),</span>
-<span class="sd">        ...     &quot;sigma0&quot;: jnp.ones((dim_obs, ch_obs)),</span>
-<span class="sd">        ...     &quot;alpha&quot;: 1.0,</span>
-<span class="sd">        ... })</span>
-<span class="sd">        &gt;&gt;&gt; sampler = pipeline.get_sampler(solver=solver)</span>
-<span class="sd">        &gt;&gt;&gt; samples = sampler(key, nsamples=1000)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">solver</span> <span class="o">=</span> <span class="p">(</span><span class="n">ODESolver</span><span class="p">,</span> <span class="p">{})</span>
-
-        <span class="k">if</span> <span class="n">use_ema</span><span class="p">:</span>
-            <span class="n">vf_wrapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">vf_wrapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
-
-        <span class="k">if</span> <span class="n">time_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
-            <span class="n">return_intermediates</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">time_grid</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">time_grid</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
-            <span class="n">return_intermediates</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="n">solver_cls</span><span class="p">,</span> <span class="n">solver_kwargs</span> <span class="o">=</span> <span class="n">solver</span>
-        <span class="n">solver_instance</span> <span class="o">=</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">velocity_model</span><span class="o">=</span><span class="n">vf_wrapped</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span><span class="p">)</span>
-        <span class="n">pass_key</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">BaseFmSDESolver</span><span class="p">)</span>
-
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">}</span>
-
-        <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
-            <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
-            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
-            <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
-            <span class="n">key</span><span class="p">,</span> <span class="n">key_init</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="n">x_init</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key_init</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">))</span>
-
-            <span class="k">if</span> <span class="n">pass_key</span><span class="p">:</span>
-                <span class="n">key</span><span class="p">,</span> <span class="n">key_sampler</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-                <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key_sampler</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">x_init</span><span class="p">)</span>
-
-            <span class="k">return</span> <span class="n">samples</span>
-
-        <span class="k">return</span> <span class="n">sampler</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalFlowPipeline.sample">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">,</span>
-        <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
-        <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
-        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the flow model.</span>
-
-<span class="sd">        Convenience method that internally calls :meth:`get_sampler` and</span>
-<span class="sd">        immediately evaluates the returned sampler function.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        key : jax.random.PRNGKey</span>
-<span class="sd">            JAX random key used for sampling.</span>
-<span class="sd">        nsamples : int, optional</span>
-<span class="sd">            Number of samples to draw. Default is 10 000.</span>
-<span class="sd">        step_size : float, optional</span>
-<span class="sd">            Step size for the solver. Default is 0.01.</span>
-<span class="sd">        use_ema : bool, optional</span>
-<span class="sd">            Whether to use the EMA model. Default is True.</span>
-<span class="sd">        time_grid : Array, optional</span>
-<span class="sd">            Time grid for intermediate steps. If None, uses</span>
-<span class="sd">            ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.</span>
-<span class="sd">        solver : tuple of (type, dict), optional</span>
-<span class="sd">            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver</span>
-<span class="sd">            class and its keyword arguments. Defaults to ``(ODESolver, {})``.</span>
-
-<span class="sd">            To use an SDE solver instead:</span>
-
-<span class="sd">            &gt;&gt;&gt; from gensbi.flow_matching.solver import ZeroEndsSolver</span>
-<span class="sd">            &gt;&gt;&gt; solver = (ZeroEndsSolver, {&quot;mu0&quot;: 0.0, &quot;sigma0&quot;: 0.01})</span>
-<span class="sd">            &gt;&gt;&gt; samples = pipeline.sample(key, solver=solver)</span>
-
-<span class="sd">        **model_extras : dict</span>
-<span class="sd">            Additional keyword arguments passed to the model.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Array</span>
-<span class="sd">            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Using the default ODE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; samples = pipeline.sample(key, nsamples=1000)</span>
-
-<span class="sd">        Using the ZeroEnds SDE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; from gensbi.flow_matching.solver import ZeroEndsSolver</span>
-<span class="sd">        &gt;&gt;&gt; solver = (ZeroEndsSolver, {&quot;mu0&quot;: 0.0, &quot;sigma0&quot;: 0.01})</span>
-<span class="sd">        &gt;&gt;&gt; samples = pipeline.sample(key, solver=solver)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
-            <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
-            <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
-            <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">samples</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalFlowPipeline.sample_batched">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline.sample_batched">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Batched sampling not implemented for UnconditionalFlowPipeline.&quot;</span>
-        <span class="p">)</span></div>
+<div class="viewcode-block" id="_DeprecatedUnconditionalPipeline.get_default_training_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes._DeprecatedUnconditionalPipeline.get_default_training_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_training_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_message</span><span class="p">)</span></div>
 </div>
 
 
-    <span class="c1"># def compute_unnorm_logprob(</span>
-    <span class="c1">#     self, x_1, step_size=0.01, use_ema=True, time_grid=None, **model_extras</span>
-    <span class="c1"># ):</span>
-    <span class="c1">#     if use_ema:</span>
-    <span class="c1">#         model = self.ema_model_wrapped</span>
-    <span class="c1">#     else:</span>
-    <span class="c1">#         model = self.model_wrapped</span>
 
-    <span class="c1">#     if time_grid is None:</span>
-    <span class="c1">#         time_grid = jnp.array([1.0, 0.0])</span>
-    <span class="c1">#         return_intermediates = False</span>
-    <span class="c1">#     else:</span>
-    <span class="c1">#         # assert time grid is decreasing</span>
-    <span class="c1">#         assert jnp.all(time_grid[:-1] &gt;= time_grid[1:])</span>
-    <span class="c1">#         return_intermediates = True</span>
+<div class="viewcode-block" id="UnconditionalFlowPipeline">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalFlowPipeline</span><span class="p">(</span><span class="n">_DeprecatedUnconditionalPipeline</span><span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalFlowPipeline._message">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalFlowPipeline._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;UnconditionalFlowPipeline has been removed. &quot;</span>
+        <span class="s2">&quot;Use UnconditionalPipeline(method=FlowMatchingMethod(), ...) instead.&quot;</span>
+    <span class="p">)</span></div>
+</div>
 
-    <span class="c1">#     solver = ODESolver(velocity_model=model)</span>
-
-    <span class="c1">#     # x_1 = _expand_dims(x_1)</span>
-    <span class="c1">#     assert (</span>
-    <span class="c1">#         x_1.ndim == 2</span>
-    <span class="c1">#     ), &quot;x_1 must be of shape (num_samples, dim_obs), currently sampling for multiple channels is not supported.&quot;</span>
-
-    <span class="c1">#     # todo need to check the model extras, is that node_ids instead?</span>
-    <span class="c1">#     model_extras = {&quot;obs_ids&quot;: self.obs_ids, **model_extras}</span>
-
-    <span class="c1">#     logp_sampler = solver.get_unnormalized_logprob(</span>
-    <span class="c1">#         time_grid=time_grid,</span>
-    <span class="c1">#         method=&quot;Euler&quot;,</span>
-    <span class="c1">#         step_size=step_size,</span>
-    <span class="c1">#         log_p0=self.p0_obs.log_prob,</span>
-    <span class="c1">#         model_extras=model_extras,</span>
-    <span class="c1">#         return_intermediates=return_intermediates,</span>
-    <span class="c1">#     )</span>
-
-    <span class="c1">#     if len(x_1) &gt; 4:</span>
-    <span class="c1">#         # we trigger precompilation first</span>
-    <span class="c1">#         _ = logp_sampler(x_1[:4])</span>
-
-    <span class="c1">#     exact_log_p = logp_sampler(x_1)</span>
-    <span class="c1">#     return exact_log_p</span>
 
 
 <div class="viewcode-block" id="UnconditionalDiffusionPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalDiffusionPipeline</span><span class="p">(</span><span class="n">AbstractPipeline</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Diffusion pipeline for training and using an Unconditional model for simulation-based inference.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    model : nnx.Module</span>
-<span class="sd">        The model to be trained.</span>
-<span class="sd">    train_dataset : grain dataset or iterator over batches</span>
-<span class="sd">        Training dataset.</span>
-<span class="sd">    val_dataset : grain dataset or iterator over batches</span>
-<span class="sd">        Validation dataset.</span>
-<span class="sd">    dim_obs : int</span>
-<span class="sd">        Dimension of the parameter space.</span>
-<span class="sd">    ch_obs : int</span>
-<span class="sd">        Number of channels in the observation space.</span>
-<span class="sd">    params : optional</span>
-<span class="sd">        Parameters for the model. Serves no use if a custom model is provided.</span>
-<span class="sd">    training_config : dict, optional</span>
-<span class="sd">        Configuration for training. If None, default configuration is used.</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    Minimal example on how to instantiate and use the UnconditionalDiffusionPipeline:</span>
-
-<span class="sd">    .. literalinclude:: /examples/unconditional_diffusion_pipeline.py</span>
-<span class="sd">        :language: python</span>
-<span class="sd">        :linenos:</span>
-
-<span class="sd">    .. image:: /examples/unconditional_diffusion_samples.png</span>
-<span class="sd">        :width: 600</span>
-
-<span class="sd">    .. note::</span>
-<span class="sd">        If you plan on using multiprocessing prefetching, ensure that your script is wrapped</span>
-<span class="sd">        in a ``if __name__ == &quot;__main__&quot;:`` guard.</span>
-<span class="sd">        See https://docs.python.org/3/library/multiprocessing.html</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">,</span>
-        <span class="n">train_dataset</span><span class="p">,</span>
-        <span class="n">val_dataset</span><span class="p">,</span>
-        <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">ch_obs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">sde</span><span class="o">=</span><span class="s2">&quot;EDM&quot;</span><span class="p">,</span>
-        <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-            <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
-            <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
-            <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
-            <span class="n">dim_cond</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-            <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-            <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">)</span>
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.sde">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.sde">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sde</span> <span class="o">=</span> <span class="n">sde</span></div>
-
-        <span class="k">if</span> <span class="n">sde</span> <span class="o">==</span> <span class="s2">&quot;EDM&quot;</span><span class="p">:</span>
-            <span class="n">sigma_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">)</span>
-            <span class="n">sigma_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_max&quot;</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">EDMPath</span><span class="p">(</span>
-                <span class="n">scheduler</span><span class="o">=</span><span class="n">EDMScheduler</span><span class="p">(</span>
-                    <span class="n">sigma_min</span><span class="o">=</span><span class="n">sigma_min</span><span class="p">,</span>
-                    <span class="n">sigma_max</span><span class="o">=</span><span class="n">sigma_max</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">sde</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span><span class="p">:</span>
-            <span class="n">sigma_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
-            <span class="n">sigma_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_max&quot;</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">EDMPath</span><span class="p">(</span>
-                <span class="n">scheduler</span><span class="o">=</span><span class="n">VEEdmScheduler</span><span class="p">(</span>
-                    <span class="n">sigma_min</span><span class="o">=</span><span class="n">sigma_min</span><span class="p">,</span>
-                    <span class="n">sigma_max</span><span class="o">=</span><span class="n">sigma_max</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">sde</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
-            <span class="n">beta_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;beta_min&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
-            <span class="n">beta_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;beta_max&quot;</span><span class="p">,</span> <span class="mf">19.9</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">EDMPath</span><span class="p">(</span>
-                <span class="n">scheduler</span><span class="o">=</span><span class="n">VPEdmScheduler</span><span class="p">(</span>
-                    <span class="n">beta_min</span><span class="o">=</span><span class="n">beta_min</span><span class="p">,</span>
-                    <span class="n">beta_max</span><span class="o">=</span><span class="n">beta_max</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown sde type: </span><span class="si">{</span><span class="n">sde</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.loss_fn">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.loss_fn">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">UnconditionalEDMLoss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
-
-
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.init_pipeline_from_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.init_pipeline_from_config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span>
-        <span class="bp">cls</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Initialization from config not implemented for UnconditionalDiffusionPipeline.&quot;</span>
-        <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline._make_model">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline._make_model">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_make_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Model creation not implemented for UnconditionalDiffusionPipeline.&quot;</span>
-        <span class="p">)</span></div>
-
-
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.get_default_params">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.get_default_params">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Default parameters not implemented for UnconditionalDiffusionPipeline.&quot;</span>
-        <span class="p">)</span></div>
-
-
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.get_default_training_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.get_default_training_config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_training_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sde</span><span class="o">=</span><span class="s2">&quot;EDM&quot;</span><span class="p">):</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">sde</span> <span class="o">==</span> <span class="s2">&quot;EDM&quot;</span><span class="p">:</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;sigma_min&quot;</span><span class="p">:</span> <span class="mf">0.002</span><span class="p">,</span>  <span class="c1"># from edm paper</span>
-                    <span class="s2">&quot;sigma_max&quot;</span><span class="p">:</span> <span class="mf">80.0</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">sde</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span><span class="p">:</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;sigma_min&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>  <span class="c1"># from edm paper</span>
-                    <span class="s2">&quot;sigma_max&quot;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">sde</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;beta_min&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-                    <span class="s2">&quot;beta_max&quot;</span><span class="p">:</span> <span class="mf">19.9</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">config</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.get_loss_fn">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.get_loss_fn">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_loss_fn</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">):</span>
-            <span class="n">rng_x0</span><span class="p">,</span> <span class="n">rng_sigma</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-            <span class="n">x_1</span> <span class="o">=</span> <span class="n">batch</span>
-            <span class="c1"># sigma = self.path.sample_sigma(rng_sigma, (x_1.shape[0], ))</span>
-            <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample_sigma</span><span class="p">(</span><span class="n">rng_sigma</span><span class="p">,</span> <span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-            <span class="c1"># sigma = repeat(sigma, f&quot;b -&gt; b {&#39;1 &#39; * (x_1.ndim - 1)}&quot;)  # TODO fixme</span>
-
-            <span class="n">batch</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-            <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">rng_x0</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">node_ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">loss</span>
-
-        <span class="k">return</span> <span class="n">loss_fn</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline._wrap_model">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline._wrap_model">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span> <span class="o">=</span> <span class="n">UnconditionalWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="o">=</span> <span class="n">UnconditionalWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
-        <span class="k">return</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.get_sampler">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.get_sampler">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">nsteps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span>
-        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a sampler function for the diffusion model.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        nsteps : int, optional</span>
-<span class="sd">            Number of sampling steps. Default is 18.</span>
-<span class="sd">        use_ema : bool, optional</span>
-<span class="sd">            Whether to use the EMA model. Default is True.</span>
-<span class="sd">        return_intermediates : bool, optional</span>
-<span class="sd">            Whether to return intermediate steps. Default is False.</span>
-<span class="sd">        solver : tuple of (type, dict), optional</span>
-<span class="sd">            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver</span>
-<span class="sd">            class and its constructor keyword arguments.</span>
-<span class="sd">            Defaults to ``(EDMSolver, {})``.</span>
-
-<span class="sd">            The solver class must accept ``score_model`` and ``path`` as</span>
-<span class="sd">            its first two positional arguments.</span>
-
-<span class="sd">            EDM-specific options can be provided in the kwargs dict:</span>
-
-<span class="sd">            - ``solver_scheduler``: override the path&#39;s scheduler for</span>
-<span class="sd">              sampling (also used for ``sample_prior``).</span>
-<span class="sd">            - ``solver_params``: dict of EDM solver parameters</span>
-<span class="sd">              (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).</span>
-
-<span class="sd">        **model_extras : dict</span>
-<span class="sd">            Additional keyword arguments passed to the model.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Callable</span>
-<span class="sd">            A function ``sampler(key, nsamples)`` that generates samples.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Using the default EDM solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; sampler = pipeline.get_sampler()</span>
-<span class="sd">        &gt;&gt;&gt; samples = sampler(key, nsamples=1000)</span>
-
-<span class="sd">        Using a custom scheduler:</span>
-
-<span class="sd">        &gt;&gt;&gt; from gensbi.diffusion.solver import EDMSolver</span>
-<span class="sd">        &gt;&gt;&gt; from gensbi.diffusion.path.scheduler import VEEdmScheduler</span>
-<span class="sd">        &gt;&gt;&gt; solver = (EDMSolver, {&quot;solver_scheduler&quot;: VEEdmScheduler()})</span>
-<span class="sd">        &gt;&gt;&gt; sampler = pipeline.get_sampler(solver=solver)</span>
-<span class="sd">        &gt;&gt;&gt; samples = sampler(key, nsamples=1000)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">solver</span> <span class="o">=</span> <span class="p">(</span><span class="n">EDMSolver</span><span class="p">,</span> <span class="p">{})</span>
-
-        <span class="k">if</span> <span class="n">use_ema</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
-
-        <span class="n">solver_cls</span><span class="p">,</span> <span class="n">solver_kwargs</span> <span class="o">=</span> <span class="n">solver</span>
-        <span class="n">solver_scheduler</span> <span class="o">=</span> <span class="n">solver_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;solver_scheduler&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="n">solver_params</span> <span class="o">=</span> <span class="n">solver_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;solver_params&quot;</span><span class="p">,</span> <span class="p">{})</span>
-
-        <span class="n">solver_instance</span> <span class="o">=</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">score_model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span><span class="p">)</span>
-
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">}</span>
-
-        <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
-            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
-            <span class="n">solver_scheduler</span><span class="o">=</span><span class="n">solver_scheduler</span><span class="p">,</span>
-            <span class="n">solver_params</span><span class="o">=</span><span class="n">solver_params</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">prior_source</span> <span class="o">=</span> <span class="n">solver_scheduler</span> <span class="k">if</span> <span class="n">solver_scheduler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
-            <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-            <span class="n">x_init</span> <span class="o">=</span> <span class="n">prior_source</span><span class="o">.</span><span class="n">sample_prior</span><span class="p">(</span>
-                <span class="n">key1</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">)</span>
-            <span class="p">)</span>
-            <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">key2</span><span class="p">,</span> <span class="n">x_init</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">samples</span>
-
-        <span class="k">return</span> <span class="n">sampler</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.sample">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">,</span>
-        <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
-        <span class="n">nsteps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span>
-        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the diffusion model.</span>
-
-<span class="sd">        Convenience method that internally calls :meth:`get_sampler` and</span>
-<span class="sd">        immediately evaluates the returned sampler function.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        key : jax.random.PRNGKey</span>
-<span class="sd">            JAX random key used for sampling.</span>
-<span class="sd">        nsamples : int, optional</span>
-<span class="sd">            Number of samples to draw. Default is 10 000.</span>
-<span class="sd">        nsteps : int, optional</span>
-<span class="sd">            Number of sampling steps. Default is 18.</span>
-<span class="sd">        use_ema : bool, optional</span>
-<span class="sd">            Whether to use the EMA model. Default is True.</span>
-<span class="sd">        return_intermediates : bool, optional</span>
-<span class="sd">            Whether to return intermediate steps. Default is False.</span>
-<span class="sd">        solver : tuple of (type, dict), optional</span>
-<span class="sd">            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver</span>
-<span class="sd">            class and its keyword arguments. Defaults to ``(EDMSolver, {})``.</span>
-
-<span class="sd">            EDM-specific options can be provided in the kwargs dict:</span>
-
-<span class="sd">            - ``solver_scheduler``: override the path&#39;s scheduler for</span>
-<span class="sd">              sampling (also used for ``sample_prior``).</span>
-<span class="sd">            - ``solver_params``: dict of EDM solver parameters</span>
-<span class="sd">              (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).</span>
-
-<span class="sd">        **model_extras : dict</span>
-<span class="sd">            Additional keyword arguments passed to the model.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Array</span>
-<span class="sd">            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Using the default EDM solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; samples = pipeline.sample(key, nsamples=1000)</span>
-
-<span class="sd">        Using a custom scheduler:</span>
-
-<span class="sd">        &gt;&gt;&gt; from gensbi.diffusion.solver import EDMSolver</span>
-<span class="sd">        &gt;&gt;&gt; from gensbi.diffusion.path.scheduler import VEEdmScheduler</span>
-<span class="sd">        &gt;&gt;&gt; solver = (EDMSolver, {&quot;solver_scheduler&quot;: VEEdmScheduler()})</span>
-<span class="sd">        &gt;&gt;&gt; samples = pipeline.sample(key, solver=solver)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
-            <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
-            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">samples</span></div>
-
-
-<div class="viewcode-block" id="UnconditionalDiffusionPipeline.sample_batched">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline.sample_batched">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Batched sampling not implemented for UnconditionalDiffusionPipeline.&quot;</span>
-        <span class="p">)</span></div>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalDiffusionPipeline</span><span class="p">(</span><span class="n">_DeprecatedUnconditionalPipeline</span><span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalDiffusionPipeline._message">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalDiffusionPipeline._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;UnconditionalDiffusionPipeline has been removed. &quot;</span>
+        <span class="s2">&quot;Use UnconditionalPipeline(method=DiffusionEDMMethod(), ...) instead.&quot;</span>
+    <span class="p">)</span></div>
 </div>
 
 
 
 <div class="viewcode-block" id="UnconditionalSMPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalSMPipeline</span><span class="p">(</span><span class="n">AbstractPipeline</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Score matching pipeline for training and using an Unconditional model for simulation-based inference.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalSMPipeline</span><span class="p">(</span><span class="n">_DeprecatedUnconditionalPipeline</span><span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalSMPipeline._message">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline._message">[docs]</a>
+    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;UnconditionalSMPipeline has been removed. &quot;</span>
+        <span class="s2">&quot;Use UnconditionalPipeline(method=ScoreMatchingMethod(), ...) instead.&quot;</span>
+    <span class="p">)</span></div>
+</div>
 
-<span class="sd">    Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Unified UnconditionalPipeline (Phase 2)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.generative_method</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeMethod</span>
+
+
+<div class="viewcode-block" id="UnconditionalPipeline">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnconditionalPipeline</span><span class="p">(</span><span class="n">AbstractPipeline</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Model-agnostic unconditional pipeline parameterized by a ``GenerativeMethod``.</span>
+
+<span class="sd">    Unlike the method-specific classes above (``UnconditionalFlowPipeline``,</span>
+<span class="sd">    ``UnconditionalDiffusionPipeline``, ``UnconditionalSMPipeline``), this</span>
+<span class="sd">    class works with **any** generative method and **any** user-provided</span>
+<span class="sd">    model that conforms to the ``UnconditionalWrapper`` interface.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    model : nnx.Module</span>
 <span class="sd">        The model to be trained.</span>
-<span class="sd">    train_dataset : grain dataset or iterator over batches</span>
-<span class="sd">        Training dataset.</span>
-<span class="sd">    val_dataset : grain dataset or iterator over batches</span>
+<span class="sd">    train_dataset : iterable</span>
+<span class="sd">        Training dataset yielding ``x_1`` batches (not tuples).</span>
+<span class="sd">    val_dataset : iterable</span>
 <span class="sd">        Validation dataset.</span>
 <span class="sd">    dim_obs : int</span>
-<span class="sd">        Dimension of the parameter space.</span>
-<span class="sd">    ch_obs : int</span>
-<span class="sd">        Number of channels in the observation space.</span>
-<span class="sd">    sde_type : str</span>
-<span class="sd">        Type of SDE to use. One of ``&quot;VP&quot;`` (Variance Preserving) or ``&quot;VE&quot;`` (Variance Exploding).</span>
+<span class="sd">        Dimension of the data space.</span>
+<span class="sd">    method : GenerativeMethod</span>
+<span class="sd">        Strategy object (e.g. ``FlowMatchingMethod()``,</span>
+<span class="sd">        ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).</span>
+<span class="sd">    ch_obs : int, optional</span>
+<span class="sd">        Number of channels per token. Default is 1.</span>
 <span class="sd">    params : optional</span>
-<span class="sd">        Parameters for the model. Serves no use if a custom model is provided.</span>
+<span class="sd">        Model parameters (stored but not used directly).</span>
 <span class="sd">    training_config : dict, optional</span>
-<span class="sd">        Configuration for training. If None, default configuration is used.</span>
+<span class="sd">        Training configuration.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from gensbi.core import FlowMatchingMethod</span>
+<span class="sd">    &gt;&gt;&gt; pipeline = UnconditionalPipeline(</span>
+<span class="sd">    ...     model=my_model,</span>
+<span class="sd">    ...     train_dataset=train_ds,</span>
+<span class="sd">    ...     val_dataset=val_ds,</span>
+<span class="sd">    ...     dim_obs=9,</span>
+<span class="sd">    ...     method=FlowMatchingMethod(),</span>
+<span class="sd">    ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -1634,11 +970,22 @@ window.addEventListener("load", load);</script>
         <span class="n">train_dataset</span><span class="p">,</span>
         <span class="n">val_dataset</span><span class="p">,</span>
         <span class="n">dim_obs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">ch_obs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">sde_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VP&quot;</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">GenerativeMethod</span><span class="p">,</span>
+        <span class="n">ch_obs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalPipeline.method">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.method">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span></div>
+
+
+        <span class="k">if</span> <span class="n">training_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">training_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
+        <span class="n">extra</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">get_extra_training_config</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">extra</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">training_config</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
@@ -1651,251 +998,135 @@ window.addEventListener("load", load);</script>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">)</span>
-<div class="viewcode-block" id="UnconditionalSMPipeline.sde_type">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.sde_type">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">=</span> <span class="n">sde_type</span></div>
+
+<div class="viewcode-block" id="UnconditionalPipeline.path">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.path">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="UnconditionalPipeline.loss_obj">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.loss_obj">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_obj</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
 
 
-        <span class="k">if</span> <span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
-            <span class="n">beta_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;beta_min&quot;</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">)</span>
-            <span class="n">beta_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;beta_max&quot;</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">SMPath</span><span class="p">(</span><span class="n">VPSmScheduler</span><span class="p">(</span><span class="n">beta_min</span><span class="o">=</span><span class="n">beta_min</span><span class="p">,</span> <span class="n">beta_max</span><span class="o">=</span><span class="n">beta_max</span><span class="p">))</span>
-        <span class="k">elif</span> <span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span><span class="p">:</span>
-            <span class="n">sigma_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">)</span>
-            <span class="n">sigma_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_max&quot;</span><span class="p">,</span> <span class="mf">15.0</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">SMPath</span><span class="p">(</span><span class="n">VESmScheduler</span><span class="p">(</span><span class="n">sigma_min</span><span class="o">=</span><span class="n">sigma_min</span><span class="p">,</span> <span class="n">sigma_max</span><span class="o">=</span><span class="n">sigma_max</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sde_type must be one of [&#39;VP&#39;, &#39;VE&#39;], got </span><span class="si">{</span><span class="n">sde_type</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-
-<div class="viewcode-block" id="UnconditionalSMPipeline.loss_fn">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.loss_fn">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">UnconditionalSMLoss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
-
+    <span class="c1"># -- Factory stubs ------------------------------------------------------</span>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalSMPipeline.init_pipeline_from_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.init_pipeline_from_config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalPipeline.init_pipeline_from_config">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.init_pipeline_from_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Initialization from config not implemented for UnconditionalSMPipeline.&quot;</span>
+            <span class="s2">&quot;UnconditionalPipeline is model-agnostic. &quot;</span>
+            <span class="s2">&quot;Use model-specific pipelines for config init.&quot;</span>
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalSMPipeline._make_model">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline._make_model">[docs]</a>
+<div class="viewcode-block" id="UnconditionalPipeline._make_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline._make_model">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Model creation not implemented for UnconditionalSMPipeline.&quot;</span>
+            <span class="s2">&quot;UnconditionalPipeline is model-agnostic — the user provides the model.&quot;</span>
         <span class="p">)</span></div>
 
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalSMPipeline.get_default_params">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.get_default_params">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">):</span>
+<div class="viewcode-block" id="UnconditionalPipeline.get_default_params">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.get_default_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Default parameters not implemented for UnconditionalSMPipeline.&quot;</span>
+            <span class="s2">&quot;UnconditionalPipeline is model-agnostic — the user provides model params.&quot;</span>
         <span class="p">)</span></div>
 
 
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="UnconditionalSMPipeline.get_default_training_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.get_default_training_config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_training_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sde_type</span><span class="o">=</span><span class="s2">&quot;VP&quot;</span><span class="p">):</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;beta_min&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>
-                    <span class="s2">&quot;beta_max&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span><span class="p">:</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;sigma_min&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>
-                    <span class="s2">&quot;sigma_max&quot;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">,</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">config</span></div>
+    <span class="c1"># -- Core pipeline methods ----------------------------------------------</span>
 
-
-<div class="viewcode-block" id="UnconditionalSMPipeline.get_loss_fn">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.get_loss_fn">[docs]</a>
+<div class="viewcode-block" id="UnconditionalPipeline.get_loss_fn">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.get_loss_fn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_loss_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">):</span>
-            <span class="n">rng_x0</span><span class="p">,</span> <span class="n">rng_t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
+        <span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
             <span class="n">x_1</span> <span class="o">=</span> <span class="n">batch</span>
-            <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample_t</span><span class="p">(</span><span class="n">rng_t</span><span class="p">,</span> <span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-
-            <span class="n">batch</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-            <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">rng_x0</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">node_ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">loss</span>
+            <span class="n">prepared</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">prepare_batch</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;node_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">}</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_obj</span><span class="p">(</span>
+                <span class="n">model</span><span class="p">,</span> <span class="n">prepared</span><span class="p">,</span>
+                <span class="n">condition_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">loss_fn</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalSMPipeline._wrap_model">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline._wrap_model">[docs]</a>
+<div class="viewcode-block" id="UnconditionalPipeline._wrap_model">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline._wrap_model">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span> <span class="o">=</span> <span class="n">UnconditionalWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="o">=</span> <span class="n">UnconditionalWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
-        <span class="k">return</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="o">=</span> <span class="n">UnconditionalWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalSMPipeline.get_sampler">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.get_sampler">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a sampler function for the score matching model.</span>
+<div class="viewcode-block" id="UnconditionalPipeline.get_sampler">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.get_sampler">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a sampler function.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        nsteps : int, optional</span>
-<span class="sd">            Number of integration steps. Default is 1000.</span>
 <span class="sd">        use_ema : bool, optional</span>
 <span class="sd">            Whether to use the EMA model. Default is True.</span>
-<span class="sd">        return_intermediates : bool, optional</span>
-<span class="sd">            Whether to return intermediate steps. Default is False.</span>
-<span class="sd">        solver : tuple of (type, dict), optional</span>
-<span class="sd">            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver</span>
-<span class="sd">            class and its constructor keyword arguments.</span>
-<span class="sd">            Defaults to ``(SMSolver, {})``.</span>
-
-<span class="sd">            The solver class must accept ``score_model`` and ``path`` as</span>
-<span class="sd">            its first two positional arguments.</span>
-
-<span class="sd">        **model_extras : dict</span>
-<span class="sd">            Additional keyword arguments passed to the model.</span>
+<span class="sd">        **sampler_kwargs</span>
+<span class="sd">            Forwarded to ``method.build_sampler_fn``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Callable</span>
-<span class="sd">            A function ``sampler(key, nsamples)`` that generates samples.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Using the default reverse SDE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; sampler = pipeline.get_sampler()</span>
-<span class="sd">        &gt;&gt;&gt; samples = sampler(key, nsamples=1000)</span>
-
-<span class="sd">        Using the Probability Flow ODE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; from gensbi.diffusion.solver import SMPFSolver</span>
-<span class="sd">        &gt;&gt;&gt; sampler = pipeline.get_sampler(solver=(SMPFSolver, {}))</span>
-<span class="sd">        &gt;&gt;&gt; samples = sampler(key, nsamples=1000)</span>
+<span class="sd">            ``sampler(key, nsamples) -&gt; samples``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">solver</span> <span class="o">=</span> <span class="p">(</span><span class="n">SMSolver</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">model_wrapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="k">if</span> <span class="n">use_ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
 
-        <span class="k">if</span> <span class="n">use_ema</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
+        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">}</span>
 
-        <span class="n">solver_cls</span><span class="p">,</span> <span class="n">solver_kwargs</span> <span class="o">=</span> <span class="n">solver</span>
-        <span class="n">solver_instance</span> <span class="o">=</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">score_model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span><span class="p">)</span>
-
-        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">}</span>
-
-        <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
-            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+        <span class="n">sampler_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_sampler_fn</span><span class="p">(</span>
+            <span class="n">model_wrapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
-            <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-            <span class="n">x_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample_prior</span><span class="p">(</span><span class="n">key1</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">))</span>
-            <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">key2</span><span class="p">,</span> <span class="n">x_init</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">samples</span>
+            <span class="n">key</span><span class="p">,</span> <span class="n">key_init</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">x_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span>
+                <span class="n">key_init</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sampler</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalSMPipeline.sample">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">key</span><span class="p">,</span>
-        <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
-        <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the score matching model.</span>
-
-<span class="sd">        Convenience method that internally calls :meth:`get_sampler` and</span>
-<span class="sd">        immediately evaluates the returned sampler function.</span>
+<div class="viewcode-block" id="UnconditionalPipeline.sample">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the model.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        key : jax.random.PRNGKey</span>
-<span class="sd">            JAX random key used for sampling.</span>
+<span class="sd">            Random key.</span>
 <span class="sd">        nsamples : int, optional</span>
-<span class="sd">            Number of samples to draw. Default is 10 000.</span>
-<span class="sd">        nsteps : int, optional</span>
-<span class="sd">            Number of sampling steps. Default is 1000.</span>
+<span class="sd">            Number of samples. Default is 10 000.</span>
 <span class="sd">        use_ema : bool, optional</span>
-<span class="sd">            Whether to use the EMA model. Default is True.</span>
-<span class="sd">        return_intermediates : bool, optional</span>
-<span class="sd">            Whether to return intermediate steps. Default is False.</span>
-<span class="sd">        solver : tuple of (type, dict), optional</span>
-<span class="sd">            A tuple ``(SolverClass, solver_kwargs)`` specifying the solver</span>
-<span class="sd">            class and its keyword arguments. Defaults to ``(SMSolver, {})``.</span>
-
-<span class="sd">            To use the probability flow ODE solver instead:</span>
-
-<span class="sd">            &gt;&gt;&gt; from gensbi.diffusion.solver import SMPFSolver</span>
-<span class="sd">            &gt;&gt;&gt; solver = (SMPFSolver, {})</span>
-<span class="sd">            &gt;&gt;&gt; samples = pipeline.sample(key, solver=solver)</span>
-
-<span class="sd">        **model_extras : dict</span>
-<span class="sd">            Additional keyword arguments passed to the model.</span>
+<span class="sd">            Use the EMA model. Default is True.</span>
+<span class="sd">        **sampler_kwargs</span>
+<span class="sd">            Forwarded to :meth:`get_sampler`.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Array</span>
-<span class="sd">            Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Using the default SDE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; samples = pipeline.sample(key, nsamples=1000)</span>
-
-<span class="sd">        Using the probability flow ODE solver:</span>
-
-<span class="sd">        &gt;&gt;&gt; from gensbi.diffusion.solver import SMPFSolver</span>
-<span class="sd">        &gt;&gt;&gt; solver = (SMPFSolver, {})</span>
-<span class="sd">        &gt;&gt;&gt; samples = pipeline.sample(key, solver=solver)</span>
+<span class="sd">            Samples of shape ``(nsamples, dim_obs, ch_obs)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
-            <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
-            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">model_extras</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">samples</span></div>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="UnconditionalSMPipeline.sample_batched">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalSMPipeline.sample_batched">[docs]</a>
+<div class="viewcode-block" id="UnconditionalPipeline.sample_batched">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.sample_batched">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Batched sampling not implemented for UnconditionalSMPipeline.&quot;</span>
+            <span class="s2">&quot;Batched sampling not implemented for UnconditionalPipeline.&quot;</span>
         <span class="p">)</span></div>
 </div>
 

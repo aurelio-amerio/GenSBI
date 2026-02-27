@@ -86,7 +86,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 1000, method = 'Euler', return_intermediates = False, model_extras = {}, solver_params = {}, atol = 1e-05, rtol = 1e-05)
+   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 1000, method = 'Euler', return_intermediates = False, static_model_kwargs = {}, solver_params = {}, atol = 1e-05, rtol = 1e-05)
 
       
       Returns a sampler function for the probability flow ODE (PF-ODE).
@@ -105,8 +105,10 @@ Module Contents
       :type method: str
       :param return_intermediates: Whether to return intermediate steps.
       :type return_intermediates: bool
-      :param model_extras: Additional model arguments.
-      :type model_extras: dict
+      :param static_model_kwargs: Static model arguments baked into the sampler.
+                                  Condition-dependent data should be passed at call time
+                                  via ``model_extras``.
+      :type static_model_kwargs: dict
       :param solver_params: Additional solver parameters.
       :type solver_params: Optional[dict]
       :param atol: Absolute tolerance for adaptive step solvers.
@@ -114,7 +116,7 @@ Module Contents
       :param rtol: Relative tolerance for adaptive step solvers.
       :type rtol: float
 
-      :returns: Sampler function.
+      :returns: ``sample(key, x_init, model_extras={})`` sampler function.
       :rtype: Callable
 
 
@@ -186,7 +188,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 1000, method = 'Euler', return_intermediates = False, model_extras = {}, solver_params = {})
+   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 1000, method = 'Euler', return_intermediates = False, static_model_kwargs = {}, solver_params = {})
 
       
       Returns a sampler function for the reverse SDE.
@@ -203,12 +205,14 @@ Module Contents
       :type method: str
       :param return_intermediates: Whether to return intermediate steps.
       :type return_intermediates: bool
-      :param model_extras: Additional model arguments.
-      :type model_extras: dict
+      :param static_model_kwargs: Static model arguments baked into the sampler.
+                                  Condition-dependent data should be passed at call time
+                                  via ``model_extras``.
+      :type static_model_kwargs: dict
       :param solver_params: Additional solver parameters.
       :type solver_params: Optional[dict]
 
-      :returns: Sampler function.
+      :returns: ``sample(key, x_init, model_extras={})`` sampler function.
       :rtype: Callable
 
 

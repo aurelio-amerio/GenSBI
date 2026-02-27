@@ -1,0 +1,1247 @@
+gensbi.core
+===========
+
+.. py:module:: gensbi.core
+
+.. autoapi-nested-parse::
+
+   
+   Core module for GenSBI.
+
+   Provides the ``GenerativeMethod`` strategy pattern and its concrete
+   implementations for flow matching, EDM diffusion, and score matching.
+
+   These strategy objects encapsulate the generative framework (path, loss,
+   solver, batch preparation) and are composed into mode-specific pipelines
+   (Conditional, Joint, Unconditional) in the ``recipes`` module.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/core/diffusion_edm/index
+   /api/gensbi/core/flow_matching/index
+   /api/gensbi/core/generative_method/index
+   /api/gensbi/core/score_matching/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.core.DiffusionEDMMethod
+   gensbi.core.FlowMatchingMethod
+   gensbi.core.GenerativeMethod
+   gensbi.core.ScoreMatchingMethod
+
+
+Package Contents
+----------------
+
+.. py:class:: DiffusionEDMMethod(sde='EDM')
+
+   Bases: :py:obj:`gensbi.core.generative_method.GenerativeMethod`
+
+
+   
+   EDM diffusion strategy.
+
+   Supports three SDE formulations via the ``sde`` parameter:
+
+   - ``"EDM"`` — standard EDM schedule (default)
+   - ``"VP"`` — variance-preserving schedule
+   - ``"VE"`` — variance-exploding schedule
+
+   :param sde: SDE type. One of ``"EDM"``, ``"VP"``, ``"VE"``. Default is ``"EDM"``.
+   :type sde: str, optional
+
+   .. rubric:: Examples
+
+   >>> method = DiffusionEDMMethod(sde="EDM")
+   >>> path = method.build_path(config={"sigma_min": 0.002, "sigma_max": 80.0})
+   >>> loss = method.build_loss(path)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_loss(path)
+
+      
+      Build the EDM denoising loss.
+
+      Wraps ``path.get_loss_fn()`` into a callable object.
+
+      :param path: The diffusion path.
+      :type path: EDMPath
+
+      :returns: A loss callable with signature
+                ``(key, model, batch, condition_mask=None, model_extras={}) -> loss``.
+      :rtype: EDMLoss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_path(config)
+
+      
+      Build an EDM diffusion path.
+
+      :param config: Training configuration. Reads scheduler hyperparameters
+                     (``sigma_min``, ``sigma_max``, ``beta_min``, ``beta_max``)
+                     with sensible defaults.
+      :type config: dict
+
+      :returns: The configured diffusion path.
+      :rtype: EDMPath
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_sampler_fn(model_wrapped, path, model_extras, nsteps=18, return_intermediates=False, solver=None, solver_scheduler=None, solver_params=None, **kwargs)
+
+      
+      Build a sampler closure for EDM diffusion.
+
+      Supports ``EDMSolver`` with EDM, VP, and VE schedulers.
+      The ``solver_scheduler`` can override the path's scheduler for
+      sampling (also used for ``sample_prior``).
+
+      :param model_wrapped: The wrapped score model.
+      :param path: The diffusion path.
+      :type path: EDMPath
+      :param model_extras: Mode-specific extras (``cond``, ``obs_ids``, etc.).
+      :type model_extras: dict
+      :param nsteps: Number of sampling steps. Default is 18.
+      :type nsteps: int, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(EDMSolver, {})``.
+      :type solver: tuple of (type, dict), optional
+      :param solver_scheduler: Override scheduler for the solver. If ``None``, uses the
+                               path's scheduler.
+      :type solver_scheduler: optional
+      :param solver_params: EDM solver parameters (``S_churn``, ``S_min``, ``S_max``,
+                            ``S_noise``).
+      :type solver_params: dict, optional
+
+      :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_solver(model_wrapped, path, solver=None)
+
+      
+      Instantiate an EDM solver.
+
+      The solver class must accept ``score_model`` and ``path`` as
+      its first two positional arguments.
+
+      :param model_wrapped: The wrapped score model.
+      :param path: The diffusion path.
+      :type path: EDMPath
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(EDMSolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: An instantiated solver.
+      :rtype: solver_instance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_solver()
+
+      
+      Return the default EDM solver.
+
+      :returns: ``(EDMSolver, {})``
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_extra_training_config()
+
+      
+      Return EDM-specific training config defaults.
+
+      :returns: Scheduler defaults for the selected SDE type.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: prepare_batch(key, x_1, path)
+
+      
+      Sample noise and sigma for an EDM training batch.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_1: Clean data of shape ``(batch_size, dim, ch)``.
+      :type x_1: Array
+      :param path: The diffusion path.
+      :type path: EDMPath
+
+      :returns: ``(x_0, x_1, sigma)`` where ``x_0`` is standard normal noise
+                and ``sigma`` has shape ``(batch_size, 1, 1)``.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_init(key, shape, path)
+
+      
+      Sample from the diffusion prior.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param shape: Shape of the initial sample.
+      :type shape: tuple
+      :param path: The diffusion path (provides ``sample_prior``).
+      :type path: EDMPath
+
+      :returns: Sample from the prior.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sde
+      :value: 'EDM'
+
+
+
+.. py:class:: FlowMatchingMethod(prior=None)
+
+   Bases: :py:obj:`gensbi.core.generative_method.GenerativeMethod`
+
+
+   
+   Flow matching strategy using affine probability paths.
+
+   Uses the conditional optimal-transport scheduler and an ODE or SDE
+   solver for sampling.
+
+   :param prior: Source distribution for noise sampling. Must implement
+                 ``sample(key, shape) -> Array``. Defaults to standard normal
+                 ``N(0, I)``.
+   :type prior: object, optional
+
+   .. rubric:: Examples
+
+   >>> method = FlowMatchingMethod()
+   >>> path = method.build_path(config={})
+   >>> loss = method.build_loss(path)
+
+   Using a custom prior:
+
+   >>> from numpyro.distributions import Uniform
+   >>> method = FlowMatchingMethod(prior=Uniform(low=-1.0, high=1.0))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_loss(path)
+
+      
+      Build the continuous flow matching loss.
+
+      :param path: The probability path.
+      :type path: AffineProbPath
+
+      :returns: A loss callable with uniform interface
+                ``(model, batch, condition_mask=None, model_extras=None) -> loss``.
+      :rtype: FMLoss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_path(config)
+
+      
+      Build an affine probability path with the CondOT scheduler.
+
+      :param config: Training configuration (unused for flow matching).
+      :type config: dict
+
+      :returns: The probability path.
+      :rtype: AffineProbPath
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_sampler_fn(model_wrapped, path, model_extras, step_size=0.01, time_grid=None, solver=None, **kwargs)
+
+      
+      Build a sampler closure for flow matching.
+
+      Supports ODE solvers (deterministic) and SDE solvers (stochastic;
+      ``ZeroEndsSolver``, ``NonSingularSolver``). When an SDE solver is
+      used, the sampler function accepts and splits an extra random key.
+
+      :param model_wrapped: The wrapped velocity field model.
+      :param path: The probability path.
+      :param model_extras: Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).
+      :type model_extras: dict
+      :param step_size: Step size for fixed-step solvers. Default is 0.01.
+      :type step_size: float, optional
+      :param time_grid: Time grid for integration. If ``None``, uses ``[0, 1]``.
+      :type time_grid: Array, optional
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_solver(model_wrapped, path, solver=None)
+
+      
+      Instantiate a flow matching solver.
+
+      Supports both ODE solvers (``ODESolver``) and SDE solvers
+      (``ZeroEndsSolver``, ``NonSingularSolver``).
+
+      :param model_wrapped: The wrapped velocity field model.
+      :param path: The probability path (unused by ODE solver, but may be
+                   needed by SDE solvers).
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: An instantiated solver.
+      :rtype: solver_instance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_solver()
+
+      
+      Return the default ODE solver.
+
+      :returns: ``(ODESolver, {})``
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: prepare_batch(key, x_1, path)
+
+      
+      Sample from the prior and time for a flow matching training batch.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_1: Clean data of shape ``(batch_size, dim, ch)``.
+      :type x_1: Array
+      :param path: The probability path (unused, kept for interface consistency).
+      :type path: AffineProbPath
+
+      :returns: ``(x_0, x_1, t)`` where ``x_0`` is drawn from the prior and
+                ``t`` is uniform in ``[0, 1)``.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_init(key, shape, path)
+
+      
+      Sample from the prior distribution.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param shape: Shape of the initial sample.
+      :type shape: tuple
+      :param path: The probability path (unused).
+
+      :returns: Sample from the prior.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: prior
+      :value: None
+
+
+
+.. py:class:: GenerativeMethod
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Strategy that encapsulates a generative framework.
+
+   Concrete implementations handle:
+
+   - **Path construction** — the probability path defining the forward process
+   - **Loss creation** — the training objective
+   - **Batch preparation** — sampling noise / time for training batches
+   - **Solver construction** — building the sampler for inference
+   - **Initial sample generation** — drawing from the prior
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_loss(path)
+      :abstractmethod:
+
+
+      
+      Create the loss callable for this method.
+
+      :param path: The probability path returned by :meth:`build_path`.
+
+      :returns: A loss object whose ``__call__`` computes the training loss.
+      :rtype: loss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_path(config)
+      :abstractmethod:
+
+
+      
+      Create the probability path from training config.
+
+      :param config: Training configuration dictionary (may contain scheduler
+                     hyperparameters such as ``sigma_min``, ``sigma_max``).
+      :type config: dict
+
+      :returns: A probability path object (e.g. ``AffineProbPath``, ``EDMPath``,
+                ``SMPath``).
+      :rtype: path
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_sampler_fn(model_wrapped, path, model_extras, **kwargs)
+      :abstractmethod:
+
+
+      
+      Build a sampler closure for inference.
+
+      The pipeline should use :meth:`sample_init` to generate the
+      initial noise ``x_init`` before calling the returned sampler.
+
+      :param model_wrapped: The wrapped model.
+      :param path: The probability path.
+      :param model_extras: Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).
+      :type model_extras: dict
+      :param \*\*kwargs: Method-specific sampler arguments (``step_size``, ``nsteps``,
+                         ``time_grid``, ``solver``, etc.).
+
+      :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_solver(model_wrapped, path, solver=None)
+      :abstractmethod:
+
+
+      
+      Instantiate a solver.
+
+      :param model_wrapped: The wrapped model (velocity field or score model).
+      :param path: The probability path.
+      :param solver: ``(SolverClass, kwargs)`` override. If ``None``, uses
+                     :meth:`get_default_solver`.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: An instantiated solver.
+      :rtype: solver_instance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_solver()
+      :abstractmethod:
+
+
+      
+      Return the default ``(SolverClass, kwargs)`` for this method.
+
+      :returns: **solver** -- A ``(SolverClass, default_kwargs)`` pair.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_extra_training_config()
+
+      
+      Return method-specific training config defaults.
+
+      Override in subclasses to supply extra defaults (e.g. ``sigma_min``).
+
+      :returns: Extra configuration parameters.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: prepare_batch(key, x_1, path)
+      :abstractmethod:
+
+
+      
+      Prepare a training batch from clean data.
+
+      All methods return a uniform ``(x_0, x_1, t_or_sigma)`` tuple
+      where ``x_0`` is noise sampled from the prior.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_1: Clean data batch of shape ``(batch_size, dim, ch)``.
+      :type x_1: Array
+      :param path: The probability path.
+
+      :returns: **batch** -- ``(x_0, x_1, t_or_sigma)`` prepared training batch.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_init(key, shape, path)
+      :abstractmethod:
+
+
+      
+      Sample initial noise for the generative process.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param shape: Shape of the initial sample, e.g. ``(nsamples, dim, ch)``.
+      :type shape: tuple
+      :param path: The probability path (needed for ``sample_prior`` in diffusion/SM).
+
+      :returns: **x_init** -- Initial noise sample.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: ScoreMatchingMethod(sde_type='VP')
+
+   Bases: :py:obj:`gensbi.core.generative_method.GenerativeMethod`
+
+
+   
+   Score matching strategy.
+
+   Supports two SDE formulations via the ``sde_type`` parameter:
+
+   - ``"VP"`` — variance-preserving (default)
+   - ``"VE"`` — variance-exploding
+
+   Sampling can use either the reverse SDE (``SMSolver``, default) or
+   the probability flow ODE (``SMPFSolver``).
+
+   :param sde_type: SDE type. One of ``"VP"`` or ``"VE"``. Default is ``"VP"``.
+   :type sde_type: str, optional
+
+   .. rubric:: Examples
+
+   >>> method = ScoreMatchingMethod(sde_type="VP")
+   >>> path = method.build_path(config={"beta_min": 0.001, "beta_max": 3.0})
+   >>> loss = method.build_loss(path)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_loss(path)
+
+      
+      Build the score matching loss.
+
+      Wraps ``path.get_loss_fn()`` into a callable object.
+
+      :param path: The score matching path.
+      :type path: SMPath
+
+      :returns: A loss callable with signature
+                ``(key, model, batch, condition_mask=None, model_extras={}) -> loss``.
+      :rtype: SMLoss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_path(config)
+
+      
+      Build a score matching path.
+
+      :param config: Training configuration. Reads scheduler hyperparameters
+                     (``beta_min``, ``beta_max`` for VP; ``sigma_min``, ``sigma_max``
+                     for VE) with sensible defaults.
+      :type config: dict
+
+      :returns: The configured score matching path.
+      :rtype: SMPath
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_sampler_fn(model_wrapped, path, model_extras, nsteps=1000, return_intermediates=False, solver=None, **kwargs)
+
+      
+      Build a sampler closure for score matching.
+
+      Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``
+      (probability flow ODE).
+
+      :param model_wrapped: The wrapped score model.
+      :param path: The score matching path.
+      :type path: SMPath
+      :param model_extras: Mode-specific extras (``cond``, ``obs_ids``, etc.).
+      :type model_extras: dict
+      :param nsteps: Number of integration steps. Default is 1000.
+      :type nsteps: int, optional
+      :param return_intermediates: Whether to return intermediate steps. Default is False.
+      :type return_intermediates: bool, optional
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_solver(model_wrapped, path, solver=None)
+
+      
+      Instantiate a score matching solver.
+
+      Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``
+      (probability flow ODE).
+
+      :param model_wrapped: The wrapped score model.
+      :param path: The score matching path.
+      :type path: SMPath
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.
+      :type solver: tuple of (type, dict), optional
+
+      :returns: An instantiated solver.
+      :rtype: solver_instance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_solver()
+
+      
+      Return the default reverse SDE solver.
+
+      :returns: ``(SMSolver, {})``
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_extra_training_config()
+
+      
+      Return SM-specific training config defaults.
+
+      :returns: Scheduler defaults for the selected SDE type.
+      :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: prepare_batch(key, x_1, path)
+
+      
+      Sample noise and diffusion time for a score matching training batch.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_1: Clean data of shape ``(batch_size, dim, ch)``.
+      :type x_1: Array
+      :param path: The score matching path.
+      :type path: SMPath
+
+      :returns: ``(x_0, x_1, t)`` where ``x_0`` is standard normal noise
+                and ``t`` has shape ``(batch_size, 1, 1)``.
+      :rtype: tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_init(key, shape, path)
+
+      
+      Sample from the score matching prior.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param shape: Shape of the initial sample.
+      :type shape: tuple
+      :param path: The score matching path (provides ``sample_prior``).
+      :type path: SMPath
+
+      :returns: Sample from the prior.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sde_type
+      :value: 'VP'
+
+
+

@@ -4,7 +4,7 @@ Once your model is trained, the primary goal of Simulation-Based Inference is to
 
 ## Basic Sampling
 
-The `AbstractPipeline` provides a unified `sample` method for both Flow Matching and Diffusion models.
+The `AbstractPipeline` provides a unified `sample` method for all generative methods — Flow Matching, EDM Diffusion, and Score Matching.
 
 ```python
 import jax
@@ -40,6 +40,22 @@ The numerical integration requires discretizing the time interval $[0, 1]$. You 
 By default, the pipeline uses a robust solver configuration (e.g., `step_size=0.01` or an adaptive solver). Reducing the number of steps by increasing the `step_size` will speed up inference but may reduce the accuracy of the posterior density.
 ```
 
+## Understanding Diffusion Inference
+
+GenSBI provides two diffusion implementations. Both use the same `pipeline.sample()` interface, but the underlying process differs.
+
+### EDM Diffusion (Recommended)
+
+If you are using an EDM model (e.g., `Flux1DiffusionPipeline`), the model has learned a **denoiser** $D_\theta(x; \sigma)$ that predicts the clean signal from noisy input. Sampling iterates through a decreasing noise schedule in $\sigma$-space, applying the denoiser at each step.
+
+### Score Matching (Classical)
+
+If you are using a Score Matching model (e.g., `Flux1SMPipeline`), the model has learned the **score function** $\nabla \log p_t(x)$. Sampling solves the reverse SDE from $t{=}T$ to $t{=}\varepsilon$ for stochastic samples (default `SMSolver`), or the probability flow ODE for deterministic samples (`SMPFSolver`).
+
+```{tip}
+You can override the solver at sample time without retraining. For details on available solvers and how to pass custom ones, see [Samplers and Solvers](/advanced/samplers).
+```
+
 ## Efficient Sampling
 
 ### JIT Compilation
@@ -50,6 +66,25 @@ The `sample` method internally calls `get_sampler` to obtain a JIT-compiled samp
 sampler_fn = pipeline.get_sampler(x_observed)
 samples1 = sampler_fn(jax.random.PRNGKey(1), nsamples=5000)
 samples2 = sampler_fn(jax.random.PRNGKey(2), nsamples=5000)
+```
+
+### Dynamic Model Extras
+
+Samplers accept `model_extras` at **call time**, which means the sampler can be compiled once and reused for different conditions without recompilation. The pipeline methods (`sample`, `sample_batched`) handle this automatically, but if you are building custom sampling loops, you can pass extras directly:
+
+```python
+sampler = pipeline.get_sampler(x_observed_1)
+
+# Reuse the same compiled sampler with different conditioning:
+samples_1 = sampler(jax.random.PRNGKey(1), nsamples=5000)
+samples_2 = sampler(
+    jax.random.PRNGKey(2), nsamples=5000,
+    model_extras={"cond": x_observed_2, "obs_ids": obs_ids, "cond_ids": cond_ids},
+)
+```
+
+```{tip}
+This is exactly how `sample_batched` works internally: it compiles the sampler once using the first condition, then loops over all conditions, passing different `model_extras` for each.
 ```
 
 ## Batched Inference

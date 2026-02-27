@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>gensbi.flow_matching.loss.continuous_loss &#8212; GenSBI  documentation</title>
+    <title>gensbi.diffusion.loss.sm_loss &#8212; GenSBI  documentation</title>
   
   
   
@@ -489,7 +489,7 @@ mermaid.initialize(
 );
 
 window.addEventListener("load", load);</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/flow_matching/loss/continuous_loss';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/diffusion/loss/sm_loss';</script>
     <link rel="icon" href="../../../../_static/logo-square-small.png"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -797,7 +797,7 @@ window.addEventListener("load", load);</script>
     
     <li class="breadcrumb-item"><a href="../../../gensbi.html" class="nav-link">gensbi</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.flow_matching.loss.continuous_loss</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.diffusion.loss.sm_loss</span></li>
   </ul>
 </nav>
 </div>
@@ -814,121 +814,71 @@ window.addEventListener("load", load);</script>
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for gensbi.flow_matching.loss.continuous_loss</h1><div class="highlight"><pre>
+  <h1>Source code for gensbi.diffusion.loss.sm_loss</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Continuous flow matching loss functions.</span>
-
-<span class="sd">This module implements loss functions for training continuous flow matching models,</span>
-<span class="sd">computing the squared difference between predicted and target velocities.</span>
+<span class="sd">Score matching loss with unified interface.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Any</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 
 
-<div class="viewcode-block" id="ContinuousFMLoss">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/loss/index.html#gensbi.flow_matching.loss.continuous_loss.ContinuousFMLoss">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ContinuousFMLoss</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    ContinuousFMLoss is a class that computes the continuous flow matching loss.</span>
+<div class="viewcode-block" id="SMLoss">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SMLoss</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score matching loss with a uniform ``(model, batch, ...)`` interface.</span>
+
+<span class="sd">    Wraps ``SMPath.get_loss_fn()`` so that the calling convention matches</span>
+<span class="sd">    :class:`~gensbi.flow_matching.loss.FMLoss` and</span>
+<span class="sd">    :class:`~gensbi.diffusion.loss.EDMLoss`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">        path : MixtureDiscreteProbPath</span>
-<span class="sd">            Probability path (x-prediction training).</span>
-<span class="sd">        reduction : str, optional</span>
-<span class="sd">            Specify the reduction to apply to the output ``&#39;none&#39;`` | ``&#39;mean&#39;`` | ``&#39;sum&#39;``. ``&#39;none&#39;``: no reduction is applied to the output, ``&#39;mean&#39;``: the output is reduced by mean over sequence elements, ``&#39;sum&#39;``: the output is reduced by sum over sequence elements. Defaults to &#39;mean&#39;.</span>
-
-<span class="sd">    Example:</span>
-<span class="sd">        .. code-block:: python</span>
-
-<span class="sd">            from gensbi.flow_matching.loss import ContinuousFMLoss</span>
-<span class="sd">            from gensbi.flow_matching.path import AffineProbPath</span>
-<span class="sd">            from gensbi.flow_matching.path.scheduler import CondOTScheduler</span>
-<span class="sd">            import jax, jax.numpy as jnp</span>
-<span class="sd">            scheduler = CondOTScheduler()</span>
-<span class="sd">            path = AffineProbPath(scheduler)</span>
-<span class="sd">            loss_fn = ContinuousFMLoss(path)</span>
-<span class="sd">            def vf(x, t, args=None):</span>
-<span class="sd">                return x + t</span>
-<span class="sd">            x_0 = jnp.zeros((8, 2))</span>
-<span class="sd">            x_1 = jnp.ones((8, 2))</span>
-<span class="sd">            t = jnp.linspace(0, 1, 8)</span>
-<span class="sd">            batch = (x_0, x_1, t)</span>
-<span class="sd">            loss = loss_fn(vf, batch)</span>
-<span class="sd">            print(loss.shape)</span>
-<span class="sd">            # ()</span>
-
+<span class="sd">    path : SMPath</span>
+<span class="sd">        The score matching path.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">reduction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize the continuous flow matching loss.</span>
-<span class="sd">        </span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            path: Probability path for x-prediction training.</span>
-<span class="sd">            reduction: Reduction method for the loss. Options: &#39;none&#39;, &#39;mean&#39;, &#39;sum&#39;. Defaults to &#39;mean&#39;.</span>
-<span class="sd">            </span>
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">            ValueError</span>
-<span class="sd">                If reduction is not one of &#39;None&#39;, &#39;mean&#39;, or &#39;sum&#39;.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="ContinuousFMLoss.path">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/loss/continuous_loss/index.html#gensbi.flow_matching.loss.continuous_loss.ContinuousFMLoss.path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<div class="viewcode-block" id="SMLoss.path">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss.path">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
 
-        <span class="k">if</span> <span class="n">reduction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;sum&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">reduction</span><span class="si">}</span><span class="s2"> is not a valid value for reduction&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="SMLoss.loss_fn">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss.loss_fn">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">get_loss_fn</span><span class="p">()</span></div>
 
-        <span class="k">if</span> <span class="n">reduction</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span>
-        <span class="k">elif</span> <span class="n">reduction</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span>
 
-<div class="viewcode-block" id="ContinuousFMLoss.__call__">
-<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/loss/index.html#gensbi.flow_matching.loss.continuous_loss.ContinuousFMLoss.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">vf</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
-        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">],</span>
-        <span class="n">args</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Evaluates the continuous flow matching loss.</span>
+<div class="viewcode-block" id="SMLoss.__call__">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">condition_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate the score matching loss.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            vf : callable</span>
-<span class="sd">                The vector field model to evaluate.</span>
-<span class="sd">            batch : tuple</span>
-<span class="sd">                A tuple containing the input data (x_0, x_1, t).</span>
-<span class="sd">            args : optional</span>
-<span class="sd">                Additional arguments for the function.</span>
-<span class="sd">            condition_mask : optional</span>
-<span class="sd">                A mask to apply to the input data.</span>
-<span class="sd">            **kwargs: Additional keyword arguments for the function.</span>
+<span class="sd">        model : Callable</span>
+<span class="sd">            The score model.</span>
+<span class="sd">        batch : tuple</span>
+<span class="sd">            ``(x_0, x_1, t)`` — standard normal noise, clean data,</span>
+<span class="sd">            and diffusion time.</span>
+<span class="sd">        condition_mask : Array, optional</span>
+<span class="sd">            Conditioning mask (for joint models).</span>
+<span class="sd">        model_extras : dict, optional</span>
+<span class="sd">            Additional model keyword arguments.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">            Array</span>
-<span class="sd">                The computed loss.</span>
+<span class="sd">        Array</span>
+<span class="sd">            Scalar loss.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="n">path_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">batch</span>
+        <span class="n">path_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">loss_batch</span> <span class="o">=</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">get_batch</span><span class="p">()</span>
 
-        <span class="n">x_t</span> <span class="o">=</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">x_t</span>
-
-        <span class="n">model_output</span> <span class="o">=</span> <span class="n">vf</span><span class="p">(</span><span class="n">x_t</span><span class="p">,</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-        <span class="n">loss</span> <span class="o">=</span> <span class="n">model_output</span> <span class="o">-</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">dx_t</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">loss</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">loss_batch</span><span class="p">,</span>
+            <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </div>
 
 </pre></div>

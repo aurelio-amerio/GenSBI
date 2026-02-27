@@ -1340,6 +1340,120 @@ window.addEventListener("load", load);</script>
 
 
 
+<div class="viewcode-block" id="_validate_and_prepare_ranks">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._validate_and_prepare_ranks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_and_prepare_ranks</span><span class="p">(</span>
+    <span class="n">ranks</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Array</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
+    <span class="n">plot_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate and normalize ranks into a list of numpy arrays.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ranks : Array or List[Array]</span>
+<span class="sd">        Ranks to validate.</span>
+<span class="sd">    plot_type : str</span>
+<span class="sd">        Plot type (``&quot;hist&quot;`` or ``&quot;cdf&quot;``).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[np.ndarray]</span>
+<span class="sd">        Validated and normalized list of rank arrays.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="p">(</span><span class="n">Array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="n">ranks_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranks</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">List</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ranks must be an Array, np.ndarray, or a List of them.&quot;</span><span class="p">)</span>
+        <span class="n">ranks_list</span> <span class="o">=</span> <span class="n">ranks</span>
+
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">rank</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranks_list</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="p">(</span><span class="n">Array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;All ranks in the list must be Arrays or np.ndarrays.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">Array</span><span class="p">):</span>
+            <span class="n">ranks_list</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">rank</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
+
+    <span class="n">plot_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span> <span class="s2">&quot;cdf&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">plot_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plot_types</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;plot type </span><span class="si">{</span><span class="n">plot_type</span><span class="si">}</span><span class="s2"> not implemented, use one in </span><span class="si">{</span><span class="n">plot_types</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">ranki</span> <span class="ow">in</span> <span class="n">ranks_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ranki</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">ranks_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;all ranks in list must have the same shape.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ranks_list</span></div>
+
+
+
+<div class="viewcode-block" id="_create_sbc_figure">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._create_sbc_figure">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_create_sbc_figure</span><span class="p">(</span>
+    <span class="n">num_parameters</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">num_cols</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">params_in_subplots</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">figsize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">],</span>
+    <span class="n">sharey</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">fig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FigureBase</span><span class="p">],</span>
+    <span class="n">ax</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create or validate the figure/axes layout for the SBC rank plot.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_parameters : int</span>
+<span class="sd">        Number of parameter dimensions.</span>
+<span class="sd">    num_cols : int</span>
+<span class="sd">        Number of subplot columns.</span>
+<span class="sd">    params_in_subplots : bool</span>
+<span class="sd">        Whether each parameter gets its own subplot.</span>
+<span class="sd">    figsize : tuple or None</span>
+<span class="sd">        Figure dimensions.</span>
+<span class="sd">    sharey : bool</span>
+<span class="sd">        Whether to share y-axis across subplots.</span>
+<span class="sd">    fig : Figure or None</span>
+<span class="sd">        Existing figure to reuse.</span>
+<span class="sd">    ax : Axes or None</span>
+<span class="sd">        Existing axes to reuse.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig : Figure</span>
+<span class="sd">        Figure object.</span>
+<span class="sd">    ax : Axes</span>
+<span class="sd">        Axes object.</span>
+<span class="sd">    num_rows : int</span>
+<span class="sd">        Number of subplot rows.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">num_parameters</span> <span class="o">/</span> <span class="n">num_cols</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">params_in_subplots</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+                <span class="n">num_rows</span><span class="p">,</span>
+                <span class="nb">min</span><span class="p">(</span><span class="n">num_parameters</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">),</span>
+                <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span>
+                <span class="n">sharey</span><span class="o">=</span><span class="n">sharey</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="n">num_parameters</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;There must be at least as many subplots as parameters.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">num_rows</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ax cannot be None&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">num_rows</span></div>
+
+
+
 <div class="viewcode-block" id="_sbc_rank_plot">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._sbc_rank_plot">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">_sbc_rank_plot</span><span class="p">(</span>
@@ -1419,23 +1533,7 @@ window.addEventListener("load", load);</script>
 <span class="sd">        Axis object.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="p">(</span><span class="n">Array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
-        <span class="n">ranks_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranks</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">List</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ranks must be an Array, np.ndarray, or a List of them.&quot;</span><span class="p">)</span>
-        <span class="n">ranks_list</span> <span class="o">=</span> <span class="n">ranks</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">rank</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranks_list</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="p">(</span><span class="n">Array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;All ranks in the list must be Arrays or np.ndarrays.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">Array</span><span class="p">):</span>
-            <span class="n">ranks_list</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">rank</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
-
-    <span class="n">plot_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span> <span class="s2">&quot;cdf&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">plot_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plot_types</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;plot type </span><span class="si">{</span><span class="n">plot_type</span><span class="si">}</span><span class="s2"> not implemented, use one in </span><span class="si">{</span><span class="n">plot_types</span><span class="si">}</span><span class="s2">.&quot;</span>
-        <span class="p">)</span>
+    <span class="n">ranks_list</span> <span class="o">=</span> <span class="n">_validate_and_prepare_ranks</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">plot_type</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">legend_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">legend_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">,</span> <span class="n">handlelength</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
@@ -1446,10 +1544,6 @@ window.addEventListener("load", load);</script>
     <span class="c1"># For multiple methods, and for the hist plots plot each param in a separate subplot</span>
     <span class="k">if</span> <span class="n">num_ranks</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">plot_type</span> <span class="o">==</span> <span class="s2">&quot;hist&quot;</span><span class="p">:</span>
         <span class="n">params_in_subplots</span> <span class="o">=</span> <span class="kc">True</span>
-
-    <span class="k">for</span> <span class="n">ranki</span> <span class="ow">in</span> <span class="n">ranks_list</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">ranki</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">ranks_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;all ranks in list must have the same shape.&quot;</span><span class="p">)</span>
 
     <span class="n">num_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">num_parameters</span> <span class="o">/</span> <span class="n">num_cols</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">figsize</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1463,26 +1557,14 @@ window.addEventListener("load", load);</script>
         <span class="c1"># Recommendation from Talts et al.</span>
         <span class="n">num_bins</span> <span class="o">=</span> <span class="n">num_sbc_runs</span> <span class="o">//</span> <span class="mi">20</span>
 
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">num_rows</span> <span class="o">=</span> <span class="n">_create_sbc_figure</span><span class="p">(</span>
+        <span class="n">num_parameters</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">,</span> <span class="n">params_in_subplots</span><span class="p">,</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">sharey</span><span class="p">,</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span>
+    <span class="p">)</span>
+
+    <span class="n">plot_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span> <span class="s2">&quot;cdf&quot;</span><span class="p">]</span>
+
     <span class="c1"># Plot one row subplot for each parameter, different &quot;methods&quot; on top of each other.</span>
     <span class="k">if</span> <span class="n">params_in_subplots</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
-                <span class="n">num_rows</span><span class="p">,</span>
-                <span class="nb">min</span><span class="p">(</span><span class="n">num_parameters</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">),</span>
-                <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span>
-                <span class="n">sharey</span><span class="o">=</span><span class="n">sharey</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">ax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="n">num_parameters</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;There must be at least as many subplots as parameters.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">num_rows</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">1</span>
-
-        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ax cannot be None&quot;</span><span class="p">)</span>
-
         <span class="n">col_idx</span><span class="p">,</span> <span class="n">row_idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">ranki</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranks_list</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parameters</span><span class="p">):</span>
@@ -1545,9 +1627,6 @@ window.addEventListener("load", load);</script>
 
     <span class="c1"># When there is only one set of ranks show all params in a single subplot.</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
-
         <span class="n">plt</span><span class="o">.</span><span class="n">sca</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
         <span class="n">ranki</span> <span class="o">=</span> <span class="n">ranks_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_parameters</span><span class="p">):</span>

@@ -819,7 +819,6 @@ window.addEventListener("load", load);</script>
 <span class="sd">Pipeline for training and using a Flux1Joint model for simulation-based inference.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
 
@@ -828,14 +827,10 @@ window.addEventListener("load", load);</script>
     <span class="n">Flux1JointParams</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpyro.distributions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.model_wrapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">_expand_dims</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.joint_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">JointFlowPipeline</span><span class="p">,</span> <span class="n">JointDiffusionPipeline</span><span class="p">,</span> <span class="n">JointSMPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.joint_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">JointPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_training_config</span>
 
 
 <div class="viewcode-block" id="parse_flux1joint_params">
@@ -951,75 +946,9 @@ window.addEventListener("load", load);</script>
 
 
 
-<div class="viewcode-block" id="parse_training_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/flux1joint/index.html#gensbi.recipes.flux1joint.parse_training_config">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">parse_training_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Parse a training configuration file.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    config_path : str</span>
-<span class="sd">        Path to the configuration file.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    config : dict</span>
-<span class="sd">        Parsed configuration dictionary.</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-    <span class="c1"># Training parameters</span>
-    <span class="n">train_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;training&quot;</span><span class="p">,</span> <span class="p">{})</span>
-    <span class="n">multistep</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;multistep&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">early_stopping</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-    <span class="n">nsteps</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nsteps&quot;</span><span class="p">,</span> <span class="mi">30000</span><span class="p">)</span> <span class="o">*</span> <span class="n">multistep</span>
-    <span class="n">val_every</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;val_every&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="n">multistep</span>
-    <span class="n">sigma_min</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">)</span>
-    <span class="n">sigma_max</span> <span class="o">=</span> <span class="n">train_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sigma_max&quot;</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">)</span>
-
-    <span class="c1"># Optimizer parameters</span>
-    <span class="n">opt_params</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">,</span> <span class="p">{})</span>
-
-    <span class="n">RTOL</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rtol&quot;</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">)</span>
-    <span class="n">MAX_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_lr&quot;</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>
-    <span class="n">MIN_LR</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_lr&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-    <span class="n">MIN_SCALE</span> <span class="o">=</span> <span class="n">MIN_LR</span> <span class="o">/</span> <span class="n">MAX_LR</span> <span class="k">if</span> <span class="n">MAX_LR</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
-
-    <span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
-
-    <span class="n">ema_decay</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">,</span> <span class="mf">0.999</span><span class="p">)</span>
-
-    <span class="n">decay_transition</span> <span class="o">=</span> <span class="n">opt_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">)</span>
-
-    <span class="n">training_config</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="c1"># overwrite the defaults with the config file values</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nsteps</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;ema_decay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ema_decay</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">decay_transition</span>
-
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">RTOL</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MAX_LR</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_LR</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;min_scale&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_SCALE</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val_every</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">early_stopping</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">experiment_id</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">multistep</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">warmup_steps</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma_min</span>
-    <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;sigma_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma_max</span>
-
-    <span class="k">return</span> <span class="n">training_config</span></div>
-
-
-
 <div class="viewcode-block" id="Flux1JointFlowPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1joint.Flux1JointFlowPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Flux1JointFlowPipeline</span><span class="p">(</span><span class="n">JointFlowPipeline</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Flux1JointFlowPipeline</span><span class="p">(</span><span class="n">JointPipeline</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">train_dataset</span><span class="p">,</span>
@@ -1085,12 +1014,14 @@ window.addEventListener("load", load);</script>
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
             <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
@@ -1172,7 +1103,7 @@ window.addEventListener("load", load);</script>
 
 <div class="viewcode-block" id="Flux1JointSMPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1joint.Flux1JointSMPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Flux1JointSMPipeline</span><span class="p">(</span><span class="n">JointSMPipeline</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Flux1JointSMPipeline</span><span class="p">(</span><span class="n">JointPipeline</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">train_dataset</span><span class="p">,</span>
@@ -1224,14 +1155,15 @@ window.addEventListener("load", load);</script>
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreMatchingMethod</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">ScoreMatchingMethod</span><span class="p">(</span><span class="n">sde_type</span><span class="o">=</span><span class="n">sde_type</span><span class="p">),</span>
             <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
-            <span class="n">sde_type</span><span class="o">=</span><span class="n">sde_type</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
@@ -1310,7 +1242,7 @@ window.addEventListener("load", load);</script>
 
 <div class="viewcode-block" id="Flux1JointDiffusionPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flux1joint.Flux1JointDiffusionPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Flux1JointDiffusionPipeline</span><span class="p">(</span><span class="n">JointDiffusionPipeline</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Flux1JointDiffusionPipeline</span><span class="p">(</span><span class="n">JointPipeline</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">train_dataset</span><span class="p">,</span>
@@ -1376,12 +1308,14 @@ window.addEventListener("load", load);</script>
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_model</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiffusionEDMMethod</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
             <span class="n">val_dataset</span><span class="o">=</span><span class="n">val_dataset</span><span class="p">,</span>
             <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">DiffusionEDMMethod</span><span class="p">(),</span>
             <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>

@@ -860,8 +860,9 @@ window.addEventListener("load", load);</script>
 <span class="sd">            path = EDMPath(scheduler)</span>
 <span class="sd">            key = jax.random.PRNGKey(0)</span>
 <span class="sd">            x_1 = jax.random.normal(key, (32, 2))</span>
+<span class="sd">            x_0 = jax.random.normal(jax.random.PRNGKey(1), (32, 2))</span>
 <span class="sd">            sigma = jnp.ones((32, 1))</span>
-<span class="sd">            sample = path.sample(key, x_1, sigma)</span>
+<span class="sd">            sample = path.sample(x_0, x_1, sigma)</span>
 <span class="sd">            print(sample.x_t.shape)</span>
 <span class="sd">            # (32, 2)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -896,14 +897,17 @@ window.addEventListener("load", load);</script>
 
 <div class="viewcode-block" id="EDMPath.sample">
 <a class="viewcode-back" href="../../../../api/gensbi/diffusion/path/index.html#gensbi.diffusion.path.edm_path.EDMPath.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_1</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EDMPathSample</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_0</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_1</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EDMPathSample</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sample from the EDM probability path.</span>
 
+<span class="sd">        Constructs ``x_t = x_1 + sigma * x_0`` where ``x_0`` is standard</span>
+<span class="sd">        normal noise.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            key : Array</span>
-<span class="sd">                JAX random key.</span>
+<span class="sd">            x_0 : Array</span>
+<span class="sd">                Source noise sample from N(0, 1), shape (batch_size, ...).</span>
 <span class="sd">            x_1 : Array</span>
 <span class="sd">                Target data point, shape (batch_size, ...).</span>
 <span class="sd">            sigma : Array</span>
@@ -911,10 +915,10 @@ window.addEventListener("load", load);</script>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">            PathSample</span>
+<span class="sd">            EDMPathSample</span>
 <span class="sd">                A sample from the EDM path.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">sample_noise</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+        <span class="n">noise</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">x_0</span>
         <span class="n">x_t</span> <span class="o">=</span> <span class="n">x_1</span> <span class="o">+</span> <span class="n">noise</span>
         <span class="k">return</span> <span class="n">EDMPathSample</span><span class="p">(</span>
             <span class="n">x_1</span><span class="o">=</span><span class="n">x_1</span><span class="p">,</span>

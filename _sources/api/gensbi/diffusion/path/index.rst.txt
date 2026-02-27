@@ -82,8 +82,9 @@ Package Contents
        path = EDMPath(scheduler)
        key = jax.random.PRNGKey(0)
        x_1 = jax.random.normal(key, (32, 2))
+       x_0 = jax.random.normal(jax.random.PRNGKey(1), (32, 2))
        sigma = jnp.ones((32, 1))
-       sample = path.sample(key, x_1, sigma)
+       sample = path.sample(x_0, x_1, sigma)
        print(sample.x_t.shape)
        # (32, 2)
 
@@ -130,20 +131,23 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_1, sigma)
+   .. py:method:: sample(x_0, x_1, sigma)
 
       
       Sample from the EDM probability path.
 
-      :param key: JAX random key.
-      :type key: Array
+      Constructs ``x_t = x_1 + sigma * x_0`` where ``x_0`` is standard
+      normal noise.
+
+      :param x_0: Source noise sample from N(0, 1), shape (batch_size, ...).
+      :type x_0: Array
       :param x_1: Target data point, shape (batch_size, ...).
       :type x_1: Array
       :param sigma: Noise scale, shape (batch_size, ...).
       :type sigma: Array
 
       :returns: A sample from the EDM path.
-      :rtype: PathSample
+      :rtype: EDMPathSample
 
 
 
@@ -224,9 +228,9 @@ Package Contents
        path = SMPath(scheduler)
        key = jax.random.PRNGKey(0)
        x_1 = jax.random.normal(key, (32, 2))
-       sample = path.sample(key, x_1)
-       print(sample.x_t.shape)
-       # (32, 2)
+       x_0 = jax.random.normal(jax.random.PRNGKey(1), (32, 2))
+       t = jnp.ones((32, 1, 1)) * 0.5
+       sample = path.sample(x_0, x_1, t)
 
 
 
@@ -278,15 +282,16 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_1, t)
+   .. py:method:: sample(x_0, x_1, t)
 
       
       Sample from the score matching probability path.
 
-      Constructs x_t = mean_coeff(t) * x_1 + std(t) * epsilon.
+      Constructs ``x_t = mean_coeff(t) * x_1 + std(t) * x_0`` where
+      ``x_0`` is standard normal noise.
 
-      :param key: JAX random key (used for noise sampling).
-      :type key: Array
+      :param x_0: Source noise sample from N(0, 1), shape (batch_size, ...).
+      :type x_0: Array
       :param x_1: Target data point, shape (batch_size, ...).
       :type x_1: Array
       :param t: Diffusion time, shape (batch_size, 1, ...).

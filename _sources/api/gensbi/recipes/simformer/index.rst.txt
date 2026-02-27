@@ -29,7 +29,6 @@ Functions
    gensbi.recipes.simformer._simformer_config_from_path
    gensbi.recipes.simformer.get_default_simformer_params
    gensbi.recipes.simformer.parse_simformer_params
-   gensbi.recipes.simformer.parse_training_config
 
 
 Module Contents
@@ -37,44 +36,51 @@ Module Contents
 
 .. py:class:: SimformerDiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
 
-   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointDiffusionPipeline`
+   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
 
    
-   Diffusion pipeline for training and using a Joint model for simulation-based inference.
+   Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.
 
-   :param train_dataset: Training dataset.
-   :type train_dataset: grain dataset or iterator over batches
+   Unlike the method-specific classes above (``JointFlowPipeline``,
+   ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with
+   **any** generative method and **any** user-provided model that conforms
+   to the ``JointWrapper`` interface.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset yielding concatenated ``x_1`` batches
+                         (obs and cond concatenated along the token dimension).
+   :type train_dataset: iterable
    :param val_dataset: Validation dataset.
-   :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space.
+   :type val_dataset: iterable
+   :param dim_obs: Dimension of the observation/parameter space.
    :type dim_obs: int
-   :param dim_cond: Dimension of the observation space.
+   :param dim_cond: Dimension of the conditioning space.
    :type dim_cond: int
-   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :param method: Strategy object (e.g. ``FlowMatchingMethod()``,
+                  ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).
+   :type method: GenerativeMethod
+   :param ch_obs: Number of channels per token. Default is 1.
    :type ch_obs: int, optional
-   :param params: Parameters for the Joint model. If None, default parameters are used.
-   :type params: optional
-   :param training_config: Configuration for training. If None, default configuration is used.
-   :type training_config: dict, optional
-   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :param condition_mask_kind: Kind of condition mask. One of ``"structured"`` or ``"posterior"``.
+                               Default is ``"structured"``.
    :type condition_mask_kind: str, optional
+   :param params: Model parameters (stored but not used directly).
+   :type params: optional
+   :param training_config: Training configuration.
+   :type training_config: dict, optional
 
    .. rubric:: Examples
 
-   Minimal example on how to instantiate and use the JointDiffusionPipeline:
-
-   .. literalinclude:: /examples/joint_diffusion_pipeline.py
-       :language: python
-       :linenos:
-
-   .. image:: /examples/joint_diffusion_pipeline_marginals.png
-       :width: 600
-
-   .. note::
-       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
-       in a ``if __name__ == "__main__":`` guard.
-       See https://docs.python.org/3/library/multiprocessing.html
+   >>> from gensbi.core import FlowMatchingMethod
+   >>> pipeline = JointPipeline(
+   ...     model=my_model,
+   ...     train_dataset=train_ds,
+   ...     val_dataset=val_ds,
+   ...     dim_obs=2, dim_cond=7,
+   ...     method=FlowMatchingMethod(),
+   ... )
 
 
 
@@ -174,51 +180,20 @@ Module Contents
    .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False)
 
       
-      Draw samples from the diffusion model.
+      Draw samples from the model.
 
-      Convenience method that internally calls :meth:`get_sampler` and
-      immediately evaluates the returned sampler function.
-
-      :param key: JAX random key used for sampling.
+      :param key: Random key.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
+      :param x_o: Conditioning variable.
       :type x_o: array-like
-      :param nsamples: Number of samples to draw. Default is 10 000.
+      :param nsamples: Number of samples. Default is 10 000.
       :type nsamples: int, optional
-      :param nsteps: Number of sampling steps. Default is 18.
-      :type nsteps: int, optional
-      :param use_ema: Whether to use the EMA model. Default is True.
+      :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param return_intermediates: Whether to return intermediate steps. Default is False.
-      :type return_intermediates: bool, optional
-      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
-                     class and its keyword arguments. Defaults to ``(EDMSolver, {})``.
+      :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
-                     EDM-specific options can be provided in the kwargs dict:
-
-                     - ``solver_scheduler``: override the path's scheduler for
-                       sampling (also used for ``sample_prior``).
-                     - ``solver_params``: dict of EDM solver parameters
-                       (``S_churn``, ``S_min``, ``S_max``, ``S_noise``).
-      :type solver: tuple of (type, dict), optional
-      :param \*\*model_extras: Additional keyword arguments passed to the model.
-      :type \*\*model_extras: dict
-
-      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
       :rtype: Array
-
-      .. rubric:: Examples
-
-      Using the default EDM solver:
-
-      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
-
-      Using a custom scheduler:
-
-      >>> from gensbi.diffusion.solver import EDMSolver
-      >>> from gensbi.diffusion.path.scheduler import VEEdmScheduler
-      >>> solver = (EDMSolver, {"solver_scheduler": VEEdmScheduler()})
-      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -256,44 +231,51 @@ Module Contents
 
 .. py:class:: SimformerFlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
 
-   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointFlowPipeline`
+   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
 
    
-   Flow pipeline for training and using a Joint model for simulation-based inference.
+   Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.
 
-   :param train_dataset: Training dataset.
-   :type train_dataset: grain dataset or iterator over batches
+   Unlike the method-specific classes above (``JointFlowPipeline``,
+   ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with
+   **any** generative method and **any** user-provided model that conforms
+   to the ``JointWrapper`` interface.
+
+   :param model: The model to be trained.
+   :type model: nnx.Module
+   :param train_dataset: Training dataset yielding concatenated ``x_1`` batches
+                         (obs and cond concatenated along the token dimension).
+   :type train_dataset: iterable
    :param val_dataset: Validation dataset.
-   :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space.
+   :type val_dataset: iterable
+   :param dim_obs: Dimension of the observation/parameter space.
    :type dim_obs: int
-   :param dim_cond: Dimension of the observation space.
+   :param dim_cond: Dimension of the conditioning space.
    :type dim_cond: int
-   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :param method: Strategy object (e.g. ``FlowMatchingMethod()``,
+                  ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).
+   :type method: GenerativeMethod
+   :param ch_obs: Number of channels per token. Default is 1.
    :type ch_obs: int, optional
-   :param params: Parameters for the Joint model. If None, default parameters are used.
-   :type params: JointParams, optional
-   :param training_config: Configuration for training. If None, default configuration is used.
-   :type training_config: dict, optional
-   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :param condition_mask_kind: Kind of condition mask. One of ``"structured"`` or ``"posterior"``.
+                               Default is ``"structured"``.
    :type condition_mask_kind: str, optional
+   :param params: Model parameters (stored but not used directly).
+   :type params: optional
+   :param training_config: Training configuration.
+   :type training_config: dict, optional
 
    .. rubric:: Examples
 
-   Minimal example on how to instantiate and use the JointFlowPipeline:
-
-   .. literalinclude:: /examples/joint_flow_pipeline.py
-       :language: python
-       :linenos:
-
-   .. image:: /examples/joint_flow_pipeline_marginals.png
-       :width: 600
-
-   .. note::
-       If you plan on using multiprocessing prefetching, ensure that your script is wrapped
-       in a ``if __name__ == "__main__":`` guard.
-       See https://docs.python.org/3/library/multiprocessing.html
+   >>> from gensbi.core import FlowMatchingMethod
+   >>> pipeline = JointPipeline(
+   ...     model=my_model,
+   ...     train_dataset=train_ds,
+   ...     val_dataset=val_ds,
+   ...     dim_obs=2, dim_cond=7,
+   ...     method=FlowMatchingMethod(),
+   ... )
 
 
 
@@ -393,50 +375,20 @@ Module Contents
    .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None)
 
       
-      Draw samples from the flow model.
+      Draw samples from the model.
 
-      Convenience method that internally calls :meth:`get_sampler` and
-      immediately evaluates the returned sampler function.
-
-      :param key: JAX random key used for sampling.
+      :param key: Random key.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
+      :param x_o: Conditioning variable.
       :type x_o: array-like
-      :param nsamples: Number of samples to draw. Default is 10 000.
+      :param nsamples: Number of samples. Default is 10 000.
       :type nsamples: int, optional
-      :param step_size: Step size for the solver. Default is 0.01.
-      :type step_size: float, optional
-      :param use_ema: Whether to use the EMA model. Default is True.
+      :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param time_grid: Time grid for intermediate steps. If None, uses
-                        ``jnp.linspace(0, 1, int(1 / step_size) + 1)``.
-      :type time_grid: Array, optional
-      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
-                     class and its keyword arguments. Defaults to ``(ODESolver, {})``.
+      :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
-                     To use an SDE solver instead:
-
-                     >>> from gensbi.flow_matching.solver import ZeroEndsSolver
-                     >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
-                     >>> samples = pipeline.sample(key, x_o, solver=solver)
-      :type solver: tuple of (type, dict), optional
-      :param \*\*model_extras: Additional keyword arguments passed to the model.
-      :type \*\*model_extras: dict
-
-      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
       :rtype: Array
-
-      .. rubric:: Examples
-
-      Using the default ODE solver:
-
-      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
-
-      Using the ZeroEnds SDE solver:
-
-      >>> from gensbi.flow_matching.solver import ZeroEndsSolver
-      >>> solver = (ZeroEndsSolver, {"mu0": 0.0, "sigma0": 0.01})
-      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -474,34 +426,51 @@ Module Contents
 
 .. py:class:: SimformerSMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, sde_type = 'VP', params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
 
-   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointSMPipeline`
+   Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
 
    
-   Score matching pipeline for training and using a Joint model for simulation-based inference.
+   Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.
 
-   Supports both Variance Preserving (VP) and Variance Exploding (VE) SDE formulations.
+   Unlike the method-specific classes above (``JointFlowPipeline``,
+   ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with
+   **any** generative method and **any** user-provided model that conforms
+   to the ``JointWrapper`` interface.
 
    :param model: The model to be trained.
    :type model: nnx.Module
-   :param train_dataset: Training dataset.
-   :type train_dataset: grain dataset or iterator over batches
+   :param train_dataset: Training dataset yielding concatenated ``x_1`` batches
+                         (obs and cond concatenated along the token dimension).
+   :type train_dataset: iterable
    :param val_dataset: Validation dataset.
-   :type val_dataset: grain dataset or iterator over batches
-   :param dim_obs: Dimension of the parameter space.
+   :type val_dataset: iterable
+   :param dim_obs: Dimension of the observation/parameter space.
    :type dim_obs: int
-   :param dim_cond: Dimension of the observation space.
+   :param dim_cond: Dimension of the conditioning space.
    :type dim_cond: int
-   :param ch_obs: Number of channels for the observation space. Default is 1.
+   :param method: Strategy object (e.g. ``FlowMatchingMethod()``,
+                  ``DiffusionEDMMethod()``, ``ScoreMatchingMethod()``).
+   :type method: GenerativeMethod
+   :param ch_obs: Number of channels per token. Default is 1.
    :type ch_obs: int, optional
-   :param sde_type: Type of SDE to use. One of ``"VP"`` (Variance Preserving) or ``"VE"`` (Variance Exploding).
-   :type sde_type: str
-   :param params: Parameters for the Joint model. If None, default parameters are used.
-   :type params: optional
-   :param training_config: Configuration for training. If None, default configuration is used.
-   :type training_config: dict, optional
-   :param condition_mask_kind: Kind of condition mask to use. One of ["structured", "posterior"].
+   :param condition_mask_kind: Kind of condition mask. One of ``"structured"`` or ``"posterior"``.
+                               Default is ``"structured"``.
    :type condition_mask_kind: str, optional
+   :param params: Model parameters (stored but not used directly).
+   :type params: optional
+   :param training_config: Training configuration.
+   :type training_config: dict, optional
+
+   .. rubric:: Examples
+
+   >>> from gensbi.core import FlowMatchingMethod
+   >>> pipeline = JointPipeline(
+   ...     model=my_model,
+   ...     train_dataset=train_ds,
+   ...     val_dataset=val_ds,
+   ...     dim_obs=2, dim_cond=7,
+   ...     method=FlowMatchingMethod(),
+   ... )
 
 
 
@@ -601,49 +570,20 @@ Module Contents
    .. py:method:: sample(key, x_o, nsamples=10000, nsteps=1000, use_ema=True, return_intermediates=False)
 
       
-      Draw samples from the score matching model.
+      Draw samples from the model.
 
-      Convenience method that internally calls :meth:`get_sampler` and
-      immediately evaluates the returned sampler function.
-
-      :param key: JAX random key used for sampling.
+      :param key: Random key.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
+      :param x_o: Conditioning variable.
       :type x_o: array-like
-      :param nsamples: Number of samples to draw. Default is 10 000.
+      :param nsamples: Number of samples. Default is 10 000.
       :type nsamples: int, optional
-      :param nsteps: Number of sampling steps. Default is 1000.
-      :type nsteps: int, optional
-      :param use_ema: Whether to use the EMA model. Default is True.
+      :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
-      :param return_intermediates: Whether to return intermediate steps. Default is False.
-      :type return_intermediates: bool, optional
-      :param solver: A tuple ``(SolverClass, solver_kwargs)`` specifying the solver
-                     class and its keyword arguments. Defaults to ``(SMSolver, {})``.
+      :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
-                     To use the probability flow ODE solver instead:
-
-                     >>> from gensbi.diffusion.solver import SMPFSolver
-                     >>> solver = (SMPFSolver, {})
-                     >>> samples = pipeline.sample(key, x_o, solver=solver)
-      :type solver: tuple of (type, dict), optional
-      :param \*\*model_extras: Additional keyword arguments passed to the model.
-      :type \*\*model_extras: dict
-
-      :returns: Sampled output of shape ``(nsamples, dim_obs, ch_obs)``.
+      :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
       :rtype: Array
-
-      .. rubric:: Examples
-
-      Using the default SDE solver:
-
-      >>> samples = pipeline.sample(key, x_o, nsamples=1000)
-
-      Using the probability flow ODE solver:
-
-      >>> from gensbi.diffusion.solver import SMPFSolver
-      >>> solver = (SMPFSolver, {})
-      >>> samples = pipeline.sample(key, x_o, solver=solver)
 
 
 
@@ -732,34 +672,6 @@ Module Contents
 
    
    Parse a Simformer configuration file.
-
-   :param config_path: Path to the configuration file.
-   :type config_path: str
-
-   :returns: **config** -- Parsed configuration dictionary.
-   :rtype: dict
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: parse_training_config(config_path)
-
-   
-   Parse a training configuration file.
 
    :param config_path: Path to the configuration file.
    :type config_path: str

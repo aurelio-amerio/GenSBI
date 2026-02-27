@@ -895,7 +895,7 @@ window.addEventListener("load", load);</script>
         <span class="n">nsteps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
         <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
         <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
         <span class="n">solver_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -915,15 +915,17 @@ window.addEventListener("load", load);</script>
 <span class="sd">                Integration method. One of &quot;Euler&quot;, &quot;Heun&quot;, &quot;SEA&quot;, &quot;ShARK&quot;.</span>
 <span class="sd">            return_intermediates : bool</span>
 <span class="sd">                Whether to return intermediate steps.</span>
-<span class="sd">            model_extras : dict</span>
-<span class="sd">                Additional model arguments.</span>
+<span class="sd">            static_model_kwargs : dict</span>
+<span class="sd">                Static model arguments baked into the sampler.</span>
+<span class="sd">                Condition-dependent data should be passed at call time</span>
+<span class="sd">                via ``model_extras``.</span>
 <span class="sd">            solver_params : Optional[dict]</span>
 <span class="sd">                Additional solver parameters.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Callable</span>
-<span class="sd">                Sampler function.</span>
+<span class="sd">                ``sample(key, x_init, model_extras={})`` sampler function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">cfg_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
@@ -933,7 +935,7 @@ window.addEventListener("load", load);</script>
         <span class="n">eps</span> <span class="o">=</span> <span class="n">solver_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eps&quot;</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 
         <span class="nd">@jit</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="p">{})</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">sm_reverse_sde_sampler</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">score_model</span><span class="p">,</span>
@@ -945,7 +947,7 @@ window.addEventListener("load", load);</script>
                 <span class="n">n_steps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
                 <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span>
                 <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
-                <span class="n">model_kwargs</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+                <span class="n">model_kwargs</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">static_model_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">},</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sample</span></div>
@@ -1004,10 +1006,9 @@ window.addEventListener("load", load);</script>
             <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
             <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
             <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-            <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
             <span class="n">solver_params</span><span class="o">=</span><span class="n">solver_params</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span></div>
 </div>
 
 
@@ -1068,7 +1069,7 @@ window.addEventListener("load", load);</script>
         <span class="n">nsteps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
         <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
         <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
         <span class="n">solver_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
         <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
@@ -1092,8 +1093,10 @@ window.addEventListener("load", load);</script>
 <span class="sd">                ``PIDController``; the others use fixed step size.</span>
 <span class="sd">            return_intermediates : bool</span>
 <span class="sd">                Whether to return intermediate steps.</span>
-<span class="sd">            model_extras : dict</span>
-<span class="sd">                Additional model arguments.</span>
+<span class="sd">            static_model_kwargs : dict</span>
+<span class="sd">                Static model arguments baked into the sampler.</span>
+<span class="sd">                Condition-dependent data should be passed at call time</span>
+<span class="sd">                via ``model_extras``.</span>
 <span class="sd">            solver_params : Optional[dict]</span>
 <span class="sd">                Additional solver parameters.</span>
 <span class="sd">            atol : float</span>
@@ -1104,7 +1107,7 @@ window.addEventListener("load", load);</script>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Callable</span>
-<span class="sd">                Sampler function.</span>
+<span class="sd">                ``sample(key, x_init, model_extras={})`` sampler function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">cfg_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
@@ -1114,7 +1117,7 @@ window.addEventListener("load", load);</script>
         <span class="n">eps</span> <span class="o">=</span> <span class="n">solver_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eps&quot;</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 
         <span class="nd">@jit</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="p">{})</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">sm_reverse_ode_sampler</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">score_model</span><span class="p">,</span>
@@ -1128,7 +1131,7 @@ window.addEventListener("load", load);</script>
                 <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
                 <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span>
                 <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
-                <span class="n">model_kwargs</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
+                <span class="n">model_kwargs</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">static_model_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">},</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sample</span></div>

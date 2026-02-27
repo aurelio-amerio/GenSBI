@@ -4,14 +4,27 @@ gensbi.recipes.utils
 .. py:module:: gensbi.recipes.utils
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   gensbi.recipes.utils._EMBEDDINGS_1D
+   gensbi.recipes.utils._EMBEDDINGS_2D
+
+
 Functions
 ---------
 
 .. autoapisummary::
 
+   gensbi.recipes.utils._resolve_embedding_ids
+   gensbi.recipes.utils.build_edm_path
+   gensbi.recipes.utils.build_sm_path
    gensbi.recipes.utils.init_ids_1d
    gensbi.recipes.utils.init_ids_2d
    gensbi.recipes.utils.init_ids_joint
+   gensbi.recipes.utils.parse_training_config
    gensbi.recipes.utils.patchify_2d
    gensbi.recipes.utils.scale_lr
 
@@ -19,11 +32,143 @@ Functions
 Module Contents
 ---------------
 
+.. py:function:: _resolve_embedding_ids(dim, strategy, semantic_id)
+
+   
+   Resolve ID embeddings by strategy name.
+
+   :param dim: Dimension specification (number of tokens, or (H, W) for 2D images).
+   :type dim: int or tuple of int
+   :param strategy: Embedding strategy name (e.g., "absolute", "pos1d", "rope1d",
+                    "pos2d", "rope2d").
+   :type strategy: str
+   :param semantic_id: Semantic identifier for the token group (0=obs, 1=cond).
+   :type semantic_id: int
+
+   :returns: * **ids** (*Array*) -- Token ID array.
+             * **resolved_dim** (*int*) -- Resolved flat dimension.
+
+   :raises ValueError: If ``strategy`` is not recognized.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: build_edm_path(sde, config)
+
+   
+   Build an EDM-family diffusion path from an SDE type string and config.
+
+   :param sde: SDE type: ``"EDM"``, ``"VE"``, or ``"VP"``.
+   :type sde: str
+   :param config: Training configuration dict; scheduler hyperparameters are read from
+                  here with sensible defaults.
+   :type config: dict
+
+   :returns: Configured diffusion path.
+   :rtype: EDMPath
+
+   :raises ValueError: If ``sde`` is not one of ``{"EDM", "VE", "VP"}``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: build_sm_path(sde_type, config)
+
+   
+   Build a score-matching path from an SDE type string and config.
+
+   :param sde_type: SDE type: ``"VP"`` or ``"VE"``.
+   :type sde_type: str
+   :param config: Training configuration dict; scheduler hyperparameters are read from
+                  here with sensible defaults.
+   :type config: dict
+
+   :returns: Configured score-matching path.
+   :rtype: SMPath
+
+   :raises ValueError: If ``sde_type`` is not one of ``{"VP", "VE"}``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:function:: init_ids_1d(dim, semantic_id = None)
 
 .. py:function:: init_ids_2d(dim, semantic_id = 0)
 
 .. py:function:: init_ids_joint(dim_obs, dim_cond)
+
+.. py:function:: parse_training_config(config_path)
+
+   
+   Parse training and optimizer configuration from a YAML config file.
+
+   Reads the ``training`` and ``optimizer`` sections of the config and
+   returns a flat dictionary consumed by :class:`AbstractPipeline`.
+
+   :param config_path: Path to the YAML configuration file.
+   :type config_path: str
+
+   :returns: **training_config** -- Parsed training configuration dictionary.
+   :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:function:: patchify_2d(x)
 
@@ -58,4 +203,8 @@ Module Contents
 
    ..
        !! processed by numpydoc !!
+
+.. py:data:: _EMBEDDINGS_1D
+
+.. py:data:: _EMBEDDINGS_2D
 

@@ -41,7 +41,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, model_extras = {}, solver_params = {}, solver_scheduler = None)
+   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 18, method = 'Heun', return_intermediates = False, static_model_kwargs = {}, solver_params = {}, solver_scheduler = None)
 
       
       Returns a sampler function for the SDE.
@@ -58,14 +58,16 @@ Module Contents
       :type method: str
       :param return_intermediates: Whether to return intermediate steps.
       :type return_intermediates: bool
-      :param model_extras: Additional model arguments.
-      :type model_extras: dict
+      :param static_model_kwargs: Static model arguments baked into the sampler.
+                                  Condition-dependent data should be passed at call time
+                                  via ``model_extras``.
+      :type static_model_kwargs: dict
       :param solver_params: Additional solver parameters.
       :type solver_params: Optional[dict]
       :param solver_scheduler: Scheduler to use for the solver. If None, the path's scheduler is used.
       :type solver_scheduler: Optional[Any]
 
-      :returns: Sampler function.
+      :returns: ``sample(key, x_init, model_extras={})`` sampler function.
       :rtype: Callable
 
 
@@ -107,7 +109,7 @@ Module Contents
       :type method: str
       :param return_intermediates: Whether to return intermediate steps.
       :type return_intermediates: bool
-      :param model_extras: Additional model arguments.
+      :param model_extras: Runtime model extras (e.g. ``cond``, ``obs_ids``).
       :type model_extras: dict
       :param solver_params: Additional solver parameters.
       :type solver_params: Optional[dict]

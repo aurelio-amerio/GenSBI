@@ -34,8 +34,8 @@ Classes
 .. autoapisummary::
 
    gensbi.flow_matching.solver.sde_solver_fm.BaseFmSDESolver
-   gensbi.flow_matching.solver.sde_solver_fm.NonSingular
-   gensbi.flow_matching.solver.sde_solver_fm.ZeroEnds
+   gensbi.flow_matching.solver.sde_solver_fm.NonSingularSolver
+   gensbi.flow_matching.solver.sde_solver_fm.ZeroEndsSolver
 
 
 Module Contents
@@ -134,7 +134,7 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = {})
+   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, static_model_kwargs = {})
 
       
       Stochastic sampler for the SDE.
@@ -154,11 +154,13 @@ Module Contents
       :type time_grid: Array
       :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
       :type return_intermediates: bool, optional
-      :param model_extras: Additional input for the model.
-      :type model_extras: dict
+      :param static_model_kwargs: Static keyword arguments baked into the drift/diffusion
+                                  at creation time.  Condition-dependent data should be
+                                  passed at call time via ``model_extras``.
+      :type static_model_kwargs: dict
 
-      :returns: A function ``sample(x_init, key)`` that returns sampled trajectories
-                of shape ``(batch, features, channels)``.
+      :returns: ``sampler(x_init, key, model_extras={})`` that returns
+                sampled trajectories of shape ``(batch, features, channels)``.
       :rtype: Callable
 
 
@@ -222,7 +224,7 @@ Module Contents
       :type time_grid: Array
       :param return_intermediates: Return intermediates.
       :type return_intermediates: bool
-      :param model_extras: Model extras.
+      :param model_extras: Runtime model extras (e.g. ``cond``, ``obs_ids``).
       :type model_extras: dict
       :param key: Random key. Required for SDE.
       :type key: jax.random.PRNGKey
@@ -271,7 +273,7 @@ Module Contents
    .. py:attribute:: velocity_model
 
 
-.. py:class:: NonSingular(velocity_model, mu0, sigma0, alpha)
+.. py:class:: NonSingularSolver(velocity_model, mu0, sigma0, alpha)
 
    Bases: :py:obj:`BaseFmSDESolver`
 
@@ -362,7 +364,7 @@ Module Contents
    .. py:attribute:: alpha
 
 
-.. py:class:: ZeroEnds(velocity_model, mu0, sigma0, alpha, eps0 = 0.001)
+.. py:class:: ZeroEndsSolver(velocity_model, mu0, sigma0, alpha, eps0 = 0.001)
 
    Bases: :py:obj:`BaseFmSDESolver`
 
