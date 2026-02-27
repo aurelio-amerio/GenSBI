@@ -115,8 +115,8 @@ params = SimformerParams(
     dim_joint=dim_joint,
     fourier_features=128,
     num_heads=4,
-    num_layers=6,
-    widening_factor=3,
+    depth=6,
+    mlp_ratio=3,
     qkv_features=40,
     num_hidden_layers=1,
 )
@@ -180,7 +180,9 @@ plt.show()
 from gensbi.diffusion.solver import SMPFSolver
 
 samples_pf = pipeline.sample(
-    rngs.sample(), x_o, nsamples=100_000,
+    rngs.sample(),
+    x_o,
+    nsamples=100_000,
     solver=(SMPFSolver, {}),
 )
 samples_pf = unnormalize(samples_pf, means[:dim_obs], stds[:dim_obs])

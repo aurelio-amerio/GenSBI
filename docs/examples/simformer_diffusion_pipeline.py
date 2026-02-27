@@ -120,8 +120,8 @@ params = SimformerParams(
     dim_joint=dim_joint,
     fourier_features=128,
     num_heads=4,
-    num_layers=6,
-    widening_factor=3,
+    depth=6,
+    mlp_ratio=3,
     qkv_features=40,
     num_hidden_layers=1,
 )

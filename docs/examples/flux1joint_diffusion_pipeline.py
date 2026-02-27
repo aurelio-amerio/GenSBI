@@ -123,7 +123,7 @@ params = Flux1JointParams(
     qkv_bias=True,
     rngs=nnx.Rngs(0),
     dim_joint=dim_joint,
-    id_embedding_strategy="concat",
+    id_merge_mode="concat",
     guidance_embed=False,
     param_dtype=jnp.float32,
 )
