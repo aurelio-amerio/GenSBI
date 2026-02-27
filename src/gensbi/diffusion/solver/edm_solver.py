@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable, Optional, Sequence, Tuple, Union, Any
 
 import jax
@@ -98,7 +99,11 @@ class EDMSolver(Solver):
         if solver_scheduler.name == "EDM":
             sampler_ = edm_sampler
         else:
-            sampler_ = edm_ablation_sampler
+            # Bind the training scheduler as denoise_scheduler so the model
+            # is always called with the preconditioning it was trained with.
+            sampler_ = partial(
+                edm_ablation_sampler, denoise_scheduler=self.path.scheduler
+            )
 
         if cfg_scale is not None:
             raise NotImplementedError(
