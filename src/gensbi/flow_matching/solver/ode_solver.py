@@ -190,7 +190,7 @@ class ODESolver(Solver):
 
         return solution
 
-    def get_unnormalized_logprob(
+    def get_log_prob(
         self,
         log_p0: Callable[[Array], Array],
         step_size: float = 0.01,
@@ -199,9 +199,8 @@ class ODESolver(Solver):
         rtol: float = 1e-5,
         time_grid=[1.0, 0.0],
         return_intermediates: bool = False,
-        # exact_divergence: bool = True,
+        exact_divergence: bool = True,
         *,
-        # key: jax.random.PRNGKey = None,
         static_model_kwargs: dict = {},
     ) -> Callable:
         r"""Solve for log likelihood given a target sample at :math:`t=0`.
@@ -238,7 +237,9 @@ class ODESolver(Solver):
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
         vector_field = self.velocity_model.get_vector_field(**static_model_kwargs)
-        divergence = self.velocity_model.get_divergence(**static_model_kwargs)
+        divergence = self.velocity_model.get_divergence(
+            exact=exact_divergence, **static_model_kwargs
+        )
 
         def dynamics_func(t, states, args):
             xt, _ = states
@@ -262,7 +263,22 @@ class ODESolver(Solver):
         else:
             stepsize_controller = diffrax.ConstantStepSize()
 
-        def sampler(x_1, model_extras={}):
+        def sampler(x_1, model_extras={}, *, key=None):
+            _extras = dict(model_extras)  # shallow copy
+
+            # For Hutchinson: draw probe vector v once, fixed across ODE steps
+            if not exact_divergence:
+                if key is None:
+                    raise ValueError(
+                        "A PRNG key is required for Hutchinson divergence. "
+                        "Pass key= when calling the log_prob function."
+                    )
+                from gensbi.utils.math import _expand_dims
+                v = jax.random.rademacher(
+                    key, shape=_expand_dims(x_1).shape, dtype=x_1.dtype
+                )
+                _extras["div_v"] = v
+
             y_init = (
                 x_1,
                 jnp.zeros(x_1.shape[0]),
@@ -274,7 +290,7 @@ class ODESolver(Solver):
                 t1=time_grid[-1],
                 dt0=-step_size,
                 y0=y_init,
-                args=model_extras,
+                args=_extras,
                 saveat=(
                     diffrax.SaveAt(ts=time_grid)
                     if return_intermediates
@@ -291,7 +307,7 @@ class ODESolver(Solver):
 
         return sampler
 
-    def unnormalized_logprob(
+    def compute_log_prob(
         self,
         x_1: Array,
         log_p0: Callable[[Array], Array],
@@ -301,13 +317,13 @@ class ODESolver(Solver):
         rtol: float = 1e-5,
         time_grid=[1.0, 0.0],
         return_intermediates: bool = False,
-        # exact_divergence: bool = True,
+        exact_divergence: bool = True,
         *,
-        # key: jax.random.PRNGKey = None,
+        key: jax.random.PRNGKey = None,
         model_extras: dict = {},
     ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
 
-        sampler = self.get_unnormalized_logprob(
+        sampler = self.get_log_prob(
             log_p0=log_p0,
             step_size=step_size,
             method=method,
@@ -315,6 +331,7 @@ class ODESolver(Solver):
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
+            exact_divergence=exact_divergence,
         )
-        solution = sampler(x_1, model_extras=model_extras)
+        solution = sampler(x_1, model_extras=model_extras, key=key)
         return solution

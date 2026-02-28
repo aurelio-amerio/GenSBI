@@ -74,7 +74,7 @@ def test_unnorm_logprob_shape(solver):
     )
 
     time_grid = jnp.array([1.0, 0.0])
-    logp = solver.unnormalized_logprob(
+    logp = solver.compute_log_prob(
         x_1=x_1,
         log_p0=p0_cond.log_prob,
         time_grid=time_grid,
@@ -84,7 +84,7 @@ def test_unnorm_logprob_shape(solver):
     )
     assert logp.shape == (1,x_1.shape[0])
 
-    logp = solver.unnormalized_logprob(
+    logp = solver.compute_log_prob(
         x_1=x_1,
         log_p0=p0_cond.log_prob,
         time_grid=time_grid,
@@ -95,7 +95,7 @@ def test_unnorm_logprob_shape(solver):
     assert logp.shape == (1,x_1.shape[0])
 
     time_grid = jnp.linspace(1, 0, 10)
-    logp = solver.unnormalized_logprob(
+    logp = solver.compute_log_prob(
         x_1=x_1,
         log_p0=p0_cond.log_prob,
         time_grid=time_grid,
@@ -106,4 +106,45 @@ def test_unnorm_logprob_shape(solver):
     assert logp.shape == (
         10,
         x_1.shape[0],
+    )
+
+
+def test_logprob_exact_vs_hutchinson(solver):
+    """Hutchinson logprob should match exact logprob for this model."""
+    import jax
+
+    x_1 = jnp.ones((5, 2, 3))
+
+    p0_cond = dist.Independent(
+        dist.Normal(loc=jnp.zeros((2, 3)), scale=jnp.ones((2, 3))),
+        reinterpreted_batch_ndims=2,
+    )
+
+    time_grid = jnp.array([1.0, 0.0])
+
+    # Exact divergence
+    logp_exact = solver.compute_log_prob(
+        x_1=x_1,
+        log_p0=p0_cond.log_prob,
+        time_grid=time_grid,
+        method="Euler",
+        step_size=0.01,
+        exact_divergence=True,
+    )
+
+    # Hutchinson divergence
+    key = jax.random.PRNGKey(42)
+    logp_hutch = solver.compute_log_prob(
+        x_1=x_1,
+        log_p0=p0_cond.log_prob,
+        time_grid=time_grid,
+        method="Euler",
+        step_size=0.01,
+        exact_divergence=False,
+        key=key,
+    )
+
+    assert logp_hutch.shape == logp_exact.shape
+    assert jnp.allclose(logp_exact, logp_hutch, rtol=1e-3), (
+        f"Exact vs Hutchinson mismatch: exact={logp_exact}, hutch={logp_hutch}"
     )

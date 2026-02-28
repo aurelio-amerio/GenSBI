@@ -109,8 +109,8 @@ class ModelWrapper(nnx.Module):
                 the full Jacobian (``jax.jacfwd`` + trace).  If ``False``,
                 use the Hutchinson stochastic trace estimator (single JVP
                 with a Rademacher probe).  The Hutchinson variant requires
-                a PRNG key to be passed at call time inside
-                ``args["div_key"]``.
+                the probe vector to be passed at call time inside
+                ``args["div_v"]``.
             **kwargs
                 Static keyword arguments forwarded to ``get_vector_field``.
 
@@ -128,8 +128,8 @@ class ModelWrapper(nnx.Module):
         else:
             def div_(t, x, args):
                 args = dict(args)  # shallow copy to avoid mutating the caller's dict
-                key = args.pop("div_key")
-                return divergence_hutchinson(vf, t, x, args, key=key)
+                v = args.pop("div_v")
+                return divergence_hutchinson(vf, t, x, args, v=v)
 
         return div_
 

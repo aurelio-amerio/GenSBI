@@ -160,6 +160,37 @@ class GenerativeMethod(ABC):
         """
         ...  # pragma: no cover
 
+    def build_log_prob_fn(self, model_wrapped, path, model_extras, **kwargs):
+        """Build a log-probability closure for inference.
+
+        Only supported by methods whose solver can evaluate the continuous
+        change-of-variables formula (e.g., flow matching + ODE solver).
+
+        Parameters
+        ----------
+        model_wrapped
+            The wrapped model.
+        path
+            The probability path.
+        model_extras : dict
+            Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).
+        **kwargs
+            Method-specific arguments (``step_size``, ``method``, etc.).
+
+        Returns
+        -------
+        log_prob_fn : Callable
+            A function ``(x_1, model_extras) -> log_prob``.
+
+        Raises
+        ------
+        NotImplementedError
+            If the method does not support log-probability computation.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support log-probability computation."
+        )
+
     def get_extra_training_config(self) -> dict:
         """Return method-specific training config defaults.
 

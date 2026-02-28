@@ -58,7 +58,7 @@ def test_model_wrapper_divergence():
     x = jnp.ones((1, 2, 4))
     t = jnp.ones((1,))
     div = div_fn(t, x, None)
-    assert div.shape == (), f"Expected divergence shape (), got {div.shape}"
+    assert div.shape == (1,), f"Expected divergence shape (1,), got {div.shape}"
 
 
 def test_model_wrapper_divergence_hutchinson():
@@ -74,9 +74,11 @@ def test_model_wrapper_divergence_hutchinson():
     exact_div_fn = wrapper.get_divergence(exact=True)
     exact_div = exact_div_fn(t, x, None)
 
+    x_expanded = _expand_dims(x)
     keys = jax.random.split(jax.random.PRNGKey(0), 500)
     estimates = jnp.array([
-        div_fn(t, x, {"div_key": k}) for k in keys
+        div_fn(t, x, {"div_v": jax.random.rademacher(k, shape=x_expanded.shape, dtype=x.dtype)})
+        for k in keys
     ])
     mean_estimate = jnp.mean(estimates, axis=0)
     assert jnp.allclose(mean_estimate, exact_div, atol=0.5), (

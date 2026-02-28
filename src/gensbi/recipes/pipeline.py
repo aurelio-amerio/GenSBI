@@ -807,6 +807,28 @@ class AbstractPipeline(abc.ABC):
         """
         ...  # pragma: no cover
 
+    @abc.abstractmethod
+    def get_log_prob_fn(self, *args, **kwargs):
+        """Get a log-probability function for evaluating data under the model.
+
+        Returns
+        -------
+        log_prob_fn : Callable
+            ``(x_1) -> log_prob``
+        """
+        ...  # pragma: no cover
+
+    @abc.abstractmethod
+    def log_prob(self, x_1, *args, **kwargs):
+        """Compute log-probability of data under the trained model.
+
+        Returns
+        -------
+        Array
+            Log-probabilities.
+        """
+        ...  # pragma: no cover
+
     def sample_batched(
         self,
         key,
