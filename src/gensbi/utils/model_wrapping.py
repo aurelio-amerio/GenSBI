@@ -12,7 +12,7 @@ import jax.numpy as jnp
 
 from typing import Callable
 
-from .math import divergence, _expand_dims, _expand_time
+from .math import divergence, divergence_hutchinson, _expand_dims, _expand_time
 
 class ModelWrapper(nnx.Module):
     """
@@ -99,30 +99,37 @@ class ModelWrapper(nnx.Module):
 
         return vf
 
-    def get_divergence(self, **kwargs) -> Callable:
-        r"""Compute the divergence of the model.
+    def get_divergence(self, exact: bool = True, **kwargs) -> Callable:
+        r"""Return a function that computes the divergence of the vector field.
 
         Parameters
         ----------
-            t : Array
-                time (batch_size).
-            x : Array
-                input data to the model (batch_size, ...).
-            args: additional information forwarded to the model, e.g., text condition.
+            exact : bool
+                If ``True`` (default), compute the exact divergence via
+                the full Jacobian (``jax.jacfwd`` + trace).  If ``False``,
+                use the Hutchinson stochastic trace estimator (single JVP
+                with a Rademacher probe).  The Hutchinson variant requires
+                a PRNG key to be passed at call time inside
+                ``args["div_key"]``.
+            **kwargs
+                Static keyword arguments forwarded to ``get_vector_field``.
 
         Returns
         -------
-            Array
-                divergence of the model.
+            Callable
+                ``div_(t, x, args)`` — divergence function compatible with
+                diffrax ODE terms.
         """
         vf = self.get_vector_field(**kwargs)
 
-        def div_(t, x, args):
-            div = divergence(vf, t, x, args)
-            # squeeze the first dimension of the divergence if it is 1
-            # if div.shape[0] == 1:
-            #     div = jnp.squeeze(div, axis=0)
-            return div
+        if exact:
+            def div_(t, x, args):
+                return divergence(vf, t, x, args)
+        else:
+            def div_(t, x, args):
+                args = dict(args)  # shallow copy to avoid mutating the caller's dict
+                key = args.pop("div_key")
+                return divergence_hutchinson(vf, t, x, args, key=key)
 
         return div_
 

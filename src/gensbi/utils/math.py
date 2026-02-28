@@ -89,3 +89,53 @@ def divergence(
     res = rearrange(res, 'i a b j c d -> i (a b) j (c d)')
     res = einsum(res, 'i a i c -> i')
     return jnp.squeeze(res)
+
+
+def divergence_hutchinson(
+    vf: Callable,
+    t: Array,
+    x: Array,
+    args: Optional[Array] = None,
+    *,
+    key: jax.random.PRNGKey = None,
+) -> Array:
+    """
+    Estimate the divergence of a vector field using the Hutchinson trace estimator.
+
+    Uses a single JVP with a Rademacher (±1) probe vector to obtain an
+    unbiased estimate of tr(J), where J = ∂vf/∂x:
+
+        tr(J) ≈ vᵀ J v,   v ~ Rademacher(±1)
+
+    This is O(1) in the dimensionality of x, compared to the O(d) cost of
+    the exact Jacobian-based divergence.
+
+    Parameters
+    ----------
+        vf: The vector field function with signature ``vf(t, x, args)``.
+        t: The time at which to compute the divergence.
+        x: The point at which to compute the divergence.
+        args: Optional additional arguments for the vector field function.
+        key: A JAX PRNG key used to draw the probe vector.
+
+    Returns
+    -------
+        The Hutchinson estimate of the divergence at point x and time t.
+    """
+    x = _expand_dims(x)
+    t = _expand_time(t)
+
+    # Draw Rademacher probe: ±1 with equal probability, same shape as x
+    v = jax.random.rademacher(key, shape=x.shape, dtype=x.dtype)
+
+    vf_wrapped = lambda x_: vf(t, x_, args=args)
+
+    # JVP: (vf(x), J @ v) in a single forward pass
+    _, jvp_val = jax.jvp(vf_wrapped, (x,), (v,))
+
+    # Hutchinson estimate: vᵀ (J v) summed per sample
+    # x shape is (batch, features, 1) after _expand_dims
+    # jvp_val and v have the same shape as x
+    estimate = jnp.sum(v * jvp_val, axis=tuple(range(1, v.ndim)))
+
+    return jnp.squeeze(estimate)
