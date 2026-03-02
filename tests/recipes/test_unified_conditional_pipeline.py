@@ -166,3 +166,80 @@ def test_unified_conditional_loss_fn(method):
     mock_batch = (jnp.zeros((32, dim_obs, 2)), jnp.zeros((32, dim_cond, 2)))
     loss = loss_fn(pipeline.model_wrapped, mock_batch, key=jax.random.PRNGKey(1))
     assert loss.shape == ()
+
+
+@pytest.mark.parametrize("use_ema", [False, True], ids=["no_ema", "ema"])
+@pytest.mark.parametrize("exact_divergence", [True, False], ids=["exact", "hutchinson"])
+def test_unified_conditional_log_prob(use_ema, exact_divergence):
+    # log_prob is only supported for FlowMatchingMethod
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = ConditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = ConditionalPipeline(
+            model=MockConditionalModel(),
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=FlowMatchingMethod(),
+            ch_obs=2,
+            ch_cond=2,
+            training_config=training_config,
+        )
+
+        pipeline.train(nnx.Rngs(0), nsteps=2, save_model=False)
+        pipeline._wrap_model()
+
+        batch_size = 3
+        x_1 = jnp.zeros((batch_size, dim_obs, 2))
+        x_o = jnp.zeros((1, dim_cond, 2))
+
+        log_prob_key = jax.random.PRNGKey(42) if not exact_divergence else None
+        lp = pipeline.log_prob(
+            x_1, x_o,
+            use_ema=use_ema,
+            key=log_prob_key,
+            exact_divergence=exact_divergence,
+        )
+        assert lp.shape == (batch_size,)
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        DiffusionEDMMethod(),
+        ScoreMatchingMethod(),
+    ],
+    ids=["diffusion", "score"],
+)
+def test_unified_conditional_log_prob_not_implemented(method):
+    # EDM and ScoreMatching do not support log_prob
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = ConditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+        training_config["val_every"] = 1
+
+        pipeline = ConditionalPipeline(
+            model=MockConditionalModel(),
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=dim_obs,
+            dim_cond=dim_cond,
+            method=method,
+            ch_obs=2,
+            ch_cond=2,
+            training_config=training_config,
+        )
+
+        pipeline.train(nnx.Rngs(0), nsteps=2, save_model=False)
+        pipeline._wrap_model()
+
+        x_1 = jnp.zeros((3, dim_obs, 2))
+        x_o = jnp.zeros((1, dim_cond, 2))
+
+        with pytest.raises(NotImplementedError):
+            pipeline.log_prob(x_1, x_o, use_ema=True)

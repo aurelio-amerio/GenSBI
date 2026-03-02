@@ -82,7 +82,7 @@ def test_unnorm_logprob_shape(solver):
         step_size=0.01,
         return_intermediates=False,
     )
-    assert logp.shape == (1,x_1.shape[0])
+    assert logp.shape == (x_1.shape[0],)
 
     logp = solver.compute_log_prob(
         x_1=x_1,
@@ -92,7 +92,7 @@ def test_unnorm_logprob_shape(solver):
         step_size=0.01,
         return_intermediates=False,
     )
-    assert logp.shape == (1,x_1.shape[0])
+    assert logp.shape == (x_1.shape[0],)
 
     time_grid = jnp.linspace(1, 0, 10)
     logp = solver.compute_log_prob(

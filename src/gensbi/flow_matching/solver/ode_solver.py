@@ -301,6 +301,10 @@ class ODESolver(Solver):
 
             x_source, log_det = solution.ys[0], solution.ys[1]  # type: ignore
 
+            if not return_intermediates:
+                x_source = x_source[-1]
+                log_det = log_det[-1]
+
             source_log_p = log_p0(x_source)
 
             return source_log_p + log_det
