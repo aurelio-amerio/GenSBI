@@ -118,3 +118,4 @@ def test_defaults(pipeline_cls):
 @pytest.mark.slow
 def test_model_pipeline(pipeline_cls, params):
     run_model_pipeline_test(pipeline_cls, params, is_conditional=True)
+

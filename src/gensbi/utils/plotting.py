@@ -741,6 +741,61 @@ def plot_2d_levels(x, y, Z, ax, levels=[0.6827, 0.9545], display_labels=False):
     return
 
 
+def _plot_2d_dist_contour(
+    x,
+    y,
+    Z,
+    ax,
+    true_param=None,
+    levels=[0.6827, 0.9545],
+    cmap=cmap_lcontour,
+    display_labels=False,
+):
+    """
+    Plot a 2D contour plot of a distribution.
+
+    Parameters
+    ----------
+    x : array-like
+        X values.
+    y : array-like
+        Y values.
+    Z : array-like
+        Z values corresponding to (x, y).
+    levels : list or None, optional
+        Contour levels to plot. If None, contours will not be plotted.
+
+    Returns
+    -------
+    fig, ax : matplotlib Figure and Axes objects
+        The figure and axes containing the plot.
+    """
+
+    x = np.asarray(x)  # make sure we have numpy arrays
+    y = np.asarray(y)  # make sure we have numpy arrays
+    Z = np.asarray(Z)  # make sure we have numpy arrays
+
+    ax.contourf(x, y, Z, levels=20, cmap=cmap, vmin=0)
+
+    if levels is not None:
+        plot_2d_levels(x, y, Z, ax, levels=levels, display_labels=display_labels)
+
+    if true_param is not None:
+        ax.scatter(
+            true_param[0], true_param[1], color=base_color, s=50, marker="s", zorder=10
+        )
+        ax.axvline(
+            true_param[0], color=base_color, linestyle="-", linewidth=1.5, zorder=9
+        )
+        ax.axhline(
+            true_param[1], color=base_color, linestyle="-", linewidth=1.5, zorder=9
+        )
+
+    # Set aspect ratio to equal for better visualization
+    ax.set_aspect("equal", adjustable="box")
+
+    return ax
+
 def plot_2d_dist_contour(
     x,
     y,
@@ -772,28 +827,15 @@ def plot_2d_dist_contour(
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    x = np.asarray(x)  # make sure we have numpy arrays
-    y = np.asarray(y)  # make sure we have numpy arrays
-    Z = np.asarray(Z)  # make sure we have numpy arrays
-
-    ax.contourf(x, y, Z, levels=20, cmap=cmap, vmin=0)
-
-    if levels is not None:
-        plot_2d_levels(x, y, Z, ax, levels=levels, display_labels=display_labels)
-
-    if true_param is not None:
-        ax.scatter(
-            true_param[0], true_param[1], color=base_color, s=50, marker="s", zorder=10
-        )
-        ax.axvline(
-            true_param[0], color=base_color, linestyle="-", linewidth=1.5, zorder=9
-        )
-        ax.axhline(
-            true_param[1], color=base_color, linestyle="-", linewidth=1.5, zorder=9
-        )
-
-    # Set aspect ratio to equal for better visualization
-    ax.set_aspect("equal", adjustable="box")
-    fig.tight_layout()
+    ax = _plot_2d_dist_contour(
+        x,
+        y,
+        Z,
+        ax,
+        true_param=true_param,
+        levels=levels,
+        cmap=cmap,
+        display_labels=display_labels,
+    )
 
     return fig, ax

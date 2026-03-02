@@ -135,6 +135,27 @@ def run_model_pipeline_test(pipeline_cls, params, is_conditional):
         )
         assert samples_batched.shape == (4, 3, dim_obs, 2)
 
+        # Log prob (only supported for FlowMatchingMethod)
+        from gensbi.core import FlowMatchingMethod
+        if isinstance(pipeline.method, FlowMatchingMethod):
+            x_1 = jnp.zeros((batch_size, dim_obs, 2))
+            # Exact divergence
+            lp = pipeline.log_prob(x_1, x_o, use_ema=False, exact_divergence=True)
+            assert lp.shape == (batch_size,)
+            lp_ema = pipeline.log_prob(x_1, x_o, use_ema=True, exact_divergence=True)
+            assert lp_ema.shape == (batch_size,)
+            # Hutchinson divergence
+            lp_hutch = pipeline.log_prob(
+                x_1, x_o, use_ema=False,
+                key=jax.random.PRNGKey(42), exact_divergence=False,
+            )
+            assert lp_hutch.shape == (batch_size,)
+            lp_hutch_ema = pipeline.log_prob(
+                x_1, x_o, use_ema=True,
+                key=jax.random.PRNGKey(42), exact_divergence=False,
+            )
+            assert lp_hutch_ema.shape == (batch_size,)
+
 
 def run_load_config_test(pipeline_cls, config_path, is_conditional):
     """Shared config loading test."""
@@ -155,3 +176,4 @@ def run_load_config_test(pipeline_cls, config_path, is_conditional):
         checkpoint_dir=checkpoint_dir,
     )
     assert isinstance(pipeline, pipeline_cls)
+

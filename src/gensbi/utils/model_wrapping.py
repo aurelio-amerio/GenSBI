@@ -89,12 +89,11 @@ class ModelWrapper(nnx.Module):
         def vf(t, x, args):
             # merge args and kwargs
             args = args if args is not None else {}
-            vf = self(t, x, **args, **kwargs)
-            # squeeze the first dimension of the vector field if it is 1
-            # if vf.shape[0] == 1:
-            #     vf = jnp.squeeze(vf, axis=0)
-
-            # vf = jnp.squeeze(vf, axis=-1)
+            # Filter out divergence-only keys (e.g. div_v for Hutchinson)
+            # that are not model parameters.
+            _DIVERGENCE_KEYS = {"div_v"}
+            model_args = {k: v for k, v in args.items() if k not in _DIVERGENCE_KEYS}
+            vf = self(t, x, **model_args, **kwargs)
             return vf
 
         return vf
