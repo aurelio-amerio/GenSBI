@@ -22,7 +22,7 @@ All examples are available in the [GenSBI-examples repository](https://github.co
 ```{toctree}
 :maxdepth: 1
 
-notebooks/my_first_model
+getting_started/my_first_model
 ```
 
 ## Neural Density Estimators (NDE)

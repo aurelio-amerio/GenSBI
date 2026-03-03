@@ -91,7 +91,8 @@ Some key examples include:
 
 **Getting Started:**
 
-- [My First Model](/notebooks/my_first_model) - Complete beginner tutorial
+- `my_first_model.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/getting_started/my_first_model.ipynb) <br> 
+Complete beginner tutorial
 
 **Unconditional Density Estimation:**
 
