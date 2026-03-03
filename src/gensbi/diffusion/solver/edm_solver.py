@@ -58,8 +58,8 @@ class EDMSolver(Solver):
         nsteps: int = 18,
         method: str = "Heun",
         return_intermediates: bool = False,
-        static_model_kwargs: dict = {},
-        solver_params: Optional[dict] = {},
+        static_model_kwargs: dict = None,
+        solver_params: Optional[dict] = None,
         solver_scheduler: Optional[Any] = None,
     ) -> Callable:
         """
@@ -91,10 +91,15 @@ class EDMSolver(Solver):
         Returns
         -------
             Callable
-                ``sample(key, x_init, model_extras={})`` sampler function.
+                ``sample(key, x_init, model_extras=None)`` sampler function.
         """
         if solver_scheduler is None:
             solver_scheduler = self.path.scheduler
+
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
+        if solver_params is None:
+            solver_params = {}
 
         if solver_scheduler.name == "EDM":
             sampler_ = edm_sampler
@@ -120,7 +125,9 @@ class EDMSolver(Solver):
         S_noise = solver_params.get("S_noise", 1)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array, model_extras={}) -> Array:
+        def sample(key: Array, x_init: Array, model_extras=None) -> Array:
+            if model_extras is None:
+                model_extras = {}
             return sampler_(
                 solver_scheduler,
                 self.score_model,
@@ -150,8 +157,8 @@ class EDMSolver(Solver):
         nsteps: int = 18,
         method: str = "Heun",
         return_intermediates: bool = False,
-        model_extras: dict = {},
-        solver_params: Optional[dict] = {},
+        model_extras: dict = None,
+        solver_params: Optional[dict] = None,
         solver_scheduler: Optional[Any] = None,
     ) -> Array:
         """

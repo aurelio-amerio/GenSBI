@@ -3,6 +3,7 @@ import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
+import jax
 from flax import nnx
 from jax import Array
 
@@ -57,7 +58,32 @@ def test_model_wrapper_divergence():
     x = jnp.ones((1, 2, 4))
     t = jnp.ones((1,))
     div = div_fn(t, x, None)
-    assert div.shape == (), f"Expected divergence shape (), got {div.shape}"
+    assert div.shape == (1,), f"Expected divergence shape (1,), got {div.shape}"
+
+
+def test_model_wrapper_divergence_hutchinson():
+    """get_divergence(exact=False) should return approximate divergence using Hutchinson."""
+    model = DummyModel()
+    wrapper = ModelWrapper(model)
+    div_fn = wrapper.get_divergence(exact=False)
+
+    x = jnp.ones((3, 4, 2))
+    t = jnp.ones((3,))
+
+    # Average many draws and check convergence to exact value
+    exact_div_fn = wrapper.get_divergence(exact=True)
+    exact_div = exact_div_fn(t, x, None)
+
+    x_expanded = _expand_dims(x)
+    keys = jax.random.split(jax.random.PRNGKey(0), 500)
+    estimates = jnp.array([
+        div_fn(t, x, {"div_v": jax.random.rademacher(k, shape=x_expanded.shape, dtype=x.dtype)})
+        for k in keys
+    ])
+    mean_estimate = jnp.mean(estimates, axis=0)
+    assert jnp.allclose(mean_estimate, exact_div, atol=0.5), (
+        f"Expected mean ≈ {exact_div}, got {mean_estimate}"
+    )
 
 
 # def test_guided_model_wrapper_call_and_vector_field():

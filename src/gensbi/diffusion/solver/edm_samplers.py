@@ -22,7 +22,7 @@ def edm_sampler(
     S_max: float = float("inf"),
     S_noise: float = 1,
     method: str = "Heun",
-    model_kwargs: dict = {},
+    model_kwargs: dict = None,
 ) -> Array:
     """
     EDM sampler for diffusion models.
@@ -70,6 +70,8 @@ def edm_sampler(
             Sampled output.
     """
     assert method in ["Euler", "Heun"], f"Unknown method: {method}"
+    if model_kwargs is None:
+        model_kwargs = {}
     if condition_mask is not None:
         assert (
             condition_value is not None
@@ -113,7 +115,7 @@ def edm_sampler(
         # Euler step.
         denoised = sde.denoise(
             model, x_hat, t_hat[..., None], **model_kwargs
-        )  # TODO test
+        ) 
         d_cur = (x_hat - denoised) / t_hat
         x_next = x_hat + (t_next - t_hat) * d_cur
         x_next = (
@@ -173,7 +175,7 @@ def edm_ablation_sampler(
     S_max=float("inf"),
     S_noise=1,
     method="Heun",
-    model_kwargs={},
+    model_kwargs=None,
 ):
     """Generalized ablation sampler for EDM diffusion models.
 
@@ -225,6 +227,8 @@ def edm_ablation_sampler(
     """
 
     assert method in ["Euler", "Heun"], f"Unknown method: {method}"
+    if model_kwargs is None:
+        model_kwargs = {}
     if condition_mask is not None:
         assert (
             condition_value is not None

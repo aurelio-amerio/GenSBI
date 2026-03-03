@@ -246,6 +246,56 @@ class UnconditionalPipeline(AbstractPipeline):
         sampler = self.get_sampler(use_ema=use_ema, **sampler_kwargs)
         return sampler(key, nsamples)
 
+    def get_log_prob_fn(self, use_ema=True, **kwargs):
+        """Get a log-probability function.
+
+        Parameters
+        ----------
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        **kwargs
+            Forwarded to ``method.build_log_prob_fn``.
+
+        Returns
+        -------
+        Callable
+            ``log_prob_fn(x_1) -> log_prob``
+        """
+        model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
+
+        model_extras = {"obs_ids": self.obs_ids}
+
+        log_prob_fn = self.method.build_log_prob_fn(
+            model_wrapped, self.path, model_extras, **kwargs,
+        )
+
+        def _log_prob(x_1, *, key=None):
+            return log_prob_fn(x_1, model_extras, key=key)
+
+        return _log_prob
+
+    def log_prob(self, x_1, use_ema=True, *, key=None, **kwargs):
+        """Compute log-probability of x_1.
+
+        Parameters
+        ----------
+        x_1 : array-like
+            Data samples to evaluate.
+        use_ema : bool, optional
+            Use the EMA model. Default is True.
+        key : jax.random.PRNGKey, optional
+            Required when ``exact_divergence=False`` (Hutchinson).
+        **kwargs
+            Forwarded to :meth:`get_log_prob_fn`.
+
+        Returns
+        -------
+        Array
+            Log-probabilities.
+        """
+        log_prob_fn = self.get_log_prob_fn(use_ema=use_ema, **kwargs)
+        return log_prob_fn(x_1, key=key)
+
     def sample_batched(self, *args, **kwargs):
         raise NotImplementedError(
             "Batched sampling not implemented for UnconditionalPipeline."

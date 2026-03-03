@@ -319,3 +319,76 @@ class ConditionalPipeline(AbstractPipeline):
             )
         sampler = self.get_sampler(x_o, use_ema=use_ema, **sampler_kwargs)
         return sampler(key, nsamples)
+
+    def get_log_prob_fn(self, x_o, use_ema=True, model_extras=None, **kwargs):
+        """Get a log-probability function.
+
+        Parameters
+        ----------
+        x_o : array-like
+            Conditioning variable (observed data).
+        use_ema : bool, optional
+            Whether to use the EMA model. Default is True.
+        model_extras : dict, optional
+            Additional model extras. Cannot override protected keys.
+        **kwargs
+            Forwarded to ``method.build_log_prob_fn``.
+
+        Returns
+        -------
+        Callable
+            ``log_prob_fn(x_1) -> log_prob``
+        """
+        model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
+
+        cond = _expand_dims(x_o)
+
+        _PROTECTED = {"cond", "obs_ids", "cond_ids"}
+        extras = {
+            "cond": cond,
+            "obs_ids": self.obs_ids,
+            "cond_ids": self.cond_ids,
+        }
+        # TODO: this branch is not currently tested, as we don't really ever use it. 
+        # Add tests when we find a good usage for this, same below.
+        if model_extras:
+            conflict = _PROTECTED & model_extras.keys()
+            if conflict:
+                raise ValueError(
+                    f"model_extras cannot override protected keys: {conflict}"
+                )
+            extras.update(model_extras)
+
+        log_prob_fn = self.method.build_log_prob_fn(
+            model_wrapped, self.path, extras, **kwargs,
+        )
+
+        def _log_prob(x_1, model_extras=None, *, key=None):
+            _extras = model_extras if model_extras is not None else extras
+            return log_prob_fn(x_1, _extras, key=key)
+
+        return _log_prob
+
+    def log_prob(self, x_1, x_o, use_ema=True, *, key=None, **kwargs):
+        """Compute log-probability of x_1 given x_o.
+
+        Parameters
+        ----------
+        x_1 : array-like
+            Data samples to evaluate.
+        x_o : array-like
+            Conditioning variable.
+        use_ema : bool, optional
+            Use the EMA model. Default is True.
+        key : jax.random.PRNGKey, optional
+            Required when ``exact_divergence=False`` (Hutchinson).
+        **kwargs
+            Forwarded to :meth:`get_log_prob_fn`.
+
+        Returns
+        -------
+        Array
+            Log-probabilities.
+        """
+        log_prob_fn = self.get_log_prob_fn(x_o, use_ema=use_ema, **kwargs)
+        return log_prob_fn(x_1, key=key)

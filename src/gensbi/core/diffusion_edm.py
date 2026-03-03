@@ -13,6 +13,8 @@ from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_edm_path
 from gensbi.diffusion.solver import EDMSolver
 
+from gensbi.diffusion.loss import EDMLoss  
+
 
 class DiffusionEDMMethod(GenerativeMethod):
     """EDM diffusion strategy.
@@ -73,7 +75,7 @@ class DiffusionEDMMethod(GenerativeMethod):
         -------
         EDMLoss
             A loss callable with signature
-            ``(key, model, batch, condition_mask=None, model_extras={}) -> loss``.
+            ``(key, model, batch, condition_mask=None, model_extras=None) -> loss``.
         """
         return EDMLoss(path)
 
@@ -202,7 +204,9 @@ class DiffusionEDMMethod(GenerativeMethod):
             solver_params=solver_params,
         )
 
-        def sampler_fn(key, x_init, model_extras={}):
+        def sampler_fn(key, x_init, model_extras=None):
+            if model_extras is None:
+                model_extras = {}
             return sampler_(key, x_init, model_extras=model_extras)
 
         return sampler_fn
@@ -224,4 +228,4 @@ class DiffusionEDMMethod(GenerativeMethod):
         return {}
 
 
-from gensbi.diffusion.loss import EDMLoss  # noqa: E402
+

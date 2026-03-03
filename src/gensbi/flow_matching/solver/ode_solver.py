@@ -53,9 +53,9 @@ class ODESolver(Solver):
         method: Union[str, AbstractERK] = "Euler",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid: Array = jnp.array([0.0, 1.0]),
+        time_grid: Optional[Array] = None,
         return_intermediates: bool = False,
-        static_model_kwargs: dict = {},
+        static_model_kwargs: dict = None,
     ) -> Callable:
         r"""Obtain a sampler to solve the ODE with the velocity field.
 
@@ -91,10 +91,16 @@ class ODESolver(Solver):
         Returns
         -------
             Callable
-                ``sampler(x_init, model_extras={})`` — a function that
+                ``sampler(x_init, model_extras=None)`` — a function that
                 takes initial conditions and runtime model extras, and
                 returns the solution at final time or intermediate times.
         """
+
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
+
+        if time_grid is None:
+            time_grid = jnp.array([0.0, 1.0])
 
         term = diffrax.ODETerm(self.velocity_model.get_vector_field(**static_model_kwargs))
 
@@ -115,7 +121,9 @@ class ODESolver(Solver):
             stepsize_controller = diffrax.ConstantStepSize()
 
         @jax.jit
-        def sampler(x_init, model_extras={}):
+        def sampler(x_init, model_extras=None):
+            if model_extras is None:
+                model_extras = {}
 
             solution = diffrax.diffeqsolve(
                 term,
@@ -145,7 +153,7 @@ class ODESolver(Solver):
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        model_extras: dict = None,
     ) -> Union[Array, Sequence[Array]]:
         r"""Sample from the ODE defined by the velocity field.
 
@@ -190,21 +198,20 @@ class ODESolver(Solver):
 
         return solution
 
-    def get_unnormalized_logprob(
+    def get_log_prob(
         self,
         log_p0: Callable[[Array], Array],
         step_size: float = 0.01,
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid=[1.0, 0.0],
+        time_grid: Optional[Array] = None,
         return_intermediates: bool = False,
-        # exact_divergence: bool = True,
+        exact_divergence: bool = True,
         *,
-        # key: jax.random.PRNGKey = None,
-        static_model_kwargs: dict = {},
+        static_model_kwargs: dict = None,
     ) -> Callable:
-        r"""Solve for log likelihood given a target sample at :math:`t=0`.
+        r"""Solve for log_prob given a target sample at :math:`t=0`.
 
         Parameters
         ----------
@@ -231,14 +238,23 @@ class ODESolver(Solver):
 
         Returns
         -------
-            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: Samples and log likelihood values.
+            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: Samples and log prob values.
         """
+
+        if time_grid is None:
+            time_grid = jnp.array([1.0, 0.0])
         assert (
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
+
+
         vector_field = self.velocity_model.get_vector_field(**static_model_kwargs)
-        divergence = self.velocity_model.get_divergence(**static_model_kwargs)
+        divergence = self.velocity_model.get_divergence(
+            exact=exact_divergence, **static_model_kwargs
+        )
 
         def dynamics_func(t, states, args):
             xt, _ = states
@@ -262,7 +278,24 @@ class ODESolver(Solver):
         else:
             stepsize_controller = diffrax.ConstantStepSize()
 
-        def sampler(x_1, model_extras={}):
+        def sampler(x_1, model_extras=None, *, key=None):
+            if model_extras is None:
+                model_extras = {}
+            _extras = dict(model_extras)  # shallow copy
+
+            # For Hutchinson: draw probe vector v once, fixed across ODE steps
+            if not exact_divergence:
+                if key is None:
+                    raise ValueError(
+                        "A PRNG key is required for Hutchinson divergence. "
+                        "Pass key= when calling the log_prob function."
+                    )
+                from gensbi.utils.math import _expand_dims
+                v = jax.random.rademacher(
+                    key, shape=_expand_dims(x_1).shape, dtype=x_1.dtype
+                )
+                _extras["div_v"] = v
+
             y_init = (
                 x_1,
                 jnp.zeros(x_1.shape[0]),
@@ -274,7 +307,7 @@ class ODESolver(Solver):
                 t1=time_grid[-1],
                 dt0=-step_size,
                 y0=y_init,
-                args=model_extras,
+                args=_extras,
                 saveat=(
                     diffrax.SaveAt(ts=time_grid)
                     if return_intermediates
@@ -285,13 +318,17 @@ class ODESolver(Solver):
 
             x_source, log_det = solution.ys[0], solution.ys[1]  # type: ignore
 
+            if not return_intermediates:
+                x_source = x_source[-1]
+                log_det = log_det[-1]
+
             source_log_p = log_p0(x_source)
 
             return source_log_p + log_det
 
         return sampler
 
-    def unnormalized_logprob(
+    def compute_log_prob(
         self,
         x_1: Array,
         log_p0: Callable[[Array], Array],
@@ -299,15 +336,15 @@ class ODESolver(Solver):
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid=[1.0, 0.0],
+        time_grid: Optional[Array] = None,
         return_intermediates: bool = False,
-        # exact_divergence: bool = True,
+        exact_divergence: bool = True,
         *,
-        # key: jax.random.PRNGKey = None,
-        model_extras: dict = {},
+        key: jax.random.PRNGKey = None,
+        model_extras: dict = None,
     ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
 
-        sampler = self.get_unnormalized_logprob(
+        sampler = self.get_log_prob(
             log_p0=log_p0,
             step_size=step_size,
             method=method,
@@ -315,6 +352,7 @@ class ODESolver(Solver):
             rtol=rtol,
             time_grid=time_grid,
             return_intermediates=return_intermediates,
+            exact_divergence=exact_divergence,
         )
-        solution = sampler(x_1, model_extras=model_extras)
+        solution = sampler(x_1, model_extras=model_extras, key=key)
         return solution

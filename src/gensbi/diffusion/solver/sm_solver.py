@@ -68,8 +68,8 @@ class SMSolver(Solver):
         nsteps: int = 1000,
         method: str = "Euler",
         return_intermediates: bool = False,
-        static_model_kwargs: dict = {},
-        solver_params: Optional[dict] = {},
+        static_model_kwargs: dict = None,
+        solver_params: Optional[dict] = None,
     ) -> Callable:
         """
         Returns a sampler function for the reverse SDE.
@@ -98,17 +98,24 @@ class SMSolver(Solver):
         Returns
         -------
             Callable
-                ``sample(key, x_init, model_extras={})`` sampler function.
+                ``sample(key, x_init, model_extras=None)`` sampler function.
         """
         if cfg_scale is not None:
             raise NotImplementedError(
                 "CFG scale is not implemented for SM samplers yet."
             )
 
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
+        if solver_params is None:
+            solver_params = {}
+
         eps = solver_params.get("eps", 1e-3)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array, model_extras={}) -> Array:
+        def sample(key: Array, x_init: Array, model_extras=None) -> Array:
+            if model_extras is None:
+                model_extras = {}
             return sm_reverse_sde_sampler(
                 self.path.scheduler,
                 self.score_model,
@@ -135,8 +142,8 @@ class SMSolver(Solver):
         nsteps: int = 1000,
         method: str = "Euler",
         return_intermediates: bool = False,
-        model_extras: dict = {},
-        solver_params: Optional[dict] = {},
+        model_extras: dict = None,
+        solver_params: Optional[dict] = None,
     ) -> Array:
         """
         Sample from the reverse SDE.
@@ -189,7 +196,7 @@ class SMPFSolver(SMSolver):
     Probability Flow ODE (PF-ODE) from section 4.3 of Song et al., 2021
     (arXiv:2011.13456). The PF-ODE shares the same marginal distributions
     as the reverse SDE but is fully deterministic, which often leads to
-    higher sample quality and enables exact likelihood computation.
+    higher sample quality and enables exact log_prob computation.
 
     The PF-ODE is:
 
@@ -233,8 +240,8 @@ class SMPFSolver(SMSolver):
         nsteps: int = 1000,
         method: str = "Euler",
         return_intermediates: bool = False,
-        static_model_kwargs: dict = {},
-        solver_params: Optional[dict] = {},
+        static_model_kwargs: dict = None,
+        solver_params: Optional[dict] = None,
         atol: float = 1e-5,
         rtol: float = 1e-5,
     ) -> Callable:
@@ -271,17 +278,24 @@ class SMPFSolver(SMSolver):
         Returns
         -------
             Callable
-                ``sample(key, x_init, model_extras={})`` sampler function.
+                ``sample(key, x_init, model_extras=None)`` sampler function.
         """
         if cfg_scale is not None:
             raise NotImplementedError(
                 "CFG scale is not implemented for SM samplers yet."
             )
 
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
+        if solver_params is None:
+            solver_params = {}
+
         eps = solver_params.get("eps", 1e-3)  # type: ignore
 
         @jit
-        def sample(key: Array, x_init: Array, model_extras={}) -> Array:
+        def sample(key: Array, x_init: Array, model_extras=None) -> Array:
+            if model_extras is None:
+                model_extras = {}
             return sm_reverse_ode_sampler(
                 self.path.scheduler,
                 self.score_model,

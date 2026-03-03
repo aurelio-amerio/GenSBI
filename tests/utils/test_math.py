@@ -6,17 +6,21 @@ import jax
 import pytest
 
 from gensbi.utils.math import divergence
+from gensbi.utils.math import divergence_hutchinson
+from gensbi.utils.math import _expand_dims
 
 def test_divergence_linear_field():
-    # vf(t, x, args) = A @ x, where A is a constant matrix
-    A = jnp.array([[2.0, 0.0], [0.0, 3.0]])
+    # vf(t, x, args) = scale * x, where scale is a per-element diagonal
+    # x has shape (batch, features, channels) = (1, 2, 1)
+    # divergence = sum of diagonal entries = 2.0 + 3.0 = 5.0
+    scale = jnp.array([[[2.0], [3.0]]])  # (1, 2, 1) to broadcast with x
     def vf(t, x, args=None):
-        return A * x
+        return scale * x
 
     t = jnp.array([0.5])
-    x = jnp.array([1.0, 2.0]).reshape(1,2,1)
+    x = jnp.array([1.0, 2.0]).reshape(1, 2, 1)
     div = divergence(vf, t, x)
-    # For a linear field, divergence is the trace of A
+    # For a diagonal scaling field, divergence is the trace = 2 + 3 = 5
     assert jnp.allclose(div, 5.0), f"Expected divergence 5.0, got {div}"
 
 # def test_divergence_single():
@@ -51,3 +55,63 @@ def test_divergence_with_args():
     div = divergence(vf, t, x, args=args)
     # divergence should be 4 + 4 = 8
     assert jnp.allclose(div, 8.0)
+
+
+# ---------- Hutchinson trace estimator tests ----------
+
+def test_divergence_hutchinson_linear_field():
+    """For vf(t,x) = A @ x, the Hutchinson estimate should converge to tr(A)."""
+    scale = jnp.array([[[2.0], [3.0]]])  # (1, 2, 1)
+    def vf(t, x, args=None):
+        return scale * x
+
+    t = jnp.array([0.5])
+    x = jnp.array([1.0, 2.0]).reshape(1, 2, 1)
+
+    # Average many Hutchinson draws to check unbiasedness
+    keys = jax.random.split(jax.random.PRNGKey(0), 500)
+    estimates = jnp.array([
+        divergence_hutchinson(vf, t, x, v=jax.random.rademacher(k, shape=x.shape, dtype=x.dtype))
+        for k in keys
+    ])
+    mean_estimate = jnp.mean(estimates)
+    assert jnp.allclose(mean_estimate, 5.0, atol=0.3), (
+        f"Expected mean ≈ 5.0, got {mean_estimate}"
+    )
+
+
+def test_divergence_hutchinson_identity():
+    """For vf(t,x) = x (identity), Hutchinson estimate should ≈ dim."""
+    def vf(t, x, args=None):
+        return x
+
+    t = jnp.array([0.1, 0.2])
+    x = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+
+    x_expanded = _expand_dims(x)
+    keys = jax.random.split(jax.random.PRNGKey(42), 500)
+    estimates = jnp.array([
+        divergence_hutchinson(vf, t, x, v=jax.random.rademacher(k, shape=x_expanded.shape, dtype=x.dtype))
+        for k in keys
+    ])
+    # Should converge to 3.0 per sample
+    mean_estimate = jnp.mean(estimates, axis=0)
+    assert jnp.allclose(mean_estimate, 3.0, atol=0.3), (
+        f"Expected mean ≈ [3.0, 3.0], got {mean_estimate}"
+    )
+
+
+def test_divergence_hutchinson_shape():
+    """Single Hutchinson draw should have shape (batch,)."""
+    def vf(t, x, args=None):
+        return x
+
+    t = jnp.array([0.1, 0.2, 0.3])
+    x = jnp.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+
+    x_expanded = _expand_dims(x)
+    key = jax.random.PRNGKey(7)
+    v = jax.random.rademacher(key, shape=x_expanded.shape, dtype=x.dtype)
+    div = divergence_hutchinson(vf, t, x, v=v)
+    assert div.shape == (3,), f"Expected shape (3,), got {div.shape}"
+

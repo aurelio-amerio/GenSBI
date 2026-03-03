@@ -29,3 +29,34 @@ class Solver(ABC):
             Sampled output from the solver.
         """
         ...  # pragma: no cover
+
+    def get_log_prob(self, *args, **kwargs):
+        """Return a callable that computes the log-probability.
+
+        Only supported by solvers that can evaluate the continuous
+        change-of-variables formula (e.g. ``ODESolver``).
+
+        Raises
+        ------
+        NotImplementedError
+            If the solver does not support log-probability computation.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support log-probability computation."
+        )
+
+    def compute_log_prob(self, *args, **kwargs):
+        """Compute the log-probability for given samples.
+
+        Only supported by solvers that can evaluate the continuous
+        change-of-variables formula (e.g. ``ODESolver``).
+
+        Raises
+        ------
+        NotImplementedError
+            If the solver does not support log-probability computation.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support log-probability computation."
+        )
+

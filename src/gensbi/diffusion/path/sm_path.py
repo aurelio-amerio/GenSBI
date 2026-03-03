@@ -144,8 +144,10 @@ class SMPath(ProbPath):
             F: Callable,
             batch: tuple,
             condition_mask: Any = None,
-            model_extras: dict = {},
+            model_extras: dict = None,
         ) -> Array:
+            if model_extras is None:
+                model_extras = {}
             (x_1, x_t, t, noise, std_t) = batch
 
             # Score target: -noise / std_t = nabla_x log p(x_t | x_0)

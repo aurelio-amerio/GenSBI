@@ -21,8 +21,6 @@ from typing import Callable, Any
 # we will create an abstract SDE class which can implement VP, VE, and EDM methods, following https://github.com/NVlabs/edm/
 # we will then define a precondition function for each method
 
-# TODO still need to test
-
 
 class BaseSDE(abc.ABC):
     def __init__(self) -> None:
@@ -425,8 +423,10 @@ class BaseSDE(abc.ABC):
             F: Callable,
             batch: tuple,
             condition_mask: Any = None,
-            model_extras: dict = {},
+            model_extras: dict = None,
         ) -> Array:
+            if model_extras is None:
+                model_extras = {}
             (x_1, x_t, sigma) = batch
 
             lam = self.loss_weight(sigma)

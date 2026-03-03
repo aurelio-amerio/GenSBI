@@ -130,7 +130,7 @@ class BaseFmSDESolver(Solver):
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        static_model_kwargs: dict = {},
+        static_model_kwargs: dict = None,
     ) -> Callable:
         """Stochastic sampler for the SDE.
 
@@ -159,7 +159,7 @@ class BaseFmSDESolver(Solver):
         Returns
         -------
             Callable
-                ``sampler(x_init, key, model_extras={})`` that returns
+                ``sampler(x_init, key, model_extras=None)`` that returns
                 sampled trajectories of shape ``(batch, features, channels)``.
         """
         solvers = {
@@ -182,6 +182,9 @@ class BaseFmSDESolver(Solver):
             levy_area = diffrax.BrownianIncrement
         else:
             levy_area = diffrax.SpaceTimeLevyArea
+
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
 
         drift = self.get_f_tilde()  # (t, x, args) -> drift; no extras baked in
         diff = self.get_g_tilde()  # (t, x, args) -> diffusion matrix
@@ -211,7 +214,9 @@ class BaseFmSDESolver(Solver):
 
         # We remove static_argnums because now nsamples is implicit in x_init shape
         @jit
-        def sampler(x_init, key, model_extras={}):
+        def sampler(x_init, key, model_extras=None):
+            if model_extras is None:
+                model_extras = {}
             # x_init shape: (batch, features, channels)
             nsamples = x_init.shape[0]
 
@@ -308,7 +313,7 @@ class BaseFmSDESolver(Solver):
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        model_extras: dict = None,
         key: Optional[Array] = None,
     ) -> Array:
         """Sample from the SDE.
