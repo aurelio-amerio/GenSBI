@@ -12,14 +12,14 @@ Feel free to [open an issue](https://github.com/aurelio-amerio/GenSBI/issues) to
     cd GenSBI
     ```
 
-2.  **Install dependencies** (we recommend using a virtual environment):
+2.  **Install dependencies**:
     ```bash
-    pip install -e ".[cuda12,examples,test,docs]"
+    uv sync --group dev
     ```
 
 ## Requirements for Contributions
 
-- **Tests**: All new functionality must include comprehensive tests. We use `pytest`; run the full suite with `pytest test/` and ensure all tests pass before submitting a PR.
+- **Tests**: All new functionality must include comprehensive tests. We use `pytest`; run the full suite with `uv run pytest tests/` and ensure all tests pass before submitting a PR.
 - **Documentation**: All public functions and classes must be documented using **NumPy-style docstrings**.
 - **Code style**: Please follow PEP 8 conventions.
 
@@ -84,7 +84,7 @@ GenSBI/
 
 1. Create a branch: `git checkout -b feature/your-feature-name`
 2. Make your changes with tests and documentation
-3. Run tests: `pytest test/`
+3. Run tests: `uv run pytest tests/`
 4. Push and open a PR with a clear description of your changes
 
 We appreciate your contributions and look forward to collaborating with you!

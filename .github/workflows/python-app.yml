@@ -17,53 +17,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
+        run: uv python install 3.11
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install .[test]
+        run: uv sync --group lint
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          uv run flake8 . --exclude=.venv --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          uv run flake8 . --exclude=.venv --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
+        run: uv python install 3.11
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pandoc
-          python -m pip install --upgrade pip
-          pip install .[test]
+          uv sync --group test
       - name: Run fast tests
         run: |
-          pytest -m "not slow and not experimental" -n auto --junitxml=reports/junit/junit-fast.xml --cov=gensbi --cov-report=term-missing
+          uv run pytest -m "not slow and not experimental" -n auto --junitxml=reports/junit/junit-fast.xml --cov=gensbi --cov-report=term-missing
       - name: Run slow tests
         run: |
-          pytest -m "slow" -n auto --junitxml=reports/junit/junit-slow.xml --cov=gensbi --cov-append --cov-report=term-missing
+          uv run pytest -m "slow" -n auto --junitxml=reports/junit/junit-slow.xml --cov=gensbi --cov-append --cov-report=term-missing
       - name: Run experimental tests
         run: |
-          pytest -m "experimental" -n auto --junitxml=reports/junit/junit-experimental.xml --cov=gensbi --cov-append --cov-report=xml:reports/coverage/coverage.xml --cov-report=term-missing
+          uv run pytest -m "experimental" -n auto --junitxml=reports/junit/junit-experimental.xml --cov=gensbi --cov-append --cov-report=xml:reports/coverage/coverage.xml --cov-report=term-missing
       - name: Merge Test Reports
         run: |
-          python -m junitparser merge reports/junit/junit-fast.xml reports/junit/junit-slow.xml reports/junit/junit-experimental.xml reports/junit/junit.xml
+          uv run python -m junitparser merge reports/junit/junit-fast.xml reports/junit/junit-slow.xml reports/junit/junit-experimental.xml reports/junit/junit.xml
       - name: Generate Badges
         run: |
-          genbadge coverage --input-file reports/coverage/coverage.xml --output-file reports/badges/coverage.svg
-          genbadge tests --input-file reports/junit/junit.xml --output-file reports/badges/tests.svg
+          uv run genbadge coverage --input-file reports/coverage/coverage.xml --output-file reports/badges/coverage.svg
+          uv run genbadge tests --input-file reports/junit/junit.xml --output-file reports/badges/tests.svg
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4
         with:
@@ -74,21 +69,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
+        run: uv python install 3.11
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pandoc
-          python -m pip install --upgrade pip
-          pip install .[docs]
+          uv sync --group docs
       - name: Build documentation
         run: |
           cd docs
-          make html
+          uv run make html
       - name: Upload Documentation
         uses: actions/upload-artifact@v4
         with:

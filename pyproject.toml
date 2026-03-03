@@ -32,31 +32,16 @@ Homepage = "https://github.com/aurelio-amerio/GenSBI"
 Issues = "https://github.com/aurelio-amerio/GenSBI/issues"
 
 [project.optional-dependencies]
-cuda12 = ["jax[cuda12]>=0.7.2"] # update once numpyro releases a patch
-tpu = ["jax[tpu]>=0.7.2"] # update once numpyro releases a patch
+cuda12 = ["jax[cuda12]>=0.9.0"] 
+cuda13 = ["jax[cuda13]>=0.9.0"] 
+tpu = ["jax[tpu]>=0.9.0"] 
 
 examples = ["gensbi-examples"]
 
-docs = [
-  "jupytext",
-  "pandoc",
-  "pydata-sphinx-theme",
-  "sphinx",
-  "myst-nb",
-  "astroid>=3,<5", # fix for sphinx.autoapi and read the docs, should be reverted at a later date - see issue #2125
-  "numpydoc",
-  "linkify-it-py", # for link shortening
-  "sphinxext-rediraffe",
-  # TODO: unpin sphinx-sitemap once a solution is offered for https://github.com/jdillard/sphinx-sitemap/issues/109
-  "sphinx-sitemap<2.7.0",
-  "sphinx-autoapi>=3.0.0",
-  "sphinx-copybutton",
-  "sphinx-design",
-  "sphinx-togglebutton",
-  "sphinxcontrib-mermaid",
-  "sphinx-favicon>=1.0.1",
+[dependency-groups]
+lint = [
+    "flake8",
 ]
-
 test = [
     "pytest",
     "pytest-xdist",
@@ -64,19 +49,41 @@ test = [
     "pytest-mock",
     "pytest-env",
     "genbadge[all]",
-    "flake8",
     "junitparser",
+]
+docs = [
+    "jupytext",
+    "pandoc",
+    "pydata-sphinx-theme",
+    "sphinx",
+    "myst-nb",
+    "astroid>=3,<5", # fix for sphinx.autoapi and read the docs, should be reverted at a later date - see issue #2125
+    "numpydoc",
+    "linkify-it-py", # for link shortening
+    "sphinxext-rediraffe",
+    # TODO: unpin sphinx-sitemap once a solution is offered for https://github.com/jdillard/sphinx-sitemap/issues/109
+    "sphinx-sitemap<2.7.0",
+    "sphinx-autoapi>=3.0.0",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "sphinx-togglebutton",
+    "sphinxcontrib-mermaid",
+    "sphinx-favicon>=1.0.1",
+]
+
+notebooks = [
+    "notebook>=7.5.4",
+]
+dev = [
+    {include-group = "lint"},
+    {include-group = "test"},
+    {include-group = "docs"},
+    {include-group = "notebooks"},
 ]
 
 [build-system]
-requires = ["hatchling >= 1.26"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build]
-sources = ["src"]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 addopts = "-n 2"

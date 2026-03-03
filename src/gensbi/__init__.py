@@ -12,6 +12,7 @@ See the documentation for details and usage examples.
 
 from importlib.metadata import version, PackageNotFoundError
 
+# try to automatically fetch the current gensbi version from pyproject.toml
 try:
     __version__ = version("gensbi")
 except PackageNotFoundError:
