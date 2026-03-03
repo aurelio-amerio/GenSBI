@@ -270,7 +270,7 @@ def sm_reverse_ode_sampler(
 
     Unlike the reverse SDE sampler, this ODE has no stochastic (diffusion)
     term, making it fully deterministic for a given ``x_init``. This
-    enables exact likelihood computation.
+    enables exact log_prob computation.
 
     **Time direction convention:**
     The forward SDE runs from ``t=0`` (clean data) to ``t=T`` (noise).

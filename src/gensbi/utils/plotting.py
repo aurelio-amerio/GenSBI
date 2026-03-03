@@ -662,7 +662,7 @@ def plot_marginals(
         raise ValueError(f"Unknown backend: {backend}. Use 'corner' or 'seaborn'.")
 
 
-# code to plot a 2D likelihood
+# code to plot a 2D pdf
 
 cmap_lcontour = sns.cubehelix_palette(
     start=0.5, rot=-0.5, light=1.0, dark=0.2, as_cmap=True

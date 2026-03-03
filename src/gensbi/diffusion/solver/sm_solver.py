@@ -189,7 +189,7 @@ class SMPFSolver(SMSolver):
     Probability Flow ODE (PF-ODE) from section 4.3 of Song et al., 2021
     (arXiv:2011.13456). The PF-ODE shares the same marginal distributions
     as the reverse SDE but is fully deterministic, which often leads to
-    higher sample quality and enables exact likelihood computation.
+    higher sample quality and enables exact log_prob computation.
 
     The PF-ODE is:
 

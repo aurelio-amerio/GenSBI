@@ -203,7 +203,7 @@ class ODESolver(Solver):
         *,
         static_model_kwargs: dict = {},
     ) -> Callable:
-        r"""Solve for log likelihood given a target sample at :math:`t=0`.
+        r"""Solve for log_prob given a target sample at :math:`t=0`.
 
         Parameters
         ----------
@@ -230,7 +230,7 @@ class ODESolver(Solver):
 
         Returns
         -------
-            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: Samples and log likelihood values.
+            Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: Samples and log prob values.
         """
         assert (
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
