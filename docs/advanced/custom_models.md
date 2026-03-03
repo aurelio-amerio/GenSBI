@@ -180,6 +180,6 @@ These notebooks are being updated to use the new unified pipeline interface. The
 
 See these example scripts that demonstrate custom and built-in models with unified pipelines:
 
-- [unconditional_pipeline.py](../examples/unconditional_pipeline.py) — Custom MLP + `UnconditionalPipeline`
-- [conditional_pipeline.py](../examples/conditional_pipeline.py) — Flux1 + `ConditionalPipeline`
-- [joint_pipeline.py](../examples/joint_pipeline.py) — Simformer + `JointPipeline`
+- [unconditional_pipeline.py](https://github.com/aurelio-amerio/GenSBI/blob/main/docs/examples/unconditional_pipeline.py) — Custom MLP + `UnconditionalPipeline`
+- [conditional_pipeline.py](https://github.com/aurelio-amerio/GenSBI/blob/main/docs/examples/conditional_pipeline.py) — Flux1 + `ConditionalPipeline`
+- [joint_pipeline.py](https://github.com/aurelio-amerio/GenSBI/blob/main/docs/examples/joint_pipeline.py) — Simformer + `JointPipeline`
