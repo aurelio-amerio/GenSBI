@@ -1,19 +1,42 @@
 # Installation
 
-To avoid dependency issues, it is recommended to create a new conda/mamba environment.
+## Using uv (recommended)
+
+To add gensbi as a dependency to an existing pyproject.toml:
 
 ```bash
-conda create -n gensbi python=3.12 -y
-conda activate gensbi
+uv add gensbi
 ```
 
-To install, clone the repository and install dependencies:
+For a standalone install without a project:
+
+```bash
+uv pip install gensbi
+```
+
+For GPU support:
+
+```bash
+uv add gensbi[cuda12]
+# or
+uv pip install gensbi[cuda12]
+```
+
+```{info} Install uv
+To install uv, run:
+
+`curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+```
+
+
+## Using pip
 
 ```bash
 pip install gensbi
 ```
 
-If a GPU is available, it is advisable to install the cuda version of the package:
+For GPU support:
 
 ```bash
 pip install gensbi[cuda12]
@@ -22,12 +45,16 @@ pip install gensbi[cuda12]
 If you want to run the examples, install the GenSBI-examples repository:
 
 ```bash
+uv add gensbi[examples]
+# or
 pip install gensbi[examples]
 ```
 
 To install all the optional dependencies at once, run:
 
 ```bash
+uv add gensbi[cuda12,examples]
+# or
 pip install gensbi[cuda12,examples]
 ```
 
