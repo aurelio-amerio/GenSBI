@@ -26,11 +26,29 @@ It is designed for researchers and practitioners who need a flexible, high-perfo
 
 ## Installation
 
+Using [uv](https://docs.astral.sh/uv/) (recommended):
+
+```bash
+uv add gensbi
+# or, for a standalone install:
+uv pip install gensbi
+```
+
+For GPU support:
+
+```bash
+uv add gensbi[cuda12]
+# or
+uv pip install gensbi[cuda12]
+```
+
+Or using pip:
+
 ```bash
 pip install gensbi
 ```
 
-For GPU support and other options, see the [Installation Guide](https://aurelio-amerio.github.io/GenSBI/getting_started/installation.html).
+For GPU support and other options, including how to install `uv`, see the [Installation Guide](https://aurelio-amerio.github.io/GenSBI/getting_started/installation.html).
 
 ## Quick Start
 
