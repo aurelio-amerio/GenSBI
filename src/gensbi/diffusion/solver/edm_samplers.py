@@ -113,7 +113,7 @@ def edm_sampler(
         # Euler step.
         denoised = sde.denoise(
             model, x_hat, t_hat[..., None], **model_kwargs
-        )  # TODO test
+        ) 
         d_cur = (x_hat - denoised) / t_hat
         x_next = x_hat + (t_next - t_hat) * d_cur
         x_next = (

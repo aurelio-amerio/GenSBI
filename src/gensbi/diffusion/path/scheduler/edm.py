@@ -21,8 +21,6 @@ from typing import Callable, Any
 # we will create an abstract SDE class which can implement VP, VE, and EDM methods, following https://github.com/NVlabs/edm/
 # we will then define a precondition function for each method
 
-# TODO still need to test
-
 
 class BaseSDE(abc.ABC):
     def __init__(self) -> None:

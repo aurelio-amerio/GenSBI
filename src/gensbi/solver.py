@@ -30,8 +30,6 @@ class Solver(ABC):
         """
         ...  # pragma: no cover
 
-    # TODO: verify that the resulting density is properly normalized
-    # (it should be in theory, deviations come from numerical integration).
     def get_log_prob(self, *args, **kwargs):
         """Return a callable that computes the log-probability.
 

@@ -349,6 +349,8 @@ class ConditionalPipeline(AbstractPipeline):
             "obs_ids": self.obs_ids,
             "cond_ids": self.cond_ids,
         }
+        # TODO: this branch is not currently tested, as we don't really ever use it. 
+        # Add tests when we find a good usage for this, same below.
         if model_extras:
             conflict = _PROTECTED & model_extras.keys()
             if conflict:
