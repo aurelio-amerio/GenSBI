@@ -15,6 +15,8 @@ from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
 
+from gensbi.flow_matching.loss import FMLoss  
+
 
 class StandardNormalPrior:
     """Default prior: standard normal distribution with ``log_prob`` support.
@@ -230,7 +232,9 @@ class FlowMatchingMethod(GenerativeMethod):
             time_grid=time_grid,
         )
 
-        def sampler_fn(key, x_init, model_extras={}):
+        def sampler_fn(key, x_init, model_extras=None):
+            if model_extras is None:
+                model_extras = {}
             if pass_key:
                 key, key_sampler = jax.random.split(key)
                 return sampler_(x_init, key_sampler, model_extras=model_extras)
@@ -306,10 +310,12 @@ class FlowMatchingMethod(GenerativeMethod):
             exact_divergence=exact_divergence,
         )
 
-        def log_prob_fn(x_1, model_extras={}, *, key=None):
+        def log_prob_fn(x_1, model_extras=None, *, key=None):
+            if model_extras is None:
+                model_extras = {}
             return log_prob_closure(x_1, model_extras=model_extras, key=key)
 
         return log_prob_fn
 
 
-from gensbi.flow_matching.loss import FMLoss  # noqa: E402
+

@@ -55,7 +55,7 @@ class ODESolver(Solver):
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        static_model_kwargs: dict = {},
+        static_model_kwargs: dict = None,
     ) -> Callable:
         r"""Obtain a sampler to solve the ODE with the velocity field.
 
@@ -91,10 +91,13 @@ class ODESolver(Solver):
         Returns
         -------
             Callable
-                ``sampler(x_init, model_extras={})`` — a function that
+                ``sampler(x_init, model_extras=None)`` — a function that
                 takes initial conditions and runtime model extras, and
                 returns the solution at final time or intermediate times.
         """
+
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
 
         term = diffrax.ODETerm(self.velocity_model.get_vector_field(**static_model_kwargs))
 
@@ -115,7 +118,9 @@ class ODESolver(Solver):
             stepsize_controller = diffrax.ConstantStepSize()
 
         @jax.jit
-        def sampler(x_init, model_extras={}):
+        def sampler(x_init, model_extras=None):
+            if model_extras is None:
+                model_extras = {}
 
             solution = diffrax.diffeqsolve(
                 term,
@@ -145,7 +150,7 @@ class ODESolver(Solver):
         rtol: float = 1e-5,
         time_grid: Array = jnp.array([0.0, 1.0]),
         return_intermediates: bool = False,
-        model_extras: dict = {},
+        model_extras: dict = None,
     ) -> Union[Array, Sequence[Array]]:
         r"""Sample from the ODE defined by the velocity field.
 
@@ -201,7 +206,7 @@ class ODESolver(Solver):
         return_intermediates: bool = False,
         exact_divergence: bool = True,
         *,
-        static_model_kwargs: dict = {},
+        static_model_kwargs: dict = None,
     ) -> Callable:
         r"""Solve for log_prob given a target sample at :math:`t=0`.
 
@@ -236,6 +241,9 @@ class ODESolver(Solver):
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
+        if static_model_kwargs is None:
+            static_model_kwargs = {}
+
         vector_field = self.velocity_model.get_vector_field(**static_model_kwargs)
         divergence = self.velocity_model.get_divergence(
             exact=exact_divergence, **static_model_kwargs
@@ -263,7 +271,9 @@ class ODESolver(Solver):
         else:
             stepsize_controller = diffrax.ConstantStepSize()
 
-        def sampler(x_1, model_extras={}, *, key=None):
+        def sampler(x_1, model_extras=None, *, key=None):
+            if model_extras is None:
+                model_extras = {}
             _extras = dict(model_extras)  # shallow copy
 
             # For Hutchinson: draw probe vector v once, fixed across ODE steps
@@ -324,7 +334,7 @@ class ODESolver(Solver):
         exact_divergence: bool = True,
         *,
         key: jax.random.PRNGKey = None,
-        model_extras: dict = {},
+        model_extras: dict = None,
     ) -> Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]:
 
         sampler = self.get_log_prob(

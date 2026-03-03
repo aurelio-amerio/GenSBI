@@ -13,6 +13,8 @@ from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_sm_path
 from gensbi.diffusion.solver import SMSolver
 
+from gensbi.diffusion.loss import SMLoss 
+
 
 class ScoreMatchingMethod(GenerativeMethod):
     """Score matching strategy.
@@ -75,7 +77,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         -------
         SMLoss
             A loss callable with signature
-            ``(key, model, batch, condition_mask=None, model_extras={}) -> loss``.
+            ``(key, model, batch, condition_mask=None, model_extras=None) -> loss``.
         """
         return SMLoss(path)
 
@@ -191,7 +193,9 @@ class ScoreMatchingMethod(GenerativeMethod):
             return_intermediates=return_intermediates,
         )
 
-        def sampler_fn(key, x_init, model_extras={}):
+        def sampler_fn(key, x_init, model_extras=None):
+            if model_extras is None:
+                model_extras = {}
             return sampler_(key, x_init, model_extras=model_extras)
 
         return sampler_fn
@@ -211,4 +215,4 @@ class ScoreMatchingMethod(GenerativeMethod):
         return {}
 
 
-from gensbi.diffusion.loss import SMLoss  # noqa: E402
+

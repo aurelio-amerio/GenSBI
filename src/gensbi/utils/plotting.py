@@ -467,11 +467,15 @@ def _plot_marginals_seaborn(
     labels=None,
     gridsize=15,
     range=None,
-    hexbin_kwargs={},
-    histplot_kwargs={},
+    hexbin_kwargs=None,
+    histplot_kwargs=None,
     true_param=None,
 ):
     data = np.array(data)
+    if hexbin_kwargs is None:
+        hexbin_kwargs = {}
+    if histplot_kwargs is None:
+        histplot_kwargs = {}
     if true_param is not None:
         true_param = np.array(true_param)
 
@@ -581,8 +585,8 @@ def plot_marginals(
     plot_levels=None,
     labels=None,
     gridsize=15,
-    hexbin_kwargs={},
-    histplot_kwargs={},
+    hexbin_kwargs=None,
+    histplot_kwargs=None,
     range=None,
     true_param=None,
     **kwargs,
@@ -605,9 +609,9 @@ def plot_marginals(
         Axis labels for each parameter. If None, uses LaTeX-style $\theta_i$.
     gridsize : int, default=15
         Number of bins for hexbin/histogram (seaborn) or for corner plot.
-    hexbin_kwargs : dict, default={}
+    hexbin_kwargs : dict, default=None
         Additional keyword arguments for hexbin plots (seaborn backend only).
-    histplot_kwargs : dict, default={}
+    histplot_kwargs : dict, default=None
         Additional keyword arguments for histogram plots (seaborn backend only).
     range : tuple or list of tuples or None, default=None
         Axis limits for each parameter, e.g. [(xmin, xmax), (ymin, ymax), ...].

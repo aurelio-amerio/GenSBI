@@ -10,7 +10,13 @@ Provides tools for probabilistic modeling, simulation, and training of generativ
 See the documentation for details and usage examples.
 """
 
-__version__ = "0.1.0"
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("gensbi")
+except PackageNotFoundError:
+    # Fallback if the package is being run without being installed
+    __version__ = "unknown"
 
 import warnings
 
