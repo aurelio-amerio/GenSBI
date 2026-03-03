@@ -14,7 +14,7 @@
 
 ```{admonition} Project Status
 :class: info
-GenSBI is currently reaching the end of the **Alpha** cycle. The API is reaching stability, but may still change in the future.
+This library is at an early stage of development. The API is currently stable, but it is subject to change.
 ```
 
 ## Getting Started
