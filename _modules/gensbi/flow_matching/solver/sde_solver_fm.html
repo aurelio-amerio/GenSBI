@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
@@ -981,7 +981,7 @@ window.addEventListener("load", load);</script>
         <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">time_grid</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span>
         <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stochastic sampler for the SDE.</span>
 
@@ -1010,7 +1010,7 @@ window.addEventListener("load", load);</script>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Callable</span>
-<span class="sd">                ``sampler(x_init, key, model_extras={})`` that returns</span>
+<span class="sd">                ``sampler(x_init, key, model_extras=None)`` that returns</span>
 <span class="sd">                sampled trajectories of shape ``(batch, features, channels)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">solvers</span> <span class="o">=</span> <span class="p">{</span>
@@ -1033,6 +1033,9 @@ window.addEventListener("load", load);</script>
             <span class="n">levy_area</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">BrownianIncrement</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">levy_area</span> <span class="o">=</span> <span class="n">diffrax</span><span class="o">.</span><span class="n">SpaceTimeLevyArea</span>
+
+        <span class="k">if</span> <span class="n">static_model_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">static_model_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_f_tilde</span><span class="p">()</span>  <span class="c1"># (t, x, args) -&gt; drift; no extras baked in</span>
         <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_g_tilde</span><span class="p">()</span>  <span class="c1"># (t, x, args) -&gt; diffusion matrix</span>
@@ -1062,7 +1065,9 @@ window.addEventListener("load", load);</script>
 
         <span class="c1"># We remove static_argnums because now nsamples is implicit in x_init shape</span>
         <span class="nd">@jit</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="c1"># x_init shape: (batch, features, channels)</span>
             <span class="n">nsamples</span> <span class="o">=</span> <span class="n">x_init</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -1162,7 +1167,7 @@ window.addEventListener("load", load);</script>
         <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">time_grid</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span>
         <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">model_extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the SDE.</span>

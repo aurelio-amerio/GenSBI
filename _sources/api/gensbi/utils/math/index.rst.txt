@@ -22,6 +22,7 @@ Functions
    gensbi.utils.math._expand_dims
    gensbi.utils.math._expand_time
    gensbi.utils.math.divergence
+   gensbi.utils.math.divergence_hutchinson
 
 
 Module Contents
@@ -86,8 +87,11 @@ Module Contents
    
    Compute the divergence of a vector field at specified points and times.
 
+   Uses ``vmap(jacfwd)`` to compute per-sample Jacobians efficiently,
+   then takes the trace over the flattened ``(features, channels)`` axes.
+
    :param vf:
-   :type vf: The vector field function.
+   :type vf: The vector field function with signature ``vf(t, x, args)``.
    :param t:
    :type t: The time at which to compute the divergence.
    :param x:
@@ -95,7 +99,51 @@ Module Contents
    :param args:
    :type args: Optional additional arguments for the vector field function.
 
-   :rtype: The divergence of the vector field at point x and time t.
+   :returns: * *The divergence of the vector field at point x and time t,*
+             * with shape ``(batch,)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: divergence_hutchinson(vf, t, x, args = None, *, v = None)
+
+   
+   Estimate the divergence of a vector field using the Hutchinson trace estimator.
+
+   Uses a single JVP with a probe vector to obtain an unbiased estimate of
+   tr(J), where J = ∂vf/∂x:
+
+       tr(J) ≈ vᵀ J v
+
+   The probe vector ``v`` should be drawn externally (e.g., Rademacher ±1)
+   and fixed across ODE steps for lower-variance log-probability estimates.
+
+   :param vf:
+   :type vf: The vector field function with signature ``vf(t, x, args)``.
+   :param t:
+   :type t: The time at which to compute the divergence.
+   :param x:
+   :type x: The point at which to compute the divergence.
+   :param args:
+   :type args: Optional additional arguments for the vector field function.
+   :param v: Typically Rademacher ±1, drawn once and reused across ODE steps.
+   :type v: Probe vector, same shape as x (after ``_expand_dims``).
+
+   :rtype: The Hutchinson estimate of the divergence at point x and time t.
 
 
 

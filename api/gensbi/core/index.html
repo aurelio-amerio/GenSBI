@@ -33,7 +33,7 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
@@ -631,7 +631,7 @@ solver, batch preparation) and are composed into mode-specific pipelines
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A loss callable with signature
-<code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">model,</span> <span class="pre">batch,</span> <span class="pre">condition_mask=None,</span> <span class="pre">model_extras={})</span> <span class="pre">-&gt;</span> <span class="pre">loss</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">model,</span> <span class="pre">batch,</span> <span class="pre">condition_mask=None,</span> <span class="pre">model_extras=None)</span> <span class="pre">-&gt;</span> <span class="pre">loss</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="../diffusion/loss/edm_loss/index.html#gensbi.diffusion.loss.edm_loss.EDMLoss" title="gensbi.diffusion.loss.edm_loss.EDMLoss">EDMLoss</a></p>
@@ -799,9 +799,10 @@ and <code class="docutils literal notranslate"><span class="pre">sigma</span></c
 solver for sampling.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>prior</strong> (<em>object</em><em>, </em><em>optional</em>) – Source distribution for noise sampling. Must implement
-<code class="docutils literal notranslate"><span class="pre">sample(key,</span> <span class="pre">shape)</span> <span class="pre">-&gt;</span> <span class="pre">Array</span></code>. Defaults to standard normal
-<code class="docutils literal notranslate"><span class="pre">N(0,</span> <span class="pre">I)</span></code>.</p>
+<dd class="field-odd"><p><strong>prior</strong> (<em>numpyro.distributions.Distribution</em><em>, </em><em>optional</em>) – Source distribution. Must implement <code class="docutils literal notranslate"><span class="pre">sample(key,</span> <span class="pre">shape)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">log_prob(x)</span></code>. If you need log-probability evaluation (via
+<code class="docutils literal notranslate"><span class="pre">build_log_prob_fn</span></code>), the prior <strong>must</strong> be a proper numpyro
+distribution. Defaults to <code class="docutils literal notranslate"><span class="pre">StandardNormalPrior</span></code> (≡ N(0, I)).</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
@@ -810,11 +811,51 @@ solver for sampling.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">loss</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_loss</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Using a custom prior:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">numpyro.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uniform</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">method</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">(</span><span class="n">prior</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">1.0</span><span class="p">))</span>
+<p>Using a custom numpyro prior (x has shape <code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">dim_obs,</span> <span class="pre">ch_obs)</span></code>):</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpyro.distributions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dim_obs</span><span class="p">,</span> <span class="n">ch_obs</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prior</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">Independent</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">)),</span> <span class="n">scale</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="n">ch_obs</span><span class="p">))),</span>
+<span class="gp">... </span>    <span class="n">reinterpreted_batch_ndims</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">method</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">(</span><span class="n">prior</span><span class="o">=</span><span class="n">prior</span><span class="p">)</span>
 </pre></div>
 </div>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.core.FlowMatchingMethod.build_log_prob_fn">
+<span class="sig-name descname"><span class="pre">build_log_prob_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_wrapped</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exact_divergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/core/flow_matching.html#FlowMatchingMethod.build_log_prob_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.FlowMatchingMethod.build_log_prob_fn" title="Link to this definition">#</a></dt>
+<dd><p>Build a log-probability closure for flow matching.</p>
+<p>Uses the continuous change-of-variables formula via <code class="docutils literal notranslate"><span class="pre">ODESolver</span></code>.
+Only works with ODE solvers (not SDE solvers).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_wrapped</strong> – The wrapped velocity field model.</p></li>
+<li><p><strong>path</strong> – The probability path.</p></li>
+<li><p><strong>model_extras</strong> (<em>dict</em>) – Mode-specific extras (<code class="docutils literal notranslate"><span class="pre">cond</span></code>, <code class="docutils literal notranslate"><span class="pre">obs_ids</span></code>, etc.).</p></li>
+<li><p><strong>step_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Step size for fixed-step solvers. Default is 0.01.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em> or </em><em>diffrax solver</em><em>, </em><em>optional</em>) – Integration method. Default is <code class="docutils literal notranslate"><span class="pre">&quot;Dopri5&quot;</span></code>.</p></li>
+<li><p><strong>atol</strong> (<em>float</em><em>, </em><em>optional</em>) – Absolute tolerance for adaptive solvers.</p></li>
+<li><p><strong>rtol</strong> (<em>float</em><em>, </em><em>optional</em>) – Relative tolerance for adaptive solvers.</p></li>
+<li><p><strong>time_grid</strong> (<em>list</em><em>, </em><em>optional</em>) – Time grid. Defaults to <code class="docutils literal notranslate"><span class="pre">[1.0,</span> <span class="pre">0.0]</span></code>.</p></li>
+<li><p><strong>solver</strong> (<em>tuple</em><em> of </em><em>(</em><em>type</em><em>, </em><em>dict</em><em>)</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(SolverClass,</span> <span class="pre">kwargs)</span></code>. Must be an ODE solver.</p></li>
+<li><p><strong>exact_divergence</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), compute exact divergence via full
+Jacobian. If <code class="docutils literal notranslate"><span class="pre">False</span></code>, use the Hutchinson estimator (requires
+a PRNG <code class="docutils literal notranslate"><span class="pre">key</span></code> at call time).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>log_prob_fn</strong> – <code class="docutils literal notranslate"><span class="pre">(x_1,</span> <span class="pre">model_extras,</span> <span class="pre">*,</span> <span class="pre">key=None)</span> <span class="pre">-&gt;</span> <span class="pre">log_prob</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – If a non-ODE solver is specified.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.core.FlowMatchingMethod.build_loss">
 <span class="sig-name descname"><span class="pre">build_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/core/flow_matching.html#FlowMatchingMethod.build_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.FlowMatchingMethod.build_loss" title="Link to this definition">#</a></dt>
@@ -978,6 +1019,33 @@ needed by SDE solvers).</p></li>
 <li><p><strong>Solver construction</strong> — building the sampler for inference</p></li>
 <li><p><strong>Initial sample generation</strong> — drawing from the prior</p></li>
 </ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.core.GenerativeMethod.build_log_prob_fn">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">build_log_prob_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_wrapped</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/core/generative_method.html#GenerativeMethod.build_log_prob_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.GenerativeMethod.build_log_prob_fn" title="Link to this definition">#</a></dt>
+<dd><p>Build a log-probability closure for inference.</p>
+<p>Only supported by methods whose solver can evaluate the continuous
+change-of-variables formula (e.g., flow matching + ODE solver).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_wrapped</strong> – The wrapped model.</p></li>
+<li><p><strong>path</strong> – The probability path.</p></li>
+<li><p><strong>model_extras</strong> (<em>dict</em>) – Mode-specific extras (<code class="docutils literal notranslate"><span class="pre">cond</span></code>, <code class="docutils literal notranslate"><span class="pre">obs_ids</span></code>, <code class="docutils literal notranslate"><span class="pre">cond_ids</span></code>, etc.).</p></li>
+<li><p><strong>**kwargs</strong> – Method-specific arguments (<code class="docutils literal notranslate"><span class="pre">step_size</span></code>, <code class="docutils literal notranslate"><span class="pre">method</span></code>, etc.).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>log_prob_fn</strong> – A function <code class="docutils literal notranslate"><span class="pre">(x_1,</span> <span class="pre">model_extras)</span> <span class="pre">-&gt;</span> <span class="pre">log_prob</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – If the method does not support log-probability computation.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.core.GenerativeMethod.build_loss">
 <span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">build_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/core/generative_method.html#GenerativeMethod.build_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.GenerativeMethod.build_loss" title="Link to this definition">#</a></dt>
@@ -1170,7 +1238,7 @@ the probability flow ODE (<code class="docutils literal notranslate"><span class
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A loss callable with signature
-<code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">model,</span> <span class="pre">batch,</span> <span class="pre">condition_mask=None,</span> <span class="pre">model_extras={})</span> <span class="pre">-&gt;</span> <span class="pre">loss</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">model,</span> <span class="pre">batch,</span> <span class="pre">condition_mask=None,</span> <span class="pre">model_extras=None)</span> <span class="pre">-&gt;</span> <span class="pre">loss</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="../diffusion/loss/index.html#gensbi.diffusion.loss.SMLoss" title="gensbi.diffusion.loss.SMLoss">SMLoss</a></p>
@@ -1390,6 +1458,7 @@ and <code class="docutils literal notranslate"><span class="pre">t</span></code>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.FlowMatchingMethod"><code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.FlowMatchingMethod.build_log_prob_fn"><code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod.build_log_prob_fn()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.FlowMatchingMethod.build_loss"><code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod.build_loss()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.FlowMatchingMethod.build_path"><code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod.build_path()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.FlowMatchingMethod.build_sampler_fn"><code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod.build_sampler_fn()</span></code></a></li>
@@ -1401,6 +1470,7 @@ and <code class="docutils literal notranslate"><span class="pre">t</span></code>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.GenerativeMethod"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.GenerativeMethod.build_log_prob_fn"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_log_prob_fn()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.GenerativeMethod.build_loss"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_loss()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.GenerativeMethod.build_path"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_path()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.GenerativeMethod.build_sampler_fn"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_sampler_fn()</span></code></a></li>

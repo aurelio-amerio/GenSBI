@@ -101,20 +101,23 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_divergence(**kwargs)
+   .. py:method:: get_divergence(exact = True, **kwargs)
 
       
-      Compute the divergence of the model.
+      Return a function that computes the divergence of the vector field.
 
-      :param t: time (batch_size).
-      :type t: Array
-      :param x: input data to the model (batch_size, ...).
-      :type x: Array
-      :param args:
-      :type args: additional information forwarded to the model, e.g., text condition.
+      :param exact: If ``True`` (default), compute the exact divergence via
+                    the full Jacobian (``jax.jacfwd`` + trace).  If ``False``,
+                    use the Hutchinson stochastic trace estimator (single JVP
+                    with a Rademacher probe).  The Hutchinson variant requires
+                    the probe vector to be passed at call time inside
+                    ``args["div_v"]``.
+      :type exact: bool
+      :param \*\*kwargs: Static keyword arguments forwarded to ``get_vector_field``.
 
-      :returns: divergence of the model.
-      :rtype: Array
+      :returns: ``div_(t, x, args)`` — divergence function compatible with
+                diffrax ODE terms.
+      :rtype: Callable
 
 
 

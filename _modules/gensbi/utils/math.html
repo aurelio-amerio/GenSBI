@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
@@ -825,7 +825,7 @@ window.addEventListener("load", load);</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">rearrange</span><span class="p">,</span> <span class="n">einsum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">rearrange</span>
 
 
 <div class="viewcode-block" id="_expand_dims">
@@ -869,12 +869,6 @@ window.addEventListener("load", load);</script>
 
 
 
-<span class="c1"># def _divergence_single(vf, t, x):</span>
-<span class="c1">#     res = jax.jacfwd(vf, argnums=1)(t, x)</span>
-<span class="c1">#     res = rearrange(res, &#39; b c d e -&gt;  (b c) (d e)&#39;)</span>
-<span class="c1">#     res = jnp.trace(res, axis1=-2, axis2=-1)</span>
-<span class="c1">#     return res</span>
-
 
 <div class="viewcode-block" id="divergence">
 <a class="viewcode-back" href="../../../api/gensbi/utils/math/index.html#gensbi.utils.math.divergence">[docs]</a>
@@ -886,34 +880,97 @@ window.addEventListener("load", load);</script>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the divergence of a vector field at specified points and times.</span>
-<span class="sd">    </span>
+
+<span class="sd">    Uses ``vmap(jacfwd)`` to compute per-sample Jacobians efficiently,</span>
+<span class="sd">    then takes the trace over the flattened ``(features, channels)`` axes.</span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">        vf: The vector field function.</span>
+<span class="sd">        vf: The vector field function with signature ``vf(t, x, args)``.</span>
 <span class="sd">        t: The time at which to compute the divergence.</span>
 <span class="sd">        x: The point at which to compute the divergence.</span>
 <span class="sd">        args: Optional additional arguments for the vector field function.</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">        The divergence of the vector field at point x and time t.</span>
+<span class="sd">        The divergence of the vector field at point x and time t,</span>
+<span class="sd">        with shape ``(batch,)``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">_expand_time</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
 
-    <span class="n">vf_wrapped</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">vf</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+    <span class="c1"># Broadcast t to match x&#39;s batch dimension for vmap</span>
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
 
-    <span class="c1"># res = jax.vmap(_divergence_single, in_axes=(None, 0, 0))(vf_wrapped, t, x)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_single_div</span><span class="p">(</span><span class="n">t_i</span><span class="p">,</span> <span class="n">x_i</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Divergence for a single sample (no batch dimension).&quot;&quot;&quot;</span>
+        <span class="c1"># x_i: (features, channels), t_i: (1,)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">x_</span><span class="p">):</span>
+            <span class="c1"># Unsqueeze batch dim, call vf, squeeze back</span>
+            <span class="k">return</span> <span class="n">vf</span><span class="p">(</span><span class="n">t_i</span><span class="p">[</span><span class="kc">None</span><span class="p">],</span> <span class="n">x_</span><span class="p">[</span><span class="kc">None</span><span class="p">],</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jacfwd</span><span class="p">(</span><span class="n">f</span><span class="p">)(</span><span class="n">x_i</span><span class="p">)</span>  <span class="c1"># (features, channels, features, channels)</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">jac</span><span class="p">,</span> <span class="s1">&#39;a b c d -&gt; (a b) (c d)&#39;</span><span class="p">)</span>  <span class="c1"># (D*C, D*C)</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">jac</span><span class="p">)</span>
 
-    <span class="c1"># res = jax.vmap(jax.jacfwd(vf_wrapped, argnums=1), in_axes=(0,0))(t, x)</span>
-    <span class="c1"># res = rearrange(res, &#39;a b c d e -&gt; a (b c) (d e)&#39;)</span>
-    <span class="c1"># res = jnp.trace(res, axis1=-2, axis2=-1)</span>
-    <span class="c1"># return jnp.squeeze(res, axis=1) if res.ndim &gt; 1 else res</span>
+    <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">_single_div</span><span class="p">)(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></div>
 
-    <span class="n">res</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jacfwd</span><span class="p">(</span><span class="n">vf_wrapped</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="mi">1</span><span class="p">)(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-    <span class="n">res</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="s1">&#39;i a b j c d -&gt; i (a b) j (c d)&#39;</span><span class="p">)</span>
-    <span class="n">res</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="s1">&#39;i a i c -&gt; i&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div>
+
+
+<span class="c1"># NOTE: When using divergence_hutchinson inside an ODE solve for log-probability</span>
+<span class="c1"># computation, the probe vector v should be drawn ONCE before the ODE solve and</span>
+<span class="c1"># reused at every time step. A fixed probe gives smoother augmented dynamics,</span>
+<span class="c1"># which is critical for adaptive solvers (Dopri5) and reduces variance in the</span>
+<span class="c1"># accumulated log-det integral.</span>
+<span class="c1"># Reference: Meta&#39;s flow_matching library `compute_likelihood` draws z once:</span>
+<span class="c1">#   z = (torch.randn_like(x_1) &lt; 0) * 2.0 - 1.0  # fixed before odeint</span>
+<span class="c1"># The caller should generate the probe and pass it through the ODE args.</span>
+<div class="viewcode-block" id="divergence_hutchinson">
+<a class="viewcode-back" href="../../../api/gensbi/utils/math/index.html#gensbi.utils.math.divergence_hutchinson">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">divergence_hutchinson</span><span class="p">(</span>
+    <span class="n">vf</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">t</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">v</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the divergence of a vector field using the Hutchinson trace estimator.</span>
+
+<span class="sd">    Uses a single JVP with a probe vector to obtain an unbiased estimate of</span>
+<span class="sd">    tr(J), where J = ∂vf/∂x:</span>
+
+<span class="sd">        tr(J) ≈ vᵀ J v</span>
+
+<span class="sd">    The probe vector ``v`` should be drawn externally (e.g., Rademacher ±1)</span>
+<span class="sd">    and fixed across ODE steps for lower-variance log-probability estimates.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        vf: The vector field function with signature ``vf(t, x, args)``.</span>
+<span class="sd">        t: The time at which to compute the divergence.</span>
+<span class="sd">        x: The point at which to compute the divergence.</span>
+<span class="sd">        args: Optional additional arguments for the vector field function.</span>
+<span class="sd">        v: Probe vector, same shape as x (after ``_expand_dims``).</span>
+<span class="sd">            Typically Rademacher ±1, drawn once and reused across ODE steps.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        The Hutchinson estimate of the divergence at point x and time t.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">_expand_time</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+    <span class="n">vf_wrapped</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x_</span><span class="p">:</span> <span class="n">vf</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x_</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># JVP: (vf(x), J @ v) in a single forward pass</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">jvp_val</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jvp</span><span class="p">(</span><span class="n">vf_wrapped</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,),</span> <span class="p">(</span><span class="n">v</span><span class="p">,))</span>
+
+    <span class="c1"># Hutchinson estimate: vᵀ (J v) summed per sample</span>
+    <span class="n">estimate</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">jvp_val</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">ndim</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">estimate</span><span class="p">)</span></div>
 
 </pre></div>
 

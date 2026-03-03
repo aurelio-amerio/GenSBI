@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
@@ -829,7 +829,7 @@ window.addEventListener("load", load);</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">divergence</span><span class="p">,</span> <span class="n">_expand_dims</span><span class="p">,</span> <span class="n">_expand_time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">divergence</span><span class="p">,</span> <span class="n">divergence_hutchinson</span><span class="p">,</span> <span class="n">_expand_dims</span><span class="p">,</span> <span class="n">_expand_time</span>
 
 <div class="viewcode-block" id="ModelWrapper">
 <a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper">[docs]</a>
@@ -916,12 +916,11 @@ window.addEventListener("load", load);</script>
         <span class="k">def</span><span class="w"> </span><span class="nf">vf</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
             <span class="c1"># merge args and kwargs</span>
             <span class="n">args</span> <span class="o">=</span> <span class="n">args</span> <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
-            <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="c1"># squeeze the first dimension of the vector field if it is 1</span>
-            <span class="c1"># if vf.shape[0] == 1:</span>
-            <span class="c1">#     vf = jnp.squeeze(vf, axis=0)</span>
-
-            <span class="c1"># vf = jnp.squeeze(vf, axis=-1)</span>
+            <span class="c1"># Filter out divergence-only keys (e.g. div_v for Hutchinson)</span>
+            <span class="c1"># that are not model parameters.</span>
+            <span class="n">_DIVERGENCE_KEYS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;div_v&quot;</span><span class="p">}</span>
+            <span class="n">model_args</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_DIVERGENCE_KEYS</span><span class="p">}</span>
+            <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">model_args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">vf</span>
 
         <span class="k">return</span> <span class="n">vf</span></div>
@@ -929,30 +928,37 @@ window.addEventListener("load", load);</script>
 
 <div class="viewcode-block" id="ModelWrapper.get_divergence">
 <a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper.get_divergence">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_divergence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute the divergence of the model.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_divergence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exact</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a function that computes the divergence of the vector field.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            t : Array</span>
-<span class="sd">                time (batch_size).</span>
-<span class="sd">            x : Array</span>
-<span class="sd">                input data to the model (batch_size, ...).</span>
-<span class="sd">            args: additional information forwarded to the model, e.g., text condition.</span>
+<span class="sd">            exact : bool</span>
+<span class="sd">                If ``True`` (default), compute the exact divergence via</span>
+<span class="sd">                the full Jacobian (``jax.jacfwd`` + trace).  If ``False``,</span>
+<span class="sd">                use the Hutchinson stochastic trace estimator (single JVP</span>
+<span class="sd">                with a Rademacher probe).  The Hutchinson variant requires</span>
+<span class="sd">                the probe vector to be passed at call time inside</span>
+<span class="sd">                ``args[&quot;div_v&quot;]``.</span>
+<span class="sd">            **kwargs</span>
+<span class="sd">                Static keyword arguments forwarded to ``get_vector_field``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">            Array</span>
-<span class="sd">                divergence of the model.</span>
+<span class="sd">            Callable</span>
+<span class="sd">                ``div_(t, x, args)`` — divergence function compatible with</span>
+<span class="sd">                diffrax ODE terms.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">div_</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-            <span class="n">div</span> <span class="o">=</span> <span class="n">divergence</span><span class="p">(</span><span class="n">vf</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-            <span class="c1"># squeeze the first dimension of the divergence if it is 1</span>
-            <span class="c1"># if div.shape[0] == 1:</span>
-            <span class="c1">#     div = jnp.squeeze(div, axis=0)</span>
-            <span class="k">return</span> <span class="n">div</span>
+        <span class="k">if</span> <span class="n">exact</span><span class="p">:</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">div_</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">divergence</span><span class="p">(</span><span class="n">vf</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">div_</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># shallow copy to avoid mutating the caller&#39;s dict</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;div_v&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">divergence_hutchinson</span><span class="p">(</span><span class="n">vf</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">v</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">div_</span></div>
 </div>

@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
@@ -1120,6 +1120,62 @@ window.addEventListener("load", load);</script>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="UnconditionalPipeline.get_log_prob_fn">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.get_log_prob_fn">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_log_prob_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a log-probability function.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            Whether to use the EMA model. Default is True.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Forwarded to ``method.build_log_prob_fn``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Callable</span>
+<span class="sd">            ``log_prob_fn(x_1) -&gt; log_prob``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_wrapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="k">if</span> <span class="n">use_ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
+
+        <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">}</span>
+
+        <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_log_prob_fn</span><span class="p">(</span>
+            <span class="n">model_wrapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">log_prob_fn</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_log_prob</span></div>
+
+
+<div class="viewcode-block" id="UnconditionalPipeline.log_prob">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.log_prob">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute log-probability of x_1.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x_1 : array-like</span>
+<span class="sd">            Data samples to evaluate.</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            Use the EMA model. Default is True.</span>
+<span class="sd">        key : jax.random.PRNGKey, optional</span>
+<span class="sd">            Required when ``exact_divergence=False`` (Hutchinson).</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Forwarded to :meth:`get_log_prob_fn`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array</span>
+<span class="sd">            Log-probabilities.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_log_prob_fn</span><span class="p">(</span><span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">log_prob_fn</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="UnconditionalPipeline.sample_batched">

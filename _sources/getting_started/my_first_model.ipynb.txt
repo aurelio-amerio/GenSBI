@@ -75,7 +75,7 @@
         },
         {
             "cell_type": "code",
-            "execution_count": 2,
+            "execution_count": null,
             "id": "ef46258d",
             "metadata": {},
             "outputs": [],
@@ -485,9 +485,9 @@
             "outputs": [],
             "source": [
                 "# uncomment to train the model\n",
-                "loss_history = pipeline.train(\n",
-                "    rngs, save_model=False\n",
-                ")  # if you want to save the model, set save_model=True"
+                "# loss_history = pipeline.train(\n",
+                "#     rngs, save_model=False\n",
+                "# )  # if you want to save the model, set save_model=True"
             ]
         },
         {
@@ -505,7 +505,7 @@
             "metadata": {},
             "outputs": [],
             "source": [
-                "# pipeline.restore_model(2) # we have stored the pretrained model with tag 2"
+                "pipeline.restore_model(2) # we have stored the pretrained model with tag 2"
             ]
         },
         {
@@ -515,15 +515,15 @@
             "metadata": {},
             "outputs": [],
             "source": [
-                "steps = np.linspace(1, len(loss_history[0]), len(loss_history[0]))*100\n",
-                "plt.plot(steps, loss_history[0], label=\"train loss\")\n",
-                "plt.plot(steps, loss_history[1], label=\"val loss\")\n",
-                "plt.yscale(\"log\")\n",
-                "plt.xlabel(\"steps\")\n",
-                "plt.ylabel(\"loss\")\n",
-                "plt.ylim(0.1,10)\n",
-                "plt.legend()\n",
-                "plt.show()"
+                "# steps = np.linspace(1, len(loss_history[0]), len(loss_history[0]))*100\n",
+                "# plt.plot(steps, loss_history[0], label=\"train loss\")\n",
+                "# plt.plot(steps, loss_history[1], label=\"val loss\")\n",
+                "# plt.yscale(\"log\")\n",
+                "# plt.xlabel(\"steps\")\n",
+                "# plt.ylabel(\"loss\")\n",
+                "# plt.ylim(0.1,10)\n",
+                "# plt.legend()\n",
+                "# plt.show()"
             ]
         },
         {
@@ -622,6 +622,192 @@
             "metadata": {},
             "source": [
                 "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_marginals_2.png\" width=600>"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "b4d25279",
+            "metadata": {},
+            "source": [
+                "## Computing the log_prob exactly"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "90f1fe63",
+            "metadata": {},
+            "source": [
+                "GenSBI can also be used to compute the exact value of the (approximate) posterior log_prob at a given point.\n",
+                "This method requires an ODE fomulation, and is currently only implemented for Flow Matching.\n",
+                "\n",
+                "GenSBI - and diffusion/flow models in general - is optimized for sampling, and evaluating the log_prob exactly is computationally expensive, as it involves solving a coupled ODE involving the divergence of the vector field. "
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "a5f04192",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "from gensbi.utils.plotting import _plot_2d_dist_contour"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "6a8ad408",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "new_sample = simulator(jax.random.PRNGKey(20), 1) # generate one (theta, x) pair\n",
+                "\n",
+                "true_theta = new_sample[:, :dim_obs, :]  # the true parameters used for the simulation\n",
+                "x_o = new_sample[:, dim_obs:, :]  # the observed data, which we condition on"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "c9fae1e2",
+            "metadata": {},
+            "source": [
+                "You can compute the value of the posterior log_prob at one point using a convenience function from the pipeline:"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "bdbf94d2",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "x_1 = jnp.array([1.9, 1.7, -0.1]).reshape((1,-1,1))\n",
+                "pipeline.log_prob(x_1, x_o, use_ema=True) # Array([4.342539], dtype=float32)"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "699f4e0c",
+            "metadata": {},
+            "source": [
+                "We can use this to plot the log_prob in a corner plot. Note that, at the moment, computing 2D marginals is not fast for GenSBI, as it involves marginalizing the full ND pdf. "
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "0d3b04d5",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# we create a 3D meshgrid \n",
+                "theta1 = np.linspace(1.6,2.2, 50)\n",
+                "theta2 = np.linspace(1.4,2.0, 51)\n",
+                "theta3 = np.linspace(-0.5,0.25, 52)\n",
+                "\n",
+                "tt1, tt2, tt3 = jnp.meshgrid(theta1, theta2, theta3, indexing='ij')\n",
+                "\n",
+                "tt1_flat = tt1.ravel()\n",
+                "tt2_flat = tt2.ravel()\n",
+                "tt3_flat = tt3.ravel()\n",
+                "\n",
+                "x_1 = jnp.stack([tt1_flat, tt2_flat, tt3_flat], axis=-1)[...,None]\n"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "ac5ce766",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "logp = pipeline.log_prob(x_1, x_o, use_ema=True)"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "42e021a9",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# we can also compute the log_prob using the Hutchinson's divergence approximation\n",
+                "# key=jax.random.PRNGKey(42)\n",
+                "# logp_2 = pipeline.log_prob(x_1, x_o, use_ema=True, key=key, exact_divergence=False) "
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "2490e412",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "prob = jnp.exp(logp).reshape((len(theta1),len(theta2),len(theta3)))\n",
+                "# prob2 = jnp.exp(logp_2).reshape((len(theta1),len(theta2),len(theta3)))"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "bae304c4",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# integrate one dimension out, to get 2D marginal distributions\n",
+                "prob12 = jnp.trapezoid(prob, x=theta3, axis=2)\n",
+                "prob13 = jnp.trapezoid(prob, x=theta2, axis=1)\n",
+                "prob23 = jnp.trapezoid(prob, x=theta1, axis=0)"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": null,
+            "id": "391f55a3",
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "fig, axes = plt.subplots(2,2, figsize=(6,6))\n",
+                "\n",
+                "fontsize=12\n",
+                "\n",
+                "ax = axes[1,0]\n",
+                "_plot_2d_dist_contour(theta1,theta3, prob13.T, ax=ax, true_param=[true_theta[:,0],true_theta[:,2]])\n",
+                "ax.set_xlabel(r\"$\\theta_1$\")\n",
+                "ax.set_ylabel(r\"$\\theta_3$\")\n",
+                "\n",
+                "ax = axes[1,1]\n",
+                "_plot_2d_dist_contour(theta2,theta3, prob23.T, ax=ax, true_param=[true_theta[:,1],true_theta[:,2]])\n",
+                "ax.set_xlabel(r\"$\\theta_2$\")\n",
+                "ax.set_ylabel(\"\")\n",
+                "ax.set_yticks([])\n",
+                "\n",
+                "ax = axes[0,0]\n",
+                "_plot_2d_dist_contour(theta1,theta2, prob12.T, ax=ax, true_param=[true_theta[:,0],true_theta[:,1]])\n",
+                "ax.set_xlabel(\"\")\n",
+                "ax.set_xticks([])\n",
+                "ax.set_ylabel(r\"$\\theta_2$\")\n",
+                "\n",
+                "axes[0, 1].set_visible(False)\n",
+                "\n",
+                "\n",
+                "fig.subplots_adjust(\n",
+                "            hspace=0.05, wspace=0.1, left=0.2, right=0.98, top=0.98, bottom=0.06\n",
+                "        )\n",
+                "\n",
+                "for ax in axes.ravel():\n",
+                "    ax.set_aspect(\"equal\", adjustable=\"box\")\n",
+                "\n",
+                "plt.savefig(\"flux1_flow_pipeline_log_prob.png\", dpi=300, bbox_inches=\"tight\") # uncomment to save the figure\n",
+                "plt.show()"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "id": "42ebf706",
+            "metadata": {},
+            "source": [
+                "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/getting_started/flux1_flow_pipeline_log_prob_2.png\" width=600>"
             ]
         },
         {

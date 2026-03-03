@@ -33,7 +33,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
@@ -578,6 +578,9 @@ the library, including dimension expansion and divergence computation for vector
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.utils.math.divergence" title="gensbi.utils.math.divergence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">divergence</span></code></a>(vf, t, x[, args])</p></td>
 <td><p>Compute the divergence of a vector field at specified points and times.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.utils.math.divergence_hutchinson" title="gensbi.utils.math.divergence_hutchinson"><code class="xref py py-obj docutils literal notranslate"><span class="pre">divergence_hutchinson</span></code></a>(vf, t, x[, args, v])</p></td>
+<td><p>Estimate the divergence of a vector field using the Hutchinson trace estimator.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -616,17 +619,53 @@ the library, including dimension expansion and divergence computation for vector
 <dt class="sig sig-object py" id="gensbi.utils.math.divergence">
 <span class="sig-prename descclassname"><span class="pre">gensbi.utils.math.</span></span><span class="sig-name descname"><span class="pre">divergence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/utils/math.html#divergence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.utils.math.divergence" title="Link to this definition">#</a></dt>
 <dd><p>Compute the divergence of a vector field at specified points and times.</p>
+<p>Uses <code class="docutils literal notranslate"><span class="pre">vmap(jacfwd)</span></code> to compute per-sample Jacobians efficiently,
+then takes the trace over the flattened <code class="docutils literal notranslate"><span class="pre">(features,</span> <span class="pre">channels)</span></code> axes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>vf</strong> (<em>The vector field function.</em>)</p></li>
+<li><p><strong>vf</strong> (The vector field function with signature <code class="docutils literal notranslate"><span class="pre">vf(t,</span> <span class="pre">x,</span> <span class="pre">args)</span></code>.)</p></li>
 <li><p><strong>t</strong> (<em>The time at which to compute the divergence.</em>)</p></li>
 <li><p><strong>x</strong> (<em>The point at which to compute the divergence.</em>)</p></li>
 <li><p><strong>args</strong> (<em>Optional additional arguments for the vector field function.</em>)</p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>The divergence of the vector field at point x and time t,</em></p></li>
+<li><p>with shape <code class="docutils literal notranslate"><span class="pre">(batch,)</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.utils.math.divergence_hutchinson">
+<span class="sig-prename descclassname"><span class="pre">gensbi.utils.math.</span></span><span class="sig-name descname"><span class="pre">divergence_hutchinson</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/utils/math.html#divergence_hutchinson"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.utils.math.divergence_hutchinson" title="Link to this definition">#</a></dt>
+<dd><p>Estimate the divergence of a vector field using the Hutchinson trace estimator.</p>
+<p>Uses a single JVP with a probe vector to obtain an unbiased estimate of
+tr(J), where J = ∂vf/∂x:</p>
+<blockquote>
+<div><p>tr(J) ≈ vᵀ J v</p>
+</div></blockquote>
+<p>The probe vector <code class="docutils literal notranslate"><span class="pre">v</span></code> should be drawn externally (e.g., Rademacher ±1)
+and fixed across ODE steps for lower-variance log-probability estimates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vf</strong> (The vector field function with signature <code class="docutils literal notranslate"><span class="pre">vf(t,</span> <span class="pre">x,</span> <span class="pre">args)</span></code>.)</p></li>
+<li><p><strong>t</strong> (<em>The time at which to compute the divergence.</em>)</p></li>
+<li><p><strong>x</strong> (<em>The point at which to compute the divergence.</em>)</p></li>
+<li><p><strong>args</strong> (<em>Optional additional arguments for the vector field function.</em>)</p></li>
+<li><p><strong>v</strong> (Probe vector, same shape as x (after <code class="docutils literal notranslate"><span class="pre">_expand_dims</span></code>).) – Typically Rademacher ±1, drawn once and reused across ODE steps.</p></li>
+</ul>
+</dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>The divergence of the vector field at point x and time t.</p>
+<dd class="field-even"><p>The Hutchinson estimate of the divergence at point x and time t.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -686,6 +725,7 @@ the library, including dimension expansion and divergence computation for vector
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.math._expand_dims"><code class="docutils literal notranslate"><span class="pre">_expand_dims()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.math._expand_time"><code class="docutils literal notranslate"><span class="pre">_expand_time()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.math.divergence"><code class="docutils literal notranslate"><span class="pre">divergence()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.math.divergence_hutchinson"><code class="docutils literal notranslate"><span class="pre">divergence_hutchinson()</span></code></a></li>
 </ul>
 </li>
 </ul>

@@ -33,7 +33,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
@@ -594,6 +594,33 @@ via the strategy pattern.</p>
 <li><p><strong>Initial sample generation</strong> — drawing from the prior</p></li>
 </ul>
 <dl class="py method">
+<dt class="sig sig-object py" id="gensbi.core.generative_method.GenerativeMethod.build_log_prob_fn">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">build_log_prob_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_wrapped</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/generative_method.html#GenerativeMethod.build_log_prob_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.generative_method.GenerativeMethod.build_log_prob_fn" title="Link to this definition">#</a></dt>
+<dd><p>Build a log-probability closure for inference.</p>
+<p>Only supported by methods whose solver can evaluate the continuous
+change-of-variables formula (e.g., flow matching + ODE solver).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_wrapped</strong> – The wrapped model.</p></li>
+<li><p><strong>path</strong> – The probability path.</p></li>
+<li><p><strong>model_extras</strong> (<em>dict</em>) – Mode-specific extras (<code class="docutils literal notranslate"><span class="pre">cond</span></code>, <code class="docutils literal notranslate"><span class="pre">obs_ids</span></code>, <code class="docutils literal notranslate"><span class="pre">cond_ids</span></code>, etc.).</p></li>
+<li><p><strong>**kwargs</strong> – Method-specific arguments (<code class="docutils literal notranslate"><span class="pre">step_size</span></code>, <code class="docutils literal notranslate"><span class="pre">method</span></code>, etc.).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>log_prob_fn</strong> – A function <code class="docutils literal notranslate"><span class="pre">(x_1,</span> <span class="pre">model_extras)</span> <span class="pre">-&gt;</span> <span class="pre">log_prob</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – If the method does not support log-probability computation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="gensbi.core.generative_method.GenerativeMethod.build_loss">
 <span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">build_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/generative_method.html#GenerativeMethod.build_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.generative_method.GenerativeMethod.build_loss" title="Link to this definition">#</a></dt>
 <dd><p>Create the loss callable for this method.</p>
@@ -804,6 +831,7 @@ where <code class="docutils literal notranslate"><span class="pre">x_0</span></c
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.generative_method.GenerativeMethod"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.generative_method.GenerativeMethod.build_log_prob_fn"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_log_prob_fn()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.generative_method.GenerativeMethod.build_loss"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_loss()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.generative_method.GenerativeMethod.build_path"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_path()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.generative_method.GenerativeMethod.build_sampler_fn"><code class="docutils literal notranslate"><span class="pre">GenerativeMethod.build_sampler_fn()</span></code></a></li>
