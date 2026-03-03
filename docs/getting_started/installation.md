@@ -22,7 +22,7 @@ uv add gensbi[cuda12]
 uv pip install gensbi[cuda12]
 ```
 
-```{info} Install uv
+```{tip}
 To install uv, run:
 
 `curl -LsSf https://astral.sh/uv/install.sh | sh`
