@@ -295,7 +295,7 @@ class FlowMatchingMethod(GenerativeMethod):
             )
 
         if time_grid is None:
-            time_grid = [1.0, 0.0]
+            time_grid = jnp.array([1.0, 0.0])
 
         # Get log_p0 from the prior
         log_p0 = self.prior.log_prob

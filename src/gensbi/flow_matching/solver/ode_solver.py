@@ -53,7 +53,7 @@ class ODESolver(Solver):
         method: Union[str, AbstractERK] = "Euler",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid: Array = jnp.array([0.0, 1.0]),
+        time_grid: Optional[Array] = None,
         return_intermediates: bool = False,
         static_model_kwargs: dict = None,
     ) -> Callable:
@@ -98,6 +98,9 @@ class ODESolver(Solver):
 
         if static_model_kwargs is None:
             static_model_kwargs = {}
+
+        if time_grid is None:
+            time_grid = jnp.array([0.0, 1.0])
 
         term = diffrax.ODETerm(self.velocity_model.get_vector_field(**static_model_kwargs))
 
@@ -202,7 +205,7 @@ class ODESolver(Solver):
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid=[1.0, 0.0],
+        time_grid: Optional[Array] = None,
         return_intermediates: bool = False,
         exact_divergence: bool = True,
         *,
@@ -237,12 +240,16 @@ class ODESolver(Solver):
         -------
             Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]: Samples and log prob values.
         """
+
+        if time_grid is None:
+            time_grid = jnp.array([1.0, 0.0])
         assert (
             time_grid[0] == 1.0 and time_grid[-1] == 0.0
         ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
 
         if static_model_kwargs is None:
             static_model_kwargs = {}
+
 
         vector_field = self.velocity_model.get_vector_field(**static_model_kwargs)
         divergence = self.velocity_model.get_divergence(
@@ -329,7 +336,7 @@ class ODESolver(Solver):
         method: Union[str, AbstractERK] = "Dopri5",
         atol: float = 1e-5,
         rtol: float = 1e-5,
-        time_grid=[1.0, 0.0],
+        time_grid: Optional[Array] = None,
         return_intermediates: bool = False,
         exact_divergence: bool = True,
         *,
