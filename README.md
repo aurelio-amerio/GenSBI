@@ -8,7 +8,7 @@
 ![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
 
 > [!IMPORTANT]  
-> This library is at an early stage of development. The API is potentially subject to change.
+> This library is at an early stage of development. The API is currently stable, but it is subject to change.
 
 ## Overview
 
