@@ -38,7 +38,8 @@ These examples demonstrate how to use flow matching and diffusion models for unc
 ```{toctree}
 :maxdepth: 1
 
-notebooks/diffusion_2d_unconditional
+notebooks/diffusion_EDM_2d_unconditional
+notebooks/diffusion_SM_2d_unconditional
 notebooks/flow_matching_2d_unconditional
 notebooks/flow_matching_2d_unconditional_flux1joint
 ```

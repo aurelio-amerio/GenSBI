@@ -35,8 +35,10 @@ download:
 	@rm -rf notebooks/*
 	
 	# NDE
-	curl -L -o notebooks/diffusion_2d_unconditional.ipynb \
-		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/diffusion_2d_unconditional.ipynb
+	curl -L -o notebooks/diffusion_EDM_2d_unconditional.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/diffusion_EDM_2d_unconditional.ipynb
+	curl -L -o notebooks/diffusion_SM_2d_unconditional.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/diffusion_SM_2d_unconditional.ipynb
 	curl -L -o notebooks/flow_matching_2d_unconditional.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/flow_matching_2d_unconditional.ipynb
 	curl -L -o notebooks/flow_matching_2d_unconditional_flux1joint.ipynb \
