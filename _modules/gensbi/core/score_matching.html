@@ -831,7 +831,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_sm_path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMSolver</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMLoss</span> 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMLoss</span>
 
 
 <div class="viewcode-block" id="ScoreMatchingMethod">
@@ -861,9 +861,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sde_type</span><span class="o">=</span><span class="s2">&quot;VP&quot;</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">sde_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;VP&quot;</span><span class="p">,</span> <span class="s2">&quot;VE&quot;</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;sde_type must be one of &#39;VP&#39;, &#39;VE&#39;, got &#39;</span><span class="si">{</span><span class="n">sde_type</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sde_type must be one of &#39;VP&#39;, &#39;VE&#39;, got &#39;</span><span class="si">{</span><span class="n">sde_type</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
 <div class="viewcode-block" id="ScoreMatchingMethod.sde_type">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.sde_type">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">=</span> <span class="n">sde_type</span></div>
@@ -1001,9 +999,16 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="ScoreMatchingMethod.build_sampler_fn">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.build_sampler_fn">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_sampler_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span>
-                         <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                         <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_sampler_fn</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_wrapped</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">,</span>
+        <span class="n">model_extras</span><span class="p">,</span>
+        <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a sampler closure for score matching.</span>
 
 <span class="sd">        Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``</span>
@@ -1057,12 +1062,9 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;beta_min&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;beta_max&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">}</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;sigma_max&quot;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">}</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="s2">&quot;sigma_max&quot;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">}</span>
         <span class="k">return</span> <span class="p">{}</span></div>
 </div>
-
-
-
 
 </pre></div>
 
