@@ -55,12 +55,12 @@
     <script src="../_static/togglebutton.js?v=1ae7504c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/diffusion_2d_unconditional';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/diffusion_SM_2d_unconditional';</script>
     <link rel="icon" href="../_static/logo-square-small.png"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Flow Matching 2D Unconditional Example" href="flow_matching_2d_unconditional.html" />
-    <link rel="prev" title="Examples" href="../examples.html" />
+    <link rel="prev" title="Diffusion 2D Unconditional Example" href="diffusion_EDM_2d_unconditional.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -335,6 +335,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/my_first_model.html">My First Model</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional.html">Flow Matching 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
@@ -431,8 +432,8 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="diffusion-2d-unconditional-example">
 <h1>Diffusion 2D Unconditional Example<a class="headerlink" href="#diffusion-2d-unconditional-example" title="Link to this heading">#</a></h1>
-<p><a class="reference external" href="https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_2d_unconditional.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
-<p>This notebook demonstrates how to train and sample from a diffusion (score-matching) model on a 2D toy dataset using JAX and Flax. We will cover data generation, model definition, training, sampling, and density estimation using the pipeline utility.</p>
+<p><a class="reference external" href="https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_SM_2d_unconditional.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
+<p>This notebook demonstrates how to train and sample from a score-matching model on a 2D toy dataset using JAX and Flax. We will cover data generation, model definition, training, sampling, and density estimation using the pipeline utility.</p>
 <section id="environment-setup">
 <h2>1. Environment Setup<a class="headerlink" href="#environment-setup" title="Link to this heading">#</a></h2>
 <p>In this section, we set up the notebook environment, import required libraries, and configure JAX for CPU or GPU usage.</p>
@@ -493,7 +494,7 @@
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the checkpoint directory for saving/restoring models</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">orbax.checkpoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ocp</span>
-<span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s2">/checkpoints/diffusion_2d_example&quot;</span>
+<span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s2">/checkpoints/score_matching_2d_example&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -541,12 +542,6 @@
     <span class="n">data</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x1</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">x2</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">0.45</span>
 
     <span class="k">return</span> <span class="n">data</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/lhome/ific/a/aamerio/miniforge3/envs/gensbi/lib/python3.12/site-packages/google/protobuf/runtime_version.py:98: UserWarning: Protobuf gencode version 5.28.3 is exactly one major version older than the runtime version 6.31.1 at grain/proto/execution_summary.proto. Please update the gencode to avoid compatibility violations in the next runtime release.
-  warnings.warn(
 </pre></div>
 </div>
 </div>
@@ -618,7 +613,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/736152d281132a190a79328f924be10079e3cbe09b6f17e43b439c8b504f11a6.png" src="../_images/736152d281132a190a79328f924be10079e3cbe09b6f17e43b439c8b504f11a6.png" />
+<img alt="../_images/c8d7684b4471fa6b571425635dfe2447f649a7080e5563bd8a11476795bdb588.png" src="../_images/c8d7684b4471fa6b571425635dfe2447f649a7080e5563bd8a11476795bdb588.png" />
 </div>
 </div>
 </section>
@@ -628,7 +623,14 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import diffusion components and utilities</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalDiffusionPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreMatchingMethod</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/aure/miniforge3/envs/gensbi/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
 </div>
@@ -697,15 +699,16 @@
 <span class="c1"># velocity field model init</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 
-<span class="n">training_config</span> <span class="o">=</span> <span class="n">UnconditionalDiffusionPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
+<span class="n">training_config</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
 <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
-<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30_000</span>
+<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50_000</span>
 
-
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">UnconditionalDiffusionPipeline</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+<span class="n">method</span> <span class="o">=</span> <span class="n">ScoreMatchingMethod</span><span class="p">(</span><span class="n">sde_type</span><span class="o">=</span><span class="s2">&quot;VE&quot;</span><span class="p">)</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
     <span class="n">train_dataset_batched</span><span class="p">,</span>
     <span class="n">val_dataset_batched</span><span class="p">,</span>
     <span class="mi">2</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
     <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -722,10 +725,10 @@
 <div class="cell_output docutils container">
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/GenSBI-examples/examples/NDE/checkpoints/diffusion_2d_example
+WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/score_matching_2d_example
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/GenSBI-examples/examples/NDE/checkpoints/diffusion_2d_example/ema
+WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/score_matching_2d_example/ema
 </pre></div>
 </div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
@@ -770,7 +773,7 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <span class="c1"># time steps: 20,</span>
-<span class="n">sol_</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">19</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sol_</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">sol_</span><span class="p">)</span>
 <span class="p">;</span>
 </pre></div>
@@ -784,13 +787,25 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sol_</span><span class="p">[::</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(61, 500000, 2, 1)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize the sampled trajectories at different time steps</span>
-<span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol_</span><span class="p">[::</span><span class="mi">2</span><span class="p">])</span>  <span class="c1"># convert to numpy array, take only one step every 2</span>
-<span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
+<span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol_</span><span class="p">[::</span><span class="mi">50</span><span class="p">])</span>  <span class="c1"># convert to numpy array, take only one step every 2</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
     <span class="n">H</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
 
     <span class="n">cmin</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -802,15 +817,16 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 
     <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
     <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
-    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;t = </span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;t = </span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;diffusion_SM_unconditional.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/5fba0dc4d30c2115f16328ec23331b06901a383e3abf31ef4a6708298d6e79cc.png" src="../_images/5fba0dc4d30c2115f16328ec23331b06901a383e3abf31ef4a6708298d6e79cc.png" />
+<img alt="../_images/3ea1bfbab5a1bd74f2f47562357a19f18de109e8b85a1b2f10cc3b5a4a0a6ce0.png" src="../_images/3ea1bfbab5a1bd74f2f47562357a19f18de109e8b85a1b2f10cc3b5a4a0a6ce0.png" />
 </div>
 </div>
 </section>
@@ -829,13 +845,15 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot the marginal distribution of the final samples</span>
-<span class="n">plot_marginals</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;seaborn&quot;</span><span class="p">)</span>
+<span class="n">plot_marginals</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;seaborn&quot;</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)])</span>
+<span class="c1"># plt.xlim(-5,5)</span>
+<span class="c1"># plt.ylim(-5,5)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/a0312186b5ba8a0ae6f3901b54e185873f78317e546c4b34bcffaa98e7ed0cf2.png" src="../_images/a0312186b5ba8a0ae6f3901b54e185873f78317e546c4b34bcffaa98e7ed0cf2.png" />
+<img alt="../_images/b954a80b8860bf41f48c642dd4f06095e659a3f5b9dc5653fa67a5b644411599.png" src="../_images/b954a80b8860bf41f48c642dd4f06095e659a3f5b9dc5653fa67a5b644411599.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -843,7 +861,7 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample and visualize trajectories with finer time resolution</span>
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">1000</span>
 <span class="c1"># T = jnp.linspace(0,1,50)  # sample times</span>
-<span class="n">nsteps</span> <span class="o">=</span> <span class="mi">99</span>
+<span class="n">nsteps</span> <span class="o">=</span> <span class="mi">500</span>
 
 <span class="n">sol</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
@@ -868,16 +886,18 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot sampled trajectories</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_trajectories</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_trajectories</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol</span><span class="p">[::</span><span class="mi">100</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Diffusion - Score Matching VE&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;diffusion_SM_unconditional_trajectories.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/11eb0edcdabc75cec3dcca3dac3a1ffb4406bf0c78502343f4a50b2bfddd40e2.png" src="../_images/11eb0edcdabc75cec3dcca3dac3a1ffb4406bf0c78502343f4a50b2bfddd40e2.png" />
+<img alt="../_images/c53f71be5ea9f7ec373a882ddb1d95ba4195de9c9308e767f3b9cfbcfdd35345.png" src="../_images/c53f71be5ea9f7ec373a882ddb1d95ba4195de9c9308e767f3b9cfbcfdd35345.png" />
 </div>
 </div>
 </section>
@@ -894,12 +914,12 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../examples.html"
+       href="diffusion_EDM_2d_unconditional.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Examples</p>
+        <p class="prev-next-title">Diffusion 2D Unconditional Example</p>
       </div>
     </a>
     <a class="right-next"

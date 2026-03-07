@@ -60,7 +60,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Flow Matching 2D Unconditional Example" href="flow_matching_2d_unconditional_flux1joint.html" />
-    <link rel="prev" title="Diffusion 2D Unconditional Example" href="diffusion_2d_unconditional.html" />
+    <link rel="prev" title="Diffusion 2D Unconditional Example" href="diffusion_SM_2d_unconditional.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -335,7 +335,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/my_first_model.html">My First Model</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="diffusion_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Flow Matching 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
@@ -612,7 +613,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/d24247ab98b39cecec405ac437b841e40664b062b84d50e1894a10a37b4d17f1.png" src="../_images/d24247ab98b39cecec405ac437b841e40664b062b84d50e1894a10a37b4d17f1.png" />
+<img alt="../_images/c8d7684b4471fa6b571425635dfe2447f649a7080e5563bd8a11476795bdb588.png" src="../_images/c8d7684b4471fa6b571425635dfe2447f649a7080e5563bd8a11476795bdb588.png" />
 </div>
 </div>
 </section>
@@ -622,7 +623,14 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import flow matching components and utilities</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalFlowPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/aure/miniforge3/envs/gensbi/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
 </div>
@@ -681,15 +689,16 @@
 <span class="c1"># velocity field model init</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">input_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 
-<span class="n">training_config</span> <span class="o">=</span> <span class="n">UnconditionalFlowPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
+<span class="n">training_config</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
 <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
 <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30_000</span>
 
-
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">UnconditionalFlowPipeline</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+<span class="n">method</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">()</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
     <span class="n">train_dataset_batched</span><span class="p">,</span>
     <span class="n">val_dataset_batched</span><span class="p">,</span>
     <span class="mi">2</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
     <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -706,10 +715,10 @@
 <div class="cell_output docutils container">
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example_1c
+WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example_1c/ema
+WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example/ema
 </pre></div>
 </div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
@@ -753,8 +762,18 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">T</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># sample times</span>
+<span class="n">nplots</span><span class="o">=</span><span class="mi">6</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">nplots</span><span class="p">)</span>  <span class="c1"># sample times</span>
 <span class="n">sol</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s2">&quot;darkgrid&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -765,9 +784,9 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 <span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
 <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nplots</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nplots</span><span class="p">):</span>
     <span class="n">H</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
 
     <span class="n">cmin</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -779,15 +798,17 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 
     <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
     <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
-    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;t = </span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;t = </span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;flow_matching_unconditional.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="c1"># plt.savefig(&quot;flow_matching_unconditional.pdf&quot;, dpi=300, bbox_inches=&quot;tight&quot;)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/9a811ab37e55bc4c457b2a8b4a5382d9b7e29e261a4035e0fe6e563aa5ef1206.png" src="../_images/9a811ab37e55bc4c457b2a8b4a5382d9b7e29e261a4035e0fe6e563aa5ef1206.png" />
+<img alt="../_images/3a56639a81b2847a6b721235476aa4a111c46a2f032daf334593ed49dd2463b8.png" src="../_images/3a56639a81b2847a6b721235476aa4a111c46a2f032daf334593ed49dd2463b8.png" />
 </div>
 </div>
 </section>
@@ -812,7 +833,7 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/d0506940dcce60fa511625d65532657c401447c2101a9dfbf7f3f96df88ad627.png" src="../_images/d0506940dcce60fa511625d65532657c401447c2101a9dfbf7f3f96df88ad627.png" />
+<img alt="../_images/96f4e98979e35875130412d0d62923eca9576b38ed19b62e9b0573281738acd0.png" src="../_images/96f4e98979e35875130412d0d62923eca9576b38ed19b62e9b0573281738acd0.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -839,12 +860,16 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot sampled trajectories</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_trajectories</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Flow Matching - CondOT&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;flow_matching_unconditional_trajectories.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/e207b2e902175a3484d693fd05c6906e4e5f477712bb9b3512ff2d6663794f65.png" src="../_images/e207b2e902175a3484d693fd05c6906e4e5f477712bb9b3512ff2d6663794f65.png" />
+<img alt="../_images/b5274a096658776a7d1aafe4f908c28b1797333e2262b93a1f65ec1069f4b56d.png" src="../_images/b5274a096658776a7d1aafe4f908c28b1797333e2262b93a1f65ec1069f4b56d.png" />
 </div>
 </div>
 </section>
@@ -861,7 +886,7 @@ WARNING:absl:Given directory is read only=/lustre/ific.uv.es/ml/ific088/github/G
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="diffusion_2d_unconditional.html"
+       href="diffusion_SM_2d_unconditional.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
