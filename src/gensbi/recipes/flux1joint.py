@@ -205,6 +205,7 @@ class Flux1JointFlowPipeline(JointPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -213,6 +214,8 @@ class Flux1JointFlowPipeline(JointPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor.
 
         """
         params, training_config, method = _flux1joint_config_from_path(
@@ -235,6 +238,7 @@ class Flux1JointFlowPipeline(JointPipeline):
             ch_obs=params.in_channels,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline
@@ -325,6 +329,7 @@ class Flux1JointSMPipeline(JointPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -333,6 +338,9 @@ class Flux1JointSMPipeline(JointPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor
+            (e.g. ``sde_type="VE"`` for score matching).
         """
         params, training_config, method = _flux1joint_config_from_path(
             config_path, dim_obs + dim_cond
@@ -353,6 +361,7 @@ class Flux1JointSMPipeline(JointPipeline):
             ch_obs=params.in_channels,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline
@@ -457,6 +466,7 @@ class Flux1JointDiffusionPipeline(JointPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -465,6 +475,8 @@ class Flux1JointDiffusionPipeline(JointPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor.
 
         """
         params, training_config, method = _flux1joint_config_from_path(
@@ -487,6 +499,7 @@ class Flux1JointDiffusionPipeline(JointPipeline):
             ch_obs=params.in_channels,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline

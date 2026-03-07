@@ -208,6 +208,7 @@ class SimformerFlowPipeline(JointPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -216,6 +217,8 @@ class SimformerFlowPipeline(JointPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor.
 
         """
         params, training_config, method = _simformer_config_from_path(
@@ -237,6 +240,7 @@ class SimformerFlowPipeline(JointPipeline):
             ch_obs=params.in_channels,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline
@@ -346,6 +350,7 @@ class SimformerSMPipeline(JointPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -354,6 +359,9 @@ class SimformerSMPipeline(JointPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor
+            (e.g. ``sde_type="VE"`` for score matching).
         """
         params, training_config, method = _simformer_config_from_path(
             config_path, dim_obs + dim_cond
@@ -373,6 +381,7 @@ class SimformerSMPipeline(JointPipeline):
             ch_obs=params.in_channels,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline
@@ -500,6 +509,7 @@ class SimformerDiffusionPipeline(JointPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -508,6 +518,8 @@ class SimformerDiffusionPipeline(JointPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor.
 
         """
         params, training_config, method = _simformer_config_from_path(
@@ -529,6 +541,7 @@ class SimformerDiffusionPipeline(JointPipeline):
             ch_obs=params.in_channels,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline

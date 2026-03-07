@@ -217,6 +217,7 @@ class Flux1FlowPipeline(ConditionalPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -225,6 +226,8 @@ class Flux1FlowPipeline(ConditionalPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor.
 
         """
         params, training_config, method = _flux1_config_from_path(
@@ -246,6 +249,7 @@ class Flux1FlowPipeline(ConditionalPipeline):
             ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline
@@ -353,6 +357,7 @@ class Flux1DiffusionPipeline(ConditionalPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -361,6 +366,8 @@ class Flux1DiffusionPipeline(ConditionalPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor.
 
         """
         params, training_config, method = _flux1_config_from_path(
@@ -384,6 +391,7 @@ class Flux1DiffusionPipeline(ConditionalPipeline):
             ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline
@@ -477,6 +485,7 @@ class Flux1SMPipeline(ConditionalPipeline):
         dim_cond: int,
         config_path: str,
         checkpoint_dir: str,
+        **kwargs,
     ):
         """
         Initialize the pipeline from a configuration file.
@@ -485,6 +494,9 @@ class Flux1SMPipeline(ConditionalPipeline):
         ----------
         config_path : str
             Path to the configuration file.
+        **kwargs
+            Additional keyword arguments forwarded to the constructor
+            (e.g. ``sde_type="VE"`` for score matching).
         """
         params, training_config, method = _flux1_config_from_path(
             config_path, dim_obs, dim_cond
@@ -506,6 +518,7 @@ class Flux1SMPipeline(ConditionalPipeline):
             ch_cond=params.context_in_dim,
             params=params,
             training_config=training_config,
+            **kwargs,
         )
 
         return pipeline

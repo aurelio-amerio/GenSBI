@@ -13,7 +13,7 @@ from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_sm_path
 from gensbi.diffusion.solver import SMSolver
 
-from gensbi.diffusion.loss import SMLoss 
+from gensbi.diffusion.loss import SMLoss
 
 
 class ScoreMatchingMethod(GenerativeMethod):
@@ -41,9 +41,7 @@ class ScoreMatchingMethod(GenerativeMethod):
 
     def __init__(self, sde_type="VP"):
         if sde_type not in ("VP", "VE"):
-            raise ValueError(
-                f"sde_type must be one of 'VP', 'VE', got '{sde_type}'."
-            )
+            raise ValueError(f"sde_type must be one of 'VP', 'VE', got '{sde_type}'.")
         self.sde_type = sde_type
 
     def build_path(self, config):
@@ -158,9 +156,16 @@ class ScoreMatchingMethod(GenerativeMethod):
         """
         return path.sample_prior(key, shape)
 
-    def build_sampler_fn(self, model_wrapped, path, model_extras,
-                         nsteps=1000, return_intermediates=False,
-                         solver=None, **kwargs):
+    def build_sampler_fn(
+        self,
+        model_wrapped,
+        path,
+        model_extras,
+        nsteps=1000,
+        return_intermediates=False,
+        solver=None,
+        **kwargs,
+    ):
         """Build a sampler closure for score matching.
 
         Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``
@@ -211,8 +216,5 @@ class ScoreMatchingMethod(GenerativeMethod):
         if self.sde_type == "VP":
             return {"beta_min": 0.001, "beta_max": 3.0}
         elif self.sde_type == "VE":
-            return {"sigma_min": 0.001, "sigma_max": 15.0}
+            return {"sigma_min": 0.0001, "sigma_max": 15.0}
         return {}
-
-
-
