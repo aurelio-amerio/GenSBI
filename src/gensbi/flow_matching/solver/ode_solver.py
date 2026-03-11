@@ -244,8 +244,8 @@ class ODESolver(Solver):
         if time_grid is None:
             time_grid = jnp.array([1.0, 0.0])
         assert (
-            time_grid[0] == 1.0 and time_grid[-1] == 0.0
-        ), f"Time grid must start at 1.0 and end at 0.0. Got {time_grid}"
+            time_grid[0] > time_grid[-1]
+        ), f"Time grid must be descending for log-prob (source ← data). Got {time_grid}"
 
         if static_model_kwargs is None:
             static_model_kwargs = {}

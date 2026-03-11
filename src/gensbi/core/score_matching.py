@@ -263,6 +263,102 @@ class ScoreMatchingMethod(GenerativeMethod):
 
         return sampler_fn
 
+    def build_log_prob_fn(
+        self,
+        model_wrapped,
+        path,
+        model_extras,
+        step_size=0.01,
+        method="Dopri5",
+        atol=1e-5,
+        rtol=1e-5,
+        nsteps=1000,
+        solver=None,
+        exact_divergence=True,
+        **kwargs,
+    ):
+        """Build a log-probability closure for the score matching PF-ODE.
+
+        Uses the continuous change-of-variables formula via ``SMPFSolver``
+        (which inherits ``get_log_prob`` from ``ODESolver``).  Only works
+        with ``SMPFSolver``; passing ``SMSolver`` will raise an error.
+
+        Parameters
+        ----------
+        model_wrapped
+            The wrapped score model.
+        path : SMPath
+            The score matching path.
+        model_extras : dict
+            Mode-specific extras (``cond``, ``obs_ids``, etc.).
+        step_size : float, optional
+            Step size for fixed-step solvers. Default is 0.01.
+        method : str or diffrax solver, optional
+            Integration method. Default is ``"Dopri5"``.
+        atol : float, optional
+            Absolute tolerance for adaptive solvers.
+        rtol : float, optional
+            Relative tolerance for adaptive solvers.
+        nsteps : int, optional
+            Number of integration steps (used for step_size calculation
+            when a fixed-step solver is selected). Default is 1000.
+        solver : tuple of (type, dict), optional
+            ``(SolverClass, kwargs)``. Must be an ODE-based solver
+            (``SMPFSolver``).
+        exact_divergence : bool, optional
+            If ``True`` (default), compute exact divergence via full
+            Jacobian. If ``False``, use the Hutchinson estimator (requires
+            a PRNG ``key`` at call time).
+
+        Returns
+        -------
+        log_prob_fn : Callable
+            ``(x_1, model_extras=None, *, key=None) -> log_prob``.
+
+        Raises
+        ------
+        NotImplementedError
+            If a non-ODE solver (e.g. ``SMSolver``) is specified.
+        """
+        if solver is None:
+            solver = (SMPFSolver, {})
+
+        solver_instance = self.build_solver(model_wrapped, path, solver=solver)
+
+        if not isinstance(solver_instance, SMPFSolver):
+            raise NotImplementedError(
+                f"Log-probability computation requires SMPFSolver, "
+                f"got {type(solver_instance).__name__}."
+            )
+
+        # SM time grid: T (noise) → eps (near-data)
+        sde = path.scheduler
+        T = sde.T
+        eps = 1e-3
+        time_grid = jnp.array([T, eps])
+
+        # Step size: positive — ODESolver.get_log_prob already negates it
+        step_size = (T - eps) / nsteps
+
+        log_p0 = self.prior.log_prob
+
+        log_prob_closure = solver_instance.get_log_prob(
+            log_p0=log_p0,
+            step_size=step_size,
+            method=method,
+            atol=atol,
+            rtol=rtol,
+            time_grid=time_grid,
+            exact_divergence=exact_divergence,
+        )
+
+        def log_prob_fn(x_1, model_extras=None, *, key=None):
+            if model_extras is None:
+                model_extras = {}
+            return log_prob_closure(x_1, model_extras=model_extras, key=key)
+
+        return log_prob_fn
+
     def get_extra_training_config(self):
         """Return SM-specific training config defaults.
 

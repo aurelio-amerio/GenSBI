@@ -376,3 +376,132 @@ def test_score_matching_method_smpf_solver(sde_cls):
     lp = method.prior.log_prob(x_init)
     assert lp.shape == (4,)
 
+
+# =========================================================
+# Log-probability tests (SMPFSolver / ODESolver.get_log_prob)
+# =========================================================
+
+
+def _build_smpf_log_prob(score_model, path, nsteps=100, exact_divergence=True):
+    """Build a log_prob callable via SMPFSolver, matching SM time conventions."""
+    solver = _build_smpf_solver(score_model, path)
+    sde = path.scheduler
+    T = sde.T
+    eps = 1e-3
+    time_grid = jnp.array([T, eps])
+    step_size = (T - eps) / nsteps
+
+    from gensbi.diffusion.sm_prior import VPPrior, VEPrior
+
+    if path.name == "SM-VP":
+        prior = VPPrior()
+    else:
+        prior = VEPrior(sigma_max=sde.sigma_max)
+
+    return solver.get_log_prob(
+        log_p0=prior.log_prob,
+        step_size=step_size,
+        method="Euler",
+        time_grid=time_grid,
+        exact_divergence=exact_divergence,
+    )
+
+
+@pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
+def test_smpf_log_prob_shape(sde_cls):
+    """SMPFSolver.get_log_prob produces log-prob with shape (batch,)."""
+    score_model = DummyScoreModel()
+    sde = sde_cls()
+    path = SMPath(sde)
+
+    log_prob_fn = _build_smpf_log_prob(score_model, path, nsteps=10)
+
+    key = jax.random.PRNGKey(0)
+    x_1 = path.sample_prior(key, (5, 3, 1))
+
+    logp = log_prob_fn(x_1)
+    assert logp.shape == (5,)
+    assert jnp.all(jnp.isfinite(logp))
+
+
+@pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
+def test_smpf_log_prob_exact_vs_hutchinson(sde_cls):
+    """Hutchinson log-prob should match exact log-prob for the dummy score model."""
+    score_model = DummyScoreModel()
+    sde = sde_cls()
+    path = SMPath(sde)
+
+    key = jax.random.PRNGKey(0)
+    x_1 = path.sample_prior(key, (4, 2, 1))
+
+    # Exact divergence
+    logp_exact_fn = _build_smpf_log_prob(
+        score_model, path, nsteps=10, exact_divergence=True
+    )
+    logp_exact = logp_exact_fn(x_1)
+
+    # Hutchinson divergence
+    hutch_key = jax.random.PRNGKey(42)
+    logp_hutch_fn = _build_smpf_log_prob(
+        score_model, path, nsteps=10, exact_divergence=False
+    )
+    logp_hutch = logp_hutch_fn(x_1, key=hutch_key)
+
+    assert logp_hutch.shape == logp_exact.shape
+    assert jnp.allclose(logp_exact, logp_hutch, rtol=1e-3), (
+        f"Exact vs Hutchinson mismatch: exact={logp_exact}, hutch={logp_hutch}"
+    )
+
+
+# =========================================================
+# Pipeline-level log-prob tests
+# =========================================================
+
+
+@pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
+def test_score_matching_method_build_log_prob_fn(sde_cls):
+    """ScoreMatchingMethod.build_log_prob_fn with SMPFSolver produces valid log-prob."""
+    from gensbi.core.score_matching import ScoreMatchingMethod
+
+    sde_type = "VP" if sde_cls is VPSmScheduler else "VE"
+    method = ScoreMatchingMethod(sde_type=sde_type)
+
+    config = method.get_extra_training_config()
+    path = method.build_path(config)
+
+    score_model = DummyScoreModel()
+
+    log_prob_fn = method.build_log_prob_fn(
+        model_wrapped=score_model,
+        path=path,
+        model_extras={},
+        nsteps=10,
+        method="Euler",
+        solver=(SMPFSolver, {}),
+    )
+
+    key = jax.random.PRNGKey(0)
+    x_1 = path.sample_prior(key, (4, 3, 1))
+    logp = log_prob_fn(x_1)
+
+    assert logp.shape == (4,)
+    assert jnp.all(jnp.isfinite(logp))
+
+
+def test_score_matching_method_log_prob_rejects_sde_solver():
+    """build_log_prob_fn should reject SMSolver (SDE, not ODE)."""
+    from gensbi.core.score_matching import ScoreMatchingMethod
+
+    method = ScoreMatchingMethod(sde_type="VP")
+    config = method.get_extra_training_config()
+    path = method.build_path(config)
+
+    with pytest.raises(NotImplementedError, match="SMPFSolver"):
+        method.build_log_prob_fn(
+            model_wrapped=DummyScoreModel(),
+            path=path,
+            model_extras={},
+            solver=(SMSolver, {}),
+        )
+
+
