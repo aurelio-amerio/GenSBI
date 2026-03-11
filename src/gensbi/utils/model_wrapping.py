@@ -37,7 +37,7 @@ class ModelWrapper(nnx.Module):
         """
         self.model = model
 
-    def __call__(self, t: Array, obs: Array, *args, **kwargs) -> Array:
+    def __call__(self, t: Array, obs: Array, **kwargs) -> Array:
         r"""
         Call the wrapped model with ``obs`` and ``t``.
 
