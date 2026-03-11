@@ -13,14 +13,14 @@ from gensbi.utils.math import _expand_dims, _expand_time
 
 
 class DummyModel(nnx.Module):
-    def __call__(self, x: Array, t: Array, *args, conditioned=True, **kwargs):
-        # Ensure x and t are arrays and compatible for broadcasting
-        x = _expand_dims(x)
+    def __call__(self, obs: Array, t: Array, conditioned=True, **kwargs):
+        # Ensure obs and t are arrays and compatible for broadcasting
+        obs = _expand_dims(obs)
         t = _expand_time(t)
  
         t = t[..., None]
             
-        res = x + t if conditioned else x - t
+        res = obs + t if conditioned else obs - t
         return res
 
     

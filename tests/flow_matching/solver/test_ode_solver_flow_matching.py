@@ -16,12 +16,12 @@ from gensbi.utils.math import _expand_dims, _expand_time
 
 
 class DummyModel(nnx.Module):
-    def __call__(self, x, t, *args, **kwargs):
-        x = _expand_dims(x)
+    def __call__(self, obs, t, **kwargs):
+        obs = _expand_dims(obs)
         t = _expand_time(t)
         if t.ndim < 3:
             t = t[..., None]
-        res = jnp.ones_like(x) * 3.0 * t**2
+        res = jnp.ones_like(obs) * 3.0 * t**2
         return res
 
 

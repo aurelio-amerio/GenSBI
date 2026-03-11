@@ -188,8 +188,8 @@ class FlowMatchingMethod(GenerativeMethod):
         return self.prior.sample(key, shape)
 
     def build_sampler_fn(self, model_wrapped, path, model_extras,
-                         step_size=0.01, time_grid=None, solver=None,
-                         **kwargs):
+                         step_size=0.01, method="Euler", time_grid=None,
+                         solver=None, **kwargs):
         """Build a sampler closure for flow matching.
 
         Supports ODE solvers (deterministic) and SDE solvers (stochastic;
@@ -206,6 +206,10 @@ class FlowMatchingMethod(GenerativeMethod):
             Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).
         step_size : float, optional
             Step size for fixed-step solvers. Default is 0.01.
+        method : str or diffrax solver, optional
+            Integration method for the ODE/SDE solver. Default is ``"Euler"``.
+            Other commonly used solvers are ``"Dopri5"`` (adaptive),
+            ``diffrax.Heun()``, and ``diffrax.Midpoint()``.
         time_grid : Array, optional
             Time grid for integration. If ``None``, uses ``[0, 1]``.
         solver : tuple of (type, dict), optional
@@ -226,7 +230,7 @@ class FlowMatchingMethod(GenerativeMethod):
             return_intermediates = True
 
         sampler_ = solver_instance.get_sampler(
-            method="Euler",
+            method=method,
             step_size=step_size,
             return_intermediates=return_intermediates,
             time_grid=time_grid,
