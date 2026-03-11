@@ -329,3 +329,113 @@ class TestLossEvaluation:
         loss = loss_obj(dummy_model, batch)
         assert loss.shape == ()
         assert jnp.isfinite(loss)
+
+
+# ---------------------------------------------------------------------------
+# Method parameter forwarding
+# ---------------------------------------------------------------------------
+
+
+class TestMethodForwarding:
+    """Verify that ``build_sampler_fn`` forwards the ``method`` parameter.
+
+    For each generative method we mock the solver so that
+    ``solver.get_sampler()`` records its kwargs. We then call
+    ``build_sampler_fn(method=<custom>)`` and assert that the custom
+    method reaches the solver, rather than being hardcoded.
+    """
+
+    def test_flow_matching_forwards_method(self, dummy_model):
+        from unittest.mock import MagicMock
+
+        method = FlowMatchingMethod()
+        path = method.build_path({})
+        wrapped = ModelWrapper(dummy_model)
+
+        mock_solver = MagicMock(spec=ODESolver)
+        mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
+        mock_solver.get_sampler.return_value = mock_sampler
+
+        original = method.build_solver
+        method.build_solver = lambda *a, **kw: mock_solver
+
+        try:
+            # Default: should forward "Euler"
+            method.build_sampler_fn(wrapped, path, model_extras={})
+            call_kwargs = mock_solver.get_sampler.call_args[1]
+            assert call_kwargs["method"] == "Euler"
+
+            # Custom: should forward "Dopri5"
+            method.build_sampler_fn(
+                wrapped, path, model_extras={}, method="Dopri5",
+            )
+            call_kwargs = mock_solver.get_sampler.call_args[1]
+            assert call_kwargs["method"] == "Dopri5"
+        finally:
+            method.build_solver = original
+
+    def test_score_matching_pf_ode_forwards_method(self, dummy_model):
+        from unittest.mock import MagicMock
+
+        method = ScoreMatchingMethod(sde_type="VP")
+        config = method.get_extra_training_config()
+        path = method.build_path(config)
+        wrapped = ModelWrapper(dummy_model)
+
+        # Mock an SMPFSolver (PF-ODE branch)
+        mock_solver = MagicMock(spec=SMPFSolver)
+        mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
+        mock_solver.get_sampler.return_value = mock_sampler
+
+        original = method.build_solver
+        method.build_solver = lambda *a, **kw: mock_solver
+
+        try:
+            # Default: should forward "Euler"
+            method.build_sampler_fn(
+                wrapped, path, model_extras={},
+                solver=(SMPFSolver, {}),
+            )
+            call_kwargs = mock_solver.get_sampler.call_args[1]
+            assert call_kwargs["method"] == "Euler"
+
+            # Custom: should forward "Dopri5"
+            method.build_sampler_fn(
+                wrapped, path, model_extras={},
+                solver=(SMPFSolver, {}), method="Dopri5",
+            )
+            call_kwargs = mock_solver.get_sampler.call_args[1]
+            assert call_kwargs["method"] == "Dopri5"
+        finally:
+            method.build_solver = original
+
+    def test_edm_forwards_method(self, dummy_model):
+        from unittest.mock import MagicMock
+
+        method = DiffusionEDMMethod(sde="EDM")
+        config = method.get_extra_training_config()
+        path = method.build_path(config)
+        wrapped = ModelWrapper(dummy_model)
+
+        mock_solver = MagicMock(spec=EDMSolver)
+        mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
+        mock_solver.get_sampler.return_value = mock_sampler
+
+        original = method.build_solver
+        method.build_solver = lambda *a, **kw: mock_solver
+
+        try:
+            # Default: should forward "Heun"
+            method.build_sampler_fn(wrapped, path, model_extras={})
+            call_kwargs = mock_solver.get_sampler.call_args[1]
+            assert call_kwargs["method"] == "Heun"
+
+            # Custom: should forward "Euler"
+            method.build_sampler_fn(
+                wrapped, path, model_extras={}, method="Euler",
+            )
+            call_kwargs = mock_solver.get_sampler.call_args[1]
+            assert call_kwargs["method"] == "Euler"
+        finally:
+            method.build_solver = original
+

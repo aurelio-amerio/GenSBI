@@ -157,7 +157,8 @@ class DiffusionEDMMethod(GenerativeMethod):
         return path.sample_prior(key, shape)
 
     def build_sampler_fn(self, model_wrapped, path, model_extras,
-                         nsteps=18, return_intermediates=False,
+                         nsteps=18, method="Heun",
+                         return_intermediates=False,
                          solver=None, solver_scheduler=None,
                          solver_params=None, **kwargs):
         """Build a sampler closure for EDM diffusion.
@@ -176,6 +177,9 @@ class DiffusionEDMMethod(GenerativeMethod):
             Mode-specific extras (``cond``, ``obs_ids``, etc.).
         nsteps : int, optional
             Number of sampling steps. Default is 18.
+        method : str, optional
+            Integration method. One of ``"Euler"`` or ``"Heun"``.
+            Default is ``"Heun"`` (second-order).
         return_intermediates : bool, optional
             Whether to return intermediate steps. Default is False.
         solver : tuple of (type, dict), optional
@@ -199,6 +203,7 @@ class DiffusionEDMMethod(GenerativeMethod):
 
         sampler_ = solver_instance.get_sampler(
             nsteps=nsteps,
+            method=method,
             return_intermediates=return_intermediates,
             solver_scheduler=solver_scheduler,
             solver_params=solver_params,

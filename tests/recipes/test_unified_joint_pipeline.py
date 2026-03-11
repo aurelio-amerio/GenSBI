@@ -161,8 +161,16 @@ def test_unified_joint_loss_fn(method):
 
 @pytest.mark.parametrize("use_ema", [False, True], ids=["no_ema", "ema"])
 @pytest.mark.parametrize("exact_divergence", [True, False], ids=["exact", "hutchinson"])
-def test_unified_joint_log_prob(use_ema, exact_divergence):
-    # log_prob is only supported for FlowMatchingMethod
+@pytest.mark.parametrize(
+    "method",
+    [
+        FlowMatchingMethod(),
+        ScoreMatchingMethod(),
+    ],
+    ids=["flow", "score"],
+)
+def test_unified_joint_log_prob(use_ema, exact_divergence, method):
+    # log_prob is supported for FlowMatchingMethod and ScoreMatchingMethod (via PF-ODE)
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         training_config = JointPipeline.get_default_training_config()
@@ -175,7 +183,7 @@ def test_unified_joint_log_prob(use_ema, exact_divergence):
             val_dataset=val_dataset,
             dim_obs=dim_obs,
             dim_cond=dim_cond,
-            method=FlowMatchingMethod(),
+            method=method,
             ch_obs=2,
             training_config=training_config,
         )
@@ -201,12 +209,11 @@ def test_unified_joint_log_prob(use_ema, exact_divergence):
     "method",
     [
         DiffusionEDMMethod(),
-        ScoreMatchingMethod(),
     ],
-    ids=["diffusion", "score"],
+    ids=["diffusion"],
 )
 def test_unified_joint_log_prob_not_implemented(method):
-    # EDM and ScoreMatching do not support log_prob
+    # EDM does not support log_prob
     home = os.path.expanduser("~")
     with tempfile.TemporaryDirectory(dir=home) as model_dir:
         training_config = JointPipeline.get_default_training_config()

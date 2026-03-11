@@ -192,6 +192,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         path,
         model_extras,
         nsteps=1000,
+        method="Euler",
         return_intermediates=False,
         solver=None,
         **kwargs,
@@ -211,6 +212,10 @@ class ScoreMatchingMethod(GenerativeMethod):
             Mode-specific extras (``cond``, ``obs_ids``, etc.).
         nsteps : int, optional
             Number of integration steps. Default is 1000.
+        method : str or diffrax solver, optional
+            Integration method for the PF-ODE solver. Default is
+            ``"Euler"``. Ignored when using the reverse SDE solver
+            (``SMSolver``).
         return_intermediates : bool, optional
             Whether to return intermediate steps. Default is False.
         solver : tuple of (type, dict), optional
@@ -238,7 +243,7 @@ class ScoreMatchingMethod(GenerativeMethod):
 
             sampler_ = solver_instance.get_sampler(
                 step_size=step_size,
-                method="Euler",
+                method=method,
                 time_grid=time_grid,
                 return_intermediates=return_intermediates,
             )
@@ -282,6 +287,16 @@ class ScoreMatchingMethod(GenerativeMethod):
         Uses the continuous change-of-variables formula via ``SMPFSolver``
         (which inherits ``get_log_prob`` from ``ODESolver``).  Only works
         with ``SMPFSolver``; passing ``SMSolver`` will raise an error.
+
+        .. note::
+
+           Unlike the default sampling behaviour of ``ScoreMatchingMethod``,
+           which integrates the *reverse SDE* (via ``SMSolver``), log-probability
+           evaluation requires the *probability flow ODE* formulation
+           (via ``SMPFSolver``).  Both formulations share the same marginal
+           distributions, so a score model trained with the standard SM loss
+           is mathematically valid for the PF-ODE.  When no ``solver`` is
+           passed, ``SMPFSolver`` is selected automatically.
 
         Parameters
         ----------
