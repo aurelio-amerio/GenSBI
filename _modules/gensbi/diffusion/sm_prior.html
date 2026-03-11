@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>gensbi.utils.model_wrapping &#8212; GenSBI  documentation</title>
+    <title>gensbi.diffusion.sm_prior &#8212; GenSBI  documentation</title>
   
   
   
@@ -490,7 +490,7 @@ mermaid.initialize(
 
 window.addEventListener("load", load);
 window.runMermaid = runMermaid;</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/utils/model_wrapping';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/diffusion/sm_prior';</script>
     <link rel="icon" href="../../../_static/logo-square-small.png"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -798,7 +798,7 @@ window.runMermaid = runMermaid;</script>
     
     <li class="breadcrumb-item"><a href="../../gensbi.html" class="nav-link">gensbi</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.utils.model_wrapping</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.diffusion.sm_prior</span></li>
   </ul>
 </nav>
 </div>
@@ -815,254 +815,140 @@ window.runMermaid = runMermaid;</script>
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for gensbi.utils.model_wrapping</h1><div class="highlight"><pre>
+  <h1>Source code for gensbi.diffusion.sm_prior</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Model wrapping utilities for GenSBI.</span>
+<span class="sd">SDE prior distributions for score matching.</span>
 
-<span class="sd">This module provides wrapper classes for models used in flow matching and diffusion,</span>
-<span class="sd">facilitating integration with ODE solvers and providing utilities for computing</span>
-<span class="sd">vector fields and divergences.</span>
+<span class="sd">Provides prior classes with ``sample`` and ``log_prob`` support,</span>
+<span class="sd">following the same pattern as ``StandardNormalPrior`` from flow matching.</span>
+<span class="sd">Ready for use in both sampling (Phase 1) and log_prob (Phase 2).</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpyro.distributions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">divergence</span><span class="p">,</span> <span class="n">divergence_hutchinson</span><span class="p">,</span> <span class="n">_expand_dims</span><span class="p">,</span> <span class="n">_expand_time</span>
 
-<div class="viewcode-block" id="ModelWrapper">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ModelWrapper</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Wrapper class for models to provide ODE solver integration.</span>
-<span class="sd">    </span>
-<span class="sd">    This class wraps around another model and provides methods for computing</span>
-<span class="sd">    the vector field and divergence, which are useful for ODE solvers that</span>
-<span class="sd">    require these quantities.</span>
-<span class="sd">    </span>
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">        model: The model to wrap.</span>
+<div class="viewcode-block" id="VPPrior">
+<a class="viewcode-back" href="../../../api/gensbi/diffusion/sm_prior/index.html#gensbi.diffusion.sm_prior.VPPrior">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VPPrior</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;VP-SDE prior: standard normal :math:`\mathcal{N}(0, I)`.</span>
+
+<span class="sd">    At :math:`t = T` the VP marginal converges to :math:`\mathcal{N}(0, I)`,</span>
+<span class="sd">    identical to the flow matching prior.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; prior = VPPrior()</span>
+<span class="sd">    &gt;&gt;&gt; key = jax.random.PRNGKey(0)</span>
+<span class="sd">    &gt;&gt;&gt; x = prior.sample(key, (4, 3, 1))</span>
+<span class="sd">    &gt;&gt;&gt; assert x.shape == (4, 3, 1)</span>
+<span class="sd">    &gt;&gt;&gt; lp = prior.log_prob(x)</span>
+<span class="sd">    &gt;&gt;&gt; assert lp.shape == (4,)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize the model wrapper.</span>
-<span class="sd">        </span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            model: The model to wrap.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="ModelWrapper.model">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper.model">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span></div>
+<div class="viewcode-block" id="VPPrior.sample">
+<a class="viewcode-back" href="../../../api/gensbi/diffusion/sm_prior/index.html#gensbi.diffusion.sm_prior.VPPrior.sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">shape</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from :math:`\\mathcal{N}(0, I)`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ModelWrapper.__call__">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">obs</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Call the wrapped model with ``obs`` and ``t``.</span>
-
-<span class="sd">        Uses keyword arguments when calling the underlying model for</span>
-<span class="sd">        safety (avoids positional-argument order bugs).</span>
+<div class="viewcode-block" id="VPPrior.log_prob">
+<a class="viewcode-back" href="../../../api/gensbi/diffusion/sm_prior/index.html#gensbi.diffusion.sm_prior.VPPrior.log_prob">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log-probability under :math:`\mathcal{N}(0, I)` for non-batch dims.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            t : Array</span>
-<span class="sd">                time (batch_size).</span>
-<span class="sd">            obs : Array</span>
-<span class="sd">                input data to the model (batch_size, ...).</span>
-<span class="sd">            **kwargs: additional information forwarded to the model,</span>
-<span class="sd">                e.g., text condition.</span>
+<span class="sd">        x : Array</span>
+<span class="sd">            Input of shape ``(batch, features, channels)`` or</span>
+<span class="sd">            ``(features, channels)``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">            Array</span>
-<span class="sd">                model output.</span>
+<span class="sd">        Array</span>
+<span class="sd">            Log-probability per sample, shape ``(batch,)`` or scalar.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="ModelWrapper.get_vector_field">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper.get_vector_field">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_vector_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute the vector field of the model, properly squeezed for the ODE term.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            x : Array</span>
-<span class="sd">                input data to the model (batch_size, ...).</span>
-<span class="sd">            t : Array</span>
-<span class="sd">                time (batch_size).</span>
-<span class="sd">            args: additional information forwarded to the model, e.g., text condition.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            Array</span>
-<span class="sd">                vector field of the model.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">vf</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-            <span class="c1"># merge args and kwargs</span>
-            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span> <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
-            <span class="c1"># Filter out divergence-only keys (e.g. div_v for Hutchinson)</span>
-            <span class="c1"># that are not model parameters.</span>
-            <span class="n">_DIVERGENCE_KEYS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;div_v&quot;</span><span class="p">}</span>
-            <span class="n">model_args</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_DIVERGENCE_KEYS</span><span class="p">}</span>
-            <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">model_args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">vf</span>
-
-        <span class="k">return</span> <span class="n">vf</span></div>
-
-
-<div class="viewcode-block" id="ModelWrapper.get_divergence">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper.get_divergence">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_divergence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exact</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a function that computes the divergence of the vector field.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            exact : bool</span>
-<span class="sd">                If ``True`` (default), compute the exact divergence via</span>
-<span class="sd">                the full Jacobian (``jax.jacfwd`` + trace).  If ``False``,</span>
-<span class="sd">                use the Hutchinson stochastic trace estimator (single JVP</span>
-<span class="sd">                with a Rademacher probe).  The Hutchinson variant requires</span>
-<span class="sd">                the probe vector to be passed at call time inside</span>
-<span class="sd">                ``args[&quot;div_v&quot;]``.</span>
-<span class="sd">            **kwargs</span>
-<span class="sd">                Static keyword arguments forwarded to ``get_vector_field``.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            Callable</span>
-<span class="sd">                ``div_(t, x, args)`` — divergence function compatible with</span>
-<span class="sd">                diffrax ODE terms.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_vector_field</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">exact</span><span class="p">:</span>
-            <span class="k">def</span><span class="w"> </span><span class="nf">div_</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">divergence</span><span class="p">(</span><span class="n">vf</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">def</span><span class="w"> </span><span class="nf">div_</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-                <span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># shallow copy to avoid mutating the caller&#39;s dict</span>
-                <span class="n">v</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;div_v&quot;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="n">divergence_hutchinson</span><span class="p">(</span><span class="n">vf</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">v</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">div_</span></div>
+        <span class="n">event_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>  <span class="c1"># (features, channels)</span>
+        <span class="n">p0</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">Independent</span><span class="p">(</span>
+            <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span>
+                <span class="n">loc</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
+                <span class="n">scale</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">reinterpreted_batch_ndims</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">p0</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
 </div>
 
 
 
+<div class="viewcode-block" id="VEPrior">
+<a class="viewcode-back" href="../../../api/gensbi/diffusion/sm_prior/index.html#gensbi.diffusion.sm_prior.VEPrior">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VEPrior</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;VE-SDE prior: :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.</span>
 
-<div class="viewcode-block" id="ScoreToDrift">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ScoreToDrift">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ScoreToDrift</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Thin adapter that makes a score model look like a velocity (drift) model.</span>
-
-<span class="sd">    When called as ``model(obs, t, **kwargs)``, returns the PF-ODE drift</span>
-<span class="sd">    instead of the raw score:</span>
-
-<span class="sd">    .. math::</span>
-<span class="sd">        u(x, t) = f(x, t) - \tfrac{1}{2}\, g(t)^2\, s_\theta(x, t)</span>
-
-<span class="sd">    This allows passing the adapted model to **existing** wrappers</span>
-<span class="sd">    (``ModelWrapper``, ``JointWrapper``, ``ConditionalWrapper``, etc.)</span>
-<span class="sd">    without needing SM-specific wrapper subclasses.</span>
+<span class="sd">    At :math:`t = T` the VE marginal has std :math:`\sigma_{\max}`,</span>
+<span class="sd">    so the prior is the wider Gaussian.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    score_model</span>
-<span class="sd">        The score model, called as ``score_model(obs, t, **kwargs)``.</span>
-<span class="sd">    sde</span>
-<span class="sd">        The SDE scheduler (e.g. ``VPSmScheduler`` or ``VESmScheduler``).</span>
+<span class="sd">    sigma_max : float</span>
+<span class="sd">        Maximum noise level from the VE scheduler.</span>
 
-<span class="sd">    Example</span>
-<span class="sd">    -------</span>
-<span class="sd">    .. code-block:: python</span>
-
-<span class="sd">        drift_model = ScoreToDrift(score_model, sde)</span>
-<span class="sd">        wrapper = ModelWrapper(drift_model)    # or JointWrapper(drift_model)</span>
-<span class="sd">        solver = ODESolver(velocity_model=wrapper)</span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; prior = VEPrior(sigma_max=15.0)</span>
+<span class="sd">    &gt;&gt;&gt; key = jax.random.PRNGKey(0)</span>
+<span class="sd">    &gt;&gt;&gt; x = prior.sample(key, (4, 3, 1))</span>
+<span class="sd">    &gt;&gt;&gt; assert x.shape == (4, 3, 1)</span>
+<span class="sd">    &gt;&gt;&gt; lp = prior.log_prob(x)</span>
+<span class="sd">    &gt;&gt;&gt; assert lp.shape == (4,)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score_model</span><span class="p">,</span> <span class="n">sde</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<div class="viewcode-block" id="ScoreToDrift.score_model">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ScoreToDrift.score_model">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">score_model</span> <span class="o">=</span> <span class="n">score_model</span></div>
-
-<div class="viewcode-block" id="ScoreToDrift.sde">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ScoreToDrift.sde">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sde</span> <span class="o">=</span> <span class="n">sde</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma_max</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<div class="viewcode-block" id="VEPrior.sigma_max">
+<a class="viewcode-back" href="../../../api/gensbi/diffusion/sm_prior/index.html#gensbi.diffusion.sm_prior.VEPrior.sigma_max">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_max</span> <span class="o">=</span> <span class="n">sigma_max</span></div>
 
 
-<div class="viewcode-block" id="ScoreToDrift.__call__">
-<a class="viewcode-back" href="../../../api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ScoreToDrift.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return PF-ODE drift for inputs ``(obs, t)``.&quot;&quot;&quot;</span>
-        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score_model</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="viewcode-block" id="VEPrior.sample">
+<a class="viewcode-back" href="../../../api/gensbi/diffusion/sm_prior/index.html#gensbi.diffusion.sm_prior.VEPrior.sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">shape</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Draw samples from :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_max</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
 
-        <span class="c1"># SDE coefficients — broadcast t to match obs shape</span>
-        <span class="n">t_broadcast</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        <span class="n">g_sq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde</span><span class="o">.</span><span class="n">diffusion</span><span class="p">(</span><span class="n">t_broadcast</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
-        <span class="n">forward_drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde</span><span class="o">.</span><span class="n">drift</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">t_broadcast</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">forward_drift</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">g_sq</span> <span class="o">*</span> <span class="n">score</span></div>
+<div class="viewcode-block" id="VEPrior.log_prob">
+<a class="viewcode-back" href="../../../api/gensbi/diffusion/sm_prior/index.html#gensbi.diffusion.sm_prior.VEPrior.log_prob">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log-probability under :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : Array</span>
+<span class="sd">            Input of shape ``(batch, features, channels)`` or</span>
+<span class="sd">            ``(features, channels)``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array</span>
+<span class="sd">            Log-probability per sample, shape ``(batch,)`` or scalar.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">event_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>  <span class="c1"># (features, channels)</span>
+        <span class="n">p0</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">Independent</span><span class="p">(</span>
+            <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span>
+                <span class="n">loc</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
+                <span class="n">scale</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_max</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">reinterpreted_batch_ndims</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">p0</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
 </div>
 
-
-
-<span class="c1"># class GuidedModelWrapper(ModelWrapper):</span>
-<span class="c1">#     &quot;&quot;&quot;</span>
-<span class="c1">#     This class is used to wrap around another model. We define a call method which returns the model output.</span>
-<span class="c1">#     Furthermore, we define a vector_field method which computes the vector field of the model,</span>
-<span class="c1">#     and a divergence method which computes the divergence of the model, in a form useful for diffrax.</span>
-<span class="c1">#     This is useful for ODE solvers that require the vector field and divergence of the model.</span>
-
-<span class="c1">#     &quot;&quot;&quot;</span>
-
-<span class="c1">#     cfg_scale: float</span>
-
-<span class="c1">#     def __init__(self, model, cfg_scale=0.7):</span>
-<span class="c1">#         super().__init__(model)</span>
-<span class="c1">#         self.cfg_scale = cfg_scale</span>
-
-<span class="c1">#     def __call__(self, t: Array, obs: Array, *args, **kwargs) -&gt; Array:</span>
-<span class="c1">#         r&quot;&quot;&quot;Compute the guided model output as a weighted sum of conditioned and unconditioned predictions.</span>
-
-<span class="c1">#         Args:</span>
-<span class="c1">#             obs (Array): input data to the model (batch_size, ...).</span>
-<span class="c1">#             t (Array): time (batch_size).</span>
-<span class="c1">#             args: additional information forwarded to the model, e.g., text condition.</span>
-<span class="c1">#             **kwargs: additional keyword arguments.</span>
-
-<span class="c1">#         Returns:</span>
-<span class="c1">#             Array: guided model output.</span>
-<span class="c1">#         &quot;&quot;&quot;</span>
-<span class="c1">#         kwargs.pop(&quot;conditioned&quot;, None)  # we set this flag manually</span>
-<span class="c1">#         # Get outputs from parent class</span>
-<span class="c1">#         c_out = super().__call__(t, obs, *args, conditioned=True, **kwargs)</span>
-<span class="c1">#         u_out = super().__call__(t, obs, *args, conditioned=False, **kwargs)</span>
-
-<span class="c1">#         return (1 - self.cfg_scale) * u_out + self.cfg_scale * c_out</span>
-
-<span class="c1">#     def get_vector_field(self, **kwargs) -&gt; Callable:</span>
-<span class="c1">#         &quot;&quot;&quot;Compute the guided vector field as a weighted sum of conditioned and unconditioned predictions.&quot;&quot;&quot;</span>
-<span class="c1">#         # Get vector fields from parent class</span>
-<span class="c1">#         c_vf = super().get_vector_field(conditioned=True, **kwargs)</span>
-<span class="c1">#         u_vf = super().get_vector_field(conditioned=False, **kwargs)</span>
-
-<span class="c1">#         def g_vf(t, x, args):</span>
-<span class="c1">#             return (1 - self.cfg_scale) * u_vf(t, x, args) + self.cfg_scale * c_vf(</span>
-<span class="c1">#                 t, x, args</span>
-<span class="c1">#             )</span>
-
-<span class="c1">#         return g_vf</span>
 </pre></div>
 
                 </article>

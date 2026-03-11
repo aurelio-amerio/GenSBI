@@ -1040,8 +1040,8 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="FlowMatchingMethod.build_sampler_fn">
 <a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_sampler_fn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_sampler_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span>
-                         <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                         <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                         <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a sampler closure for flow matching.</span>
 
 <span class="sd">        Supports ODE solvers (deterministic) and SDE solvers (stochastic;</span>
@@ -1058,6 +1058,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).</span>
 <span class="sd">        step_size : float, optional</span>
 <span class="sd">            Step size for fixed-step solvers. Default is 0.01.</span>
+<span class="sd">        method : str or diffrax solver, optional</span>
+<span class="sd">            Integration method for the ODE/SDE solver. Default is ``&quot;Euler&quot;``.</span>
+<span class="sd">            Other commonly used solvers are ``&quot;Dopri5&quot;`` (adaptive),</span>
+<span class="sd">            ``diffrax.Heun()``, and ``diffrax.Midpoint()``.</span>
 <span class="sd">        time_grid : Array, optional</span>
 <span class="sd">            Time grid for integration. If ``None``, uses ``[0, 1]``.</span>
 <span class="sd">        solver : tuple of (type, dict), optional</span>
@@ -1078,7 +1082,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">return_intermediates</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
             <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
             <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
             <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>

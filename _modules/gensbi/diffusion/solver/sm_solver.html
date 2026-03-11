@@ -817,10 +817,11 @@ window.runMermaid = runMermaid;</script>
                   
   <h1>Source code for gensbi.diffusion.solver.sm_solver</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Score Matching SDE Solver.</span>
+<span class="sd">Score Matching Solvers.</span>
 
-<span class="sd">This module provides a solver for score matching diffusion models,</span>
-<span class="sd">handling reverse SDE sampling using the learned score function.</span>
+<span class="sd">This module provides solvers for score matching diffusion models:</span>
+<span class="sd">``SMSolver`` for reverse SDE sampling and ``SMPFSolver`` (a thin</span>
+<span class="sd">``ODESolver`` subclass) for probability flow ODE sampling.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
@@ -831,10 +832,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solver</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver.sm_samplers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">sm_reverse_sde_sampler</span><span class="p">,</span>
-    <span class="n">sm_reverse_ode_sampler</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver.sm_samplers</span><span class="w"> </span><span class="kn">import</span> <span class="n">sm_reverse_sde_sampler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path.sm_path</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMPath</span>
 
 
@@ -1021,136 +1019,34 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ODESolver</span>
+
+
 <div class="viewcode-block" id="SMPFSolver">
 <a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/sm_solver/index.html#gensbi.diffusion.solver.SMPFSolver">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">SMPFSolver</span><span class="p">(</span><span class="n">SMSolver</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Solver for score matching diffusion models using the Probability Flow ODE.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SMPFSolver</span><span class="p">(</span><span class="n">ODESolver</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Score matching PF-ODE solver (probability flow ODE).</span>
 
-<span class="sd">    Instead of the reverse SDE, this solver integrates the deterministic</span>
-<span class="sd">    Probability Flow ODE (PF-ODE) from section 4.3 of Song et al., 2021</span>
-<span class="sd">    (arXiv:2011.13456). The PF-ODE shares the same marginal distributions</span>
-<span class="sd">    as the reverse SDE but is fully deterministic, which often leads to</span>
-<span class="sd">    higher sample quality and enables exact log_prob computation.</span>
+<span class="sd">    Thin subclass of :class:`ODESolver` used for dispatching in the</span>
+<span class="sd">    score matching pipeline.  ``ScoreMatchingMethod.build_solver``</span>
+<span class="sd">    detects this type and wraps the score model with</span>
+<span class="sd">    :class:`~gensbi.utils.model_wrapping.ScoreToDrift` before</span>
+<span class="sd">    constructing the solver.</span>
 
 <span class="sd">    The PF-ODE is:</span>
 
 <span class="sd">    .. math::</span>
 <span class="sd">        dx = \left[ f(x,t) - \frac{1}{2} g(t)^2 s_\theta(x, t) \right] dt</span>
 
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">        score_model : Callable</span>
-<span class="sd">            The score model function.</span>
-<span class="sd">        path : SMPath</span>
-<span class="sd">            The SMPath object containing the SDE scheduler.</span>
+<span class="sd">    All integration logic is inherited from ``ODESolver``.</span>
 
-<span class="sd">    Example:</span>
-<span class="sd">        .. code-block:: python</span>
-
-<span class="sd">            from gensbi.diffusion.solver.sm_solver import SMPFSolver</span>
-<span class="sd">            from gensbi.diffusion.path.sm_path import SMPath</span>
-<span class="sd">            from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler</span>
-<span class="sd">            import jax, jax.numpy as jnp</span>
-<span class="sd">            sde = VPSmScheduler()</span>
-<span class="sd">            path = SMPath(sde)</span>
-<span class="sd">            def score_model(obs, t, **kwargs):</span>
-<span class="sd">                return jnp.zeros_like(obs)</span>
-<span class="sd">            solver = SMPFSolver(score_model, path)</span>
-<span class="sd">            key = jax.random.PRNGKey(0)</span>
-<span class="sd">            x_init = jax.random.normal(key, (16, 2, 1))</span>
-<span class="sd">            samples = solver.sample(key, x_init, nsteps=10)</span>
-<span class="sd">            print(samples.shape)</span>
-<span class="sd">            # (16, 2, 1)</span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    gensbi.utils.model_wrapping.ScoreToDrift</span>
+<span class="sd">    gensbi.core.score_matching.ScoreMatchingMethod.build_solver</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score_model</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">SMPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">score_model</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-
-<div class="viewcode-block" id="SMPFSolver.get_sampler">
-<a class="viewcode-back" href="../../../../api/gensbi/diffusion/solver/sm_solver/index.html#gensbi.diffusion.solver.SMPFSolver.get_sampler">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">condition_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">condition_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">cfg_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">nsteps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
-        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
-        <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">static_model_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">solver_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
-        <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a sampler function for the probability flow ODE (PF-ODE).</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            condition_mask : Optional[Array]</span>
-<span class="sd">                Mask for conditioning.</span>
-<span class="sd">            condition_value : Optional[Array]</span>
-<span class="sd">                Value for conditioning.</span>
-<span class="sd">            cfg_scale : Optional[float]</span>
-<span class="sd">                Classifier-free guidance scale (not implemented).</span>
-<span class="sd">            nsteps : int</span>
-<span class="sd">                Number of integration steps.</span>
-<span class="sd">            method : str</span>
-<span class="sd">                Integration method. One of ``&quot;Euler&quot;``, ``&quot;Heun&quot;``, ``&quot;Dopri5&quot;``.</span>
-<span class="sd">                ``&quot;Dopri5&quot;`` automatically uses adaptive step sizing via</span>
-<span class="sd">                ``PIDController``; the others use fixed step size.</span>
-<span class="sd">            return_intermediates : bool</span>
-<span class="sd">                Whether to return intermediate steps.</span>
-<span class="sd">            static_model_kwargs : dict</span>
-<span class="sd">                Static model arguments baked into the sampler.</span>
-<span class="sd">                Condition-dependent data should be passed at call time</span>
-<span class="sd">                via ``model_extras``.</span>
-<span class="sd">            solver_params : Optional[dict]</span>
-<span class="sd">                Additional solver parameters.</span>
-<span class="sd">            atol : float</span>
-<span class="sd">                Absolute tolerance for adaptive step solvers.</span>
-<span class="sd">            rtol : float</span>
-<span class="sd">                Relative tolerance for adaptive step solvers.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            Callable</span>
-<span class="sd">                ``sample(key, x_init, model_extras=None)`` sampler function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">cfg_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="s2">&quot;CFG scale is not implemented for SM samplers yet.&quot;</span>
-            <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">static_model_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">static_model_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">if</span> <span class="n">solver_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">solver_params</span> <span class="o">=</span> <span class="p">{}</span>
-
-        <span class="n">eps</span> <span class="o">=</span> <span class="n">solver_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eps&quot;</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-
-        <span class="nd">@jit</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">x_init</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">return</span> <span class="n">sm_reverse_ode_sampler</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">score_model</span><span class="p">,</span>
-                <span class="n">x_init</span><span class="p">,</span>
-                <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
-                <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span>
-                <span class="n">condition_value</span><span class="o">=</span><span class="n">condition_value</span><span class="p">,</span>
-                <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-                <span class="n">n_steps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
-                <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span>
-                <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
-                <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span>
-                <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
-                <span class="n">model_kwargs</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">static_model_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">},</span>
-            <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">sample</span></div>
-</div>
+    <span class="k">pass</span></div>
 
 </pre></div>
 

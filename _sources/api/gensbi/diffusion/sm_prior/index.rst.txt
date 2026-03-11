@@ -1,0 +1,211 @@
+gensbi.diffusion.sm_prior
+=========================
+
+.. py:module:: gensbi.diffusion.sm_prior
+
+.. autoapi-nested-parse::
+
+   SDE prior distributions for score matching.
+
+   Provides prior classes with ``sample`` and ``log_prob`` support,
+   following the same pattern as ``StandardNormalPrior`` from flow matching.
+   Ready for use in both sampling (Phase 1) and log_prob (Phase 2).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diffusion.sm_prior.VEPrior
+   gensbi.diffusion.sm_prior.VPPrior
+
+
+Module Contents
+---------------
+
+.. py:class:: VEPrior(sigma_max)
+
+   
+   VE-SDE prior: :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.
+
+   At :math:`t = T` the VE marginal has std :math:`\sigma_{\max}`,
+   so the prior is the wider Gaussian.
+
+   :param sigma_max: Maximum noise level from the VE scheduler.
+   :type sigma_max: float
+
+   .. rubric:: Examples
+
+   >>> prior = VEPrior(sigma_max=15.0)
+   >>> key = jax.random.PRNGKey(0)
+   >>> x = prior.sample(key, (4, 3, 1))
+   >>> assert x.shape == (4, 3, 1)
+   >>> lp = prior.log_prob(x)
+   >>> assert lp.shape == (4,)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: log_prob(x)
+
+      
+      Log-probability under :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.
+
+      :param x: Input of shape ``(batch, features, channels)`` or
+                ``(features, channels)``.
+      :type x: Array
+
+      :returns: Log-probability per sample, shape ``(batch,)`` or scalar.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, shape)
+
+      
+      Draw samples from :math:`\mathcal{N}(0, \sigma_{\max}^2 I)`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sigma_max
+
+
+.. py:class:: VPPrior
+
+   
+   VP-SDE prior: standard normal :math:`\mathcal{N}(0, I)`.
+
+   At :math:`t = T` the VP marginal converges to :math:`\mathcal{N}(0, I)`,
+   identical to the flow matching prior.
+
+   .. rubric:: Examples
+
+   >>> prior = VPPrior()
+   >>> key = jax.random.PRNGKey(0)
+   >>> x = prior.sample(key, (4, 3, 1))
+   >>> assert x.shape == (4, 3, 1)
+   >>> lp = prior.log_prob(x)
+   >>> assert lp.shape == (4,)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: log_prob(x)
+
+      
+      Log-probability under :math:`\mathcal{N}(0, I)` for non-batch dims.
+
+      :param x: Input of shape ``(batch, features, channels)`` or
+                ``(features, channels)``.
+      :type x: Array
+
+      :returns: Log-probability per sample, shape ``(batch,)`` or scalar.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, shape)
+
+      
+      Draw samples from :math:`\mathcal{N}(0, I)`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

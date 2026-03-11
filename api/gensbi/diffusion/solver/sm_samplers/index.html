@@ -398,6 +398,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../path/sm_path/index.html">gensbi.diffusion.path.sm_path</a></li>
 </ul>
 </details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../sm_prior/index.html">gensbi.diffusion.sm_prior</a></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../index.html">gensbi.diffusion.solver</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="../edm_samplers/index.html">gensbi.diffusion.solver.edm_samplers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../edm_solver/index.html">gensbi.diffusion.solver.edm_solver</a></li>
@@ -576,10 +577,7 @@ by Song et al., 2021. <a class="reference external" href="https://arxiv.org/abs/
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diffusion.solver.sm_samplers.sm_reverse_ode_sampler" title="gensbi.diffusion.solver.sm_samplers.sm_reverse_ode_sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sm_reverse_ode_sampler</span></code></a>(sde, score_model, x_init, *, key)</p></td>
-<td><p>Sample from the probability flow ODE (PF-ODE) using diffrax integration.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler" title="gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sm_reverse_sde_sampler</span></code></a>(sde, score_model, x_init, *, key)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler" title="gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sm_reverse_sde_sampler</span></code></a>(sde, score_model, x_init, *, key)</p></td>
 <td><p>Sample from the reverse SDE using diffrax integration.</p></td>
 </tr>
 </tbody>
@@ -588,63 +586,6 @@ by Song et al., 2021. <a class="reference external" href="https://arxiv.org/abs/
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="gensbi.diffusion.solver.sm_samplers.sm_reverse_ode_sampler">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diffusion.solver.sm_samplers.</span></span><span class="sig-name descname"><span class="pre">sm_reverse_ode_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sde</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_init</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Euler'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/solver/sm_samplers.html#sm_reverse_ode_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.solver.sm_samplers.sm_reverse_ode_sampler" title="Link to this definition">#</a></dt>
-<dd><p>Sample from the probability flow ODE (PF-ODE) using diffrax integration.</p>
-<p>Implements the deterministic sampler based on the Probability Flow ODE
-from section 4.3 of “Score-Based Generative Modeling through Stochastic
-Differential Equations” by Song et al., 2021.
-See <a class="reference external" href="https://arxiv.org/abs/2011.13456">https://arxiv.org/abs/2011.13456</a>.</p>
-<p>Unlike the reverse SDE sampler, this ODE has no stochastic (diffusion)
-term, making it fully deterministic for a given <code class="docutils literal notranslate"><span class="pre">x_init</span></code>. This
-enables exact log_prob computation.</p>
-<p><strong>Time direction convention:</strong>
-The forward SDE runs from <code class="docutils literal notranslate"><span class="pre">t=0</span></code> (clean data) to <code class="docutils literal notranslate"><span class="pre">t=T</span></code> (noise).
-This sampler integrates <strong>backwards</strong> from <code class="docutils literal notranslate"><span class="pre">t=T</span></code> to <code class="docutils literal notranslate"><span class="pre">t=eps</span></code>
-to generate samples.</p>
-<p><strong>Input shape convention:</strong>
-All inputs must have shape <code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">features,</span> <span class="pre">channels)</span></code>.
-If your data is 2D <code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">features)</span></code>, add a trailing dimension:
-<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">x[...,</span> <span class="pre">None]</span></code>.</p>
-<p>The PF-ODE is:</p>
-<div class="math notranslate nohighlight">
-\[dx = \left[ f(x,t) - \frac{1}{2} g(t)^2 s_\theta(x, t) \right] dt\]</div>
-<p>where <span class="math notranslate nohighlight">\(s_\theta\)</span> is the learned score model, <span class="math notranslate nohighlight">\(f\)</span> is the
-forward drift, and <span class="math notranslate nohighlight">\(g\)</span> is the forward diffusion coefficient.
-Compared to the reverse SDE, the diffusion coefficient is halved and
-the Brownian noise term is removed.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>sde</strong> (<em>Any</em>) – The forward SDE scheduler (VPSmScheduler or VESmScheduler).</p></li>
-<li><p><strong>score_model</strong> (<em>Callable</em>) – The score model function, called as <code class="docutils literal notranslate"><span class="pre">score_model(obs=x,</span> <span class="pre">t=t,</span> <span class="pre">**model_kwargs)</span></code>.</p></li>
-<li><p><strong>x_init</strong> (<em>Array</em>) – Initial samples from the prior, shape <code class="docutils literal notranslate"><span class="pre">(batch_size,</span> <span class="pre">features,</span> <span class="pre">channels)</span></code>.</p></li>
-<li><p><strong>key</strong> (<em>Array</em>) – JAX random key (unused by the ODE itself, kept for API consistency).</p></li>
-<li><p><strong>condition_mask</strong> (<em>Optional</em><em>[</em><em>Array</em><em>]</em>) – Boolean mask for conditioning (True for conditioned dimensions).</p></li>
-<li><p><strong>condition_value</strong> (<em>Optional</em><em>[</em><em>Array</em><em>]</em>) – Values for conditioned dimensions.</p></li>
-<li><p><strong>return_intermediates</strong> (<em>bool</em>) – Whether to return all intermediate steps.</p></li>
-<li><p><strong>n_steps</strong> (<em>int</em>) – Number of integration steps.</p></li>
-<li><p><strong>eps</strong> (<em>float</em>) – Minimum time (to avoid singularities near t=0).</p></li>
-<li><p><strong>method</strong> (<em>str</em>) – Integration method. One of <code class="docutils literal notranslate"><span class="pre">&quot;Euler&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Heun&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Dopri5&quot;</span></code>.
-<code class="docutils literal notranslate"><span class="pre">&quot;Dopri5&quot;</span></code> automatically uses adaptive step sizing via
-<code class="docutils literal notranslate"><span class="pre">PIDController</span></code>; the others use fixed step size.</p></li>
-<li><p><strong>atol</strong> (<em>float</em>) – Absolute tolerance for adaptive step solvers.</p></li>
-<li><p><strong>rtol</strong> (<em>float</em>) – Relative tolerance for adaptive step solvers.</p></li>
-<li><p><strong>model_kwargs</strong> (<em>dict</em>) – Additional keyword arguments passed to the score model.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Sampled output. Shape <code class="docutils literal notranslate"><span class="pre">(batch_size,</span> <span class="pre">features,</span> <span class="pre">channels)</span></code> if
-<code class="docutils literal notranslate"><span class="pre">return_intermediates</span></code> is False, or
-<code class="docutils literal notranslate"><span class="pre">(n_steps+1,</span> <span class="pre">batch_size,</span> <span class="pre">features,</span> <span class="pre">channels)</span></code> if True.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Array</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler">
 <span class="sig-prename descclassname"><span class="pre">gensbi.diffusion.solver.sm_samplers.</span></span><span class="sig-name descname"><span class="pre">sm_reverse_sde_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sde</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_init</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Euler'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/diffusion/solver/sm_samplers.html#sm_reverse_sde_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler" title="Link to this definition">#</a></dt>
@@ -742,7 +683,6 @@ and <span class="math notranslate nohighlight">\(g\)</span> is the forward diffu
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.solver.sm_samplers.sm_reverse_ode_sampler"><code class="docutils literal notranslate"><span class="pre">sm_reverse_ode_sampler()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diffusion.solver.sm_samplers.sm_reverse_sde_sampler"><code class="docutils literal notranslate"><span class="pre">sm_reverse_sde_sampler()</span></code></a></li>
 </ul>
 </li>

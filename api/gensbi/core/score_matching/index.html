@@ -396,6 +396,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../diffusion/path/sm_path/index.html">gensbi.diffusion.path.sm_path</a></li>
 </ul>
 </details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../diffusion/sm_prior/index.html">gensbi.diffusion.sm_prior</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../diffusion/solver/index.html">gensbi.diffusion.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../diffusion/solver/edm_samplers/index.html">gensbi.diffusion.solver.edm_samplers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../diffusion/solver/edm_solver/index.html">gensbi.diffusion.solver.edm_solver</a></li>
@@ -590,7 +591,7 @@ solvers and support for VP and VE SDE formulations.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;VE&quot;</span></code> — variance-exploding</p></li>
 </ul>
 <p>Sampling can use either the reverse SDE (<code class="docutils literal notranslate"><span class="pre">SMSolver</span></code>, default) or
-the probability flow ODE (<code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>).</p>
+the probability flow ODE (<code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code> via <code class="docutils literal notranslate"><span class="pre">ScoreToDrift</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>sde_type</strong> (<em>str</em><em>, </em><em>optional</em>) – SDE type. One of <code class="docutils literal notranslate"><span class="pre">&quot;VP&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;VE&quot;</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">&quot;VP&quot;</span></code>.</p>
@@ -602,6 +603,54 @@ the probability flow ODE (<code class="docutils literal notranslate"><span class
 <span class="gp">&gt;&gt;&gt; </span><span class="n">loss</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_loss</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </pre></div>
 </div>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.core.score_matching.ScoreMatchingMethod.build_log_prob_fn">
+<span class="sig-name descname"><span class="pre">build_log_prob_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_wrapped</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Dopri5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsteps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exact_divergence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/score_matching.html#ScoreMatchingMethod.build_log_prob_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_log_prob_fn" title="Link to this definition">#</a></dt>
+<dd><p>Build a log-probability closure for the score matching PF-ODE.</p>
+<p>Uses the continuous change-of-variables formula via <code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>
+(which inherits <code class="docutils literal notranslate"><span class="pre">get_log_prob</span></code> from <code class="docutils literal notranslate"><span class="pre">ODESolver</span></code>).  Only works
+with <code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>; passing <code class="docutils literal notranslate"><span class="pre">SMSolver</span></code> will raise an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unlike the default sampling behaviour of <code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod</span></code>,
+which integrates the <em>reverse SDE</em> (via <code class="docutils literal notranslate"><span class="pre">SMSolver</span></code>), log-probability
+evaluation requires the <em>probability flow ODE</em> formulation
+(via <code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>).  Both formulations share the same marginal
+distributions, so a score model trained with the standard SM loss
+is mathematically valid for the PF-ODE.  When no <code class="docutils literal notranslate"><span class="pre">solver</span></code> is
+passed, <code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code> is selected automatically.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_wrapped</strong> – The wrapped score model.</p></li>
+<li><p><strong>path</strong> (<a class="reference internal" href="../../diffusion/path/index.html#gensbi.diffusion.path.SMPath" title="gensbi.diffusion.path.SMPath"><em>SMPath</em></a>) – The score matching path.</p></li>
+<li><p><strong>model_extras</strong> (<em>dict</em>) – Mode-specific extras (<code class="docutils literal notranslate"><span class="pre">cond</span></code>, <code class="docutils literal notranslate"><span class="pre">obs_ids</span></code>, etc.).</p></li>
+<li><p><strong>step_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Step size for fixed-step solvers. Default is 0.01.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em> or </em><em>diffrax solver</em><em>, </em><em>optional</em>) – Integration method. Default is <code class="docutils literal notranslate"><span class="pre">&quot;Dopri5&quot;</span></code>.</p></li>
+<li><p><strong>atol</strong> (<em>float</em><em>, </em><em>optional</em>) – Absolute tolerance for adaptive solvers.</p></li>
+<li><p><strong>rtol</strong> (<em>float</em><em>, </em><em>optional</em>) – Relative tolerance for adaptive solvers.</p></li>
+<li><p><strong>nsteps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of integration steps (used for step_size calculation
+when a fixed-step solver is selected). Default is 1000.</p></li>
+<li><p><strong>solver</strong> (<em>tuple</em><em> of </em><em>(</em><em>type</em><em>, </em><em>dict</em><em>)</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(SolverClass,</span> <span class="pre">kwargs)</span></code>. Must be an ODE-based solver
+(<code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>).</p></li>
+<li><p><strong>exact_divergence</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), compute exact divergence via full
+Jacobian. If <code class="docutils literal notranslate"><span class="pre">False</span></code>, use the Hutchinson estimator (requires
+a PRNG <code class="docutils literal notranslate"><span class="pre">key</span></code> at call time).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>log_prob_fn</strong> – <code class="docutils literal notranslate"><span class="pre">(x_1,</span> <span class="pre">model_extras=None,</span> <span class="pre">*,</span> <span class="pre">key=None)</span> <span class="pre">-&gt;</span> <span class="pre">log_prob</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – If a non-ODE solver (e.g. <code class="docutils literal notranslate"><span class="pre">SMSolver</span></code>) is specified.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.core.score_matching.ScoreMatchingMethod.build_loss">
 <span class="sig-name descname"><span class="pre">build_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/score_matching.html#ScoreMatchingMethod.build_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_loss" title="Link to this definition">#</a></dt>
@@ -642,10 +691,10 @@ for VE) with sensible defaults.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.core.score_matching.ScoreMatchingMethod.build_sampler_fn">
-<span class="sig-name descname"><span class="pre">build_sampler_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_wrapped</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsteps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/score_matching.html#ScoreMatchingMethod.build_sampler_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_sampler_fn" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">build_sampler_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_wrapped</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_extras</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsteps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Euler'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_intermediates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/score_matching.html#ScoreMatchingMethod.build_sampler_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_sampler_fn" title="Link to this definition">#</a></dt>
 <dd><p>Build a sampler closure for score matching.</p>
 <p>Supports <code class="docutils literal notranslate"><span class="pre">SMSolver</span></code> (reverse SDE) and <code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>
-(probability flow ODE).</p>
+(PF-ODE via <code class="docutils literal notranslate"><span class="pre">ScoreToDrift</span></code> + <code class="docutils literal notranslate"><span class="pre">ODESolver</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -653,6 +702,9 @@ for VE) with sensible defaults.</p>
 <li><p><strong>path</strong> (<a class="reference internal" href="../../diffusion/path/index.html#gensbi.diffusion.path.SMPath" title="gensbi.diffusion.path.SMPath"><em>SMPath</em></a>) – The score matching path.</p></li>
 <li><p><strong>model_extras</strong> (<em>dict</em>) – Mode-specific extras (<code class="docutils literal notranslate"><span class="pre">cond</span></code>, <code class="docutils literal notranslate"><span class="pre">obs_ids</span></code>, etc.).</p></li>
 <li><p><strong>nsteps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of integration steps. Default is 1000.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em> or </em><em>diffrax solver</em><em>, </em><em>optional</em>) – Integration method for the PF-ODE solver. Default is
+<code class="docutils literal notranslate"><span class="pre">&quot;Euler&quot;</span></code>. Ignored when using the reverse SDE solver
+(<code class="docutils literal notranslate"><span class="pre">SMSolver</span></code>).</p></li>
 <li><p><strong>return_intermediates</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return intermediate steps. Default is False.</p></li>
 <li><p><strong>solver</strong> (<em>tuple</em><em> of </em><em>(</em><em>type</em><em>, </em><em>dict</em><em>)</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(SolverClass,</span> <span class="pre">kwargs)</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">(SMSolver,</span> <span class="pre">{})</span></code>.</p></li>
 </ul>
@@ -670,8 +722,9 @@ for VE) with sensible defaults.</p>
 <dt class="sig sig-object py" id="gensbi.core.score_matching.ScoreMatchingMethod.build_solver">
 <span class="sig-name descname"><span class="pre">build_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_wrapped</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/score_matching.html#ScoreMatchingMethod.build_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_solver" title="Link to this definition">#</a></dt>
 <dd><p>Instantiate a score matching solver.</p>
-<p>Supports <code class="docutils literal notranslate"><span class="pre">SMSolver</span></code> (reverse SDE) and <code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>
-(probability flow ODE).</p>
+<p>For the reverse SDE (<code class="docutils literal notranslate"><span class="pre">SMSolver</span></code>), instantiates the solver
+directly. For PF-ODE sampling (<code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code>), wraps the score model with
+<code class="docutils literal notranslate"><span class="pre">ScoreToDrift</span></code> first.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -820,6 +873,7 @@ and <code class="docutils literal notranslate"><span class="pre">t</span></code>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.score_matching.ScoreMatchingMethod"><code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_log_prob_fn"><code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod.build_log_prob_fn()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_loss"><code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod.build_loss()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_path"><code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod.build_path()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.core.score_matching.ScoreMatchingMethod.build_sampler_fn"><code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod.build_sampler_fn()</span></code></a></li>

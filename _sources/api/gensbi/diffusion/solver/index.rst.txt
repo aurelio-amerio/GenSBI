@@ -186,48 +186,28 @@ Package Contents
    .. py:attribute:: score_model
 
 
-.. py:class:: SMPFSolver(score_model, path)
+.. py:class:: SMPFSolver(velocity_model)
 
-   Bases: :py:obj:`SMSolver`
+   Bases: :py:obj:`gensbi.flow_matching.solver.ODESolver`
 
 
    
-   Solver for score matching diffusion models using the Probability Flow ODE.
+   Score matching PF-ODE solver (probability flow ODE).
 
-   Instead of the reverse SDE, this solver integrates the deterministic
-   Probability Flow ODE (PF-ODE) from section 4.3 of Song et al., 2021
-   (arXiv:2011.13456). The PF-ODE shares the same marginal distributions
-   as the reverse SDE but is fully deterministic, which often leads to
-   higher sample quality and enables exact log_prob computation.
+   Thin subclass of :class:`ODESolver` used for dispatching in the
+   score matching pipeline.  ``ScoreMatchingMethod.build_solver``
+   detects this type and wraps the score model with
+   :class:`~gensbi.utils.model_wrapping.ScoreToDrift` before
+   constructing the solver.
 
    The PF-ODE is:
 
    .. math::
        dx = \left[ f(x,t) - \frac{1}{2} g(t)^2 s_\theta(x, t) \right] dt
 
-   :param score_model: The score model function.
-   :type score_model: Callable
-   :param path: The SMPath object containing the SDE scheduler.
-   :type path: SMPath
+   All integration logic is inherited from ``ODESolver``.
 
-   .. rubric:: Example
-
-   .. code-block:: python
-
-       from gensbi.diffusion.solver.sm_solver import SMPFSolver
-       from gensbi.diffusion.path.sm_path import SMPath
-       from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler
-       import jax, jax.numpy as jnp
-       sde = VPSmScheduler()
-       path = SMPath(sde)
-       def score_model(obs, t, **kwargs):
-           return jnp.zeros_like(obs)
-       solver = SMPFSolver(score_model, path)
-       key = jax.random.PRNGKey(0)
-       x_init = jax.random.normal(key, (16, 2, 1))
-       samples = solver.sample(key, x_init, nsteps=10)
-       print(samples.shape)
-       # (16, 2, 1)
+   .. seealso:: :py:obj:`gensbi.utils.model_wrapping.ScoreToDrift`, :py:obj:`gensbi.core.score_matching.ScoreMatchingMethod.build_solver`
 
 
 
@@ -245,57 +225,6 @@ Package Contents
 
    ..
        !! processed by numpydoc !!
-
-   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 1000, method = 'Euler', return_intermediates = False, static_model_kwargs = None, solver_params = None, atol = 1e-05, rtol = 1e-05)
-
-      
-      Returns a sampler function for the probability flow ODE (PF-ODE).
-
-      :param condition_mask: Mask for conditioning.
-      :type condition_mask: Optional[Array]
-      :param condition_value: Value for conditioning.
-      :type condition_value: Optional[Array]
-      :param cfg_scale: Classifier-free guidance scale (not implemented).
-      :type cfg_scale: Optional[float]
-      :param nsteps: Number of integration steps.
-      :type nsteps: int
-      :param method: Integration method. One of ``"Euler"``, ``"Heun"``, ``"Dopri5"``.
-                     ``"Dopri5"`` automatically uses adaptive step sizing via
-                     ``PIDController``; the others use fixed step size.
-      :type method: str
-      :param return_intermediates: Whether to return intermediate steps.
-      :type return_intermediates: bool
-      :param static_model_kwargs: Static model arguments baked into the sampler.
-                                  Condition-dependent data should be passed at call time
-                                  via ``model_extras``.
-      :type static_model_kwargs: dict
-      :param solver_params: Additional solver parameters.
-      :type solver_params: Optional[dict]
-      :param atol: Absolute tolerance for adaptive step solvers.
-      :type atol: float
-      :param rtol: Relative tolerance for adaptive step solvers.
-      :type rtol: float
-
-      :returns: ``sample(key, x_init, model_extras=None)`` sampler function.
-      :rtype: Callable
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
 
 .. py:class:: SMSolver(score_model, path)
 

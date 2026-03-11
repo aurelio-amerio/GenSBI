@@ -829,9 +829,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.generative_method</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeMethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_sm_path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMSolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMSolver</span><span class="p">,</span> <span class="n">SMPFSolver</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMLoss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.sm_prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">VPPrior</span><span class="p">,</span> <span class="n">VEPrior</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ODESolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.model_wrapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelWrapper</span><span class="p">,</span> <span class="n">ScoreToDrift</span>
 
 
 <div class="viewcode-block" id="ScoreMatchingMethod">
@@ -845,7 +848,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    - ``&quot;VE&quot;`` — variance-exploding</span>
 
 <span class="sd">    Sampling can use either the reverse SDE (``SMSolver``, default) or</span>
-<span class="sd">    the probability flow ODE (``SMPFSolver``).</span>
+<span class="sd">    the probability flow ODE (``SMPFSolver`` via ``ScoreToDrift``).</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -867,6 +870,14 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">=</span> <span class="n">sde_type</span></div>
 
 
+        <span class="c1"># Prior distribution (matches FM&#39;s StandardNormalPrior pattern)</span>
+        <span class="k">if</span> <span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="n">VPPrior</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># VEPrior requires sigma_max, which depends on the path config.</span>
+            <span class="c1"># Initialized to None; set properly when build_path is called.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="kc">None</span>
+
 <div class="viewcode-block" id="ScoreMatchingMethod.build_path">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.build_path">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
@@ -884,7 +895,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        SMPath</span>
 <span class="sd">            The configured score matching path.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">build_sm_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span></div>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">build_sm_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+        <span class="c1"># Set VE prior now that we know sigma_max</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="n">VEPrior</span><span class="p">(</span><span class="n">sigma_max</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">sigma_max</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">path</span></div>
 
 
 <div class="viewcode-block" id="ScoreMatchingMethod.build_loss">
@@ -952,8 +969,9 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate a score matching solver.</span>
 
-<span class="sd">        Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``</span>
-<span class="sd">        (probability flow ODE).</span>
+<span class="sd">        For the reverse SDE (``SMSolver``), instantiates the solver</span>
+<span class="sd">        directly. For PF-ODE sampling (``SMPFSolver``), wraps the score model with</span>
+<span class="sd">        ``ScoreToDrift`` first.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -972,7 +990,19 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_solver</span><span class="p">()</span>
         <span class="n">solver_cls</span><span class="p">,</span> <span class="n">solver_kwargs</span> <span class="o">=</span> <span class="n">solver</span>
-        <span class="k">return</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">score_model</span><span class="o">=</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span><span class="p">)</span></div>
+
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">solver_cls</span><span class="p">,</span> <span class="n">SMPFSolver</span><span class="p">):</span>
+            <span class="c1"># PF-ODE path: wrap score model as drift model</span>
+            <span class="n">drift_model</span> <span class="o">=</span> <span class="n">ScoreToDrift</span><span class="p">(</span>
+                <span class="n">score_model</span><span class="o">=</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">sde</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span>
+            <span class="p">)</span>
+            <span class="n">wrapper</span> <span class="o">=</span> <span class="n">ModelWrapper</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">drift_model</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">velocity_model</span><span class="o">=</span><span class="n">wrapper</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># SDE path (SMSolver): pass directly</span>
+            <span class="k">return</span> <span class="n">solver_cls</span><span class="p">(</span>
+                <span class="n">score_model</span><span class="o">=</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ScoreMatchingMethod.sample_init">
@@ -1005,6 +1035,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">path</span><span class="p">,</span>
         <span class="n">model_extras</span><span class="p">,</span>
         <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
         <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -1012,7 +1043,7 @@ window.runMermaid = runMermaid;</script>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a sampler closure for score matching.</span>
 
 <span class="sd">        Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``</span>
-<span class="sd">        (probability flow ODE).</span>
+<span class="sd">        (PF-ODE via ``ScoreToDrift`` + ``ODESolver``).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1024,6 +1055,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Mode-specific extras (``cond``, ``obs_ids``, etc.).</span>
 <span class="sd">        nsteps : int, optional</span>
 <span class="sd">            Number of integration steps. Default is 1000.</span>
+<span class="sd">        method : str or diffrax solver, optional</span>
+<span class="sd">            Integration method for the PF-ODE solver. Default is</span>
+<span class="sd">            ``&quot;Euler&quot;``. Ignored when using the reverse SDE solver</span>
+<span class="sd">            (``SMSolver``).</span>
 <span class="sd">        return_intermediates : bool, optional</span>
 <span class="sd">            Whether to return intermediate steps. Default is False.</span>
 <span class="sd">        solver : tuple of (type, dict), optional</span>
@@ -1036,17 +1071,154 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">solver_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_solver</span><span class="p">(</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span>
 
-        <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
-            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
-            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">SMPFSolver</span><span class="p">):</span>
+            <span class="c1"># PF-ODE via SMPFSolver: compute SM-specific time grid and step size</span>
+            <span class="n">sde</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">scheduler</span>
+            <span class="n">T</span> <span class="o">=</span> <span class="n">sde</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-3</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">return</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">return_intermediates</span><span class="p">:</span>
+                <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">nsteps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T</span><span class="p">,</span> <span class="n">eps</span><span class="p">])</span>
+
+            <span class="n">step_size</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">T</span> <span class="o">-</span> <span class="n">eps</span><span class="p">)</span> <span class="o">/</span> <span class="n">nsteps</span>
+
+            <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
+                <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+                <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
+                <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">return</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">SMSolver</span><span class="p">):</span>
+            <span class="c1"># SDE path (SMSolver)</span>
+            <span class="n">sampler_</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span>
+                <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
+                <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">return</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported solver type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sampler_fn</span></div>
+
+
+<div class="viewcode-block" id="ScoreMatchingMethod.build_log_prob_fn">
+<a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.ScoreMatchingMethod.build_log_prob_fn">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_log_prob_fn</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_wrapped</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">,</span>
+        <span class="n">model_extras</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Dopri5&quot;</span><span class="p">,</span>
+        <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
+        <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
+        <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">exact_divergence</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a log-probability closure for the score matching PF-ODE.</span>
+
+<span class="sd">        Uses the continuous change-of-variables formula via ``SMPFSolver``</span>
+<span class="sd">        (which inherits ``get_log_prob`` from ``ODESolver``).  Only works</span>
+<span class="sd">        with ``SMPFSolver``; passing ``SMSolver`` will raise an error.</span>
+
+<span class="sd">        .. note::</span>
+
+<span class="sd">           Unlike the default sampling behaviour of ``ScoreMatchingMethod``,</span>
+<span class="sd">           which integrates the *reverse SDE* (via ``SMSolver``), log-probability</span>
+<span class="sd">           evaluation requires the *probability flow ODE* formulation</span>
+<span class="sd">           (via ``SMPFSolver``).  Both formulations share the same marginal</span>
+<span class="sd">           distributions, so a score model trained with the standard SM loss</span>
+<span class="sd">           is mathematically valid for the PF-ODE.  When no ``solver`` is</span>
+<span class="sd">           passed, ``SMPFSolver`` is selected automatically.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_wrapped</span>
+<span class="sd">            The wrapped score model.</span>
+<span class="sd">        path : SMPath</span>
+<span class="sd">            The score matching path.</span>
+<span class="sd">        model_extras : dict</span>
+<span class="sd">            Mode-specific extras (``cond``, ``obs_ids``, etc.).</span>
+<span class="sd">        step_size : float, optional</span>
+<span class="sd">            Step size for fixed-step solvers. Default is 0.01.</span>
+<span class="sd">        method : str or diffrax solver, optional</span>
+<span class="sd">            Integration method. Default is ``&quot;Dopri5&quot;``.</span>
+<span class="sd">        atol : float, optional</span>
+<span class="sd">            Absolute tolerance for adaptive solvers.</span>
+<span class="sd">        rtol : float, optional</span>
+<span class="sd">            Relative tolerance for adaptive solvers.</span>
+<span class="sd">        nsteps : int, optional</span>
+<span class="sd">            Number of integration steps (used for step_size calculation</span>
+<span class="sd">            when a fixed-step solver is selected). Default is 1000.</span>
+<span class="sd">        solver : tuple of (type, dict), optional</span>
+<span class="sd">            ``(SolverClass, kwargs)``. Must be an ODE-based solver</span>
+<span class="sd">            (``SMPFSolver``).</span>
+<span class="sd">        exact_divergence : bool, optional</span>
+<span class="sd">            If ``True`` (default), compute exact divergence via full</span>
+<span class="sd">            Jacobian. If ``False``, use the Hutchinson estimator (requires</span>
+<span class="sd">            a PRNG ``key`` at call time).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        log_prob_fn : Callable</span>
+<span class="sd">            ``(x_1, model_extras=None, *, key=None) -&gt; log_prob``.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError</span>
+<span class="sd">            If a non-ODE solver (e.g. ``SMSolver``) is specified.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">solver</span> <span class="o">=</span> <span class="p">(</span><span class="n">SMPFSolver</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="n">solver_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_solver</span><span class="p">(</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">SMPFSolver</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Log-probability computation requires SMPFSolver, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># SM time grid: T (noise) → eps (near-data)</span>
+        <span class="n">sde</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">scheduler</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">sde</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-3</span>
+        <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T</span><span class="p">,</span> <span class="n">eps</span><span class="p">])</span>
+
+        <span class="c1"># Step size: positive — ODESolver.get_log_prob already negates it</span>
+        <span class="n">step_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">T</span> <span class="o">-</span> <span class="n">eps</span><span class="p">)</span> <span class="o">/</span> <span class="n">nsteps</span>
+
+        <span class="n">log_p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">log_prob</span>
+
+        <span class="n">log_prob_closure</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_log_prob</span><span class="p">(</span>
+            <span class="n">log_p0</span><span class="o">=</span><span class="n">log_p0</span><span class="p">,</span>
+            <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">atol</span><span class="o">=</span><span class="n">atol</span><span class="p">,</span>
+            <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
+            <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
+            <span class="n">exact_divergence</span><span class="o">=</span><span class="n">exact_divergence</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">log_prob_fn</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">return</span> <span class="n">log_prob_closure</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">log_prob_fn</span></div>
 
 
 <div class="viewcode-block" id="ScoreMatchingMethod.get_extra_training_config">
