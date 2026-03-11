@@ -39,25 +39,19 @@ class ModelWrapper(nnx.Module):
 
     def __call__(self, t: Array, obs: Array, *args, **kwargs) -> Array:
         r"""
-        This method defines how inputs should be passed through the wrapped model.
-        Here, we're assuming that the wrapped model takes both :math:`obs` and :math:`t` as input,
-        along with any additional keyword arguments.
+        Call the wrapped model with ``obs`` and ``t``.
 
-        Optional things to do here:
-            - check that t is in the dimensions that the model is expecting.
-            - add a custom forward pass logic.
-            - call the wrapped model.
-
-        | given obs, t
-        | returns the model output for input obs at time t, with extra information `extra`.
+        Uses keyword arguments when calling the underlying model for
+        safety (avoids positional-argument order bugs).
 
         Parameters
         ----------
-            obs : Array
-                input data to the model (batch_size, ...).
             t : Array
                 time (batch_size).
-            **extras: additional information forwarded to the model, e.g., text condition.
+            obs : Array
+                input data to the model (batch_size, ...).
+            **kwargs: additional information forwarded to the model,
+                e.g., text condition.
 
         Returns
         -------
@@ -65,9 +59,8 @@ class ModelWrapper(nnx.Module):
                 model output.
         """
         obs = _expand_dims(obs)
-        # t = self._expand_time(t)
 
-        return self.model(obs, t, *args, **kwargs)
+        return self.model(obs=obs, t=t, **kwargs)
 
     def get_vector_field(self, **kwargs) -> Callable:
         r"""Compute the vector field of the model, properly squeezed for the ODE term.
@@ -131,6 +124,52 @@ class ModelWrapper(nnx.Module):
                 return divergence_hutchinson(vf, t, x, args, v=v)
 
         return div_
+
+
+
+class ScoreToDrift(nnx.Module):
+    r"""Thin adapter that makes a score model look like a velocity (drift) model.
+
+    When called as ``model(obs, t, **kwargs)``, returns the PF-ODE drift
+    instead of the raw score:
+
+    .. math::
+        u(x, t) = f(x, t) - \tfrac{1}{2}\, g(t)^2\, s_\theta(x, t)
+
+    This allows passing the adapted model to **existing** wrappers
+    (``ModelWrapper``, ``JointWrapper``, ``ConditionalWrapper``, etc.)
+    without needing SM-specific wrapper subclasses.
+
+    Parameters
+    ----------
+    score_model
+        The score model, called as ``score_model(obs, t, **kwargs)``.
+    sde
+        The SDE scheduler (e.g. ``VPSmScheduler`` or ``VESmScheduler``).
+
+    Example
+    -------
+    .. code-block:: python
+
+        drift_model = ScoreToDrift(score_model, sde)
+        wrapper = ModelWrapper(drift_model)    # or JointWrapper(drift_model)
+        solver = ODESolver(velocity_model=wrapper)
+    """
+
+    def __init__(self, score_model, sde) -> None:
+        self.score_model = score_model
+        self.sde = sde
+
+    def __call__(self, obs, t, **kwargs):
+        """Return PF-ODE drift for inputs ``(obs, t)``."""
+        score = self.score_model(obs=obs, t=t, **kwargs)
+
+        # SDE coefficients — broadcast t to match obs shape
+        t_broadcast = jnp.broadcast_to(t, obs.shape)
+        g_sq = self.sde.diffusion(t_broadcast) ** 2
+        forward_drift = self.sde.drift(obs, t_broadcast)
+
+        return forward_drift - 0.5 * g_sq * score
 
 
 # class GuidedModelWrapper(ModelWrapper):
