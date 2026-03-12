@@ -1154,13 +1154,14 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">)</span></div>
 
 
-        <span class="c1"># OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1):</span>
+        <span class="c1"># OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1), currently disabled</span>
         <span class="c1"># upweight parameter (obs) dimensions by d_cond / d_obs to balance</span>
         <span class="c1"># gradient magnitudes when d_cond &gt;&gt; d_obs.</span>
-        <span class="n">loss_weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span><span class="p">)</span>
-        <span class="n">loss_weights</span> <span class="o">=</span> <span class="n">loss_weights</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim_obs</span><span class="p">)]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">dim_cond</span> <span class="o">/</span> <span class="n">dim_obs</span><span class="p">)</span>
-        <span class="c1"># reshape to (1, dim_joint, 1) to broadcast over (batch, dim_joint, ch)</span>
-        <span class="n">loss_weights</span> <span class="o">=</span> <span class="n">loss_weights</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># loss_weights = jnp.ones(dim_obs + dim_cond)</span>
+        <span class="c1"># loss_weights = loss_weights.at[jnp.arange(dim_obs)].set(dim_cond / dim_obs)</span>
+        <span class="c1"># # reshape to (1, dim_joint, 1) to broadcast over (batch, dim_joint, ch)</span>
+        <span class="c1"># loss_weights = loss_weights.reshape(1, -1, 1)</span>
+        <span class="n">loss_weights</span> <span class="o">=</span> <span class="kc">None</span>
 <div class="viewcode-block" id="JointPipeline.loss_obj">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.loss_obj">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">loss_obj</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">loss_weights</span><span class="p">)</span></div>
