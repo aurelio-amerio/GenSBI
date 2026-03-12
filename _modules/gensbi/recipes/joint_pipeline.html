@@ -1153,9 +1153,17 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.path">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">)</span></div>
 
+
+        <span class="c1"># OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1):</span>
+        <span class="c1"># upweight parameter (obs) dimensions by d_cond / d_obs to balance</span>
+        <span class="c1"># gradient magnitudes when d_cond &gt;&gt; d_obs.</span>
+        <span class="n">loss_weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span><span class="p">)</span>
+        <span class="n">loss_weights</span> <span class="o">=</span> <span class="n">loss_weights</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim_obs</span><span class="p">)]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">dim_cond</span> <span class="o">/</span> <span class="n">dim_obs</span><span class="p">)</span>
+        <span class="c1"># reshape to (1, dim_joint, 1) to broadcast over (batch, dim_joint, ch)</span>
+        <span class="n">loss_weights</span> <span class="o">=</span> <span class="n">loss_weights</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 <div class="viewcode-block" id="JointPipeline.loss_obj">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.loss_obj">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loss_obj</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_obj</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">loss_weights</span><span class="p">)</span></div>
 
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_cond</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -1227,7 +1235,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">&quot;condition_mask&quot;</span><span class="p">:</span> <span class="n">condition_mask</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_obj</span><span class="p">(</span>
-                <span class="n">model</span><span class="p">,</span> <span class="n">prepared</span><span class="p">,</span>
+                <span class="n">model</span><span class="p">,</span>
+                <span class="n">prepared</span><span class="p">,</span>
                 <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span>
                 <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1284,14 +1293,19 @@ window.runMermaid = runMermaid;</script>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
 
         <span class="n">sampler_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_sampler_fn</span><span class="p">(</span>
-            <span class="n">model_wrapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">,</span>
+            <span class="n">model_wrapped</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="n">extras</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
             <span class="n">_extras</span> <span class="o">=</span> <span class="n">model_extras</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
             <span class="n">key</span><span class="p">,</span> <span class="n">key_init</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="n">x_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span>
-                <span class="n">key_init</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                <span class="n">key_init</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">_extras</span><span class="p">)</span>
 
@@ -1375,7 +1389,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
 
         <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_log_prob_fn</span><span class="p">(</span>
-            <span class="n">model_wrapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="n">model_wrapped</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="n">extras</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>

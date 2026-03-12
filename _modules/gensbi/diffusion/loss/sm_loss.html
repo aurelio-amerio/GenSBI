@@ -820,6 +820,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Score matching loss with unified interface.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
 
 <div class="viewcode-block" id="SMLoss">
 <a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss">[docs]</a>
@@ -834,9 +836,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ----------</span>
 <span class="sd">    path : SMPath</span>
 <span class="sd">        The score matching path.</span>
+<span class="sd">    weights : Array, optional</span>
+<span class="sd">        Weights for the loss, applied element-wise before reduction.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <div class="viewcode-block" id="SMLoss.path">
 <a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss.path">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
@@ -844,6 +848,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SMLoss.loss_fn">
 <a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss.loss_fn">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">get_loss_fn</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SMLoss.weights">
+<a class="viewcode-back" href="../../../../api/gensbi/diffusion/loss/sm_loss/index.html#gensbi.diffusion.loss.SMLoss.weights">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="SMLoss.__call__">
@@ -875,9 +883,15 @@ window.runMermaid = runMermaid;</script>
         <span class="n">path_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
         <span class="n">loss_batch</span> <span class="o">=</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">get_batch</span><span class="p">()</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">(</span>
             <span class="n">model</span><span class="p">,</span> <span class="n">loss_batch</span><span class="p">,</span>
             <span class="n">condition_mask</span><span class="o">=</span><span class="n">condition_mask</span><span class="p">,</span>
+            <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
             <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">,</span>
         <span class="p">)</span></div>
 </div>

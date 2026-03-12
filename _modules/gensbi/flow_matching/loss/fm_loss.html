@@ -844,7 +844,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        The probability path.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <div class="viewcode-block" id="FMLoss.path">
 <a class="viewcode-back" href="../../../../api/gensbi/flow_matching/loss/fm_loss/index.html#gensbi.flow_matching.loss.fm_loss.FMLoss.path">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span></div>
@@ -852,6 +852,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="FMLoss.reduction">
 <a class="viewcode-back" href="../../../../api/gensbi/flow_matching/loss/fm_loss/index.html#gensbi.flow_matching.loss.fm_loss.FMLoss.reduction">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">reduction</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span></div>
+
+<div class="viewcode-block" id="FMLoss.weights">
+<a class="viewcode-back" href="../../../../api/gensbi/flow_matching/loss/fm_loss/index.html#gensbi.flow_matching.loss.fm_loss.FMLoss.weights">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="FMLoss.__call__">
@@ -867,6 +871,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``(x_0, x_1, t)`` — source noise, target data, and time.</span>
 <span class="sd">        condition_mask : Array, optional</span>
 <span class="sd">            Conditioning mask (for joint models).</span>
+<span class="sd">        weights : Array, optional</span>
+<span class="sd">            Weights for the loss.</span>
 <span class="sd">        model_extras : dict, optional</span>
 <span class="sd">            Additional model keyword arguments.</span>
 
@@ -890,7 +896,12 @@ window.runMermaid = runMermaid;</script>
 
         <span class="n">model_output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">x_t</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">path_sample</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
 
-        <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">model_output</span> <span class="o">-</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">dx_t</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x_1</span><span class="p">)</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">model_output</span> <span class="o">-</span> <span class="n">path_sample</span><span class="o">.</span><span class="n">dx_t</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">condition_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition_mask_broad</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
