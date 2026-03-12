@@ -292,13 +292,14 @@ class JointPipeline(AbstractPipeline):
 
         self.path = method.build_path(self.training_config)
 
-        # OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1):
+        # OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1), currently disabled
         # upweight parameter (obs) dimensions by d_cond / d_obs to balance
         # gradient magnitudes when d_cond >> d_obs.
-        loss_weights = jnp.ones(dim_obs + dim_cond)
-        loss_weights = loss_weights.at[jnp.arange(dim_obs)].set(dim_cond / dim_obs)
-        # reshape to (1, dim_joint, 1) to broadcast over (batch, dim_joint, ch)
-        loss_weights = loss_weights.reshape(1, -1, 1)
+        # loss_weights = jnp.ones(dim_obs + dim_cond)
+        # loss_weights = loss_weights.at[jnp.arange(dim_obs)].set(dim_cond / dim_obs)
+        # # reshape to (1, dim_joint, 1) to broadcast over (batch, dim_joint, ch)
+        # loss_weights = loss_weights.reshape(1, -1, 1)
+        loss_weights = None
         self.loss_obj = method.build_loss(self.path, weights=loss_weights)
 
         if self.dim_cond == 0:
