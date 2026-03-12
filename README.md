@@ -1,4 +1,4 @@
-# GenSBI
+# GenSBI: Generative Models for Simulation-Based Inference in JAX
 
 [![Build](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml/badge.svg)](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml)
 ![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
@@ -133,7 +133,7 @@ If you use this library, please consider citing this work and the original metho
 ```bibtex
 @misc{GenSBI,
   author       = {Amerio, Aurelio},
-  title        = "{GenSBI: Generative models for Simulation-Based Inference}",
+  title        = "{GenSBI: Generative Models for Simulation-Based Inference in JAX}",
   year         = {2026}, 
   publisher    = {GitHub},
   journal      = {GitHub repository},
