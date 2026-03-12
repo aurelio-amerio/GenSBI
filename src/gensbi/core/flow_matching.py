@@ -93,13 +93,15 @@ class FlowMatchingMethod(GenerativeMethod):
         """
         return AffineProbPath(scheduler=CondOTScheduler())
 
-    def build_loss(self, path):
+    def build_loss(self, path, weights=None):
         """Build the continuous flow matching loss.
 
         Parameters
         ----------
         path : AffineProbPath
             The probability path.
+        weights : Array, optional
+            Per-dimension loss weights.
 
         Returns
         -------
@@ -107,7 +109,7 @@ class FlowMatchingMethod(GenerativeMethod):
             A loss callable with uniform interface
             ``(model, batch, condition_mask=None, model_extras=None) -> loss``.
         """
-        return FMLoss(path)
+        return FMLoss(path, weights=weights)
 
     def prepare_batch(self, key, x_1, path):
         """Sample from the prior and time for a flow matching training batch.

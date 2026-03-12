@@ -44,13 +44,16 @@ class GenerativeMethod(ABC):
         ...  # pragma: no cover
 
     @abstractmethod
-    def build_loss(self, path):
+    def build_loss(self, path, weights=None):
         """Create the loss callable for this method.
 
         Parameters
         ----------
         path
             The probability path returned by :meth:`build_path`.
+        weights : Array, optional
+            Per-dimension loss weights (e.g. for rebalancing joint
+            parameter/observation dimensions).
 
         Returns
         -------

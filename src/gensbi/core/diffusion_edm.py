@@ -61,7 +61,7 @@ class DiffusionEDMMethod(GenerativeMethod):
         """
         return build_edm_path(self.sde, config)
 
-    def build_loss(self, path):
+    def build_loss(self, path, weights=None):
         """Build the EDM denoising loss.
 
         Wraps ``path.get_loss_fn()`` into a callable object.
@@ -70,6 +70,8 @@ class DiffusionEDMMethod(GenerativeMethod):
         ----------
         path : EDMPath
             The diffusion path.
+        weights : Array, optional
+            Per-dimension loss weights.
 
         Returns
         -------
@@ -77,7 +79,7 @@ class DiffusionEDMMethod(GenerativeMethod):
             A loss callable with signature
             ``(key, model, batch, condition_mask=None, model_extras=None) -> loss``.
         """
-        return EDMLoss(path)
+        return EDMLoss(path, weights=weights)
 
     def prepare_batch(self, key, x_1, path):
         """Sample noise and sigma for an EDM training batch.

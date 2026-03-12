@@ -24,9 +24,10 @@ class FMLoss:
         The probability path.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, weights=None):
         self.path = path
         self.reduction = jnp.mean
+        self.weights = jnp.asarray(weights) if weights is not None else None
 
     def __call__(self, model, batch, condition_mask=None, model_extras=None):
         """Evaluate the flow matching loss.
@@ -39,6 +40,8 @@ class FMLoss:
             ``(x_0, x_1, t)`` — source noise, target data, and time.
         condition_mask : Array, optional
             Conditioning mask (for joint models).
+        weights : Array, optional
+            Weights for the loss.
         model_extras : dict, optional
             Additional model keyword arguments.
 
@@ -62,7 +65,12 @@ class FMLoss:
 
         model_output = model(obs=x_t, t=path_sample.t, **model_extras)
 
-        loss = jnp.square(model_output - path_sample.dx_t)
+        if self.weights is not None:
+            weights = jnp.broadcast_to(self.weights, x_1.shape)
+        else:
+            weights = jnp.ones_like(x_1)
+
+        loss = weights * jnp.square(model_output - path_sample.dx_t)
 
         if condition_mask is not None:
             loss = jnp.where(condition_mask_broad, 0.0, loss)

@@ -2,6 +2,8 @@
 EDM diffusion loss with unified interface.
 """
 
+import jax.numpy as jnp
+
 
 class EDMLoss:
     """EDM denoising loss with a uniform ``(model, batch, ...)`` interface.
@@ -14,11 +16,14 @@ class EDMLoss:
     ----------
     path : EDMPath
         The diffusion path.
+    weights : Array, optional
+        Weights for the loss, applied element-wise before reduction.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, weights=None):
         self.path = path
         self.loss_fn = path.get_loss_fn()
+        self.weights = jnp.asarray(weights) if weights is not None else None
 
     def __call__(self, model, batch, condition_mask=None, model_extras=None):
         """Evaluate the EDM denoising loss.
@@ -47,8 +52,14 @@ class EDMLoss:
         path_sample = self.path.sample(x_0, x_1, sigma)
         loss_batch = path_sample.get_batch()
 
+        if self.weights is not None:
+            weights = jnp.broadcast_to(self.weights, x_1.shape)
+        else:
+            weights = None
+
         return self.loss_fn(
             model, loss_batch,
             condition_mask=condition_mask,
+            weights=weights,
             model_extras=model_extras,
         )

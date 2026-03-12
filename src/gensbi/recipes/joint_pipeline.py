@@ -291,7 +291,15 @@ class JointPipeline(AbstractPipeline):
         )
 
         self.path = method.build_path(self.training_config)
-        self.loss_obj = method.build_loss(self.path)
+
+        # OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1):
+        # upweight parameter (obs) dimensions by d_cond / d_obs to balance
+        # gradient magnitudes when d_cond >> d_obs.
+        loss_weights = jnp.ones(dim_obs + dim_cond)
+        loss_weights = loss_weights.at[jnp.arange(dim_obs)].set(dim_cond / dim_obs)
+        # reshape to (1, dim_joint, 1) to broadcast over (batch, dim_joint, ch)
+        loss_weights = loss_weights.reshape(1, -1, 1)
+        self.loss_obj = method.build_loss(self.path, weights=loss_weights)
 
         if self.dim_cond == 0:
             raise ValueError(
@@ -348,7 +356,8 @@ class JointPipeline(AbstractPipeline):
                 "condition_mask": condition_mask,
             }
             return self.loss_obj(
-                model, prepared,
+                model,
+                prepared,
                 condition_mask=condition_mask,
                 model_extras=model_extras,
             )
@@ -399,14 +408,19 @@ class JointPipeline(AbstractPipeline):
             extras.update(model_extras)
 
         sampler_fn = self.method.build_sampler_fn(
-            model_wrapped, self.path, extras, **sampler_kwargs,
+            model_wrapped,
+            self.path,
+            extras,
+            **sampler_kwargs,
         )
 
         def sampler(key, nsamples, model_extras=None):
             _extras = model_extras if model_extras is not None else extras
             key, key_init = jax.random.split(key)
             x_init = self.method.sample_init(
-                key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
+                key_init,
+                (nsamples, self.dim_obs, self.ch_obs),
+                self.path,
             )
             return sampler_fn(key, x_init, _extras)
 
@@ -484,7 +498,10 @@ class JointPipeline(AbstractPipeline):
             extras.update(model_extras)
 
         log_prob_fn = self.method.build_log_prob_fn(
-            model_wrapped, self.path, extras, **kwargs,
+            model_wrapped,
+            self.path,
+            extras,
+            **kwargs,
         )
 
         def _log_prob(x_1, model_extras=None, *, key=None):

@@ -78,7 +78,7 @@ class ScoreMatchingMethod(GenerativeMethod):
 
         return path
 
-    def build_loss(self, path):
+    def build_loss(self, path, weights=None):
         """Build the score matching loss.
 
         Wraps ``path.get_loss_fn()`` into a callable object.
@@ -87,6 +87,8 @@ class ScoreMatchingMethod(GenerativeMethod):
         ----------
         path : SMPath
             The score matching path.
+        weights : Array, optional
+            Per-dimension loss weights.
 
         Returns
         -------
@@ -94,7 +96,7 @@ class ScoreMatchingMethod(GenerativeMethod):
             A loss callable with signature
             ``(key, model, batch, condition_mask=None, model_extras=None) -> loss``.
         """
-        return SMLoss(path)
+        return SMLoss(path, weights=weights)
 
     def prepare_batch(self, key, x_1, path):
         """Sample noise and diffusion time for a score matching training batch.

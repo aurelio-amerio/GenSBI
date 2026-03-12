@@ -423,6 +423,7 @@ class BaseSDE(abc.ABC):
             F: Callable,
             batch: tuple,
             condition_mask: Any = None,
+            weights: Any = None,
             model_extras: dict = None,
         ) -> Array:
             if model_extras is None:
@@ -439,8 +440,14 @@ class BaseSDE(abc.ABC):
                 condition_mask = jnp.broadcast_to(condition_mask, x_1.shape)
                 x_t = jnp.where(condition_mask, x_1, x_t)
 
+            if weights is not None:
+                weights = jnp.broadcast_to(weights, x_1.shape)
+            else:
+                weights = jnp.ones_like(x_1)
+
             loss = (
-                lam
+                weights
+                * lam
                 * c_out**2
                 * (
                     F(obs=c_in * (x_t), t=c_noise, **model_extras)
