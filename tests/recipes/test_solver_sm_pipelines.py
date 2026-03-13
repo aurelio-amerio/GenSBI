@@ -1,6 +1,6 @@
 # Tests for ScoreMatching solver variations across all pipeline types.
-# Covers both the default SMSolver (reverse SDE) and the probability-flow
-# SMPFSolver (reverse ODE), plus sample_batched for dynamic extras.
+# Covers both the default NewSMSDESolver (reverse SDE) and the probability-flow
+# NewSMODESolver (reverse ODE), plus sample_batched for dynamic extras.
 
 import os
 
@@ -22,7 +22,7 @@ from gensbi.recipes import (
 )
 
 from gensbi.core import ScoreMatchingMethod
-from gensbi.diffusion.solver import SMSolver, SMPFSolver
+from gensbi.diffusion.solver import NewSMSDESolver, NewSMODESolver
 
 import sys
 from pathlib import Path
@@ -302,7 +302,7 @@ def test_unconditional_sm_pf_sample(sde_type):
             jax.random.PRNGKey(1),
             nsamples=10,
             use_ema=False,
-            solver=(SMPFSolver, {}),
+            solver=(NewSMODESolver, {}),
         )
         assert sample.shape == (10, dim_joint, 2)
 
@@ -339,7 +339,7 @@ def test_conditional_sm_pf_sample(sde_type):
             x_o=x_o,
             nsamples=5,
             use_ema=False,
-            solver=(SMPFSolver, {}),
+            solver=(NewSMODESolver, {}),
         )
         assert sample.shape == (5, dim_obs, 2)
 
@@ -376,7 +376,7 @@ def test_joint_sm_pf_sample(sde_type):
             x_o=x_o,
             nsamples=5,
             use_ema=False,
-            solver=(SMPFSolver, {}),
+            solver=(NewSMODESolver, {}),
         )
         assert sample.shape == (5, dim_obs, 2)
 
@@ -418,7 +418,7 @@ def test_conditional_sm_pf_sample_batched(sde_type):
             x_o=x_o,
             nsamples=5,
             use_ema=False,
-            solver=(SMPFSolver, {}),
+            solver=(NewSMODESolver, {}),
         )
         assert samples.shape == (5, 3, dim_obs, 2)
 
@@ -455,6 +455,6 @@ def test_joint_sm_pf_sample_batched(sde_type):
             x_o=x_o,
             nsamples=5,
             use_ema=False,
-            solver=(SMPFSolver, {}),
+            solver=(NewSMODESolver, {}),
         )
         assert samples.shape == (5, 3, dim_obs, 2)

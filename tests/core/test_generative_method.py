@@ -24,8 +24,9 @@ from gensbi.core import (
     ScoreMatchingMethod,
 )
 from gensbi.flow_matching.path import AffineProbPath
-from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
-from gensbi.diffusion.solver import EDMSolver, SMSolver, SMPFSolver
+from gensbi.flow_matching.solver import NewFMODESolver
+from gensbi.core.sde_solver import NewSDESolver
+from gensbi.diffusion.solver import EDMSolver, NewSMSDESolver, NewSMODESolver
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.utils.model_wrapping import ModelWrapper
@@ -116,7 +117,7 @@ class TestFlowMatchingMethod:
 
     def test_get_default_solver(self, method):
         cls, kwargs = method.get_default_solver()
-        assert cls is ODESolver
+        assert cls is NewFMODESolver
         assert kwargs == {}
 
     def test_sample_init(self, method, key):
@@ -146,7 +147,7 @@ class TestFlowMatchingMethod:
         from unittest.mock import MagicMock
         path = method.build_path({})
 
-        mock_solver = MagicMock(spec=BaseFmSDESolver)
+        mock_solver = MagicMock(spec=NewSDESolver)
         mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
         mock_solver.get_sampler.return_value = mock_sampler
 
@@ -170,7 +171,7 @@ class TestFlowMatchingMethod:
         """build_solver with solver=None falls back to get_default_solver."""
         wrapped = ModelWrapper(dummy_model)
         solver = method.build_solver(wrapped, path=None, solver=None)
-        assert isinstance(solver, ODESolver)
+        assert isinstance(solver, NewFMODESolver)
 
 
 # ---------------------------------------------------------------------------
@@ -271,7 +272,7 @@ class TestScoreMatchingMethod:
 
     def test_get_default_solver(self, method):
         cls, kwargs = method.get_default_solver()
-        assert cls is SMSolver
+        assert cls is NewSMSDESolver
         assert kwargs == {}
 
     def test_sample_init(self, method, key):
@@ -352,7 +353,7 @@ class TestMethodForwarding:
         path = method.build_path({})
         wrapped = ModelWrapper(dummy_model)
 
-        mock_solver = MagicMock(spec=ODESolver)
+        mock_solver = MagicMock(spec=NewFMODESolver)
         mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
         mock_solver.get_sampler.return_value = mock_sampler
 
@@ -382,8 +383,8 @@ class TestMethodForwarding:
         path = method.build_path(config)
         wrapped = ModelWrapper(dummy_model)
 
-        # Mock an SMPFSolver (PF-ODE branch)
-        mock_solver = MagicMock(spec=SMPFSolver)
+        # Mock an SMODESolver (PF-ODE branch)
+        mock_solver = MagicMock(spec=NewSMODESolver)
         mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
         mock_solver.get_sampler.return_value = mock_sampler
 
@@ -394,7 +395,7 @@ class TestMethodForwarding:
             # Default: should forward "Euler"
             method.build_sampler_fn(
                 wrapped, path, model_extras={},
-                solver=(SMPFSolver, {}),
+                solver=(NewSMODESolver, {}),
             )
             call_kwargs = mock_solver.get_sampler.call_args[1]
             assert call_kwargs["method"] == "Euler"
@@ -402,7 +403,7 @@ class TestMethodForwarding:
             # Custom: should forward "Dopri5"
             method.build_sampler_fn(
                 wrapped, path, model_extras={},
-                solver=(SMPFSolver, {}), method="Dopri5",
+                solver=(NewSMODESolver, {}), method="Dopri5",
             )
             call_kwargs = mock_solver.get_sampler.call_args[1]
             assert call_kwargs["method"] == "Dopri5"

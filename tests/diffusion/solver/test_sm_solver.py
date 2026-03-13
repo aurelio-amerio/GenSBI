@@ -8,6 +8,8 @@ import pytest
 from flax import nnx
 
 from gensbi.diffusion.solver.sm_solver import SMSolver, SMPFSolver
+from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
+from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
 from gensbi.utils.model_wrapping import ModelWrapper, ScoreToODEDrift
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler, VESmScheduler
@@ -361,7 +363,7 @@ def test_score_matching_method_smpf_solver(sde_cls):
         path=path,
         model_extras={},
         nsteps=10,
-        solver=(SMPFSolver, {}),
+        solver=(NewSMODESolver, {}),
     )
 
     key = jax.random.PRNGKey(0)
@@ -477,7 +479,7 @@ def test_score_matching_method_build_log_prob_fn(sde_cls):
         model_extras={},
         nsteps=10,
         method="Euler",
-        solver=(SMPFSolver, {}),
+        solver=(NewSMODESolver, {}),
     )
 
     key = jax.random.PRNGKey(0)
@@ -496,12 +498,12 @@ def test_score_matching_method_log_prob_rejects_sde_solver():
     config = method.get_extra_training_config()
     path = method.build_path(config)
 
-    with pytest.raises(NotImplementedError, match="SMPFSolver"):
+    with pytest.raises(NotImplementedError, match="SMODESolver"):
         method.build_log_prob_fn(
             model_wrapped=DummyScoreModel(),
             path=path,
             model_extras={},
-            solver=(SMSolver, {}),
+            solver=(NewSMSDESolver, {}),
         )
 
 

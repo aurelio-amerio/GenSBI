@@ -11,7 +11,8 @@ import jax.numpy as jnp
 
 from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_sm_path
-from gensbi.diffusion.solver import NewSMODESolver, NewSMSDESolver
+from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
+from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
 
 from gensbi.diffusion.loss import SMLoss
 from gensbi.diffusion.sm_prior import VPPrior, VEPrior
@@ -242,8 +243,6 @@ class ScoreMatchingMethod(GenerativeMethod):
         sampler_fn : Callable
             A function ``(key, x_init) -> samples``.
         """
-        solver_instance = self.build_solver(model_wrapped, path, solver=solver)
-
         sde = path.scheduler
         T = sde.T
         eps = 1e-3
@@ -255,8 +254,13 @@ class ScoreMatchingMethod(GenerativeMethod):
 
         step_size = -(T - eps) / nsteps
 
-        if isinstance(solver_instance, NewSMODESolver):
-            # PF-ODE path (deterministic)
+        if solver is None:
+            solver = self.get_default_solver()
+        solver_cls, solver_kwargs = solver
+
+        if issubclass(solver_cls, NewSMODESolver):
+            # PF-ODE path (deterministic) — build solver eagerly
+            solver_instance = self.build_solver(model_wrapped, path, solver=(solver_cls, solver_kwargs))
             sampler_ = solver_instance.get_sampler(
                 step_size=step_size,
                 method=method,
@@ -268,11 +272,25 @@ class ScoreMatchingMethod(GenerativeMethod):
                 if model_extras is None:
                     model_extras = {}
                 return sampler_(x_init, model_extras=model_extras)
-        elif isinstance(solver_instance, NewSMSDESolver):
-            # Reverse SDE path (stochastic)
+        elif issubclass(solver_cls, NewSMSDESolver):
+            # Reverse SDE path (stochastic) — build solver lazily
+            wrapper = ModelWrapper(model=model_wrapped)
+            sde_obj = path.scheduler
+
             def sampler_fn(key, x_init, model_extras=None):
                 if model_extras is None:
                     model_extras = {}
+                # Infer mu0/sigma0 from x_init shape (B, F, C) -> (F, C)
+                sample_shape = x_init.shape[1:]
+                mu0 = jnp.zeros(sample_shape)
+                sigma0 = jnp.ones(sample_shape)
+                solver_instance = solver_cls(
+                    velocity_model=wrapper,
+                    sde=sde_obj,
+                    mu0=mu0,
+                    sigma0=sigma0,
+                    **solver_kwargs,
+                )
                 return solver_instance.sample(
                     x_init=x_init,
                     step_size=step_size,
@@ -283,7 +301,7 @@ class ScoreMatchingMethod(GenerativeMethod):
                     key=key,
                 )
         else:
-            raise ValueError(f"Unsupported solver type: {type(solver_instance)}")
+            raise ValueError(f"Unsupported solver type: {solver_cls}")
 
         return sampler_fn
 

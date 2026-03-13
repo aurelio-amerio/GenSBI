@@ -218,11 +218,19 @@ class NewSDESolver(Solver):
         flat_dim = self.flat_dim
         sample_shape = self.sample_shape
 
+        # Override stored shape if x_init has different shape
+        # (e.g., when mu0 was set as placeholder at build time)
+        _infer_shape = True
+
         @jit
         def sampler(x_init, key, model_extras=None):
             if model_extras is None:
                 model_extras = {}
             nsamples = x_init.shape[0]
+
+            # Infer sample shape from x_init (B, F, C) -> (F, C)
+            _sample_shape = x_init.shape[1:]
+            _flat_dim = math.prod(_sample_shape)
 
             def sample_one(key_i, y0_flat):
                 """Integrate one sample.  State is flat ``(flat_dim,)``."""
@@ -231,18 +239,18 @@ class NewSDESolver(Solver):
                     bt_t0,
                     bt_t1,
                     tol=1e-3,
-                    shape=(flat_dim,),
+                    shape=(_flat_dim,),
                     key=key_i,
                     levy_area=levy_area,
                 )
 
                 # Wrap drift: unflatten → model call → reflatten
                 def drift_flat(t, y_flat, drift_args):
-                    y = y_flat.reshape(sample_shape)
+                    y = y_flat.reshape(_sample_shape)
                     y_batched = y[None, ...]  # (1, features, channels)
                     result = drift(t, y_batched, drift_args)
                     result = jnp.squeeze(result, axis=0)
-                    return result.reshape(flat_dim)
+                    return result.reshape(_flat_dim)
 
                 def diff_flat(t, y_flat, diff_args):
                     return diff(t, y_flat, diff_args)
@@ -271,18 +279,18 @@ class NewSDESolver(Solver):
                 return sol.ys  # (n_saves, flat_dim)
 
             # Flatten x_init: (B, F, C) -> (B, F*C)
-            y0s_flat = x_init.reshape(nsamples, flat_dim)
+            y0s_flat = x_init.reshape(nsamples, _flat_dim)
 
             keys = jax.random.split(key, nsamples)
             results = jax.vmap(sample_one)(keys, y0s_flat)
 
             if return_intermediates:
                 n_times = results.shape[1]
-                results = results.reshape(nsamples, n_times, *sample_shape)
-                perm = (1, 0) + tuple(range(2, 2 + len(sample_shape)))
+                results = results.reshape(nsamples, n_times, *_sample_shape)
+                perm = (1, 0) + tuple(range(2, 2 + len(_sample_shape)))
                 return jnp.transpose(results, perm)
             else:
-                return results.reshape(nsamples, *sample_shape)
+                return results.reshape(nsamples, *_sample_shape)
 
         return sampler
 

@@ -11,8 +11,6 @@ from numpyro import distributions as dist
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import NewFMODESolver
-from gensbi.flow_matching.solver import NewZeroEndsSolver, NewNonSingularSolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
@@ -20,7 +18,7 @@ from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
-from gensbi.diffusion.solver import NewSMSDESolver, NewSMODESolver
+
 
 from gensbi.models import UnconditionalWrapper
 
