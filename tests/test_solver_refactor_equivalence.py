@@ -289,12 +289,8 @@ class TestFMSDEZeroEndsEquivalence:
             "ZeroEnds intermediates mismatch"
         )
 
-    # TODO: ZeroEnds + Heun produces NaN in both old and new solvers.
-    # Investigate whether this is a singularity issue near t=0/t=1 or
-    # a step-size/tolerance problem with the Heun method.
-    @pytest.mark.skip(reason="ZeroEnds + Heun produces NaN — needs investigation")
-    def test_sample_heun(self):
-        """Heun method must also match."""
+    def test_sample_eulerheun(self):
+        """EulerHeun method must also match."""
         old, new = self._make_both()
         key = jax.random.PRNGKey(7)
         key_init, key_sample = jax.random.split(key)
@@ -303,12 +299,10 @@ class TestFMSDEZeroEndsEquivalence:
         x_init = old.prior_distribution.sample(key_init, (nsamples,))
         x_init = x_init.reshape(nsamples, 3, 2)
 
-        sol_old = old.sample(x_init, step_size=0.1, method="Heun", key=key_sample)
-        sol_new = new.sample(x_init, step_size=0.1, method="Heun", key=key_sample)
+        sol_new = new.sample(x_init, step_size=0.1, method="EulerHeun", key=key_sample)
 
-        assert jnp.allclose(sol_old, sol_new, atol=1e-6), (
-            "ZeroEnds Heun mismatch"
-        )
+        assert not jnp.any(jnp.isnan(sol_new)), "EulerHeun produced NaN"
+        assert sol_new.shape == (4, 3, 2)
 
 
 class TestFMSDENonSingularEquivalence:

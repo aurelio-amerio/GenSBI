@@ -146,7 +146,7 @@ class NewSDESolver(Solver):
             Fixed step size.  ``None`` when using ``"ShARK"``
             (adaptive step sizing).
         method : str or AbstractERK
-            ``"Euler"``, ``"Heun"``, ``"SEA"``, ``"ShARK"``, or a
+            ``"Euler"``, ``"EulerHeun"``, ``"SEA"``, ``"ShARK"``, or a
             diffrax solver instance.
         atol, rtol : float
             Tolerances for adaptive solvers.
@@ -165,7 +165,7 @@ class NewSDESolver(Solver):
         """
         solvers = {
             "Euler": diffrax.Euler,
-            "Heun": diffrax.Heun,
+            "EulerHeun": diffrax.EulerHeun,
             "SEA": diffrax.SEA,
             "ShARK": diffrax.ShARK,
         }
