@@ -172,6 +172,12 @@ class ScoreToDrift(nnx.Module):
         return forward_drift - 0.5 * g_sq * score
 
 
+# Canonical name for the PF-ODE drift adapter.
+# In a future refactor (Phase 3), the class itself will be renamed
+# to ``ScoreToODEDrift`` and ``ScoreToDrift`` will become the alias.
+ScoreToODEDrift = ScoreToDrift
+
+
 # class GuidedModelWrapper(ModelWrapper):
 #     """
 #     This class is used to wrap around another model. We define a call method which returns the model output.
