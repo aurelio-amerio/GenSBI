@@ -8,7 +8,7 @@ import pytest
 from flax import nnx
 
 from gensbi.diffusion.solver.sm_solver import SMSolver, SMPFSolver
-from gensbi.utils.model_wrapping import ModelWrapper, ScoreToDrift
+from gensbi.utils.model_wrapping import ModelWrapper, ScoreToODEDrift
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler, VESmScheduler
 
@@ -19,9 +19,9 @@ class DummyScoreModel(nnx.Module):
 
 
 def _build_smpf_solver(score_model, path):
-    """Construct SMPFSolver via ScoreToDrift + ModelWrapper."""
+    """Construct SMPFSolver via ScoreToODEDrift + ModelWrapper."""
     sde = path.scheduler
-    drift_model = ScoreToDrift(score_model=score_model, sde=sde)
+    drift_model = ScoreToODEDrift(score_model=score_model, sde=sde)
     wrapper = ModelWrapper(model=drift_model)
     return SMPFSolver(velocity_model=wrapper)
 
@@ -91,7 +91,7 @@ def test_sm_solver_sample_3d(sde_cls):
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_sm_pf_solver_sample_3d(sde_cls):
-    """Test sampling with 3D input via ScoreToDrift + SMPFSolver."""
+    """Test sampling with 3D input via ScoreToODEDrift + SMPFSolver."""
     score_model = DummyScoreModel()
     sde = sde_cls()
     path = SMPath(sde)
@@ -120,7 +120,7 @@ def test_sm_solver_sample_3d_intermediates(sde_cls):
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_sm_pf_solver_sample_3d_intermediates(sde_cls):
-    """Test sampling with intermediates via ScoreToDrift + SMPFSolver."""
+    """Test sampling with intermediates via ScoreToODEDrift + SMPFSolver."""
     score_model = DummyScoreModel()
     sde = sde_cls()
     path = SMPath(sde)
@@ -151,7 +151,7 @@ def test_sm_solver_sample_channel1(sde_cls):
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_sm_pf_solver_sample_channel1(sde_cls):
-    """Test with channel=1 via ScoreToDrift + SMPFSolver."""
+    """Test with channel=1 via ScoreToODEDrift + SMPFSolver."""
     score_model = DummyScoreModel()
     sde = sde_cls()
     path = SMPath(sde)

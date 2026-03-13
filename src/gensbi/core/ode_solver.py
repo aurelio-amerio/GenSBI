@@ -3,7 +3,7 @@ Core ODE solver.
 
 Provides :class:`NewODESolver`, an abstract base solver for ordinary
 differential equations using diffrax.  Subclasses only need to implement
-:meth:`get_drift` to define the vector field (often called f̃ in the SDE
+:meth:`get_drift` to define the vector field (often called :math:`\tilde{f}` in the SDE
 literature).
 """
 
@@ -50,7 +50,7 @@ class NewODESolver(Solver):
     def get_drift(self, **kwargs) -> Callable:
         r"""Return the drift function for the ODE.
 
-        Also known as f̃ in the SDE/ODE literature.
+        Also known as :math:`\tilde{f}` in the SDE/ODE literature.
 
         Returns
         -------

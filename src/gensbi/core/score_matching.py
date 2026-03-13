@@ -16,7 +16,7 @@ from gensbi.diffusion.solver import SMSolver, SMPFSolver
 from gensbi.diffusion.loss import SMLoss
 from gensbi.diffusion.sm_prior import VPPrior, VEPrior
 from gensbi.flow_matching.solver import ODESolver
-from gensbi.utils.model_wrapping import ModelWrapper, ScoreToDrift
+from gensbi.utils.model_wrapping import ModelWrapper, ScoreToODEDrift
 
 
 class ScoreMatchingMethod(GenerativeMethod):
@@ -28,7 +28,7 @@ class ScoreMatchingMethod(GenerativeMethod):
     - ``"VE"`` — variance-exploding
 
     Sampling can use either the reverse SDE (``SMSolver``, default) or
-    the probability flow ODE (``SMPFSolver`` via ``ScoreToDrift``).
+    the probability flow ODE (``SMPFSolver`` via ``ScoreToODEDrift``).
 
     Parameters
     ----------
@@ -136,7 +136,7 @@ class ScoreMatchingMethod(GenerativeMethod):
 
         For the reverse SDE (``SMSolver``), instantiates the solver
         directly. For PF-ODE sampling (``SMPFSolver``), wraps the score model with
-        ``ScoreToDrift`` first.
+        ``ScoreToODEDrift`` first.
 
         Parameters
         ----------
@@ -158,7 +158,7 @@ class ScoreMatchingMethod(GenerativeMethod):
 
         if issubclass(solver_cls, SMPFSolver):
             # PF-ODE path: wrap score model as drift model
-            drift_model = ScoreToDrift(
+            drift_model = ScoreToODEDrift(
                 score_model=model_wrapped, sde=path.scheduler
             )
             wrapper = ModelWrapper(model=drift_model)
@@ -202,7 +202,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         """Build a sampler closure for score matching.
 
         Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``
-        (PF-ODE via ``ScoreToDrift`` + ``ODESolver``).
+        (PF-ODE via ``ScoreToODEDrift`` + ``ODESolver``).
 
         Parameters
         ----------

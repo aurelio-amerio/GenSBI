@@ -16,7 +16,7 @@ import pytest
 from flax import nnx
 from numpyro import distributions as dist
 
-from gensbi.utils.model_wrapping import ModelWrapper, ScoreToDrift
+from gensbi.utils.model_wrapping import ModelWrapper, ScoreToODEDrift
 from gensbi.utils.math import _expand_dims, _expand_time
 
 # ------------------------------------------------------------------
@@ -373,14 +373,14 @@ class TestFMSDENonSingularEquivalence:
 
 
 class TestSMODEEquivalence:
-    """NewSMODESolver ≡ SMPFSolver (both use ScoreToDrift + ODESolver)."""
+    """NewSMODESolver ≡ SMPFSolver (both use ScoreToODEDrift + ODESolver)."""
 
     def _make_both(self):
         score_model = DummyScoreModel()
         sde = VPSmScheduler()
         path = SMPath(sde)
 
-        drift_model = ScoreToDrift(score_model=score_model, sde=sde)
+        drift_model = ScoreToODEDrift(score_model=score_model, sde=sde)
         wrapper = ModelWrapper(model=drift_model)
 
         old = SMPFSolver(velocity_model=wrapper)

@@ -4,7 +4,7 @@ Core SDE solver.
 Provides :class:`NewSDESolver`, an abstract base solver for stochastic
 differential equations using diffrax.  Subclasses implement
 :meth:`get_drift` and :meth:`get_diffusion` to define the SDE coefficients
-(often called f̃ and g̃ in the literature, see arXiv:2410.02217).
+(often called :math:`\tilde{f}` and :math:`\tilde{g}` in the literature, see arXiv:2410.02217).
 """
 
 from abc import abstractmethod
@@ -34,8 +34,8 @@ from gensbi.utils.model_wrapping import ModelWrapper
 class NewSDESolver(Solver):
     r"""Abstract SDE solver built on diffrax.
 
-    Subclass and implement :meth:`get_drift` (f̃) and :meth:`get_diffusion`
-    (g̃) to provide the SDE coefficients:
+    Subclass and implement :meth:`get_drift` (:math:`\tilde{f}`) and :meth:`get_diffusion`
+    (:math:`\tilde{g}`) to provide the SDE coefficients:
 
     .. math::
         dx = \tilde{f}(t, x)\, dt + \tilde{g}(t)\, dW
@@ -61,6 +61,12 @@ class NewSDESolver(Solver):
     **Input shape convention:** all inputs must have shape
     ``(batch, features, channels)``.  If your data is 2-D
     ``(batch, features)``, add a trailing dimension: ``x = x[..., None]``.
+
+    **Itô vs Stratonovich:** Since the diffusion coefficient
+    :math:`\tilde{g}(t)` depends only on time (additive noise), the Itô
+    and Stratonovich interpretations coincide.  Both Itô solvers
+    (e.g. ``Euler``) and Stratonovich solvers (e.g. ``EulerHeun``) can be
+    used interchangeably.
     """
 
     def __init__(
@@ -98,9 +104,9 @@ class NewSDESolver(Solver):
     # ------------------------------------------------------------------
     @abstractmethod
     def get_drift(self, **kwargs) -> Callable:
-        r"""Return the drift function f̃(t, x, args) for the SDE.
+        r"""Return the drift function :math:`\tilde{f}(t, x, \text{args})` for the SDE.
 
-        Also known as f̃ (f-tilde) in the SDE literature.
+        Also known as :math:`\tilde{f}` (f-tilde) in the SDE literature.
 
         Returns
         -------
@@ -111,9 +117,9 @@ class NewSDESolver(Solver):
 
     @abstractmethod
     def get_diffusion(self) -> Callable:
-        r"""Return the diffusion function g̃(t, y_flat, args) for the SDE.
+        r"""Return the diffusion function :math:`\tilde{g}(t, y, \text{args})` for the SDE.
 
-        Also known as g̃ (g-tilde) in the SDE literature.
+        Also known as :math:`\tilde{g}` (g-tilde) in the SDE literature.
         Must return a ``(flat_dim, flat_dim)`` matrix for
         ``diffrax.ControlTerm``.
 

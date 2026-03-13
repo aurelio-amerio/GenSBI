@@ -13,7 +13,7 @@ The reverse SDE is:
 where :math:`s_\\theta` is the learned score, :math:`f` is the forward
 SDE drift, and :math:`g` is the forward diffusion coefficient.
 
-The drift (f̃) and diffusion (g̃) are defined directly inside the solver
+The drift (:math:`\tilde{f}`) and diffusion (:math:`\tilde{g}`) are defined directly inside the solver
 class (same pattern as ``ZeroEndsSolver``), using the raw score model
 accessed via ``velocity_model.get_vector_field()`` and the SDE scheduler
 for the forward process coefficients.

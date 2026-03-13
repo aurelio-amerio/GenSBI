@@ -195,7 +195,7 @@ class SMPFSolver(ODESolver):
     Thin subclass of :class:`ODESolver` used for dispatching in the
     score matching pipeline.  ``ScoreMatchingMethod.build_solver``
     detects this type and wraps the score model with
-    :class:`~gensbi.utils.model_wrapping.ScoreToDrift` before
+    :class:`~gensbi.utils.model_wrapping.ScoreToODEDrift` before
     constructing the solver.
 
     The PF-ODE is:
@@ -207,7 +207,7 @@ class SMPFSolver(ODESolver):
 
     See Also
     --------
-    gensbi.utils.model_wrapping.ScoreToDrift
+    gensbi.utils.model_wrapping.ScoreToODEDrift
     gensbi.core.score_matching.ScoreMatchingMethod.build_solver
     """
 

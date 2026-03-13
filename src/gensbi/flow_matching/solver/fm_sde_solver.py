@@ -27,7 +27,7 @@ class NewFMSDESolver(NewSDESolver):
 
     Provides :meth:`get_score` which derives the score from the velocity
     field (see arXiv:2410.02217).  Subclasses implement :meth:`get_drift`
-    (f̃) and :meth:`get_diffusion` (g̃) using the score and velocity field.
+    (:math:`\tilde{f}`) and :meth:`get_diffusion` (:math:`\tilde{g}`) using the score and velocity field.
 
     Parameters
     ----------
@@ -77,7 +77,7 @@ class NewZeroEndsSolver(NewFMSDESolver):
     with change of variable for time: t → 1−t to match flow matching
     time notation.
 
-    The drift (f̃) and diffusion (g̃) are:
+    The drift (:math:`\tilde{f}`) and diffusion (:math:`\tilde{g}`) are:
 
     .. math::
         \tilde{f}(t, x) = u_t(x) + \tfrac{1}{2}\alpha^2 t(1-t)\, s(t, x)
@@ -110,7 +110,7 @@ class NewZeroEndsSolver(NewFMSDESolver):
         self.alpha = alpha
 
     def get_drift(self, **kwargs) -> Callable:
-        r"""Return drift f̃(t, x, args) for ZeroEnds SDE."""
+        r"""Return drift :math:`\tilde{f}(t, x, \text{args})` for ZeroEnds SDE."""
         score = self.get_score(**kwargs)
         vf = self.velocity_model.get_vector_field(**kwargs)
 
@@ -124,7 +124,7 @@ class NewZeroEndsSolver(NewFMSDESolver):
         return drift
 
     def get_diffusion(self) -> Callable:
-        r"""Return diffusion g̃(t) for ZeroEnds SDE."""
+        r"""Return diffusion :math:`\tilde{g}(t)` for ZeroEnds SDE."""
         flat_dim = self.flat_dim
 
         def g_tilde(t, y_flat, args):
@@ -142,7 +142,7 @@ class NewNonSingularSolver(NewFMSDESolver):
     with change of variable for time: t → 1−t to match flow matching
     time notation.
 
-    The drift (f̃) and diffusion (g̃) are:
+    The drift (:math:`\tilde{f}`) and diffusion (:math:`\tilde{g}`) are:
 
     .. math::
         \tilde{f}(t, x) = u_t(x) + \tfrac{1}{2}\alpha^2 (1-t)\, s(t, x)
@@ -172,7 +172,7 @@ class NewNonSingularSolver(NewFMSDESolver):
         self.alpha = alpha
 
     def get_drift(self, **kwargs) -> Callable:
-        r"""Return drift f̃(t, x, args) for NonSingular SDE."""
+        r"""Return drift :math:`\tilde{f}(t, x, \text{args})` for NonSingular SDE."""
         score = self.get_score(**kwargs)
         vf = self.velocity_model.get_vector_field(**kwargs)
 
@@ -185,7 +185,7 @@ class NewNonSingularSolver(NewFMSDESolver):
         return drift
 
     def get_diffusion(self) -> Callable:
-        r"""Return diffusion g̃(t) for NonSingular SDE."""
+        r"""Return diffusion :math:`\tilde{g}(t)` for NonSingular SDE."""
         flat_dim = self.flat_dim
 
         def g_tilde(t, y_flat, args):
