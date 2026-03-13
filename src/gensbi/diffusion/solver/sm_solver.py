@@ -51,6 +51,12 @@ class SMSolver(Solver):
     """
 
     def __init__(self, score_model: Callable, path: SMPath) -> None:
+        import warnings
+        warnings.warn(
+            "SMSolver is deprecated, use SMSDESolver (from gensbi.diffusion.solver) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.score_model = score_model
         self.path = path
         assert self.path.name in [
@@ -211,4 +217,11 @@ class SMPFSolver(ODESolver):
     gensbi.core.score_matching.ScoreMatchingMethod.build_solver
     """
 
-    pass
+    def __init__(self, velocity_model):
+        import warnings
+        warnings.warn(
+            "SMPFSolver is deprecated, use SMODESolver (from gensbi.diffusion.solver) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(velocity_model=velocity_model)

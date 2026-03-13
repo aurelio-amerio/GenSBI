@@ -71,6 +71,13 @@ class BaseFmSDESolver(Solver):
         sigma0: Array,
         eps0: float = 1e-5,
     ):
+        import warnings
+        warnings.warn(
+            f"{type(self).__name__} (BaseFmSDESolver) is deprecated, "
+            "use the new solver classes from gensbi.flow_matching.solver instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__()
         self.velocity_model = velocity_model
         self.mu0 = mu0

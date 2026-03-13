@@ -44,6 +44,12 @@ class ODESolver(Solver):
     """
 
     def __init__(self, velocity_model: ModelWrapper):
+        import warnings
+        warnings.warn(
+            "ODESolver is deprecated, use FMODESolver (from gensbi.flow_matching.solver) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__()
         self.velocity_model = velocity_model
 

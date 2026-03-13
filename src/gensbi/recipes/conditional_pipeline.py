@@ -18,10 +18,9 @@ from typing import Union, Tuple
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver import (
-    ODESolver,
-    BaseFmSDESolver,
-    ZeroEndsSolver,
-    NonSingularSolver,
+    NewFMODESolver,
+    NewZeroEndsSolver,
+    NewNonSingularSolver,
 )
 
 from gensbi.diffusion.path import EDMPath
@@ -30,7 +29,7 @@ from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
-from gensbi.diffusion.solver import SMSolver, SMPFSolver
+from gensbi.diffusion.solver import NewSMSDESolver, NewSMODESolver
 
 from gensbi.models import ConditionalWrapper
 

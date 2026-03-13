@@ -13,7 +13,8 @@ import numpyro.distributions as dist
 from gensbi.core.generative_method import GenerativeMethod
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
+from gensbi.flow_matching.solver import NewFMODESolver
+from gensbi.core.sde_solver import NewSDESolver
 
 from gensbi.flow_matching.loss import FMLoss  
 
@@ -140,9 +141,9 @@ class FlowMatchingMethod(GenerativeMethod):
         Returns
         -------
         tuple
-            ``(ODESolver, {})``
+            ``(NewFMODESolver, {})``
         """
-        return (ODESolver, {})
+        return (NewFMODESolver, {})
 
     def build_solver(self, model_wrapped, path, solver=None):
         """Instantiate a flow matching solver.
@@ -223,7 +224,7 @@ class FlowMatchingMethod(GenerativeMethod):
             A function ``(key, x_init) -> samples``.
         """
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
-        pass_key = isinstance(solver_instance, BaseFmSDESolver)
+        pass_key = isinstance(solver_instance, NewSDESolver)
 
         if time_grid is None:
             time_grid = jnp.array([0.0, 1.0])
@@ -294,9 +295,9 @@ class FlowMatchingMethod(GenerativeMethod):
         """
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
 
-        if not isinstance(solver_instance, ODESolver):
+        if not isinstance(solver_instance, NewFMODESolver):
             raise NotImplementedError(
-                f"Log-probability computation requires ODESolver, "
+                f"Log-probability computation requires FMODESolver, "
                 f"got {type(solver_instance).__name__}."
             )
 
