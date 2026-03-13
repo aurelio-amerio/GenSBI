@@ -164,25 +164,12 @@ class ScoreMatchingMethod(GenerativeMethod):
             wrapper = ModelWrapper(model=drift_model)
             return solver_cls(velocity_model=wrapper, **solver_kwargs)
         else:
-            # SDE path (NewSMSDESolver): wrap model, extract prior params
+            # SDE path (NewSMSDESolver): wrap model, pass SDE scheduler
             wrapper = ModelWrapper(model=model_wrapped)
             sde = path.scheduler
-            # Extract mu0/sigma0 from the prior
-            prior = self.prior
-            dim = solver_kwargs.pop("dim", None)
-            channels = solver_kwargs.pop("channels", None)
-            if dim is not None and channels is not None:
-                mu0 = jnp.zeros((dim, channels))
-                sigma0 = jnp.ones((dim, channels))
-            else:
-                # Default: will be set at sample time from x_init shape
-                mu0 = jnp.zeros((1, 1))
-                sigma0 = jnp.ones((1, 1))
             return solver_cls(
                 velocity_model=wrapper,
                 sde=sde,
-                mu0=mu0,
-                sigma0=sigma0,
                 **solver_kwargs,
             )
 
@@ -273,33 +260,19 @@ class ScoreMatchingMethod(GenerativeMethod):
                     model_extras = {}
                 return sampler_(x_init, model_extras=model_extras)
         elif issubclass(solver_cls, NewSMSDESolver):
-            # Reverse SDE path (stochastic) — build solver lazily
-            wrapper = ModelWrapper(model=model_wrapped)
-            sde_obj = path.scheduler
+            # Reverse SDE path (stochastic) — build solver eagerly
+            solver_instance = self.build_solver(model_wrapped, path, solver=(solver_cls, solver_kwargs))
+            sampler_ = solver_instance.get_sampler(
+                step_size=step_size,
+                method=method,
+                time_grid=time_grid,
+                return_intermediates=return_intermediates,
+            )
 
             def sampler_fn(key, x_init, model_extras=None):
                 if model_extras is None:
                     model_extras = {}
-                # Infer mu0/sigma0 from x_init shape (B, F, C) -> (F, C)
-                sample_shape = x_init.shape[1:]
-                mu0 = jnp.zeros(sample_shape)
-                sigma0 = jnp.ones(sample_shape)
-                solver_instance = solver_cls(
-                    velocity_model=wrapper,
-                    sde=sde_obj,
-                    mu0=mu0,
-                    sigma0=sigma0,
-                    **solver_kwargs,
-                )
-                return solver_instance.sample(
-                    x_init=x_init,
-                    step_size=step_size,
-                    method=method,
-                    time_grid=time_grid,
-                    return_intermediates=return_intermediates,
-                    model_extras=model_extras,
-                    key=key,
-                )
+                return sampler_(x_init, key=key, model_extras=model_extras)
         else:
             raise ValueError(f"Unsupported solver type: {solver_cls}")
 

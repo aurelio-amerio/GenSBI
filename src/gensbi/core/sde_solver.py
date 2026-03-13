@@ -25,7 +25,6 @@ from diffrax import (
     VirtualBrownianTree,
 )
 
-from numpyro.distributions import Independent, Normal
 
 from gensbi.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
@@ -49,10 +48,6 @@ class NewSDESolver(Solver):
     ----------
     velocity_model : ModelWrapper
         A properly wrapped model.
-    mu0 : Array
-        Mean of the prior Gaussian, shape ``(features, channels)``.
-    sigma0 : Array
-        Std of the prior Gaussian, shape ``(features, channels)``.
     eps0 : float
         Minimum time value (to avoid singularities near t=0).
 
@@ -72,31 +67,10 @@ class NewSDESolver(Solver):
     def __init__(
         self,
         velocity_model: ModelWrapper,
-        mu0: Array,
-        sigma0: Array,
         eps0: float = 1e-5,
     ):
         super().__init__()
         self.velocity_model = velocity_model
-        self.mu0 = mu0
-        self.sigma0 = sigma0
-
-        assert mu0.ndim == 2, (
-            f"mu0 must have shape (features, channels), got shape {mu0.shape}. "
-            "If your data is 1D, use mu0[:, None]."
-        )
-        assert (
-            sigma0.shape == mu0.shape
-        ), f"sigma0 shape {sigma0.shape} must match mu0 shape {mu0.shape}"
-
-        self.sample_shape = mu0.shape  # (features, channels)
-        self.flat_dim = math.prod(mu0.shape)
-
-        self.prior_distribution = Independent(
-            Normal(mu0.reshape(-1), sigma0.reshape(-1)),
-            reinterpreted_batch_ndims=1,
-        )
-
         self.eps0 = eps0
 
     # ------------------------------------------------------------------
@@ -215,12 +189,7 @@ class NewSDESolver(Solver):
         else:
             stepsize_controller = diffrax.ConstantStepSize()
 
-        flat_dim = self.flat_dim
-        sample_shape = self.sample_shape
 
-        # Override stored shape if x_init has different shape
-        # (e.g., when mu0 was set as placeholder at build time)
-        _infer_shape = True
 
         @jit
         def sampler(x_init, key, model_extras=None):

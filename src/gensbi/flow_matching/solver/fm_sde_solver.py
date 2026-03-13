@@ -41,6 +41,17 @@ class NewFMSDESolver(NewSDESolver):
         Minimum time value.
     """
 
+    def __init__(
+        self,
+        velocity_model: ModelWrapper,
+        mu0: Array,
+        sigma0: Array,
+        eps0: float = 1e-5,
+    ):
+        super().__init__(velocity_model, eps0=eps0)
+        self.mu0 = mu0
+        self.sigma0 = sigma0
+
     def get_score(self, **kwargs) -> Callable:
         r"""Obtain the score function from the velocity model.
 
@@ -125,10 +136,10 @@ class NewZeroEndsSolver(NewFMSDESolver):
 
     def get_diffusion(self) -> Callable:
         r"""Return diffusion :math:`\tilde{g}(t)` for ZeroEnds SDE."""
-        flat_dim = self.flat_dim
 
         def g_tilde(t, y_flat, args):
             """Returns (flat_dim, flat_dim) diagonal diffusion matrix."""
+            flat_dim = y_flat.shape[0]
             g = self.alpha * jnp.sqrt(t * (1 - t))
             return g * jnp.eye(flat_dim)
 
@@ -186,10 +197,10 @@ class NewNonSingularSolver(NewFMSDESolver):
 
     def get_diffusion(self) -> Callable:
         r"""Return diffusion :math:`\tilde{g}(t)` for NonSingular SDE."""
-        flat_dim = self.flat_dim
 
         def g_tilde(t, y_flat, args):
             """Returns (flat_dim, flat_dim) diagonal diffusion matrix."""
+            flat_dim = y_flat.shape[0]
             g = self.alpha * jnp.sqrt(1 - t)
             return g * jnp.eye(flat_dim)
 

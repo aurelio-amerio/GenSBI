@@ -515,13 +515,9 @@ class TestSMSDEEquivalence:
 
         # New SMSDESolver — takes wrapped score model
         wrapper = ModelWrapper(model=score_model)
-        mu0 = jnp.zeros((features, channels))
-        sigma0 = jnp.ones((features, channels))
         new = NewSMSDESolver(
             velocity_model=wrapper,
             sde=sde,
-            mu0=mu0,
-            sigma0=sigma0,
             eps0=1e-3,
         )
         return old, new, path

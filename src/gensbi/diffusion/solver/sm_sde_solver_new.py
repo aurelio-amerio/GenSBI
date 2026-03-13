@@ -50,10 +50,6 @@ class NewSMSDESolver(NewSDESolver):
     sde
         Forward SDE scheduler (``VPSmScheduler``, ``VESmScheduler``, etc.)
         providing ``drift(x, t)`` and ``diffusion(t)``.
-    mu0 : Array
-        Prior mean, shape ``(features, channels)``.
-    sigma0 : Array
-        Prior std, shape ``(features, channels)``.
     eps0 : float
         Minimum time value.
     """
@@ -62,11 +58,9 @@ class NewSMSDESolver(NewSDESolver):
         self,
         velocity_model: ModelWrapper,
         sde,
-        mu0: Array,
-        sigma0: Array,
         eps0: float = 1e-3,
     ):
-        super().__init__(velocity_model, mu0, sigma0, eps0=eps0)
+        super().__init__(velocity_model, eps0=eps0)
         self.sde = sde
 
     def get_drift(self, **kwargs) -> Callable:
@@ -98,10 +92,10 @@ class NewSMSDESolver(NewSDESolver):
 
         Returns a ``(flat_dim, flat_dim)`` diagonal matrix.
         """
-        flat_dim = self.flat_dim
         sde = self.sde
 
         def g_tilde(t, y_flat, args):
+            flat_dim = y_flat.shape[0]
             t_bc = jnp.broadcast_to(t, (flat_dim,))
             g = sde.diffusion(t_bc)
             return jnp.diag(g)
