@@ -1,8 +1,8 @@
 # GenSBI Solver Refactoring — Status
 
-## Current Status: ✅ 594/594 tests pass (Steps 3a–3b complete, Prior refactoring complete)
+## Current Status: ✅ 522/522 tests pass (Steps 3a–3c complete, Prior refactoring complete)
 
-All pipeline dispatch uses the new solver classes. The old classes still exist with deprecation warnings and are tested by the equivalence tests. No test failures.
+All pipeline dispatch uses the new solver classes. The old classes and their tests have been deleted. No test failures. All new solver files have 100% coverage from pipeline tests.
 
 ---
 
@@ -63,6 +63,32 @@ Replaced all custom prior classes with standard numpyro distributions. The prior
 - Removed lazy import in `joint_pipeline.py` (`make_gaussian_prior`).
 - All imports are now top-level.
 
+### Step 3c: Delete Old Classes ✅
+
+Deleted all deprecated old solver classes and their tests.
+
+#### Source files deleted:
+| File | Contents |
+|------|----------|
+| `flow_matching/solver/ode_solver.py` | Old `ODESolver` (365 lines) |
+| `flow_matching/solver/sde_solver_fm.py` | Old `BaseFmSDESolver`, `ZeroEndsSolver`, `NonSingularSolver` (464 lines) |
+| `diffusion/solver/sm_solver.py` | Old `SMSolver`, `SMPFSolver` (228 lines) |
+| `diffusion/solver/sm_samplers.py` | Old `sm_reverse_sde_sampler` (245 lines) |
+
+#### Test files deleted:
+| File | Contents |
+|------|----------|
+| `test_solver_refactor_equivalence.py` | Old↔new equivalence tests (616 lines) |
+| `test_ode_solver_flow_matching.py` | Old `ODESolver` tests (151 lines) |
+| `test_sde_solver_flow_matching.py` | Old FM SDE solver tests (236 lines) |
+
+#### Files modified:
+| File | Change |
+|------|--------|
+| `flow_matching/solver/__init__.py` | Removed `ODESolver`, `BaseFmSDESolver`, `ZeroEndsSolver`, `NonSingularSolver` exports |
+| `diffusion/solver/__init__.py` | Removed `SMSolver`, `SMPFSolver` exports |
+| `test_sm_solver.py` | Removed old-class unit tests, kept prior tests and pipeline-level tests using new solvers |
+
 ---
 
 ## Key Design Decisions
@@ -92,15 +118,18 @@ All `get_diffusion()` closures compute `flat_dim = y_flat.shape[0]` inside the c
 
 ## What Remains
 
-### Step 3c: Delete Old Classes
-- [ ] Delete `ODESolver` from `ode_solver.py`
-- [ ] Delete `BaseFmSDESolver`, `ZeroEndsSolver`, `NonSingularSolver` from `sde_solver_fm.py`
-- [ ] Delete `SMSolver`, `SMPFSolver` from `sm_solver.py`
-- [ ] Delete `sm_samplers.py`
-- [ ] Delete `test_solver_refactor_equivalence.py` (equivalence tests become obsolete)
-- [ ] Delete old ODE solver tests: `test_ode_solver_flow_matching.py` (tests old `ODESolver`)
-- [ ] Update all `__init__.py` exports to remove old class names
-- [ ] Run full test suite
+### Step 3c: Delete Old Classes ✅
+- [x] Delete `ODESolver` from `ode_solver.py`
+- [x] Delete `BaseFmSDESolver`, `ZeroEndsSolver`, `NonSingularSolver` from `sde_solver_fm.py`
+- [x] Delete `SMSolver`, `SMPFSolver` from `sm_solver.py`
+- [x] Delete `sm_samplers.py`
+- [x] Delete `test_solver_refactor_equivalence.py` (equivalence tests become obsolete)
+- [x] Delete old ODE solver tests: `test_ode_solver_flow_matching.py` (tests old `ODESolver`)
+- [x] Delete old FM SDE solver tests: `test_sde_solver_flow_matching.py`
+- [x] Update all `__init__.py` exports to remove old class names
+- [x] Rewrite `test_sm_solver.py` (remove old-class tests, keep pipeline tests)
+- [x] Run full test suite — 522 passed, 95% coverage
+- [x] Verify new solver coverage — all 4 new solver files at 100%
 
 ### Step 3d: Remove "New" Prefix
 - [ ] Rename `NewFMODESolver` → `FMODESolver`
