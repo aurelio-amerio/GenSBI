@@ -43,48 +43,6 @@ from gensbi.recipes.utils import _resolve_embedding_ids, build_edm_path, build_s
 
 import warnings
 
-# ---------------------------------------------------------------------------
-# Deprecated pipeline classes (replaced by ConditionalPipeline)
-# ---------------------------------------------------------------------------
-
-
-class _DeprecatedConditionalPipeline:
-    """Base for deprecated conditional pipeline stubs."""
-
-    _message = ""
-
-    def __init__(self, *args, **kwargs):
-        raise RuntimeError(self._message)
-
-    @classmethod
-    def get_default_training_config(cls, **kwargs):
-        raise RuntimeError(cls._message)
-
-
-class ConditionalFlowPipeline(_DeprecatedConditionalPipeline):
-    _message = (
-        "ConditionalFlowPipeline has been removed. "
-        "Use ConditionalPipeline(method=FlowMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. Flux1FlowPipeline)."
-    )
-
-
-class ConditionalDiffusionPipeline(_DeprecatedConditionalPipeline):
-    _message = (
-        "ConditionalDiffusionPipeline has been removed. "
-        "Use ConditionalPipeline(method=DiffusionEDMMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. Flux1DiffusionPipeline)."
-    )
-
-
-class ConditionalSMPipeline(_DeprecatedConditionalPipeline):
-    _message = (
-        "ConditionalSMPipeline has been removed. "
-        "Use ConditionalPipeline(method=ScoreMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. Flux1SMPipeline)."
-    )
-
-
 
 # ---------------------------------------------------------------------------
 # Unified ConditionalPipeline (Phase 2)
@@ -96,8 +54,7 @@ from gensbi.core.generative_method import GenerativeMethod
 class ConditionalPipeline(AbstractPipeline):
     """Model-agnostic conditional pipeline parameterized by a ``GenerativeMethod``.
 
-    Unlike the method-specific classes above (``ConditionalFlowPipeline``,
-    ``ConditionalDiffusionPipeline``, ``ConditionalSMPipeline``), this class
+    Unlike the old method-specific pipeline classes, this class
     works with **any** generative method and **any** user-provided model that
     conforms to the ``ConditionalWrapper`` interface.
 

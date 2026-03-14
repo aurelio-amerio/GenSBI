@@ -159,49 +159,7 @@ def sample_condition_mask(
     return condition_mask
 
 
-# ---------------------------------------------------------------------------
-# Deprecated pipeline classes (replaced by JointPipeline)
-# ---------------------------------------------------------------------------
 
-
-class _DeprecatedJointPipeline:
-    """Base for deprecated joint pipeline stubs."""
-
-    _message = ""
-
-    def __init__(self, *args, **kwargs):
-        raise RuntimeError(self._message)
-
-    @classmethod
-    def get_default_training_config(cls, **kwargs):
-        raise RuntimeError(cls._message)
-
-
-class JointFlowPipeline(_DeprecatedJointPipeline):
-    _message = (
-        "JointFlowPipeline has been removed. "
-        "Use JointPipeline(method=FlowMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. SimformerFlowPipeline)."
-    )
-
-
-class JointDiffusionPipeline(_DeprecatedJointPipeline):
-    _message = (
-        "JointDiffusionPipeline has been removed. "
-        "Use JointPipeline(method=DiffusionEDMMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. SimformerDiffusionPipeline)."
-    )
-
-
-class JointSMPipeline(_DeprecatedJointPipeline):
-    _message = (
-        "JointSMPipeline has been removed. "
-        "Use JointPipeline(method=ScoreMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. SimformerSMPipeline)."
-    )
-
-
-# Unified JointPipeline (Phase 2)
 # ---------------------------------------------------------------------------
 
 from gensbi.core.generative_method import GenerativeMethod
@@ -210,8 +168,7 @@ from gensbi.core.generative_method import GenerativeMethod
 class JointPipeline(AbstractPipeline):
     """Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.
 
-    Unlike the method-specific classes above (``JointFlowPipeline``,
-    ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with
+    Unlike the old method-specific pipeline classes, this class works with
     **any** generative method and **any** user-provided model that conforms
     to the ``JointWrapper`` interface.
 

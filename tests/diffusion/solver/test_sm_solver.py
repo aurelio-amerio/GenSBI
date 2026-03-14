@@ -301,7 +301,7 @@ def test_sm_sde_solver_key_none_error(sde_cls):
 # =========================================================
 
 
-def _build_ode_log_prob(score_model, path, nsteps=100, exact_divergence=True):
+def _build_ode_log_prob(score_model, path, nsteps=100, exact_divergence=True, dim=3, ch=1):
     """Build a log_prob callable via SMODESolver, matching SM time conventions."""
     solver = _build_ode_solver(score_model, path)
     sde = path.scheduler
@@ -310,12 +310,12 @@ def _build_ode_log_prob(score_model, path, nsteps=100, exact_divergence=True):
     time_grid = jnp.array([T, eps])
     step_size = (T - eps) / nsteps
 
-    from gensbi.diffusion.sm_prior import VPPrior, VEPrior
+    from gensbi.core.prior import make_gaussian_prior
 
     if path.name == "SM-VP":
-        prior = VPPrior()
+        prior = make_gaussian_prior(dim, ch)
     else:
-        prior = VEPrior(sigma_max=sde.sigma_max)
+        prior = make_gaussian_prior(dim, ch, sigma=sde.sigma_max)
 
     return solver.get_log_prob(
         log_p0=prior.log_prob,
@@ -355,14 +355,14 @@ def test_sm_ode_log_prob_exact_vs_hutchinson(sde_cls):
 
     # Exact divergence
     logp_exact_fn = _build_ode_log_prob(
-        score_model, path, nsteps=10, exact_divergence=True
+        score_model, path, nsteps=10, exact_divergence=True, dim=2,
     )
     logp_exact = logp_exact_fn(x_1)
 
     # Hutchinson divergence
     hutch_key = jax.random.PRNGKey(42)
     logp_hutch_fn = _build_ode_log_prob(
-        score_model, path, nsteps=10, exact_divergence=False
+        score_model, path, nsteps=10, exact_divergence=False, dim=2,
     )
     logp_hutch = logp_hutch_fn(x_1, key=hutch_key)
 
@@ -372,42 +372,6 @@ def test_sm_ode_log_prob_exact_vs_hutchinson(sde_cls):
     )
 
 
-# =========================================================
-# Prior distribution tests
-# =========================================================
-
-
-def test_vp_prior_log_prob():
-    """VP prior log_prob should match standard normal."""
-    from gensbi.diffusion.sm_prior import VPPrior
-
-    prior = VPPrior()
-    key = jax.random.PRNGKey(0)
-    x = prior.sample(key, (8, 3, 1))
-    lp = prior.log_prob(x)
-    assert lp.shape == (8,)
-    assert jnp.all(jnp.isfinite(lp))
-
-
-def test_ve_prior_log_prob():
-    """VE prior log_prob should match N(0, sigma_max^2 I)."""
-    from gensbi.diffusion.sm_prior import VEPrior
-
-    sigma_max = 15.0
-    prior = VEPrior(sigma_max=sigma_max)
-    key = jax.random.PRNGKey(0)
-    x = prior.sample(key, (8, 3, 1))
-    lp = prior.log_prob(x)
-    assert lp.shape == (8,)
-    assert jnp.all(jnp.isfinite(lp))
-
-    # VP has higher density at zero (narrower distribution)
-    from gensbi.diffusion.sm_prior import VPPrior
-
-    x_zero = jnp.zeros((1, 3, 1))
-    vp_lp = VPPrior().log_prob(x_zero)
-    ve_lp = prior.log_prob(x_zero)
-    assert vp_lp > ve_lp
 
 
 # =========================================================

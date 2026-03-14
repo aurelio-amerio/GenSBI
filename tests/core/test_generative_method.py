@@ -440,3 +440,199 @@ class TestMethodForwarding:
         finally:
             method.build_solver = original
 
+
+# ---------------------------------------------------------------------------
+# Coverage-targeted branch tests
+# ---------------------------------------------------------------------------
+
+
+class TestFlowMatchingMethodBranches:
+    """Tests for uncovered branches in FlowMatchingMethod."""
+
+    def test_prior_shape_mismatch_raises(self):
+        """build_path with mismatched user prior raises ValueError (L81-86)."""
+        import numpyro.distributions as dist
+        wrong_prior = dist.Independent(
+            dist.Normal(jnp.zeros((3, 1)), jnp.ones((3, 1))), 2
+        )
+        method = FlowMatchingMethod(prior=wrong_prior)
+        with pytest.raises(ValueError, match="does not match expected"):
+            method.build_path({}, event_shape=(DIM, CH))
+
+    def test_build_solver_sde_non_gaussian_prior_raises(self, dummy_model):
+        """SDE solver + non-Gaussian prior raises ValueError (L168)."""
+        from gensbi.flow_matching.solver.fm_sde_solver import ZeroEndsSolver
+        import numpyro.distributions as dist
+
+        method = FlowMatchingMethod()
+        path = method.build_path({}, event_shape=(DIM, CH))
+        # Override prior with a non-Gaussian one
+        method.prior = dist.Uniform(jnp.zeros((DIM, CH)), jnp.ones((DIM, CH)))
+        wrapped = ModelWrapper(dummy_model)
+
+        with pytest.raises(ValueError, match="Gaussian prior"):
+            method.build_solver(
+                wrapped, path, solver=(ZeroEndsSolver, {"alpha": 1.0})
+            )
+
+    def test_log_prob_with_non_ode_solver_raises(self, dummy_model):
+        """build_log_prob_fn with non-ODE solver raises NotImplementedError (L306-310)."""
+        from gensbi.flow_matching.solver.fm_sde_solver import ZeroEndsSolver
+
+        method = FlowMatchingMethod()
+        path = method.build_path({}, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+
+        with pytest.raises(NotImplementedError, match="FMODESolver"):
+            method.build_log_prob_fn(
+                wrapped, path, model_extras={},
+                solver=(ZeroEndsSolver, {"alpha": 1.0}),
+            )
+
+    def test_build_sampler_fn_inner_none_extras(self, dummy_model):
+        """Exercise sampler_fn inner closure with model_extras=None (L330)."""
+        method = FlowMatchingMethod()
+        path = method.build_path({}, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+        sampler_fn = method.build_sampler_fn(wrapped, path, model_extras={})
+        key = jax.random.PRNGKey(99)
+        x_init = jax.random.normal(key, SHAPE)
+        # Call with model_extras=None to hit the default branch
+        result = sampler_fn(key, x_init, model_extras=None)
+        assert result is not None
+
+    def test_build_log_prob_fn_inner_none_extras(self, dummy_model):
+        """Exercise log_prob_fn inner closure with model_extras=None (L330)."""
+        method = FlowMatchingMethod()
+        path = method.build_path({}, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+        log_prob_fn = method.build_log_prob_fn(wrapped, path, model_extras={})
+        x_1 = jax.random.normal(jax.random.PRNGKey(1), SHAPE)
+        result = log_prob_fn(x_1, model_extras=None)
+        assert result.shape == (BATCH_SIZE,)
+
+
+class TestDiffusionEDMMethodBranches:
+    """Tests for uncovered branches in DiffusionEDMMethod."""
+
+    def test_build_sampler_fn_end_to_end(self, dummy_model):
+        """Full build_sampler_fn with real solver (covers inner model_extras=None, L221)."""
+        method = DiffusionEDMMethod(sde="EDM")
+        config = method.get_extra_training_config()
+        path = method.build_path(config, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+
+        sampler_fn = method.build_sampler_fn(
+            wrapped, path, model_extras={}, nsteps=2, method="Euler",
+        )
+        key = jax.random.PRNGKey(99)
+        x_init = jax.random.normal(key, SHAPE)
+        result = sampler_fn(key, x_init, model_extras=None)
+        assert result.shape == SHAPE
+
+    def test_build_solver_default_fallback(self, dummy_model):
+        """build_solver with solver=None falls back to get_default_solver (L144-146)."""
+        method = DiffusionEDMMethod(sde="EDM")
+        config = method.get_extra_training_config()
+        path = method.build_path(config, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+        solver = method.build_solver(wrapped, path, solver=None)
+        assert isinstance(solver, EDMSolver)
+
+
+class TestScoreMatchingMethodBranches:
+    """Tests for uncovered branches in ScoreMatchingMethod."""
+
+    def test_build_solver_default_fallback(self, dummy_model):
+        """build_solver with solver=None uses default (L153-154)."""
+        method = ScoreMatchingMethod(sde_type="VP")
+        config = method.get_extra_training_config()
+        path = method.build_path(config, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+        solver = method.build_solver(wrapped, path, solver=None)
+        assert isinstance(solver, SMSDESolver)
+
+    def test_build_sampler_fn_unsupported_solver_raises(self, dummy_model):
+        """build_sampler_fn with non-SM solver type raises ValueError (L273)."""
+        from gensbi.flow_matching.solver.fm_ode_solver import FMODESolver as BadSolver
+
+        method = ScoreMatchingMethod(sde_type="VP")
+        config = method.get_extra_training_config()
+        path = method.build_path(config, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+
+        with pytest.raises(ValueError, match="Unsupported solver type"):
+            method.build_sampler_fn(
+                wrapped, path, model_extras={},
+                solver=(BadSolver, {}),
+            )
+
+    def test_build_sampler_fn_sde_model_extras_none(self, dummy_model):
+        """Exercise SDE sampler_fn inner closure with model_extras=None (L234/L269)."""
+        from unittest.mock import MagicMock
+
+        method = ScoreMatchingMethod(sde_type="VP")
+        config = method.get_extra_training_config()
+        path = method.build_path(config, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+
+        mock_solver = MagicMock(spec=SMSDESolver)
+        mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
+        mock_solver.get_sampler.return_value = mock_sampler
+
+        original = method.build_solver
+        method.build_solver = lambda *a, **kw: mock_solver
+
+        try:
+            sampler_fn = method.build_sampler_fn(
+                wrapped, path, model_extras={},
+            )
+            key = jax.random.PRNGKey(99)
+            x_init = jax.random.normal(key, SHAPE)
+            sampler_fn(key, x_init, model_extras=None)
+            # model_extras={} should be passed (the default)
+            assert "model_extras" in mock_sampler.call_args[1]
+        finally:
+            method.build_solver = original
+
+    def test_log_prob_with_sde_solver_raises(self, dummy_model):
+        """build_log_prob_fn with SMSDESolver raises NotImplementedError (L354-358)."""
+        method = ScoreMatchingMethod(sde_type="VP")
+        config = method.get_extra_training_config()
+        path = method.build_path(config, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+
+        with pytest.raises(NotImplementedError, match="SMODESolver"):
+            method.build_log_prob_fn(
+                wrapped, path, model_extras={},
+                solver=(SMSDESolver, {}),
+            )
+
+    def test_build_sampler_fn_ode_model_extras_none(self, dummy_model):
+        """Exercise PF-ODE sampler_fn inner closure with model_extras=None (L255-256)."""
+        from unittest.mock import MagicMock
+
+        method = ScoreMatchingMethod(sde_type="VP")
+        config = method.get_extra_training_config()
+        path = method.build_path(config, event_shape=(DIM, CH))
+        wrapped = ModelWrapper(dummy_model)
+
+        mock_solver = MagicMock(spec=SMODESolver)
+        mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
+        mock_solver.get_sampler.return_value = mock_sampler
+
+        original = method.build_solver
+        method.build_solver = lambda *a, **kw: mock_solver
+
+        try:
+            sampler_fn = method.build_sampler_fn(
+                wrapped, path, model_extras={},
+                solver=(SMODESolver, {}),
+            )
+            key = jax.random.PRNGKey(99)
+            x_init = jax.random.normal(key, SHAPE)
+            sampler_fn(key, x_init, model_extras=None)
+            assert "model_extras" in mock_sampler.call_args[1]
+        finally:
+            method.build_solver = original
+
