@@ -11,8 +11,6 @@ import jax.numpy as jnp
 
 from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_sm_path
-from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
-from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
 
 from gensbi.diffusion.loss import SMLoss
 from gensbi.core.prior import make_gaussian_prior
@@ -127,6 +125,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         tuple
             ``(NewSMSDESolver, {})``
         """
+        from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
         return (NewSMSDESolver, {})
 
     def build_solver(self, model_wrapped, path, solver=None):
@@ -154,6 +153,7 @@ class ScoreMatchingMethod(GenerativeMethod):
             solver = self.get_default_solver()
         solver_cls, solver_kwargs = solver
 
+        from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
         if issubclass(solver_cls, NewSMODESolver):
             # PF-ODE path: wrap score model as drift model
             drift_model = ScoreToODEDrift(
@@ -241,6 +241,8 @@ class ScoreMatchingMethod(GenerativeMethod):
             solver = self.get_default_solver()
         solver_cls, solver_kwargs = solver
 
+        from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
+        from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
         if issubclass(solver_cls, NewSMODESolver):
             # PF-ODE path (deterministic) — build solver eagerly
             solver_instance = self.build_solver(model_wrapped, path, solver=(solver_cls, solver_kwargs))
@@ -347,10 +349,12 @@ class ScoreMatchingMethod(GenerativeMethod):
             If a non-ODE solver (e.g. ``SMSDESolver``) is specified.
         """
         if solver is None:
+            from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
             solver = (NewSMODESolver, {})
 
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
 
+        from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
         if not isinstance(solver_instance, NewSMODESolver):
             raise NotImplementedError(
                 f"Log-probability computation requires SMODESolver, "
