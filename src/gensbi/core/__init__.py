@@ -7,23 +7,36 @@ implementations for flow matching, EDM diffusion, and score matching.
 These strategy objects encapsulate the generative framework (path, loss,
 solver, batch preparation) and are composed into mode-specific pipelines
 (Conditional, Joint, Unconditional) in the ``recipes`` module.
+
+Public API (all lazy-loaded to avoid circular imports with solver
+subclasses that inherit from core base classes)::
+
+    from gensbi.core import FlowMatchingMethod
+    from gensbi.core import DiffusionEDMMethod
+    from gensbi.core import ScoreMatchingMethod
+    from gensbi.core import GenerativeMethod
 """
 
 from gensbi.core.generative_method import GenerativeMethod
-from gensbi.core.flow_matching import FlowMatchingMethod
-from gensbi.core.diffusion_edm import DiffusionEDMMethod
-from gensbi.core.score_matching import ScoreMatchingMethod
-from gensbi.core.ode_solver import NewODESolver
-from gensbi.core.sde_solver import NewSDESolver
-from gensbi.core.prior import make_gaussian_prior, is_gaussian_prior
+
+_LAZY_IMPORTS = {
+    "FlowMatchingMethod": "gensbi.core.flow_matching",
+    "DiffusionEDMMethod": "gensbi.core.diffusion_edm",
+    "ScoreMatchingMethod": "gensbi.core.score_matching",
+}
+
+
+def __getattr__(name):
+    if name in _LAZY_IMPORTS:
+        import importlib
+        module = importlib.import_module(_LAZY_IMPORTS[name])
+        return getattr(module, name)
+    raise AttributeError(f"module 'gensbi.core' has no attribute {name!r}")
+
 
 __all__ = [
     "GenerativeMethod",
     "FlowMatchingMethod",
     "DiffusionEDMMethod",
     "ScoreMatchingMethod",
-    "NewODESolver",
-    "NewSDESolver",
-    "make_gaussian_prior",
-    "is_gaussian_prior",
 ]
