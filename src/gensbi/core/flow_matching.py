@@ -12,10 +12,10 @@ import numpyro.distributions as dist
 
 from gensbi.core.generative_method import GenerativeMethod
 from gensbi.core.prior import make_gaussian_prior, is_gaussian_prior
-from gensbi.core.sde_solver import NewSDESolver
+from gensbi.core.sde_solver import SDESolver
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver.fm_ode_solver import NewFMODESolver
+from gensbi.flow_matching.solver.fm_ode_solver import FMODESolver
 
 from gensbi.flow_matching.loss import FMLoss
 
@@ -135,9 +135,9 @@ class FlowMatchingMethod(GenerativeMethod):
         Returns
         -------
         tuple
-            ``(NewFMODESolver, {})``
+            ``(FMODESolver, {})``
         """
-        return (NewFMODESolver, {})
+        return (FMODESolver, {})
 
     def build_solver(self, model_wrapped, path, solver=None):
         """Instantiate a flow matching solver.
@@ -163,7 +163,7 @@ class FlowMatchingMethod(GenerativeMethod):
             solver = self.get_default_solver()
         solver_cls, solver_kwargs = solver
 
-        if issubclass(solver_cls, NewSDESolver):
+        if issubclass(solver_cls, SDESolver):
             if not is_gaussian_prior(self.prior):
                 raise ValueError("FM SDE solvers require a Gaussian prior.")
             # Prior provides default mu0/sigma0; user kwargs override
@@ -228,7 +228,7 @@ class FlowMatchingMethod(GenerativeMethod):
             A function ``(key, x_init) -> samples``.
         """
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
-        pass_key = isinstance(solver_instance, NewSDESolver)
+        pass_key = isinstance(solver_instance, SDESolver)
 
         if time_grid is None:
             time_grid = jnp.array([0.0, 1.0])
@@ -303,7 +303,7 @@ class FlowMatchingMethod(GenerativeMethod):
         """
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
 
-        if not isinstance(solver_instance, NewFMODESolver):
+        if not isinstance(solver_instance, FMODESolver):
             raise NotImplementedError(
                 f"Log-probability computation requires FMODESolver, "
                 f"got {type(solver_instance).__name__}."

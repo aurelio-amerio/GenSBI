@@ -1,8 +1,8 @@
 """
 Flow matching SDE solvers.
 
-Provides :class:`NewFMSDESolver` (abstract base with score derivation),
-:class:`NewZeroEndsSolver`, and :class:`NewNonSingularSolver`.
+Provides :class:`FMSDESolver` (abstract base with score derivation),
+:class:`ZeroEndsSolver`, and :class:`NonSingularSolver`.
 
 Based on: "Improving Flow Matching by Stochastic Sampling"
 (arXiv:2410.02217)
@@ -18,11 +18,11 @@ from typing import Callable
 import jax.numpy as jnp
 from jax import Array
 
-from gensbi.core.sde_solver import NewSDESolver
+from gensbi.core.sde_solver import SDESolver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
-class NewFMSDESolver(NewSDESolver):
+class FMSDESolver(SDESolver):
     r"""Base flow matching SDE solver.
 
     Provides :meth:`get_score` which derives the score from the velocity
@@ -81,7 +81,7 @@ class NewFMSDESolver(NewSDESolver):
         ...  # pragma: no cover
 
 
-class NewZeroEndsSolver(NewFMSDESolver):
+class ZeroEndsSolver(FMSDESolver):
     r"""ZeroEnds SDE solver for flow matching.
 
     From Tab. 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_,
@@ -146,7 +146,7 @@ class NewZeroEndsSolver(NewFMSDESolver):
         return g_tilde
 
 
-class NewNonSingularSolver(NewFMSDESolver):
+class NonSingularSolver(FMSDESolver):
     r"""NonSingular SDE solver for flow matching.
 
     From Tab. 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_,

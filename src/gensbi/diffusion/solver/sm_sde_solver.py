@@ -1,7 +1,7 @@
 """
 Score matching reverse SDE solver.
 
-Provides :class:`NewSMSDESolver`, an SDE solver for score matching
+Provides :class:`SMSDESolver`, an SDE solver for score matching
 diffusion models.
 
 The reverse SDE is:
@@ -28,11 +28,11 @@ from typing import Callable
 import jax.numpy as jnp
 from jax import Array
 
-from gensbi.core.sde_solver import NewSDESolver
+from gensbi.core.sde_solver import SDESolver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
-class NewSMSDESolver(NewSDESolver):
+class SMSDESolver(SDESolver):
     r"""Score matching reverse SDE solver.
 
     The drift and diffusion are computed inline from the raw score model

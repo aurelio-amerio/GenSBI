@@ -1,17 +1,17 @@
 """
 Flow matching ODE solver.
 
-Provides :class:`NewFMODESolver`, where the drift is simply the
+Provides :class:`FMODESolver`, where the drift is simply the
 velocity field from the wrapped model.
 """
 
 from typing import Callable
 
-from gensbi.core.ode_solver import NewODESolver
+from gensbi.core.ode_solver import ODESolver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
-class NewFMODESolver(NewODESolver):
+class FMODESolver(ODESolver):
     """Flow matching ODE solver.
 
     The drift for the ODE is the velocity field itself:
@@ -28,12 +28,12 @@ class NewFMODESolver(NewODESolver):
     -------
     .. code-block:: python
 
-        from gensbi.flow_matching.solver.fm_ode_solver import NewFMODESolver
+        from gensbi.flow_matching.solver.fm_ode_solver import FMODESolver
         from gensbi.utils.model_wrapping import ModelWrapper
         import jax.numpy as jnp
 
         model_wrapped = ModelWrapper(my_velocity_model)
-        solver = NewFMODESolver(velocity_model=model_wrapped)
+        solver = FMODESolver(velocity_model=model_wrapped)
         sol = solver.sample(x_init, step_size=0.01, time_grid=jnp.array([0.0, 1.0]))
     """
 

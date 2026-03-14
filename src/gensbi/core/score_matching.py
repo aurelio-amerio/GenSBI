@@ -11,8 +11,8 @@ import jax.numpy as jnp
 
 from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_sm_path
-from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
-from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
+from gensbi.diffusion.solver.sm_ode_solver import SMODESolver
+from gensbi.diffusion.solver.sm_sde_solver import SMSDESolver
 
 from gensbi.diffusion.loss import SMLoss
 from gensbi.core.prior import make_gaussian_prior
@@ -125,9 +125,9 @@ class ScoreMatchingMethod(GenerativeMethod):
         Returns
         -------
         tuple
-            ``(NewSMSDESolver, {})``
+            ``(SMSDESolver, {})``
         """
-        return (NewSMSDESolver, {})
+        return (SMSDESolver, {})
 
     def build_solver(self, model_wrapped, path, solver=None):
         """Instantiate a score matching solver.
@@ -143,7 +143,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         path : SMPath
             The score matching path.
         solver : tuple of (type, dict), optional
-            ``(SolverClass, kwargs)``. Defaults to ``(NewSMSDESolver, {})``.
+            ``(SolverClass, kwargs)``. Defaults to ``(SMSDESolver, {})``.
 
         Returns
         -------
@@ -154,7 +154,7 @@ class ScoreMatchingMethod(GenerativeMethod):
             solver = self.get_default_solver()
         solver_cls, solver_kwargs = solver
 
-        if issubclass(solver_cls, NewSMODESolver):
+        if issubclass(solver_cls, SMODESolver):
             # PF-ODE path: wrap score model as drift model
             drift_model = ScoreToODEDrift(
                 score_model=model_wrapped, sde=path.scheduler
@@ -162,7 +162,7 @@ class ScoreMatchingMethod(GenerativeMethod):
             wrapper = ModelWrapper(model=drift_model)
             return solver_cls(velocity_model=wrapper, **solver_kwargs)
         else:
-            # SDE path (NewSMSDESolver): wrap model, pass SDE scheduler
+            # SDE path (SMSDESolver): wrap model, pass SDE scheduler
             wrapper = ModelWrapper(model=model_wrapped)
             sde = path.scheduler
             return solver_cls(
@@ -219,7 +219,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         return_intermediates : bool, optional
             Whether to return intermediate steps. Default is False.
         solver : tuple of (type, dict), optional
-            ``(SolverClass, kwargs)``. Defaults to ``(NewSMSDESolver, {})``.
+            ``(SolverClass, kwargs)``. Defaults to ``(SMSDESolver, {})``.
 
         Returns
         -------
@@ -241,7 +241,7 @@ class ScoreMatchingMethod(GenerativeMethod):
             solver = self.get_default_solver()
         solver_cls, solver_kwargs = solver
 
-        if issubclass(solver_cls, NewSMODESolver):
+        if issubclass(solver_cls, SMODESolver):
             # PF-ODE path (deterministic) — build solver eagerly
             solver_instance = self.build_solver(model_wrapped, path, solver=(solver_cls, solver_kwargs))
             sampler_ = solver_instance.get_sampler(
@@ -255,7 +255,7 @@ class ScoreMatchingMethod(GenerativeMethod):
                 if model_extras is None:
                     model_extras = {}
                 return sampler_(x_init, model_extras=model_extras)
-        elif issubclass(solver_cls, NewSMSDESolver):
+        elif issubclass(solver_cls, SMSDESolver):
             # Reverse SDE path (stochastic) — build solver eagerly
             solver_instance = self.build_solver(model_wrapped, path, solver=(solver_cls, solver_kwargs))
             sampler_ = solver_instance.get_sampler(
@@ -347,11 +347,11 @@ class ScoreMatchingMethod(GenerativeMethod):
             If a non-ODE solver (e.g. ``SMSDESolver``) is specified.
         """
         if solver is None:
-            solver = (NewSMODESolver, {})
+            solver = (SMODESolver, {})
 
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
 
-        if not isinstance(solver_instance, NewSMODESolver):
+        if not isinstance(solver_instance, SMODESolver):
             raise NotImplementedError(
                 f"Log-probability computation requires SMODESolver, "
                 f"got {type(solver_instance).__name__}."

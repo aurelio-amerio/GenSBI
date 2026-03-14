@@ -1,8 +1,8 @@
 """
 Score matching probability flow ODE solver.
 
-Provides :class:`NewSMODESolver`, a thin subclass of
-:class:`~gensbi.core.ode_solver.NewODESolver` used for dispatch in
+Provides :class:`SMODESolver`, a thin subclass of
+:class:`~gensbi.core.ode_solver.ODESolver` used for dispatch in
 the score matching pipeline.
 
 The probability flow ODE is:
@@ -16,15 +16,15 @@ this solver, so the drift returned by ``get_drift()`` is already the
 PF-ODE drift.
 
 All integration and log-probability logic is inherited from
-``NewODESolver``.
+``ODESolver``.
 """
 
 from typing import Callable
 
-from gensbi.core.ode_solver import NewODESolver
+from gensbi.core.ode_solver import ODESolver
 
 
-class NewSMODESolver(NewODESolver):
+class SMODESolver(ODESolver):
     r"""Score matching probability flow ODE solver.
 
     Uses the probability flow ODE formulation to sample deterministically
@@ -33,7 +33,7 @@ class NewSMODESolver(NewODESolver):
     by the pipeline.
 
     All integration and log-probability logic is inherited from
-    :class:`~gensbi.core.ode_solver.NewODESolver`.
+    :class:`~gensbi.core.ode_solver.ODESolver`.
 
     See Also
     --------

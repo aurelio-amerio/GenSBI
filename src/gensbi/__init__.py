@@ -15,9 +15,9 @@ from importlib.metadata import version, PackageNotFoundError
 # try to automatically fetch the current gensbi version from pyproject.toml
 try:
     __version__ = version("gensbi")
-except PackageNotFoundError:
+except PackageNotFoundError:  # pragma: no cover
     # Fallback if the package is being run without being installed
-    __version__ = "unknown"
+    __version__ = "unknown"  # pragma: no cover
 
 import warnings
 
@@ -25,4 +25,3 @@ import warnings
 warnings.filterwarnings(
     "ignore", category=UserWarning, module="google.protobuf.runtime_version"
 )
-

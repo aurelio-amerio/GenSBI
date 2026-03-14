@@ -22,7 +22,7 @@ from gensbi.recipes import (
 )
 
 from gensbi.core import FlowMatchingMethod
-from gensbi.flow_matching.solver import NewZeroEndsSolver, NewNonSingularSolver
+from gensbi.flow_matching.solver import ZeroEndsSolver, NonSingularSolver
 
 import sys
 from pathlib import Path
@@ -207,7 +207,7 @@ def test_joint_fm_ode_sample_batched():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_unconditional_fm_sde_sample(solver_cls):
     """Unconditional sampling with an alternative SDE solver."""
     home = os.path.expanduser("~")
@@ -241,7 +241,7 @@ def test_unconditional_fm_sde_sample(solver_cls):
         assert sample.shape == (5, dim_joint, 2)
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_conditional_fm_sde_sample(solver_cls):
     """Conditional sampling with an alternative SDE solver."""
     home = os.path.expanduser("~")
@@ -279,7 +279,7 @@ def test_conditional_fm_sde_sample(solver_cls):
         assert sample.shape == (5, dim_obs, 2)
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_joint_fm_sde_sample(solver_cls):
     """Joint sampling with an alternative SDE solver."""
     home = os.path.expanduser("~")
@@ -322,7 +322,7 @@ def test_joint_fm_sde_sample(solver_cls):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_conditional_fm_sde_sample_batched(solver_cls):
     """Batched conditional sampling with SDE — model_extras must change per condition."""
     home = os.path.expanduser("~")
@@ -360,7 +360,7 @@ def test_conditional_fm_sde_sample_batched(solver_cls):
         assert samples.shape == (5, 3, dim_obs, 2)
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_joint_fm_sde_sample_batched(solver_cls):
     """Batched joint sampling with SDE — model_extras must change per condition."""
     home = os.path.expanduser("~")

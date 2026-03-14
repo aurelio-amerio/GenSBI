@@ -8,7 +8,7 @@ import pytest
 from flax import nnx
 from numpyro import distributions as dist
 
-from gensbi.flow_matching.solver.fm_sde_solver import NewZeroEndsSolver, NewNonSingularSolver
+from gensbi.flow_matching.solver.fm_sde_solver import ZeroEndsSolver, NonSingularSolver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
@@ -25,7 +25,7 @@ def make_solver(solver_cls, features=3, channels=2, alpha=0.5, eps0=1e-3):
     wrapper = ModelWrapper(model)
     mu0 = jnp.zeros((features, channels))
     sigma0 = jnp.ones((features, channels))
-    if solver_cls == NewNonSingularSolver:
+    if solver_cls == NonSingularSolver:
         return solver_cls(wrapper, mu0, sigma0, alpha=alpha)
     else:
         return solver_cls(wrapper, mu0, sigma0, alpha=alpha, eps0=eps0)
@@ -45,7 +45,7 @@ def _sample_prior(mu0, sigma0, key, nsamples):
 # =========================================================
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_initialization(solver_cls):
     solver = make_solver(solver_cls)
     assert solver.mu0.shape == (3, 2)
@@ -53,7 +53,7 @@ def test_initialization(solver_cls):
     assert solver.alpha == 0.5
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_attributes(solver_cls):
     """Verify key attributes are stored correctly."""
     solver = make_solver(solver_cls, features=4, channels=3, alpha=0.8)
@@ -67,7 +67,7 @@ def test_attributes(solver_cls):
 # =========================================================
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_sample_3d(solver_cls):
     solver = make_solver(solver_cls, features=3, channels=4)
     key = jax.random.PRNGKey(0)
@@ -80,7 +80,7 @@ def test_sample_3d(solver_cls):
     assert samples.shape == (5, 3, 4)
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_sample_channel1(solver_cls):
     """Channel=1 case (user with effectively 1D features)."""
     solver = make_solver(solver_cls, features=4, channels=1)
@@ -94,7 +94,7 @@ def test_sample_channel1(solver_cls):
     assert samples.shape == (5, 4, 1)
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_sample_intermediates(solver_cls):
     solver = make_solver(solver_cls, features=3, channels=2)
     key = jax.random.PRNGKey(0)
@@ -116,7 +116,7 @@ def test_sample_intermediates(solver_cls):
 # =========================================================
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_get_sampler_api(solver_cls):
     solver = make_solver(solver_cls)
     sampler = solver.get_sampler(step_size=0.2, method="Euler")
@@ -135,7 +135,7 @@ def test_get_sampler_api(solver_cls):
 # =========================================================
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_batch_independence(solver_cls):
     """Verify all samples in a batch are independent (not identical)."""
     solver = make_solver(solver_cls, features=3, channels=2)
@@ -161,7 +161,7 @@ def test_batch_independence(solver_cls):
 # =========================================================
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_invalid_method(solver_cls):
     solver = make_solver(solver_cls)
     with pytest.raises(ValueError, match="not supported"):
@@ -173,7 +173,7 @@ def test_invalid_method(solver_cls):
 # =========================================================
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_custom_solver_instance(solver_cls):
     """Pass a diffrax solver instance instead of a string."""
     import diffrax
@@ -192,7 +192,7 @@ def test_custom_solver_instance(solver_cls):
     assert samples.shape == (3, 3, 2)
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_shark_method(solver_cls):
     """Test with ShARK method (adaptive step sizing via PIDController)."""
     solver = make_solver(solver_cls, features=3, channels=2)
@@ -208,7 +208,7 @@ def test_shark_method(solver_cls):
     assert samples.shape == (3, 3, 2)
 
 
-@pytest.mark.parametrize("solver_cls", [NewZeroEndsSolver, NewNonSingularSolver])
+@pytest.mark.parametrize("solver_cls", [ZeroEndsSolver, NonSingularSolver])
 def test_sample_key_none_error(solver_cls):
     """Calling sample with key=None should raise ValueError."""
     solver = make_solver(solver_cls)

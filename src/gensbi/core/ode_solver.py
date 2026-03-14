@@ -1,7 +1,7 @@
 """
 Core ODE solver.
 
-Provides :class:`NewODESolver`, an abstract base solver for ordinary
+Provides :class:`ODESolver`, an abstract base solver for ordinary
 differential equations using diffrax.  Subclasses only need to implement
 :meth:`get_drift` to define the vector field (often called :math:`\tilde{f}` in the SDE
 literature).
@@ -21,7 +21,7 @@ from gensbi.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
-class NewODESolver(Solver):
+class ODESolver(Solver):
     r"""Abstract ODE solver built on diffrax.
 
     Subclass and implement :meth:`get_drift` to provide the drift / velocity

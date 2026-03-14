@@ -7,8 +7,8 @@ import jax.numpy as jnp
 import pytest
 from flax import nnx
 
-from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
-from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
+from gensbi.diffusion.solver.sm_ode_solver import SMODESolver
+from gensbi.diffusion.solver.sm_sde_solver import SMSDESolver
 from gensbi.utils.model_wrapping import ModelWrapper, ScoreToODEDrift
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler, VESmScheduler
@@ -25,22 +25,22 @@ class DummyScoreModel(nnx.Module):
 
 
 def _build_ode_solver(score_model, path):
-    """Construct NewSMODESolver via ScoreToODEDrift + ModelWrapper."""
+    """Construct SMODESolver via ScoreToODEDrift + ModelWrapper."""
     sde = path.scheduler
     drift_model = ScoreToODEDrift(score_model=score_model, sde=sde)
     wrapper = ModelWrapper(model=drift_model)
-    return NewSMODESolver(velocity_model=wrapper)
+    return SMODESolver(velocity_model=wrapper)
 
 
 def _build_sde_solver(score_model, path):
-    """Construct NewSMSDESolver with ModelWrapper + SDE scheduler."""
+    """Construct SMSDESolver with ModelWrapper + SDE scheduler."""
     wrapper = ModelWrapper(model=score_model)
     sde = path.scheduler
-    return NewSMSDESolver(velocity_model=wrapper, sde=sde)
+    return SMSDESolver(velocity_model=wrapper, sde=sde)
 
 
 def _ode_sampler(score_model, path, nsteps, return_intermediates=False):
-    """Build a sampler via NewSMODESolver, matching SM time conventions."""
+    """Build a sampler via SMODESolver, matching SM time conventions."""
     solver = _build_ode_solver(score_model, path)
     sde = path.scheduler
     T = sde.T
@@ -62,7 +62,7 @@ def _ode_sampler(score_model, path, nsteps, return_intermediates=False):
 
 
 def _sde_sampler(score_model, path, nsteps, method="Euler", return_intermediates=False):
-    """Build a sampler via NewSMSDESolver, matching SM time conventions."""
+    """Build a sampler via SMSDESolver, matching SM time conventions."""
     solver = _build_sde_solver(score_model, path)
     sde = path.scheduler
     T = sde.T
@@ -90,25 +90,25 @@ def _sde_sampler(score_model, path, nsteps, method="Euler", return_intermediates
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_sm_ode_solver_initialization(sde_cls):
-    """NewSMODESolver constructs without error."""
+    """SMODESolver constructs without error."""
     sde = sde_cls()
     path = SMPath(sde)
     solver = _build_ode_solver(DummyScoreModel(), path)
-    assert isinstance(solver, NewSMODESolver)
+    assert isinstance(solver, SMODESolver)
 
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_sm_sde_solver_initialization(sde_cls):
-    """NewSMSDESolver constructs without error and stores the SDE."""
+    """SMSDESolver constructs without error and stores the SDE."""
     sde = sde_cls()
     path = SMPath(sde)
     solver = _build_sde_solver(DummyScoreModel(), path)
-    assert isinstance(solver, NewSMSDESolver)
+    assert isinstance(solver, SMSDESolver)
     assert solver.sde is sde
 
 
 # =========================================================
-# ODE solver (NewSMODESolver) shape tests
+# ODE solver (SMODESolver) shape tests
 # =========================================================
 
 
@@ -183,7 +183,7 @@ def test_sm_ode_solver_dopri5(sde_cls):
 
 
 # =========================================================
-# SDE solver (NewSMSDESolver) shape tests
+# SDE solver (SMSDESolver) shape tests
 # =========================================================
 
 
@@ -297,12 +297,12 @@ def test_sm_sde_solver_key_none_error(sde_cls):
 
 
 # =========================================================
-# Log-probability tests (NewSMODESolver)
+# Log-probability tests (SMODESolver)
 # =========================================================
 
 
 def _build_ode_log_prob(score_model, path, nsteps=100, exact_divergence=True):
-    """Build a log_prob callable via NewSMODESolver, matching SM time conventions."""
+    """Build a log_prob callable via SMODESolver, matching SM time conventions."""
     solver = _build_ode_solver(score_model, path)
     sde = path.scheduler
     T = sde.T
@@ -328,7 +328,7 @@ def _build_ode_log_prob(score_model, path, nsteps=100, exact_divergence=True):
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_sm_ode_log_prob_shape(sde_cls):
-    """NewSMODESolver.get_log_prob produces log-prob with shape (batch,)."""
+    """SMODESolver.get_log_prob produces log-prob with shape (batch,)."""
     score_model = DummyScoreModel()
     sde = sde_cls()
     path = SMPath(sde)
@@ -417,7 +417,7 @@ def test_ve_prior_log_prob():
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_score_matching_method_smpf_solver(sde_cls):
-    """ScoreMatchingMethod.build_sampler_fn with NewSMODESolver produces valid samples."""
+    """ScoreMatchingMethod.build_sampler_fn with SMODESolver produces valid samples."""
     from gensbi.core.score_matching import ScoreMatchingMethod
 
     sde_type = "VP" if sde_cls is VPSmScheduler else "VE"
@@ -433,7 +433,7 @@ def test_score_matching_method_smpf_solver(sde_cls):
         path=path,
         model_extras={},
         nsteps=10,
-        solver=(NewSMODESolver, {}),
+        solver=(SMODESolver, {}),
     )
 
     key = jax.random.PRNGKey(0)
@@ -451,7 +451,7 @@ def test_score_matching_method_smpf_solver(sde_cls):
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_score_matching_method_sde_solver(sde_cls):
-    """ScoreMatchingMethod.build_sampler_fn with NewSMSDESolver produces valid samples."""
+    """ScoreMatchingMethod.build_sampler_fn with SMSDESolver produces valid samples."""
     from gensbi.core.score_matching import ScoreMatchingMethod
 
     sde_type = "VP" if sde_cls is VPSmScheduler else "VE"
@@ -467,7 +467,7 @@ def test_score_matching_method_sde_solver(sde_cls):
         path=path,
         model_extras={},
         nsteps=10,
-        solver=(NewSMSDESolver, {}),
+        solver=(SMSDESolver, {}),
     )
 
     key = jax.random.PRNGKey(0)
@@ -485,7 +485,7 @@ def test_score_matching_method_sde_solver(sde_cls):
 
 @pytest.mark.parametrize("sde_cls", [VPSmScheduler, VESmScheduler])
 def test_score_matching_method_build_log_prob_fn(sde_cls):
-    """ScoreMatchingMethod.build_log_prob_fn with NewSMODESolver produces valid log-prob."""
+    """ScoreMatchingMethod.build_log_prob_fn with SMODESolver produces valid log-prob."""
     from gensbi.core.score_matching import ScoreMatchingMethod
 
     sde_type = "VP" if sde_cls is VPSmScheduler else "VE"
@@ -502,7 +502,7 @@ def test_score_matching_method_build_log_prob_fn(sde_cls):
         model_extras={},
         nsteps=10,
         method="Euler",
-        solver=(NewSMODESolver, {}),
+        solver=(SMODESolver, {}),
     )
 
     key = jax.random.PRNGKey(0)
@@ -526,5 +526,5 @@ def test_score_matching_method_log_prob_rejects_sde_solver():
             model_wrapped=DummyScoreModel(),
             path=path,
             model_extras={},
-            solver=(NewSMSDESolver, {}),
+            solver=(SMSDESolver, {}),
         )

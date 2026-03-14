@@ -1,7 +1,7 @@
 """
 Core SDE solver.
 
-Provides :class:`NewSDESolver`, an abstract base solver for stochastic
+Provides :class:`SDESolver`, an abstract base solver for stochastic
 differential equations using diffrax.  Subclasses implement
 :meth:`get_drift` and :meth:`get_diffusion` to define the SDE coefficients
 (often called :math:`\tilde{f}` and :math:`\tilde{g}` in the literature, see arXiv:2410.02217).
@@ -30,7 +30,7 @@ from gensbi.solver import Solver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 
-class NewSDESolver(Solver):
+class SDESolver(Solver):
     r"""Abstract SDE solver built on diffrax.
 
     Subclass and implement :meth:`get_drift` (:math:`\tilde{f}`) and :meth:`get_diffusion`
