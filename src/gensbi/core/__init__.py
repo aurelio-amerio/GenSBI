@@ -15,6 +15,7 @@ from gensbi.core.diffusion_edm import DiffusionEDMMethod
 from gensbi.core.score_matching import ScoreMatchingMethod
 from gensbi.core.ode_solver import NewODESolver
 from gensbi.core.sde_solver import NewSDESolver
+from gensbi.core.prior import make_gaussian_prior, is_gaussian_prior
 
 __all__ = [
     "GenerativeMethod",
@@ -23,4 +24,6 @@ __all__ = [
     "ScoreMatchingMethod",
     "NewODESolver",
     "NewSDESolver",
+    "make_gaussian_prior",
+    "is_gaussian_prior",
 ]

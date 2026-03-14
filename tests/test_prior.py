@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from gensbi.prior import make_gaussian_prior, is_gaussian_prior
+from gensbi.core.prior import make_gaussian_prior, is_gaussian_prior
 
 
 def test_make_gaussian_prior_shape():

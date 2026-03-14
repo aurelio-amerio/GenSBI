@@ -10,6 +10,7 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 from typing import Any
+import warnings
 
 import numpyro.distributions as dist
 
@@ -32,6 +33,11 @@ class VPPrior:
 
     def sample(self, key: Array, shape: Any) -> Array:
         """Draw samples from :math:`\\mathcal{N}(0, I)`."""
+        warnings.warn(
+            "VPPrior is deprecated. Use make_gaussian_prior() from gensbi.prior instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return jax.random.normal(key, shape)
 
     def log_prob(self, x: Array) -> Array:
@@ -81,6 +87,11 @@ class VEPrior:
     """
 
     def __init__(self, sigma_max: float):
+        warnings.warn(
+            "VEPrior is deprecated. Use make_gaussian_prior(sigma=sigma_max) from gensbi.prior instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.sigma_max = sigma_max
 
     def sample(self, key: Array, shape: Any) -> Array:

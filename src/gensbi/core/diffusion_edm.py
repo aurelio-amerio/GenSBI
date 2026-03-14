@@ -12,6 +12,7 @@ import jax.numpy as jnp
 from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_edm_path
 from gensbi.diffusion.solver import EDMSolver
+from gensbi.core.prior import make_gaussian_prior
 
 from gensbi.diffusion.loss import EDMLoss  
 
@@ -44,8 +45,11 @@ class DiffusionEDMMethod(GenerativeMethod):
             )
         self.sde = sde
 
-    def build_path(self, config):
+    def build_path(self, config, event_shape):
         """Build an EDM diffusion path.
+
+        Also constructs ``self.prior`` as a standard normal numpyro
+        distribution.
 
         Parameters
         ----------
@@ -53,12 +57,15 @@ class DiffusionEDMMethod(GenerativeMethod):
             Training configuration. Reads scheduler hyperparameters
             (``sigma_min``, ``sigma_max``, ``beta_min``, ``beta_max``)
             with sensible defaults.
+        event_shape : tuple of (int, int)
+            ``(dim, ch)`` — feature and channel dimensions.
 
         Returns
         -------
         EDMPath
             The configured diffusion path.
         """
+        self.prior = make_gaussian_prior(*event_shape)
         return build_edm_path(self.sde, config)
 
     def build_loss(self, path, weights=None):
@@ -139,24 +146,22 @@ class DiffusionEDMMethod(GenerativeMethod):
         solver_cls, solver_kwargs = solver
         return solver_cls(score_model=model_wrapped, path=path, **solver_kwargs)
 
-    def sample_init(self, key, shape, path):
+    def sample_init(self, key, nsamples):
         """Sample from the diffusion prior.
 
         Parameters
         ----------
         key : jax.random.PRNGKey
             Random key.
-        shape : tuple
-            Shape of the initial sample.
-        path : EDMPath
-            The diffusion path (provides ``sample_prior``).
+        nsamples : int
+            Number of samples to draw.
 
         Returns
         -------
         Array
             Sample from the prior.
         """
-        return path.sample_prior(key, shape)
+        return self.prior.sample(key, (nsamples,))
 
     def build_sampler_fn(self, model_wrapped, path, model_extras,
                          nsteps=18, method="Heun",

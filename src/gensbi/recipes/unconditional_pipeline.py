@@ -149,7 +149,7 @@ class UnconditionalPipeline(AbstractPipeline):
 
         self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
 
-        self.path = method.build_path(self.training_config)
+        self.path = method.build_path(self.training_config, event_shape=(self.dim_obs, self.ch_obs))
         self.loss_obj = method.build_loss(self.path)
 
     # -- Factory stubs ------------------------------------------------------
@@ -217,7 +217,7 @@ class UnconditionalPipeline(AbstractPipeline):
         def sampler(key, nsamples):
             key, key_init = jax.random.split(key)
             x_init = self.method.sample_init(
-                key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
+                key_init, nsamples,
             )
             return sampler_fn(key, x_init, model_extras)
 

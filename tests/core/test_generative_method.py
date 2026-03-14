@@ -95,18 +95,18 @@ class TestFlowMatchingMethod:
         return FlowMatchingMethod()
 
     def test_build_path(self, method):
-        path = method.build_path({})
+        path = method.build_path({}, event_shape=(DIM, CH))
         assert isinstance(path, AffineProbPath)
 
     def test_build_loss(self, method):
         from gensbi.flow_matching.loss import FMLoss
 
-        path = method.build_path({})
+        path = method.build_path({}, event_shape=(DIM, CH))
         loss = method.build_loss(path)
         assert isinstance(loss, FMLoss)
 
     def test_prepare_batch_shapes(self, method, key, x_1):
-        path = method.build_path({})
+        path = method.build_path({}, event_shape=(DIM, CH))
         x_0, x_1_out, t = method.prepare_batch(key, x_1, path)
         assert x_0.shape == SHAPE
         assert x_1_out.shape == SHAPE
@@ -121,8 +121,8 @@ class TestFlowMatchingMethod:
         assert kwargs == {}
 
     def test_sample_init(self, method, key):
-        path = method.build_path({})
-        x = method.sample_init(key, SHAPE, path)
+        path = method.build_path({}, event_shape=(DIM, CH))
+        x = method.sample_init(key, BATCH_SIZE)
         assert x.shape == SHAPE
 
     def test_extra_training_config_empty(self, method):
@@ -130,7 +130,7 @@ class TestFlowMatchingMethod:
 
     def test_build_sampler_fn_with_custom_time_grid(self, method, dummy_model):
         """Custom time_grid triggers return_intermediates=True (L197)."""
-        path = method.build_path({})
+        path = method.build_path({}, event_shape=(DIM, CH))
         wrapped = ModelWrapper(dummy_model)
         time_grid = jnp.array([0.0, 0.5, 1.0])
         sampler_fn = method.build_sampler_fn(
@@ -145,7 +145,7 @@ class TestFlowMatchingMethod:
     def test_build_sampler_fn_with_sde_solver(self, method, dummy_model):
         """SDE solver triggers pass_key branch (L209-210)."""
         from unittest.mock import MagicMock
-        path = method.build_path({})
+        path = method.build_path({}, event_shape=(DIM, CH))
 
         mock_solver = MagicMock(spec=NewSDESolver)
         mock_sampler = MagicMock(return_value=jnp.zeros(SHAPE))
@@ -190,20 +190,20 @@ class TestDiffusionEDMMethod:
 
     def test_build_path(self, method):
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         assert isinstance(path, EDMPath)
 
     def test_build_loss(self, method):
         from gensbi.diffusion.loss import EDMLoss
 
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         loss = method.build_loss(path)
         assert isinstance(loss, EDMLoss)
 
     def test_prepare_batch_shapes(self, method, key, x_1):
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         x_0, x_1_out, sigma = method.prepare_batch(key, x_1, path)
         assert x_0.shape == SHAPE
         assert x_1_out.shape == SHAPE
@@ -216,8 +216,8 @@ class TestDiffusionEDMMethod:
 
     def test_sample_init(self, method, key):
         config = method.get_extra_training_config()
-        path = method.build_path(config)
-        x = method.sample_init(key, SHAPE, path)
+        path = method.build_path(config, event_shape=(DIM, CH))
+        x = method.sample_init(key, BATCH_SIZE)
         assert x.shape == SHAPE
 
     def test_extra_training_config(self, method):
@@ -251,20 +251,20 @@ class TestScoreMatchingMethod:
 
     def test_build_path(self, method):
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         assert isinstance(path, SMPath)
 
     def test_build_loss(self, method):
         from gensbi.diffusion.loss import SMLoss
 
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         loss = method.build_loss(path)
         assert isinstance(loss, SMLoss)
 
     def test_prepare_batch_shapes(self, method, key, x_1):
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         x_0, x_1_out, t = method.prepare_batch(key, x_1, path)
         assert x_0.shape == SHAPE
         assert x_1_out.shape == SHAPE
@@ -277,8 +277,8 @@ class TestScoreMatchingMethod:
 
     def test_sample_init(self, method, key):
         config = method.get_extra_training_config()
-        path = method.build_path(config)
-        x = method.sample_init(key, SHAPE, path)
+        path = method.build_path(config, event_shape=(DIM, CH))
+        x = method.sample_init(key, BATCH_SIZE)
         assert x.shape == SHAPE
 
     def test_extra_training_config(self, method):
@@ -303,7 +303,7 @@ class TestLossEvaluation:
 
     def test_flow_loss_evaluates(self, key, x_1, dummy_model):
         method = FlowMatchingMethod()
-        path = method.build_path({})
+        path = method.build_path({}, event_shape=(DIM, CH))
         loss_obj = method.build_loss(path)
         batch = method.prepare_batch(key, x_1, path)
         # ContinuousFMLoss.__call__(vf, batch, args=None, **kwargs)
@@ -314,7 +314,7 @@ class TestLossEvaluation:
     def test_edm_loss_evaluates(self, key, x_1, dummy_model):
         method = DiffusionEDMMethod(sde="EDM")
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         loss_obj = method.build_loss(path)
         batch = method.prepare_batch(key, x_1, path)
         loss = loss_obj(dummy_model, batch)
@@ -324,7 +324,7 @@ class TestLossEvaluation:
     def test_sm_loss_evaluates(self, key, x_1, dummy_model):
         method = ScoreMatchingMethod(sde_type="VP")
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         loss_obj = method.build_loss(path)
         batch = method.prepare_batch(key, x_1, path)
         loss = loss_obj(dummy_model, batch)
@@ -350,7 +350,7 @@ class TestMethodForwarding:
         from unittest.mock import MagicMock
 
         method = FlowMatchingMethod()
-        path = method.build_path({})
+        path = method.build_path({}, event_shape=(DIM, CH))
         wrapped = ModelWrapper(dummy_model)
 
         mock_solver = MagicMock(spec=NewFMODESolver)
@@ -380,7 +380,7 @@ class TestMethodForwarding:
 
         method = ScoreMatchingMethod(sde_type="VP")
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         wrapped = ModelWrapper(dummy_model)
 
         # Mock an SMODESolver (PF-ODE branch)
@@ -415,7 +415,7 @@ class TestMethodForwarding:
 
         method = DiffusionEDMMethod(sde="EDM")
         config = method.get_extra_training_config()
-        path = method.build_path(config)
+        path = method.build_path(config, event_shape=(DIM, CH))
         wrapped = ModelWrapper(dummy_model)
 
         mock_solver = MagicMock(spec=EDMSolver)

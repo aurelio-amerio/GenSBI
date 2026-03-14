@@ -354,7 +354,7 @@ def test_score_matching_method_smpf_solver(sde_cls):
     method = ScoreMatchingMethod(sde_type=sde_type)
 
     config = method.get_extra_training_config()
-    path = method.build_path(config)
+    path = method.build_path(config, event_shape=(3, 1))
 
     score_model = DummyScoreModel()
 
@@ -469,7 +469,7 @@ def test_score_matching_method_build_log_prob_fn(sde_cls):
     method = ScoreMatchingMethod(sde_type=sde_type)
 
     config = method.get_extra_training_config()
-    path = method.build_path(config)
+    path = method.build_path(config, event_shape=(3, 1))
 
     score_model = DummyScoreModel()
 
@@ -496,7 +496,7 @@ def test_score_matching_method_log_prob_rejects_sde_solver():
 
     method = ScoreMatchingMethod(sde_type="VP")
     config = method.get_extra_training_config()
-    path = method.build_path(config)
+    path = method.build_path(config, event_shape=(3, 1))
 
     with pytest.raises(NotImplementedError, match="SMODESolver"):
         method.build_log_prob_fn(

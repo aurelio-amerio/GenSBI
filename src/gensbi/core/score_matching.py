@@ -15,7 +15,7 @@ from gensbi.diffusion.solver.sm_ode_solver_new import NewSMODESolver
 from gensbi.diffusion.solver.sm_sde_solver_new import NewSMSDESolver
 
 from gensbi.diffusion.loss import SMLoss
-from gensbi.diffusion.sm_prior import VPPrior, VEPrior
+from gensbi.core.prior import make_gaussian_prior
 from gensbi.utils.model_wrapping import ModelWrapper, ScoreToODEDrift
 
 
@@ -46,17 +46,12 @@ class ScoreMatchingMethod(GenerativeMethod):
         if sde_type not in ("VP", "VE"):
             raise ValueError(f"sde_type must be one of 'VP', 'VE', got '{sde_type}'.")
         self.sde_type = sde_type
+        self.prior = None
 
-        # Prior distribution (matches FM's StandardNormalPrior pattern)
-        if sde_type == "VP":
-            self.prior = VPPrior()
-        else:
-            # VEPrior requires sigma_max, which depends on the path config.
-            # Initialized to None; set properly when build_path is called.
-            self.prior = None
-
-    def build_path(self, config):
+    def build_path(self, config, event_shape):
         """Build a score matching path.
+
+        Also constructs ``self.prior`` as a numpyro distribution.
 
         Parameters
         ----------
@@ -64,6 +59,8 @@ class ScoreMatchingMethod(GenerativeMethod):
             Training configuration. Reads scheduler hyperparameters
             (``beta_min``, ``beta_max`` for VP; ``sigma_min``, ``sigma_max``
             for VE) with sensible defaults.
+        event_shape : tuple of (int, int)
+            ``(dim, ch)`` — feature and channel dimensions.
 
         Returns
         -------
@@ -72,9 +69,10 @@ class ScoreMatchingMethod(GenerativeMethod):
         """
         path = build_sm_path(self.sde_type, config)
 
-        # Set VE prior now that we know sigma_max
-        if self.sde_type == "VE" and self.prior is None:
-            self.prior = VEPrior(sigma_max=path.scheduler.sigma_max)
+        if self.sde_type == "VP":
+            self.prior = make_gaussian_prior(*event_shape)
+        else:  # VE
+            self.prior = make_gaussian_prior(*event_shape, sigma=path.scheduler.sigma_max)
 
         return path
 
@@ -173,24 +171,22 @@ class ScoreMatchingMethod(GenerativeMethod):
                 **solver_kwargs,
             )
 
-    def sample_init(self, key, shape, path):
+    def sample_init(self, key, nsamples):
         """Sample from the score matching prior.
 
         Parameters
         ----------
         key : jax.random.PRNGKey
             Random key.
-        shape : tuple
-            Shape of the initial sample.
-        path : SMPath
-            The score matching path (provides ``sample_prior``).
+        nsamples : int
+            Number of samples to draw.
 
         Returns
         -------
         Array
             Sample from the prior.
         """
-        return path.sample_prior(key, shape)
+        return self.prior.sample(key, (nsamples,))
 
     def build_sampler_fn(
         self,
@@ -290,6 +286,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         nsteps=1000,
         solver=None,
         exact_divergence=True,
+        log_prior=None,
         **kwargs,
     ):
         """Build a log-probability closure for the score matching probability flow ODE.
@@ -335,6 +332,9 @@ class ScoreMatchingMethod(GenerativeMethod):
             If ``True`` (default), compute exact divergence via full
             Jacobian. If ``False``, use the Hutchinson estimator (requires
             a PRNG ``key`` at call time).
+        log_prior : callable, optional
+            Override for the prior's ``log_prob``. If ``None``, uses
+            ``self.prior.log_prob``. Used by the joint pipeline.
 
         Returns
         -------
@@ -366,7 +366,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         # Step size: positive — ODESolver.get_log_prob already negates it
         step_size = (T - eps) / nsteps
 
-        log_p0 = self.prior.log_prob
+        log_p0 = log_prior if log_prior is not None else self.prior.log_prob
 
         log_prob_closure = solver_instance.get_log_prob(
             log_p0=log_p0,

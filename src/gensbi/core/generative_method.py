@@ -25,15 +25,23 @@ class GenerativeMethod(ABC):
     - **Initial sample generation** — drawing from the prior
     """
 
+    @property
+    def has_custom_prior(self):
+        """Whether the user provided a custom prior at construction time."""
+        return getattr(self, "_user_prior", None) is not None
+
     @abstractmethod
-    def build_path(self, config: dict):
-        """Create the probability path from training config.
+    def build_path(self, config: dict, event_shape: Tuple[int, int]):
+        """Create the probability path and construct the prior.
 
         Parameters
         ----------
         config : dict
             Training configuration dictionary (may contain scheduler
             hyperparameters such as ``sigma_min``, ``sigma_max``).
+        event_shape : tuple of (int, int)
+            ``(dim, ch)`` — feature and channel dimensions. Used to
+            construct ``self.prior`` as a numpyro distribution.
 
         Returns
         -------
@@ -118,22 +126,22 @@ class GenerativeMethod(ABC):
         ...  # pragma: no cover
 
     @abstractmethod
-    def sample_init(self, key, shape, path):
+    def sample_init(self, key, nsamples):
         """Sample initial noise for the generative process.
+
+        Uses ``self.prior`` (constructed during :meth:`build_path`).
 
         Parameters
         ----------
         key : jax.random.PRNGKey
             Random key.
-        shape : tuple
-            Shape of the initial sample, e.g. ``(nsamples, dim, ch)``.
-        path
-            The probability path (needed for ``sample_prior`` in diffusion/SM).
+        nsamples : int
+            Number of samples to draw.
 
         Returns
         -------
         x_init : Array
-            Initial noise sample.
+            Initial noise sample of shape ``(nsamples, *event_shape)``.
         """
         ...  # pragma: no cover
 

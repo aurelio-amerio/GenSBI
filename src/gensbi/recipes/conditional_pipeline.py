@@ -184,7 +184,7 @@ class ConditionalPipeline(AbstractPipeline):
             dim_cond, id_embedding_strategy[1], semantic_id=1
         )
 
-        self.path = method.build_path(self.training_config)
+        self.path = method.build_path(self.training_config, event_shape=(self.dim_obs, self.ch_obs))
         self.loss_obj = method.build_loss(self.path)
 
     # -- Factory stubs (model-agnostic: user provides model) ----------------
@@ -274,7 +274,7 @@ class ConditionalPipeline(AbstractPipeline):
             _extras = model_extras if model_extras is not None else extras
             key, key_init = jax.random.split(key)
             x_init = self.method.sample_init(
-                key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
+                key_init, nsamples,
             )
             return sampler_fn(key, x_init, _extras)
 
