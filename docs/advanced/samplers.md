@@ -98,6 +98,20 @@ The EDM solver is always used for `DiffusionEDMMethod`. The scheduler variant (E
 
 ---
 
+## Time Direction Conventions
+
+Each method has its own convention for how time maps to "data" and "noise/source". Understanding this is critical when working with log-probability computation or custom solvers.
+
+| Method | Noise/Source | Data | Sampling direction | Log-prob direction |
+|--------|-------------|------|--------------------|--------------------|
+| **Flow Matching** | $t = 0$ | $t = 1$ | $0 \to 1$ (ascending) | $1 \to 0$ (descending) |
+| **Score Matching** | $t = T$ (=1) | $t = \varepsilon$ (≈0) | $T \to \varepsilon$ (descending) | $\varepsilon \to T$ (ascending) |
+| **EDM Diffusion** | $\sigma = \sigma_\text{max}$ | $\sigma \approx 0$ | Uses $\sigma$-schedule, not a time grid | Log-prob not supported |
+
+```{important}
+**Sampling and log-prob always go in opposite directions.** Sampling goes from noise to data; log-prob goes from data to noise (source). If you implement a custom solver or modify the time grid, ensure the log-prob time grid is **reversed** from the sampling time grid.
+```
+
 ## How to Override the Solver
 
 Pass a `solver` tuple of `(SolverClass, kwargs_dict)` to `pipeline.sample()`:
