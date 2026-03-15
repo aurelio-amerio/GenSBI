@@ -177,13 +177,13 @@ plt.show()
 # %% Alternative: sample with SMPFSolver (probability flow ODE)
 # The default solver is the reverse SDE (SMSolver, stochastic). You can alternatively
 # use the probability flow ODE (SMPFSolver), which gives deterministic samples.
-from gensbi.diffusion.solver import SMPFSolver
+from gensbi.diffusion.solver import SMODESolver
 
 samples_pf = pipeline.sample(
     rngs.sample(),
     x_o,
     nsamples=100_000,
-    solver=(SMPFSolver, {}),
+    solver=(SMODESolver, {}),
 )
 samples_pf = unnormalize(samples_pf, means[:dim_obs], stds[:dim_obs])
 
