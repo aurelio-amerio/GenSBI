@@ -357,13 +357,16 @@ class ScoreMatchingMethod(GenerativeMethod):
                 f"got {type(solver_instance).__name__}."
             )
 
-        # SM time grid: T (noise) → eps (near-data)
+        # SM log-prob time grid: eps (data) → T (noise/source)
+        # This reverses the sampling direction [T, eps], just as FM
+        # reverses its sampling [0, 1] to log-prob [1, 0].
         sde = path.scheduler
         T = sde.T
         eps = 1e-3
-        time_grid = jnp.array([T, eps])
+        time_grid = jnp.array([eps, T])
 
-        # Step size: positive — ODESolver.get_log_prob already negates it
+        # Step size: positive — ODESolver.get_log_prob computes dt0 sign
+        # from the time grid direction.
         step_size = (T - eps) / nsteps
 
         log_p0 = log_prior if log_prior is not None else self.prior.log_prob

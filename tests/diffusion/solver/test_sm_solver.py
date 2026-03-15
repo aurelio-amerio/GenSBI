@@ -307,7 +307,8 @@ def _build_ode_log_prob(score_model, path, nsteps=100, exact_divergence=True, di
     sde = path.scheduler
     T = sde.T
     eps = 1e-3
-    time_grid = jnp.array([T, eps])
+    # SM log-prob: data (eps) → source (T), reversed from sampling [T, eps]
+    time_grid = jnp.array([eps, T])
     step_size = (T - eps) / nsteps
 
     from gensbi.core.prior import make_gaussian_prior

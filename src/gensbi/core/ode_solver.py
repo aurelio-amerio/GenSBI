@@ -220,7 +220,9 @@ class ODESolver(Solver):
         atol, rtol : float
             Tolerances for adaptive solvers.
         time_grid : Array, optional
-            Must be descending (data → source). Defaults to ``[1, 0]``.
+            Integration interval from data to source.  Can be descending
+            (FM: ``[1, 0]``) or ascending (SM: ``[eps, T]``).
+            Defaults to ``[1, 0]``.
         return_intermediates : bool
             Return intermediate steps.
         exact_divergence : bool
@@ -235,9 +237,9 @@ class ODESolver(Solver):
         """
         if time_grid is None:
             time_grid = jnp.array([1.0, 0.0])
-        assert (
-            time_grid[0] > time_grid[-1]
-        ), f"Time grid must be descending for log-prob (source ← data). Got {time_grid}"
+
+        # dt0 sign: negative when descending (FM), positive when ascending (SM)
+        _descending = time_grid[0] > time_grid[-1]
 
         if static_model_kwargs is None:
             static_model_kwargs = {}
@@ -280,6 +282,7 @@ class ODESolver(Solver):
                         "Pass key= when calling the log_prob function."
                     )
                 from gensbi.utils.math import _expand_dims
+
                 v = jax.random.rademacher(
                     key, shape=_expand_dims(x_1).shape, dtype=x_1.dtype
                 )
@@ -294,7 +297,7 @@ class ODESolver(Solver):
                 solver,
                 t0=time_grid[0],
                 t1=time_grid[-1],
-                dt0=-step_size,
+                dt0=-step_size if _descending else step_size,
                 y0=y_init,
                 args=_extras,
                 saveat=(
