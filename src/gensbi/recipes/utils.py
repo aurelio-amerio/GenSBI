@@ -228,6 +228,7 @@ def parse_training_config(config_path: str):
         "experiment_id": train_params.get("experiment_id", 1),
         "early_stopping": train_params.get("early_stopping", True),
         "val_every": train_params.get("val_every", 100) * multistep,
+        "val_error_ratio": train_params.get("val_error_ratio", 1.3),
         # Optional method-specific parameters (override strategy defaults)
         "sigma_min": train_params.get("sigma_min", 0.002),
         "sigma_max": train_params.get("sigma_max", 80.0),

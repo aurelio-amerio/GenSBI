@@ -377,6 +377,7 @@ class AbstractPipeline(abc.ABC):
         training_config["experiment_id"] = 1
         training_config["multistep"] = 1
         training_config["checkpoint_dir"] = os.path.join(os.getcwd(), "checkpoints")
+        training_config["val_error_ratio"] = 1.3
 
         return training_config
 
@@ -681,7 +682,7 @@ class AbstractPipeline(abc.ABC):
         batch_val = next(self.val_dataset_iter)
         min_val = val_step(self.model, batch_val, rng_val)
 
-        val_error_ratio = 1.3
+        val_error_ratio = self.training_config.get("val_error_ratio", 1.3)
         counter = 0
         cmax = 10
 
