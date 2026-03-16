@@ -16,11 +16,7 @@ Classes
 
 .. autoapisummary::
 
-   gensbi.recipes.joint_pipeline.JointDiffusionPipeline
-   gensbi.recipes.joint_pipeline.JointFlowPipeline
    gensbi.recipes.joint_pipeline.JointPipeline
-   gensbi.recipes.joint_pipeline.JointSMPipeline
-   gensbi.recipes.joint_pipeline._DeprecatedJointPipeline
 
 
 Functions
@@ -35,68 +31,6 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: JointDiffusionPipeline(*args, **kwargs)
-
-   Bases: :py:obj:`_DeprecatedJointPipeline`
-
-
-   
-   Base for deprecated joint pipeline stubs.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-   .. py:attribute:: _message
-      :value: 'JointDiffusionPipeline has been removed. Use JointPipeline(method=DiffusionEDMMethod(), ...)...
-
-
-
-.. py:class:: JointFlowPipeline(*args, **kwargs)
-
-   Bases: :py:obj:`_DeprecatedJointPipeline`
-
-
-   
-   Base for deprecated joint pipeline stubs.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-   .. py:attribute:: _message
-      :value: 'JointFlowPipeline has been removed. Use JointPipeline(method=FlowMatchingMethod(), ...)...
-
-
-
 .. py:class:: JointPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, condition_mask_kind='structured', params=None, training_config=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
@@ -105,8 +39,7 @@ Module Contents
    
    Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.
 
-   Unlike the method-specific classes above (``JointFlowPipeline``,
-   ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with
+   Unlike the old method-specific pipeline classes, this class works with
    **any** generative method and **any** user-provided model that conforms
    to the ``JointWrapper`` interface.
 
@@ -219,7 +152,7 @@ Module Contents
 
 
 
-   .. py:method:: get_log_prob_fn(x_o, use_ema=True, model_extras=None, **kwargs)
+   .. py:method:: get_log_prob_fn(x_o, use_ema=True, prior=None, model_extras=None, **kwargs)
 
       
       Get a log-probability function.
@@ -228,12 +161,21 @@ Module Contents
       :type x_o: array-like
       :param use_ema: Whether to use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param prior: Obs-space prior for log-probability evaluation. The method's
+                    prior lives on the full joint space ``(dim_joint, ch)`` and
+                    cannot be automatically marginalized for arbitrary priors.
+
+                    - **Default Gaussian**: auto-constructed — no need to provide.
+                    - **Custom prior**: must supply the correct obs-space marginal.
+      :type prior: numpyro.distributions.Distribution, optional
       :param model_extras: Additional model extras. Cannot override protected keys.
       :type model_extras: dict, optional
       :param \*\*kwargs: Forwarded to ``method.build_log_prob_fn``.
 
       :returns: ``log_prob_fn(x_1) -> log_prob``
       :rtype: Callable
+
+      :raises ValueError: If the joint prior is non-Gaussian and no ``prior`` is provided.
 
 
 
@@ -356,7 +298,7 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: log_prob(x_1, x_o, use_ema=True, *, key=None, **kwargs)
+   .. py:method:: log_prob(x_1, x_o, use_ema=True, prior=None, *, key=None, **kwargs)
 
       
       Compute log-probability of x_1 given x_o.
@@ -367,6 +309,9 @@ Module Contents
       :type x_o: array-like
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param prior: Obs-space prior distribution.
+                    See :meth:`get_log_prob_fn` for details.
+      :type prior: numpyro.distributions.Distribution, optional
       :param key: Required when ``exact_divergence=False`` (Hutchinson).
       :type key: jax.random.PRNGKey, optional
       :param \*\*kwargs: Forwarded to :meth:`get_log_prob_fn`.
@@ -443,70 +388,6 @@ Module Contents
 
 
    .. py:attribute:: path
-
-
-.. py:class:: JointSMPipeline(*args, **kwargs)
-
-   Bases: :py:obj:`_DeprecatedJointPipeline`
-
-
-   
-   Base for deprecated joint pipeline stubs.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-   .. py:attribute:: _message
-      :value: 'JointSMPipeline has been removed. Use JointPipeline(method=ScoreMatchingMethod(), ...) instead,...
-
-
-
-.. py:class:: _DeprecatedJointPipeline(*args, **kwargs)
-
-   
-   Base for deprecated joint pipeline stubs.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-   .. py:method:: get_default_training_config(**kwargs)
-      :classmethod:
-
-
-
-   .. py:attribute:: _message
-      :value: ''
-
 
 
 .. py:function:: sample_condition_mask(key, num_samples, theta_dim, x_dim, kind='structured')

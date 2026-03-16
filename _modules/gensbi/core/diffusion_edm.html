@@ -830,12 +830,13 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.generative_method</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeMethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_edm_path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDMSolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_gaussian_prior</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDMLoss</span>  
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DiffusionEDMMethod</span><span class="p">(</span><span class="n">GenerativeMethod</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;EDM diffusion strategy.</span>
 
@@ -868,9 +869,12 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.build_path">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_path">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build an EDM diffusion path.</span>
+
+<span class="sd">        Also constructs ``self.prior`` as a standard normal numpyro</span>
+<span class="sd">        distribution.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -878,17 +882,20 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Training configuration. Reads scheduler hyperparameters</span>
 <span class="sd">            (``sigma_min``, ``sigma_max``, ``beta_min``, ``beta_max``)</span>
 <span class="sd">            with sensible defaults.</span>
+<span class="sd">        event_shape : tuple of (int, int)</span>
+<span class="sd">            ``(dim, ch)`` — feature and channel dimensions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        EDMPath</span>
 <span class="sd">            The configured diffusion path.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="n">make_gaussian_prior</span><span class="p">(</span><span class="o">*</span><span class="n">event_shape</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">build_edm_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sde</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.build_loss">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_loss">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_loss">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the EDM denoising loss.</span>
 
@@ -911,7 +918,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.prepare_batch">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.prepare_batch">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.prepare_batch">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample noise and sigma for an EDM training batch.</span>
 
@@ -937,7 +944,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.get_default_solver">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.get_default_solver">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.get_default_solver">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_default_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the default EDM solver.</span>
 
@@ -950,7 +957,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.build_solver">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_solver">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_solver">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate an EDM solver.</span>
 
@@ -978,29 +985,27 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.sample_init">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.sample_init">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.sample_init">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the diffusion prior.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        key : jax.random.PRNGKey</span>
 <span class="sd">            Random key.</span>
-<span class="sd">        shape : tuple</span>
-<span class="sd">            Shape of the initial sample.</span>
-<span class="sd">        path : EDMPath</span>
-<span class="sd">            The diffusion path (provides ``sample_prior``).</span>
+<span class="sd">        nsamples : int</span>
+<span class="sd">            Number of samples to draw.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Array</span>
 <span class="sd">            Sample from the prior.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">sample_prior</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,))</span></div>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.build_sampler_fn">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_sampler_fn">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.build_sampler_fn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_sampler_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span>
                          <span class="n">nsteps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Heun&quot;</span><span class="p">,</span>
                          <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1063,7 +1068,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="DiffusionEDMMethod.get_extra_training_config">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.get_extra_training_config">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.get_extra_training_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_extra_training_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return EDM-specific training config defaults.</span>
 

@@ -132,16 +132,19 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: build_path(config)
+   .. py:method:: build_path(config, event_shape)
       :abstractmethod:
 
 
       
-      Create the probability path from training config.
+      Create the probability path and construct the prior.
 
       :param config: Training configuration dictionary (may contain scheduler
                      hyperparameters such as ``sigma_min``, ``sigma_max``).
       :type config: dict
+      :param event_shape: ``(dim, ch)`` — feature and channel dimensions. Used to
+                          construct ``self.prior`` as a numpyro distribution.
+      :type event_shape: tuple of (int, int)
 
       :returns: A probability path object (e.g. ``AffineProbPath``, ``EDMPath``,
                 ``SMPath``).
@@ -330,21 +333,46 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample_init(key, shape, path)
+   .. py:method:: sample_init(key, nsamples)
       :abstractmethod:
 
 
       
       Sample initial noise for the generative process.
 
+      Uses ``self.prior`` (constructed during :meth:`build_path`).
+
       :param key: Random key.
       :type key: jax.random.PRNGKey
-      :param shape: Shape of the initial sample, e.g. ``(nsamples, dim, ch)``.
-      :type shape: tuple
-      :param path: The probability path (needed for ``sample_prior`` in diffusion/SM).
+      :param nsamples: Number of samples to draw.
+      :type nsamples: int
 
-      :returns: **x_init** -- Initial noise sample.
+      :returns: **x_init** -- Initial noise sample of shape ``(nsamples, *event_shape)``.
       :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: has_custom_prior
+
+      
+      Whether the user provided a custom prior at construction time.
+
 
 
 

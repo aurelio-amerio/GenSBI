@@ -1,0 +1,365 @@
+gensbi.flow_matching.solver.fm_sde_solver
+=========================================
+
+.. py:module:: gensbi.flow_matching.solver.fm_sde_solver
+
+.. autoapi-nested-parse::
+
+   Flow matching SDE solvers.
+
+   Provides :class:`FMSDESolver` (abstract base with score derivation),
+   :class:`ZeroEndsSolver`, and :class:`NonSingularSolver`.
+
+   Based on: "Improving Flow Matching by Stochastic Sampling"
+   (arXiv:2410.02217)
+
+   **Time direction convention:**
+   In flow matching, ``t=0`` is noise and ``t=1`` is data.
+   These SDE solvers integrate **forward** from ``t=eps`` to ``t=1``.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.flow_matching.solver.fm_sde_solver.FMSDESolver
+   gensbi.flow_matching.solver.fm_sde_solver.NonSingularSolver
+   gensbi.flow_matching.solver.fm_sde_solver.ZeroEndsSolver
+
+
+Module Contents
+---------------
+
+.. py:class:: FMSDESolver(velocity_model, mu0, sigma0, eps0 = 1e-05)
+
+   Bases: :py:obj:`gensbi.core.sde_solver.SDESolver`
+
+
+   
+   Base flow matching SDE solver.
+
+   Provides :meth:`get_score` which derives the score from the velocity
+   field (see arXiv:2410.02217).  Subclasses implement :meth:`get_drift`
+   (:math:`\tilde{f}`) and :meth:`get_diffusion` (:math:`\tilde{g}`) using the score and velocity field.
+
+   :param velocity_model: Wrapped velocity field model.
+   :type velocity_model: ModelWrapper
+   :param mu0: Prior mean, shape ``(features, channels)``.
+   :type mu0: Array
+   :param sigma0: Prior std, shape ``(features, channels)``.
+   :type sigma0: Array
+   :param eps0: Minimum time value.
+   :type eps0: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_diffusion()
+      :abstractmethod:
+
+
+      
+      Return the diffusion function :math:`\tilde{g}(t, y, \text{args})` for the SDE.
+
+      Also known as :math:`\tilde{g}` (g-tilde) in the SDE literature.
+      Must return a ``(flat_dim, flat_dim)`` matrix for
+      ``diffrax.ControlTerm``.
+
+      :returns: ``diffusion(t, y_flat, args) -> Array`` of shape
+                ``(flat_dim, flat_dim)``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_drift(**kwargs)
+      :abstractmethod:
+
+
+      
+      Return the drift function :math:`\tilde{f}(t, x, \text{args})` for the SDE.
+
+      Also known as :math:`\tilde{f}` (f-tilde) in the SDE literature.
+
+      :returns: ``drift(t, x, args) -> Array``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_score(**kwargs)
+
+      
+      Obtain the score function from the velocity model.
+
+      See arXiv:2410.02217.
+
+      :returns: ``score(t, x, args) -> Array``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: mu0
+
+
+   .. py:attribute:: sigma0
+
+
+.. py:class:: NonSingularSolver(velocity_model, mu0, sigma0, alpha)
+
+   Bases: :py:obj:`FMSDESolver`
+
+
+   
+   NonSingular SDE solver for flow matching.
+
+   From Tab. 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_,
+   with change of variable for time: t → 1−t to match flow matching
+   time notation.
+
+   The drift (:math:`\tilde{f}`) and diffusion (:math:`\tilde{g}`) are:
+
+   .. math::
+       \tilde{f}(t, x) = u_t(x) + \tfrac{1}{2}\alpha^2 (1-t)\, s(t, x)
+
+       \tilde{g}(t) = \alpha \sqrt{1-t}
+
+   :param velocity_model: Velocity field model.
+   :type velocity_model: ModelWrapper
+   :param mu0: Prior mean, shape ``(features, channels)``.
+   :type mu0: Array
+   :param sigma0: Prior std, shape ``(features, channels)``.
+   :type sigma0: Array
+   :param alpha: Diffusion strength parameter.
+   :type alpha: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_diffusion()
+
+      
+      Return diffusion :math:`\tilde{g}(t)` for NonSingular SDE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_drift(**kwargs)
+
+      
+      Return drift :math:`\tilde{f}(t, x, \text{args})` for NonSingular SDE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: alpha
+
+
+.. py:class:: ZeroEndsSolver(velocity_model, mu0, sigma0, alpha, eps0 = 0.001)
+
+   Bases: :py:obj:`FMSDESolver`
+
+
+   
+   ZeroEnds SDE solver for flow matching.
+
+   From Tab. 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_,
+   with change of variable for time: t → 1−t to match flow matching
+   time notation.
+
+   The drift (:math:`\tilde{f}`) and diffusion (:math:`\tilde{g}`) are:
+
+   .. math::
+       \tilde{f}(t, x) = u_t(x) + \tfrac{1}{2}\alpha^2 t(1-t)\, s(t, x)
+
+       \tilde{g}(t) = \alpha \sqrt{t(1-t)}
+
+   :param velocity_model: Velocity field model.
+   :type velocity_model: ModelWrapper
+   :param mu0: Prior mean, shape ``(features, channels)``.
+   :type mu0: Array
+   :param sigma0: Prior std, shape ``(features, channels)``.
+   :type sigma0: Array
+   :param alpha: Diffusion strength parameter.
+   :type alpha: float
+   :param eps0: Minimum time value.
+   :type eps0: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_diffusion()
+
+      
+      Return diffusion :math:`\tilde{g}(t)` for ZeroEnds SDE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_drift(**kwargs)
+
+      
+      Return drift :math:`\tilde{f}(t, x, \text{args})` for ZeroEnds SDE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: alpha
+
+

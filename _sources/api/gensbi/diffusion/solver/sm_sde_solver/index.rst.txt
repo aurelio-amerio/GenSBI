@@ -1,0 +1,145 @@
+gensbi.diffusion.solver.sm_sde_solver
+=====================================
+
+.. py:module:: gensbi.diffusion.solver.sm_sde_solver
+
+.. autoapi-nested-parse::
+
+   Score matching reverse SDE solver.
+
+   Provides :class:`SMSDESolver`, an SDE solver for score matching
+   diffusion models.
+
+   The reverse SDE is:
+
+   .. math::
+       dx = \left[ f(x,t) - g(t)^2\, s_\theta(x, t) \right] dt
+            + g(t)\, d\bar{W}
+
+   where :math:`s_\theta` is the learned score, :math:`f` is the forward
+   SDE drift, and :math:`g` is the forward diffusion coefficient.
+
+   The drift (:math:`      ilde{f}`) and diffusion (:math:`        ilde{g}`) are defined directly inside the solver
+   class (same pattern as ``ZeroEndsSolver``), using the raw score model
+   accessed via ``velocity_model.get_vector_field()`` and the SDE scheduler
+   for the forward process coefficients.
+
+   **Time direction convention:**
+   Score matching integrates **backwards** from ``t=T`` (noise) to ``t=eps``
+   (near-clean data).  This is the opposite of flow matching (``t=0→1``).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diffusion.solver.sm_sde_solver.SMSDESolver
+
+
+Module Contents
+---------------
+
+.. py:class:: SMSDESolver(velocity_model, sde, eps0 = 0.001)
+
+   Bases: :py:obj:`gensbi.core.sde_solver.SDESolver`
+
+
+   
+   Score matching reverse SDE solver.
+
+   The drift and diffusion are computed inline from the raw score model
+   and the forward SDE scheduler, analogous to how ``ZeroEndsSolver``
+   computes its SDE coefficients from the velocity field.
+
+   Conditioning is handled entirely by the ``ModelWrapper`` layer
+   (``ConditionalWrapper``, ``JointWrapper``).
+
+   :param velocity_model: Wrapped **score** model.  ``get_vector_field()`` returns the
+                          raw score function.
+   :type velocity_model: ModelWrapper
+   :param sde: Forward SDE scheduler (``VPSmScheduler``, ``VESmScheduler``, etc.)
+               providing ``drift(x, t)`` and ``diffusion(t)``.
+   :param eps0: Minimum time value.
+   :type eps0: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_diffusion()
+
+      
+      Return the reverse SDE diffusion.
+
+      .. math::
+          \tilde{g}(t) = g(t)
+
+      Returns a ``(flat_dim, flat_dim)`` diagonal matrix.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_drift(**kwargs)
+
+      
+      Return the reverse SDE drift.
+
+      .. math::
+          \tilde{f}(t, x) = f(x, t) - g(t)^2\, s_\theta(x, t)
+
+      where :math:`f` and :math:`g` are the forward SDE coefficients
+      and :math:`s_\theta` is the score model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sde
+
+

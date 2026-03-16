@@ -39,8 +39,8 @@ Module Contents
    - ``"VP"`` — variance-preserving (default)
    - ``"VE"`` — variance-exploding
 
-   Sampling can use either the reverse SDE (``SMSolver``, default) or
-   the probability flow ODE (``SMPFSolver`` via ``ScoreToDrift``).
+   Sampling can use either the reverse SDE (``SMSDESolver``, default) or
+   the probability flow ODE (``SMODESolver`` via ``ScoreToODEDrift``).
 
    :param sde_type: SDE type. One of ``"VP"`` or ``"VE"``. Default is ``"VP"``.
    :type sde_type: str, optional
@@ -68,24 +68,25 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: build_log_prob_fn(model_wrapped, path, model_extras, step_size=0.01, method='Dopri5', atol=1e-05, rtol=1e-05, nsteps=1000, solver=None, exact_divergence=True, **kwargs)
+   .. py:method:: build_log_prob_fn(model_wrapped, path, model_extras, step_size=0.01, method='Dopri5', atol=1e-05, rtol=1e-05, nsteps=1000, solver=None, exact_divergence=True, log_prior=None, **kwargs)
 
       
-      Build a log-probability closure for the score matching PF-ODE.
+      Build a log-probability closure for the score matching probability flow ODE.
 
-      Uses the continuous change-of-variables formula via ``SMPFSolver``
+      Uses the continuous change-of-variables formula via ``SMODESolver``
       (which inherits ``get_log_prob`` from ``ODESolver``).  Only works
-      with ``SMPFSolver``; passing ``SMSolver`` will raise an error.
+      with ``SMODESolver``; passing ``SMSDESolver`` will raise an error.
 
       .. note::
 
          Unlike the default sampling behaviour of ``ScoreMatchingMethod``,
-         which integrates the *reverse SDE* (via ``SMSolver``), log-probability
-         evaluation requires the *probability flow ODE* formulation
-         (via ``SMPFSolver``).  Both formulations share the same marginal
-         distributions, so a score model trained with the standard SM loss
-         is mathematically valid for the PF-ODE.  When no ``solver`` is
-         passed, ``SMPFSolver`` is selected automatically.
+         which integrates the *reverse SDE* (via ``SMSDESolver``),
+         log-probability evaluation requires the *probability flow ODE*
+         formulation (via ``SMODESolver``).  Both formulations share the
+         same marginal distributions, so a score model trained with the
+         standard SM loss is mathematically valid for the probability
+         flow ODE.  When no ``solver`` is passed, ``SMODESolver`` is
+         selected automatically.
 
       :param model_wrapped: The wrapped score model.
       :param path: The score matching path.
@@ -104,17 +105,20 @@ Module Contents
                      when a fixed-step solver is selected). Default is 1000.
       :type nsteps: int, optional
       :param solver: ``(SolverClass, kwargs)``. Must be an ODE-based solver
-                     (``SMPFSolver``).
+                     (``SMODESolver``).
       :type solver: tuple of (type, dict), optional
       :param exact_divergence: If ``True`` (default), compute exact divergence via full
                                Jacobian. If ``False``, use the Hutchinson estimator (requires
                                a PRNG ``key`` at call time).
       :type exact_divergence: bool, optional
+      :param log_prior: Override for the prior's ``log_prob``. If ``None``, uses
+                        ``self.prior.log_prob``. Used by the joint pipeline.
+      :type log_prior: callable, optional
 
       :returns: **log_prob_fn** -- ``(x_1, model_extras=None, *, key=None) -> log_prob``.
       :rtype: Callable
 
-      :raises NotImplementedError: If a non-ODE solver (e.g. ``SMSolver``) is specified.
+      :raises NotImplementedError: If a non-ODE solver (e.g. ``SMSDESolver``) is specified.
 
 
 
@@ -168,15 +172,19 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: build_path(config)
+   .. py:method:: build_path(config, event_shape)
 
       
       Build a score matching path.
+
+      Also constructs ``self.prior`` as a numpyro distribution.
 
       :param config: Training configuration. Reads scheduler hyperparameters
                      (``beta_min``, ``beta_max`` for VP; ``sigma_min``, ``sigma_max``
                      for VE) with sensible defaults.
       :type config: dict
+      :param event_shape: ``(dim, ch)`` — feature and channel dimensions.
+      :type event_shape: tuple of (int, int)
 
       :returns: The configured score matching path.
       :rtype: SMPath
@@ -204,8 +212,8 @@ Module Contents
       
       Build a sampler closure for score matching.
 
-      Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``
-      (PF-ODE via ``ScoreToDrift`` + ``ODESolver``).
+      Supports ``SMSDESolver`` (reverse SDE) and ``SMODESolver``
+      (probability flow ODE via ``ScoreToODEDrift``).
 
       :param model_wrapped: The wrapped score model.
       :param path: The score matching path.
@@ -214,13 +222,11 @@ Module Contents
       :type model_extras: dict
       :param nsteps: Number of integration steps. Default is 1000.
       :type nsteps: int, optional
-      :param method: Integration method for the PF-ODE solver. Default is
-                     ``"Euler"``. Ignored when using the reverse SDE solver
-                     (``SMSolver``).
+      :param method: Integration method. Default is ``"Euler"``.
       :type method: str or diffrax solver, optional
       :param return_intermediates: Whether to return intermediate steps. Default is False.
       :type return_intermediates: bool, optional
-      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(SMSDESolver, {})``.
       :type solver: tuple of (type, dict), optional
 
       :returns: **sampler_fn** -- A function ``(key, x_init) -> samples``.
@@ -249,14 +255,14 @@ Module Contents
       
       Instantiate a score matching solver.
 
-      For the reverse SDE (``SMSolver``), instantiates the solver
-      directly. For PF-ODE sampling (``SMPFSolver``), wraps the score model with
-      ``ScoreToDrift`` first.
+      For the reverse SDE (``SMSDESolver``), wraps the model and extracts
+      prior parameters. For the probability flow ODE (``SMODESolver``),
+      wraps the score model with ``ScoreToODEDrift`` first.
 
       :param model_wrapped: The wrapped score model.
       :param path: The score matching path.
       :type path: SMPath
-      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.
+      :param solver: ``(SolverClass, kwargs)``. Defaults to ``(SMSDESolver, {})``.
       :type solver: tuple of (type, dict), optional
 
       :returns: An instantiated solver.
@@ -285,7 +291,7 @@ Module Contents
       
       Return the default reverse SDE solver.
 
-      :returns: ``(SMSolver, {})``
+      :returns: ``(SMSDESolver, {})``
       :rtype: tuple
 
 
@@ -366,17 +372,15 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample_init(key, shape, path)
+   .. py:method:: sample_init(key, nsamples)
 
       
       Sample from the score matching prior.
 
       :param key: Random key.
       :type key: jax.random.PRNGKey
-      :param shape: Shape of the initial sample.
-      :type shape: tuple
-      :param path: The score matching path (provides ``sample_prior``).
-      :type path: SMPath
+      :param nsamples: Number of samples to draw.
+      :type nsamples: int
 
       :returns: Sample from the prior.
       :rtype: Array
@@ -397,6 +401,11 @@ Module Contents
 
       ..
           !! processed by numpydoc !!
+
+
+   .. py:attribute:: prior
+      :value: None
+
 
 
    .. py:attribute:: sde_type

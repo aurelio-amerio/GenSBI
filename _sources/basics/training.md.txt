@@ -205,6 +205,7 @@ These are the standard hyperparameters available in `AbstractPipeline`:
 | `ema_decay`      | `0.999`         | Decay rate for the Exponential Moving Average.               |
 | `val_every`      | `100`           | How frequently (in steps) to run validation.                 |
 | `early_stopping` | `True`          | Whether to enable early stopping.                            |
+| `val_error_ratio` | `1.3`          | Threshold ratio of validation loss to best validation loss for incrementing the early-stopping counter. |
 | `checkpoint_dir` | `./checkpoints` | Directory to save model states.                              |
 
 ### Modifying the Configuration

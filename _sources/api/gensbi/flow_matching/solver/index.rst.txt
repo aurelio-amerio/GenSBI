@@ -35,8 +35,8 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
-   /api/gensbi/flow_matching/solver/ode_solver/index
-   /api/gensbi/flow_matching/solver/sde_solver_fm/index
+   /api/gensbi/flow_matching/solver/fm_ode_solver/index
+   /api/gensbi/flow_matching/solver/fm_sde_solver/index
 
 
 Classes
@@ -44,34 +44,103 @@ Classes
 
 .. autoapisummary::
 
-   gensbi.flow_matching.solver.BaseFmSDESolver
+   gensbi.flow_matching.solver.FMODESolver
+   gensbi.flow_matching.solver.FMSDESolver
    gensbi.flow_matching.solver.NonSingularSolver
-   gensbi.flow_matching.solver.ODESolver
    gensbi.flow_matching.solver.ZeroEndsSolver
 
 
 Package Contents
 ----------------
 
-.. py:class:: BaseFmSDESolver(velocity_model, mu0, sigma0, eps0 = 1e-05)
+.. py:class:: FMODESolver(velocity_model)
 
-   Bases: :py:obj:`gensbi.solver.Solver`
+   Bases: :py:obj:`gensbi.core.ode_solver.ODESolver`
 
 
    
-   Base class for flow matching SDE solvers.
+   Flow matching ODE solver.
 
-   Uses a velocity field model to construct drift and diffusion terms for an SDE
-   that samples from the same distribution as the flow matching ODE, but with
-   added stochasticity for improved sample quality.
+   The drift for the ODE is the velocity field itself:
 
-   :param velocity_model: A velocity field model, properly wrapped.
+   .. math::
+       dx = u_t(x)\, dt
+
+   :param velocity_model: Wrapped velocity field model.
    :type velocity_model: ModelWrapper
-   :param mu0: Mean of the prior Gaussian distribution. Shape: ``(features, channels)``.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gensbi.flow_matching.solver.fm_ode_solver import FMODESolver
+       from gensbi.utils.model_wrapping import ModelWrapper
+       import jax.numpy as jnp
+
+       model_wrapped = ModelWrapper(my_velocity_model)
+       solver = FMODESolver(velocity_model=model_wrapped)
+       sol = solver.sample(x_init, step_size=0.01, time_grid=jnp.array([0.0, 1.0]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_drift(**kwargs)
+
+      
+      Return the velocity field as the ODE drift.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: FMSDESolver(velocity_model, mu0, sigma0, eps0 = 1e-05)
+
+   Bases: :py:obj:`gensbi.core.sde_solver.SDESolver`
+
+
+   
+   Base flow matching SDE solver.
+
+   Provides :meth:`get_score` which derives the score from the velocity
+   field (see arXiv:2410.02217).  Subclasses implement :meth:`get_drift`
+   (:math:`\tilde{f}`) and :meth:`get_diffusion` (:math:`\tilde{g}`) using the score and velocity field.
+
+   :param velocity_model: Wrapped velocity field model.
+   :type velocity_model: ModelWrapper
+   :param mu0: Prior mean, shape ``(features, channels)``.
    :type mu0: Array
-   :param sigma0: Standard deviation of the prior Gaussian distribution. Shape: ``(features, channels)``.
+   :param sigma0: Prior std, shape ``(features, channels)``.
    :type sigma0: Array
-   :param eps0: Minimum time value (to avoid singularities near t=0).
+   :param eps0: Minimum time value.
    :type eps0: float
 
 
@@ -91,14 +160,20 @@ Package Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_f_tilde()
+   .. py:method:: get_diffusion()
       :abstractmethod:
 
 
       
-      Get the drift function :math:`\tilde{f}` for the SDE.
+      Return the diffusion function :math:`\tilde{g}(t, y, \text{args})` for the SDE.
 
-      See arXiv:2410.02217. Also known as the "drift" term.
+      Also known as :math:`\tilde{g}` (g-tilde) in the SDE literature.
+      Must return a ``(flat_dim, flat_dim)`` matrix for
+      ``diffrax.ControlTerm``.
+
+      :returns: ``diffusion(t, y_flat, args) -> Array`` of shape
+                ``(flat_dim, flat_dim)``
+      :rtype: Callable
 
 
 
@@ -118,61 +193,16 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_g_tilde()
+   .. py:method:: get_drift(**kwargs)
       :abstractmethod:
 
 
       
-      Get the diffusion function :math:`\tilde{g}` for the SDE.
+      Return the drift function :math:`\tilde{f}(t, x, \text{args})` for the SDE.
 
-      See arXiv:2410.02217. Also known as the "diffusion" term.
-      Must return a ``(flat_dim, flat_dim)`` matrix for ``ControlTerm``.
+      Also known as :math:`\tilde{f}` (f-tilde) in the SDE literature.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, static_model_kwargs = None)
-
-      
-      Stochastic sampler for the SDE.
-
-      :param step_size: The step size. Must be None when using ``"ShARK"`` (adaptive step sizing).
-      :type step_size: Optional[float]
-      :param method: Integration method. One of ``"Euler"``, ``"Heun"``, ``"SEA"``,
-                     ``"ShARK"``. Defaults to ``"Euler"``. ``"ShARK"`` automatically
-                     uses adaptive step sizing via ``PIDController``; the others use
-                     fixed step size.
-      :type method: Union[str, diffrax.AbstractERK]
-      :param atol: Absolute tolerance, used for adaptive step solvers.
-      :type atol: float
-      :param rtol: Relative tolerance, used for adaptive step solvers.
-      :type rtol: float
-      :param time_grid: The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
-      :type time_grid: Array
-      :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
-      :type return_intermediates: bool, optional
-      :param static_model_kwargs: Static keyword arguments baked into the drift/diffusion
-                                  at creation time.  Condition-dependent data should be
-                                  passed at call time via ``model_extras``.
-      :type static_model_kwargs: dict
-
-      :returns: ``sampler(x_init, key, model_extras=None)`` that returns
-                sampled trajectories of shape ``(batch, features, channels)``.
+      :returns: ``drift(t, x, args) -> Array``
       :rtype: Callable
 
 
@@ -196,53 +226,12 @@ Package Contents
    .. py:method:: get_score(**kwargs)
 
       
-      Obtain the score function given the velocity model. See arXiv:2410.02217.
+      Obtain the score function from the velocity model.
 
+      See arXiv:2410.02217.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: sample(x_init, step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = None, key = None)
-
-      
-      Sample from the SDE.
-
-      :param x_init: Initial conditions. Shape: [batch, features, channels].
-      :type x_init: Array
-      :param step_size: Step size.
-      :type step_size: Optional[float]
-      :param method: Integration method.
-      :type method: Union[str, diffrax.AbstractERK]
-      :param atol: Absolute tolerance.
-      :type atol: float
-      :param rtol: Relative tolerance.
-      :type rtol: float
-      :param time_grid: Time grid.
-      :type time_grid: Array
-      :param return_intermediates: Return intermediates.
-      :type return_intermediates: bool
-      :param model_extras: Runtime model extras (e.g. ``cond``, ``obs_ids``).
-      :type model_extras: dict
-      :param key: Random key. Required for SDE.
-      :type key: jax.random.PRNGKey
-
-      :returns: Samples.
-      :rtype: Array
+      :returns: ``score(t, x, args) -> Array``
+      :rtype: Callable
 
 
 
@@ -260,41 +249,32 @@ Package Contents
 
       ..
           !! processed by numpydoc !!
-
-
-   .. py:attribute:: eps0
-      :value: 1e-05
-
-
-
-   .. py:attribute:: flat_dim
 
 
    .. py:attribute:: mu0
 
 
-   .. py:attribute:: prior_distribution
-
-
-   .. py:attribute:: sample_shape
-
-
    .. py:attribute:: sigma0
-
-
-   .. py:attribute:: velocity_model
 
 
 .. py:class:: NonSingularSolver(velocity_model, mu0, sigma0, alpha)
 
-   Bases: :py:obj:`BaseFmSDESolver`
+   Bases: :py:obj:`FMSDESolver`
 
 
    
    NonSingular SDE solver for flow matching.
 
    From Tab. 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_,
-   with change of variable for time: t -> 1-t to match flow matching time notation.
+   with change of variable for time: t → 1−t to match flow matching
+   time notation.
+
+   The drift (:math:`\tilde{f}`) and diffusion (:math:`\tilde{g}`) are:
+
+   .. math::
+       \tilde{f}(t, x) = u_t(x) + \tfrac{1}{2}\alpha^2 (1-t)\, s(t, x)
+
+       \tilde{g}(t) = \alpha \sqrt{1-t}
 
    :param velocity_model: Velocity field model.
    :type velocity_model: ModelWrapper
@@ -322,12 +302,11 @@ Package Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_f_tilde(**kwargs)
+   .. py:method:: get_diffusion()
 
       
-      Get the drift function :math:`\tilde{f}` for the SDE.
+      Return diffusion :math:`\tilde{g}(t)` for NonSingular SDE.
 
-      See arXiv:2410.02217. Also known as the "drift" term.
 
 
 
@@ -347,13 +326,11 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_g_tilde()
+   .. py:method:: get_drift(**kwargs)
 
       
-      Get the diffusion function :math:`\tilde{g}` for the SDE.
+      Return drift :math:`\tilde{f}(t, x, \text{args})` for NonSingular SDE.
 
-      See arXiv:2410.02217. Also known as the "diffusion" term.
-      Must return a ``(flat_dim, flat_dim)`` matrix for ``ControlTerm``.
 
 
 
@@ -376,247 +353,24 @@ Package Contents
    .. py:attribute:: alpha
 
 
-.. py:class:: ODESolver(velocity_model)
-
-   Bases: :py:obj:`gensbi.solver.Solver`
-
-
-   
-   A class to solve ordinary differential equations (ODEs) using a specified velocity model.
-
-   This class utilizes a velocity field model to solve ODEs over a given time grid using numerical ode solvers.
-
-   :param velocity_model: a velocity field model receiving :math:`(x,t)` and returning :math:`u_t(x)`
-   :type velocity_model: Union[ModelWrapper, Callable]
-
-   .. rubric:: Example
-
-   .. code-block:: python
-
-       from gensbi.flow_matching.solver import ODESolver
-       from gensbi.utils.model_wrapping import ModelWrapper
-       import jax, jax.numpy as jnp
-
-       class DummyModel:
-           def __call__(self, obs, t, *args, **kwargs):
-               return jnp.squeeze(obs + t, axis=-1)
-
-       vf_model = DummyModel() # replace with your actual velocity field model, Simformer or Flux1
-
-       model_wrapped = ModelWrapper(vf_model) # you should use the appropriate ModelWrapper for your model, either ConditionalWrapper or JointWrapper, or a custom subclass of ModelWrapper
-       solver = ODESolver(velocity_model=model_wrapped)
-       x_init = jnp.zeros((10, 2))
-       time_grid = jnp.linspace(0, 1, 5)
-       sol = solver.sample(x_init=x_init, step_size=0.05, time_grid=time_grid)
-       print(sol.shape)
-       # (5, 10, 2)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-   .. py:method:: compute_log_prob(x_1, log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = None, return_intermediates = False, exact_divergence = True, *, key = None, model_extras = None)
-
-      
-      Compute the log-probability for given samples.
-
-      Only supported by solvers that can evaluate the continuous
-      change-of-variables formula (e.g. ``ODESolver``).
-
-      :raises NotImplementedError: If the solver does not support log-probability computation.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: get_log_prob(log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = None, return_intermediates = False, exact_divergence = True, *, static_model_kwargs = None)
-
-      
-      Solve for log_prob given a target sample at :math:`t=0`.
-
-      :param x_1: target sample (e.g., samples :math:`X_1 \sim p_1`).
-      :type x_1: Array
-      :param log_p0: Log probability function of source distribution.
-      :type log_p0: Callable[[Array], Array]
-      :param step_size: Step size for fixed-step solvers.
-      :type step_size: Optional[float]
-      :param method: Integration method to use.
-      :type method: str
-      :param atol: Absolute tolerance for adaptive solvers.
-      :type atol: float
-      :param rtol: Relative tolerance for adaptive solvers.
-      :type rtol: float
-      :param time_grid: Must start at 1.0 and end at 0.0.
-      :type time_grid: Array
-      :param return_intermediates: Whether to return intermediate steps.
-      :type return_intermediates: bool
-      :param exact_divergence: Use exact divergence vs Hutchinson estimator.
-      :type exact_divergence: bool
-      :param static_model_kwargs: Static keyword arguments baked into the vector field.
-      :type static_model_kwargs: dict
-
-      :returns: **Union[Tuple[Array, Array], Tuple[Sequence[Array], Array]]**
-      :rtype: Samples and log prob values.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = None, return_intermediates = False, static_model_kwargs = None)
-
-      
-      Obtain a sampler to solve the ODE with the velocity field.
-
-      **Time direction convention:**
-      In flow matching, ``t=0`` is noise and ``t=1`` is data. Sampling
-      integrates **forward** from ``t=0`` to ``t=1`` to transform noise
-      into data. This is the opposite of standard score matching (reverse
-      SDE: ``t=T→eps``) and different from EDM (which uses σ-space).
-
-      :param step_size: The step size. Must be None when using ``"Dopri5"`` (adaptive step sizing).
-      :type step_size: Optional[float]
-      :param method: A method supported by diffrax. Defaults to "Euler". Other commonly
-                     used solvers are ``"Dopri5"`` (adaptive), ``diffrax.Heun()``, and
-                     ``diffrax.Midpoint()``. ``"Dopri5"`` automatically uses adaptive
-                     step sizing via ``PIDController``; the others use fixed step size.
-      :type method: Union[str, AbstractERK]
-      :param atol: Absolute tolerance, used for adaptive step solvers.
-      :type atol: float
-      :param rtol: Relative tolerance, used for adaptive step solvers.
-      :type rtol: float
-      :param time_grid: The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
-      :type time_grid: Array
-      :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
-      :type return_intermediates: bool, optional
-      :param static_model_kwargs: Static keyword arguments baked into the vector field at
-                                  creation time.  Use for genuinely static configuration;
-                                  condition-dependent data should be passed at call time
-                                  via the ``model_extras`` argument of the returned sampler.
-      :type static_model_kwargs: dict
-
-      :returns: ``sampler(x_init, model_extras=None)`` — a function that
-                takes initial conditions and runtime model extras, and
-                returns the solution at final time or intermediate times.
-      :rtype: Callable
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: sample(x_init, step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = None)
-
-      
-      Sample from the ODE defined by the velocity field.
-
-      :param x_init: Initial conditions (e.g., source samples :math:`X_0 \sim p`). Shape: [batch_size, ...].
-      :type x_init: Array
-      :param step_size: The step size. Must be None when using ``"Dopri5"`` (adaptive step sizing).
-      :type step_size: Optional[float]
-      :param method: A method supported by diffrax. Defaults to "Euler". Other commonly
-                     used solvers are ``"Dopri5"`` (adaptive), ``diffrax.Heun()``, and
-                     ``diffrax.Midpoint()``. ``"Dopri5"`` automatically uses adaptive
-                     step sizing via ``PIDController``; the others use fixed step size.
-      :type method: Union[str, AbstractERK]
-      :param atol: Absolute tolerance, used for adaptive step solvers.
-      :type atol: float
-      :param rtol: Relative tolerance, used for adaptive step solvers.
-      :type rtol: float
-      :param time_grid: The process is solved in the interval [min(time_grid), max(time_grid)] and if step_size is None then time discretization is set by the time grid. May specify a descending time_grid to solve in the reverse direction. Defaults to jnp.array([0.0, 1.0]).
-      :type time_grid: Array
-      :param return_intermediates: If True then return intermediate time steps according to time_grid. Defaults to False.
-      :type return_intermediates: bool, optional
-      :param model_extras: Runtime model extras (e.g. ``cond``, ``obs_ids``).
-      :type model_extras: dict
-
-      :returns: The final state or the states at all intermediate time steps.
-      :rtype: Union[Array, Sequence[Array]]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:attribute:: velocity_model
-
-
 .. py:class:: ZeroEndsSolver(velocity_model, mu0, sigma0, alpha, eps0 = 0.001)
 
-   Bases: :py:obj:`BaseFmSDESolver`
+   Bases: :py:obj:`FMSDESolver`
 
 
    
    ZeroEnds SDE solver for flow matching.
 
    From Tab. 1 of `arXiv:2410.02217 <http://arxiv.org/abs/2410.02217>`_,
-   with change of variable for time: t -> 1-t to match flow matching time notation.
+   with change of variable for time: t → 1−t to match flow matching
+   time notation.
+
+   The drift (:math:`\tilde{f}`) and diffusion (:math:`\tilde{g}`) are:
+
+   .. math::
+       \tilde{f}(t, x) = u_t(x) + \tfrac{1}{2}\alpha^2 t(1-t)\, s(t, x)
+
+       \tilde{g}(t) = \alpha \sqrt{t(1-t)}
 
    :param velocity_model: Velocity field model.
    :type velocity_model: ModelWrapper
@@ -646,12 +400,11 @@ Package Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: get_f_tilde(**kwargs)
+   .. py:method:: get_diffusion()
 
       
-      Get the drift function :math:`\tilde{f}` for the SDE.
+      Return diffusion :math:`\tilde{g}(t)` for ZeroEnds SDE.
 
-      See arXiv:2410.02217. Also known as the "drift" term.
 
 
 
@@ -671,13 +424,11 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: get_g_tilde()
+   .. py:method:: get_drift(**kwargs)
 
       
-      Get the diffusion function :math:`\tilde{g}` for the SDE.
+      Return drift :math:`\tilde{f}(t, x, \text{args})` for ZeroEnds SDE.
 
-      See arXiv:2410.02217. Also known as the "diffusion" term.
-      Must return a ``(flat_dim, flat_dim)`` matrix for ``ControlTerm``.
 
 
 

@@ -100,15 +100,20 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: build_path(config)
+   .. py:method:: build_path(config, event_shape)
 
       
       Build an EDM diffusion path.
+
+      Also constructs ``self.prior`` as a standard normal numpyro
+      distribution.
 
       :param config: Training configuration. Reads scheduler hyperparameters
                      (``sigma_min``, ``sigma_max``, ``beta_min``, ``beta_max``)
                      with sensible defaults.
       :type config: dict
+      :param event_shape: ``(dim, ch)`` — feature and channel dimensions.
+      :type event_shape: tuple of (int, int)
 
       :returns: The configured diffusion path.
       :rtype: EDMPath
@@ -303,17 +308,15 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample_init(key, shape, path)
+   .. py:method:: sample_init(key, nsamples)
 
       
       Sample from the diffusion prior.
 
       :param key: Random key.
       :type key: jax.random.PRNGKey
-      :param shape: Shape of the initial sample.
-      :type shape: tuple
-      :param path: The diffusion path (provides ``sample_prior``).
-      :type path: EDMPath
+      :param nsamples: Number of samples to draw.
+      :type nsamples: int
 
       :returns: Sample from the prior.
       :rtype: Array

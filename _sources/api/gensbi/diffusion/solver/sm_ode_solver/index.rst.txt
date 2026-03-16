@@ -1,0 +1,100 @@
+gensbi.diffusion.solver.sm_ode_solver
+=====================================
+
+.. py:module:: gensbi.diffusion.solver.sm_ode_solver
+
+.. autoapi-nested-parse::
+
+   Score matching probability flow ODE solver.
+
+   Provides :class:`SMODESolver`, a thin subclass of
+   :class:`~gensbi.core.ode_solver.ODESolver` used for dispatch in
+   the score matching pipeline.
+
+   The probability flow ODE is:
+
+   .. math::
+       dx = \left[ f(x,t) - \tfrac{1}{2}\, g(t)^2\, s_\theta(x, t) \right] dt
+
+   The pipeline wraps the score model with
+   :class:`~gensbi.utils.model_wrapping.ScoreToODEDrift` before constructing
+   this solver, so the drift returned by ``get_drift()`` is already the
+   PF-ODE drift.
+
+   All integration and log-probability logic is inherited from
+   ``ODESolver``.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.diffusion.solver.sm_ode_solver.SMODESolver
+
+
+Module Contents
+---------------
+
+.. py:class:: SMODESolver(velocity_model)
+
+   Bases: :py:obj:`gensbi.core.ode_solver.ODESolver`
+
+
+   
+   Score matching probability flow ODE solver.
+
+   Uses the probability flow ODE formulation to sample deterministically
+   from a score matching model.  The velocity model passed to this solver
+   should already be wrapped with ``ScoreToODEDrift`` + ``ModelWrapper``
+   by the pipeline.
+
+   All integration and log-probability logic is inherited from
+   :class:`~gensbi.core.ode_solver.ODESolver`.
+
+   .. seealso:: :py:obj:`gensbi.utils.model_wrapping.ScoreToODEDrift`, :py:obj:`gensbi.core.score_matching.ScoreMatchingMethod.build_solver`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_drift(**kwargs)
+
+      
+      Return the probability flow ODE drift (from ScoreToODEDrift adapter).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

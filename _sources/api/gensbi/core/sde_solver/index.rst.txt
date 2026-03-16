@@ -1,0 +1,242 @@
+gensbi.core.sde_solver
+======================
+
+.. py:module:: gensbi.core.sde_solver
+
+.. autoapi-nested-parse::
+
+   Core SDE solver.
+
+   Provides :class:`SDESolver`, an abstract base solver for stochastic
+   differential equations using diffrax.  Subclasses implement
+   :meth:`get_drift` and :meth:`get_diffusion` to define the SDE coefficients
+   (often called :math:`   ilde{f}` and :math:`    ilde{g}` in the literature, see arXiv:2410.02217).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.core.sde_solver.SDESolver
+
+
+Module Contents
+---------------
+
+.. py:class:: SDESolver(velocity_model, eps0 = 1e-05)
+
+   Bases: :py:obj:`gensbi.solver.Solver`
+
+
+   
+   Abstract SDE solver built on diffrax.
+
+   Subclass and implement :meth:`get_drift` (:math:`\tilde{f}`) and :meth:`get_diffusion`
+   (:math:`\tilde{g}`) to provide the SDE coefficients:
+
+   .. math::
+       dx = \tilde{f}(t, x)\, dt + \tilde{g}(t)\, dW
+
+   The ``velocity_model`` must be a
+   :class:`~gensbi.utils.model_wrapping.ModelWrapper` subclass.
+   Conditioning is handled entirely by the wrapper layer — the solver
+   never needs to know about it.
+
+   :param velocity_model: A properly wrapped model.
+   :type velocity_model: ModelWrapper
+   :param eps0: Minimum time value (to avoid singularities near t=0).
+   :type eps0: float
+
+   .. rubric:: Notes
+
+   **Input shape convention:** all inputs must have shape
+   ``(batch, features, channels)``.  If your data is 2-D
+   ``(batch, features)``, add a trailing dimension: ``x = x[..., None]``.
+
+   **Itô vs Stratonovich:** Since the diffusion coefficient
+   :math:`\tilde{g}(t)` depends only on time (additive noise), the Itô
+   and Stratonovich interpretations coincide.  Both Itô solvers
+   (e.g. ``Euler``) and Stratonovich solvers (e.g. ``EulerHeun``) can be
+   used interchangeably.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_diffusion()
+      :abstractmethod:
+
+
+      
+      Return the diffusion function :math:`\tilde{g}(t, y, \text{args})` for the SDE.
+
+      Also known as :math:`\tilde{g}` (g-tilde) in the SDE literature.
+      Must return a ``(flat_dim, flat_dim)`` matrix for
+      ``diffrax.ControlTerm``.
+
+      :returns: ``diffusion(t, y_flat, args) -> Array`` of shape
+                ``(flat_dim, flat_dim)``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_drift(**kwargs)
+      :abstractmethod:
+
+
+      
+      Return the drift function :math:`\tilde{f}(t, x, \text{args})` for the SDE.
+
+      Also known as :math:`\tilde{f}` (f-tilde) in the SDE literature.
+
+      :returns: ``drift(t, x, args) -> Array``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, static_model_kwargs = None)
+
+      
+      Build a stochastic sampler for the SDE.
+
+      :param step_size: Fixed step size.  ``None`` when using ``"ShARK"``
+                        (adaptive step sizing).
+      :type step_size: float or None
+      :param method: ``"Euler"``, ``"EulerHeun"``, ``"SEA"``, ``"ShARK"``, or a
+                     diffrax solver instance.
+      :type method: str or AbstractERK
+      :param atol: Tolerances for adaptive solvers.
+      :type atol: float
+      :param rtol: Tolerances for adaptive solvers.
+      :type rtol: float
+      :param time_grid: Integration interval.  Defaults to ``[0, 1]``.
+      :type time_grid: Array
+      :param return_intermediates: Return solution at every point in *time_grid*.
+      :type return_intermediates: bool
+      :param static_model_kwargs: Static keyword arguments baked into the drift at creation
+                                  time.
+      :type static_model_kwargs: dict
+
+      :returns: ``sampler(x_init, key, model_extras=None)``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(x_init, step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = None, key = None)
+
+      
+      Sample from the SDE.
+
+      :param x_init: Initial conditions, shape ``(batch, features, channels)``.
+      :type x_init: Array
+      :param step_size: Step size.
+      :type step_size: float or None
+      :param method: Integration method.
+      :type method: str or AbstractERK
+      :param atol: Tolerances.
+      :type atol: float
+      :param rtol: Tolerances.
+      :type rtol: float
+      :param time_grid: Integration interval.
+      :type time_grid: Array
+      :param return_intermediates: Return intermediates.
+      :type return_intermediates: bool
+      :param model_extras: Runtime model extras.
+      :type model_extras: dict
+      :param key: Random key (required).
+      :type key: PRNGKey
+
+      :returns: Samples.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: eps0
+      :value: 1e-05
+
+
+
+   .. py:attribute:: velocity_model
+
+

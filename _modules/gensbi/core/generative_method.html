@@ -845,17 +845,28 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    - **Initial sample generation** — drawing from the prior</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="GenerativeMethod.has_custom_prior">
+<a class="viewcode-back" href="../../../api/gensbi/core/generative_method/index.html#gensbi.core.generative_method.GenerativeMethod.has_custom_prior">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_custom_prior</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the user provided a custom prior at construction time.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_user_prior&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+
     <span class="nd">@abstractmethod</span>
 <div class="viewcode-block" id="GenerativeMethod.build_path">
 <a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.generative_method.GenerativeMethod.build_path">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the probability path from training config.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create the probability path and construct the prior.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        config : dict</span>
 <span class="sd">            Training configuration dictionary (may contain scheduler</span>
 <span class="sd">            hyperparameters such as ``sigma_min``, ``sigma_max``).</span>
+<span class="sd">        event_shape : tuple of (int, int)</span>
+<span class="sd">            ``(dim, ch)`` — feature and channel dimensions. Used to</span>
+<span class="sd">            construct ``self.prior`` as a numpyro distribution.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -955,22 +966,22 @@ window.runMermaid = runMermaid;</script>
     <span class="nd">@abstractmethod</span>
 <div class="viewcode-block" id="GenerativeMethod.sample_init">
 <a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.generative_method.GenerativeMethod.sample_init">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample initial noise for the generative process.</span>
+
+<span class="sd">        Uses ``self.prior`` (constructed during :meth:`build_path`).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        key : jax.random.PRNGKey</span>
 <span class="sd">            Random key.</span>
-<span class="sd">        shape : tuple</span>
-<span class="sd">            Shape of the initial sample, e.g. ``(nsamples, dim, ch)``.</span>
-<span class="sd">        path</span>
-<span class="sd">            The probability path (needed for ``sample_prior`` in diffusion/SM).</span>
+<span class="sd">        nsamples : int</span>
+<span class="sd">            Number of samples to draw.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        x_init : Array</span>
-<span class="sd">            Initial noise sample.</span>
+<span class="sd">            Initial noise sample of shape ``(nsamples, *event_shape)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
 

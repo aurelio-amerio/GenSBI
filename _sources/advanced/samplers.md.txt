@@ -46,12 +46,12 @@ The [Methods and Samplers notebook](/notebooks/methods_and_samplers) demonstrate
 
 ```{admonition} Import
 :class: tip
-`from gensbi.flow_matching.solver import ODESolver, ZeroEndsSolver, NonSingularSolver`
+`from gensbi.flow_matching.solver import FMODESolver, ZeroEndsSolver, NonSingularSolver`
 ```
 
 | Solver | Type | Default? | Description |
 |--------|------|----------|-------------|
-| `ODESolver` | Deterministic ODE | ✅ Yes | Standard ODE integration (Euler, Dopri5). Fast and robust. |
+| `FMODESolver` | Deterministic ODE | ✅ Yes | Standard ODE integration (Euler, Dopri5). Fast and robust. |
 | `ZeroEndsSolver` | Stochastic SDE | No | SDE from arXiv:2410.02217 (Tab. 1). Diffusion vanishes at both time endpoints. Can improve sample diversity. |
 | `NonSingularSolver` | Stochastic SDE | No | SDE from arXiv:2410.02217 (Tab. 1). Non-singular diffusion coefficient. |
 
@@ -86,17 +86,31 @@ The EDM solver is always used for `DiffusionEDMMethod`. The scheduler variant (E
 
 ```{admonition} Import
 :class: tip
-`from gensbi.diffusion.solver import SMSolver, SMPFSolver`
+`from gensbi.diffusion.solver import SMSDESolver, SMODESolver`
 ```
 
 | Solver | Type | Default? | Description |
 |--------|------|----------|-------------|
-| `SMSolver` | Stochastic (reverse SDE) | ✅ Yes | Standard reverse-SDE sampler from Song et al., 2021. |
-| `SMPFSolver` | Deterministic (probability flow ODE) | No | Probability flow ODE. Deterministic samples from the same learned score. |
+| `SMSDESolver` | Stochastic (reverse SDE) | ✅ Yes | Standard reverse-SDE sampler from Song et al., 2021. |
+| `SMODESolver` | Deterministic (probability flow ODE) | No | Probability flow ODE. Deterministic samples from the same learned score. |
 
 **No additional kwargs needed** — pass `{}` as the kwargs dict.
 
 ---
+
+## Time Direction Conventions
+
+Each method has its own convention for how time maps to "data" and "noise/source". Understanding this is critical when working with log-probability computation or custom solvers.
+
+| Method | Noise/Source | Data | Sampling direction | Log-prob direction |
+|--------|-------------|------|--------------------|--------------------|
+| **Flow Matching** | $t = 0$ | $t = 1$ | $0 \to 1$ (ascending) | $1 \to 0$ (descending) |
+| **Score Matching** | $t = T$ (=1) | $t = \varepsilon$ (≈0) | $T \to \varepsilon$ (descending) | $\varepsilon \to T$ (ascending) |
+| **EDM Diffusion** | $\sigma = \sigma_\text{max}$ | $\sigma \approx 0$ | Uses $\sigma$-schedule, not a time grid | Log-prob not supported |
+
+```{important}
+**Sampling and log-prob always go in opposite directions.** Sampling goes from noise to data; log-prob goes from data to noise (source). If you implement a custom solver or modify the time grid, ensure the log-prob time grid is **reversed** from the sampling time grid.
+```
 
 ## How to Override the Solver
 
@@ -116,10 +130,10 @@ solver_kwargs = {
 }
 samples = pipeline.sample(key, x_o, nsamples=10_000, solver=(ZeroEndsSolver, solver_kwargs))
 
-# Override with SMPFSolver (score matching)
-from gensbi.diffusion.solver import SMPFSolver
+# Override with SMODESolver (score matching)
+from gensbi.diffusion.solver import SMODESolver
 
-samples = pipeline.sample(key, x_o, nsamples=10_000, solver=(SMPFSolver, {}))
+samples = pipeline.sample(key, x_o, nsamples=10_000, solver=(SMODESolver, {}))
 ```
 
 ```{important}
@@ -132,12 +146,12 @@ The solver override only affects sampling — it does **not** require retraining
 
 | Method | Default Solver | Alternative Solvers |
 |--------|---------------|---------------------|
-| `FlowMatchingMethod` | `ODESolver` (ODE) | `ZeroEndsSolver` (SDE), `NonSingularSolver` (SDE) |
+| `FlowMatchingMethod` | `FMODESolver` (ODE) | `ZeroEndsSolver` (SDE), `NonSingularSolver` (SDE) |
 | `DiffusionEDMMethod` | `EDMSolver` | — |
-| `ScoreMatchingMethod` | `SMSolver` (reverse SDE) | `SMPFSolver` (probability flow ODE) |
+| `ScoreMatchingMethod` | `SMSDESolver` (reverse SDE) | `SMODESolver` (probability flow ODE) |
 
 For working examples demonstrating these solvers, see:
 <!-- - [Flow Matching examples](../examples/flux1_flow_pipeline.py) — includes `ZeroEndsSolver` section
-- [Score Matching examples](../examples/flux1_sm_pipeline.py) — includes `SMPFSolver` section
+- [Score Matching examples](../examples/flux1_sm_pipeline.py) — includes `SMODESolver` section
 - [Unified pipeline examples](../examples/conditional_pipeline.py) — shows method + solver selection -->
 - [Methods and Samplers notebook](/notebooks/methods_and_samplers) — interactive notebook covering all three methods and their solvers.

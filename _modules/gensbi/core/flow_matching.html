@@ -829,50 +829,17 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpyro.distributions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.generative_method</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeMethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_gaussian_prior</span><span class="p">,</span> <span class="n">is_gaussian_prior</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.sde_solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SDESolver</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">AffineProbPath</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">CondOTScheduler</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ODESolver</span><span class="p">,</span> <span class="n">BaseFmSDESolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver.fm_ode_solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">FMODESolver</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">FMLoss</span>  
-
-
-<div class="viewcode-block" id="StandardNormalPrior">
-<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.StandardNormalPrior">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">StandardNormalPrior</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Default prior: standard normal distribution with ``log_prob`` support.</span>
-
-<span class="sd">    Wraps ``jax.random.normal`` for sampling and uses</span>
-<span class="sd">    ``numpyro.distributions.Independent(Normal(...))`` for ``log_prob``.</span>
-<span class="sd">    The distribution is lazily constructed on the first ``log_prob`` call</span>
-<span class="sd">    to match the shape of the input.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-<div class="viewcode-block" id="StandardNormalPrior.sample">
-<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.StandardNormalPrior.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="StandardNormalPrior.log_prob">
-<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.StandardNormalPrior.log_prob">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute log-probability under N(0, I) for the non-batch dims.&quot;&quot;&quot;</span>
-        <span class="c1"># x has shape (batch, features, channels) or (features, channels)</span>
-        <span class="n">event_shape</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>  <span class="c1"># (features, channels)</span>
-        <span class="n">p0</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">Independent</span><span class="p">(</span>
-            <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span>
-                <span class="n">loc</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
-                <span class="n">scale</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
-            <span class="p">),</span>
-            <span class="n">reinterpreted_batch_ndims</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">p0</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
-</div>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">FMLoss</span>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FlowMatchingMethod</span><span class="p">(</span><span class="n">GenerativeMethod</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flow matching strategy using affine probability paths.</span>
 
@@ -883,14 +850,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ----------</span>
 <span class="sd">    prior : numpyro.distributions.Distribution, optional</span>
 <span class="sd">        Source distribution. Must implement ``sample(key, shape)`` and</span>
-<span class="sd">        ``log_prob(x)``. If you need log-probability evaluation (via</span>
-<span class="sd">        ``build_log_prob_fn``), the prior **must** be a proper numpyro</span>
-<span class="sd">        distribution. Defaults to ``StandardNormalPrior`` (≡ N(0, I)).</span>
+<span class="sd">        ``log_prob(x)``. Validated against ``event_shape`` in</span>
+<span class="sd">        :meth:`build_path`. If ``None``, a standard normal prior is</span>
+<span class="sd">        constructed automatically.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    &gt;&gt;&gt; method = FlowMatchingMethod()</span>
-<span class="sd">    &gt;&gt;&gt; path = method.build_path(config={})</span>
+<span class="sd">    &gt;&gt;&gt; path = method.build_path(config={}, event_shape=(5, 1))</span>
 <span class="sd">    &gt;&gt;&gt; loss = method.build_loss(path)</span>
 
 <span class="sd">    Using a custom numpyro prior (x has shape ``(batch, dim_obs, ch_obs)``):</span>
@@ -905,31 +872,53 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="FlowMatchingMethod._user_prior">
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod._user_prior">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_user_prior</span> <span class="o">=</span> <span class="n">prior</span></div>
+
 <div class="viewcode-block" id="FlowMatchingMethod.prior">
 <a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.prior">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="n">prior</span> <span class="k">if</span> <span class="n">prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">StandardNormalPrior</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.build_path">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_path">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build an affine probability path with the CondOT scheduler.</span>
+
+<span class="sd">        Also constructs or validates ``self.prior``.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        config : dict</span>
 <span class="sd">            Training configuration (unused for flow matching).</span>
+<span class="sd">        event_shape : tuple of (int, int)</span>
+<span class="sd">            ``(dim, ch)`` — feature and channel dimensions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        AffineProbPath</span>
 <span class="sd">            The probability path.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If a user-supplied prior has a mismatched ``event_shape``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_prior</span><span class="o">.</span><span class="n">event_shape</span> <span class="o">!=</span> <span class="n">event_shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Prior event_shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_user_prior</span><span class="o">.</span><span class="n">event_shape</span><span class="si">}</span><span class="s2"> does not &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;match expected </span><span class="si">{</span><span class="n">event_shape</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_prior</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="n">make_gaussian_prior</span><span class="p">(</span><span class="o">*</span><span class="n">event_shape</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">AffineProbPath</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="n">CondOTScheduler</span><span class="p">())</span></div>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.build_loss">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_loss">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_loss">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the continuous flow matching loss.</span>
 
@@ -950,7 +939,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.prepare_batch">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.prepare_batch">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.prepare_batch">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the prior and time for a flow matching training batch.</span>
 
@@ -970,26 +959,26 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``t`` is uniform in ``[0, 1)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">rng_x0</span><span class="p">,</span> <span class="n">rng_t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="n">x_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rng_x0</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">x_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rng_x0</span><span class="p">,</span> <span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],))</span>
         <span class="n">t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">rng_t</span><span class="p">,</span> <span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],))</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.get_default_solver">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.get_default_solver">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.get_default_solver">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_default_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the default ODE solver.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        tuple</span>
-<span class="sd">            ``(ODESolver, {})``</span>
+<span class="sd">            ``(FMODESolver, {})``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">ODESolver</span><span class="p">,</span> <span class="p">{})</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">FMODESolver</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.build_solver">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_solver">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_solver">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate a flow matching solver.</span>
 
@@ -1004,8 +993,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            The probability path (unused by ODE solver, but may be</span>
 <span class="sd">            needed by SDE solvers).</span>
 <span class="sd">        solver : tuple of (type, dict), optional</span>
-<span class="sd">            ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.\</span>
-
+<span class="sd">            ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.\n</span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        solver_instance</span>
@@ -1014,33 +1002,44 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_solver</span><span class="p">()</span>
         <span class="n">solver_cls</span><span class="p">,</span> <span class="n">solver_kwargs</span> <span class="o">=</span> <span class="n">solver</span>
+
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">solver_cls</span><span class="p">,</span> <span class="n">SDESolver</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_gaussian_prior</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;FM SDE solvers require a Gaussian prior.&quot;</span><span class="p">)</span>
+            <span class="c1"># Prior provides default mu0/sigma0; user kwargs override</span>
+            <span class="c1"># (needed for joint pipeline where solver operates in obs-space)</span>
+            <span class="n">sde_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;mu0&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">base_dist</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span>
+                <span class="s2">&quot;sigma0&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">base_dist</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">sde_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">solver_kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">velocity_model</span><span class="o">=</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="o">**</span><span class="n">sde_kwargs</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">solver_cls</span><span class="p">(</span><span class="n">velocity_model</span><span class="o">=</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_kwargs</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.sample_init">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.sample_init">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.sample_init">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the prior distribution.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        key : jax.random.PRNGKey</span>
 <span class="sd">            Random key.</span>
-<span class="sd">        shape : tuple</span>
-<span class="sd">            Shape of the initial sample.</span>
-<span class="sd">        path</span>
-<span class="sd">            The probability path (unused).</span>
+<span class="sd">        nsamples : int</span>
+<span class="sd">            Number of samples to draw.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Array</span>
 <span class="sd">            Sample from the prior.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,))</span></div>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.build_sampler_fn">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_sampler_fn">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_sampler_fn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_sampler_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span>
                          <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                          <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -1075,7 +1074,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            A function ``(key, x_init) -&gt; samples``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">solver_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_solver</span><span class="p">(</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span>
-        <span class="n">pass_key</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">BaseFmSDESolver</span><span class="p">)</span>
+        <span class="n">pass_key</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">SDESolver</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">time_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
@@ -1102,11 +1101,11 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="FlowMatchingMethod.build_log_prob_fn">
-<a class="viewcode-back" href="../../../api/gensbi/core/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_log_prob_fn">[docs]</a>
+<a class="viewcode-back" href="../../../api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_log_prob_fn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_log_prob_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">model_extras</span><span class="p">,</span>
                           <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Dopri5&quot;</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
                           <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                          <span class="n">exact_divergence</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                          <span class="n">exact_divergence</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a log-probability closure for flow matching.</span>
 
 <span class="sd">        Uses the continuous change-of-variables formula via ``ODESolver``.</span>
@@ -1136,6 +1135,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            If ``True`` (default), compute exact divergence via full</span>
 <span class="sd">            Jacobian. If ``False``, use the Hutchinson estimator (requires</span>
 <span class="sd">            a PRNG ``key`` at call time).</span>
+<span class="sd">        log_prior : callable, optional</span>
+<span class="sd">            Override for the prior&#39;s ``log_prob``. If ``None``, uses</span>
+<span class="sd">            ``self.prior.log_prob``. Used by the joint pipeline to pass</span>
+<span class="sd">            a user-supplied obs-space prior.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1149,17 +1152,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">solver_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_solver</span><span class="p">(</span><span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">ODESolver</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">FMODESolver</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Log-probability computation requires ODESolver, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Log-probability computation requires FMODESolver, &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">time_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
 
-        <span class="c1"># Get log_p0 from the prior</span>
-        <span class="n">log_p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">log_prob</span>
+        <span class="c1"># Use the provided log_prior if given, otherwise fall back to the prior</span>
+        <span class="n">log_p0</span> <span class="o">=</span> <span class="n">log_prior</span> <span class="k">if</span> <span class="n">log_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">log_prob</span>
 
         <span class="n">log_prob_closure</span> <span class="o">=</span> <span class="n">solver_instance</span><span class="o">.</span><span class="n">get_log_prob</span><span class="p">(</span>
             <span class="n">log_p0</span><span class="o">=</span><span class="n">log_p0</span><span class="p">,</span>

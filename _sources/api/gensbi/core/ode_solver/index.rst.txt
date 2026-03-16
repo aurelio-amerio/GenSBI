@@ -1,0 +1,259 @@
+gensbi.core.ode_solver
+======================
+
+.. py:module:: gensbi.core.ode_solver
+
+.. autoapi-nested-parse::
+
+   Core ODE solver.
+
+   Provides :class:`ODESolver`, an abstract base solver for ordinary
+   differential equations using diffrax.  Subclasses only need to implement
+   :meth:`get_drift` to define the vector field (often called :math:`      ilde{f}` in the SDE
+   literature).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.core.ode_solver.ODESolver
+
+
+Module Contents
+---------------
+
+.. py:class:: ODESolver(velocity_model)
+
+   Bases: :py:obj:`gensbi.solver.Solver`
+
+
+   
+   Abstract ODE solver built on diffrax.
+
+   Subclass and implement :meth:`get_drift` to provide the drift / velocity
+   field for the ODE.
+
+   The ``velocity_model`` must be a :class:`~gensbi.utils.model_wrapping.ModelWrapper`
+   subclass.  Conditioning is handled entirely by the wrapper layer
+   (``ConditionalWrapper``, ``JointWrapper``, etc.) — the solver never
+   needs to know about it.
+
+   :param velocity_model: A properly wrapped model providing ``get_vector_field`` and
+                          ``get_divergence`` methods.
+   :type velocity_model: ModelWrapper
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: compute_log_prob(x_1, log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = None, return_intermediates = False, exact_divergence = True, *, key = None, model_extras = None)
+
+      
+      Compute log-probability for given samples.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_drift(**kwargs)
+      :abstractmethod:
+
+
+      
+      Return the drift function for the ODE.
+
+      Also known as :math:`\tilde{f}` in the SDE/ODE literature.
+
+      :returns: ``drift(t, x, args) -> Array``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_log_prob(log_p0, step_size = 0.01, method = 'Dopri5', atol = 1e-05, rtol = 1e-05, time_grid = None, return_intermediates = False, exact_divergence = True, *, static_model_kwargs = None)
+
+      
+      Build a log-probability function via the change-of-variables formula.
+
+      :param log_p0: Log-probability of the source (base) distribution.
+      :type log_p0: Callable
+      :param step_size: Step size for fixed-step solvers.
+      :type step_size: float
+      :param method: Integration method.
+      :type method: str or AbstractERK
+      :param atol: Tolerances for adaptive solvers.
+      :type atol: float
+      :param rtol: Tolerances for adaptive solvers.
+      :type rtol: float
+      :param time_grid: Integration interval from data to source.  Can be descending
+                        (FM: ``[1, 0]``) or ascending (SM: ``[eps, T]``).
+                        Defaults to ``[1, 0]``.
+      :type time_grid: Array, optional
+      :param return_intermediates: Return intermediate steps.
+      :type return_intermediates: bool
+      :param exact_divergence: Use exact divergence (True) or Hutchinson estimator (False).
+      :type exact_divergence: bool
+      :param static_model_kwargs: Static keyword arguments for the drift.
+      :type static_model_kwargs: dict
+
+      :returns: ``log_prob_fn(x_1, model_extras=None, *, key=None)``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = None, return_intermediates = False, static_model_kwargs = None)
+
+      
+      Obtain a sampler to solve the ODE.
+
+      :param step_size: Fixed step size. ``None`` when using adaptive solvers
+                        (e.g. ``"Dopri5"``).
+      :type step_size: float or None
+      :param method: Diffrax solver.  ``"Euler"``, ``"Dopri5"``, ``diffrax.Heun()``,
+                     ``diffrax.Midpoint()``, etc.
+      :type method: str or AbstractERK
+      :param atol: Absolute tolerance (adaptive solvers).
+      :type atol: float
+      :param rtol: Relative tolerance (adaptive solvers).
+      :type rtol: float
+      :param time_grid: Integration interval ``[time_grid[0], time_grid[-1]]``.
+                        Defaults to ``[0, 1]``.
+      :type time_grid: Array, optional
+      :param return_intermediates: If True, return solution at every point in *time_grid*.
+      :type return_intermediates: bool
+      :param static_model_kwargs: Static keyword arguments baked into the drift at creation
+                                  time.  Condition-dependent data should be passed at call time
+                                  via ``model_extras``.
+      :type static_model_kwargs: dict
+
+      :returns: ``sampler(x_init, model_extras=None)``
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(x_init, step_size, method = 'Euler', atol = 1e-05, rtol = 1e-05, time_grid = jnp.array([0.0, 1.0]), return_intermediates = False, model_extras = None)
+
+      
+      Sample from the ODE.
+
+      :param x_init: Initial conditions. Shape ``(batch, ...)``.
+      :type x_init: Array
+      :param step_size: Step size.
+      :type step_size: float or None
+      :param method: Integration method.
+      :type method: str or AbstractERK
+      :param atol: Tolerances for adaptive solvers.
+      :type atol: float
+      :param rtol: Tolerances for adaptive solvers.
+      :type rtol: float
+      :param time_grid: Integration interval.
+      :type time_grid: Array
+      :param return_intermediates: Return intermediate steps.
+      :type return_intermediates: bool
+      :param model_extras: Runtime model extras (e.g. ``cond``, ``obs_ids``).
+      :type model_extras: dict
+
+      :returns: Solution at final time or at all intermediate times.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: velocity_model
+
+

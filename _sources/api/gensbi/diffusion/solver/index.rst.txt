@@ -41,8 +41,8 @@ Submodules
 
    /api/gensbi/diffusion/solver/edm_samplers/index
    /api/gensbi/diffusion/solver/edm_solver/index
-   /api/gensbi/diffusion/solver/sm_samplers/index
-   /api/gensbi/diffusion/solver/sm_solver/index
+   /api/gensbi/diffusion/solver/sm_ode_solver/index
+   /api/gensbi/diffusion/solver/sm_sde_solver/index
 
 
 Classes
@@ -51,8 +51,8 @@ Classes
 .. autoapisummary::
 
    gensbi.diffusion.solver.EDMSolver
-   gensbi.diffusion.solver.SMPFSolver
-   gensbi.diffusion.solver.SMSolver
+   gensbi.diffusion.solver.SMODESolver
+   gensbi.diffusion.solver.SMSDESolver
 
 
 Package Contents
@@ -186,28 +186,23 @@ Package Contents
    .. py:attribute:: score_model
 
 
-.. py:class:: SMPFSolver(velocity_model)
+.. py:class:: SMODESolver(velocity_model)
 
-   Bases: :py:obj:`gensbi.flow_matching.solver.ODESolver`
+   Bases: :py:obj:`gensbi.core.ode_solver.ODESolver`
 
 
    
-   Score matching PF-ODE solver (probability flow ODE).
+   Score matching probability flow ODE solver.
 
-   Thin subclass of :class:`ODESolver` used for dispatching in the
-   score matching pipeline.  ``ScoreMatchingMethod.build_solver``
-   detects this type and wraps the score model with
-   :class:`~gensbi.utils.model_wrapping.ScoreToDrift` before
-   constructing the solver.
+   Uses the probability flow ODE formulation to sample deterministically
+   from a score matching model.  The velocity model passed to this solver
+   should already be wrapped with ``ScoreToODEDrift`` + ``ModelWrapper``
+   by the pipeline.
 
-   The PF-ODE is:
+   All integration and log-probability logic is inherited from
+   :class:`~gensbi.core.ode_solver.ODESolver`.
 
-   .. math::
-       dx = \left[ f(x,t) - \frac{1}{2} g(t)^2 s_\theta(x, t) \right] dt
-
-   All integration logic is inherited from ``ODESolver``.
-
-   .. seealso:: :py:obj:`gensbi.utils.model_wrapping.ScoreToDrift`, :py:obj:`gensbi.core.score_matching.ScoreMatchingMethod.build_solver`
+   .. seealso:: :py:obj:`gensbi.utils.model_wrapping.ScoreToODEDrift`, :py:obj:`gensbi.core.score_matching.ScoreMatchingMethod.build_solver`
 
 
 
@@ -226,83 +221,11 @@ Package Contents
    ..
        !! processed by numpydoc !!
 
-.. py:class:: SMSolver(score_model, path)
-
-   Bases: :py:obj:`gensbi.solver.Solver`
-
-
-   
-   Solver for standard score matching diffusion models.
-
-   Uses reverse SDE sampling via Euler-Maruyama integration.
-
-   :param score_model: The score model function.
-   :type score_model: Callable
-   :param path: The SMPath object containing the SDE scheduler.
-   :type path: SMPath
-
-   .. rubric:: Example
-
-   .. code-block:: python
-
-       from gensbi.diffusion.solver.sm_solver import SMSolver
-       from gensbi.diffusion.path.sm_path import SMPath
-       from gensbi.diffusion.path.scheduler.sm_sde import VPSmScheduler
-       import jax, jax.numpy as jnp
-       sde = VPSmScheduler()
-       path = SMPath(sde)
-       def score_model(obs, t, **kwargs):
-           return jnp.zeros_like(obs)
-       solver = SMSolver(score_model, path)
-       key = jax.random.PRNGKey(0)
-       x_init = jax.random.normal(key, (16, 2))
-       samples = solver.sample(key, x_init, nsteps=10)
-       print(samples.shape)
-       # (16, 2)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-   .. py:method:: get_sampler(condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 1000, method = 'Euler', return_intermediates = False, static_model_kwargs = None, solver_params = None)
+   .. py:method:: get_drift(**kwargs)
 
       
-      Returns a sampler function for the reverse SDE.
+      Return the probability flow ODE drift (from ScoreToODEDrift adapter).
 
-      :param condition_mask: Mask for conditioning.
-      :type condition_mask: Optional[Array]
-      :param condition_value: Value for conditioning.
-      :type condition_value: Optional[Array]
-      :param cfg_scale: Classifier-free guidance scale (not implemented).
-      :type cfg_scale: Optional[float]
-      :param nsteps: Number of integration steps.
-      :type nsteps: int
-      :param method: Integration method. One of "Euler", "Heun", "SEA", "ShARK".
-      :type method: str
-      :param return_intermediates: Whether to return intermediate steps.
-      :type return_intermediates: bool
-      :param static_model_kwargs: Static model arguments baked into the sampler.
-                                  Condition-dependent data should be passed at call time
-                                  via ``model_extras``.
-      :type static_model_kwargs: dict
-      :param solver_params: Additional solver parameters.
-      :type solver_params: Optional[dict]
-
-      :returns: ``sample(key, x_init, model_extras=None)`` sampler function.
-      :rtype: Callable
 
 
 
@@ -322,34 +245,55 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_init, condition_mask = None, condition_value = None, cfg_scale = None, nsteps = 1000, method = 'Euler', return_intermediates = False, model_extras = None, solver_params = None)
+.. py:class:: SMSDESolver(velocity_model, sde, eps0 = 0.001)
+
+   Bases: :py:obj:`gensbi.core.sde_solver.SDESolver`
+
+
+   
+   Score matching reverse SDE solver.
+
+   The drift and diffusion are computed inline from the raw score model
+   and the forward SDE scheduler, analogous to how ``ZeroEndsSolver``
+   computes its SDE coefficients from the velocity field.
+
+   Conditioning is handled entirely by the ``ModelWrapper`` layer
+   (``ConditionalWrapper``, ``JointWrapper``).
+
+   :param velocity_model: Wrapped **score** model.  ``get_vector_field()`` returns the
+                          raw score function.
+   :type velocity_model: ModelWrapper
+   :param sde: Forward SDE scheduler (``VPSmScheduler``, ``VESmScheduler``, etc.)
+               providing ``drift(x, t)`` and ``diffusion(t)``.
+   :param eps0: Minimum time value.
+   :type eps0: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: get_diffusion()
 
       
-      Sample from the reverse SDE.
+      Return the reverse SDE diffusion.
 
-      :param key: JAX random key.
-      :type key: Array
-      :param x_init: Initial value from prior.
-      :type x_init: Array
-      :param condition_mask: Mask for conditioning.
-      :type condition_mask: Optional[Array]
-      :param condition_value: Value for conditioning.
-      :type condition_value: Optional[Array]
-      :param cfg_scale: Classifier-free guidance scale (not implemented).
-      :type cfg_scale: Optional[float]
-      :param nsteps: Number of integration steps.
-      :type nsteps: int
-      :param method: Integration method. One of "Euler", "Heun", "SEA", "ShARK".
-      :type method: str
-      :param return_intermediates: Whether to return intermediate steps.
-      :type return_intermediates: bool
-      :param model_extras: Additional model arguments.
-      :type model_extras: dict
-      :param solver_params: Additional solver parameters.
-      :type solver_params: Optional[dict]
+      .. math::
+          \tilde{g}(t) = g(t)
 
-      :returns: Sampled output.
-      :rtype: Array
+      Returns a ``(flat_dim, flat_dim)`` diagonal matrix.
 
 
 
@@ -369,9 +313,35 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:attribute:: path
+   .. py:method:: get_drift(**kwargs)
+
+      
+      Return the reverse SDE drift.
+
+      .. math::
+          \tilde{f}(t, x) = f(x, t) - g(t)^2\, s_\theta(x, t)
+
+      where :math:`f` and :math:`g` are the forward SDE coefficients
+      and :math:`s_\theta` is the score model.
 
 
-   .. py:attribute:: score_model
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sde
 
 

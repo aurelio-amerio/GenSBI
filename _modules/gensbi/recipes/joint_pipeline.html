@@ -833,7 +833,6 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">AffineProbPath</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">CondOTScheduler</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ODESolver</span><span class="p">,</span> <span class="n">BaseFmSDESolver</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDMPath</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDMScheduler</span><span class="p">,</span> <span class="n">VEEdmScheduler</span><span class="p">,</span> <span class="n">VPEdmScheduler</span>
@@ -841,7 +840,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path.sm_path</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMPath</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">VPSmScheduler</span><span class="p">,</span> <span class="n">VESmScheduler</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMSolver</span><span class="p">,</span> <span class="n">SMPFSolver</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_gaussian_prior</span>
+
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">repeat</span>
 
@@ -982,76 +983,7 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="c1"># ---------------------------------------------------------------------------</span>
-<span class="c1"># Deprecated pipeline classes (replaced by JointPipeline)</span>
-<span class="c1"># ---------------------------------------------------------------------------</span>
 
-
-<div class="viewcode-block" id="_DeprecatedJointPipeline">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes._DeprecatedJointPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">_DeprecatedJointPipeline</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base for deprecated joint pipeline stubs.&quot;&quot;&quot;</span>
-
-<div class="viewcode-block" id="_DeprecatedJointPipeline._message">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes._DeprecatedJointPipeline._message">[docs]</a>
-    <span class="n">_message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">)</span>
-
-    <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="_DeprecatedJointPipeline.get_default_training_config">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes._DeprecatedJointPipeline.get_default_training_config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_training_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_message</span><span class="p">)</span></div>
-</div>
-
-
-
-<div class="viewcode-block" id="JointFlowPipeline">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointFlowPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">JointFlowPipeline</span><span class="p">(</span><span class="n">_DeprecatedJointPipeline</span><span class="p">):</span>
-<div class="viewcode-block" id="JointFlowPipeline._message">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointFlowPipeline._message">[docs]</a>
-    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;JointFlowPipeline has been removed. &quot;</span>
-        <span class="s2">&quot;Use JointPipeline(method=FlowMatchingMethod(), ...) instead, &quot;</span>
-        <span class="s2">&quot;or one of the model-specific pipelines (e.g. SimformerFlowPipeline).&quot;</span>
-    <span class="p">)</span></div>
-</div>
-
-
-
-<div class="viewcode-block" id="JointDiffusionPipeline">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointDiffusionPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">JointDiffusionPipeline</span><span class="p">(</span><span class="n">_DeprecatedJointPipeline</span><span class="p">):</span>
-<div class="viewcode-block" id="JointDiffusionPipeline._message">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointDiffusionPipeline._message">[docs]</a>
-    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;JointDiffusionPipeline has been removed. &quot;</span>
-        <span class="s2">&quot;Use JointPipeline(method=DiffusionEDMMethod(), ...) instead, &quot;</span>
-        <span class="s2">&quot;or one of the model-specific pipelines (e.g. SimformerDiffusionPipeline).&quot;</span>
-    <span class="p">)</span></div>
-</div>
-
-
-
-<div class="viewcode-block" id="JointSMPipeline">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointSMPipeline">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">JointSMPipeline</span><span class="p">(</span><span class="n">_DeprecatedJointPipeline</span><span class="p">):</span>
-<div class="viewcode-block" id="JointSMPipeline._message">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointSMPipeline._message">[docs]</a>
-    <span class="n">_message</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;JointSMPipeline has been removed. &quot;</span>
-        <span class="s2">&quot;Use JointPipeline(method=ScoreMatchingMethod(), ...) instead, &quot;</span>
-        <span class="s2">&quot;or one of the model-specific pipelines (e.g. SimformerSMPipeline).&quot;</span>
-    <span class="p">)</span></div>
-</div>
-
-
-
-<span class="c1"># Unified JointPipeline (Phase 2)</span>
 <span class="c1"># ---------------------------------------------------------------------------</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.generative_method</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeMethod</span>
@@ -1062,8 +994,7 @@ window.runMermaid = runMermaid;</script>
 <span class="k">class</span><span class="w"> </span><span class="nc">JointPipeline</span><span class="p">(</span><span class="n">AbstractPipeline</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.</span>
 
-<span class="sd">    Unlike the method-specific classes above (``JointFlowPipeline``,</span>
-<span class="sd">    ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with</span>
+<span class="sd">    Unlike the old method-specific pipeline classes, this class works with</span>
 <span class="sd">    **any** generative method and **any** user-provided model that conforms</span>
 <span class="sd">    to the ``JointWrapper`` interface.</span>
 
@@ -1151,7 +1082,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="JointPipeline.path">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.path">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">build_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">,</span> <span class="n">event_shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">))</span></div>
 
 
         <span class="c1"># OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1), currently disabled</span>
@@ -1303,11 +1234,13 @@ window.runMermaid = runMermaid;</script>
         <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
             <span class="n">_extras</span> <span class="o">=</span> <span class="n">model_extras</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
             <span class="n">key</span><span class="p">,</span> <span class="n">key_init</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="n">x_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span>
-                <span class="n">key_init</span><span class="p">,</span>
-                <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">),</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="n">x_init_joint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span><span class="n">key_init</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span>
+            <span class="c1"># Marginalize joint prior to obs dims. This matches</span>
+            <span class="c1"># JointWrapper.conditioned() which assumes obs = first dim_obs</span>
+            <span class="c1"># dims, cond = remaining dims.</span>
+            <span class="c1"># When supporting arbitrary condition masks, update both this</span>
+            <span class="c1"># and the wrapper.</span>
+            <span class="n">x_init</span> <span class="o">=</span> <span class="n">x_init_joint</span><span class="p">[:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:]</span>
             <span class="k">return</span> <span class="n">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">_extras</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sampler</span></div>
@@ -1352,7 +1285,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="JointPipeline.get_log_prob_fn">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.get_log_prob_fn">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_log_prob_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_log_prob_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a log-probability function.</span>
 
 <span class="sd">        Parameters</span>
@@ -1361,6 +1294,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Conditioning variable (observed data).</span>
 <span class="sd">        use_ema : bool, optional</span>
 <span class="sd">            Whether to use the EMA model. Default is True.</span>
+<span class="sd">        prior : numpyro.distributions.Distribution, optional</span>
+<span class="sd">            Obs-space prior for log-probability evaluation. The method&#39;s</span>
+<span class="sd">            prior lives on the full joint space ``(dim_joint, ch)`` and</span>
+<span class="sd">            cannot be automatically marginalized for arbitrary priors.</span>
+
+<span class="sd">            - **Default Gaussian**: auto-constructed — no need to provide.</span>
+<span class="sd">            - **Custom prior**: must supply the correct obs-space marginal.</span>
 <span class="sd">        model_extras : dict, optional</span>
 <span class="sd">            Additional model extras. Cannot override protected keys.</span>
 <span class="sd">        **kwargs</span>
@@ -1370,7 +1310,28 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        Callable</span>
 <span class="sd">            ``log_prob_fn(x_1) -&gt; log_prob``</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the joint prior is non-Gaussian and no ``prior`` is provided.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_p0</span> <span class="o">=</span> <span class="n">prior</span><span class="o">.</span><span class="n">log_prob</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">has_custom_prior</span><span class="p">:</span>
+            <span class="c1"># Auto-constructed default prior — we know the marginal is a</span>
+            <span class="c1"># standard Gaussian on the obs dims.</span>
+            <span class="n">obs_prior</span> <span class="o">=</span> <span class="n">make_gaussian_prior</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_obs</span><span class="p">)</span>
+            <span class="n">log_p0</span> <span class="o">=</span> <span class="n">obs_prior</span><span class="o">.</span><span class="n">log_prob</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Joint pipeline with a custom prior requires an explicit &quot;</span>
+                <span class="s2">&quot;`prior` for log_prob — the obs-space marginal of the joint &quot;</span>
+                <span class="s2">&quot;prior. Pass a numpyro distribution whose event_shape &quot;</span>
+                <span class="s2">&quot;matches (dim_obs, ch_obs).&quot;</span>
+            <span class="p">)</span>
+
         <span class="n">model_wrapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="k">if</span> <span class="n">use_ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
 
         <span class="n">cond</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
@@ -1393,6 +1354,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">model_wrapped</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
             <span class="n">extras</span><span class="p">,</span>
+            <span class="n">log_prior</span><span class="o">=</span><span class="n">log_p0</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -1405,7 +1367,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="JointPipeline.log_prob">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.log_prob">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute log-probability of x_1 given x_o.</span>
 
 <span class="sd">        Parameters</span>
@@ -1416,6 +1378,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Conditioning variable.</span>
 <span class="sd">        use_ema : bool, optional</span>
 <span class="sd">            Use the EMA model. Default is True.</span>
+<span class="sd">        prior : numpyro.distributions.Distribution, optional</span>
+<span class="sd">            Obs-space prior distribution.</span>
+<span class="sd">            See :meth:`get_log_prob_fn` for details.</span>
 <span class="sd">        key : jax.random.PRNGKey, optional</span>
 <span class="sd">            Required when ``exact_divergence=False`` (Hutchinson).</span>
 <span class="sd">        **kwargs</span>
@@ -1426,7 +1391,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Array</span>
 <span class="sd">            Log-probabilities.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_log_prob_fn</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_log_prob_fn</span><span class="p">(</span>
+            <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="n">log_prob_fn</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span></div>
 </div>
 
