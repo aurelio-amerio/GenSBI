@@ -4,7 +4,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax.numpy as jnp
 import pytest
-from gensbi.flow_matching.solver.ode_solver import ODESolver
+from gensbi.flow_matching.solver.fm_ode_solver import FMODESolver
 from gensbi.utils.model_wrapping import ModelWrapper
 
 from flax import nnx
@@ -29,7 +29,7 @@ class DummyModel(nnx.Module):
 def solver():
     dummy_model = DummyModel()
     dummy_wrapped_model = ModelWrapper(dummy_model)
-    return ODESolver(velocity_model=dummy_wrapped_model)
+    return FMODESolver(velocity_model=dummy_wrapped_model)
 
 
 def test_sample_shape(solver):

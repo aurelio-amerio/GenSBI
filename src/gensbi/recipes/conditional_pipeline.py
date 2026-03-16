@@ -17,12 +17,6 @@ from typing import Union, Tuple
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import (
-    ODESolver,
-    BaseFmSDESolver,
-    ZeroEndsSolver,
-    NonSingularSolver,
-)
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
@@ -30,7 +24,7 @@ from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
-from gensbi.diffusion.solver import SMSolver, SMPFSolver
+
 
 from gensbi.models import ConditionalWrapper
 
@@ -49,48 +43,6 @@ from gensbi.recipes.utils import _resolve_embedding_ids, build_edm_path, build_s
 
 import warnings
 
-# ---------------------------------------------------------------------------
-# Deprecated pipeline classes (replaced by ConditionalPipeline)
-# ---------------------------------------------------------------------------
-
-
-class _DeprecatedConditionalPipeline:
-    """Base for deprecated conditional pipeline stubs."""
-
-    _message = ""
-
-    def __init__(self, *args, **kwargs):
-        raise RuntimeError(self._message)
-
-    @classmethod
-    def get_default_training_config(cls, **kwargs):
-        raise RuntimeError(cls._message)
-
-
-class ConditionalFlowPipeline(_DeprecatedConditionalPipeline):
-    _message = (
-        "ConditionalFlowPipeline has been removed. "
-        "Use ConditionalPipeline(method=FlowMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. Flux1FlowPipeline)."
-    )
-
-
-class ConditionalDiffusionPipeline(_DeprecatedConditionalPipeline):
-    _message = (
-        "ConditionalDiffusionPipeline has been removed. "
-        "Use ConditionalPipeline(method=DiffusionEDMMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. Flux1DiffusionPipeline)."
-    )
-
-
-class ConditionalSMPipeline(_DeprecatedConditionalPipeline):
-    _message = (
-        "ConditionalSMPipeline has been removed. "
-        "Use ConditionalPipeline(method=ScoreMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. Flux1SMPipeline)."
-    )
-
-
 
 # ---------------------------------------------------------------------------
 # Unified ConditionalPipeline (Phase 2)
@@ -102,8 +54,7 @@ from gensbi.core.generative_method import GenerativeMethod
 class ConditionalPipeline(AbstractPipeline):
     """Model-agnostic conditional pipeline parameterized by a ``GenerativeMethod``.
 
-    Unlike the method-specific classes above (``ConditionalFlowPipeline``,
-    ``ConditionalDiffusionPipeline``, ``ConditionalSMPipeline``), this class
+    Unlike the old method-specific pipeline classes, this class
     works with **any** generative method and **any** user-provided model that
     conforms to the ``ConditionalWrapper`` interface.
 
@@ -190,7 +141,7 @@ class ConditionalPipeline(AbstractPipeline):
             dim_cond, id_embedding_strategy[1], semantic_id=1
         )
 
-        self.path = method.build_path(self.training_config)
+        self.path = method.build_path(self.training_config, event_shape=(self.dim_obs, self.ch_obs))
         self.loss_obj = method.build_loss(self.path)
 
     # -- Factory stubs (model-agnostic: user provides model) ----------------
@@ -280,7 +231,7 @@ class ConditionalPipeline(AbstractPipeline):
             _extras = model_extras if model_extras is not None else extras
             key, key_init = jax.random.split(key)
             x_init = self.method.sample_init(
-                key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
+                key_init, nsamples,
             )
             return sampler_fn(key, x_init, _extras)
 

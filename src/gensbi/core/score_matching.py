@@ -11,12 +11,12 @@ import jax.numpy as jnp
 
 from gensbi.core.generative_method import GenerativeMethod
 from gensbi.recipes.utils import build_sm_path
-from gensbi.diffusion.solver import SMSolver, SMPFSolver
+from gensbi.diffusion.solver.sm_ode_solver import SMODESolver
+from gensbi.diffusion.solver.sm_sde_solver import SMSDESolver
 
 from gensbi.diffusion.loss import SMLoss
-from gensbi.diffusion.sm_prior import VPPrior, VEPrior
-from gensbi.flow_matching.solver import ODESolver
-from gensbi.utils.model_wrapping import ModelWrapper, ScoreToDrift
+from gensbi.core.prior import make_gaussian_prior
+from gensbi.utils.model_wrapping import ModelWrapper, ScoreToODEDrift
 
 
 class ScoreMatchingMethod(GenerativeMethod):
@@ -27,8 +27,8 @@ class ScoreMatchingMethod(GenerativeMethod):
     - ``"VP"`` — variance-preserving (default)
     - ``"VE"`` — variance-exploding
 
-    Sampling can use either the reverse SDE (``SMSolver``, default) or
-    the probability flow ODE (``SMPFSolver`` via ``ScoreToDrift``).
+    Sampling can use either the reverse SDE (``SMSDESolver``, default) or
+    the probability flow ODE (``SMODESolver`` via ``ScoreToODEDrift``).
 
     Parameters
     ----------
@@ -46,17 +46,12 @@ class ScoreMatchingMethod(GenerativeMethod):
         if sde_type not in ("VP", "VE"):
             raise ValueError(f"sde_type must be one of 'VP', 'VE', got '{sde_type}'.")
         self.sde_type = sde_type
+        self.prior = None
 
-        # Prior distribution (matches FM's StandardNormalPrior pattern)
-        if sde_type == "VP":
-            self.prior = VPPrior()
-        else:
-            # VEPrior requires sigma_max, which depends on the path config.
-            # Initialized to None; set properly when build_path is called.
-            self.prior = None
-
-    def build_path(self, config):
+    def build_path(self, config, event_shape):
         """Build a score matching path.
+
+        Also constructs ``self.prior`` as a numpyro distribution.
 
         Parameters
         ----------
@@ -64,6 +59,8 @@ class ScoreMatchingMethod(GenerativeMethod):
             Training configuration. Reads scheduler hyperparameters
             (``beta_min``, ``beta_max`` for VP; ``sigma_min``, ``sigma_max``
             for VE) with sensible defaults.
+        event_shape : tuple of (int, int)
+            ``(dim, ch)`` — feature and channel dimensions.
 
         Returns
         -------
@@ -72,9 +69,10 @@ class ScoreMatchingMethod(GenerativeMethod):
         """
         path = build_sm_path(self.sde_type, config)
 
-        # Set VE prior now that we know sigma_max
-        if self.sde_type == "VE" and self.prior is None:
-            self.prior = VEPrior(sigma_max=path.scheduler.sigma_max)
+        if self.sde_type == "VP":
+            self.prior = make_gaussian_prior(*event_shape)
+        else:  # VE
+            self.prior = make_gaussian_prior(*event_shape, sigma=path.scheduler.sigma_max)
 
         return path
 
@@ -127,16 +125,16 @@ class ScoreMatchingMethod(GenerativeMethod):
         Returns
         -------
         tuple
-            ``(SMSolver, {})``
+            ``(SMSDESolver, {})``
         """
-        return (SMSolver, {})
+        return (SMSDESolver, {})
 
     def build_solver(self, model_wrapped, path, solver=None):
         """Instantiate a score matching solver.
 
-        For the reverse SDE (``SMSolver``), instantiates the solver
-        directly. For PF-ODE sampling (``SMPFSolver``), wraps the score model with
-        ``ScoreToDrift`` first.
+        For the reverse SDE (``SMSDESolver``), wraps the model and extracts
+        prior parameters. For the probability flow ODE (``SMODESolver``),
+        wraps the score model with ``ScoreToODEDrift`` first.
 
         Parameters
         ----------
@@ -145,7 +143,7 @@ class ScoreMatchingMethod(GenerativeMethod):
         path : SMPath
             The score matching path.
         solver : tuple of (type, dict), optional
-            ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.
+            ``(SolverClass, kwargs)``. Defaults to ``(SMSDESolver, {})``.
 
         Returns
         -------
@@ -156,37 +154,39 @@ class ScoreMatchingMethod(GenerativeMethod):
             solver = self.get_default_solver()
         solver_cls, solver_kwargs = solver
 
-        if issubclass(solver_cls, SMPFSolver):
+        if issubclass(solver_cls, SMODESolver):
             # PF-ODE path: wrap score model as drift model
-            drift_model = ScoreToDrift(
+            drift_model = ScoreToODEDrift(
                 score_model=model_wrapped, sde=path.scheduler
             )
             wrapper = ModelWrapper(model=drift_model)
             return solver_cls(velocity_model=wrapper, **solver_kwargs)
         else:
-            # SDE path (SMSolver): pass directly
+            # SDE path (SMSDESolver): wrap model, pass SDE scheduler
+            wrapper = ModelWrapper(model=model_wrapped)
+            sde = path.scheduler
             return solver_cls(
-                score_model=model_wrapped, path=path, **solver_kwargs
+                velocity_model=wrapper,
+                sde=sde,
+                **solver_kwargs,
             )
 
-    def sample_init(self, key, shape, path):
+    def sample_init(self, key, nsamples):
         """Sample from the score matching prior.
 
         Parameters
         ----------
         key : jax.random.PRNGKey
             Random key.
-        shape : tuple
-            Shape of the initial sample.
-        path : SMPath
-            The score matching path (provides ``sample_prior``).
+        nsamples : int
+            Number of samples to draw.
 
         Returns
         -------
         Array
             Sample from the prior.
         """
-        return path.sample_prior(key, shape)
+        return self.prior.sample(key, (nsamples,))
 
     def build_sampler_fn(
         self,
@@ -201,8 +201,8 @@ class ScoreMatchingMethod(GenerativeMethod):
     ):
         """Build a sampler closure for score matching.
 
-        Supports ``SMSolver`` (reverse SDE) and ``SMPFSolver``
-        (PF-ODE via ``ScoreToDrift`` + ``ODESolver``).
+        Supports ``SMSDESolver`` (reverse SDE) and ``SMODESolver``
+        (probability flow ODE via ``ScoreToODEDrift``).
 
         Parameters
         ----------
@@ -215,34 +215,35 @@ class ScoreMatchingMethod(GenerativeMethod):
         nsteps : int, optional
             Number of integration steps. Default is 1000.
         method : str or diffrax solver, optional
-            Integration method for the PF-ODE solver. Default is
-            ``"Euler"``. Ignored when using the reverse SDE solver
-            (``SMSolver``).
+            Integration method. Default is ``"Euler"``.
         return_intermediates : bool, optional
             Whether to return intermediate steps. Default is False.
         solver : tuple of (type, dict), optional
-            ``(SolverClass, kwargs)``. Defaults to ``(SMSolver, {})``.
+            ``(SolverClass, kwargs)``. Defaults to ``(SMSDESolver, {})``.
 
         Returns
         -------
         sampler_fn : Callable
             A function ``(key, x_init) -> samples``.
         """
-        solver_instance = self.build_solver(model_wrapped, path, solver=solver)
+        sde = path.scheduler
+        T = sde.T
+        eps = 1e-3
 
-        if isinstance(solver_instance, SMPFSolver):
-            # PF-ODE via SMPFSolver: compute SM-specific time grid and step size
-            sde = path.scheduler
-            T = sde.T
-            eps = 1e-3
+        if return_intermediates:
+            time_grid = jnp.linspace(T, eps, nsteps + 1)
+        else:
+            time_grid = jnp.array([T, eps])
 
-            if return_intermediates:
-                time_grid = jnp.linspace(T, eps, nsteps + 1)
-            else:
-                time_grid = jnp.array([T, eps])
+        step_size = -(T - eps) / nsteps
 
-            step_size = -(T - eps) / nsteps
+        if solver is None:
+            solver = self.get_default_solver()
+        solver_cls, solver_kwargs = solver
 
+        if issubclass(solver_cls, SMODESolver):
+            # PF-ODE path (deterministic) — build solver eagerly
+            solver_instance = self.build_solver(model_wrapped, path, solver=(solver_cls, solver_kwargs))
             sampler_ = solver_instance.get_sampler(
                 step_size=step_size,
                 method=method,
@@ -254,19 +255,22 @@ class ScoreMatchingMethod(GenerativeMethod):
                 if model_extras is None:
                     model_extras = {}
                 return sampler_(x_init, model_extras=model_extras)
-        elif isinstance(solver_instance, SMSolver):
-            # SDE path (SMSolver)
+        elif issubclass(solver_cls, SMSDESolver):
+            # Reverse SDE path (stochastic) — build solver eagerly
+            solver_instance = self.build_solver(model_wrapped, path, solver=(solver_cls, solver_kwargs))
             sampler_ = solver_instance.get_sampler(
-                nsteps=nsteps,
+                step_size=step_size,
+                method=method,
+                time_grid=time_grid,
                 return_intermediates=return_intermediates,
             )
 
             def sampler_fn(key, x_init, model_extras=None):
                 if model_extras is None:
                     model_extras = {}
-                return sampler_(key, x_init, model_extras=model_extras)
+                return sampler_(x_init, key=key, model_extras=model_extras)
         else:
-            raise ValueError(f"Unsupported solver type: {type(solver_instance)}")
+            raise ValueError(f"Unsupported solver type: {solver_cls}")
 
         return sampler_fn
 
@@ -282,23 +286,25 @@ class ScoreMatchingMethod(GenerativeMethod):
         nsteps=1000,
         solver=None,
         exact_divergence=True,
+        log_prior=None,
         **kwargs,
     ):
-        """Build a log-probability closure for the score matching PF-ODE.
+        """Build a log-probability closure for the score matching probability flow ODE.
 
-        Uses the continuous change-of-variables formula via ``SMPFSolver``
+        Uses the continuous change-of-variables formula via ``SMODESolver``
         (which inherits ``get_log_prob`` from ``ODESolver``).  Only works
-        with ``SMPFSolver``; passing ``SMSolver`` will raise an error.
+        with ``SMODESolver``; passing ``SMSDESolver`` will raise an error.
 
         .. note::
 
            Unlike the default sampling behaviour of ``ScoreMatchingMethod``,
-           which integrates the *reverse SDE* (via ``SMSolver``), log-probability
-           evaluation requires the *probability flow ODE* formulation
-           (via ``SMPFSolver``).  Both formulations share the same marginal
-           distributions, so a score model trained with the standard SM loss
-           is mathematically valid for the PF-ODE.  When no ``solver`` is
-           passed, ``SMPFSolver`` is selected automatically.
+           which integrates the *reverse SDE* (via ``SMSDESolver``),
+           log-probability evaluation requires the *probability flow ODE*
+           formulation (via ``SMODESolver``).  Both formulations share the
+           same marginal distributions, so a score model trained with the
+           standard SM loss is mathematically valid for the probability
+           flow ODE.  When no ``solver`` is passed, ``SMODESolver`` is
+           selected automatically.
 
         Parameters
         ----------
@@ -321,11 +327,14 @@ class ScoreMatchingMethod(GenerativeMethod):
             when a fixed-step solver is selected). Default is 1000.
         solver : tuple of (type, dict), optional
             ``(SolverClass, kwargs)``. Must be an ODE-based solver
-            (``SMPFSolver``).
+            (``SMODESolver``).
         exact_divergence : bool, optional
             If ``True`` (default), compute exact divergence via full
             Jacobian. If ``False``, use the Hutchinson estimator (requires
             a PRNG ``key`` at call time).
+        log_prior : callable, optional
+            Override for the prior's ``log_prob``. If ``None``, uses
+            ``self.prior.log_prob``. Used by the joint pipeline.
 
         Returns
         -------
@@ -335,29 +344,32 @@ class ScoreMatchingMethod(GenerativeMethod):
         Raises
         ------
         NotImplementedError
-            If a non-ODE solver (e.g. ``SMSolver``) is specified.
+            If a non-ODE solver (e.g. ``SMSDESolver``) is specified.
         """
         if solver is None:
-            solver = (SMPFSolver, {})
+            solver = (SMODESolver, {})
 
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
 
-        if not isinstance(solver_instance, SMPFSolver):
+        if not isinstance(solver_instance, SMODESolver):
             raise NotImplementedError(
-                f"Log-probability computation requires SMPFSolver, "
+                f"Log-probability computation requires SMODESolver, "
                 f"got {type(solver_instance).__name__}."
             )
 
-        # SM time grid: T (noise) → eps (near-data)
+        # SM log-prob time grid: eps (data) → T (noise/source)
+        # This reverses the sampling direction [T, eps], just as FM
+        # reverses its sampling [0, 1] to log-prob [1, 0].
         sde = path.scheduler
         T = sde.T
         eps = 1e-3
-        time_grid = jnp.array([T, eps])
+        time_grid = jnp.array([eps, T])
 
-        # Step size: positive — ODESolver.get_log_prob already negates it
+        # Step size: positive — ODESolver.get_log_prob computes dt0 sign
+        # from the time grid direction.
         step_size = (T - eps) / nsteps
 
-        log_p0 = self.prior.log_prob
+        log_p0 = log_prior if log_prior is not None else self.prior.log_prob
 
         log_prob_closure = solver_instance.get_log_prob(
             log_p0=log_p0,

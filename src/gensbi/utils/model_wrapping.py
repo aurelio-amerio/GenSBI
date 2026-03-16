@@ -127,7 +127,7 @@ class ModelWrapper(nnx.Module):
 
 
 
-class ScoreToDrift(nnx.Module):
+class ScoreToODEDrift(nnx.Module):
     r"""Thin adapter that makes a score model look like a velocity (drift) model.
 
     When called as ``model(obs, t, **kwargs)``, returns the PF-ODE drift
@@ -151,7 +151,7 @@ class ScoreToDrift(nnx.Module):
     -------
     .. code-block:: python
 
-        drift_model = ScoreToDrift(score_model, sde)
+        drift_model = ScoreToODEDrift(score_model, sde)
         wrapper = ModelWrapper(drift_model)    # or JointWrapper(drift_model)
         solver = ODESolver(velocity_model=wrapper)
     """

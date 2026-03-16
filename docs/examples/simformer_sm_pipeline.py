@@ -147,7 +147,7 @@ pipeline.train(
 )  # if you want to save the model, set save_model=True
 
 # %% Sample from the posterior (default: reverse SDE solver)
-# The default solver for score matching is the reverse SDE (SMSolver), which is stochastic.
+# The default solver for score matching is the reverse SDE (SMSDESolver), which is stochastic.
 # To generate samples, we first need an observation (and its corresponding condition).
 # We generate a new sample from the simulator, normalize it, and extract the condition x_o.
 
@@ -174,16 +174,16 @@ plot_marginals(
 plt.savefig("simformer_sm_pipeline_marginals.png", dpi=100, bbox_inches="tight")
 plt.show()
 
-# %% Alternative: sample with SMPFSolver (probability flow ODE)
-# The default solver is the reverse SDE (SMSolver, stochastic). You can alternatively
-# use the probability flow ODE (SMPFSolver), which gives deterministic samples.
-from gensbi.diffusion.solver import SMPFSolver
+# %% Alternative: sample with SMODESolver (probability flow ODE)
+# The default solver is the reverse SDE (SMSDESolver, stochastic). You can alternatively
+# use the probability flow ODE (SMODESolver), which gives deterministic samples.
+from gensbi.diffusion.solver import SMODESolver
 
 samples_pf = pipeline.sample(
     rngs.sample(),
     x_o,
     nsamples=100_000,
-    solver=(SMPFSolver, {}),
+    solver=(SMODESolver, {}),
 )
 samples_pf = unnormalize(samples_pf, means[:dim_obs], stds[:dim_obs])
 

@@ -22,7 +22,7 @@ from gensbi.recipes import (
 )
 
 from gensbi.core import FlowMatchingMethod
-from gensbi.flow_matching.solver import ODESolver, ZeroEndsSolver, NonSingularSolver
+from gensbi.flow_matching.solver import ZeroEndsSolver, NonSingularSolver
 
 import sys
 from pathlib import Path

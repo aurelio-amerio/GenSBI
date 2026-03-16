@@ -5,12 +5,12 @@ This module provides ODE and SDE solvers for sampling from flow matching models,
 including adaptive and fixed-step integration methods.
 """
 
-from .ode_solver import ODESolver
-from .sde_solver_fm import BaseFmSDESolver, ZeroEndsSolver, NonSingularSolver
+from .fm_ode_solver import FMODESolver
+from .fm_sde_solver import FMSDESolver, ZeroEndsSolver, NonSingularSolver
 
 __all__ = [
-    "ODESolver",
-    "BaseFmSDESolver",
+    "FMODESolver",
+    "FMSDESolver",
     "ZeroEndsSolver",
     "NonSingularSolver",
 ]

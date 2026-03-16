@@ -11,37 +11,13 @@ import jax.numpy as jnp
 import numpyro.distributions as dist
 
 from gensbi.core.generative_method import GenerativeMethod
+from gensbi.core.prior import make_gaussian_prior, is_gaussian_prior
+from gensbi.core.sde_solver import SDESolver
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
+from gensbi.flow_matching.solver.fm_ode_solver import FMODESolver
 
-from gensbi.flow_matching.loss import FMLoss  
-
-
-class StandardNormalPrior:
-    """Default prior: standard normal distribution with ``log_prob`` support.
-
-    Wraps ``jax.random.normal`` for sampling and uses
-    ``numpyro.distributions.Independent(Normal(...))`` for ``log_prob``.
-    The distribution is lazily constructed on the first ``log_prob`` call
-    to match the shape of the input.
-    """
-
-    def sample(self, key, shape):
-        return jax.random.normal(key, shape)
-
-    def log_prob(self, x):
-        """Compute log-probability under N(0, I) for the non-batch dims."""
-        # x has shape (batch, features, channels) or (features, channels)
-        event_shape = x.shape[-2:]  # (features, channels)
-        p0 = dist.Independent(
-            dist.Normal(
-                loc=jnp.zeros(event_shape),
-                scale=jnp.ones(event_shape),
-            ),
-            reinterpreted_batch_ndims=len(event_shape),
-        )
-        return p0.log_prob(x)
+from gensbi.flow_matching.loss import FMLoss
 
 
 class FlowMatchingMethod(GenerativeMethod):
@@ -54,14 +30,14 @@ class FlowMatchingMethod(GenerativeMethod):
     ----------
     prior : numpyro.distributions.Distribution, optional
         Source distribution. Must implement ``sample(key, shape)`` and
-        ``log_prob(x)``. If you need log-probability evaluation (via
-        ``build_log_prob_fn``), the prior **must** be a proper numpyro
-        distribution. Defaults to ``StandardNormalPrior`` (≡ N(0, I)).
+        ``log_prob(x)``. Validated against ``event_shape`` in
+        :meth:`build_path`. If ``None``, a standard normal prior is
+        constructed automatically.
 
     Examples
     --------
     >>> method = FlowMatchingMethod()
-    >>> path = method.build_path(config={})
+    >>> path = method.build_path(config={}, event_shape=(5, 1))
     >>> loss = method.build_loss(path)
 
     Using a custom numpyro prior (x has shape ``(batch, dim_obs, ch_obs)``):
@@ -76,21 +52,40 @@ class FlowMatchingMethod(GenerativeMethod):
     """
 
     def __init__(self, prior=None):
-        self.prior = prior if prior is not None else StandardNormalPrior()
+        self._user_prior = prior
+        self.prior = None
 
-    def build_path(self, config):
+    def build_path(self, config, event_shape):
         """Build an affine probability path with the CondOT scheduler.
+
+        Also constructs or validates ``self.prior``.
 
         Parameters
         ----------
         config : dict
             Training configuration (unused for flow matching).
+        event_shape : tuple of (int, int)
+            ``(dim, ch)`` — feature and channel dimensions.
 
         Returns
         -------
         AffineProbPath
             The probability path.
+
+        Raises
+        ------
+        ValueError
+            If a user-supplied prior has a mismatched ``event_shape``.
         """
+        if self._user_prior is not None:
+            if self._user_prior.event_shape != event_shape:
+                raise ValueError(
+                    f"Prior event_shape {self._user_prior.event_shape} does not "
+                    f"match expected {event_shape}."
+                )
+            self.prior = self._user_prior
+        else:
+            self.prior = make_gaussian_prior(*event_shape)
         return AffineProbPath(scheduler=CondOTScheduler())
 
     def build_loss(self, path, weights=None):
@@ -130,7 +125,7 @@ class FlowMatchingMethod(GenerativeMethod):
             ``t`` is uniform in ``[0, 1)``.
         """
         rng_x0, rng_t = jax.random.split(key)
-        x_0 = self.prior.sample(rng_x0, x_1.shape)
+        x_0 = self.prior.sample(rng_x0, (x_1.shape[0],))
         t = jax.random.uniform(rng_t, (x_1.shape[0],))
         return (x_0, x_1, t)
 
@@ -140,9 +135,9 @@ class FlowMatchingMethod(GenerativeMethod):
         Returns
         -------
         tuple
-            ``(ODESolver, {})``
+            ``(FMODESolver, {})``
         """
-        return (ODESolver, {})
+        return (FMODESolver, {})
 
     def build_solver(self, model_wrapped, path, solver=None):
         """Instantiate a flow matching solver.
@@ -158,8 +153,7 @@ class FlowMatchingMethod(GenerativeMethod):
             The probability path (unused by ODE solver, but may be
             needed by SDE solvers).
         solver : tuple of (type, dict), optional
-            ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.\
-
+            ``(SolverClass, kwargs)``. Defaults to ``(ODESolver, {})``.\n
         Returns
         -------
         solver_instance
@@ -168,26 +162,37 @@ class FlowMatchingMethod(GenerativeMethod):
         if solver is None:
             solver = self.get_default_solver()
         solver_cls, solver_kwargs = solver
+
+        if issubclass(solver_cls, SDESolver):
+            if not is_gaussian_prior(self.prior):
+                raise ValueError("FM SDE solvers require a Gaussian prior.")
+            # Prior provides default mu0/sigma0; user kwargs override
+            # (needed for joint pipeline where solver operates in obs-space)
+            sde_kwargs = {
+                "mu0": self.prior.base_dist.loc,
+                "sigma0": self.prior.base_dist.scale,
+            }
+            sde_kwargs.update(solver_kwargs)
+            return solver_cls(velocity_model=model_wrapped, **sde_kwargs)
+
         return solver_cls(velocity_model=model_wrapped, **solver_kwargs)
 
-    def sample_init(self, key, shape, path):
+    def sample_init(self, key, nsamples):
         """Sample from the prior distribution.
 
         Parameters
         ----------
         key : jax.random.PRNGKey
             Random key.
-        shape : tuple
-            Shape of the initial sample.
-        path
-            The probability path (unused).
+        nsamples : int
+            Number of samples to draw.
 
         Returns
         -------
         Array
             Sample from the prior.
         """
-        return self.prior.sample(key, shape)
+        return self.prior.sample(key, (nsamples,))
 
     def build_sampler_fn(self, model_wrapped, path, model_extras,
                          step_size=0.01, method="Euler", time_grid=None,
@@ -223,7 +228,7 @@ class FlowMatchingMethod(GenerativeMethod):
             A function ``(key, x_init) -> samples``.
         """
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
-        pass_key = isinstance(solver_instance, BaseFmSDESolver)
+        pass_key = isinstance(solver_instance, SDESolver)
 
         if time_grid is None:
             time_grid = jnp.array([0.0, 1.0])
@@ -251,7 +256,7 @@ class FlowMatchingMethod(GenerativeMethod):
     def build_log_prob_fn(self, model_wrapped, path, model_extras,
                           step_size=0.01, method="Dopri5", atol=1e-5,
                           rtol=1e-5, time_grid=None, solver=None,
-                          exact_divergence=True, **kwargs):
+                          exact_divergence=True, log_prior=None, **kwargs):
         """Build a log-probability closure for flow matching.
 
         Uses the continuous change-of-variables formula via ``ODESolver``.
@@ -281,6 +286,10 @@ class FlowMatchingMethod(GenerativeMethod):
             If ``True`` (default), compute exact divergence via full
             Jacobian. If ``False``, use the Hutchinson estimator (requires
             a PRNG ``key`` at call time).
+        log_prior : callable, optional
+            Override for the prior's ``log_prob``. If ``None``, uses
+            ``self.prior.log_prob``. Used by the joint pipeline to pass
+            a user-supplied obs-space prior.
 
         Returns
         -------
@@ -294,17 +303,17 @@ class FlowMatchingMethod(GenerativeMethod):
         """
         solver_instance = self.build_solver(model_wrapped, path, solver=solver)
 
-        if not isinstance(solver_instance, ODESolver):
+        if not isinstance(solver_instance, FMODESolver):
             raise NotImplementedError(
-                f"Log-probability computation requires ODESolver, "
+                f"Log-probability computation requires FMODESolver, "
                 f"got {type(solver_instance).__name__}."
             )
 
         if time_grid is None:
             time_grid = jnp.array([1.0, 0.0])
 
-        # Get log_p0 from the prior
-        log_p0 = self.prior.log_prob
+        # Use the provided log_prior if given, otherwise fall back to the prior
+        log_p0 = log_prior if log_prior is not None else self.prior.log_prob
 
         log_prob_closure = solver_instance.get_log_prob(
             log_p0=log_p0,

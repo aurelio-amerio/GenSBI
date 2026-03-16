@@ -15,7 +15,6 @@ from gensbi.recipes.utils import init_ids_joint, build_edm_path, build_sm_path
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
@@ -23,7 +22,9 @@ from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
-from gensbi.diffusion.solver import SMSolver, SMPFSolver
+
+from gensbi.core.prior import make_gaussian_prior
+
 
 from einops import repeat
 
@@ -158,49 +159,7 @@ def sample_condition_mask(
     return condition_mask
 
 
-# ---------------------------------------------------------------------------
-# Deprecated pipeline classes (replaced by JointPipeline)
-# ---------------------------------------------------------------------------
 
-
-class _DeprecatedJointPipeline:
-    """Base for deprecated joint pipeline stubs."""
-
-    _message = ""
-
-    def __init__(self, *args, **kwargs):
-        raise RuntimeError(self._message)
-
-    @classmethod
-    def get_default_training_config(cls, **kwargs):
-        raise RuntimeError(cls._message)
-
-
-class JointFlowPipeline(_DeprecatedJointPipeline):
-    _message = (
-        "JointFlowPipeline has been removed. "
-        "Use JointPipeline(method=FlowMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. SimformerFlowPipeline)."
-    )
-
-
-class JointDiffusionPipeline(_DeprecatedJointPipeline):
-    _message = (
-        "JointDiffusionPipeline has been removed. "
-        "Use JointPipeline(method=DiffusionEDMMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. SimformerDiffusionPipeline)."
-    )
-
-
-class JointSMPipeline(_DeprecatedJointPipeline):
-    _message = (
-        "JointSMPipeline has been removed. "
-        "Use JointPipeline(method=ScoreMatchingMethod(), ...) instead, "
-        "or one of the model-specific pipelines (e.g. SimformerSMPipeline)."
-    )
-
-
-# Unified JointPipeline (Phase 2)
 # ---------------------------------------------------------------------------
 
 from gensbi.core.generative_method import GenerativeMethod
@@ -209,8 +168,7 @@ from gensbi.core.generative_method import GenerativeMethod
 class JointPipeline(AbstractPipeline):
     """Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.
 
-    Unlike the method-specific classes above (``JointFlowPipeline``,
-    ``JointDiffusionPipeline``, ``JointSMPipeline``), this class works with
+    Unlike the old method-specific pipeline classes, this class works with
     **any** generative method and **any** user-provided model that conforms
     to the ``JointWrapper`` interface.
 
@@ -290,7 +248,7 @@ class JointPipeline(AbstractPipeline):
             self.dim_obs, self.dim_cond
         )
 
-        self.path = method.build_path(self.training_config)
+        self.path = method.build_path(self.training_config, event_shape=(self.dim_joint, self.ch_obs))
 
         # OneFlow reweighting (Eq. 4, https://arxiv.org/pdf/2601.22951v1), currently disabled
         # upweight parameter (obs) dimensions by d_cond / d_obs to balance
@@ -418,11 +376,13 @@ class JointPipeline(AbstractPipeline):
         def sampler(key, nsamples, model_extras=None):
             _extras = model_extras if model_extras is not None else extras
             key, key_init = jax.random.split(key)
-            x_init = self.method.sample_init(
-                key_init,
-                (nsamples, self.dim_obs, self.ch_obs),
-                self.path,
-            )
+            x_init_joint = self.method.sample_init(key_init, nsamples)
+            # Marginalize joint prior to obs dims. This matches
+            # JointWrapper.conditioned() which assumes obs = first dim_obs
+            # dims, cond = remaining dims.
+            # When supporting arbitrary condition masks, update both this
+            # and the wrapper.
+            x_init = x_init_joint[:, :self.dim_obs, :]
             return sampler_fn(key, x_init, _extras)
 
         return sampler
@@ -461,7 +421,7 @@ class JointPipeline(AbstractPipeline):
         sampler = self.get_sampler(x_o, use_ema=use_ema, **sampler_kwargs)
         return sampler(key, nsamples)
 
-    def get_log_prob_fn(self, x_o, use_ema=True, model_extras=None, **kwargs):
+    def get_log_prob_fn(self, x_o, use_ema=True, prior=None, model_extras=None, **kwargs):
         """Get a log-probability function.
 
         Parameters
@@ -470,6 +430,13 @@ class JointPipeline(AbstractPipeline):
             Conditioning variable (observed data).
         use_ema : bool, optional
             Whether to use the EMA model. Default is True.
+        prior : numpyro.distributions.Distribution, optional
+            Obs-space prior for log-probability evaluation. The method's
+            prior lives on the full joint space ``(dim_joint, ch)`` and
+            cannot be automatically marginalized for arbitrary priors.
+
+            - **Default Gaussian**: auto-constructed — no need to provide.
+            - **Custom prior**: must supply the correct obs-space marginal.
         model_extras : dict, optional
             Additional model extras. Cannot override protected keys.
         **kwargs
@@ -479,7 +446,28 @@ class JointPipeline(AbstractPipeline):
         -------
         Callable
             ``log_prob_fn(x_1) -> log_prob``
+
+        Raises
+        ------
+        ValueError
+            If the joint prior is non-Gaussian and no ``prior`` is provided.
         """
+
+        if prior is not None:
+            log_p0 = prior.log_prob
+        elif not self.method.has_custom_prior:
+            # Auto-constructed default prior — we know the marginal is a
+            # standard Gaussian on the obs dims.
+            obs_prior = make_gaussian_prior(self.dim_obs, self.ch_obs)
+            log_p0 = obs_prior.log_prob
+        else:
+            raise ValueError(
+                "Joint pipeline with a custom prior requires an explicit "
+                "`prior` for log_prob — the obs-space marginal of the joint "
+                "prior. Pass a numpyro distribution whose event_shape "
+                "matches (dim_obs, ch_obs)."
+            )
+
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
         cond = _expand_dims(x_o)
@@ -502,6 +490,7 @@ class JointPipeline(AbstractPipeline):
             model_wrapped,
             self.path,
             extras,
+            log_prior=log_p0,
             **kwargs,
         )
 
@@ -511,7 +500,7 @@ class JointPipeline(AbstractPipeline):
 
         return _log_prob
 
-    def log_prob(self, x_1, x_o, use_ema=True, *, key=None, **kwargs):
+    def log_prob(self, x_1, x_o, use_ema=True, prior=None, *, key=None, **kwargs):
         """Compute log-probability of x_1 given x_o.
 
         Parameters
@@ -522,6 +511,9 @@ class JointPipeline(AbstractPipeline):
             Conditioning variable.
         use_ema : bool, optional
             Use the EMA model. Default is True.
+        prior : numpyro.distributions.Distribution, optional
+            Obs-space prior distribution.
+            See :meth:`get_log_prob_fn` for details.
         key : jax.random.PRNGKey, optional
             Required when ``exact_divergence=False`` (Hutchinson).
         **kwargs
@@ -532,5 +524,7 @@ class JointPipeline(AbstractPipeline):
         Array
             Log-probabilities.
         """
-        log_prob_fn = self.get_log_prob_fn(x_o, use_ema=use_ema, **kwargs)
+        log_prob_fn = self.get_log_prob_fn(
+            x_o, use_ema=use_ema, prior=prior, **kwargs
+        )
         return log_prob_fn(x_1, key=key)

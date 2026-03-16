@@ -11,7 +11,6 @@ from numpyro import distributions as dist
 
 from gensbi.flow_matching.path import AffineProbPath
 from gensbi.flow_matching.path.scheduler import CondOTScheduler
-from gensbi.flow_matching.solver import ODESolver, BaseFmSDESolver
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import EDMScheduler, VEEdmScheduler, VPEdmScheduler
@@ -19,7 +18,7 @@ from gensbi.diffusion.solver import EDMSolver
 
 from gensbi.diffusion.path.sm_path import SMPath
 from gensbi.diffusion.path.scheduler import VPSmScheduler, VESmScheduler
-from gensbi.diffusion.solver import SMSolver, SMPFSolver
+
 
 from gensbi.models import UnconditionalWrapper
 
@@ -32,43 +31,8 @@ from gensbi.utils.model_wrapping import _expand_dims
 from gensbi.recipes.pipeline import AbstractPipeline
 
 
-# ---------------------------------------------------------------------------
-# Deprecated pipeline classes (replaced by UnconditionalPipeline)
-# ---------------------------------------------------------------------------
 
 
-class _DeprecatedUnconditionalPipeline:
-    """Base for deprecated unconditional pipeline stubs."""
-
-    _message = ""
-
-    def __init__(self, *args, **kwargs):
-        raise RuntimeError(self._message)
-
-    @classmethod
-    def get_default_training_config(cls, **kwargs):
-        raise RuntimeError(cls._message)
-
-
-class UnconditionalFlowPipeline(_DeprecatedUnconditionalPipeline):
-    _message = (
-        "UnconditionalFlowPipeline has been removed. "
-        "Use UnconditionalPipeline(method=FlowMatchingMethod(), ...) instead."
-    )
-
-
-class UnconditionalDiffusionPipeline(_DeprecatedUnconditionalPipeline):
-    _message = (
-        "UnconditionalDiffusionPipeline has been removed. "
-        "Use UnconditionalPipeline(method=DiffusionEDMMethod(), ...) instead."
-    )
-
-
-class UnconditionalSMPipeline(_DeprecatedUnconditionalPipeline):
-    _message = (
-        "UnconditionalSMPipeline has been removed. "
-        "Use UnconditionalPipeline(method=ScoreMatchingMethod(), ...) instead."
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -81,8 +45,7 @@ from gensbi.core.generative_method import GenerativeMethod
 class UnconditionalPipeline(AbstractPipeline):
     """Model-agnostic unconditional pipeline parameterized by a ``GenerativeMethod``.
 
-    Unlike the method-specific classes above (``UnconditionalFlowPipeline``,
-    ``UnconditionalDiffusionPipeline``, ``UnconditionalSMPipeline``), this
+    Unlike the old method-specific pipeline classes, this
     class works with **any** generative method and **any** user-provided
     model that conforms to the ``UnconditionalWrapper`` interface.
 
@@ -150,7 +113,7 @@ class UnconditionalPipeline(AbstractPipeline):
 
         self.obs_ids, self.dim_obs = init_ids_1d(self.dim_obs)
 
-        self.path = method.build_path(self.training_config)
+        self.path = method.build_path(self.training_config, event_shape=(self.dim_obs, self.ch_obs))
         self.loss_obj = method.build_loss(self.path)
 
     # -- Factory stubs ------------------------------------------------------
@@ -218,7 +181,7 @@ class UnconditionalPipeline(AbstractPipeline):
         def sampler(key, nsamples):
             key, key_init = jax.random.split(key)
             x_init = self.method.sample_init(
-                key_init, (nsamples, self.dim_obs, self.ch_obs), self.path,
+                key_init, nsamples,
             )
             return sampler_fn(key, x_init, model_extras)
 

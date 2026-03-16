@@ -216,6 +216,25 @@ If later you decide to store more features per frequency bin (e.g., real/imag pa
 
 5. **Run validation diagnostics**: Use SBC, TARP, or L-C2ST to check if your model is well-calibrated. See the [Validation Guide](/basics/validation).
 
+### Log-Probability Returns Near-Zero or Wrong Values
+
+**Problem**: `pipeline.log_prob()` returns probabilities ≈ 0 everywhere (or very large negative log-probabilities), even though sampling works correctly.
+
+**Solution**:
+
+This is likely a **time-direction bug**. The log-prob computation uses the change-of-variables formula, which requires integrating the ODE from the **data** end to the **noise/source** end — the **opposite** direction from sampling.
+
+Each generative method has different time conventions:
+
+| Method | Sampling direction | Log-prob direction |
+|--------|--------------------|--------------------|
+| Flow Matching | $0 \to 1$ | $1 \to 0$ |
+| Score Matching | $T \to \varepsilon$ | $\varepsilon \to T$ |
+
+If the log-prob time grid matches the sampling time grid instead of reversing it, the ODE starts at the noise end, the prior is evaluated at data-space points, and the resulting probabilities are effectively zero.
+
+See [Time Direction Conventions](/advanced/samplers.html#time-direction-conventions) for full details.
+
 ### Slow Inference
 
 **Problem**: Sampling takes too long.

@@ -50,7 +50,7 @@ If you are using an EDM model (e.g., `Flux1DiffusionPipeline`), the model has le
 
 ### Score Matching (Classical)
 
-If you are using a Score Matching model (e.g., `Flux1SMPipeline`), the model has learned the **score function** $\nabla \log p_t(x)$. Sampling solves the reverse SDE from $t{=}T$ to $t{=}\varepsilon$ for stochastic samples (default `SMSolver`), or the probability flow ODE for deterministic samples (`SMPFSolver`).
+If you are using a Score Matching model (e.g., `Flux1SMPipeline`), the model has learned the **score function** $\nabla \log p_t(x)$. Sampling solves the reverse SDE from $t{=}T$ to $t{=}\varepsilon$ for stochastic samples (default `SMSDESolver`), or the probability flow ODE for deterministic samples (`SMODESolver`).
 
 ```{tip}
 You can override the solver at sample time without retraining. For details on available solvers and how to pass custom ones, see [Samplers and Solvers](/advanced/samplers).
