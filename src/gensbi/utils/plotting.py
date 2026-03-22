@@ -332,8 +332,18 @@ def _parse_range(range_arg, ndim):
 
 
 def _plot_lower_triangle(
-    axes, data, ndim, gridsize, cmap, color, axis_ranges,
-    plot_levels, true_param, hexbin_kwargs, fontsize, labels,
+    axes,
+    data,
+    ndim,
+    gridsize,
+    cmap,
+    color,
+    axis_ranges,
+    plot_levels,
+    true_param,
+    hexbin_kwargs,
+    fontsize,
+    labels,
 ):
     """Plot hexbin + KDE contours on the lower-triangle axes."""
     for i in np.arange(1, ndim):
@@ -398,8 +408,17 @@ def _plot_lower_triangle(
 
 
 def _plot_diagonal_histograms(
-    axes, data, ndim, bins, color_hist, fill, axis_ranges,
-    true_param, histplot_kwargs, fontsize, labels,
+    axes,
+    data,
+    ndim,
+    bins,
+    color_hist,
+    fill,
+    axis_ranges,
+    true_param,
+    histplot_kwargs,
+    fontsize,
+    labels,
 ):
     """Plot marginal histograms along the diagonal axes."""
     for i in np.arange(ndim):
@@ -512,13 +531,32 @@ def _plot_marginals_seaborn(
                 axes[i, j].set_ylabel("")
 
     _plot_lower_triangle(
-        axes, data, ndim, gridsize, cmap, color, axis_ranges,
-        plot_levels, true_param, hexbin_kwargs, fontsize, labels,
+        axes,
+        data,
+        ndim,
+        gridsize,
+        cmap,
+        color,
+        axis_ranges,
+        plot_levels,
+        true_param,
+        hexbin_kwargs,
+        fontsize,
+        labels,
     )
 
     _plot_diagonal_histograms(
-        axes, data, ndim, bins, color_hist, fill, axis_ranges,
-        true_param, histplot_kwargs, fontsize, labels,
+        axes,
+        data,
+        ndim,
+        bins,
+        color_hist,
+        fill,
+        axis_ranges,
+        true_param,
+        histplot_kwargs,
+        fontsize,
+        labels,
     )
 
     if ndim == 2:
@@ -800,6 +838,7 @@ def _plot_2d_dist_contour(
 
     return ax
 
+
 def plot_2d_dist_contour(
     x,
     y,
@@ -843,3 +882,25 @@ def plot_2d_dist_contour(
     )
 
     return fig, ax
+
+
+def set_default_style():
+    plt.rcParams["figure.figsize"] = (6, 5)  # Set figure size
+
+    plt.rcParams["axes.labelsize"] = 18  # fontsize of the x any y labels
+    plt.rcParams["xtick.labelsize"] = 16  # fontsize of the tick labels
+    plt.rcParams["ytick.labelsize"] = 16  # fontsize of the tick labels
+    plt.rcParams["xtick.direction"] = "in"  # direction: in, out, or inout
+    plt.rcParams["ytick.direction"] = "in"  # direction: in, out, or inout
+    plt.rcParams["xtick.major.size"] = 6  # size of tick marks
+    plt.rcParams["ytick.major.size"] = 6  # size of tick marks
+    plt.rcParams["xtick.minor.size"] = 3  # size of tick marks
+    plt.rcParams["ytick.minor.size"] = 3  # size of tick marks
+    plt.rcParams["xtick.major.pad"] = 7  # distance between ticks and tick labels
+    plt.rcParams["ytick.major.pad"] = 7  # distance between ticks and tick labels
+    plt.rcParams["axes.grid"] = True  # Turn grid on by default
+    plt.rcParams["grid.alpha"] = 0.5  # Set grid transparency to 0.5
+    plt.rcParams["legend.fontsize"] = 16  # fontsize of the legend
+
+    sns.set_style("darkgrid")
+    return
