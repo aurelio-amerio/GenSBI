@@ -884,7 +884,7 @@ def plot_2d_dist_contour(
     return fig, ax
 
 
-def set_default_style():
+def set_default_style():  # pragma: no cover
     plt.rcParams["figure.figsize"] = (6, 5)  # Set figure size
 
     plt.rcParams["axes.labelsize"] = 18  # fontsize of the x any y labels
