@@ -43,11 +43,4 @@ The following tasks are planned for future development:
 
 
 
-ho implementato la PF ode. Devo controllare come usarla nelle pipeline. 
-Inoltre, mi piacerebbe mettere nella Flow pipeline la possibilità di usare il solver SDE.
-In modo da poter usare sia SDE che ODE sampling per sia flow che score matching.
-Dovrebbe in teoria essere solo una modifica a livello del sampler, ma devo controllare
-
---> Implementato. Ora bisogna scrivere un notebook (avanzato) dove si mostra come fare mix and match tra SDE e ODE, e fare il sampling. Poi devo aggiornare la documentazione (capire bene come fare, magari una pagina separata). Potrei fare una sezione con "Advanced Usage" o simile. 
-
-NOTA: bisogna scrivere dei nuovi coverage tests per le nuove funzionalità (il coverage è diminuito). 
+Notes: concat seems to work better at low budget (10k). sum is equivalent at medium budgets (30k), and can help reduce overfitting at higher budgets (100k).
