@@ -15,6 +15,7 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 - **[Training Guide](/basics/training)** - Train models, configure hyperparameters, and use data loaders
 - **[Inference Guide](/basics/inference)** - Sample from trained posterior distributions
 - **[Validation Guide](/basics/validation)** - Validate results with SBC, TARP, and L-C2ST
+- **[Benchmarks](/benchmarks)** - Performance results on standard SBI benchmark tasks
 - **[Troubleshooting](/basics/troubleshooting)** - Solve common issues and FAQs
 - **[Theoretical Overview](/theoretical_overview/index)** - Understand the theory behind Flow and Diffusion models
 
@@ -46,6 +47,7 @@ Welcome to the GenSBI documentation! This section provides comprehensive guides 
 Installation </getting_started/installation>
 Quick Start </getting_started/index>
 Basics </basics/index>
+Benchmarks </benchmarks>
 Advanced Topics </advanced/index>
 Theoretical Overview </theoretical_overview/index>
 API Documentation </api/gensbi/index>
