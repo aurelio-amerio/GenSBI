@@ -65,7 +65,7 @@ GenSBI SM (Flux1Joint) — score matching with the joint architecture — matche
 
 GenSBI provides two transformer architectures: **Flux1** (conditional density estimation) and **Flux1Joint** (joint density estimation). Each can be combined with three generative methods: flow matching (FM), score matching (SM), and EDM Diffusion.
 
-::::{grid} 1 1 2 2
+::::{grid} 1
 :gutter: 3
 
 :::{grid-item-card} Flux1 (Conditional)
