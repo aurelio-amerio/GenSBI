@@ -689,7 +689,7 @@
 </section>
 <section id="architecture-comparison-flux1-vs-flux1joint">
 <h3>Architecture Comparison: Flux1 vs Flux1Joint<a class="headerlink" href="#architecture-comparison-flux1-vs-flux1joint" title="Link to this heading">#</a></h3>
-<p>GenSBI provides two transformer architectures: <strong>Flux1</strong> (conditional density estimation) and <strong>Flux1Joint</strong> (joint density estimation). Each can be combined with three generative methods: flow matching (FM), score matching (SM), and EDM Diffusion.</p>
+<p>GenSBI brings two new transformer architectures to the field of SBI: <strong>Flux1</strong> (conditional density estimation) and <strong>Flux1Joint</strong> (joint density estimation). Each can be combined with three generative methods: flow matching (FM), score matching (SM), and EDM Diffusion.</p>
 <div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
 <div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-1 sd-row-cols-md-1 sd-row-cols-lg-1 sd-g-3 sd-g-xs-3 sd-g-sm-3 sd-g-md-3 sd-g-lg-3 docutils">
 <div class="sd-col sd-d-flex-row docutils">
@@ -719,7 +719,7 @@ Flux1Joint (Joint)</div>
 <li><p>All three generative methods converge to similar C2ST scores as the simulation budget increases, indicating that the methods are effectively interchangeable.</p></li>
 <li><p>On simpler tasks (Two Moons, Gaussian Mixture, Gaussian Linear), all generative methods reach near-optimal scores (≤ 0.52) already at 3×10⁴ simulations.</p></li>
 <li><p>On harder tasks (SLCP, Bernoulli GLM), flow matching and score matching converge faster than EDM.</p></li>
-<li><p>Flux1Joint tends to match or improve on Flux1 across all tasks, consistent with an advantage of joint density estimation for tasks with complex posterior geometries.</p></li>
+<li><p>Flux1Joint tends to match or improve on Flux1 across all tasks, consistent with an advantage of joint density estimation for tasks with unstructured data and complex posterior geometries.</p></li>
 </ul>
 </section>
 </section>
@@ -785,11 +785,14 @@ Flux1Joint (Joint)</div>
 <p><strong>Key takeaways:</strong></p>
 <ul class="simple">
 <li><p>Within a fixed architecture, the three generative methods have comparable training throughput — the choice of generative method has no meaningful impact on training cost.</p></li>
-<li><p>Flux1Joint trains approximately 2.5× faster than Flux1 (11.5 vs 4.6 iterations per second).</p></li>
 <li><p>Sampling speed varies by generative method: EDM is fastest (18 solver steps), flow matching is moderate (100 steps), and score matching is slowest (~1000 steps).</p></li>
 <li><p>Even in the slowest configuration, drawing 10,000 posterior samples takes at most ~42 seconds.</p></li>
 <li><p>All benchmark models can also be trained on a consumer-grade NVIDIA RTX 4070 GPU (12 GB VRAM) with batch size 256.</p></li>
 </ul>
+<div class="note admonition">
+<p class="admonition-title">Note</p>
+<p>While the <code class="docutils literal notranslate"><span class="pre">Flux1Joint</span></code> model seems to train faster, the benchmarked architechtures have different parameter counts and reflect the default initialization setup. At equal parameter counts, the training times are comparable.</p>
+</div>
 </section>
 <section id="calibration">
 <h2>Calibration<a class="headerlink" href="#calibration" title="Link to this heading">#</a></h2>
@@ -821,7 +824,7 @@ Flux1Joint (Joint)</div>
 <td><p>10,000 posterior samples in 5–42 seconds</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Calibration</strong></p></td>
-<td><p>Well-calibrated posteriors verified by TARP diagnostics</p></td>
+<td><p>Well-calibrated posteriors verified by C2ST, TARP, SBC, L-C2ST, and marginal posterior coverage diagnostics</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>Configuration</strong></p></td>
 <td><p>Nearly uniform hyperparameters across all tasks</p></td>

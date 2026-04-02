@@ -63,7 +63,7 @@ GenSBI SM (Flux1Joint) — score matching with the joint architecture — matche
 
 ### Architecture Comparison: Flux1 vs Flux1Joint
 
-GenSBI provides two transformer architectures: **Flux1** (conditional density estimation) and **Flux1Joint** (joint density estimation). Each can be combined with three generative methods: flow matching (FM), score matching (SM), and EDM Diffusion.
+GenSBI brings two new transformer architectures to the field of SBI: **Flux1** (conditional density estimation) and **Flux1Joint** (joint density estimation). Each can be combined with three generative methods: flow matching (FM), score matching (SM), and EDM Diffusion.
 
 ::::{grid} 1
 :gutter: 3
@@ -90,7 +90,7 @@ Best C2ST as a function of simulation budget for **Flux1Joint**. Flux1Joint achi
 - All three generative methods converge to similar C2ST scores as the simulation budget increases, indicating that the methods are effectively interchangeable.
 - On simpler tasks (Two Moons, Gaussian Mixture, Gaussian Linear), all generative methods reach near-optimal scores (≤ 0.52) already at 3×10⁴ simulations.
 - On harder tasks (SLCP, Bernoulli GLM), flow matching and score matching converge faster than EDM.
-- Flux1Joint tends to match or improve on Flux1 across all tasks, consistent with an advantage of joint density estimation for tasks with complex posterior geometries.
+- Flux1Joint tends to match or improve on Flux1 across all tasks, consistent with an advantage of joint density estimation for tasks with unstructured data and complex posterior geometries.
 
 
 ## Computational Cost
@@ -109,10 +109,15 @@ All computational benchmarks below are measured on the **Two Moons** task (a low
 **Key takeaways:**
 
 - Within a fixed architecture, the three generative methods have comparable training throughput — the choice of generative method has no meaningful impact on training cost.
-- Flux1Joint trains approximately 2.5× faster than Flux1 (11.5 vs 4.6 iterations per second).
 - Sampling speed varies by generative method: EDM is fastest (18 solver steps), flow matching is moderate (100 steps), and score matching is slowest (~1000 steps).
 - Even in the slowest configuration, drawing 10,000 posterior samples takes at most ~42 seconds.
 - All benchmark models can also be trained on a consumer-grade NVIDIA RTX 4070 GPU (12 GB VRAM) with batch size 256.
+
+```{admonition} Note
+:class: note
+
+While the `Flux1Joint` model seems to train faster, the benchmarked architechtures have different parameter counts and reflect the default initialization setup. At equal parameter counts, the training times are comparable.   
+```
 
 
 ## Calibration
@@ -131,5 +136,5 @@ The [example notebooks](/examples) include full calibration plots for each bench
 | **Generative method interchangeability** | Flow matching, score matching, and EDM converge to comparable quality |
 | **Training cost** | 1–3 hours on a single V100; feasible on consumer GPUs |
 | **Sampling speed** | 10,000 posterior samples in 5–42 seconds |
-| **Calibration** | Well-calibrated posteriors verified by TARP diagnostics |
+| **Calibration** | Well-calibrated posteriors verified by C2ST, TARP, SBC, L-C2ST, and marginal posterior coverage diagnostics |
 | **Configuration** | Nearly uniform hyperparameters across all tasks |
