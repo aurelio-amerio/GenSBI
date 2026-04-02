@@ -52,7 +52,7 @@
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/diffusion_SM_2d_unconditional';</script>
@@ -557,7 +557,7 @@
 
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">256</span>
 
-<span class="n">data</span> <span class="o">=</span> <span class="n">make_boxes_jax</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="mi">500_000</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">make_boxes_jax</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e6</span><span class="p">))</span>
 
 <span class="n">train_dataset_grain</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">grain</span><span class="o">.</span><span class="n">MapDataset</span><span class="o">.</span><span class="n">source</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span><span class="kc">None</span><span class="p">])</span>
@@ -613,7 +613,80 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/b3fe2e8668d78954a3542821339490ec4d28a36dab77a3564b8a9be3315ec47c.png" src="../_images/b3fe2e8668d78954a3542821339490ec4d28a36dab77a3564b8a9be3315ec47c.png" />
+<img alt="../_images/dfd90eab6c359aec56bbff50f514d3808ac6a969e60a5604a8f37ae1cb3436b4.png" src="../_images/dfd90eab6c359aec56bbff50f514d3808ac6a969e60a5604a8f37ae1cb3436b4.png" />
+</div>
+</div>
+<p>We plot the diffusion forward process</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">VESmScheduler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMPath</span>
+
+
+<span class="n">scheduler</span> <span class="o">=</span> <span class="n">VESmScheduler</span><span class="p">()</span>
+<span class="n">path</span> <span class="o">=</span> <span class="n">SMPath</span><span class="p">(</span><span class="n">scheduler</span><span class="p">)</span>
+
+<span class="c1"># sample(self, x_0: Array, x_1: Array, t: Array)</span>
+
+<span class="n">nsamples</span> <span class="o">=</span> <span class="mi">500_000</span>
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">x_0</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">x_1</span> <span class="o">=</span> <span class="n">make_boxes_jax</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">500_000</span><span class="p">)</span>
+
+
+<span class="n">x_ts</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">ts</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ts</span><span class="p">:</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="n">x_ts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">x_t</span><span class="p">)</span>
+
+
+<span class="c1"># H=plt.hist2d(x_t[:,0], x_t[:,1], 300, range=((-5,5), (-5,5)))</span>
+<span class="c1"># cmin = 0.0</span>
+<span class="c1"># cmax = jnp.quantile(jnp.array(H[0]), 0.99).item()</span>
+<span class="c1"># norm = cm.colors.Normalize(vmax=cmax, vmin=cmin)</span>
+
+<span class="c1"># _ = plt.hist2d(x_t[:,0], x_t[:,1], 300, range=((-5,5), (-5,5)), norm=norm, cmap=&quot;viridis&quot;)</span>
+
+<span class="c1"># # set equal ratio of axes</span>
+<span class="c1"># plt.gca().set_aspect(&#39;equal&#39;, adjustable=&#39;box&#39;)</span>
+<span class="c1"># plt.show()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">x_ts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="n">H</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
+
+    <span class="n">cmin</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">cmax</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mf">0.99</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmax</span><span class="o">=</span><span class="n">cmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">cmin</span><span class="p">)</span>
+
+    <span class="n">_</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)),</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;viridis&quot;</span><span class="p">)</span>
+
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+    <span class="c1"># axs[i].set_title(&#39;t = %.2f&#39; % (T[i]),fontsize=24)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;diffusion_SM_unconditional_forward.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/6d141aa8fb5d68e8f146b879224d9ef854512bf80169bdb6b694bf1e97654345.png" src="../_images/6d141aa8fb5d68e8f146b879224d9ef854512bf80169bdb6b694bf1e97654345.png" />
 </div>
 </div>
 </section>
@@ -625,6 +698,12 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import diffusion components and utilities</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalPipeline</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreMatchingMethod</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/aure/github/GenSBI/.venv/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
 </div>
@@ -695,7 +774,7 @@
 
 <span class="n">training_config</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
 <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
-<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50_000</span>
+<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100_000</span>
 
 <span class="n">method</span> <span class="o">=</span> <span class="n">ScoreMatchingMethod</span><span class="p">(</span><span class="n">sde_type</span><span class="o">=</span><span class="s2">&quot;VE&quot;</span><span class="p">)</span>
 <span class="n">pipeline</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
@@ -719,10 +798,10 @@
 <div class="cell_output docutils container">
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/score_matching_2d_example
+WARNING:absl:Given directory is read only=/home/aure/github/GenSBI-examples/examples/NDE/checkpoints/score_matching_2d_example
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/score_matching_2d_example/ema
+WARNING:absl:Given directory is read only=/home/aure/github/GenSBI-examples/examples/NDE/checkpoints/score_matching_2d_example/ema
 </pre></div>
 </div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
@@ -767,13 +846,18 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <span class="c1"># time steps: 20,</span>
-<span class="n">sol_</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sol_</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">251</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">sol_</span><span class="p">)</span>
 <span class="p">;</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>E0401 12:29:55.350017   26123 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0401 12:29:55.606854   26111 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0401 12:29:55.727662   26111 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+</pre></div>
+</div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;&#39;
 </pre></div>
 </div>
@@ -781,12 +865,20 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sol_</span><span class="p">[::</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+<span class="n">ts_rev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">T</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sol_</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ts_rev</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(61, 500000, 2, 1)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>array([  0,  25,  50,  75, 126, 251])
 </pre></div>
 </div>
 </div>
@@ -794,8 +886,10 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize the sampled trajectories at different time steps</span>
-<span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol_</span><span class="p">[::</span><span class="mi">50</span><span class="p">])</span>  <span class="c1"># convert to numpy array, take only one step every 2</span>
-<span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
+<span class="c1"># sol = np.array(sol_[::50])  # convert to numpy array, take only one step every 2</span>
+<span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol_</span><span class="p">[</span><span class="n">ts_rev</span><span class="p">])</span>  <span class="c1"># convert to numpy array, take only one step every 2</span>
+<span class="c1"># T = np.linspace(0,1,6)  # convert to numpy array</span>
+<span class="c1"># T = np.array([0, 0.5, 0.6, 0.7, 0.8, 1.0])</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
 
@@ -803,7 +897,7 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
     <span class="n">H</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
 
     <span class="n">cmin</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">cmax</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mf">0.99</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">cmax</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mf">0.95</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 
     <span class="n">norm</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmax</span><span class="o">=</span><span class="n">cmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">cmin</span><span class="p">)</span>
 
@@ -820,7 +914,7 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/ad3baf745f37fd96bc611c9d35c221a986fe54e8e192d2a7d1768228d33f4fda.png" src="../_images/ad3baf745f37fd96bc611c9d35c221a986fe54e8e192d2a7d1768228d33f4fda.png" />
+<img alt="../_images/d77522bacc282ed37763fcbadfb29f92332298bfad241465234978d48c0688d1.png" src="../_images/d77522bacc282ed37763fcbadfb29f92332298bfad241465234978d48c0688d1.png" />
 </div>
 </div>
 </section>
@@ -847,7 +941,7 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/b954a80b8860bf41f48c642dd4f06095e659a3f5b9dc5653fa67a5b644411599.png" src="../_images/b954a80b8860bf41f48c642dd4f06095e659a3f5b9dc5653fa67a5b644411599.png" />
+<img alt="../_images/cee28e79e5f40cb8bc1725f49aaddca55459d6916d736c6389980165032a3919.png" src="../_images/cee28e79e5f40cb8bc1725f49aaddca55459d6916d736c6389980165032a3919.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -891,7 +985,7 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/7b112d094c9e821cefc47a8dd9fe532b81f06caffd575859bc22494cf54e0e12.png" src="../_images/7b112d094c9e821cefc47a8dd9fe532b81f06caffd575859bc22494cf54e0e12.png" />
+<img alt="../_images/82dde88a2943206784abc8caa1f770a90f03a63546619aa1145af6ef1be5ba3d.png" src="../_images/82dde88a2943206784abc8caa1f770a90f03a63546619aa1145af6ef1be5ba3d.png" />
 </div>
 </div>
 </section>

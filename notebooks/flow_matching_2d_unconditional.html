@@ -52,7 +52,7 @@
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/flow_matching_2d_unconditional';</script>
@@ -557,7 +557,7 @@
 
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">256</span>
 
-<span class="n">data</span> <span class="o">=</span> <span class="n">make_boxes_jax</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="mi">500_000</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">make_boxes_jax</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e6</span><span class="p">))</span>
 
 <span class="n">train_dataset_grain</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">grain</span><span class="o">.</span><span class="n">MapDataset</span><span class="o">.</span><span class="n">source</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span><span class="kc">None</span><span class="p">])</span>
@@ -613,7 +613,70 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/b3fe2e8668d78954a3542821339490ec4d28a36dab77a3564b8a9be3315ec47c.png" src="../_images/b3fe2e8668d78954a3542821339490ec4d28a36dab77a3564b8a9be3315ec47c.png" />
+<img alt="../_images/dfd90eab6c359aec56bbff50f514d3808ac6a969e60a5604a8f37ae1cb3436b4.png" src="../_images/dfd90eab6c359aec56bbff50f514d3808ac6a969e60a5604a8f37ae1cb3436b4.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">CondOTScheduler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">AffineProbPath</span>
+
+
+<span class="n">scheduler</span> <span class="o">=</span> <span class="n">CondOTScheduler</span><span class="p">()</span>
+<span class="n">path</span> <span class="o">=</span> <span class="n">AffineProbPath</span><span class="p">(</span><span class="n">scheduler</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nsamples</span> <span class="o">=</span> <span class="mi">500_000</span>
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">x_0</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">x_1</span> <span class="o">=</span> <span class="n">make_boxes_jax</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">500_000</span><span class="p">)</span>
+
+
+<span class="n">x_ts</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">ts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ts</span><span class="p">:</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">x_0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">x_ts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample</span><span class="o">.</span><span class="n">x_t</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">x_ts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="n">H</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
+
+    <span class="n">cmin</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">cmax</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mf">0.99</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmax</span><span class="o">=</span><span class="n">cmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">cmin</span><span class="p">)</span>
+
+    <span class="n">_</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)),</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;viridis&quot;</span><span class="p">)</span>
+
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+    <span class="c1"># axs[i].set_title(&#39;t = %.2f&#39; % (T[i]),fontsize=24)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;flow_matching_unconditional_forward.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/aed334e451050dc6ea2546dcb48e1729a3704d6a219cc9896ec4f75f0311b356.png" src="../_images/aed334e451050dc6ea2546dcb48e1729a3704d6a219cc9896ec4f75f0311b356.png" />
 </div>
 </div>
 </section>
@@ -625,6 +688,12 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import flow matching components and utilities</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalPipeline</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/aure/github/GenSBI/.venv/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
 </div>
@@ -685,7 +754,7 @@
 
 <span class="n">training_config</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
 <span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
-<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30_000</span>
+<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100_000</span>
 
 <span class="n">method</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">()</span>
 <span class="n">pipeline</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
@@ -703,19 +772,6 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Restore the model from checkpoint if requested</span>
 <span class="k">if</span> <span class="n">restore_model</span><span class="p">:</span>
     <span class="n">pipeline</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example/ema
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
 </pre></div>
 </div>
 </div>
@@ -743,6 +799,15 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">train_model</span><span class="p">:</span>
     <span class="c1"># Train the model</span>
     <span class="n">pipeline</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>E0401 12:09:04.375375   11060 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+100%|██████████| 100000/100000 [06:37&lt;00:00, 251.87it/s, counter=0, loss=3.7686, ratio=1.0044, val_loss=3.4145]
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Saved model to checkpoint
 </pre></div>
 </div>
 </div>
@@ -802,7 +867,40 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/5122da2b01b7d71a407869d75c95338cd05292578dea98102107a47c84ea5a31.png" src="../_images/5122da2b01b7d71a407869d75c95338cd05292578dea98102107a47c84ea5a31.png" />
+<img alt="../_images/6907a0f38e5eaefd8f96aa1566764cdfd1a86c10441f0219ac0f9afac735de97.png" src="../_images/6907a0f38e5eaefd8f96aa1566764cdfd1a86c10441f0219ac0f9afac735de97.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize the sampled trajectories at different time steps</span>
+<span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># convert to numpy array</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nplots</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nplots</span><span class="p">):</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
+
+    <span class="n">cmin</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">cmax</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mf">0.99</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmax</span><span class="o">=</span><span class="n">cmax</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">cmin</span><span class="p">)</span>
+
+    <span class="n">_</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">sol</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)),</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;viridis&quot;</span><span class="p">)</span>
+
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;t = </span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;flow_matching_unconditional_reverse.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="c1"># plt.savefig(&quot;flow_matching_unconditional.pdf&quot;, dpi=300, bbox_inches=&quot;tight&quot;)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/4763fa109415624cb7676e32b2c8f6bd85529fca407eed7cb27d28f94bb0ff48.png" src="../_images/4763fa109415624cb7676e32b2c8f6bd85529fca407eed7cb27d28f94bb0ff48.png" />
 </div>
 </div>
 </section>
@@ -827,7 +925,7 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/96f4e98979e35875130412d0d62923eca9576b38ed19b62e9b0573281738acd0.png" src="../_images/96f4e98979e35875130412d0d62923eca9576b38ed19b62e9b0573281738acd0.png" />
+<img alt="../_images/32a4f02f86f91446839659ae24fb4f97720ea7d4626eda1a3376531e3c617cdd.png" src="../_images/32a4f02f86f91446839659ae24fb4f97720ea7d4626eda1a3376531e3c617cdd.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -863,7 +961,7 @@ WARNING:absl:Given directory is read only=/mnt/c/Users/Aure/Documents/GitHub/Gen
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/26d69e3bd5311a1f14881761f7df3f13b072b5e6febb43515355af8f5f76e043.png" src="../_images/26d69e3bd5311a1f14881761f7df3f13b072b5e6febb43515355af8f5f76e043.png" />
+<img alt="../_images/ca7d09b39d814a1574407550f48d31c8317a9f201ca9203da4636ad36d4da037.png" src="../_images/ca7d09b39d814a1574407550f48d31c8317a9f201ca9203da4636ad36d4da037.png" />
 </div>
 </div>
 </section>

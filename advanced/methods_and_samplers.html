@@ -52,7 +52,7 @@
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -585,15 +585,6 @@ and parameterized by a <code class="docutils literal notranslate"><span class="p
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  Installing build dependencies ... ?25l?25hdone
-  Getting requirements to build wheel ... ?25l?25hdone
-  Preparing metadata (pyproject.toml) ... ?25l?25hdone
-fatal: destination path &#39;GenSBI-examples&#39; already exists and is not an empty directory.
-/content/GenSBI-examples/examples/methods_and_samplers
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -619,6 +610,12 @@ fatal: destination path &#39;GenSBI-examples&#39; already exists and is not an e
 <span class="c1"># Plotting</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/aure/github/GenSBI/.venv/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
 </pre></div>
 </div>
 </div>
@@ -734,6 +731,33 @@ uniform prior and produces observations x = θ + 1 + noise. This is identical to
 </div>
 </div>
 </section>
+<section id="model-parameters">
+<h2>Model parameters<a class="headerlink" href="#model-parameters" title="Link to this heading">#</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
+    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">num_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">val_emb_dim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">id_emb_dim</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
+    <span class="n">id_merge_mode</span><span class="o">=</span><span class="s2">&quot;concat&quot;</span><span class="p">,</span>
+    <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span>
+    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
 <hr class="docutils" />
 <section id="section-1-flow-matching">
 <h2>Section 1: Flow Matching<a class="headerlink" href="#section-1-flow-matching" title="Link to this heading">#</a></h2>
@@ -741,7 +765,7 @@ uniform prior and produces observations x = θ + 1 + noise. This is identical to
 from a simple prior (Gaussian noise at <span class="math notranslate nohighlight">\(t=0\)</span>) to the data distribution (at <span class="math notranslate nohighlight">\(t=1\)</span>)
 via an ordinary differential equation (ODE).</p>
 <ul class="simple">
-<li><p><strong>Default solver</strong>: <code class="docutils literal notranslate"><span class="pre">ODESolver</span></code> — deterministic ODE integration (Euler or Dopri5).</p></li>
+<li><p><strong>Default solver</strong>: <code class="docutils literal notranslate"><span class="pre">FMODESolver</span></code> — deterministic ODE integration (Euler or Dopri5).</p></li>
 <li><p><strong>Alternative solvers</strong> (SDE-based, stochastic):</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZeroEndsSolver</span></code> — diffusion vanishes at both time endpoints (arXiv:2410.02217).</p></li>
@@ -750,29 +774,11 @@ via an ordinary differential equation (ODE).</p>
 </li>
 </ul>
 <p>The SDE solvers can sometimes improve sample diversity at the cost of
-additional stochasticity. They require prior statistics (<code class="docutils literal notranslate"><span class="pre">mu0</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma0</span></code>) and a
-diffusion strength parameter <code class="docutils literal notranslate"><span class="pre">alpha</span></code>.</p>
+additional stochasticity. The prior statistics (<code class="docutils literal notranslate"><span class="pre">mu0</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma0</span></code>) are auto-provided;
+only the diffusion strength parameter <code class="docutils literal notranslate"><span class="pre">alpha</span></code> must be specified.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params_fm</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
-    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-    <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
-    <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span>
-    <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
-    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
-    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
-    <span class="n">theta</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">dim_joint</span><span class="p">,</span>
-    <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span>
-    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">model_fm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params_fm</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_fm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
 <span class="n">method_fm</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">()</span>
 
@@ -802,6 +808,217 @@ diffusion strength parameter <code class="docutils literal notranslate"><span cl
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/10000 [00:00&lt;?, ?it/s]E0315 20:07:24.684960    7958 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:07:24.787088    7950 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:07:28.135102    7958 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+100%|██████████| 10000/10000 [13:39&lt;00:00, 12.21it/s, counter=0, loss=0.1340, ratio=1.0193, val_loss=0.1105]
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Saved model to checkpoint
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>([Array(4.487134, dtype=float32),
+  Array(2.9922855, dtype=float32),
+  Array(1.960834, dtype=float32),
+  Array(1.0761648, dtype=float32),
+  Array(0.5249662, dtype=float32),
+  Array(0.29900214, dtype=float32),
+  Array(0.20662096, dtype=float32),
+  Array(0.17570512, dtype=float32),
+  Array(0.16001049, dtype=float32),
+  Array(0.15263854, dtype=float32),
+  Array(0.14871691, dtype=float32),
+  Array(0.1458437, dtype=float32),
+  Array(0.14513807, dtype=float32),
+  Array(0.14279085, dtype=float32),
+  Array(0.14386567, dtype=float32),
+  Array(0.14367118, dtype=float32),
+  Array(0.14287081, dtype=float32),
+  Array(0.14172928, dtype=float32),
+  Array(0.13863182, dtype=float32),
+  Array(0.13995412, dtype=float32),
+  Array(0.13849655, dtype=float32),
+  Array(0.13940008, dtype=float32),
+  Array(0.14105442, dtype=float32),
+  Array(0.13809459, dtype=float32),
+  Array(0.13874346, dtype=float32),
+  Array(0.13746428, dtype=float32),
+  Array(0.13833494, dtype=float32),
+  Array(0.1407088, dtype=float32),
+  Array(0.14051211, dtype=float32),
+  Array(0.13882087, dtype=float32),
+  Array(0.13966008, dtype=float32),
+  Array(0.13937397, dtype=float32),
+  Array(0.13900805, dtype=float32),
+  Array(0.13623294, dtype=float32),
+  Array(0.1366932, dtype=float32),
+  Array(0.13862215, dtype=float32),
+  Array(0.13842903, dtype=float32),
+  Array(0.1354967, dtype=float32),
+  Array(0.13894546, dtype=float32),
+  Array(0.1403241, dtype=float32),
+  Array(0.14205396, dtype=float32),
+  Array(0.1381807, dtype=float32),
+  Array(0.13841793, dtype=float32),
+  Array(0.14082186, dtype=float32),
+  Array(0.13916421, dtype=float32),
+  Array(0.13871133, dtype=float32),
+  Array(0.13839296, dtype=float32),
+  Array(0.1364929, dtype=float32),
+  Array(0.13552925, dtype=float32),
+  Array(0.13816299, dtype=float32),
+  Array(0.1377589, dtype=float32),
+  Array(0.1371782, dtype=float32),
+  Array(0.13413824, dtype=float32),
+  Array(0.13435975, dtype=float32),
+  Array(0.13781016, dtype=float32),
+  Array(0.13545497, dtype=float32),
+  Array(0.13565016, dtype=float32),
+  Array(0.13618363, dtype=float32),
+  Array(0.13905466, dtype=float32),
+  Array(0.13831833, dtype=float32),
+  Array(0.13744517, dtype=float32),
+  Array(0.13695635, dtype=float32),
+  Array(0.13566798, dtype=float32),
+  Array(0.13826647, dtype=float32),
+  Array(0.13602, dtype=float32),
+  Array(0.13674776, dtype=float32),
+  Array(0.13827562, dtype=float32),
+  Array(0.13557483, dtype=float32),
+  Array(0.13794236, dtype=float32),
+  Array(0.13687141, dtype=float32),
+  Array(0.13655987, dtype=float32),
+  Array(0.13587439, dtype=float32),
+  Array(0.13664067, dtype=float32),
+  Array(0.13575381, dtype=float32),
+  Array(0.13657752, dtype=float32),
+  Array(0.13541223, dtype=float32),
+  Array(0.13664359, dtype=float32),
+  Array(0.13906978, dtype=float32),
+  Array(0.1353971, dtype=float32),
+  Array(0.13574946, dtype=float32),
+  Array(0.13848786, dtype=float32),
+  Array(0.1367712, dtype=float32),
+  Array(0.13801691, dtype=float32),
+  Array(0.1345971, dtype=float32),
+  Array(0.13455714, dtype=float32),
+  Array(0.13408361, dtype=float32),
+  Array(0.13445859, dtype=float32),
+  Array(0.1341076, dtype=float32),
+  Array(0.13604409, dtype=float32),
+  Array(0.13149591, dtype=float32),
+  Array(0.13459405, dtype=float32),
+  Array(0.1345279, dtype=float32),
+  Array(0.13395606, dtype=float32),
+  Array(0.1336826, dtype=float32),
+  Array(0.13181722, dtype=float32),
+  Array(0.13420217, dtype=float32),
+  Array(0.13290101, dtype=float32),
+  Array(0.1349049, dtype=float32),
+  Array(0.13579135, dtype=float32)],
+ [Array(2.6953292, dtype=float32),
+  Array(1.6681368, dtype=float32),
+  Array(1.0922112, dtype=float32),
+  Array(0.2398011, dtype=float32),
+  Array(0.15399177, dtype=float32),
+  Array(0.13222507, dtype=float32),
+  Array(0.12421458, dtype=float32),
+  Array(0.12515622, dtype=float32),
+  Array(0.1212092, dtype=float32),
+  Array(0.12067457, dtype=float32),
+  Array(0.12157269, dtype=float32),
+  Array(0.11619404, dtype=float32),
+  Array(0.11513381, dtype=float32),
+  Array(0.12060885, dtype=float32),
+  Array(0.1185519, dtype=float32),
+  Array(0.11167543, dtype=float32),
+  Array(0.11582937, dtype=float32),
+  Array(0.11807926, dtype=float32),
+  Array(0.11946335, dtype=float32),
+  Array(0.112812, dtype=float32),
+  Array(0.11320811, dtype=float32),
+  Array(0.11420622, dtype=float32),
+  Array(0.11472716, dtype=float32),
+  Array(0.11466396, dtype=float32),
+  Array(0.11424752, dtype=float32),
+  Array(0.11447094, dtype=float32),
+  Array(0.11247937, dtype=float32),
+  Array(0.1104933, dtype=float32),
+  Array(0.11858489, dtype=float32),
+  Array(0.11221796, dtype=float32),
+  Array(0.11274859, dtype=float32),
+  Array(0.11522296, dtype=float32),
+  Array(0.1098765, dtype=float32),
+  Array(0.11516829, dtype=float32),
+  Array(0.11156794, dtype=float32),
+  Array(0.11285945, dtype=float32),
+  Array(0.11335954, dtype=float32),
+  Array(0.11337692, dtype=float32),
+  Array(0.1133188, dtype=float32),
+  Array(0.11339703, dtype=float32),
+  Array(0.11436679, dtype=float32),
+  Array(0.1125825, dtype=float32),
+  Array(0.11643829, dtype=float32),
+  Array(0.11185455, dtype=float32),
+  Array(0.11566383, dtype=float32),
+  Array(0.1142116, dtype=float32),
+  Array(0.11126652, dtype=float32),
+  Array(0.11499225, dtype=float32),
+  Array(0.11443239, dtype=float32),
+  Array(0.10889792, dtype=float32),
+  Array(0.11268186, dtype=float32),
+  Array(0.11004321, dtype=float32),
+  Array(0.11472531, dtype=float32),
+  Array(0.12087436, dtype=float32),
+  Array(0.10836428, dtype=float32),
+  Array(0.11448106, dtype=float32),
+  Array(0.11075194, dtype=float32),
+  Array(0.11832772, dtype=float32),
+  Array(0.11440001, dtype=float32),
+  Array(0.11424767, dtype=float32),
+  Array(0.11119241, dtype=float32),
+  Array(0.11354747, dtype=float32),
+  Array(0.11369752, dtype=float32),
+  Array(0.11143927, dtype=float32),
+  Array(0.11238287, dtype=float32),
+  Array(0.11537903, dtype=float32),
+  Array(0.1137135, dtype=float32),
+  Array(0.11341174, dtype=float32),
+  Array(0.113258, dtype=float32),
+  Array(0.11214523, dtype=float32),
+  Array(0.11948248, dtype=float32),
+  Array(0.11298381, dtype=float32),
+  Array(0.11277615, dtype=float32),
+  Array(0.11604758, dtype=float32),
+  Array(0.11149234, dtype=float32),
+  Array(0.11328979, dtype=float32),
+  Array(0.1135336, dtype=float32),
+  Array(0.1154284, dtype=float32),
+  Array(0.11114796, dtype=float32),
+  Array(0.1128342, dtype=float32),
+  Array(0.11260235, dtype=float32),
+  Array(0.11256256, dtype=float32),
+  Array(0.11525233, dtype=float32),
+  Array(0.11372485, dtype=float32),
+  Array(0.11157962, dtype=float32),
+  Array(0.11456677, dtype=float32),
+  Array(0.11403972, dtype=float32),
+  Array(0.1120085, dtype=float32),
+  Array(0.11261676, dtype=float32),
+  Array(0.11136433, dtype=float32),
+  Array(0.11135095, dtype=float32),
+  Array(0.11166685, dtype=float32),
+  Array(0.11024454, dtype=float32),
+  Array(0.11280322, dtype=float32),
+  Array(0.10942401, dtype=float32),
+  Array(0.1103438, dtype=float32),
+  Array(0.11065945, dtype=float32),
+  Array(0.11077597, dtype=float32),
+  Array(0.11045574, dtype=float32)])
+</pre></div>
+</div>
+</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -809,26 +1026,18 @@ diffusion strength parameter <code class="docutils literal notranslate"><span cl
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/flow
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/flow/ema
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The default solver for flow matching is the ODESolver, which performs deterministic</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The default solver for flow matching is the FMODESolver, which performs deterministic</span>
 <span class="c1"># ODE integration from noise (t=0) to data (t=1).</span>
 <span class="n">samples_fm</span> <span class="o">=</span> <span class="n">pipeline_fm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
 <span class="n">samples_fm</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_fm</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>E0315 20:21:02.674392    7959 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
 </pre></div>
 </div>
 </div>
@@ -841,7 +1050,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
     <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
     <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Flow Matching — ODE Solver (default)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Flow Matching — FMODESolver (default)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;fm_ode_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -851,19 +1060,17 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
 </pre></div>
 </div>
-<img alt="../_images/a110edea36339a72930517289c9e062de50e632e4693c0f2e6659948e5bac677.png" src="../_images/a110edea36339a72930517289c9e062de50e632e4693c0f2e6659948e5bac677.png" />
+<img alt="../_images/74fcc131b1930c1c023ba199c2e440ebb0be513b30ed648b4bfe8a00e1bd8c59.png" src="../_images/74fcc131b1930c1c023ba199c2e440ebb0be513b30ed648b4bfe8a00e1bd8c59.png" />
 </div>
 </div>
-<div class="cell docutils container">
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/fm_ode_marginals.png" width=800><div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The ZeroEndsSolver adds stochastic noise during sampling. The diffusion coefficient</span>
 <span class="c1"># vanishes at both t=0 and t=1, ensuring clean endpoints.</span>
-<span class="c1"># Required kwargs: mu0 (prior mean), sigma0 (prior std), alpha (diffusion strength).</span>
+<span class="c1"># Required kwarg: alpha (diffusion strength). mu0/sigma0 are auto-provided by the prior.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZeroEndsSolver</span>
 
 <span class="n">solver_kwargs_ze</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;mu0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>  <span class="c1"># prior mean (data is normalized)</span>
-    <span class="s2">&quot;sigma0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>  <span class="c1"># prior std</span>
     <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># diffusion strength</span>
 <span class="p">}</span>
 
@@ -896,10 +1103,10 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
 </pre></div>
 </div>
-<img alt="../_images/8a8ea214909d6bd530a2918bb1e197363f010de8caeb076a22908bf6019753a3.png" src="../_images/8a8ea214909d6bd530a2918bb1e197363f010de8caeb076a22908bf6019753a3.png" />
+<img alt="../_images/fdfb858d3281d19ba2dea6bbf9d6359fe84e02c73b150037decc8522b9aefbc7.png" src="../_images/fdfb858d3281d19ba2dea6bbf9d6359fe84e02c73b150037decc8522b9aefbc7.png" />
 </div>
 </div>
-<div class="cell docutils container">
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/fm_zeroends_marginals.png" width=800><div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The NonSingularSolver uses a non-singular diffusion coefficient, which can provide</span>
 <span class="c1"># different sample quality characteristics compared to ZeroEndsSolver.</span>
@@ -907,8 +1114,6 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">NonSingularSolver</span>
 
 <span class="n">solver_kwargs_ns</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;mu0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
-    <span class="s2">&quot;sigma0&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">dim_obs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
     <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
 <span class="p">}</span>
 
@@ -941,7 +1146,146 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
 </pre></div>
 </div>
-<img alt="../_images/7d7d963f201e0136d5b1d3eea28da05c9a67a72bf4f84c29f2ecb5a7ca92c016.png" src="../_images/7d7d963f201e0136d5b1d3eea28da05c9a67a72bf4f84c29f2ecb5a7ca92c016.png" />
+<img alt="../_images/cfaa666b0713aeb5beea79f7938a733f6739accb071dbbdc16ac9f3d58323bd9.png" src="../_images/cfaa666b0713aeb5beea79f7938a733f6739accb071dbbdc16ac9f3d58323bd9.png" />
+</div>
+</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/fm_nonsingular_marginals.png" width=800>
+<section id="computing-the-log-prob-flow-matching">
+<h3>Computing the log-prob (Flow Matching)<a class="headerlink" href="#computing-the-log-prob-flow-matching" title="Link to this heading">#</a></h3>
+<p>Flow matching supports exact log-probability evaluation via the continuous
+change-of-variables formula. This requires solving an ODE backward, so it is
+more expensive than sampling, but it gives the exact (approximate) posterior
+density at any point.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">_plot_2d_dist_contour</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build a meshgrid in *unnormalized* space, then normalize for the pipeline.</span>
+<span class="c1"># The plot_range we used for marginals is a good guide for the grid extent.</span>
+<span class="n">theta1_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.6</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">theta2_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.4</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mi">51</span><span class="p">)</span>
+<span class="n">theta3_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mi">52</span><span class="p">)</span>
+
+<span class="c1"># Normalize to the training data statistics (obs dims only)</span>
+<span class="n">means_obs</span> <span class="o">=</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:]</span>
+<span class="n">stds_obs</span> <span class="o">=</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:]</span>
+
+<span class="n">theta1</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta1_raw</span> <span class="o">-</span> <span class="n">means_obs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">/</span> <span class="n">stds_obs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">theta2</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta2_raw</span> <span class="o">-</span> <span class="n">means_obs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">/</span> <span class="n">stds_obs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">theta3</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta3_raw</span> <span class="o">-</span> <span class="n">means_obs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">/</span> <span class="n">stds_obs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+<span class="n">tt1</span><span class="p">,</span> <span class="n">tt2</span><span class="p">,</span> <span class="n">tt3</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">theta1</span><span class="p">,</span> <span class="n">theta2</span><span class="p">,</span> <span class="n">theta3</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">&quot;ij&quot;</span><span class="p">)</span>
+
+<span class="n">x_1</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">tt1</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">tt2</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">tt3</span><span class="o">.</span><span class="n">ravel</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">logp_fm</span> <span class="o">=</span> <span class="n">pipeline_fm</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>E0315 20:22:24.518832    7953 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:24.662507    7947 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:25.289675    7957 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:25.724458    7955 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:25.812909    7955 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:26.513620    7949 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:26.623810    7958 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:26.868348    7956 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 20:22:27.210848    7955 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">jnp</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">stds_obs</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Array(1.5409526, dtype=float32)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stds_obs</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Array([[1.1551673],
+       [1.1542176],
+       [1.1557308]], dtype=float32)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prob_fm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logp_fm</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">theta1_raw</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">theta2_raw</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">theta3_raw</span><span class="p">)))</span>
+
+<span class="c1"># since we did a change of variables, p(x_norm) = p(x)*|det(J)|, where J is the jacobian of the change of variables</span>
+<span class="c1"># we are interested in plotting p(x)</span>
+<span class="c1"># J = stds_obs, so we need to divide by the product of stds</span>
+<span class="n">prob_fm</span> <span class="o">=</span> <span class="n">prob_fm</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">stds_obs</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+<span class="c1"># Integrate out one dimension to get 2D marginal distributions</span>
+<span class="n">prob12_fm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">prob_fm</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">theta3</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">prob13_fm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">prob_fm</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">theta2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">prob23_fm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">prob_fm</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">theta1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">_plot_2d_dist_contour</span><span class="p">(</span><span class="n">theta1_raw</span><span class="p">,</span> <span class="n">theta3_raw</span><span class="p">,</span> <span class="n">prob13_fm</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                      <span class="n">true_param</span><span class="o">=</span><span class="p">[</span><span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_1$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_3$&quot;</span><span class="p">)</span>
+
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">_plot_2d_dist_contour</span><span class="p">(</span><span class="n">theta2_raw</span><span class="p">,</span> <span class="n">theta3_raw</span><span class="p">,</span> <span class="n">prob23_fm</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                      <span class="n">true_param</span><span class="o">=</span><span class="p">[</span><span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_2$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">_plot_2d_dist_contour</span><span class="p">(</span><span class="n">theta1_raw</span><span class="p">,</span> <span class="n">theta2_raw</span><span class="p">,</span> <span class="n">prob12_fm</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                      <span class="n">true_param</span><span class="o">=</span><span class="p">[</span><span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_2$&quot;</span><span class="p">)</span>
+
+
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.06</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">():</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">,</span> <span class="n">adjustable</span><span class="o">=</span><span class="s2">&quot;box&quot;</span><span class="p">)</span>
+    <span class="c1"># ax.set_aspect(&quot;equal&quot;)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Flow Matching — log-prob contours&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;fm_log_prob.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/ea0e1b159ae3364e4796180778f46d5c50fde61b91b59f7bedec296441b16721.png" src="../_images/ea0e1b159ae3364e4796180778f46d5c50fde61b91b59f7bedec296441b16721.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -951,6 +1295,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 </div>
 </div>
 </div>
+</section>
 </section>
 <hr class="docutils" />
 <section id="section-2-edm-diffusion">
@@ -970,25 +1315,7 @@ affect the noise schedule used during the diffusion process.</p>
 stochastic denoising sampler from Karras et al., 2022.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params_edm</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
-    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-    <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
-    <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span>
-    <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
-    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
-    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
-    <span class="n">theta</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">dim_joint</span><span class="p">,</span>
-    <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span>
-    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">model_edm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params_edm</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_edm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
 <span class="c1"># Default EDM scheduler (recommended for both training and sampling)</span>
 <span class="n">method_edm</span> <span class="o">=</span> <span class="n">DiffusionEDMMethod</span><span class="p">()</span>
@@ -1022,6 +1349,214 @@ stochastic denoising sampler from Karras et al., 2022.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>100%|██████████| 10000/10000 [15:01&lt;00:00, 11.10it/s, counter=0, loss=0.6074, ratio=1.0059, val_loss=0.4663]
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Saved model to checkpoint
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>([Array(4.059249, dtype=float32),
+  Array(3.217333, dtype=float32),
+  Array(2.613893, dtype=float32),
+  Array(1.8376857, dtype=float32),
+  Array(1.1931707, dtype=float32),
+  Array(0.8978646, dtype=float32),
+  Array(0.7617746, dtype=float32),
+  Array(0.70925975, dtype=float32),
+  Array(0.68048674, dtype=float32),
+  Array(0.663169, dtype=float32),
+  Array(0.6580681, dtype=float32),
+  Array(0.6520192, dtype=float32),
+  Array(0.6546059, dtype=float32),
+  Array(0.65086615, dtype=float32),
+  Array(0.6381018, dtype=float32),
+  Array(0.6430618, dtype=float32),
+  Array(0.6428918, dtype=float32),
+  Array(0.6356992, dtype=float32),
+  Array(0.6338464, dtype=float32),
+  Array(0.63547117, dtype=float32),
+  Array(0.625504, dtype=float32),
+  Array(0.62820774, dtype=float32),
+  Array(0.6310612, dtype=float32),
+  Array(0.6290156, dtype=float32),
+  Array(0.62686634, dtype=float32),
+  Array(0.6252855, dtype=float32),
+  Array(0.61055213, dtype=float32),
+  Array(0.6176732, dtype=float32),
+  Array(0.61402166, dtype=float32),
+  Array(0.631411, dtype=float32),
+  Array(0.624668, dtype=float32),
+  Array(0.6264469, dtype=float32),
+  Array(0.6280167, dtype=float32),
+  Array(0.62725717, dtype=float32),
+  Array(0.6223118, dtype=float32),
+  Array(0.62894744, dtype=float32),
+  Array(0.6310335, dtype=float32),
+  Array(0.6249081, dtype=float32),
+  Array(0.62371475, dtype=float32),
+  Array(0.61899334, dtype=float32),
+  Array(0.62192017, dtype=float32),
+  Array(0.62459624, dtype=float32),
+  Array(0.6237708, dtype=float32),
+  Array(0.6137906, dtype=float32),
+  Array(0.62421554, dtype=float32),
+  Array(0.6274787, dtype=float32),
+  Array(0.62807894, dtype=float32),
+  Array(0.61834747, dtype=float32),
+  Array(0.6170715, dtype=float32),
+  Array(0.6234053, dtype=float32),
+  Array(0.6251511, dtype=float32),
+  Array(0.61582196, dtype=float32),
+  Array(0.6186709, dtype=float32),
+  Array(0.6199263, dtype=float32),
+  Array(0.6267442, dtype=float32),
+  Array(0.6173368, dtype=float32),
+  Array(0.61855245, dtype=float32),
+  Array(0.62333107, dtype=float32),
+  Array(0.60804814, dtype=float32),
+  Array(0.60911894, dtype=float32),
+  Array(0.60740143, dtype=float32),
+  Array(0.6164437, dtype=float32),
+  Array(0.6176305, dtype=float32),
+  Array(0.62129027, dtype=float32),
+  Array(0.6178613, dtype=float32),
+  Array(0.62047464, dtype=float32),
+  Array(0.62207377, dtype=float32),
+  Array(0.6282437, dtype=float32),
+  Array(0.6252215, dtype=float32),
+  Array(0.6181593, dtype=float32),
+  Array(0.6156092, dtype=float32),
+  Array(0.6200563, dtype=float32),
+  Array(0.6158823, dtype=float32),
+  Array(0.6149634, dtype=float32),
+  Array(0.6170703, dtype=float32),
+  Array(0.61795634, dtype=float32),
+  Array(0.62167513, dtype=float32),
+  Array(0.6150648, dtype=float32),
+  Array(0.62331647, dtype=float32),
+  Array(0.6192001, dtype=float32),
+  Array(0.61079645, dtype=float32),
+  Array(0.6180751, dtype=float32),
+  Array(0.6101916, dtype=float32),
+  Array(0.6123099, dtype=float32),
+  Array(0.6158251, dtype=float32),
+  Array(0.62104434, dtype=float32),
+  Array(0.6119264, dtype=float32),
+  Array(0.6128694, dtype=float32),
+  Array(0.60652304, dtype=float32),
+  Array(0.6139978, dtype=float32),
+  Array(0.6125756, dtype=float32),
+  Array(0.6172859, dtype=float32),
+  Array(0.6114325, dtype=float32),
+  Array(0.6100706, dtype=float32),
+  Array(0.6059304, dtype=float32),
+  Array(0.6034663, dtype=float32),
+  Array(0.6083122, dtype=float32),
+  Array(0.60512745, dtype=float32),
+  Array(0.6033985, dtype=float32)],
+ [Array(2.8592796, dtype=float32),
+  Array(2.327786, dtype=float32),
+  Array(1.8583748, dtype=float32),
+  Array(0.8617617, dtype=float32),
+  Array(0.6309166, dtype=float32),
+  Array(0.5533347, dtype=float32),
+  Array(0.58571273, dtype=float32),
+  Array(0.52568436, dtype=float32),
+  Array(0.52993447, dtype=float32),
+  Array(0.5353993, dtype=float32),
+  Array(0.521914, dtype=float32),
+  Array(0.51824653, dtype=float32),
+  Array(0.50521255, dtype=float32),
+  Array(0.5029145, dtype=float32),
+  Array(0.4996899, dtype=float32),
+  Array(0.50128216, dtype=float32),
+  Array(0.49008647, dtype=float32),
+  Array(0.49893057, dtype=float32),
+  Array(0.49881458, dtype=float32),
+  Array(0.5066016, dtype=float32),
+  Array(0.5004894, dtype=float32),
+  Array(0.50201106, dtype=float32),
+  Array(0.48738083, dtype=float32),
+  Array(0.4872034, dtype=float32),
+  Array(0.50551754, dtype=float32),
+  Array(0.48877677, dtype=float32),
+  Array(0.4768177, dtype=float32),
+  Array(0.49868834, dtype=float32),
+  Array(0.4959683, dtype=float32),
+  Array(0.48784178, dtype=float32),
+  Array(0.4899279, dtype=float32),
+  Array(0.4782315, dtype=float32),
+  Array(0.50000006, dtype=float32),
+  Array(0.47983444, dtype=float32),
+  Array(0.50004196, dtype=float32),
+  Array(0.49374908, dtype=float32),
+  Array(0.48485732, dtype=float32),
+  Array(0.4893823, dtype=float32),
+  Array(0.49126983, dtype=float32),
+  Array(0.4748419, dtype=float32),
+  Array(0.48794454, dtype=float32),
+  Array(0.49256635, dtype=float32),
+  Array(0.47332996, dtype=float32),
+  Array(0.49463293, dtype=float32),
+  Array(0.50205004, dtype=float32),
+  Array(0.4781828, dtype=float32),
+  Array(0.47790533, dtype=float32),
+  Array(0.47279465, dtype=float32),
+  Array(0.49043322, dtype=float32),
+  Array(0.49173722, dtype=float32),
+  Array(0.47609007, dtype=float32),
+  Array(0.47497177, dtype=float32),
+  Array(0.4894867, dtype=float32),
+  Array(0.49068576, dtype=float32),
+  Array(0.48358774, dtype=float32),
+  Array(0.4840837, dtype=float32),
+  Array(0.47355154, dtype=float32),
+  Array(0.49129686, dtype=float32),
+  Array(0.47921866, dtype=float32),
+  Array(0.4905387, dtype=float32),
+  Array(0.46886873, dtype=float32),
+  Array(0.48023623, dtype=float32),
+  Array(0.48588794, dtype=float32),
+  Array(0.47214466, dtype=float32),
+  Array(0.47625563, dtype=float32),
+  Array(0.48928967, dtype=float32),
+  Array(0.48269105, dtype=float32),
+  Array(0.47720972, dtype=float32),
+  Array(0.4767815, dtype=float32),
+  Array(0.47382975, dtype=float32),
+  Array(0.4760456, dtype=float32),
+  Array(0.47265908, dtype=float32),
+  Array(0.48126954, dtype=float32),
+  Array(0.48596781, dtype=float32),
+  Array(0.48041204, dtype=float32),
+  Array(0.4860783, dtype=float32),
+  Array(0.48548517, dtype=float32),
+  Array(0.48507056, dtype=float32),
+  Array(0.47154447, dtype=float32),
+  Array(0.47302166, dtype=float32),
+  Array(0.47612548, dtype=float32),
+  Array(0.47788596, dtype=float32),
+  Array(0.47075498, dtype=float32),
+  Array(0.47318226, dtype=float32),
+  Array(0.4771539, dtype=float32),
+  Array(0.48754787, dtype=float32),
+  Array(0.47468507, dtype=float32),
+  Array(0.470243, dtype=float32),
+  Array(0.47566202, dtype=float32),
+  Array(0.4747144, dtype=float32),
+  Array(0.47270375, dtype=float32),
+  Array(0.46835834, dtype=float32),
+  Array(0.47178626, dtype=float32),
+  Array(0.46888995, dtype=float32),
+  Array(0.46357885, dtype=float32),
+  Array(0.46760058, dtype=float32),
+  Array(0.46743155, dtype=float32),
+  Array(0.46668592, dtype=float32),
+  Array(0.46633345, dtype=float32)])
+</pre></div>
+</div>
+</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1029,23 +1564,10 @@ stochastic denoising sampler from Karras et al., 2022.</p>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/edm
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/edm/ema
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The EDMSolver implements the stochastic denoising sampler from Karras et al., 2022.</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The EDMSolver implements the stochastic denoising sampler from Karras et al., 2022. Defaults to algorithm 1 (deterministic)</span>
 <span class="c1"># It progressively denoises samples following a noise schedule from high to low sigma.</span>
 <span class="n">samples_edm</span> <span class="o">=</span> <span class="n">pipeline_edm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
 <span class="n">samples_edm</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_edm</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
@@ -1061,7 +1583,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
     <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
     <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;EDM Diffusion — EDMSolver (default)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;EDM Diffusion — EDMSolver (default - deterministic)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;edm_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -1071,9 +1593,44 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
 </pre></div>
 </div>
-<img alt="../_images/82b6a3b1a499d34014f425b6a4c6913502ea14b54719f3a73232ebc6da4596aa.png" src="../_images/82b6a3b1a499d34014f425b6a4c6913502ea14b54719f3a73232ebc6da4596aa.png" />
+<img alt="../_images/fb149843f6e0167beff1dcba69dbc903e98220c378cb11275956509d7ea66e31.png" src="../_images/fb149843f6e0167beff1dcba69dbc903e98220c378cb11275956509d7ea66e31.png" />
 </div>
 </div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/edm_marginals.png" width=800><div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Setting S_churn != 0 will adopt a predictor-corrector stochastic sampling procedure, according to algorithm 2 of the paper</span>
+<span class="n">samples_edm_stochastic</span> <span class="o">=</span> <span class="n">pipeline_edm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span> <span class="n">S_churn</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="n">samples_edm_stochastic</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_edm_stochastic</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">samples_edm_stochastic</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">gridsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;EDM Diffusion — EDMSolver (stochastic)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;edm_marginals_stochastic.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
+</pre></div>
+</div>
+<img alt="../_images/729eb0d7a6905dda2e11ccbab6ea102d52c65424166fd2cd7a846a08c6220a56.png" src="../_images/729eb0d7a6905dda2e11ccbab6ea102d52c65424166fd2cd7a846a08c6220a56.png" />
+</div>
+</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/edm_marginals_stochastic.png" width=800>
+<blockquote>
+<div><p><strong>Note:</strong> EDM diffusion does not currently support exact log-probability evaluation.
+Only flow matching and score matching provide this functionality via their ODE formulations.</p>
+</div></blockquote>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">del</span> <span class="n">model_edm</span><span class="p">,</span> <span class="n">pipeline_edm</span>
@@ -1095,32 +1652,14 @@ Samples are generated by running a <strong>reverse-time SDE</strong> from noise 
 </ul>
 <p><strong>Solvers</strong>:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">SMSolver</span></code> (<strong>default</strong>) — reverse-time SDE, generates stochastic samples.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">SMPFSolver</span></code> — probability flow ODE, generates deterministic samples from the
+<li><p><code class="docutils literal notranslate"><span class="pre">SMSDESolver</span></code> (<strong>default</strong>) — reverse-time SDE, generates stochastic samples.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMODESolver</span></code> — probability flow ODE, generates deterministic samples from the
 same learned score function. Useful when reproducibility or lower variance is
 desired.</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params_sm</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
-    <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-    <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">depth</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
-    <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span>
-    <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
-    <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
-    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
-    <span class="n">theta</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">dim_joint</span><span class="p">,</span>
-    <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span>
-    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">model_sm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params_sm</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_sm</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
 <span class="c1"># Default: Variance Preserving (VP) SDE</span>
 <span class="n">method_sm</span> <span class="o">=</span> <span class="n">ScoreMatchingMethod</span><span class="p">()</span>
@@ -1163,10 +1702,12 @@ desired.</p></li>
 <div class="cell_output docutils container">
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/sm
-WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:Given directory is read only=/home/aure/github/GenSBI-examples/examples/methods_and_samplers/checkpoints/sm
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
 WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
-WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/methods_and_samplers/checkpoints/sm/ema
+WARNING:absl:Given directory is read only=/home/aure/github/GenSBI-examples/examples/methods_and_samplers/checkpoints/sm/ema
 </pre></div>
 </div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
@@ -1192,7 +1733,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
     <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
     <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Score Matching — SMSolver (default, reverse SDE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Score Matching — SMSDESolver (default, reverse SDE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;sm_sde_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -1202,20 +1743,20 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
 </pre></div>
 </div>
-<img alt="../_images/f894b63dd6f9455c97bfcf87ff33c88fb0831a1f6a88273810d5008a80419455.png" src="../_images/f894b63dd6f9455c97bfcf87ff33c88fb0831a1f6a88273810d5008a80419455.png" />
+<img alt="../_images/39104a3e5f322f6550d29b463e39209abd424ed3bb031fe88f6b8a5bc59fc930.png" src="../_images/39104a3e5f322f6550d29b463e39209abd424ed3bb031fe88f6b8a5bc59fc930.png" />
 </div>
 </div>
-<div class="cell docutils container">
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/sm_sde_marginals.png" width=800><div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The probability flow ODE produces deterministic samples from the same learned score</span>
 <span class="c1"># function. This can be useful when you want reproducible results or lower variance.</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMPFSolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.solver</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMODESolver</span>
 
 <span class="n">samples_sm_pf</span> <span class="o">=</span> <span class="n">pipeline_sm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
     <span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span>
     <span class="n">x_o</span><span class="p">,</span>
     <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span>
-    <span class="n">solver</span><span class="o">=</span><span class="p">(</span><span class="n">SMPFSolver</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="n">solver</span><span class="o">=</span><span class="p">(</span><span class="n">SMODESolver</span><span class="p">,</span> <span class="p">{}),</span>
 <span class="p">)</span>
 <span class="n">samples_sm_pf</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_sm_pf</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>
 </pre></div>
@@ -1230,7 +1771,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
     <span class="n">true_param</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">true_theta</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]),</span>
     <span class="nb">range</span><span class="o">=</span><span class="n">plot_range</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Score Matching — SMPFSolver (probability flow ODE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Score Matching — SMODESolver (probability flow ODE)&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;sm_pf_marginals.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -1240,7 +1781,96 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Figure size 640x480 with 0 Axes&gt;
 </pre></div>
 </div>
-<img alt="../_images/97aa417410c133d61b644e592457251d4b99698d7a78a31941fe7c3a5890fa0b.png" src="../_images/97aa417410c133d61b644e592457251d4b99698d7a78a31941fe7c3a5890fa0b.png" />
+<img alt="../_images/c4ac02f0f1221fb1dea136d904b6c6343b945f5059fbc607c1e5ec1fefb2aecc.png" src="../_images/c4ac02f0f1221fb1dea136d904b6c6343b945f5059fbc607c1e5ec1fefb2aecc.png" />
+</div>
+</div>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/methods_and_samplers/sm_pf_marginals.png" width=800>
+<section id="computing-the-log-prob-score-matching">
+<h3>Computing the log-prob (Score Matching)<a class="headerlink" href="#computing-the-log-prob-score-matching" title="Link to this heading">#</a></h3>
+<p>Score matching also supports exact log-probability evaluation via the
+probability flow ODE formulation. Internally, <code class="docutils literal notranslate"><span class="pre">pipeline.log_prob()</span></code> uses
+<code class="docutils literal notranslate"><span class="pre">SMODESolver</span></code> regardless of the default sampling solver.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We reuse the same unnormalized grid ranges defined in the FM section.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">_plot_2d_dist_contour</span>
+
+<span class="n">theta1_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.6</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">theta2_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.4</span><span class="p">,</span> <span class="mf">2.4</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+<span class="n">theta3_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mi">22</span><span class="p">)</span>
+
+<span class="n">means_obs</span> <span class="o">=</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:]</span>
+<span class="n">stds_obs</span> <span class="o">=</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:]</span>
+
+<span class="n">theta1</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta1_raw</span> <span class="o">-</span> <span class="n">means_obs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">/</span> <span class="n">stds_obs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">theta2</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta2_raw</span> <span class="o">-</span> <span class="n">means_obs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">/</span> <span class="n">stds_obs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="n">theta3</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta3_raw</span> <span class="o">-</span> <span class="n">means_obs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="o">/</span> <span class="n">stds_obs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+<span class="n">tt1</span><span class="p">,</span> <span class="n">tt2</span><span class="p">,</span> <span class="n">tt3</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">theta1</span><span class="p">,</span> <span class="n">theta2</span><span class="p">,</span> <span class="n">theta3</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s2">&quot;ij&quot;</span><span class="p">)</span>
+<span class="n">x_1</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">tt1</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">tt2</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">tt3</span><span class="o">.</span><span class="n">ravel</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">logp_sm</span> <span class="o">=</span> <span class="n">pipeline_sm</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Euler&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>E0315 23:10:35.055124   85386 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 23:10:35.135811   85386 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E0315 23:10:35.230420   85387 cuda_timer.cc:87] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">prob_sm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logp_sm</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">theta1_raw</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">theta2_raw</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">theta3_raw</span><span class="p">)))</span>
+<span class="n">prob_sm</span> <span class="o">=</span> <span class="n">prob_sm</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">stds_obs</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+<span class="n">prob12_sm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">prob_sm</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">theta3</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">prob13_sm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">prob_sm</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">theta2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">prob23_sm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">prob_sm</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">theta1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">_plot_2d_dist_contour</span><span class="p">(</span><span class="n">theta1_raw</span><span class="p">,</span> <span class="n">theta3_raw</span><span class="p">,</span> <span class="n">prob13_sm</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                      <span class="n">true_param</span><span class="o">=</span><span class="p">[</span><span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_1$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_3$&quot;</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">_plot_2d_dist_contour</span><span class="p">(</span><span class="n">theta2_raw</span><span class="p">,</span> <span class="n">theta3_raw</span><span class="p">,</span> <span class="n">prob23_sm</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                      <span class="n">true_param</span><span class="o">=</span><span class="p">[</span><span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_2$&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">_plot_2d_dist_contour</span><span class="p">(</span><span class="n">theta1_raw</span><span class="p">,</span> <span class="n">theta2_raw</span><span class="p">,</span> <span class="n">prob12_sm</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                      <span class="n">true_param</span><span class="o">=</span><span class="p">[</span><span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">true_theta</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\theta_2$&quot;</span><span class="p">)</span>
+
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.06</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">():</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">,</span> <span class="n">adjustable</span><span class="o">=</span><span class="s2">&quot;box&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Score Matching — log-prob contours&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;sm_log_prob.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/e973d8a035bcd3bc1b5fb4af321406993cb0cf1411bd9afe89d42de5ff120707.png" src="../_images/e973d8a035bcd3bc1b5fb4af321406993cb0cf1411bd9afe89d42de5ff120707.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1250,6 +1880,7 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
 </div>
 </div>
 </div>
+</section>
 </section>
 </section>
 
@@ -1301,9 +1932,16 @@ WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/meth
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-setup">Shared Setup</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-1-flow-matching">Section 1: Flow Matching</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-parameters">Model parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-1-flow-matching">Section 1: Flow Matching</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#computing-the-log-prob-flow-matching">Computing the log-prob (Flow Matching)</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-2-edm-diffusion">Section 2: EDM Diffusion</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-3-score-matching">Section 3: Score Matching</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-3-score-matching">Section 3: Score Matching</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#computing-the-log-prob-score-matching">Computing the log-prob (Score Matching)</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
