@@ -1303,6 +1303,25 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                Loss function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
+        <span class="c1"># Check performed once at loss-fn construction time (not inside the JIT&#39;d</span>
+        <span class="c1"># inner function) so the error is raised eagerly and clearly.</span>
+        <span class="n">sigma_data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;sigma_data&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sigma_data</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;EDM joint training requires sigma_data=1 (got </span><span class="si">{</span><span class="n">sigma_data</span><span class="si">}</span><span class="s2">). &quot;</span>
+                <span class="s2">&quot;Please pre-normalize your data to unit standard deviation before &quot;</span>
+                <span class="s2">&quot;training. &quot;</span>
+                <span class="c1"># TODO: to support sigma_data != 1 in joint mode, three coordinated</span>
+                <span class="c1"># changes are needed:</span>
+                <span class="c1">#   1. Here: replace `jnp.ones_like(c_in)` with</span>
+                <span class="c1">#      `jnp.full_like(c_in, 1.0 / sigma_data)` so that conditioned</span>
+                <span class="c1">#      dims are scaled by c_in(sigma=0) = 1/sigma_data.</span>
+                <span class="c1">#   2. JointWrapper.conditioned(): scale `cond` by `1/sigma_data`</span>
+                <span class="c1">#      before concatenating with obs, so sampling matches training.</span>
+                <span class="c1">#   3. Optionally, make EDMSolver / build_sampler_fn aware of</span>
+                <span class="c1">#      sigma_data to perform the scaling automatically.</span>
+            <span class="p">)</span>
+
         <span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span>
             <span class="n">F</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
             <span class="n">batch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span>
@@ -1323,6 +1342,16 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="n">condition_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
                 <span class="n">x_t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">x_t</span><span class="p">)</span>
+                <span class="c1"># For conditioned dims, c_in(sigma) = 1/sqrt(sigma^2 + sigma_data^2)</span>
+                <span class="c1"># would incorrectly rescale clean values: conditioned dims have no</span>
+                <span class="c1"># noise (x_t = x_1), so their variance is sigma_data^2 regardless of</span>
+                <span class="c1"># sigma. Setting c_in = 1 for these dims keeps them at their natural</span>
+                <span class="c1"># scale, matching the sampling path where JointWrapper inserts the</span>
+                <span class="c1"># conditioning values after the denoise function applies c_in to the</span>
+                <span class="c1"># obs dims only. This is exact when sigma_data=1 (enforced above).</span>
+                <span class="n">c_in_eff</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition_mask</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">c_in</span><span class="p">),</span> <span class="n">c_in</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">c_in_eff</span> <span class="o">=</span> <span class="n">c_in</span>
 
             <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
@@ -1334,8 +1363,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="o">*</span> <span class="n">lam</span>
                 <span class="o">*</span> <span class="n">c_out</span><span class="o">**</span><span class="mi">2</span>
                 <span class="o">*</span> <span class="p">(</span>
-                    <span class="n">F</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">c_in</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_t</span><span class="p">),</span> <span class="n">t</span><span class="o">=</span><span class="n">c_noise</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
-                    <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c_out</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_1</span> <span class="o">-</span> <span class="n">c_skip</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_t</span><span class="p">))</span>
+                    <span class="n">F</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">c_in_eff</span> <span class="o">*</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">c_noise</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
+                    <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c_out</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_1</span> <span class="o">-</span> <span class="n">c_skip</span> <span class="o">*</span> <span class="n">x_t</span><span class="p">)</span>
                 <span class="p">)</span>
                 <span class="o">**</span> <span class="mi">2</span>
             <span class="p">)</span>

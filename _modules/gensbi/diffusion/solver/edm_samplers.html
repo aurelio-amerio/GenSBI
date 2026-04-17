@@ -838,8 +838,6 @@ window.runMermaid = runMermaid;</script>
     <span class="n">x_1</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
-    <span class="n">condition_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">condition_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">return_intermediates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">n_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span>
     <span class="n">S_churn</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -868,10 +866,6 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Initial value.</span>
 <span class="sd">        key : Array</span>
 <span class="sd">            JAX random key.</span>
-<span class="sd">        condition_mask : Optional[Array]</span>
-<span class="sd">            Mask for conditioning.</span>
-<span class="sd">        condition_value : Optional[Array]</span>
-<span class="sd">            Value for conditioning.</span>
 <span class="sd">        return_intermediates : bool</span>
 <span class="sd">            Whether to return intermediate steps.</span>
 <span class="sd">        n_steps : int</span>
@@ -897,13 +891,6 @@ window.runMermaid = runMermaid;</script>
     <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span> <span class="s2">&quot;Heun&quot;</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;Unknown method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">if</span> <span class="n">model_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">condition_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="p">(</span>
-            <span class="n">condition_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="p">),</span> <span class="s2">&quot;Condition value must be provided if condition mask is provided&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">condition_mask</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">condition_value</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1"># Time step discretization.</span>
     <span class="n">step_indices</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)</span>
@@ -923,7 +910,6 @@ window.runMermaid = runMermaid;</script>
 
         <span class="c1"># Increase noise temporarily.</span>
         <span class="n">in_range</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">t_cur</span> <span class="o">&gt;=</span> <span class="n">S_min</span><span class="p">,</span> <span class="n">t_cur</span> <span class="o">&lt;=</span> <span class="n">S_max</span><span class="p">)</span>
-        <span class="c1"># print(in_range)</span>
         <span class="n">gamma</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span>
             <span class="n">in_range</span><span class="p">,</span>
             <span class="k">lambda</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">S_churn</span> <span class="o">/</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
@@ -934,18 +920,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">x_hat</span> <span class="o">=</span> <span class="n">x_curr</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sqrt_arg</span><span class="p">)</span> <span class="o">*</span> <span class="n">S_noise</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
             <span class="n">subkey</span><span class="p">,</span> <span class="n">x_curr</span><span class="o">.</span><span class="n">shape</span>
         <span class="p">)</span>
-        <span class="n">x_hat</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">x_hat</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">condition_mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">condition_value</span> <span class="o">*</span> <span class="n">condition_mask</span>
-        <span class="p">)</span>  <span class="c1"># Apply conditioning.</span>
+
         <span class="c1"># Euler step.</span>
         <span class="n">denoised</span> <span class="o">=</span> <span class="n">sde</span><span class="o">.</span><span class="n">denoise</span><span class="p">(</span>
             <span class="n">model</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">t_hat</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="o">**</span><span class="n">model_kwargs</span>
-        <span class="p">)</span> 
+        <span class="p">)</span>
         <span class="n">d_cur</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_hat</span> <span class="o">-</span> <span class="n">denoised</span><span class="p">)</span> <span class="o">/</span> <span class="n">t_hat</span>
         <span class="n">x_next</span> <span class="o">=</span> <span class="n">x_hat</span> <span class="o">+</span> <span class="p">(</span><span class="n">t_next</span> <span class="o">-</span> <span class="n">t_hat</span><span class="p">)</span> <span class="o">*</span> <span class="n">d_cur</span>
-        <span class="n">x_next</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">x_next</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">condition_mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">condition_value</span> <span class="o">*</span> <span class="n">condition_mask</span>
-        <span class="p">)</span>  <span class="c1"># Apply conditioning.</span>
 
         <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;Heun&quot;</span><span class="p">:</span>
             <span class="c1"># Apply 2nd order correction.</span>
@@ -954,12 +935,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">d_prime</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_next</span> <span class="o">-</span> <span class="n">denoised</span><span class="p">)</span> <span class="o">/</span> <span class="n">t_next</span>
                 <span class="n">x_next_updated</span> <span class="o">=</span> <span class="n">x_hat</span> <span class="o">+</span> <span class="p">(</span><span class="n">t_next</span> <span class="o">-</span> <span class="n">t_hat</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
                     <span class="mf">0.5</span> <span class="o">*</span> <span class="n">d_cur</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">d_prime</span>
-                <span class="p">)</span>  <span class="c1"># Store in a new variable</span>
-                <span class="n">x_next_updated</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">x_next_updated</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">condition_mask</span><span class="p">)</span>
-                    <span class="o">+</span> <span class="n">condition_value</span> <span class="o">*</span> <span class="n">condition_mask</span>
-                <span class="p">)</span>  <span class="c1"># Apply conditioning.</span>
-                <span class="k">return</span> <span class="n">x_next_updated</span>  <span class="c1"># Return the updated x_next</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">x_next_updated</span>
 
             <span class="n">x_next</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span>
                 <span class="n">i</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">n_steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">apply_2nd_order_correction</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">x_next</span>
@@ -971,16 +948,11 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="p">(</span><span class="n">x_next</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="p">()</span>
 
     <span class="n">i</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)</span>
-    <span class="c1"># return one_step, x_next</span>
 
     <span class="n">carry</span><span class="p">,</span> <span class="n">x_scan</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">one_step</span><span class="p">,</span> <span class="p">(</span><span class="n">x_next</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="n">i</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">return_intermediates</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">x_scan</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># if condition_mask is not None:</span>
-        <span class="c1">#     carry = jnp.where(condition_mask, condition_value, carry[0])</span>
-        <span class="c1"># else:</span>
-        <span class="c1">#     carry = carry[0]</span>
         <span class="k">return</span> <span class="n">carry</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 
 
@@ -994,8 +966,6 @@ window.runMermaid = runMermaid;</script>
     <span class="n">x_1</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">key</span><span class="p">,</span>
-    <span class="n">condition_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">condition_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">n_steps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span>
     <span class="n">S_churn</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -1027,10 +997,6 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Initial latent noise.</span>
 <span class="sd">    key : Array</span>
 <span class="sd">        JAX random key.</span>
-<span class="sd">    condition_mask : Optional[Array]</span>
-<span class="sd">        Mask for conditioning.</span>
-<span class="sd">    condition_value : Optional[Array]</span>
-<span class="sd">        Value for conditioning.</span>
 <span class="sd">    return_intermediates : bool</span>
 <span class="sd">        Whether to return intermediate steps.</span>
 <span class="sd">    n_steps : int</span>
@@ -1057,13 +1023,6 @@ window.runMermaid = runMermaid;</script>
     <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span> <span class="s2">&quot;Heun&quot;</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;Unknown method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">if</span> <span class="n">model_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">condition_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="p">(</span>
-            <span class="n">condition_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="p">),</span> <span class="s2">&quot;Condition value must be provided if condition mask is provided&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">condition_mask</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">condition_value</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1"># Time step discretization.</span>
     <span class="n">step_indices</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)</span>
@@ -1104,9 +1063,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">x_hat</span> <span class="o">=</span> <span class="n">sde</span><span class="o">.</span><span class="n">s</span><span class="p">(</span><span class="n">t_hat</span><span class="p">)</span> <span class="o">/</span> <span class="n">sde</span><span class="o">.</span><span class="n">s</span><span class="p">(</span><span class="n">t_cur</span><span class="p">)</span> <span class="o">*</span> <span class="n">x_curr</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sqrt_arg</span><span class="p">)</span> <span class="o">*</span> <span class="n">sde</span><span class="o">.</span><span class="n">s</span><span class="p">(</span>
             <span class="n">t_hat</span>
         <span class="p">)</span> <span class="o">*</span> <span class="n">S_noise</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">subkey</span><span class="p">,</span> <span class="n">x_curr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        <span class="n">x_hat</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">x_hat</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">condition_mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">condition_value</span> <span class="o">*</span> <span class="n">condition_mask</span>
-        <span class="p">)</span>  <span class="c1"># Apply conditioning.</span>
+
         <span class="c1"># Euler step.</span>
         <span class="n">h</span> <span class="o">=</span> <span class="n">t_next</span> <span class="o">-</span> <span class="n">t_hat</span>
         <span class="n">denoised</span> <span class="o">=</span> <span class="n">denoise_scheduler</span><span class="o">.</span><span class="n">denoise</span><span class="p">(</span>
@@ -1121,9 +1078,6 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span> <span class="o">*</span> <span class="n">x_hat</span> <span class="o">-</span> <span class="n">sde</span><span class="o">.</span><span class="n">sigma_deriv</span><span class="p">(</span><span class="n">t_hat</span><span class="p">)</span> <span class="o">*</span> <span class="n">sde</span><span class="o">.</span><span class="n">s</span><span class="p">(</span><span class="n">t_hat</span><span class="p">)</span> <span class="o">/</span> <span class="n">sde</span><span class="o">.</span><span class="n">sigma</span><span class="p">(</span><span class="n">t_hat</span><span class="p">)</span> <span class="o">*</span> <span class="n">denoised</span>
         <span class="n">x_prime</span> <span class="o">=</span> <span class="n">x_hat</span> <span class="o">+</span> <span class="n">h</span> <span class="o">*</span> <span class="n">d_cur</span>
         <span class="n">t_prime</span> <span class="o">=</span> <span class="n">t_next</span>
-        <span class="n">x_prime</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">x_prime</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">condition_mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">condition_value</span> <span class="o">*</span> <span class="n">condition_mask</span>
-        <span class="p">)</span>  <span class="c1"># Apply conditioning.</span>
 
         <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;Heun&quot;</span><span class="p">:</span>
             <span class="c1"># Apply 2nd order correction.</span>
@@ -1142,11 +1096,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="p">)</span> <span class="o">*</span> <span class="n">denoised</span>
                 <span class="n">x_next</span> <span class="o">=</span> <span class="n">x_hat</span> <span class="o">+</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span>
                     <span class="mf">0.5</span> <span class="o">*</span> <span class="n">d_cur</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">d_prime</span>
-                <span class="p">)</span>  <span class="c1"># Store in a new variable</span>
-                <span class="n">x_next</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">x_next</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">condition_mask</span><span class="p">)</span> <span class="o">+</span> <span class="n">condition_value</span> <span class="o">*</span> <span class="n">condition_mask</span>
-                <span class="p">)</span>  <span class="c1"># Apply conditioning.</span>
-                <span class="k">return</span> <span class="n">x_next</span>  <span class="c1"># Return the updated x_next</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">x_next</span>
 
             <span class="n">x_next</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span>
                 <span class="n">i</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">n_steps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">apply_2nd_order_correction</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">x_prime</span>
