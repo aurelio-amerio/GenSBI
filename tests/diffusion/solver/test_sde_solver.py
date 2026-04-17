@@ -62,18 +62,19 @@ def test_sde_solver_sample_shape(scheduler_cls):
         solver.sample(key, x_init, nsteps=5, return_intermediates=True, method="RK4")
     assert "Unknown method" in str(e.value)
 
-    with pytest.raises(AssertionError) as e:
-        solver.sample(
-            key,
-            x_init,
-            nsteps=5,
-            return_intermediates=True,
-            method="Heun",
-            condition_mask=1,
-        )
-    assert "Condition value must be provided if condition mask is provided" in str(
-        e.value
-    )
+    # conditioning removed from the edm sampler. now done at the level of the wrapper
+    # with pytest.raises(AssertionError) as e:
+    #     solver.sample(
+    #         key,
+    #         x_init,
+    #         nsteps=5,
+    #         return_intermediates=True,
+    #         method="Heun",
+    #         # condition_mask=1,
+    #     )
+    # assert "Condition value must be provided if condition mask is provided" in str(
+    #     e.value
+    # )
 
 
 def test_sde_solver_cfg_scale_not_implemented():

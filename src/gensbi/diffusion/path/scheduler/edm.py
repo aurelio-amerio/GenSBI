@@ -419,6 +419,25 @@ class BaseSDE(abc.ABC):
                 Loss function.
         """
 
+        # Check performed once at loss-fn construction time (not inside the JIT'd
+        # inner function) so the error is raised eagerly and clearly.
+        sigma_data = getattr(self, "sigma_data", 1.0)
+        if sigma_data != 1.0:
+            raise ValueError(
+                f"EDM joint training requires sigma_data=1 (got {sigma_data}). "
+                "Please pre-normalize your data to unit standard deviation before "
+                "training. "
+                # TODO: to support sigma_data != 1 in joint mode, three coordinated
+                # changes are needed:
+                #   1. Here: replace `jnp.ones_like(c_in)` with
+                #      `jnp.full_like(c_in, 1.0 / sigma_data)` so that conditioned
+                #      dims are scaled by c_in(sigma=0) = 1/sigma_data.
+                #   2. JointWrapper.conditioned(): scale `cond` by `1/sigma_data`
+                #      before concatenating with obs, so sampling matches training.
+                #   3. Optionally, make EDMSolver / build_sampler_fn aware of
+                #      sigma_data to perform the scaling automatically.
+            )
+
         def loss_fn(
             F: Callable,
             batch: tuple,
@@ -439,6 +458,16 @@ class BaseSDE(abc.ABC):
             if condition_mask is not None:
                 condition_mask = jnp.broadcast_to(condition_mask, x_1.shape)
                 x_t = jnp.where(condition_mask, x_1, x_t)
+                # For conditioned dims, c_in(sigma) = 1/sqrt(sigma^2 + sigma_data^2)
+                # would incorrectly rescale clean values: conditioned dims have no
+                # noise (x_t = x_1), so their variance is sigma_data^2 regardless of
+                # sigma. Setting c_in = 1 for these dims keeps them at their natural
+                # scale, matching the sampling path where JointWrapper inserts the
+                # conditioning values after the denoise function applies c_in to the
+                # obs dims only. This is exact when sigma_data=1 (enforced above).
+                c_in_eff = jnp.where(condition_mask, jnp.ones_like(c_in), c_in)
+            else:
+                c_in_eff = c_in
 
             if weights is not None:
                 weights = jnp.broadcast_to(weights, x_1.shape)
@@ -450,8 +479,8 @@ class BaseSDE(abc.ABC):
                 * lam
                 * c_out**2
                 * (
-                    F(obs=c_in * (x_t), t=c_noise, **model_extras)
-                    - 1 / c_out * (x_1 - c_skip * (x_t))
+                    F(obs=c_in_eff * x_t, t=c_noise, **model_extras)
+                    - 1 / c_out * (x_1 - c_skip * x_t)
                 )
                 ** 2
             )
