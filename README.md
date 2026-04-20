@@ -1,4 +1,4 @@
-# GenSBI: Generative Models for Simulation-Based Inference in JAX
+# GenSBI: Generative Methods for Simulation-Based Inference in JAX
 
 [![Build](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml/badge.svg)](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml)
 ![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
