@@ -12,11 +12,6 @@
   :class: logo-transparent-bg
 ```
 
-```{admonition} Project Status
-:class: info
-This library is at an early stage of development. The API is currently stable, but it is subject to change.
-```
-
 ## Getting Started
 
 ```{admonition} New to GenSBI?
