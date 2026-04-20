@@ -7,9 +7,6 @@
 
 ![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
 
-> [!IMPORTANT]  
-> This library is at an early stage of development. The API is currently stable, but it is subject to change.
-
 ## Overview
 
 **GenSBI** is a JAX-based library for Simulation-Based Inference (SBI) using state-of-the-art generative methods, currently revolving around Optimal Transport Flow Matching and Diffusion Models.
