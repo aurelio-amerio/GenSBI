@@ -12,7 +12,7 @@
 
 ## Overview
 
-**GenSBI** is a powerful JAX-based library for Simulation-Based Inference (SBI) using state-of-the-art generative models, currently revolving around Optimal Transport Flow Matching and Diffusion Models.
+**GenSBI** is a JAX-based library for Simulation-Based Inference (SBI) using state-of-the-art generative methods, currently revolving around Optimal Transport Flow Matching and Diffusion Models.
 
 It is designed for researchers and practitioners who need a flexible, high-performance toolkit to solve complex inference problems where the likelihood function is intractable.
 
