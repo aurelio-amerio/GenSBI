@@ -4,7 +4,7 @@
 ![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
 [![Version](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
 [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20407739.svg)](https://doi.org/10.5281/zenodo.20407739)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20407738.svg)](https://doi.org/10.5281/zenodo.20407738)
 
 ![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
 
