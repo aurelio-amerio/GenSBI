@@ -4,17 +4,29 @@ Welcome to GenSBI! This page is a quick guide to get you started with installati
 
 ## Installation
 
-GenSBI is in early development. To install, clone the repository and install dependencies:
+Using [uv](https://docs.astral.sh/uv/) (recommended):
+
+```bash
+uv add gensbi
+# or, for a standalone install:
+uv pip install gensbi
+```
+
+Or using pip:
 
 ```bash
 pip install gensbi
 ```
 
-If a GPU is available, it is advisable to install the cuda version of the package:
+If a GPU is available, it is advisable to install the CUDA version of the package:
 
 ```bash
+uv add gensbi[cuda12]
+# or
 pip install gensbi[cuda12]
 ```
+
+See the [Installation Guide](/getting_started/installation) for more options, including how to install the examples.
 
 ## Requirements
 

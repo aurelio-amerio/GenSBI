@@ -16,7 +16,7 @@ The following tasks are planned for future development:
 - [ ] ... implement better loss functions for 1D and 2D VAEs (e.g. windowed frequency decomposition, and perceptual loss for images)
 - [x] Implement wrapper to run posterior calibration checks using the `sbi` library (maybe add this as an additional package to avoid torch dependency?)
 - [x] Implement get sampler for every pipeline
-- [ ] Diffusion models are underconfident, the EDM sde works well while the VE and VP legacy sdes are not working properly yet
+- [x] Diffusion models are underconfident, the EDM sde works well while the VE and VP legacy sdes are not working properly yet -> solved by implementing SM as a standalone algorithm
 - [x] Include example for batched sampling in the first tutorial 
 - [x] Include SBC checks in the benchmark notebooks and training script
 - [x] Fix the GW example
@@ -30,8 +30,8 @@ The following tasks are planned for future development:
 - [x] Write in the documentation some info concernign the ID embedding, and what to use/when 
 - [x] Implement RoPE embedding with the 0-out trick
 - [x] For the Flux1Joint, add the possibility to concatenate the embedding ids, instead of just summing them
-- [ ] The theoretical overview is very basic currently, we will need to expand it
-- [ ] Move concrete Path/Solver/Loss imports in pipeline files to lazy imports or dependency injection to reduce module-load time and decouple the dependency graph
+- [x] The theoretical overview is very basic currently, we will need to expand it
+- [x] Move concrete Path/Solver/Loss imports in pipeline files to lazy imports or dependency injection to reduce module-load time and decouple the dependency graph
 - [x] Update two moons example with full diagnostics, 
 - [x] Make notebooks for all the examples with link to colab and github
 - [x] Include plots from the img directory (so users have a reference plot even when they do their own experiments with the notebook)

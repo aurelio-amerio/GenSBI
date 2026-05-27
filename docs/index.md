@@ -25,6 +25,16 @@ Start here:
 
 ### Standard Installation (CPU / Compatible)
 
+Using [uv](https://docs.astral.sh/uv/) (recommended):
+
+```bash
+uv add gensbi
+# or, for a standalone install:
+uv pip install gensbi
+```
+
+Or using pip:
+
 ```bash
 pip install gensbi
 ```
@@ -34,10 +44,12 @@ pip install gensbi
 If you have a compatible NVIDIA GPU, install with CUDA 12 support for significantly faster training:
 
 ```bash
+uv add gensbi[cuda12]
+# or
 pip install gensbi[cuda12]
 ```
 
-For more installation options, see the [Installation Guide](/getting_started/installation).
+To also install the examples, add the `examples` extra (e.g. `gensbi[cuda12,examples]`). For more installation options, see the [Installation Guide](/getting_started/installation).
 
 ## Key Documentation Sections
 
