@@ -4,6 +4,7 @@
 ![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
 [![Version](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
 [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20407739.svg)](https://doi.org/10.5281/zenodo.20407739)
 
 ![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
 
@@ -45,7 +46,7 @@ Or using pip:
 pip install gensbi
 ```
 
-For GPU support and other options, including how to install `uv`, see the [Installation Guide](https://aurelio-amerio.github.io/GenSBI/getting_started/installation.html).
+For GPU support and other options, including how to install `uv`, see the [Installation Guide](https://gensbi.com/getting_started/installation.html).
 
 ## Quick Start
 
@@ -121,11 +122,11 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 Uses the Diffusion model for posterior density estimation on the two-moons benchmark.
 
 > [!NOTE]
-> A complete list of the currently available examples can be found at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
+> A complete list of the currently available examples can be found at the [examples](https://gensbi.com/examples.html) documentation page.
 
 ## Citing GenSBI
 
-If you use this library, please consider citing this work and the original methodology papers, see [references](https://aurelio-amerio.github.io/GenSBI/references.html).
+If you use this library, please consider citing this work and the original methodology papers, see [references](https://gensbi.com/references.html).
 
 ```bibtex
 @misc{GenSBI,
