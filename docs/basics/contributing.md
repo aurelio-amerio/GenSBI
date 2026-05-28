@@ -12,8 +12,13 @@ Feel free to [open an issue](https://github.com/aurelio-amerio/GenSBI/issues) to
     cd GenSBI
     ```
 
-2.  **Install dependencies** (we recommend using a virtual environment):
+2.  **Install dependencies** (we recommend using [uv](https://docs.astral.sh/uv/)):
     ```bash
+    # using uv (recommended) — installs the package in editable mode together
+    # with the development dependency group (lint, test, docs, notebooks)
+    uv sync --extra cuda12 --extra examples
+
+    # or using pip
     pip install -e ".[cuda12,examples,test,docs]"
     ```
 

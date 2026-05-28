@@ -12,11 +12,6 @@
   :class: logo-transparent-bg
 ```
 
-```{admonition} Project Status
-:class: info
-This library is at an early stage of development. The API is currently stable, but it is subject to change.
-```
-
 ## Getting Started
 
 ```{admonition} New to GenSBI?
@@ -30,6 +25,16 @@ Start here:
 
 ### Standard Installation (CPU / Compatible)
 
+Using [uv](https://docs.astral.sh/uv/) (recommended):
+
+```bash
+uv add gensbi
+# or, for a standalone install:
+uv pip install gensbi
+```
+
+Or using pip:
+
 ```bash
 pip install gensbi
 ```
@@ -39,10 +44,12 @@ pip install gensbi
 If you have a compatible NVIDIA GPU, install with CUDA 12 support for significantly faster training:
 
 ```bash
+uv add gensbi[cuda12]
+# or
 pip install gensbi[cuda12]
 ```
 
-For more installation options, see the [Installation Guide](/getting_started/installation).
+To also install the examples, add the `examples` extra (e.g. `gensbi[cuda12,examples]`). For more installation options, see the [Installation Guide](/getting_started/installation).
 
 ## Key Documentation Sections
 
@@ -96,10 +103,12 @@ Complete beginner tutorial
 
 **Unconditional Density Estimation:**
 
-- `flow_matching_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/flow_matching_2d_unconditional.ipynb) <br>
+- `flow_matching_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/flow_matching_2d_unconditional.ipynb) <br>
 Demonstrates how to use flow matching in 2D for unconditional density estimation.
-- `diffusion_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/diffusion_2d_unconditional.ipynb) <br>
-Demonstrates how to use diffusion models in 2D for unconditional density estimation.
+- `diffusion_EDM_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_EDM_2d_unconditional.ipynb) <br>
+Demonstrates how to use EDM diffusion models in 2D for unconditional density estimation.
+- `diffusion_SM_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_SM_2d_unconditional.ipynb) <br>
+Demonstrates how to use score-matching diffusion models in 2D for unconditional density estimation.
 
 **Conditional Density Estimation:**
 

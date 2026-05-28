@@ -52,8 +52,6 @@ class EDMSolver(Solver):
 
     def get_sampler(
         self,
-        condition_mask: Optional[Array] = None,
-        condition_value: Optional[Array] = None,
         cfg_scale: Optional[float] = None,
         nsteps: int = 18,
         method: str = "Heun",
@@ -67,10 +65,6 @@ class EDMSolver(Solver):
 
         Parameters
         ----------
-            condition_mask : Optional[Array]
-                Mask for conditioning.
-            condition_value : Optional[Array]
-                Value for conditioning.
             cfg_scale : Optional[float]
                 Classifier-free guidance scale (not implemented).
             nsteps : int
@@ -133,8 +127,6 @@ class EDMSolver(Solver):
                 self.score_model,
                 x_init,
                 key=key,
-                condition_mask=condition_mask,
-                condition_value=condition_value,
                 return_intermediates=return_intermediates,
                 n_steps=nsteps,
                 S_churn=S_churn,
@@ -151,8 +143,6 @@ class EDMSolver(Solver):
         self,
         key: Array,
         x_init: Array,
-        condition_mask: Optional[Array] = None,
-        condition_value: Optional[Array] = None,
         cfg_scale: Optional[float] = None,
         nsteps: int = 18,
         method: str = "Heun",
@@ -170,10 +160,6 @@ class EDMSolver(Solver):
                 JAX random key.
             x_init : Array
                 Initial value.
-            condition_mask : Optional[Array]
-                Mask for conditioning.
-            condition_value : Optional[Array]
-                Value for conditioning.
             cfg_scale : Optional[float]
                 Classifier-free guidance scale (not implemented).
             nsteps : int
@@ -195,8 +181,6 @@ class EDMSolver(Solver):
                 Sampled output.
         """
         sample = self.get_sampler(
-            condition_mask=condition_mask,
-            condition_value=condition_value,
             cfg_scale=cfg_scale,
             nsteps=nsteps,
             method=method,

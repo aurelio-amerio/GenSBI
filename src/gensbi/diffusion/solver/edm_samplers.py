@@ -13,8 +13,6 @@ def edm_sampler(
     x_1: Array,
     *,
     key: Array,
-    condition_mask: Optional[Array] = None,
-    condition_value: Optional[Array] = None,
     return_intermediates: bool = False,
     n_steps: int = 18,
     S_churn: float = 0,
@@ -43,10 +41,6 @@ def edm_sampler(
             Initial value.
         key : Array
             JAX random key.
-        condition_mask : Optional[Array]
-            Mask for conditioning.
-        condition_value : Optional[Array]
-            Value for conditioning.
         return_intermediates : bool
             Whether to return intermediate steps.
         n_steps : int
@@ -72,13 +66,6 @@ def edm_sampler(
     assert method in ["Euler", "Heun"], f"Unknown method: {method}"
     if model_kwargs is None:
         model_kwargs = {}
-    if condition_mask is not None:
-        assert (
-            condition_value is not None
-        ), "Condition value must be provided if condition mask is provided"
-    else:
-        condition_mask = 0
-        condition_value = 0
 
     # Time step discretization.
     step_indices = jnp.arange(n_steps)
@@ -98,7 +85,6 @@ def edm_sampler(
 
         # Increase noise temporarily.
         in_range = jnp.logical_and(t_cur >= S_min, t_cur <= S_max)
-        # print(in_range)
         gamma = jax.lax.cond(
             in_range,
             lambda: jnp.minimum(S_churn / n_steps, jnp.sqrt(2) - 1),
@@ -109,18 +95,13 @@ def edm_sampler(
         x_hat = x_curr + jnp.sqrt(sqrt_arg) * S_noise * jax.random.normal(
             subkey, x_curr.shape
         )
-        x_hat = (
-            x_hat * (1 - condition_mask) + condition_value * condition_mask
-        )  # Apply conditioning.
+
         # Euler step.
         denoised = sde.denoise(
             model, x_hat, t_hat[..., None], **model_kwargs
-        ) 
+        )
         d_cur = (x_hat - denoised) / t_hat
         x_next = x_hat + (t_next - t_hat) * d_cur
-        x_next = (
-            x_next * (1 - condition_mask) + condition_value * condition_mask
-        )  # Apply conditioning.
 
         if method == "Heun":
             # Apply 2nd order correction.
@@ -129,12 +110,8 @@ def edm_sampler(
                 d_prime = (x_next - denoised) / t_next
                 x_next_updated = x_hat + (t_next - t_hat) * (
                     0.5 * d_cur + 0.5 * d_prime
-                )  # Store in a new variable
-                x_next_updated = (
-                    x_next_updated * (1 - condition_mask)
-                    + condition_value * condition_mask
-                )  # Apply conditioning.
-                return x_next_updated  # Return the updated x_next
+                )
+                return x_next_updated
 
             x_next = jax.lax.cond(
                 i < (n_steps - 1), apply_2nd_order_correction, lambda: x_next
@@ -146,16 +123,11 @@ def edm_sampler(
             return (x_next, key), ()
 
     i = jnp.arange(n_steps)
-    # return one_step, x_next
 
     carry, x_scan = jax.lax.scan(one_step, (x_next, key), i)
     if return_intermediates:
         return x_scan
     else:
-        # if condition_mask is not None:
-        #     carry = jnp.where(condition_mask, condition_value, carry[0])
-        # else:
-        #     carry = carry[0]
         return carry[0]
 
 
@@ -166,8 +138,6 @@ def edm_ablation_sampler(
     x_1,
     *,
     key,
-    condition_mask=None,
-    condition_value=None,
     return_intermediates=False,
     n_steps=18,
     S_churn=0,
@@ -199,10 +169,6 @@ def edm_ablation_sampler(
         Initial latent noise.
     key : Array
         JAX random key.
-    condition_mask : Optional[Array]
-        Mask for conditioning.
-    condition_value : Optional[Array]
-        Value for conditioning.
     return_intermediates : bool
         Whether to return intermediate steps.
     n_steps : int
@@ -229,13 +195,6 @@ def edm_ablation_sampler(
     assert method in ["Euler", "Heun"], f"Unknown method: {method}"
     if model_kwargs is None:
         model_kwargs = {}
-    if condition_mask is not None:
-        assert (
-            condition_value is not None
-        ), "Condition value must be provided if condition mask is provided"
-    else:
-        condition_mask = 0
-        condition_value = 0
 
     # Time step discretization.
     step_indices = jnp.arange(n_steps)
@@ -276,9 +235,7 @@ def edm_ablation_sampler(
         x_hat = sde.s(t_hat) / sde.s(t_cur) * x_curr + jnp.sqrt(sqrt_arg) * sde.s(
             t_hat
         ) * S_noise * jax.random.normal(subkey, x_curr.shape)
-        x_hat = (
-            x_hat * (1 - condition_mask) + condition_value * condition_mask
-        )  # Apply conditioning.
+
         # Euler step.
         h = t_next - t_hat
         denoised = denoise_scheduler.denoise(
@@ -293,9 +250,6 @@ def edm_ablation_sampler(
         ) * x_hat - sde.sigma_deriv(t_hat) * sde.s(t_hat) / sde.sigma(t_hat) * denoised
         x_prime = x_hat + h * d_cur
         t_prime = t_next
-        x_prime = (
-            x_prime * (1 - condition_mask) + condition_value * condition_mask
-        )  # Apply conditioning.
 
         if method == "Heun":
             # Apply 2nd order correction.
@@ -314,11 +268,8 @@ def edm_ablation_sampler(
                 ) * denoised
                 x_next = x_hat + h * (
                     0.5 * d_cur + 0.5 * d_prime
-                )  # Store in a new variable
-                x_next = (
-                    x_next * (1 - condition_mask) + condition_value * condition_mask
-                )  # Apply conditioning.
-                return x_next  # Return the updated x_next
+                )
+                return x_next
 
             x_next = jax.lax.cond(
                 i < (n_steps - 1), apply_2nd_order_correction, lambda: x_prime

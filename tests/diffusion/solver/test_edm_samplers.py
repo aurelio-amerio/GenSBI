@@ -114,48 +114,49 @@ def test_edm_sampler_stochasticity(mock_sde, mock_model):
     diff = jnp.max(jnp.abs(out1 - out2))
     assert diff > 1e-3, f"Expected stochastic output, but got diff {diff}"
 
+# we removed conditioning from the EDM sampler, as it is not done at the level of the model wrapper.abs
+# this way, EDM always sees a "conditional" model, without any masking needed.
+# def test_edm_sampler_conditioning(mock_sde, mock_model):
+#     """Test that edm_sampler respects conditioning mask and value."""
+#     x_1 = jnp.zeros((1, 10))
+#     key = jax.random.PRNGKey(0)
 
-def test_edm_sampler_conditioning(mock_sde, mock_model):
-    """Test that edm_sampler respects conditioning mask and value."""
-    x_1 = jnp.zeros((1, 10))
-    key = jax.random.PRNGKey(0)
+#     # Mask indices 1 and 3
+#     mask = jnp.array([0, 1, 0, 1, 0, 0, 0, 0, 0, 0]).reshape(1, 10)
+#     value = jnp.array([0, 5, 0, 5, 0, 0, 0, 0, 0, 0]).reshape(1, 10)
 
-    # Mask indices 1 and 3
-    mask = jnp.array([0, 1, 0, 1, 0, 0, 0, 0, 0, 0]).reshape(1, 10)
-    value = jnp.array([0, 5, 0, 5, 0, 0, 0, 0, 0, 0]).reshape(1, 10)
+#     # Run sampler with conditioning
+#     # Use S_churn > 0 to ensure values change if not conditioned
+#     out = edm_sampler(
+#         mock_sde,
+#         mock_model,
+#         x_1,
+#         key=key,
+#         condition_mask=mask,
+#         condition_value=value,
+#         n_steps=5,
+#         S_churn=10.0,
+#         S_min=0.0,
+#         S_max=20.0,
+#     )
 
-    # Run sampler with conditioning
-    # Use S_churn > 0 to ensure values change if not conditioned
-    out = edm_sampler(
-        mock_sde,
-        mock_model,
-        x_1,
-        key=key,
-        condition_mask=mask,
-        condition_value=value,
-        n_steps=5,
-        S_churn=10.0,
-        S_min=0.0,
-        S_max=20.0,
-    )
+#     # Check masked positions match condition_value
+#     masked_out = out * mask
+#     expected_masked = value * mask
 
-    # Check masked positions match condition_value
-    masked_out = out * mask
-    expected_masked = value * mask
+#     assert jnp.allclose(
+#         masked_out, expected_masked
+#     ), "Conditioned values do not match expected values"
 
-    assert jnp.allclose(
-        masked_out, expected_masked
-    ), "Conditioned values do not match expected values"
-
-    # Check unmasked positions are not all equal to condition_value (sanity check)
-    # Since model returns input, and we add noise, unmasked values should drift
-    # Step 0: x_next = x_1 * t_steps[0] = 0 * 10 = 0.
-    # Then noise added.
-    unmasked_out = out * (1 - mask)
-    # It shouldn't be all zeros either because of noise
-    assert not jnp.allclose(
-        unmasked_out, 0.0
-    ), "Unmasked values should not be zero due to noise"
+#     # Check unmasked positions are not all equal to condition_value (sanity check)
+#     # Since model returns input, and we add noise, unmasked values should drift
+#     # Step 0: x_next = x_1 * t_steps[0] = 0 * 10 = 0.
+#     # Then noise added.
+#     unmasked_out = out * (1 - mask)
+#     # It shouldn't be all zeros either because of noise
+#     assert not jnp.allclose(
+#         unmasked_out, 0.0
+#     ), "Unmasked values should not be zero due to noise"
 
 
 # ---------------------------------------------------------------------------

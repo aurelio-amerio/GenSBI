@@ -1,18 +1,16 @@
-# GenSBI: Generative Models for Simulation-Based Inference in JAX
+# GenSBI: Generative Methods for Simulation-Based Inference in JAX
 
 [![Build](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml/badge.svg)](https://github.com/aurelio-amerio/GenSBI/actions/workflows/python-app.yml)
 ![Coverage](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/img/badges/coverage.svg)
 [![Version](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
 [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20407738.svg)](https://doi.org/10.5281/zenodo.20407738)
 
 ![GenSBI Logo](https://raw.githubusercontent.com/aurelio-amerio/GenSBI/refs/heads/main/docs/_static/logo.png)
 
-> [!IMPORTANT]  
-> This library is at an early stage of development. The API is currently stable, but it is subject to change.
-
 ## Overview
 
-**GenSBI** is a powerful JAX-based library for Simulation-Based Inference (SBI) using state-of-the-art generative models, currently revolving around Optimal Transport Flow Matching and Diffusion Models.
+**GenSBI** is a JAX-based library for Simulation-Based Inference (SBI) using state-of-the-art generative methods, currently revolving around Optimal Transport Flow Matching and Diffusion Models.
 
 It is designed for researchers and practitioners who need a flexible, high-performance toolkit to solve complex inference problems where the likelihood function is intractable.
 
@@ -48,7 +46,7 @@ Or using pip:
 pip install gensbi
 ```
 
-For GPU support and other options, including how to install `uv`, see the [Installation Guide](https://aurelio-amerio.github.io/GenSBI/getting_started/installation.html).
+For GPU support and other options, including how to install `uv`, see the [Installation Guide](https://gensbi.com/getting_started/installation.html).
 
 ## Quick Start
 
@@ -114,8 +112,10 @@ A beginner-friendly notebook introducing the core concepts of GenSBI on a simple
 
 - `flow_matching_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/flow_matching_2d_unconditional.ipynb) <br>
 Demonstrates how to use flow matching in 2D for unconditional density estimation.
-- `diffusion_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_2d_unconditional.ipynb) <br>
-Demonstrates how to use diffusion models in 2D for unconditional density estimation.
+- `diffusion_EDM_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_EDM_2d_unconditional.ipynb) <br>
+Demonstrates how to use EDM diffusion models in 2D for unconditional density estimation.
+- `diffusion_SM_2d_unconditional.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/NDE/diffusion_SM_2d_unconditional.ipynb) <br>
+Demonstrates how to use score-matching diffusion models in 2D for unconditional density estimation.
 
 **Conditional Density Estimation:**
 - `two_moons_flow_flux.ipynb` [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_flux/two_moons_flow_flux.ipynb) <br>
@@ -124,11 +124,11 @@ Uses the Flux1 model for posterior density estimation on the two-moons benchmark
 Uses the Diffusion model for posterior density estimation on the two-moons benchmark.
 
 > [!NOTE]
-> A complete list of the currently available examples can be found at the [examples](https://aurelio-amerio.github.io/GenSBI/examples.html) documentation page.
+> A complete list of the currently available examples can be found at the [examples](https://gensbi.com/examples.html) documentation page.
 
 ## Citing GenSBI
 
-If you use this library, please consider citing this work and the original methodology papers, see [references](https://aurelio-amerio.github.io/GenSBI/references.html).
+If you use this library, please consider citing this work and the original methodology papers, see [references](https://gensbi.com/references.html).
 
 For the paper:
 ```bibtex

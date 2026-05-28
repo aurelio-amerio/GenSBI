@@ -47,9 +47,9 @@ def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0):
     return jnp.array(img_ids, dtype=jnp.int32), dim
 
 
-@jax.jit
-def patchify_2d(x: Array):
-    return rearrange(x, "b (h ph) (w pw) c -> b (h w) (c ph pw)", ph=2, pw=2)
+@jax.jit(static_argnames=["size"])
+def patchify_2d(x: Array, size=2):
+    return rearrange(x, "b (h ph) (w pw) c -> b (h w) (c ph pw)", ph=size, pw=size)
 
 
 def scale_lr(batch_size, base_lr=1e-4, reference_batch_size=256):
