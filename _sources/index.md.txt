@@ -4,6 +4,7 @@
 ![Coverage](../img/badges/coverage.svg)
 [![Version](https://img.shields.io/pypi/v/gensbi.svg?maxAge=3600)](https://pypi.org/project/gensbi/)
 [![Downloads](https://pepy.tech/badge/gensbi)](https://pepy.tech/project/gensbi)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20407738.svg)](https://doi.org/10.5281/zenodo.20407738)
 
 ```{image} _static/logo.png
   :alt: GenSBI Logo
@@ -133,14 +134,30 @@ This project utilized large language models, specifically Google Gemini and GitH
 
 If you use this library, please consider citing this work and the original methodology papers, see [references](/references).
 
+For the paper:
 ```bibtex
-@misc{GenSBI,
+@article{amerio2026gensbi_paper,
+      title={GenSBI: Generative Methods for Simulation-Based Inference in JAX}, 
+      author={Aurelio Amerio},
+      year={2026},
+      eprint={2605.27499},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2605.27499}, 
+}
+```
+For the software:
+```bibtex
+@software{amerio2026gensbi_software,
   author       = {Amerio, Aurelio},
-  title        = "{GenSBI: Generative models for Simulation-Based Inference}",
-  year         = {2025}, 
-  publisher    = {GitHub},
-  journal      = {GitHub repository},
-  howpublished = {\url{https://github.com/aurelio-amerio/GenSBI}}
+  title        = {GenSBI: Generative Methods for Simulation-Based Inference in JAX
+                  },
+  month        = may,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {v0.3.4},
+  doi          = {10.5281/zenodo.20410084},
+  url          = {https://doi.org/10.5281/zenodo.20410084},
 }
 ```
 
