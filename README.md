@@ -14,6 +14,8 @@
 
 It is designed for researchers and practitioners who need a flexible, high-performance toolkit to solve complex inference problems where the likelihood function is intractable.
 
+The companion paper with a review of methodologies and functionalities is available at: [https://arxiv.org/abs/2605.27499](https://arxiv.org/abs/2605.27499)
+
 ## Key Features
 
 - **Modern SBI Algorithms**: Implements cutting-edge techniques like **Optimal Transport Conditional Flow Matching** and **Diffusion Models** for robust and flexible posterior inference.
