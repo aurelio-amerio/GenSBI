@@ -1,0 +1,223 @@
+gensbi.experimental.models.glue
+===============================
+
+.. py:module:: gensbi.experimental.models.glue
+
+.. autoapi-nested-parse::
+
+   
+   Glue modules that compose pretrained encoders with SBI models.
+
+   These wrappers run a (frozen) encoder on the raw conditioning data and forward
+   the resulting latents into an SBI model such as :class:`gensbi.models.Flux1`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/experimental/models/glue/embedder/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.glue.Embedded1DModel
+   gensbi.experimental.models.glue.Embedded2DModel
+
+
+Package Contents
+----------------
+
+.. py:class:: Embedded1DModel(vae, sbi_model)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Wraps a VAE encoder and a Flux1 SBI model for 1D sequence conditioning.
+
+   Encodes raw 1D conditioning sequences into latent space via the VAE and
+   forwards everything to the underlying SBI model. Unlike ``Embedded2DModel``,
+   no patchification step is applied after encoding.
+
+   :param vae: Variational autoencoder used to encode conditioning sequences into latents.
+   :type vae: AutoEncoder1D
+   :param sbi_model: Simulation-based inference model that receives the encoded conditioning.
+   :type sbi_model: Flux1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, obs_ids, cond, cond_ids, conditioned = True, guidance = None, encoder_key=None)
+
+      
+      Encode conditioning sequences and run the SBI model forward pass.
+
+      :param t: Diffusion/flow timestep, shape ``(batch,)`` or scalar.
+      :type t: Array
+      :param obs: Observation tokens (noisy samples) passed directly to the SBI model.
+      :type obs: Array
+      :param obs_ids: Positional IDs for the observation tokens.
+      :type obs_ids: Array
+      :param cond: Raw 1D conditioning sequences to be encoded by the VAE, shape
+                   ``(batch, L, C)``.
+      :type cond: Array
+      :param cond_ids: Positional IDs for the conditioning tokens.
+      :type cond_ids: Array
+      :param conditioned: Whether to apply conditioning (classifier-free guidance mask).
+                          Defaults to ``True``.
+      :type conditioned: bool or Array, optional
+      :param guidance: Guidance scale for classifier-free guidance. ``None`` disables it.
+      :type guidance: Array or None, optional
+      :param encoder_key: PRNG key forwarded to the VAE encoder for stochastic encoding.
+                          Pass ``None`` for deterministic encoding.
+      :type encoder_key: jax.random.PRNGKey or None, optional
+
+      :returns: Output of the SBI model with the VAE-encoded conditioning.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sbi_model
+
+
+   .. py:attribute:: vae
+
+
+.. py:class:: Embedded2DModel(vae, sbi_model)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Wraps a VAE encoder and a Flux1 SBI model for 2D image conditioning.
+
+   Encodes raw 2D conditioning images into latent space via the VAE, patchifies
+   the result, and forwards everything to the underlying SBI model.
+
+   :param vae: Variational autoencoder used to encode conditioning images into latents.
+   :type vae: AutoEncoder2D
+   :param sbi_model: Simulation-based inference model that receives the encoded conditioning.
+   :type sbi_model: Flux1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, obs_ids, cond, cond_ids, conditioned = True, guidance = None, encoder_key=None)
+
+      
+      Encode conditioning images and run the SBI model forward pass.
+
+      :param t: Diffusion/flow timestep, shape ``(batch,)`` or scalar.
+      :type t: Array
+      :param obs: Observation tokens (noisy samples) passed directly to the SBI model.
+      :type obs: Array
+      :param obs_ids: Positional IDs for the observation tokens.
+      :type obs_ids: Array
+      :param cond: Raw 2D conditioning images to be encoded by the VAE, shape
+                   ``(batch, H, W, C)``.
+      :type cond: Array
+      :param cond_ids: Positional IDs for the conditioning tokens after patchification.
+      :type cond_ids: Array
+      :param conditioned: Whether to apply conditioning (classifier-free guidance mask).
+                          Defaults to ``True``.
+      :type conditioned: bool or Array, optional
+      :param guidance: Guidance scale for classifier-free guidance. ``None`` disables it.
+      :type guidance: Array or None, optional
+      :param encoder_key: PRNG key forwarded to the VAE encoder for stochastic encoding.
+                          Pass ``None`` for deterministic encoding.
+      :type encoder_key: jax.random.PRNGKey or None, optional
+
+      :returns: Output of the SBI model with the VAE-encoded conditioning.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: sbi_model
+
+
+   .. py:attribute:: vae
+
+

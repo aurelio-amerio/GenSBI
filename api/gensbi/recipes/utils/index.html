@@ -440,6 +440,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../experimental/index.html">gensbi.experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../experimental/models/index.html">gensbi.experimental.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../experimental/models/autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../experimental/models/glue/index.html">gensbi.experimental.models.glue</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../experimental/recipes/index.html">gensbi.experimental.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -615,22 +616,25 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.build_sm_path" title="gensbi.recipes.utils.build_sm_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_sm_path</span></code></a>(sde_type, config)</p></td>
 <td><p>Build a score-matching path from an SDE type string and config.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_1d" title="gensbi.recipes.utils.init_ids_1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_1d</span></code></a>(dim[, semantic_id])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.depatchify_2d" title="gensbi.recipes.utils.depatchify_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">depatchify_2d</span></code></a>(x[, size])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_2d" title="gensbi.recipes.utils.init_ids_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_2d</span></code></a>(dim[, semantic_id])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_1d" title="gensbi.recipes.utils.init_ids_1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_1d</span></code></a>(dim[, semantic_id])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_joint" title="gensbi.recipes.utils.init_ids_joint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_joint</span></code></a>(dim_obs, dim_cond)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_2d" title="gensbi.recipes.utils.init_ids_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_2d</span></code></a>(dim[, semantic_id])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.parse_training_config" title="gensbi.recipes.utils.parse_training_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_training_config</span></code></a>(config_path)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_joint" title="gensbi.recipes.utils.init_ids_joint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_joint</span></code></a>(dim_obs, dim_cond)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.parse_training_config" title="gensbi.recipes.utils.parse_training_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_training_config</span></code></a>(config_path)</p></td>
 <td><p>Parse training and optimizer configuration from a YAML config file.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.patchify_2d" title="gensbi.recipes.utils.patchify_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">patchify_2d</span></code></a>(x[, size])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.patchify_2d" title="gensbi.recipes.utils.patchify_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">patchify_2d</span></code></a>(x[, size])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.scale_lr" title="gensbi.recipes.utils.scale_lr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_lr</span></code></a>(batch_size[, base_lr, reference_batch_size])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.scale_lr" title="gensbi.recipes.utils.scale_lr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale_lr</span></code></a>(batch_size[, base_lr, reference_batch_size])</p></td>
 <td><p>Scale learning rate based on batch size using square root scaling.</p></td>
 </tr>
 </tbody>
@@ -709,6 +713,16 @@ here with sensible defaults.</p></li>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">sde_type</span></code> is not one of <code class="docutils literal notranslate"><span class="pre">{&quot;VP&quot;,</span> <span class="pre">&quot;VE&quot;}</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.recipes.utils.depatchify_2d">
+<span class="sig-prename descclassname"><span class="pre">gensbi.recipes.utils.</span></span><span class="sig-name descname"><span class="pre">depatchify_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/utils.html#depatchify_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.utils.depatchify_2d" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>jax.Array</em>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -868,6 +882,7 @@ returns a flat dictionary consumed by <code class="xref py py-class docutils lit
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils._resolve_embedding_ids"><code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.build_edm_path"><code class="docutils literal notranslate"><span class="pre">build_edm_path()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.build_sm_path"><code class="docutils literal notranslate"><span class="pre">build_sm_path()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.depatchify_2d"><code class="docutils literal notranslate"><span class="pre">depatchify_2d()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.init_ids_1d"><code class="docutils literal notranslate"><span class="pre">init_ids_1d()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.init_ids_2d"><code class="docutils literal notranslate"><span class="pre">init_ids_2d()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.init_ids_joint"><code class="docutils literal notranslate"><span class="pre">init_ids_joint()</span></code></a></li>

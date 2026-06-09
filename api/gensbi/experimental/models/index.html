@@ -440,6 +440,7 @@
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">gensbi.experimental</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3 current active has-children"><a class="current reference internal" href="#">gensbi.experimental.models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+<li class="toctree-l4"><a class="reference internal" href="glue/index.html">gensbi.experimental.models.glue</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../recipes/index.html">gensbi.experimental.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -593,6 +594,7 @@
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glue/index.html">gensbi.experimental.models.glue</a></li>
 </ul>
 </div>
 </section>
@@ -608,6 +610,12 @@
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.experimental.models.AutoEncoderParams" title="gensbi.experimental.models.AutoEncoderParams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AutoEncoderParams</span></code></a></p></td>
 <td><p>Configuration parameters for the AutoEncoder models.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.experimental.models.Embedded1DModel" title="gensbi.experimental.models.Embedded1DModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Embedded1DModel</span></code></a></p></td>
+<td><p>Wraps a VAE encoder and a Flux1 SBI model for 1D sequence conditioning.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.experimental.models.Embedded2DModel" title="gensbi.experimental.models.Embedded2DModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Embedded2DModel</span></code></a></p></td>
+<td><p>Wraps a VAE encoder and a Flux1 SBI model for 2D image conditioning.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1010,6 +1018,119 @@
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded1DModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.experimental.models.</span></span><span class="sig-name descname"><span class="pre">Embedded1DModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vae</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sbi_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/experimental/models/glue/embedder.html#Embedded1DModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.models.Embedded1DModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>Wraps a VAE encoder and a Flux1 SBI model for 1D sequence conditioning.</p>
+<p>Encodes raw 1D conditioning sequences into latent space via the VAE and
+forwards everything to the underlying SBI model. Unlike <code class="docutils literal notranslate"><span class="pre">Embedded2DModel</span></code>,
+no patchification step is applied after encoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vae</strong> (<a class="reference internal" href="#gensbi.experimental.models.AutoEncoder1D" title="gensbi.experimental.models.AutoEncoder1D"><em>AutoEncoder1D</em></a>) – Variational autoencoder used to encode conditioning sequences into latents.</p></li>
+<li><p><strong>sbi_model</strong> (<a class="reference internal" href="../../models/flux1/index.html#gensbi.models.flux1.Flux1" title="gensbi.models.flux1.Flux1"><em>Flux1</em></a>) – Simulation-based inference model that receives the encoded conditioning.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded1DModel.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conditioned</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guidance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoder_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/experimental/models/glue/embedder.html#Embedded1DModel.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.models.Embedded1DModel.__call__" title="Link to this definition">#</a></dt>
+<dd><p>Encode conditioning sequences and run the SBI model forward pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>Array</em>) – Diffusion/flow timestep, shape <code class="docutils literal notranslate"><span class="pre">(batch,)</span></code> or scalar.</p></li>
+<li><p><strong>obs</strong> (<em>Array</em>) – Observation tokens (noisy samples) passed directly to the SBI model.</p></li>
+<li><p><strong>obs_ids</strong> (<em>Array</em>) – Positional IDs for the observation tokens.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em>) – Raw 1D conditioning sequences to be encoded by the VAE, shape
+<code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">L,</span> <span class="pre">C)</span></code>.</p></li>
+<li><p><strong>cond_ids</strong> (<em>Array</em>) – Positional IDs for the conditioning tokens.</p></li>
+<li><p><strong>conditioned</strong> (<em>bool</em><em> or </em><em>Array</em><em>, </em><em>optional</em>) – Whether to apply conditioning (classifier-free guidance mask).
+Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>guidance</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Guidance scale for classifier-free guidance. <code class="docutils literal notranslate"><span class="pre">None</span></code> disables it.</p></li>
+<li><p><strong>encoder_key</strong> (<em>jax.random.PRNGKey</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – PRNG key forwarded to the VAE encoder for stochastic encoding.
+Pass <code class="docutils literal notranslate"><span class="pre">None</span></code> for deterministic encoding.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Output of the SBI model with the VAE-encoded conditioning.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded1DModel.sbi_model">
+<span class="sig-name descname"><span class="pre">sbi_model</span></span><a class="headerlink" href="#gensbi.experimental.models.Embedded1DModel.sbi_model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded1DModel.vae">
+<span class="sig-name descname"><span class="pre">vae</span></span><a class="headerlink" href="#gensbi.experimental.models.Embedded1DModel.vae" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded2DModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.experimental.models.</span></span><span class="sig-name descname"><span class="pre">Embedded2DModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vae</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sbi_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/experimental/models/glue/embedder.html#Embedded2DModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.models.Embedded2DModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>Wraps a VAE encoder and a Flux1 SBI model for 2D image conditioning.</p>
+<p>Encodes raw 2D conditioning images into latent space via the VAE, patchifies
+the result, and forwards everything to the underlying SBI model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vae</strong> (<a class="reference internal" href="#gensbi.experimental.models.AutoEncoder2D" title="gensbi.experimental.models.AutoEncoder2D"><em>AutoEncoder2D</em></a>) – Variational autoencoder used to encode conditioning images into latents.</p></li>
+<li><p><strong>sbi_model</strong> (<a class="reference internal" href="../../models/flux1/index.html#gensbi.models.flux1.Flux1" title="gensbi.models.flux1.Flux1"><em>Flux1</em></a>) – Simulation-based inference model that receives the encoded conditioning.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded2DModel.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conditioned</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guidance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoder_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/experimental/models/glue/embedder.html#Embedded2DModel.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.models.Embedded2DModel.__call__" title="Link to this definition">#</a></dt>
+<dd><p>Encode conditioning images and run the SBI model forward pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>Array</em>) – Diffusion/flow timestep, shape <code class="docutils literal notranslate"><span class="pre">(batch,)</span></code> or scalar.</p></li>
+<li><p><strong>obs</strong> (<em>Array</em>) – Observation tokens (noisy samples) passed directly to the SBI model.</p></li>
+<li><p><strong>obs_ids</strong> (<em>Array</em>) – Positional IDs for the observation tokens.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em>) – Raw 2D conditioning images to be encoded by the VAE, shape
+<code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">H,</span> <span class="pre">W,</span> <span class="pre">C)</span></code>.</p></li>
+<li><p><strong>cond_ids</strong> (<em>Array</em>) – Positional IDs for the conditioning tokens after patchification.</p></li>
+<li><p><strong>conditioned</strong> (<em>bool</em><em> or </em><em>Array</em><em>, </em><em>optional</em>) – Whether to apply conditioning (classifier-free guidance mask).
+Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>guidance</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Guidance scale for classifier-free guidance. <code class="docutils literal notranslate"><span class="pre">None</span></code> disables it.</p></li>
+<li><p><strong>encoder_key</strong> (<em>jax.random.PRNGKey</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – PRNG key forwarded to the VAE encoder for stochastic encoding.
+Pass <code class="docutils literal notranslate"><span class="pre">None</span></code> for deterministic encoding.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Output of the SBI model with the VAE-encoded conditioning.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded2DModel.sbi_model">
+<span class="sig-name descname"><span class="pre">sbi_model</span></span><a class="headerlink" href="#gensbi.experimental.models.Embedded2DModel.sbi_model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.experimental.models.Embedded2DModel.vae">
+<span class="sig-name descname"><span class="pre">vae</span></span><a class="headerlink" href="#gensbi.experimental.models.Embedded2DModel.vae" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.experimental.models.vae_loss_fn">
 <span class="sig-prename descclassname"><span class="pre">gensbi.experimental.models.</span></span><span class="sig-name descname"><span class="pre">vae_loss_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kl_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/experimental/models/autoencoders/commons.html#vae_loss_fn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.experimental.models.vae_loss_fn" title="Link to this definition">#</a></dt>
@@ -1132,6 +1253,18 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id8"><code class="docutils literal notranslate"><span class="pre">AutoEncoderParams.scale_factor</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id9"><code class="docutils literal notranslate"><span class="pre">AutoEncoderParams.shift_factor</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id10"><code class="docutils literal notranslate"><span class="pre">AutoEncoderParams.z_channels</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded1DModel"><code class="docutils literal notranslate"><span class="pre">Embedded1DModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded1DModel.__call__"><code class="docutils literal notranslate"><span class="pre">Embedded1DModel.__call__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded1DModel.sbi_model"><code class="docutils literal notranslate"><span class="pre">Embedded1DModel.sbi_model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded1DModel.vae"><code class="docutils literal notranslate"><span class="pre">Embedded1DModel.vae</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded2DModel"><code class="docutils literal notranslate"><span class="pre">Embedded2DModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded2DModel.__call__"><code class="docutils literal notranslate"><span class="pre">Embedded2DModel.__call__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded2DModel.sbi_model"><code class="docutils literal notranslate"><span class="pre">Embedded2DModel.sbi_model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.Embedded2DModel.vae"><code class="docutils literal notranslate"><span class="pre">Embedded2DModel.vae</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.experimental.models.vae_loss_fn"><code class="docutils literal notranslate"><span class="pre">vae_loss_fn()</span></code></a></li>
