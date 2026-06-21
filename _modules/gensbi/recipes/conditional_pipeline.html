@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -876,7 +876,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_resolve_embedding_ids</span><span class="p">,</span> <span class="n">build_edm_path</span><span class="p">,</span> <span class="n">build_sm_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_resolve_embedding_ids</span><span class="p">,</span>
+    <span class="n">_normalize_patch_size</span><span class="p">,</span>
+    <span class="n">build_edm_path</span><span class="p">,</span>
+    <span class="n">build_sm_path</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
@@ -919,6 +924,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    id_embedding_strategy : tuple of str, optional</span>
 <span class="sd">        Embedding strategy for observation and conditioning IDs.</span>
 <span class="sd">        Default is ``(&quot;absolute&quot;, &quot;absolute&quot;)``.</span>
+<span class="sd">    size : int or tuple of int, optional</span>
+<span class="sd">        Patch edge length for 2D ID-embedding strategies. Default is ``2``.</span>
+<span class="sd">        A single ``int`` is broadcast to both obs and cond (``8 -&gt; (8, 8)``).</span>
+<span class="sd">        A length-2 tuple ``(obs_size, cond_size)`` lets the two inputs differ.</span>
+<span class="sd">        Use ``1`` to disable patchification for an input. Ignored for 1D</span>
+<span class="sd">        strategies (``&quot;absolute&quot;``, ``&quot;pos1d&quot;``, ``&quot;rope1d&quot;``).</span>
 <span class="sd">    params : optional</span>
 <span class="sd">        Model parameters (stored but not used directly).</span>
 <span class="sd">    training_config : dict, optional</span>
@@ -948,6 +959,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ch_obs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">ch_cond</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;absolute&quot;</span><span class="p">),</span>
+        <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
@@ -976,11 +988,12 @@ window.runMermaid = runMermaid;</script>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="n">obs_size</span><span class="p">,</span> <span class="n">cond_size</span> <span class="o">=</span> <span class="n">_normalize_patch_size</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span> <span class="o">=</span> <span class="n">_resolve_embedding_ids</span><span class="p">(</span>
-            <span class="n">dim_obs</span><span class="p">,</span> <span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">0</span>
+            <span class="n">dim_obs</span><span class="p">,</span> <span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">obs_size</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_cond</span> <span class="o">=</span> <span class="n">_resolve_embedding_ids</span><span class="p">(</span>
-            <span class="n">dim_cond</span><span class="p">,</span> <span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">1</span>
+            <span class="n">dim_cond</span><span class="p">,</span> <span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">cond_size</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="ConditionalPipeline.path">
@@ -1248,8 +1261,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1287,7 +1300,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
 </p></div>
       
     </div>

@@ -1,0 +1,268 @@
+gensbi.experimental.models.pixeldit.model
+=========================================
+
+.. py:module:: gensbi.experimental.models.pixeldit.model
+
+.. autoapi-nested-parse::
+
+   PixelDiT config and assembly.
+
+   PixelDiT = dual-level pixel-space DiT: a patch-level MMDiT transformer over
+   patch tokens (with joint cond attention) feeds per-patch conditioning into a
+   pixel-level PiT stack that refines every pixel inside each patch, for
+   conditional pixel-space flow matching on 2D fields.
+
+   Faithful port of ``reference/PixelDiT/pixdit_core/pixeldit_t2i.py`` (cond enters
+   via tokens only; ``c = silu(t_emb)``), minus repa / attention-mask / ``s``
+   caching (YAGNI).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.pixeldit.model.PixelDiT
+   gensbi.experimental.models.pixeldit.model.PixelDiTParams
+
+
+Module Contents
+---------------
+
+.. py:class:: PixelDiT(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Dual-level pixel-space DiT for conditional flow matching on 2D fields.
+
+   Forward: ``(t, obs=field, cond) -> velocity field`` of the same shape.
+   Patch-level MMDiT blocks attend over patch tokens jointly with cond tokens,
+   producing per-patch conditioning ``s_cond``; pixel-level PiT blocks then
+   refine every pixel inside each patch under that conditioning.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, cond, obs_ids=None, cond_ids=None, conditioned=True, guidance=None)
+
+
+   .. py:attribute:: cond_dim
+
+
+   .. py:attribute:: cond_embedder
+
+
+   .. py:attribute:: cond_in_channels
+
+
+   .. py:attribute:: field_shape
+
+
+   .. py:attribute:: final_layer
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: param_dtype
+
+
+   .. py:attribute:: patch_blocks
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: pe_patch
+
+
+   .. py:attribute:: pe_pit
+
+
+   .. py:attribute:: pixel_blocks
+
+
+   .. py:attribute:: pixel_embedder
+
+
+   .. py:attribute:: s_embedder
+
+
+   .. py:attribute:: t_conditioner
+
+
+   .. py:attribute:: token_grid
+
+
+.. py:class:: PixelDiTParams
+
+   
+   Configuration for :class:`PixelDiT` (mirrors the style of ``FieldDiTParams``).
+
+   Note: ``rngs`` is a live ``nnx.Rngs`` stream (mirrors ``FieldDiTParams`` /
+   ``Flux1Params``). Constructing two models from the *same* params object
+   yields *different* weights, because the stream advances; build a fresh
+   ``PixelDiTParams`` (or a fresh ``nnx.Rngs(seed)``) per model for
+   reproducibility.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: cond_dim
+      :type:  int
+
+
+   .. py:attribute:: cond_id_embedding
+      :type:  str
+      :value: 'absolute'
+
+
+
+   .. py:attribute:: cond_in_channels
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: field_shape
+      :type:  Tuple[int, int]
+
+
+   .. py:attribute:: hidden_size
+      :type:  int
+      :value: 384
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: mlp_ratio
+      :type:  float
+      :value: 4.0
+
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+      :value: 6
+
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: patch_depth
+      :type:  int
+      :value: 6
+
+
+
+   .. py:attribute:: patch_size
+      :type:  int
+      :value: 4
+
+
+
+   .. py:attribute:: pit_post_modulation
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: pixel_attn_hidden_size
+      :type:  Optional[int]
+      :value: None
+
+
+
+   .. py:attribute:: pixel_depth
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: pixel_hidden_size
+      :type:  int
+      :value: 16
+
+
+
+   .. py:attribute:: pixel_num_heads
+      :type:  Optional[int]
+      :value: None
+
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: rope_scale
+      :type:  float
+      :value: 16.0
+
+
+
+   .. py:attribute:: theta
+      :type:  float
+      :value: 10000.0
+
+
+
+   .. py:attribute:: use_cond_rope
+      :type:  bool
+      :value: True
+
+
+
+   .. py:attribute:: use_pixel_abs_pos
+      :type:  bool
+      :value: True
+
+
+
+   .. py:attribute:: zero_init_blocks
+      :type:  bool
+      :value: True
+
+
+

@@ -1,0 +1,695 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>PixelDiT port — design spec (2026-06-12) &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/specs/2026-06-12-pixeldit-port-design';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">PixelDiT port — design spec (2026-06-12)</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="pixeldit-port-design-spec-2026-06-12">
+<h1>PixelDiT port — design spec (2026-06-12)<a class="headerlink" href="#pixeldit-port-design-spec-2026-06-12" title="Link to this heading">#</a></h1>
+<section id="goal">
+<h2>Goal<a class="headerlink" href="#goal" title="Link to this heading">#</a></h2>
+<p>Port the PixelDiT architecture (arXiv:2511.20645, NVIDIA; reference code in
+<code class="docutils literal notranslate"><span class="pre">reference/PixelDiT/</span></code>) into <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/pixeldit/</span></code> as a
+JAX/flax-nnx, <strong>channel-last</strong> conditional flow-matching model for pixel-space
+fields. Train with GenSBI’s existing <strong>CondOT flow matching</strong> and sample with
+the existing <strong>ODE pipeline</strong> — neither their REPA objective nor their
+FlowDPM-Solver sampler is ported.</p>
+<p>Context: FieldDiT (the previous in-house hybrid) underperformed and is
+stalled. PixelDiT is its successor candidate. Per the project rule, the port
+is <strong>faithful to the reference</strong> (norms, activations, init, block structure);
+unification/ablation against Flux1 blocks is deferred to promotion time.</p>
+</section>
+<section id="reference-summary-what-we-are-porting">
+<h2>Reference summary (what we are porting)<a class="headerlink" href="#reference-summary-what-we-are-porting" title="Link to this heading">#</a></h2>
+<p>PixelDiT is a VAE-free, dual-level DiT operating directly on pixels:</p>
+<ol class="arabic simple">
+<li><p><strong>Patch-level pathway</strong> (semantics): aggressive <code class="docutils literal notranslate"><span class="pre">p×p</span></code> patchify (<code class="docutils literal notranslate"><span class="pre">p=16</span></code> in
+the paper) → linear embed to width <code class="docutils literal notranslate"><span class="pre">D</span></code> → <code class="docutils literal notranslate"><span class="pre">N</span></code> MMDiT blocks. Output
+<code class="docutils literal notranslate"><span class="pre">s_cond</span> <span class="pre">=</span> <span class="pre">silu(t_emb</span> <span class="pre">+</span> <span class="pre">s_N)</span></code>, one semantic token per patch.</p></li>
+<li><p><strong>Pixel-level pathway</strong> (texture): each pixel embedded to a tiny width
+<code class="docutils literal notranslate"><span class="pre">D_pix</span></code> (16 in the paper) + 2D sincos absolute positions, grouped per patch
+to <code class="docutils literal notranslate"><span class="pre">(B·L,</span> <span class="pre">p²,</span> <span class="pre">D_pix)</span></code>. <code class="docutils literal notranslate"><span class="pre">M</span></code> <strong>PiT blocks</strong>, each:</p>
+<ul class="simple">
+<li><p><strong>pixel-wise AdaLN</strong>: <code class="docutils literal notranslate"><span class="pre">Linear(D</span> <span class="pre">→</span> <span class="pre">n_mod·D_pix·p²)</span></code> from the patch’s
+semantic token → per-pixel modulation parameters;</p></li>
+<li><p><strong>token compaction</strong>: flatten the patch’s pixels (<code class="docutils literal notranslate"><span class="pre">p²·D_pix</span></code>) → linear
+compress to <code class="docutils literal notranslate"><span class="pre">attn_dim</span></code> → global RoPE attention over the <code class="docutils literal notranslate"><span class="pre">L</span></code> patch
+positions → linear expand back to pixels;</p></li>
+<li><p>per-pixel MLP (GELU).</p></li>
+</ul>
+</li>
+<li><p><strong>Final layer</strong>: RMSNorm + zero-init linear per pixel → output field.</p></li>
+</ol>
+<p>Training target (verified in <code class="docutils literal notranslate"><span class="pre">c2i/src/diffusion.py</span></code>): <code class="docutils literal notranslate"><span class="pre">x_t</span> <span class="pre">=</span> <span class="pre">t·x</span> <span class="pre">+</span> <span class="pre">(1−t)·ε</span></code>,
+<code class="docutils literal notranslate"><span class="pre">v</span> <span class="pre">=</span> <span class="pre">x</span> <span class="pre">−</span> <span class="pre">ε</span></code> — identical to GenSBI’s CondOT path convention (noise at <code class="docutils literal notranslate"><span class="pre">t=0</span></code>).
+The model output <strong>is a velocity</strong>; our ODE sampler consumes it directly.</p>
+</section>
+<section id="decisions-locked-during-brainstorming">
+<h2>Decisions (locked during brainstorming)<a class="headerlink" href="#decisions-locked-during-brainstorming" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Faithful reimplementation</strong> of block internals: RMSNorm (<code class="docutils literal notranslate"><span class="pre">eps=1e-6</span></code>),
+SwiGLU FFN (LLaMA-style, <code class="docutils literal notranslate"><span class="pre">2/3·4D</span></code> width, no biases), sequential attn→FFN,
+their fractional-position 2D RoPE, their <code class="docutils literal notranslate"><span class="pre">TimestepConditioner</span></code> with
+<code class="docutils literal notranslate"><span class="pre">max_period=10</span></code> (not Flux’s 10 000). Reuse only exactly-equivalent
+primitives: <code class="docutils literal notranslate"><span class="pre">flux1.math.attention</span></code>/<code class="docutils literal notranslate"><span class="pre">apply_rope</span></code> (real-arithmetic rotation ≡
+their complex cis multiply), <code class="docutils literal notranslate"><span class="pre">recipes.utils</span></code> patchify/id helpers where they
+apply, <code class="docutils literal notranslate"><span class="pre">nnx.RMSNorm</span></code>.</p></li>
+<li><p><strong>Conditioning = MMDiT cond tokens</strong> (t2i topology, their
+<code class="docutils literal notranslate"><span class="pre">MMDiTBlockT2I</span></code>): patch pathway jointly attends over obs patch tokens +
+cond tokens; the pixel pathway is conditioned <strong>only</strong> through <code class="docutils literal notranslate"><span class="pre">s_cond</span></code>,
+exactly as in the paper. No Flux-style single-stream stage (PixelDiT has
+none).</p></li>
+<li><p><strong>Configurable cond id embedding</strong> (this is where we generalize beyond the
+reference, which hardcodes text): additive id embedding via the existing
+<code class="docutils literal notranslate"><span class="pre">FeatureEmbedder</span></code> kinds <code class="docutils literal notranslate"><span class="pre">{&quot;absolute&quot;,</span> <span class="pre">&quot;pos1d&quot;}</span></code> (or <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>), plus an
+independent <code class="docutils literal notranslate"><span class="pre">use_cond_rope:</span> <span class="pre">bool</span></code> for the reference’s separate 1D rope on
+cond q/k. Faithful default = <code class="docutils literal notranslate"><span class="pre">&quot;absolute&quot;</span></code> + <code class="docutils literal notranslate"><span class="pre">use_cond_rope=True</span></code> (their
+<code class="docutils literal notranslate"><span class="pre">y_pos_embedding</span></code> + <code class="docutils literal notranslate"><span class="pre">use_text_rope</span></code>). For unordered θ-vector conditioning,
+<code class="docutils literal notranslate"><span class="pre">&quot;absolute&quot;</span></code> + <code class="docutils literal notranslate"><span class="pre">use_cond_rope=False</span></code> is the sensible setting. Because each
+stream’s rope is applied before the joint q/k concat, obs and cond
+positional treatments are independent — no shared id space needed.</p></li>
+<li><p><strong>Init follows the c2i recipe</strong> (deliberate mix, approved): zero-init <em>all</em>
+adaLN modulation linears + final layer → output is exactly zero at init
+(matches the FieldDiT verified-alive test pattern). The t2i reference only
+zero-inits the final layer; reachable via a flag (<code class="docutils literal notranslate"><span class="pre">zero_init_blocks=False</span></code>).</p></li>
+<li><p><strong>Scope = architecture + pipeline gates</strong>: the phase ends with the model
+training and sampling end-to-end on a toy field through
+<code class="docutils literal notranslate"><span class="pre">FieldConditionalPipeline</span></code>, with FieldDiT-style learning gates green.</p></li>
+<li><p><strong>Skipped from their recipe</strong> (training-config refinements, not
+architecture): REPA/DINOv2 alignment loss, logit-normal t-sampling,
+timeshift, CFG/null-cond training (<code class="docutils literal notranslate"><span class="pre">conditioned=False</span></code> raises, as in
+FieldDiT), FlowDPM-Solver, EMA-decay/grad-clip schedule specifics.</p></li>
+<li><p>2D fields only in this phase (the reference is 2D); 1D fields and
+spatially-structured cond (rope2d cond grids, Kontext-style) are future
+work.</p></li>
+</ul>
+</section>
+<section id="package-layout">
+<h2>Package layout<a class="headerlink" href="#package-layout" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/pixeldit/</span></code>:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Contents</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rope.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">precompute_freqs_cis_2d(head_dim,</span> <span class="pre">h,</span> <span class="pre">w,</span> <span class="pre">theta=10000,</span> <span class="pre">scale=16)</span></code> — fractional positions <code class="docutils literal notranslate"><span class="pre">linspace(0,</span> <span class="pre">scale,</span> <span class="pre">·)</span></code>, x/y interleaved pair layout, emitted in the <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">2,</span> <span class="pre">2)</span></code> rotation format <code class="docutils literal notranslate"><span class="pre">flux1.math.apply_rope</span></code> consumes; <code class="docutils literal notranslate"><span class="pre">precompute_freqs_cis_1d</span></code> for cond rope (integer positions, full head dim).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">modules.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SwiGLU</span></code>, per-pixel <code class="docutils literal notranslate"><span class="pre">MLP</span></code> (GELU), <code class="docutils literal notranslate"><span class="pre">TimestepConditioner</span></code> (<code class="docutils literal notranslate"><span class="pre">max_period=10</span></code>), <code class="docutils literal notranslate"><span class="pre">FinalLayer</span></code> (RMSNorm + zero-init linear), 2D sincos abs-pos table builder.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">blocks.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MMDiTBlock</span></code> (faithful <code class="docutils literal notranslate"><span class="pre">MMDiTBlockT2I</span></code>: per-stream qkv/proj/SwiGLU, RMSNorm pre-norms, 6-param adaLN per stream from <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">=</span> <span class="pre">silu(t_emb)</span></code>, joint attention, per-stream rope) and <code class="docutils literal notranslate"><span class="pre">PiTBlock</span></code> (pixel-wise AdaLN incl. both <code class="docutils literal notranslate"><span class="pre">pit_post_modulation</span></code> variants, compress→global-attend→expand, per-pixel MLP).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">embedders.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PatchTokenEmbedder</span></code> (linear on flattened patch), <code class="docutils literal notranslate"><span class="pre">PixelTokenEmbedder</span></code> (per-pixel linear + 2D sincos abs-pos, group to <code class="docutils literal notranslate"><span class="pre">(B·L,</span> <span class="pre">p²,</span> <span class="pre">D_pix)</span></code>), <code class="docutils literal notranslate"><span class="pre">CondTokenEmbedder</span></code> (linear <code class="docutils literal notranslate"><span class="pre">D_c→D</span></code> + RMSNorm + configurable <code class="docutils literal notranslate"><span class="pre">FeatureEmbedder</span></code> id embedding).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">model.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PixelDiTParams</span></code> (dataclass, <code class="docutils literal notranslate"><span class="pre">FieldDiTParams</span></code> style) + <code class="docutils literal notranslate"><span class="pre">PixelDiT</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Exported as <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">gensbi.experimental.models</span> <span class="pre">import</span> <span class="pre">PixelDiT,</span> <span class="pre">PixelDiTParams</span></code>.</p>
+</section>
+<section id="model-contract">
+<h2>Model contract<a class="headerlink" href="#model-contract" title="Link to this heading">#</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PixelDiT</span><span class="p">(</span><span class="n">params</span><span class="p">)(</span><span class="n">t</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">obs_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cond_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">conditioned</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">guidance</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">velocity</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">obs</span></code>: <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">H,</span> <span class="pre">W,</span> <span class="pre">C)</span></code> channel-last; <code class="docutils literal notranslate"><span class="pre">cond</span></code>: <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">K,</span> <span class="pre">D_c)</span></code> tokens (a θ-vector
+<code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">k,</span> <span class="pre">1)</span></code> from the existing pipeline contract is K tokens with <code class="docutils literal notranslate"><span class="pre">D_c=1</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">obs_ids</span></code>/<code class="docutils literal notranslate"><span class="pre">cond_ids</span></code> accepted-and-ignored (tables built internally for the
+fixed <code class="docutils literal notranslate"><span class="pre">field_shape</span></code>), so <code class="docutils literal notranslate"><span class="pre">FieldConditionalWrapper</span></code> and
+<code class="docutils literal notranslate"><span class="pre">FieldConditionalPipeline</span></code> work without modification.</p></li>
+<li><p>Output: <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">H,</span> <span class="pre">W,</span> <span class="pre">C)</span></code> velocity. Exactly zero at init (default init).</p></li>
+<li><p>All positional tables (2D rope, cond rope, pixel sincos) precomputed at init
+and stored in <code class="docutils literal notranslate"><span class="pre">RopeIds</span></code>-style <code class="docutils literal notranslate"><span class="pre">nnx.Variable</span></code> buffers — no dict caches, no
+dynamic shapes, JIT-friendly.</p></li>
+</ul>
+<p>Channel-last replaces the reference’s <code class="docutils literal notranslate"><span class="pre">unfold</span></code>/<code class="docutils literal notranslate"><span class="pre">fold</span></code> with plain reshapes:
+<code class="docutils literal notranslate"><span class="pre">(B,H,W,C)</span> <span class="pre">→</span> <span class="pre">(B,</span> <span class="pre">Hs,</span> <span class="pre">p,</span> <span class="pre">Ws,</span> <span class="pre">p,</span> <span class="pre">C)</span> <span class="pre">→</span> <span class="pre">(B,</span> <span class="pre">L,</span> <span class="pre">p²·C)</span></code> for patches, and the
+analogous grouping for pixel tokens.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PixelDiTParams</span></code> knobs (defaults to be finalized in the plan): <code class="docutils literal notranslate"><span class="pre">in_channels</span></code>,
+<code class="docutils literal notranslate"><span class="pre">field_shape</span></code>, <code class="docutils literal notranslate"><span class="pre">patch_size</span></code>, <code class="docutils literal notranslate"><span class="pre">hidden_size</span> <span class="pre">D</span></code>, <code class="docutils literal notranslate"><span class="pre">pixel_hidden_size</span> <span class="pre">D_pix</span></code>,
+<code class="docutils literal notranslate"><span class="pre">patch_depth</span> <span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">pixel_depth</span> <span class="pre">M</span></code>, <code class="docutils literal notranslate"><span class="pre">num_heads</span></code>, <code class="docutils literal notranslate"><span class="pre">pixel_attn_hidden_size</span></code>,
+<code class="docutils literal notranslate"><span class="pre">pixel_num_heads</span></code>, <code class="docutils literal notranslate"><span class="pre">cond_dim</span> <span class="pre">K</span></code>, <code class="docutils literal notranslate"><span class="pre">cond_in_channels</span> <span class="pre">D_c</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cond_id_embedding</span> <span class="pre">∈</span> <span class="pre">{&quot;absolute&quot;,&quot;pos1d&quot;,&quot;none&quot;}</span></code>, <code class="docutils literal notranslate"><span class="pre">use_cond_rope</span></code>,
+<code class="docutils literal notranslate"><span class="pre">use_pixel_abs_pos</span></code>, <code class="docutils literal notranslate"><span class="pre">pit_post_modulation</span></code>, <code class="docutils literal notranslate"><span class="pre">zero_init_blocks</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rope_scale=16.0</span></code>, <code class="docutils literal notranslate"><span class="pre">theta=10_000</span></code>, <code class="docutils literal notranslate"><span class="pre">param_dtype=bf16</span></code>. The paper-B-scale
+config (<code class="docutils literal notranslate"><span class="pre">D=768,</span> <span class="pre">N=12,</span> <span class="pre">M=2,</span> <span class="pre">D_pix=16,</span> <span class="pre">p=16</span></code>) is exercised by the opt-in gate-3
+smoke test rather than shipped as a named preset.</p>
+</section>
+<section id="training-sampling-wiring">
+<h2>Training &amp; sampling wiring<a class="headerlink" href="#training-sampling-wiring" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FieldConditionalPipeline</span></code> with the CondOT flow-matching <code class="docutils literal notranslate"><span class="pre">GenerativeMethod</span></code>
+— no pipeline changes expected. Data contract unchanged:
+<code class="docutils literal notranslate"><span class="pre">(obs</span> <span class="pre">(B,H,W,C),</span> <span class="pre">cond</span> <span class="pre">(B,K,D_c))</span></code>.</p></li>
+<li><p>Sampling through the existing ODE solver via <code class="docutils literal notranslate"><span class="pre">FieldConditionalWrapper</span></code>.</p></li>
+<li><p>Known inherited limitation: field <code class="docutils literal notranslate"><span class="pre">log_prob</span></code> is broken upstream
+(divergence path assumes token-shaped events) — out of scope here, same as
+for FieldDiT.</p></li>
+</ul>
+</section>
+<section id="verification">
+<h2>Verification<a class="headerlink" href="#verification" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Unit level</strong>: shapes, finiteness, exact-zero-at-init, dtype policy
+(timestep sinusoid in f32 before cast — FieldDiT lesson), both
+<code class="docutils literal notranslate"><span class="pre">pit_adaln_post_modulation</span></code> variants, cond id-embedding modes.</p></li>
+<li><p><strong>Gate 1 — gradient aliveness</strong>: after optimizer step(s), every subtree
+(patch embedder, cond embedder, MMDiT blocks, PiT blocks, final layer,
+time conditioner) has nonzero grads/updates. FieldDiT lesson: subtrees that
+reach the output only through zero-init modulation need <strong>two</strong> steps.</p></li>
+<li><p><strong>Gate 2 — tiny overfit + cond sensitivity</strong>: loss drops by orders of
+magnitude on a tiny dataset; structurally different conds give different
+outputs (uniform-shift probes are annihilated by the RMSNorm in the cond
+embedder — use structurally different conds).</p></li>
+<li><p><strong>Gate 3 — opt-in realistic smoke</strong>: paper-B-ish config at a realistic
+field size, params/memory/walltime printout.</p></li>
+<li><p><strong>Parity script</strong> (<code class="docutils literal notranslate"><span class="pre">scripts/</span></code> or <code class="docutils literal notranslate"><span class="pre">tests/</span></code> opt-in, run manually, not CI):
+tiny config, copy weights from the PyTorch reference, compare forward
+outputs to tolerance. This is the only real proof of “faithful”. If a
+torch-capable env is unavailable, drop and rely on line-level code review
+against the reference.</p></li>
+</ol>
+</section>
+<section id="deviations-post-implementation">
+<h2>Deviations (post-implementation)<a class="headerlink" href="#deviations-post-implementation" title="Link to this heading">#</a></h2>
+<p>Intentional deviations from the reference discovered or confirmed during implementation and the parity script:</p>
+<ol class="arabic simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">t</span></code> shape normalisation at model boundary.</strong> <code class="docutils literal notranslate"><span class="pre">FieldConditionalWrapper._expand_time</span></code> passes <code class="docutils literal notranslate"><span class="pre">t</span></code> as <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">1)</span></code>, while the faithful <code class="docutils literal notranslate"><span class="pre">_timestep_embedding</span></code> (which mirrors the reference) expects a 1-D <code class="docutils literal notranslate"><span class="pre">(B,)</span></code> vector. <code class="docutils literal notranslate"><span class="pre">PixelDiT.__call__</span></code> calls <code class="docutils literal notranslate"><span class="pre">t.ravel()</span></code> at the entry point so the internal port stays untouched. No change to the pipeline or wrapper.</p></li>
+<li><p><strong>Gate-2 overfit uses 3 000 steps, not ~300.</strong> CFM loss has high stochasticity from the random <code class="docutils literal notranslate"><span class="pre">t</span></code> draw; convergence by 2 orders of magnitude requires more steps on a tiny fixed dataset than the plan originally estimated. The actual step count is documented directly in the test.</p></li>
+<li><p><strong>Patch-token flatten is pixel-major (<code class="docutils literal notranslate"><span class="pre">(i·p+j)·C</span> <span class="pre">+</span> <span class="pre">c</span></code>), not channel-major.</strong> The reference uses <code class="docutils literal notranslate"><span class="pre">F.unfold</span></code> (NCHW → channel-major), whereas the channel-last reshape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">Hs,</span> <span class="pre">p,</span> <span class="pre">Ws,</span> <span class="pre">p,</span> <span class="pre">C)</span> <span class="pre">→</span> <span class="pre">transpose(0,1,3,2,4,5)</span> <span class="pre">→</span> <span class="pre">(B,</span> <span class="pre">L,</span> <span class="pre">p²·C)</span></code> produces pixel-major ordering. The two orderings are internally consistent (patch embed, pixel grouping, and <code class="docutils literal notranslate"><span class="pre">unpatchify</span></code> all use the same convention), but loading reference checkpoint weights into <code class="docutils literal notranslate"><span class="pre">s_embedder</span></code> requires a kernel-row permutation. The parity script (<code class="docutils literal notranslate"><span class="pre">scripts/pixeldit_parity.py</span></code>) applies this permutation; its header explains the mapping.</p></li>
+<li><p><strong>Torch parity verified at max |Δ| ≈ 3 × 10⁻⁸ (float32).</strong> No numerical deviations beyond floating-point rounding.</p></li>
+</ol>
+</section>
+<section id="out-of-scope-future-work">
+<h2>Out of scope / future work<a class="headerlink" href="#out-of-scope-future-work" title="Link to this heading">#</a></h2>
+<p>CFG &amp; null-cond training; 1D fields; spatially-structured (2D-grid) cond
+tokens; logit-normal t / timeshift knobs; REPA; FlowDPM-Solver; field
+<code class="docutils literal notranslate"><span class="pre">log_prob</span></code> fix; any merge/ablation with Flux1 blocks (promotion-time work).</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">Goal</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reference-summary-what-we-are-porting">Reference summary (what we are porting)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#decisions-locked-during-brainstorming">Decisions (locked during brainstorming)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#package-layout">Package layout</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-contract">Model contract</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-sampling-wiring">Training &amp; sampling wiring</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#verification">Verification</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deviations-post-implementation">Deviations (post-implementation)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#out-of-scope-future-work">Out of scope / future work</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

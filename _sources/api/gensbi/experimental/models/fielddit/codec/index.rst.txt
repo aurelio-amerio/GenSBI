@@ -1,0 +1,273 @@
+gensbi.experimental.models.fielddit.codec
+=========================================
+
+.. py:module:: gensbi.experimental.models.fielddit.codec
+
+.. autoapi-nested-parse::
+
+   Conv U-Net halves and the patch boundary for FieldDiT.
+
+   ObsEncoder (conv down, time-only modulation, captures SiD2 skips) and
+   ObsDecoder (conv up, residual skips, time+cond modulation, zero-init final
+   conv) sandwich the MMDiT bottleneck; Tokenizer/Untokenizer cross the
+   patchify boundary.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.fielddit.codec.Downsample2D
+   gensbi.experimental.models.fielddit.codec.ObsDecoder
+   gensbi.experimental.models.fielddit.codec.ObsEncoder
+   gensbi.experimental.models.fielddit.codec.Tokenizer
+   gensbi.experimental.models.fielddit.codec.Untokenizer
+   gensbi.experimental.models.fielddit.codec.Upsample2D
+
+
+Module Contents
+---------------
+
+.. py:class:: Downsample2D(in_channels, out_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Stride-2 conv that also changes channel count (asymmetric pad, AE-style).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+
+   .. py:attribute:: conv
+
+
+.. py:class:: ObsDecoder(out_channels, widths, res_blocks, vec_dim, norm_groups, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Conv decoder: SiD2 residual skips + time+cond AdaGN-zero modulation.
+
+   Mirrors ``ObsEncoder``. ``self.up.layers[i]`` corresponds to encoder stage
+   ``j = depth - 1 - i``. Per stage: subtract the matching ``neg_skip``,
+   upsample ``widths[j+1] -> widths[j]``, add the matching ``pos_skip``, then
+   run the stage's blocks. The final conv is zero-initialized so the velocity
+   field is exactly zero at initialization.
+
+   ``out_channels`` is the channel count of the produced velocity field.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(feat, vec, pos_skips, neg_skips)
+
+
+   .. py:attribute:: conv_out
+
+
+   .. py:attribute:: depth
+
+
+   .. py:attribute:: norm_out
+
+
+   .. py:attribute:: up
+
+
+   .. py:attribute:: widths
+
+
+.. py:class:: ObsEncoder(in_channels, widths, res_blocks, vec_dim, norm_groups, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Conv encoder: down-sampling stages with time-only AdaGN-zero modulation.
+
+   ``widths`` has length ``D + 1`` (one width per resolution incl. the
+   bottleneck). Stage ``j`` (j = 0..D-1) runs ``res_blocks`` blocks at width
+   ``widths[j]``, then downsamples ``widths[j] -> widths[j+1]``. Returns the
+   bottleneck feature plus per-stage ``pos_skips`` (pre-downsample) and
+   ``neg_skips`` (post-downsample) for the SiD2 residual decoder.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, time_vec)
+
+
+   .. py:attribute:: conv_in
+
+
+   .. py:attribute:: depth
+
+
+   .. py:attribute:: down
+
+
+   .. py:attribute:: widths
+
+
+.. py:class:: Tokenizer(in_channels, patch_size, hidden_size, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Patchify a conv feature map and project to ``hidden_size`` tokens.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(feat)
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: proj
+
+
+.. py:class:: Untokenizer(out_channels, patch_size, hidden_size, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Project tokens back to patch pixels and depatchify to a conv feature map.
+
+   ``grid`` is the ``(h, w)`` token grid (``feat_h // p``, ``feat_w // p``),
+   passed to the (now grid-aware) ``depatchify_2d``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(tokens, grid)
+
+
+   .. py:attribute:: norm
+
+
+   .. py:attribute:: out_channels
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: proj
+
+
+.. py:class:: Upsample2D(in_channels, out_channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Nearest-neighbour 2x upsample + conv that also changes channel count.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+
+   .. py:attribute:: conv
+
+

@@ -1,0 +1,185 @@
+gensbi.experimental.recipes.field_pipeline
+==========================================
+
+.. py:module:: gensbi.experimental.recipes.field_pipeline
+
+.. autoapi-nested-parse::
+
+   Field-shaped conditional pipeline (experimental).
+
+   ``ConditionalPipeline`` assumes token-shaped observations ``(B, dim, ch)``:
+   it flattens ``dim_obs``, resolves embedding ids, and builds a rank-2 prior.
+   Pixel-space field models (FieldDiT) need ``(B, H, W, C)`` observations, a
+   rank-3 ``event_shape``, no external ids, and rank-aware input expansion.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.recipes.field_pipeline.FieldConditionalPipeline
+   gensbi.experimental.recipes.field_pipeline.FieldConditionalWrapper
+
+
+Module Contents
+---------------
+
+.. py:class:: FieldConditionalPipeline(model, train_dataset, val_dataset, field_shape, dim_cond, method, ch_obs=1, ch_cond=1, params=None, training_config=None)
+
+   Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalPipeline`
+
+
+   
+   Conditional pipeline for pixel-space fields ``(B, H, W, C)``.
+
+   Differences from :class:`ConditionalPipeline`:
+
+   - ``event_shape = (*field_shape, ch_obs)`` — prior, path, and sampling are
+     field-shaped (``sample`` returns ``(nsamples, H, W, C)``).
+   - no obs/cond id resolution: ``obs_ids``/``cond_ids`` are ``None`` in all
+     extras; the model builds its rope ids internally and ignores them.
+   - :class:`FieldConditionalWrapper` for event-rank-aware expansion.
+
+   Datasets must yield ``(obs, cond)`` batches with ``obs`` of shape
+   ``(B, H, W, C)`` and ``cond`` of shape ``(B, k)`` or ``(B, k, c)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _wrap_model()
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cond_ids
+      :value: None
+
+
+
+   .. py:attribute:: event_shape
+
+
+   .. py:attribute:: field_shape
+
+
+   .. py:attribute:: loss_obj
+
+
+   .. py:attribute:: method
+
+
+   .. py:attribute:: obs_ids
+      :value: None
+
+
+
+   .. py:attribute:: path
+
+
+.. py:class:: FieldConditionalWrapper(model)
+
+   Bases: :py:obj:`gensbi.utils.model_wrapping.ModelWrapper`
+
+
+   
+   Wrapper for field-shaped conditional models.
+
+   Expansion is event-rank-aware (a field event is rank 3, ``(H, W, C)``):
+
+   - ``obs`` with ``ndim == 3`` is treated as unbatched -> ``(1, H, W, C)``.
+   - ``cond`` with ``ndim == 1`` (``(k,)``) -> ``(1, k)``; 2D+ cond is
+     assumed batched (``(B, k)`` / ``(B, k, c)``).
+   - batch-1 ``cond`` is broadcast to the obs batch (sampling N draws for a
+     single ``x_o``; the model itself deliberately does not broadcast).
+   - ids are passed through untouched (FieldDiT builds rope ids internally).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, cond, obs_ids=None, cond_ids=None, conditioned=True, guidance=None, **kwargs)
+
+      
+      Call the wrapped model with ``obs`` and ``t``.
+
+      Uses keyword arguments when calling the underlying model for
+      safety (avoids positional-argument order bugs).
+
+      :param t: time (batch_size).
+      :type t: Array
+      :param obs: input data to the model (batch_size, ...).
+      :type obs: Array
+      :param \*\*kwargs: e.g., text condition.
+      :type \*\*kwargs: additional information forwarded to the model,
+
+      :returns: model output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

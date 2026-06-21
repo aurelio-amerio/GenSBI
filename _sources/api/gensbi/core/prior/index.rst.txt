@@ -51,22 +51,22 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: make_gaussian_prior(dim, ch, mu=0.0, sigma=1.0)
+.. py:function:: make_gaussian_prior(dim, ch=None, *, mu=0.0, sigma=1.0)
 
    
    Create a Gaussian prior as a numpyro distribution.
 
-   :param dim: Feature dimension.
-   :type dim: int
-   :param ch: Channel dimension.
-   :type ch: int
-   :param mu: Prior mean (broadcast to all dimensions).
-   :type mu: float
-   :param sigma: Prior std (broadcast to all dimensions).
-   :type sigma: float
+   Two call forms:
 
-   :returns: ``Independent(Normal(loc, scale), 2)`` with
-             ``event_shape=(dim, ch)``.
+   - ``make_gaussian_prior(dim, ch)`` — legacy rank-2 form,
+     ``event_shape=(dim, ch)``.
+   - ``make_gaussian_prior(event_shape)`` — a single tuple of any rank,
+     e.g. ``(H, W, C)`` for pixel-space fields.
+
+   ``mu`` and ``sigma`` are keyword-only: ``make_gaussian_prior(H, W, C)``
+   raises ``TypeError`` instead of silently reading ``C`` as the mean.
+
+   :returns: ``Independent(Normal(loc, scale), len(event_shape))``.
    :rtype: dist.Independent
 
 

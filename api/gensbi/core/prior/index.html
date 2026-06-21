@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
@@ -39,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -399,6 +399,7 @@
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">gensbi.core.prior</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../score_matching/index.html">gensbi.core.score_matching</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../sde_solver/index.html">gensbi.core.sde_solver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../time_sampling/index.html">gensbi.core.time_sampling</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -440,10 +441,13 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../experimental/index.html">gensbi.experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../experimental/models/index.html">gensbi.experimental.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../experimental/models/autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../experimental/models/fielddit/index.html">gensbi.experimental.models.fielddit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../experimental/models/glue/index.html">gensbi.experimental.models.glue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../experimental/models/pixeldit/index.html">gensbi.experimental.models.pixeldit</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../experimental/recipes/index.html">gensbi.experimental.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../experimental/recipes/field_pipeline/index.html">gensbi.experimental.recipes.field_pipeline</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../experimental/recipes/vae_pipeline/index.html">gensbi.experimental.recipes.vae_pipeline</a></li>
 </ul>
 </details></li>
@@ -597,7 +601,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.core.prior.is_gaussian_prior" title="gensbi.core.prior.is_gaussian_prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_gaussian_prior</span></code></a>(prior)</p></td>
 <td><p>Check whether a prior is a Gaussian (Normal-based Independent).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.core.prior.make_gaussian_prior" title="gensbi.core.prior.make_gaussian_prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_gaussian_prior</span></code></a>(dim, ch[, mu, sigma])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.core.prior.make_gaussian_prior" title="gensbi.core.prior.make_gaussian_prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_gaussian_prior</span></code></a>(dim[, ch, mu, sigma])</p></td>
 <td><p>Create a Gaussian prior as a numpyro distribution.</p></td>
 </tr>
 </tbody>
@@ -625,23 +629,23 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.core.prior.make_gaussian_prior">
-<span class="sig-prename descclassname"><span class="pre">gensbi.core.prior.</span></span><span class="sig-name descname"><span class="pre">make_gaussian_prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/prior.html#make_gaussian_prior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.prior.make_gaussian_prior" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.core.prior.</span></span><span class="sig-name descname"><span class="pre">make_gaussian_prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/core/prior.html#make_gaussian_prior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.core.prior.make_gaussian_prior" title="Link to this definition">#</a></dt>
 <dd><p>Create a Gaussian prior as a numpyro distribution.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>dim</strong> (<em>int</em>) – Feature dimension.</p></li>
-<li><p><strong>ch</strong> (<em>int</em>) – Channel dimension.</p></li>
-<li><p><strong>mu</strong> (<em>float</em>) – Prior mean (broadcast to all dimensions).</p></li>
-<li><p><strong>sigma</strong> (<em>float</em>) – Prior std (broadcast to all dimensions).</p></li>
+<p>Two call forms:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">make_gaussian_prior(dim,</span> <span class="pre">ch)</span></code> — legacy rank-2 form,
+<code class="docutils literal notranslate"><span class="pre">event_shape=(dim,</span> <span class="pre">ch)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make_gaussian_prior(event_shape)</span></code> — a single tuple of any rank,
+e.g. <code class="docutils literal notranslate"><span class="pre">(H,</span> <span class="pre">W,</span> <span class="pre">C)</span></code> for pixel-space fields.</p></li>
 </ul>
+<p><code class="docutils literal notranslate"><span class="pre">mu</span></code> and <code class="docutils literal notranslate"><span class="pre">sigma</span></code> are keyword-only: <code class="docutils literal notranslate"><span class="pre">make_gaussian_prior(H,</span> <span class="pre">W,</span> <span class="pre">C)</span></code>
+raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> instead of silently reading <code class="docutils literal notranslate"><span class="pre">C</span></code> as the mean.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">Independent(Normal(loc,</span> <span class="pre">scale),</span> <span class="pre">len(event_shape))</span></code>.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">Independent(Normal(loc,</span> <span class="pre">scale),</span> <span class="pre">2)</span></code> with
-<code class="docutils literal notranslate"><span class="pre">event_shape=(dim,</span> <span class="pre">ch)</span></code>.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dist.Independent</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dist.Independent</p>
 </dd>
 </dl>
 </dd></dl>
@@ -718,8 +722,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -757,7 +761,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
 </p></div>
       
     </div>

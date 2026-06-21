@@ -1,0 +1,288 @@
+gensbi.experimental.models.pixeldit.embedders
+=============================================
+
+.. py:module:: gensbi.experimental.models.pixeldit.embedders
+
+.. autoapi-nested-parse::
+
+   Token embedders for the PixelDiT port.
+
+   Faithful port of ``reference/PixelDiT/pixdit_core/pixeldit_c2i.py`` embedders
+   plus the cond-token embedder from ``pixeldit_t2i.py``.  Operates channel-last
+   ``(B, H, W, C)`` throughout.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.pixeldit.embedders.CondTokenEmbedder
+   gensbi.experimental.models.pixeldit.embedders.PatchTokenEmbedder
+   gensbi.experimental.models.pixeldit.embedders.PixelTokenEmbedder
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.pixeldit.embedders.patchify
+   gensbi.experimental.models.pixeldit.embedders.unpatchify
+
+
+Module Contents
+---------------
+
+.. py:class:: CondTokenEmbedder(cond_in_channels, hidden_size, n_tokens, *, id_embedding = 'absolute', rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Condition token embedder: linear → RMSNorm → add id embedding.
+
+   Faithful port of the t2i cond pipeline
+   (``y_embedder`` + ``y_pos_embedding``, pixeldit_t2i.py:179-180, 267-268).
+
+   :param cond_in_channels: Dimension of each condition token ``D_c``.
+   :param hidden_size: Output embedding dimension ``D``.
+   :param n_tokens: Number of condition tokens ``K`` (used to build the id embedding table).
+   :param id_embedding: How to embed token positions: ``"absolute"`` (learned), ``"pos1d"``
+                        (sinusoidal 1D), or ``"none"`` (no positional information added).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(cond)
+
+      
+      :param cond: ``(B, K, D_c)`` condition tokens; or ``(B, K)`` when
+                   ``cond_in_channels == 1`` (auto-expanded to ``(B, K, 1)``).
+
+      :returns: ``(B, K, D)`` embedded condition tokens.
+      :rtype: jax.Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cond_in_channels
+
+
+   .. py:attribute:: id_embedding_kind
+      :value: 'absolute'
+
+
+
+   .. py:attribute:: norm
+
+
+   .. py:attribute:: proj
+
+
+.. py:class:: PatchTokenEmbedder(in_features, hidden_size, *, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Linear patch-token embedder (ref ``PatchTokenEmbedder``, pixeldit_c2i.py:21-38).
+
+   ``Linear(in_features → hidden_size, bias=True)``; kernel xavier_uniform,
+   bias zeros.  No norm layer (``norm_layer=None`` case).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+
+   .. py:attribute:: proj
+
+
+.. py:class:: PixelTokenEmbedder(in_channels, pixel_hidden_size, field_shape, patch_size, *, use_abs_pos = True, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Per-pixel projection + optional sincos abs-pos + patch grouping.
+
+   Faithful port of ``PixelTokenEmbedder.forward`` (pixeldit_c2i.py:93-111).
+   Operates channel-last: input ``(B, H, W, C)``, output ``(B·L, p², D_pix)``.
+
+   :param in_channels: Number of input channels ``C``.
+   :param pixel_hidden_size: Per-pixel hidden dimension ``D_pix``.
+   :param field_shape: ``(H, W)`` — fixed spatial resolution; the sincos table is precomputed
+                       and stored as a non-trainable :class:`Buffer`.
+   :param patch_size: Patch size ``p``.
+   :param use_abs_pos: If ``True`` (default), add the sincos 2D positional embedding.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x)
+
+      
+      :param x: ``(B, H, W, C)`` channel-last image.
+
+      :returns: ``(B·L, p², D_pix)`` grouped pixel tokens.
+      :rtype: jax.Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: field_shape
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: pixel_hidden_size
+
+
+   .. py:attribute:: pos_embed
+
+
+   .. py:attribute:: proj
+
+
+   .. py:attribute:: use_abs_pos
+      :value: True
+
+
+
+.. py:function:: patchify(x, p)
+
+   
+   Fold a channel-last image into patch tokens, row-major.
+
+   :param x: ``(B, H, W, C)`` channel-last image.
+   :param p: Patch size (both spatial dims).
+
+   :returns: ``(B, L, p²·C)`` where ``L = Hs*Ws``, patches in row-major order
+             ``(Hs, Ws)`` and pixels within each patch in row-major order ``(p, p)``.
+   :rtype: jax.Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: unpatchify(tokens, grid, p, C)
+
+   
+   Exact inverse of :func:`patchify`.
+
+   :param tokens: ``(B, L, p²·C)`` patch tokens.
+   :param grid: ``(Hs, Ws)`` — number of patches along each spatial axis.
+   :param p: Patch size.
+   :param C: Number of output channels.
+
+   :returns: ``(B, H, W, C)`` channel-last image.
+   :rtype: jax.Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

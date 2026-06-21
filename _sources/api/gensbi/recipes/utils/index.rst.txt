@@ -18,6 +18,7 @@ Functions
 
 .. autoapisummary::
 
+   gensbi.recipes.utils._normalize_patch_size
    gensbi.recipes.utils._resolve_embedding_ids
    gensbi.recipes.utils.build_edm_path
    gensbi.recipes.utils.build_sm_path
@@ -33,7 +34,38 @@ Functions
 Module Contents
 ---------------
 
-.. py:function:: _resolve_embedding_ids(dim, strategy, semantic_id)
+.. py:function:: _normalize_patch_size(size)
+
+   
+   Normalize a patch-size spec into an ``(obs, cond)`` tuple.
+
+   :param size: A single int is broadcast to both inputs (``8 -> (8, 8)``). A
+                length-2 tuple is taken as ``(obs_size, cond_size)`` so the two
+                inputs can use different patch sizes. Use ``1`` for an input that
+                is not patchified.
+   :type size: int or tuple of int
+
+   :returns: ``(obs_size, cond_size)``.
+   :rtype: tuple of int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _resolve_embedding_ids(dim, strategy, semantic_id, size = 2)
 
    
    Resolve ID embeddings by strategy name.
@@ -45,6 +77,9 @@ Module Contents
    :type strategy: str
    :param semantic_id: Semantic identifier for the token group (0=obs, 1=cond).
    :type semantic_id: int
+   :param size: Patch edge length for 2D strategies (default 2). Ignored for 1D
+                strategies. Use 1 for no patchification.
+   :type size: int, optional
 
    :returns: * **ids** (*Array*) -- Token ID array.
              * **resolved_dim** (*int*) -- Resolved flat dimension.
@@ -134,11 +169,99 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: depatchify_2d(x, size=2)
+.. py:function:: depatchify_2d(x, size=2, grid=None)
+
+   
+   Inverse of :func:`patchify_2d`.
+
+   :param x: Patchified tensor of shape ``(B, h*w, C*size*size)``.
+   :type x: Array
+   :param size: Patch edge length used by :func:`patchify_2d`.
+   :type size: int
+   :param grid: The ``(h, w)`` patch grid. The grid cannot be inferred from the token
+                count alone, so it is required for non-square grids. If ``None``, a
+                square grid (``h == w``) is assumed.
+   :type grid: tuple of int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:function:: init_ids_1d(dim, semantic_id = None)
 
-.. py:function:: init_ids_2d(dim, semantic_id = 0)
+   
+   Build 1D positional IDs, returning ``(ids, dim)``.
+
+   ``ids`` is ``(1, dim, 1)`` when ``semantic_id is None`` (position only), or
+   ``(1, dim, 2)`` otherwise, with the position at axis 0 and the semantic id
+   at axis 1.
+
+   FIXME (axis-order footgun): this places the semantic id on the LAST axis,
+   which is the *reverse* of :func:`init_ids_2d` (semantic at axis 0, then h, w
+   -- the established convention). The two are safe in isolation, but they do
+   NOT line up if 1D and 2D ids are ever fed into the same RoPE grid (e.g.
+   FieldDiT Phase-2 obs+cond co-tokenization with a shared ``EmbedND``, where
+   ``axes_dim[i]`` is matched to ids axis ``i``). This should be unified to the
+   2D convention (semantic at axis 0). It is not changed here because callers
+   that pass ``semantic_id`` -- notably the Flux1 ``rope1d`` path via
+   :func:`init_ids` -- and any code indexing ``ids[..., k]`` must be updated in
+   lockstep.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: init_ids_2d(dim, semantic_id = 0, size = 2)
+
+   
+   Build 2D positional IDs for a patchified image grid.
+
+   The grid has one entry per patch, i.e. ``(dim[0] // size, dim[1] // size)``,
+   matching ``patchify_2d(x, size=size)``. ``size`` is the patch edge length;
+   use ``size=1`` for no patchification (one token per pixel).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:function:: init_ids_joint(dim_obs, dim_cond)
 

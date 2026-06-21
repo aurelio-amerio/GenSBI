@@ -1,0 +1,485 @@
+gensbi.experimental.models.pixeldit
+===================================
+
+.. py:module:: gensbi.experimental.models.pixeldit
+
+.. autoapi-nested-parse::
+
+   
+   PixelDiT: dual-level pixel-space DiT for conditional flow matching on 2D fields.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/experimental/models/pixeldit/blocks/index
+   /api/gensbi/experimental/models/pixeldit/embedders/index
+   /api/gensbi/experimental/models/pixeldit/model/index
+   /api/gensbi/experimental/models/pixeldit/modules/index
+   /api/gensbi/experimental/models/pixeldit/rope/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.pixeldit.MMDiTBlock
+   gensbi.experimental.models.pixeldit.PiTBlock
+   gensbi.experimental.models.pixeldit.PixelDiT
+   gensbi.experimental.models.pixeldit.PixelDiTParams
+
+
+Package Contents
+----------------
+
+.. py:class:: MMDiTBlock(hidden_size, num_heads, mlp_ratio = 4.0, *, zero_init = True, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Joint-attention MMDiT block with per-stream rope (ref lines 19-132).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, y, c, pe_x, pe_y=None)
+
+
+   .. py:method:: _qkv(qkv_lin, qk_norm, h, pe)
+
+      
+      Project, split heads, q/k-norm, and (optionally) apply per-stream rope.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: adaLN_x
+
+
+   .. py:attribute:: adaLN_y
+
+
+   .. py:attribute:: head_dim
+
+
+   .. py:attribute:: hidden_size
+
+
+   .. py:attribute:: mlp_x
+
+
+   .. py:attribute:: mlp_y
+
+
+   .. py:attribute:: norm_x1
+
+
+   .. py:attribute:: norm_x2
+
+
+   .. py:attribute:: norm_y1
+
+
+   .. py:attribute:: norm_y2
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: proj_x
+
+
+   .. py:attribute:: proj_y
+
+
+   .. py:attribute:: qk_norm_x
+
+
+   .. py:attribute:: qk_norm_y
+
+
+   .. py:attribute:: qkv_x
+
+
+   .. py:attribute:: qkv_y
+
+
+.. py:class:: PiTBlock(pixel_dim, context_dim, patch_size, attn_dim, num_heads, mlp_ratio = 4.0, post_modulation = False, *, zero_init = True, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Pixel-level DiT block: pixel-wise AdaLN + token compaction (ref
+   ``pixeldit_c2i.py:114-187``).
+
+   Operates on per-patch pixel tokens ``x`` of shape ``(B*L, p^2, D_pix)``
+   with per-patch conditioning ``s_cond`` of shape ``(B*L, D)``. The adaLN
+   projection maps ``D -> n_mod * D_pix * p^2`` and is reshaped to
+   ``(B*L, p^2, n_mod * D_pix)``, so every pixel in the patch receives its
+   own modulation parameters ("pixel-wise AdaLN").
+
+   Attention runs on *compacted* tokens: each patch's ``p^2 * D_pix`` pixels
+   are compressed to a single ``attn_dim`` token, attended globally over the
+   ``(B, L)`` patch grid with 2D rope, then expanded back. The attention
+   itself is flux1's :class:`SelfAttention`, which matches the reference
+   ``RotaryAttention`` (no-bias qkv, per-head RMSNorm on q/k, biased proj).
+
+   ``post_modulation`` selects the gate-free post-modulation variant
+   (``n_mod = 4``, chunk order ``scale1, shift1, scale2, shift2`` — scale
+   before shift, ref line 168). The default pre-variant uses the standard
+   six-chunk DiT order and is an exact identity at ``zero_init=True``; the
+   post variant is *not* (no gates close the residuals).
+
+   ``pe`` is the output of
+   ``precompute_freqs_cis_2d(attn_dim // num_heads, grid_h, grid_w, ...)``
+   over the patch grid, shape ``(1, 1, L, head_dim/2, 2, 2)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, s_cond, pe, batch)
+
+
+   .. py:attribute:: adaLN
+
+
+   .. py:attribute:: attn
+
+
+   .. py:attribute:: attn_dim
+
+
+   .. py:attribute:: compress
+
+
+   .. py:attribute:: expand
+
+
+   .. py:attribute:: mlp
+
+
+   .. py:attribute:: n_mod
+      :value: 4
+
+
+
+   .. py:attribute:: norm1
+
+
+   .. py:attribute:: norm2
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: pixel_dim
+
+
+   .. py:attribute:: post_modulation
+      :value: False
+
+
+
+.. py:class:: PixelDiT(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Dual-level pixel-space DiT for conditional flow matching on 2D fields.
+
+   Forward: ``(t, obs=field, cond) -> velocity field`` of the same shape.
+   Patch-level MMDiT blocks attend over patch tokens jointly with cond tokens,
+   producing per-patch conditioning ``s_cond``; pixel-level PiT blocks then
+   refine every pixel inside each patch under that conditioning.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, cond, obs_ids=None, cond_ids=None, conditioned=True, guidance=None)
+
+
+   .. py:attribute:: cond_dim
+
+
+   .. py:attribute:: cond_embedder
+
+
+   .. py:attribute:: cond_in_channels
+
+
+   .. py:attribute:: field_shape
+
+
+   .. py:attribute:: final_layer
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: param_dtype
+
+
+   .. py:attribute:: patch_blocks
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: pe_patch
+
+
+   .. py:attribute:: pe_pit
+
+
+   .. py:attribute:: pixel_blocks
+
+
+   .. py:attribute:: pixel_embedder
+
+
+   .. py:attribute:: s_embedder
+
+
+   .. py:attribute:: t_conditioner
+
+
+   .. py:attribute:: token_grid
+
+
+.. py:class:: PixelDiTParams
+
+   
+   Configuration for :class:`PixelDiT` (mirrors the style of ``FieldDiTParams``).
+
+   Note: ``rngs`` is a live ``nnx.Rngs`` stream (mirrors ``FieldDiTParams`` /
+   ``Flux1Params``). Constructing two models from the *same* params object
+   yields *different* weights, because the stream advances; build a fresh
+   ``PixelDiTParams`` (or a fresh ``nnx.Rngs(seed)``) per model for
+   reproducibility.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: cond_dim
+      :type:  int
+
+
+   .. py:attribute:: cond_id_embedding
+      :type:  str
+      :value: 'absolute'
+
+
+
+   .. py:attribute:: cond_in_channels
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: field_shape
+      :type:  Tuple[int, int]
+
+
+   .. py:attribute:: hidden_size
+      :type:  int
+      :value: 384
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: mlp_ratio
+      :type:  float
+      :value: 4.0
+
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+      :value: 6
+
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: patch_depth
+      :type:  int
+      :value: 6
+
+
+
+   .. py:attribute:: patch_size
+      :type:  int
+      :value: 4
+
+
+
+   .. py:attribute:: pit_post_modulation
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: pixel_attn_hidden_size
+      :type:  Optional[int]
+      :value: None
+
+
+
+   .. py:attribute:: pixel_depth
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: pixel_hidden_size
+      :type:  int
+      :value: 16
+
+
+
+   .. py:attribute:: pixel_num_heads
+      :type:  Optional[int]
+      :value: None
+
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: rope_scale
+      :type:  float
+      :value: 16.0
+
+
+
+   .. py:attribute:: theta
+      :type:  float
+      :value: 10000.0
+
+
+
+   .. py:attribute:: use_cond_rope
+      :type:  bool
+      :value: True
+
+
+
+   .. py:attribute:: use_pixel_abs_pos
+      :type:  bool
+      :value: True
+
+
+
+   .. py:attribute:: zero_init_blocks
+      :type:  bool
+      :value: True
+
+
+

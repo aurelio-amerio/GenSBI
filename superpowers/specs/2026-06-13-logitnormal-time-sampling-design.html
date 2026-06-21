@@ -1,0 +1,736 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Configurable training-time t sampling (logit-normal) + fixed-θ validation &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/specs/2026-06-13-logitnormal-time-sampling-design';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Configurable training-time <code class="docutils literal notranslate"><span class="pre">t</span></code> sampling (logit-normal) + fixed-θ validation</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="configurable-training-time-t-sampling-logit-normal-fixed-validation">
+<h1>Configurable training-time <code class="docutils literal notranslate"><span class="pre">t</span></code> sampling (logit-normal) + fixed-θ validation<a class="headerlink" href="#configurable-training-time-t-sampling-logit-normal-fixed-validation" title="Link to this heading">#</a></h1>
+<p>Date: 2026-06-13
+Status: Design approved (brainstorming), pending spec review
+Repos: <code class="docutils literal notranslate"><span class="pre">GenSBI</span></code> (library feature), <code class="docutils literal notranslate"><span class="pre">GenSBI-examples</span></code> (validation experiment)
+Branch: <code class="docutils literal notranslate"><span class="pre">FieldDiT</span></code></p>
+<section id="motivation">
+<h2>1. Motivation<a class="headerlink" href="#motivation" title="Link to this heading">#</a></h2>
+<p>The first PixelDiT training on GRF-32 (<code class="docutils literal notranslate"><span class="pre">config_4b</span></code>, 50k steps) produced near-white-noise
+samples with a flat radial power spectrum: the model learned the per-pixel <strong>1-point</strong>
+variance (a normalization) but not the <strong>2-point</strong> spatial correlation. Forward parity
+(3e-8 vs torch) and gate-2 (overfits a Nyquist-frequency checkerboard) rule out a code
+bug; the failure is consistent with under-training plus a stripped training recipe.</p>
+<p>One concrete, cheap, training-side lever the reference uses and the port dropped is the
+<strong>timestep distribution</strong>: the paper samples <code class="docutils literal notranslate"><span class="pre">t</span></code> from a logit-normal (SD3 / Esser et al.),
+GenSBI samples <code class="docutils literal notranslate"><span class="pre">t</span></code> uniformly (<code class="docutils literal notranslate"><span class="pre">flow_matching.py:129</span></code>). Logit-normal concentrates gradient
+signal on the mid-noise regime where structure forms, changing the <em>learned velocity
+field</em> (this is not a sampling-time speedup — it changes what the model learns).</p>
+<p>This spec adds a <strong>configurable training-time <code class="docutils literal notranslate"><span class="pre">t</span></code> distribution</strong> to the flow-matching
+method (default unchanged: uniform), exposes it via YAML for the experimental example
+configs, and defines a <strong>fixed-θ diagnostic run</strong> to test whether, with enough training,
+PixelDiT can learn a single GRF’s 2-point structure.</p>
+<p>Out of scope (explicitly deferred): inference-time “timeshift” / non-uniform ODE step
+grid. For a well-trained velocity field any monotonic time reparametrization integrates
+the same ODE to the same endpoint, so the sampling schedule is a discretization/step-count
+speedup, not a correctness lever. Defer until the model learns.</p>
+</section>
+<section id="part-1-library-feature-configurable-t-distribution">
+<h2>2. Part 1 — Library feature: configurable <code class="docutils literal notranslate"><span class="pre">t</span></code> distribution<a class="headerlink" href="#part-1-library-feature-configurable-t-distribution" title="Link to this heading">#</a></h2>
+<section id="new-pure-helper">
+<h3>2.1 New pure helper<a class="headerlink" href="#new-pure-helper" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">src/gensbi/core/time_sampling.py</span></code> (new):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sample_time</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="s2">&quot;uniform&quot;</span><span class="p">,</span> <span class="n">logitnorm_mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">logitnorm_std</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sample n training timesteps in (0, 1).</span>
+
+<span class="sd">    dist=&quot;uniform&quot;     -&gt; jax.random.uniform(key, (n,))  (bit-identical to the</span>
+<span class="sd">                          previous inline call; preserves all existing runs)</span>
+<span class="sd">    dist=&quot;logitnormal&quot; -&gt; sigmoid(logitnorm_mean + logitnorm_std * N(0,1))</span>
+<span class="sd">                          (SD3 / Esser et al.; concentrates mass near</span>
+<span class="sd">                          sigmoid(mean)). The reference&#39;s &quot;lognorm_t&quot; is a</span>
+<span class="sd">                          misnomer for this logit-normal sampler.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>Pure, isolated, independently unit-testable; placed in its own module so
+<code class="docutils literal notranslate"><span class="pre">score_matching</span></code> can reuse it later and <code class="docutils literal notranslate"><span class="pre">flow_matching.py</span></code> stays focused.</p>
+</section>
+<section id="flowmatchingmethod-changes">
+<h3>2.2 <code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod</span></code> changes<a class="headerlink" href="#flowmatchingmethod-changes" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">src/gensbi/core/flow_matching.py</span></code>:</p>
+<ul class="simple">
+<li><p>Constructor gains keyword-only params (defaults preserve current behavior):
+<code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod(prior=None,</span> <span class="pre">*,</span> <span class="pre">time_dist=&quot;uniform&quot;,</span> <span class="pre">logitnorm_mean=0.0,</span> <span class="pre">logitnorm_std=1.0)</span></code>.</p></li>
+<li><p>Validate <code class="docutils literal notranslate"><span class="pre">time_dist</span> <span class="pre">in</span> <span class="pre">{&quot;uniform&quot;,</span> <span class="pre">&quot;logitnormal&quot;}</span></code> in <code class="docutils literal notranslate"><span class="pre">__init__</span></code> (raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prepare_batch</span></code> replaces its <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span> <span class="pre">jax.random.uniform(rng_t,</span> <span class="pre">(n,))</span></code> line with
+<code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span> <span class="pre">sample_time(rng_t,</span> <span class="pre">n,</span> <span class="pre">dist=self.time_dist,</span> <span class="pre">logitnorm_mean=...,</span> <span class="pre">logitnorm_std=...)</span></code>.</p></li>
+</ul>
+<p>No changes to <code class="docutils literal notranslate"><span class="pre">FMLoss</span></code>, the path, the pipeline, the solver, or any model. Because
+<code class="docutils literal notranslate"><span class="pre">prepare_batch</span></code> is the single training-time <code class="docutils literal notranslate"><span class="pre">t</span></code> source for every flow-matching recipe
+(conditional, joint, unconditional), all of them gain the capability; with the uniform
+default, none of them change behavior.</p>
+</section>
+<section id="convention-must-be-correct">
+<h3>2.3 Convention (must be correct)<a class="headerlink" href="#convention-must-be-correct" title="Link to this heading">#</a></h3>
+<p>GenSBI’s affine path is <code class="docutils literal notranslate"><span class="pre">x_t</span> <span class="pre">=</span> <span class="pre">(1-t)·x_0</span> <span class="pre">+</span> <span class="pre">t·x_1</span></code> with <strong>t=1 → data, t=0 → noise</strong>, and
+the CondOT loss is <code class="docutils literal notranslate"><span class="pre">‖v</span> <span class="pre">−</span> <span class="pre">(x_1</span> <span class="pre">−</span> <span class="pre">x_0)‖²</span></code> with <strong>no <code class="docutils literal notranslate"><span class="pre">1/t</span></code> weighting</strong>. Therefore:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">logitnorm_mean=0.0</span></code> centers mass at <code class="docutils literal notranslate"><span class="pre">t=0.5</span></code> (mid-noise) — the desired default.</p></li>
+<li><p>positive mean biases toward clean data, negative toward noise.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">∈</span> <span class="pre">{0,</span> <span class="pre">1}</span></code> from sigmoid saturation is numerically safe (no singular weighting); no
+clamping is added.</p></li>
+</ul>
+</section>
+<section id="tests">
+<h3>2.4 Tests<a class="headerlink" href="#tests" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">tests/core/test_time_sampling.py</span></code> (new):</p>
+<ul class="simple">
+<li><p><strong>Regression:</strong> <code class="docutils literal notranslate"><span class="pre">sample_time(key,</span> <span class="pre">n,</span> <span class="pre">dist=&quot;uniform&quot;)</span></code> is bit-identical to
+<code class="docutils literal notranslate"><span class="pre">jax.random.uniform(key,</span> <span class="pre">(n,))</span></code> for a fixed key (guards existing runs).</p></li>
+<li><p><strong>logit-normal:</strong> empirical mean and a few quantiles match the analytic logit-normal
+for a couple of <code class="docutils literal notranslate"><span class="pre">(mean,</span> <span class="pre">std)</span></code> settings (loose statistical tolerance, fixed key); all
+samples strictly in <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1)</span></code>; deterministic for a fixed key; correct shape/dtype.</p></li>
+<li><p><strong>Validation:</strong> unknown <code class="docutils literal notranslate"><span class="pre">dist</span></code> raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
+<li><p><strong>Method-level:</strong> <code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod()</span></code> (default) <code class="docutils literal notranslate"><span class="pre">prepare_batch</span></code> output is unchanged
+vs. the pre-change behavior; <code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod(time_dist=&quot;logitnormal&quot;)</span></code> produces the
+logit-normal distribution.</p></li>
+</ul>
+</section>
+</section>
+<section id="part-2-validation-experiment-fixed-100k-diagnostic-grf-32">
+<h2>3. Part 2 — Validation experiment: fixed-θ 100k diagnostic (GRF-32)<a class="headerlink" href="#part-2-validation-experiment-fixed-100k-diagnostic-grf-32" title="Link to this heading">#</a></h2>
+<p>Goal: isolate “can PixelDiT learn a single GRF’s 2-point structure with enough training”
+from “can it generalize across θ”. If yes → under-training/recipe was the issue and the
+path forward is scale + logit-normal. If P(k) stays flat after 100k fixed-θ steps → the
+problem is deeper (architecture for this ≤256² regime) and we reconsider PixelDiT vs
+FieldDiT.</p>
+<p><strong>Honest caveat (record in run notes):</strong> with θ fixed the cond input is constant, so this
+run does <strong>not</strong> test conditioning — the model can ignore <code class="docutils literal notranslate"><span class="pre">cond</span></code> and learn the marginal at
+that θ. That is intentional; it tests generative/2-point capacity only.</p>
+<section id="new-training-script">
+<h3>3.1 New training script<a class="headerlink" href="#new-training-script" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">examples/sbi-benchmarks/gaussian_random_field/train-grf-fixedtheta.py</span></code> (new):</p>
+<ul class="simple">
+<li><p>Reuses the existing example’s helpers (<code class="docutils literal notranslate"><span class="pre">radial_power_spectrum</span></code>, <code class="docutils literal notranslate"><span class="pre">plot_losses</span></code>,
+<code class="docutils literal notranslate"><span class="pre">plot_power_spectra</span></code>, <code class="docutils literal notranslate"><span class="pre">swap_obs_cond</span></code>, <code class="docutils literal notranslate"><span class="pre">resolve_model_section</span></code>, <code class="docutils literal notranslate"><span class="pre">build_model</span></code>). Prefer
+importing them by factoring the shared helpers into a small <code class="docutils literal notranslate"><span class="pre">grf_common.py</span></code> module in
+the same directory (the current <code class="docutils literal notranslate"><span class="pre">train-grf.py</span></code> cannot be imported directly — its name
+contains a dash); duplicating the few helpers is an acceptable fallback if factoring
+proves noisy. Resolve at implementation time.</p></li>
+<li><p><strong>Fixed-θ data:</strong> draw one θ (configurable — see config) once, hold it constant, and
+generate fresh GRF realizations each batch via the task’s simulator. Implement as a thin
+loader wrapper in the script over the existing <code class="docutils literal notranslate"><span class="pre">OnlineTaskDataset</span></code> machinery
+(<code class="docutils literal notranslate"><span class="pre">task.get_prior</span></code> → replace with the constant θ broadcast to <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>; <code class="docutils literal notranslate"><span class="pre">simulator</span></code>
+unchanged). Do <strong>not</strong> modify <code class="docutils literal notranslate"><span class="pre">sbibm-jax</span></code>. Validation loader serves the same fixed-θ
+stream.</p></li>
+<li><p>Trains for <strong>100,000 steps</strong> (from config). Uses the new <code class="docutils literal notranslate"><span class="pre">time_sampling</span></code> knob (logit-
+normal) wired through <code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod</span></code> exactly as in §4 (Wiring).</p></li>
+<li><p>After training: sample N fields at the fixed θ; write the loss curve and a P(k) overlay
+(truth at that θ vs. sample mean ± σ) plus a small truth-vs-samples field grid, to
+<code class="docutils literal notranslate"><span class="pre">imgs/</span></code> with a distinct experiment suffix. The P(k) overlay is the decisive plot.</p></li>
+<li><p>Checkpoints route to <code class="docutils literal notranslate"><span class="pre">checkpoints_pixeldit/</span></code> (already wired) under the new
+<code class="docutils literal notranslate"><span class="pre">experiment_id</span></code>, so it never collides with the conditional runs.</p></li>
+</ul>
+</section>
+<section id="new-config">
+<h3>3.2 New config<a class="headerlink" href="#new-config" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">examples/sbi-benchmarks/gaussian_random_field/config/config_4f.yaml</span></code> (new; <code class="docutils literal notranslate"><span class="pre">4f</span></code> =
+“4b fixed-θ”):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pixeldit:</span></code> section copied from <code class="docutils literal notranslate"><span class="pre">config_4b.yaml</span></code> (same architecture).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time_sampling:</span></code> block: <code class="docutils literal notranslate"><span class="pre">dist:</span> <span class="pre">logitnormal</span></code>, <code class="docutils literal notranslate"><span class="pre">logitnorm_mean:</span> <span class="pre">0.0</span></code>, <code class="docutils literal notranslate"><span class="pre">logitnorm_std:</span> <span class="pre">1.0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">training:</span></code> <code class="docutils literal notranslate"><span class="pre">nsteps:</span> <span class="pre">100000</span></code>, <code class="docutils literal notranslate"><span class="pre">experiment_id:</span> <span class="pre">&lt;distinct,</span> <span class="pre">e.g.</span> <span class="pre">41&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">train_model:</span> <span class="pre">true</span></code>,
+<code class="docutils literal notranslate"><span class="pre">restore_model:</span> <span class="pre">false</span></code>, otherwise mirror <code class="docutils literal notranslate"><span class="pre">config_4b</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fixed_theta:</span></code> the held-constant θ. Choose a θ with clear spatial structure so the 2-point
+signal is visually obvious (e.g. a moderately smooth case, <code class="docutils literal notranslate"><span class="pre">alpha</span> <span class="pre">≈</span> <span class="pre">2.5–4</span></code>). Specify as
+raw <code class="docutils literal notranslate"><span class="pre">[log_std,</span> <span class="pre">alpha]</span></code> (the script normalizes it for the model and for the loader’s
+simulator call). Configurable.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sampling:</span></code> reuse <code class="docutils literal notranslate"><span class="pre">nsamples</span></code>, <code class="docutils literal notranslate"><span class="pre">step_size</span></code>; <code class="docutils literal notranslate"><span class="pre">num_thetas</span></code> is effectively 1 (the fixed θ).</p></li>
+</ul>
+</section>
+<section id="yaml-schema-for-time-sampling-shared-with-part-4">
+<h3>3.3 YAML schema for <code class="docutils literal notranslate"><span class="pre">time_sampling</span></code> (shared with Part 4)<a class="headerlink" href="#yaml-schema-for-time-sampling-shared-with-part-4" title="Link to this heading">#</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">time_sampling</span><span class="p">:</span><span class="w">           </span><span class="c1"># optional; omit -&gt; uniform (backward compatible)</span>
+<span class="w">  </span><span class="nt">dist</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">logitnormal</span><span class="w">      </span><span class="c1"># uniform (default) | logitnormal</span>
+<span class="w">  </span><span class="nt">logitnorm_mean</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span><span class="w">    </span><span class="c1"># median t = sigmoid(mean); 0.0 -&gt; 0.5</span>
+<span class="w">  </span><span class="nt">logitnorm_std</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</pre></div>
+</div>
+</section>
+<section id="condor-submission-final-step">
+<h3>3.4 Condor submission (final step)<a class="headerlink" href="#condor-submission-final-step" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">GenSBI-examples/sub/train_model_grf_PixelDiT_fixedtheta.sub</span></code> (new), modeled on
+<code class="docutils literal notranslate"><span class="pre">train_model_grf_PixelDiT.sub</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">version</span> <span class="pre">=</span> <span class="pre">4f</span></code>, <code class="docutils literal notranslate"><span class="pre">script_path</span> <span class="pre">=</span> <span class="pre">train-grf-fixedtheta.py</span></code>, same <code class="docutils literal notranslate"><span class="pre">workdir</span></code>, resources
+(32 GB, 8 CPUs, 1 A100), <code class="docutils literal notranslate"><span class="pre">getenv</span> <span class="pre">=</span> <span class="pre">True</span></code>, logs keyed by experiment/version.</p></li>
+<li><p><strong>Final action:</strong> submit it (<code class="docutils literal notranslate"><span class="pre">condor_submit</span> <span class="pre">train_model_grf_PixelDiT_fixedtheta.sub</span></code>)
+and report the job id. This is a real cluster submission — confirm with the user before
+firing, and report the outcome faithfully.</p></li>
+</ul>
+</section>
+<section id="optional-a-b-note-not-a-required-deliverable">
+<h3>3.5 Optional A/B (note, not a required deliverable)<a class="headerlink" href="#optional-a-b-note-not-a-required-deliverable" title="Link to this heading">#</a></h3>
+<p>For clean attribution of any improvement specifically to logit-normal, an otherwise-
+identical <code class="docutils literal notranslate"><span class="pre">dist:</span> <span class="pre">uniform</span></code> fixed-θ run can be submitted alongside. Mention to the user;
+do not run unless requested.</p>
+</section>
+</section>
+<section id="wiring-time-sampling-into-the-existing-scripts">
+<h2>4. Wiring <code class="docutils literal notranslate"><span class="pre">time_sampling</span></code> into the existing scripts<a class="headerlink" href="#wiring-time-sampling-into-the-existing-scripts" title="Link to this heading">#</a></h2>
+<p>Both <code class="docutils literal notranslate"><span class="pre">train-grf.py</span></code> (32² and 256²) and the new fixed-θ script read
+<code class="docutils literal notranslate"><span class="pre">ts</span> <span class="pre">=</span> <span class="pre">cfg.get(&quot;time_sampling&quot;,</span> <span class="pre">{})</span></code> and construct:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">method</span> <span class="o">=</span> <span class="n">FlowMatchingMethod</span><span class="p">(</span>
+    <span class="n">time_dist</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dist&quot;</span><span class="p">,</span> <span class="s2">&quot;uniform&quot;</span><span class="p">),</span>
+    <span class="n">logitnorm_mean</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;logitnorm_mean&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+    <span class="n">logitnorm_std</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;logitnorm_std&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Configs without the block are unchanged (uniform). This is the only edit to the existing
+<code class="docutils literal notranslate"><span class="pre">train-grf.py</span></code> scripts for Part 1.</p>
+</section>
+<section id="files-touched">
+<h2>5. Files touched<a class="headerlink" href="#files-touched" title="Link to this heading">#</a></h2>
+<p>GenSBI (library):</p>
+<ul class="simple">
+<li><p>New: <code class="docutils literal notranslate"><span class="pre">src/gensbi/core/time_sampling.py</span></code>, <code class="docutils literal notranslate"><span class="pre">tests/core/test_time_sampling.py</span></code></p></li>
+<li><p>Edit: <code class="docutils literal notranslate"><span class="pre">src/gensbi/core/flow_matching.py</span></code> (ctor + <code class="docutils literal notranslate"><span class="pre">prepare_batch</span></code>)</p></li>
+</ul>
+<p>GenSBI-examples (experiment):</p>
+<ul class="simple">
+<li><p>New: <code class="docutils literal notranslate"><span class="pre">examples/sbi-benchmarks/gaussian_random_field/train-grf-fixedtheta.py</span></code></p></li>
+<li><p>New: <code class="docutils literal notranslate"><span class="pre">examples/sbi-benchmarks/gaussian_random_field/config/config_4f.yaml</span></code></p></li>
+<li><p>New: <code class="docutils literal notranslate"><span class="pre">sub/train_model_grf_PixelDiT_fixedtheta.sub</span></code></p></li>
+<li><p>Edit: both <code class="docutils literal notranslate"><span class="pre">train-grf.py</span></code> scripts (read <code class="docutils literal notranslate"><span class="pre">time_sampling</span></code> block → <code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod</span></code>)</p></li>
+<li><p>Edit (opt-in): add <code class="docutils literal notranslate"><span class="pre">time_sampling:</span></code> to PixelDiT conditional configs (<code class="docutils literal notranslate"><span class="pre">config_4b</span></code>,
+<code class="docutils literal notranslate"><span class="pre">config_6b</span></code>) if/when we want logit-normal on the full conditional runs too.</p></li>
+<li><p>Possibly new: <code class="docutils literal notranslate"><span class="pre">grf_common.py</span></code> (shared helpers) if factoring is chosen over duplication.</p></li>
+</ul>
+</section>
+<section id="success-criteria">
+<h2>6. Success criteria<a class="headerlink" href="#success-criteria" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Part 1: uniform default provably bit-identical (regression test green); logit-normal
+produces the correct distribution; full suite stays green.</p></li>
+<li><p>Part 2: the fixed-θ 100k run completes; the decisive read is its P(k) overlay —
+<strong>success</strong> = sample P(k) develops low-k power matching the truth at the fixed θ
+(2-point structure learned); <strong>failure</strong> = P(k) still flat (escalate: architecture/
+regime, reconsider PixelDiT vs FieldDiT at ≤256²).</p></li>
+</ul>
+</section>
+<section id="decisions-deferred-to-implementation-planning-prototype-restraint">
+<h2>7. Decisions deferred to implementation (planning-prototype-restraint)<a class="headerlink" href="#decisions-deferred-to-implementation-planning-prototype-restraint" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Whether to factor <code class="docutils literal notranslate"><span class="pre">grf_common.py</span></code> vs. duplicate the handful of plotting helpers.</p></li>
+<li><p>Exact <code class="docutils literal notranslate"><span class="pre">experiment_id</span></code> value for the fixed-θ run.</p></li>
+<li><p>Exact fixed-θ value (a structurally-clear case) and whether it is drawn from the prior
+or hard-set in the config.</p></li>
+<li><p>Precise form of the fixed-θ loader wrapper (inline generator vs. small class).</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#motivation">1. Motivation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-1-library-feature-configurable-t-distribution">2. Part 1 — Library feature: configurable <code class="docutils literal notranslate"><span class="pre">t</span></code> distribution</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#new-pure-helper">2.1 New pure helper</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#flowmatchingmethod-changes">2.2 <code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod</span></code> changes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#convention-must-be-correct">2.3 Convention (must be correct)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tests">2.4 Tests</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#part-2-validation-experiment-fixed-100k-diagnostic-grf-32">3. Part 2 — Validation experiment: fixed-θ 100k diagnostic (GRF-32)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#new-training-script">3.1 New training script</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#new-config">3.2 New config</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#yaml-schema-for-time-sampling-shared-with-part-4">3.3 YAML schema for <code class="docutils literal notranslate"><span class="pre">time_sampling</span></code> (shared with Part 4)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#condor-submission-final-step">3.4 Condor submission (final step)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#optional-a-b-note-not-a-required-deliverable">3.5 Optional A/B (note, not a required deliverable)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#wiring-time-sampling-into-the-existing-scripts">4. Wiring <code class="docutils literal notranslate"><span class="pre">time_sampling</span></code> into the existing scripts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#files-touched">5. Files touched</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#success-criteria">6. Success criteria</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#decisions-deferred-to-implementation-planning-prototype-restraint">7. Decisions deferred to implementation (planning-prototype-restraint)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

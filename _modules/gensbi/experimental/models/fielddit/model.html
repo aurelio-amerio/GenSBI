@@ -1,0 +1,1287 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gensbi.experimental.models.fielddit.model &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/experimental/models/fielddit/model';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../../../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../../../_static/searchtools.js"></script>
+    <script src="../../../../../_static/language_data.js"></script>
+    <script src="../../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../../gensbi.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.experimental.models.fielddit.model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for gensbi.experimental.models.fielddit.model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;FieldDiT config and assembly.</span>
+
+<span class="sd">FieldDiT = conv U-Net (ObsEncoder/ObsDecoder) with an MMDiT transformer</span>
+<span class="sd">bottleneck, for conditional pixel-space flow matching on 2D fields.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_ids_1d</span><span class="p">,</span> <span class="n">init_ids_2d</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.flux1.layers</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPEmbedder</span><span class="p">,</span> <span class="n">timestep_embedding</span><span class="p">,</span> <span class="n">Identity</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.fielddit.codec</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ObsEncoder</span><span class="p">,</span>
+    <span class="n">ObsDecoder</span><span class="p">,</span>
+    <span class="n">Tokenizer</span><span class="p">,</span>
+    <span class="n">Untokenizer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.fielddit.cond</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScalarCondEmbedder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.fielddit.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">MMDiTCore</span>
+
+
+<div class="viewcode-block" id="RopeIds">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.RopeIds">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RopeIds</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Variable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Integer rope/positional id buffers.</span>
+
+<span class="sd">    A dedicated Variable type so the ids are (a) filterable with</span>
+<span class="sd">    ``nnx.state(model, RopeIds)``, (b) excluded from ``nnx.Param`` state, and</span>
+<span class="sd">    (c) safe from blanket float-dtype casts applied to the parameter state.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<span class="nd">@dataclass</span>
+<div class="viewcode-block" id="FieldDiTParams">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.fielddit.FieldDiTParams">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FieldDiTParams</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for :class:`FieldDiT` (mirrors the style of ``Flux1Params``).</span>
+
+<span class="sd">    The meeting-grid token count is **derived** from ``field_shape``,</span>
+<span class="sd">    ``encoder_widths`` (depth) and ``patch_size`` — it is not prescribed:</span>
+<span class="sd">    ``tokens = (H / (2**D * p)) * (W / (2**D * p))`` with ``D = len(encoder_widths) - 1``.</span>
+
+<span class="sd">    Note: ``rngs`` is a live ``nnx.Rngs`` stream (mirrors ``Flux1Params``).</span>
+<span class="sd">    Constructing two models from the *same* params object yields *different*</span>
+<span class="sd">    weights, because the stream advances; build a fresh ``FieldDiTParams``</span>
+<span class="sd">    (or a fresh ``nnx.Rngs(seed)``) per model for reproducibility.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FieldDiTParams.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.in_channels">[docs]</a>
+    <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.field_shape">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.field_shape">[docs]</a>
+    <span class="n">field_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.encoder_widths">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.encoder_widths">[docs]</a>
+    <span class="n">encoder_widths</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.cond_dim">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.cond_dim">[docs]</a>
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.rngs">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.rngs">[docs]</a>
+    <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.cond_in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.cond_in_channels">[docs]</a>
+    <span class="n">cond_in_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.res_blocks_down">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.res_blocks_down">[docs]</a>
+    <span class="n">res_blocks_down</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.res_blocks_up">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.res_blocks_up">[docs]</a>
+    <span class="n">res_blocks_up</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.patch_size">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.patch_size">[docs]</a>
+    <span class="n">patch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.num_heads">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.num_heads">[docs]</a>
+    <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.axes_dim">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.axes_dim">[docs]</a>
+    <span class="n">axes_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.mlp_ratio">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.mlp_ratio">[docs]</a>
+    <span class="n">mlp_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">4.0</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.depth">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.depth">[docs]</a>
+    <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.depth_single_blocks">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.depth_single_blocks">[docs]</a>
+    <span class="n">depth_single_blocks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.qkv_bias">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.qkv_bias">[docs]</a>
+    <span class="n">qkv_bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.theta">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.theta">[docs]</a>
+    <span class="n">theta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># None -&gt; min(10 * (n_obs_tokens + cond_dim), 10_000)</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.use_cond_summary_in_vec">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.use_cond_summary_in_vec">[docs]</a>
+    <span class="n">use_cond_summary_in_vec</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.cond_modulates_encoder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.cond_modulates_encoder">[docs]</a>
+    <span class="n">cond_modulates_encoder</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># ON: encoder gets the full vec (symmetric with decoder); OFF: time-only encoder, shareable across CFG branches</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.norm_groups">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.norm_groups">[docs]</a>
+    <span class="n">norm_groups</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.guidance_embed">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.guidance_embed">[docs]</a>
+    <span class="n">guidance_embed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.vec_in_dim">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.vec_in_dim">[docs]</a>
+    <span class="n">vec_in_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># input dim for guidance MLP (required iff guidance_embed=True)</span></div>
+
+<div class="viewcode-block" id="FieldDiTParams.param_dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.param_dtype">[docs]</a>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
+
+
+<div class="viewcode-block" id="FieldDiTParams.__post_init__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.__post_init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># (semantic, h, w) split of the rope head dims. In Phase 1 the</span>
+            <span class="c1"># semantic axis is identical (unrotated) for every token: obs uses</span>
+            <span class="c1"># semantic_id=0 and cond tokens use learned absolute embeddings</span>
+            <span class="c1"># with zero rope ids — benign, the same situation as Flux1</span>
+            <span class="c1"># txt/img. The semantic-dim budget and the 1D/2D id axis-order</span>
+            <span class="c1"># unification are revisited wholesale in the Phase-2</span>
+            <span class="c1"># co-tokenization design (see the 2026-06-10 phase-1.5 spec §2.6).</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">24</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;axes_dim must have 3 entries (semantic, h, w)&quot;</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;each axes_dim entry must be even for rope, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth_levels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder_widths</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span>
+        <span class="n">factor</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_levels</span>
+        <span class="k">assert</span> <span class="n">H</span> <span class="o">%</span> <span class="n">factor</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">W</span> <span class="o">%</span> <span class="n">factor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;field_shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span><span class="si">}</span><span class="s2"> must be divisible by 2**D=</span><span class="si">{</span><span class="n">factor</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feat_h</span> <span class="o">=</span> <span class="n">H</span> <span class="o">//</span> <span class="n">factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feat_w</span> <span class="o">=</span> <span class="n">W</span> <span class="o">//</span> <span class="n">factor</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">feat_h</span> <span class="o">%</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">feat_w</span> <span class="o">%</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;meeting grid (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">feat_h</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">feat_w</span><span class="si">}</span><span class="s2">) must be divisible by patch_size </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feat_h</span> <span class="o">//</span> <span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">feat_w</span> <span class="o">//</span> <span class="n">p</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_obs_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># rule of thumb: 10x the joint token count, capped at the</span>
+            <span class="c1"># literature default; rope frequency coverage then matches the</span>
+            <span class="c1"># actual grid instead of assuming ~10k positions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_obs_tokens</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">),</span> <span class="mi">10_000</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FieldDiT">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.fielddit.FieldDiT">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FieldDiT</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Conditional flow-matching network for 2D fields (pixel space).</span>
+
+<span class="sd">    Forward: ``(t, obs=field, cond) -&gt; velocity field`` of the same shape. The</span>
+<span class="sd">    conv encoder is modulated by time only (or by the full ``vec`` when</span>
+<span class="sd">    ``cond_modulates_encoder=True``); the decoder and the MMDiT core are</span>
+<span class="sd">    modulated by ``vec = time (+ cond summary if flagged-C) (+ guidance)``. The</span>
+<span class="sd">    meeting-grid rope2d obs ids and absolute cond ids are built internally.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">FieldDiTParams</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="n">hid</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">hidden_size</span>
+
+<div class="viewcode-block" id="FieldDiT.encoder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.encoder">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">ObsEncoder</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">encoder_widths</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">res_blocks_down</span><span class="p">,</span>
+            <span class="n">vec_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">norm_groups</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">norm_groups</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+        <span class="n">c_bottleneck</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">encoder_widths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<div class="viewcode-block" id="FieldDiT.tokenizer">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.tokenizer">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span>
+            <span class="n">c_bottleneck</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FieldDiT.cond_embedder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.cond_embedder">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_embedder</span> <span class="o">=</span> <span class="n">ScalarCondEmbedder</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FieldDiT.core">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.core">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">core</span> <span class="o">=</span> <span class="n">MMDiTCore</span><span class="p">(</span>
+            <span class="n">hid</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">mlp_ratio</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">depth_single_blocks</span><span class="p">,</span>
+            <span class="n">axes_dim</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">n_cond_tokens</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span>
+            <span class="n">qkv_bias</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">qkv_bias</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FieldDiT.untokenizer">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.untokenizer">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">untokenizer</span> <span class="o">=</span> <span class="n">Untokenizer</span><span class="p">(</span>
+            <span class="n">c_bottleneck</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FieldDiT.decoder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.decoder">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">ObsDecoder</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">encoder_widths</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">res_blocks_up</span><span class="p">,</span>
+            <span class="n">vec_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">norm_groups</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">norm_groups</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FieldDiT.time_in">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.time_in">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_in</span> <span class="o">=</span> <span class="n">MLPEmbedder</span><span class="p">(</span>
+            <span class="n">in_dim</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
+
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">guidance_embed</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">p</span><span class="o">.</span><span class="n">vec_in_dim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;vec_in_dim required when guidance_embed=True&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">guidance_in</span> <span class="o">=</span> <span class="n">MLPEmbedder</span><span class="p">(</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">vec_in_dim</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">guidance_in</span> <span class="o">=</span> <span class="n">Identity</span><span class="p">()</span>
+
+        <span class="c1"># static primitives needed at call time (the dataclass itself is NOT</span>
+        <span class="c1"># stored: it holds Rngs/derived arrays and would poison the GraphDef)</span>
+<div class="viewcode-block" id="FieldDiT.field_shape">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.field_shape">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">field_shape</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FieldDiT.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.in_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span></div>
+
+<div class="viewcode-block" id="FieldDiT.cond_dim">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.cond_dim">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">cond_dim</span></div>
+
+<div class="viewcode-block" id="FieldDiT.use_cond_summary_in_vec">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.use_cond_summary_in_vec">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_cond_summary_in_vec</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">use_cond_summary_in_vec</span></div>
+
+<div class="viewcode-block" id="FieldDiT.cond_modulates_encoder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.cond_modulates_encoder">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_modulates_encoder</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">cond_modulates_encoder</span></div>
+
+<div class="viewcode-block" id="FieldDiT.guidance_embed">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.guidance_embed">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guidance_embed</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">guidance_embed</span></div>
+
+<div class="viewcode-block" id="FieldDiT.param_dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.param_dtype">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span></div>
+
+<div class="viewcode-block" id="FieldDiT.token_grid">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.token_grid">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">token_grid</span><span class="p">)</span></div>
+
+
+        <span class="c1"># rope id buffers (int32) — built here, kept out of Param state</span>
+        <span class="n">obs_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_2d</span><span class="p">((</span><span class="n">p</span><span class="o">.</span><span class="n">feat_h</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">feat_w</span><span class="p">),</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">patch_size</span><span class="p">)</span>
+        <span class="n">cond_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="viewcode-block" id="FieldDiT.obs_ids">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.obs_ids">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span> <span class="o">=</span> <span class="n">RopeIds</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FieldDiT.cond_ids">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.cond_ids">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span> <span class="o">=</span> <span class="n">RopeIds</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FieldDiT.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/index.html#gensbi.experimental.models.fielddit.FieldDiT.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">t</span><span class="p">,</span>
+        <span class="n">obs</span><span class="p">,</span>
+        <span class="n">cond</span><span class="p">,</span>
+        <span class="n">obs_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>      <span class="c1"># accepted &amp; ignored (ids built internally)</span>
+        <span class="n">cond_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>     <span class="c1"># accepted &amp; ignored</span>
+        <span class="n">conditioned</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># only True supported (CFG/null-cond is deferred)</span>
+        <span class="n">guidance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">conditioned</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;FieldDiT has no unconditional path yet (CFG / null-conditioning &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;is deferred work); got conditioned=</span><span class="si">{</span><span class="n">conditioned</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;obs must be rank-4 (B, H, W, C), got rank </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2"> with shape </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;obs spatial shape </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2"> does not match &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;field_shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;obs has </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> channels, expected in_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># timestep sinusoid in f32 (bf16 t quantizes t*1000 to ~2.0 ulp);</span>
+        <span class="c1"># cast only the finished embedding to the model dtype</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">time_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_in</span><span class="p">(</span>
+            <span class="n">timestep_embedding</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="p">)</span>  <span class="c1"># (B, hidden)</span>
+
+        <span class="n">cond_tokens</span><span class="p">,</span> <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_embedder</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>  <span class="c1"># (B, k, hidden), (B, hidden)</span>
+        <span class="k">assert</span> <span class="n">cond_tokens</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;cond has </span><span class="si">{</span><span class="n">cond_tokens</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> tokens but cond_dim=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">vec</span> <span class="o">=</span> <span class="n">time_vec</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cond_summary_in_vec</span><span class="p">:</span>
+            <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">+</span> <span class="n">summary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">guidance_embed</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">guidance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;guidance required when guidance_embed=True&quot;</span><span class="p">)</span>
+            <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">guidance_in</span><span class="p">(</span><span class="n">guidance</span><span class="p">)</span>
+
+        <span class="n">enc_vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_modulates_encoder</span> <span class="k">else</span> <span class="n">time_vec</span>
+        <span class="n">feat</span><span class="p">,</span> <span class="n">pos_skips</span><span class="p">,</span> <span class="n">neg_skips</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">enc_vec</span><span class="p">)</span>
+        <span class="n">obs_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+        <span class="n">obs_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">core</span><span class="p">(</span>
+            <span class="n">obs_tokens</span><span class="p">,</span> <span class="n">cond_tokens</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">feat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">untokenizer</span><span class="p">(</span><span class="n">obs_tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">feat</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">pos_skips</span><span class="p">,</span> <span class="n">neg_skips</span><span class="p">)</span>          <span class="c1"># time + cond modulation</span>
+        <span class="k">return</span> <span class="n">v</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

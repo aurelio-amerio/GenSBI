@@ -1,0 +1,1338 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gensbi.experimental.models.pixeldit.model &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/experimental/models/pixeldit/model';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../../../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../../../_static/searchtools.js"></script>
+    <script src="../../../../../_static/language_data.js"></script>
+    <script src="../../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../../gensbi.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.experimental.models.pixeldit.model</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for gensbi.experimental.models.pixeldit.model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;PixelDiT config and assembly.</span>
+
+<span class="sd">PixelDiT = dual-level pixel-space DiT: a patch-level MMDiT transformer over</span>
+<span class="sd">patch tokens (with joint cond attention) feeds per-patch conditioning into a</span>
+<span class="sd">pixel-level PiT stack that refines every pixel inside each patch, for</span>
+<span class="sd">conditional pixel-space flow matching on 2D fields.</span>
+
+<span class="sd">Faithful port of ``reference/PixelDiT/pixdit_core/pixeldit_t2i.py`` (cond enters</span>
+<span class="sd">via tokens only; ``c = silu(t_emb)``), minus repa / attention-mask / ``s``</span>
+<span class="sd">caching (YAGNI).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.pixeldit.modules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Buffer</span><span class="p">,</span>
+    <span class="n">FinalLayer</span><span class="p">,</span>
+    <span class="n">TimestepConditioner</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.pixeldit.embedders</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CondTokenEmbedder</span><span class="p">,</span>
+    <span class="n">PatchTokenEmbedder</span><span class="p">,</span>
+    <span class="n">PixelTokenEmbedder</span><span class="p">,</span>
+    <span class="n">patchify</span><span class="p">,</span>
+    <span class="n">unpatchify</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.pixeldit.blocks</span><span class="w"> </span><span class="kn">import</span> <span class="n">MMDiTBlock</span><span class="p">,</span> <span class="n">PiTBlock</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.models.pixeldit.rope</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">precompute_freqs_cis_1d</span><span class="p">,</span>
+    <span class="n">precompute_freqs_cis_2d</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<div class="viewcode-block" id="PixelDiTParams">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PixelDiTParams</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for :class:`PixelDiT` (mirrors the style of ``FieldDiTParams``).</span>
+
+<span class="sd">    Note: ``rngs`` is a live ``nnx.Rngs`` stream (mirrors ``FieldDiTParams`` /</span>
+<span class="sd">    ``Flux1Params``). Constructing two models from the *same* params object</span>
+<span class="sd">    yields *different* weights, because the stream advances; build a fresh</span>
+<span class="sd">    ``PixelDiTParams`` (or a fresh ``nnx.Rngs(seed)``) per model for</span>
+<span class="sd">    reproducibility.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PixelDiTParams.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.in_channels">[docs]</a>
+    <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.field_shape">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.field_shape">[docs]</a>
+    <span class="n">field_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.cond_dim">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.cond_dim">[docs]</a>
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.rngs">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.rngs">[docs]</a>
+    <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.cond_in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.cond_in_channels">[docs]</a>
+    <span class="n">cond_in_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.patch_size">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.patch_size">[docs]</a>
+    <span class="n">patch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.hidden_size">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.hidden_size">[docs]</a>
+    <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">384</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.pixel_hidden_size">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.pixel_hidden_size">[docs]</a>
+    <span class="n">pixel_hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.patch_depth">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.patch_depth">[docs]</a>
+    <span class="n">patch_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.pixel_depth">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.pixel_depth">[docs]</a>
+    <span class="n">pixel_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.num_heads">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.num_heads">[docs]</a>
+    <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.pixel_attn_hidden_size">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.pixel_attn_hidden_size">[docs]</a>
+    <span class="n">pixel_attn_hidden_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>   <span class="c1"># None -&gt; hidden_size</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.pixel_num_heads">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.pixel_num_heads">[docs]</a>
+    <span class="n">pixel_num_heads</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>           <span class="c1"># None -&gt; num_heads</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.mlp_ratio">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.mlp_ratio">[docs]</a>
+    <span class="n">mlp_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">4.0</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.cond_id_embedding">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.cond_id_embedding">[docs]</a>
+    <span class="n">cond_id_embedding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;absolute&quot;</span>             <span class="c1"># {&quot;absolute&quot;, &quot;pos1d&quot;, &quot;none&quot;}</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.use_cond_rope">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.use_cond_rope">[docs]</a>
+    <span class="n">use_cond_rope</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>                      <span class="c1"># reference-faithful default; False for unordered theta</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.use_pixel_abs_pos">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.use_pixel_abs_pos">[docs]</a>
+    <span class="n">use_pixel_abs_pos</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.pit_post_modulation">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.pit_post_modulation">[docs]</a>
+    <span class="n">pit_post_modulation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.zero_init_blocks">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.zero_init_blocks">[docs]</a>
+    <span class="n">zero_init_blocks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>                   <span class="c1"># c2i recipe; False = t2i recipe (final layer still zero)</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.rope_scale">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.rope_scale">[docs]</a>
+    <span class="n">rope_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">16.0</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.theta">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.theta">[docs]</a>
+    <span class="n">theta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10_000.0</span></div>
+
+<div class="viewcode-block" id="PixelDiTParams.param_dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.param_dtype">[docs]</a>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
+
+
+<div class="viewcode-block" id="PixelDiTParams.__post_init__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiTParams.__post_init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span>
+        <span class="k">assert</span> <span class="n">H</span> <span class="o">%</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;field_shape H=</span><span class="si">{</span><span class="n">H</span><span class="si">}</span><span class="s2"> must be divisible by patch_size </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">W</span> <span class="o">%</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;field_shape W=</span><span class="si">{</span><span class="n">W</span><span class="si">}</span><span class="s2"> must be divisible by patch_size </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hidden_size </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="si">}</span><span class="s2"> must be divisible by num_heads </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_attn_hidden_size</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pixel_attn_hidden_size</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_attn_hidden_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_num_heads</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pixel_num_heads</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_num_heads</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_attn_hidden_size</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_num_heads</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;pixel_attn_hidden_size </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_attn_hidden_size</span><span class="si">}</span><span class="s2"> must be &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;divisible by pixel_num_heads </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_num_heads</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">patch_head_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span>
+        <span class="n">pixel_head_dim</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_attn_hidden_size</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_pixel_num_heads</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">patch_head_dim</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;patch head dim </span><span class="si">{</span><span class="n">patch_head_dim</span><span class="si">}</span><span class="s2"> must be divisible by 4 (2D rope needs dim/4 freqs)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">pixel_head_dim</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;pixel head dim </span><span class="si">{</span><span class="n">pixel_head_dim</span><span class="si">}</span><span class="s2"> must be divisible by 4 (2D rope needs dim/4 freqs)&quot;</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">H</span> <span class="o">//</span> <span class="n">p</span><span class="p">,</span> <span class="n">W</span> <span class="o">//</span> <span class="n">p</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_obs_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PixelDiT">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PixelDiT</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dual-level pixel-space DiT for conditional flow matching on 2D fields.</span>
+
+<span class="sd">    Forward: ``(t, obs=field, cond) -&gt; velocity field`` of the same shape.</span>
+<span class="sd">    Patch-level MMDiT blocks attend over patch tokens jointly with cond tokens,</span>
+<span class="sd">    producing per-patch conditioning ``s_cond``; pixel-level PiT blocks then</span>
+<span class="sd">    refine every pixel inside each patch under that conditioning.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">PixelDiTParams</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">field_shape</span>
+        <span class="n">ps</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">patch_size</span>
+        <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">token_grid</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">hidden_size</span>
+        <span class="n">attn_dim</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">resolved_pixel_attn_hidden_size</span>
+
+<div class="viewcode-block" id="PixelDiT.s_embedder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.s_embedder">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s_embedder</span> <span class="o">=</span> <span class="n">PatchTokenEmbedder</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">*</span> <span class="n">ps</span> <span class="o">*</span> <span class="n">ps</span><span class="p">,</span>
+            <span class="n">D</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PixelDiT.pixel_embedder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.pixel_embedder">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixel_embedder</span> <span class="o">=</span> <span class="n">PixelTokenEmbedder</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">pixel_hidden_size</span><span class="p">,</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">field_shape</span><span class="p">,</span>
+            <span class="n">ps</span><span class="p">,</span>
+            <span class="n">use_abs_pos</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">use_pixel_abs_pos</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PixelDiT.cond_embedder">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.cond_embedder">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_embedder</span> <span class="o">=</span> <span class="n">CondTokenEmbedder</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="p">,</span>
+            <span class="n">D</span><span class="p">,</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span>
+            <span class="n">id_embedding</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">cond_id_embedding</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PixelDiT.t_conditioner">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.t_conditioner">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_conditioner</span> <span class="o">=</span> <span class="n">TimestepConditioner</span><span class="p">(</span>
+            <span class="n">D</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="PixelDiT.patch_blocks">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.patch_blocks">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_blocks</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">List</span><span class="p">([</span>
+            <span class="n">MMDiTBlock</span><span class="p">(</span>
+                <span class="n">D</span><span class="p">,</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">mlp_ratio</span><span class="p">,</span>
+                <span class="n">zero_init</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">zero_init_blocks</span><span class="p">,</span>
+                <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">patch_depth</span><span class="p">)</span>
+        <span class="p">])</span></div>
+
+<div class="viewcode-block" id="PixelDiT.pixel_blocks">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.pixel_blocks">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixel_blocks</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">List</span><span class="p">([</span>
+            <span class="n">PiTBlock</span><span class="p">(</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">pixel_hidden_size</span><span class="p">,</span>
+                <span class="n">D</span><span class="p">,</span>
+                <span class="n">ps</span><span class="p">,</span>
+                <span class="n">attn_dim</span><span class="p">,</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">resolved_pixel_num_heads</span><span class="p">,</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">mlp_ratio</span><span class="p">,</span>
+                <span class="n">post_modulation</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">pit_post_modulation</span><span class="p">,</span>
+                <span class="n">zero_init</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">zero_init_blocks</span><span class="p">,</span>
+                <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">pixel_depth</span><span class="p">)</span>
+        <span class="p">])</span></div>
+
+<div class="viewcode-block" id="PixelDiT.final_layer">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.final_layer">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final_layer</span> <span class="o">=</span> <span class="n">FinalLayer</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">pixel_hidden_size</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
+
+
+        <span class="c1"># Rope tables built once, stored as non-trainable Buffers (excluded from</span>
+        <span class="c1"># Param state, immune to blanket float casts over Params).</span>
+        <span class="n">pe_patch</span> <span class="o">=</span> <span class="n">precompute_freqs_cis_2d</span><span class="p">(</span>
+            <span class="n">D</span> <span class="o">//</span> <span class="n">p</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">rope_scale</span>
+        <span class="p">)</span>
+        <span class="n">pe_pit</span> <span class="o">=</span> <span class="n">precompute_freqs_cis_2d</span><span class="p">(</span>
+            <span class="n">attn_dim</span> <span class="o">//</span> <span class="n">p</span><span class="o">.</span><span class="n">resolved_pixel_num_heads</span><span class="p">,</span> <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">rope_scale</span>
+        <span class="p">)</span>
+<div class="viewcode-block" id="PixelDiT.pe_patch">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.pe_patch">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pe_patch</span> <span class="o">=</span> <span class="n">Buffer</span><span class="p">(</span><span class="n">pe_patch</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PixelDiT.pe_pit">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.pe_pit">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pe_pit</span> <span class="o">=</span> <span class="n">Buffer</span><span class="p">(</span><span class="n">pe_pit</span><span class="p">)</span></div>
+
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">use_cond_rope</span><span class="p">:</span>
+            <span class="n">pe_cond</span> <span class="o">=</span> <span class="n">precompute_freqs_cis_1d</span><span class="p">(</span><span class="n">D</span> <span class="o">//</span> <span class="n">p</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pe_cond</span> <span class="o">=</span> <span class="n">Buffer</span><span class="p">(</span><span class="n">pe_cond</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pe_cond</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># static primitives needed at call time (the dataclass itself is NOT</span>
+        <span class="c1"># stored: it holds Rngs/derived arrays and would poison the GraphDef)</span>
+<div class="viewcode-block" id="PixelDiT.field_shape">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.field_shape">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">field_shape</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PixelDiT.in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.in_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span></div>
+
+<div class="viewcode-block" id="PixelDiT.cond_dim">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.cond_dim">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">cond_dim</span>          <span class="c1"># number of cond tokens K</span></div>
+
+<div class="viewcode-block" id="PixelDiT.cond_in_channels">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.cond_in_channels">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">cond_in_channels</span></div>
+
+<div class="viewcode-block" id="PixelDiT.patch_size">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.patch_size">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span> <span class="o">=</span> <span class="n">ps</span></div>
+
+<div class="viewcode-block" id="PixelDiT.token_grid">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.token_grid">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">token_grid</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PixelDiT.param_dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.param_dtype">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span></div>
+
+
+<div class="viewcode-block" id="PixelDiT.__call__">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.PixelDiT.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">t</span><span class="p">,</span>
+        <span class="n">obs</span><span class="p">,</span>
+        <span class="n">cond</span><span class="p">,</span>
+        <span class="n">obs_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>      <span class="c1"># accepted &amp; ignored (pipeline compatibility)</span>
+        <span class="n">cond_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>     <span class="c1"># accepted &amp; ignored</span>
+        <span class="n">conditioned</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># only True supported (CFG/null-cond is deferred)</span>
+        <span class="n">guidance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">conditioned</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;PixelDiT has no unconditional path yet (CFG / null-conditioning &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;is deferred work); got conditioned=</span><span class="si">{</span><span class="n">conditioned</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">guidance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;PixelDiT has no guidance embedding; got &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;guidance=</span><span class="si">{</span><span class="n">guidance</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;obs must be rank-4 (B, H, W, C), got rank </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2"> with shape </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;obs spatial shape </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2"> does not match &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;field_shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;obs has </span><span class="si">{</span><span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> channels, expected in_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">ndim</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cond must be rank-2 (B, K) or rank-3 (B, K, C), &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;got rank </span><span class="si">{</span><span class="n">cond</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2"> with shape </span><span class="si">{</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">cond_K</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">cond_K</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cond has </span><span class="si">{</span><span class="n">cond_K</span><span class="si">}</span><span class="s2"> tokens (axis 1), expected cond_dim=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span><span class="si">}</span><span class="s2">; &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;cond.shape=</span><span class="si">{</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cond has </span><span class="si">{</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> channels (axis 2), &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;expected cond_in_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="si">}</span><span class="s2">; &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;cond.shape=</span><span class="si">{</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># FieldConditionalWrapper expands t from (B,) to (B,1) via _expand_time;</span>
+        <span class="c1"># PixelDiT&#39;s _timestep_embedding expects a 1-D (B,) vector (unlike Flux1</span>
+        <span class="c1"># whose timestep_embedding ravels internally).  Normalise at this boundary</span>
+        <span class="c1"># so the faithful port stays untouched.</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="n">B</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span>
+        <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">Hs</span> <span class="o">*</span> <span class="n">Ws</span>
+
+        <span class="n">pe_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pe_patch</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+        <span class="n">pe_pit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pe_pit</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+        <span class="n">pe_cond</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pe_cond</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">pe_cond</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span>
+
+        <span class="n">t_emb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_conditioner</span><span class="p">(</span><span class="n">t</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>          <span class="c1"># (B, 1, D)</span>
+        <span class="n">cond_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_embedder</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>             <span class="c1"># (B, K, D)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="n">t_emb</span><span class="p">)</span>                                <span class="c1"># t2i: cond enters via tokens only</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s_embedder</span><span class="p">(</span><span class="n">patchify</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>              <span class="c1"># (B, L, D)</span>
+        <span class="k">for</span> <span class="n">blk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_blocks</span><span class="p">:</span>
+            <span class="n">s</span><span class="p">,</span> <span class="n">cond_tokens</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">cond_tokens</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">pe_patch</span><span class="p">,</span> <span class="n">pe_cond</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="n">t_emb</span> <span class="o">+</span> <span class="n">s</span><span class="p">)</span>                            <span class="c1"># (B, L, D)</span>
+
+        <span class="n">D</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">s_cond</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span> <span class="o">*</span> <span class="n">L</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>                       <span class="c1"># row-major (B, L)</span>
+        <span class="n">x_pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_embedder</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>                   <span class="c1"># (B*L, p^2, D_pix)</span>
+        <span class="k">for</span> <span class="n">blk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_blocks</span><span class="p">:</span>
+            <span class="n">x_pix</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">x_pix</span><span class="p">,</span> <span class="n">s_cond</span><span class="p">,</span> <span class="n">pe_pit</span><span class="p">,</span> <span class="n">batch</span><span class="o">=</span><span class="n">B</span><span class="p">)</span>
+        <span class="n">x_pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_layer</span><span class="p">(</span><span class="n">x_pix</span><span class="p">)</span>                    <span class="c1"># (B*L, p^2, C)</span>
+        <span class="k">return</span> <span class="n">unpatchify</span><span class="p">(</span><span class="n">x_pix</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">p</span> <span class="o">*</span> <span class="n">p</span> <span class="o">*</span> <span class="n">C</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_grid</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

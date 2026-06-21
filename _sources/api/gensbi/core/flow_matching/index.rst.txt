@@ -25,7 +25,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: FlowMatchingMethod(prior=None)
+.. py:class:: FlowMatchingMethod(prior=None, *, time_dist='uniform', logitnorm_mean=0.0, logitnorm_std=1.0)
 
    Bases: :py:obj:`gensbi.core.generative_method.GenerativeMethod`
 
@@ -41,6 +41,14 @@ Module Contents
                  :meth:`build_path`. If ``None``, a standard normal prior is
                  constructed automatically.
    :type prior: numpyro.distributions.Distribution, optional
+   :param time_dist: Training-time timestep distribution used in :meth:`prepare_batch`.
+                     ``"uniform"`` (default) is bit-identical to the previous behaviour;
+                     ``"logitnormal"`` draws ``sigmoid(logitnorm_mean + logitnorm_std * N(0, 1))``.
+   :type time_dist: str, optional
+   :param logitnorm_mean: Mean/std of the underlying normal for ``time_dist="logitnormal"``.
+   :type logitnorm_mean: float, optional
+   :param logitnorm_std: Mean/std of the underlying normal for ``time_dist="logitnormal"``.
+   :type logitnorm_std: float, optional
 
    .. rubric:: Examples
 
@@ -317,7 +325,7 @@ Module Contents
       :type path: AffineProbPath
 
       :returns: ``(x_0, x_1, t)`` where ``x_0`` is drawn from the prior and
-                ``t`` is uniform in ``[0, 1)``.
+                ``t`` follows ``time_dist`` (uniform in ``[0, 1)`` by default).
       :rtype: tuple
 
 
@@ -374,8 +382,19 @@ Module Contents
 
 
 
+   .. py:attribute:: logitnorm_mean
+
+
+   .. py:attribute:: logitnorm_std
+
+
    .. py:attribute:: prior
       :value: None
+
+
+
+   .. py:attribute:: time_dist
+      :value: 'uniform'
 
 
 

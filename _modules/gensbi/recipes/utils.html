@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -866,6 +866,23 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="init_ids_1d">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.init_ids_1d">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">init_ids_1d</span><span class="p">(</span><span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">semantic_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build 1D positional IDs, returning ``(ids, dim)``.</span>
+
+<span class="sd">    ``ids`` is ``(1, dim, 1)`` when ``semantic_id is None`` (position only), or</span>
+<span class="sd">    ``(1, dim, 2)`` otherwise, with the position at axis 0 and the semantic id</span>
+<span class="sd">    at axis 1.</span>
+
+<span class="sd">    FIXME (axis-order footgun): this places the semantic id on the LAST axis,</span>
+<span class="sd">    which is the *reverse* of :func:`init_ids_2d` (semantic at axis 0, then h, w</span>
+<span class="sd">    -- the established convention). The two are safe in isolation, but they do</span>
+<span class="sd">    NOT line up if 1D and 2D ids are ever fed into the same RoPE grid (e.g.</span>
+<span class="sd">    FieldDiT Phase-2 obs+cond co-tokenization with a shared ``EmbedND``, where</span>
+<span class="sd">    ``axes_dim[i]`` is matched to ids axis ``i``). This should be unified to the</span>
+<span class="sd">    2D convention (semantic at axis 0). It is not changed here because callers</span>
+<span class="sd">    that pass ``semantic_id`` -- notably the Flux1 ``rope1d`` path via</span>
+<span class="sd">    :func:`init_ids` -- and any code indexing ``ids[..., k]`` must be updated in</span>
+<span class="sd">    lockstep.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">semantic_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -878,16 +895,51 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="_normalize_patch_size">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._normalize_patch_size">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_patch_size</span><span class="p">(</span><span class="n">size</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize a patch-size spec into an ``(obs, cond)`` tuple.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    size : int or tuple of int</span>
+<span class="sd">        A single int is broadcast to both inputs (``8 -&gt; (8, 8)``). A</span>
+<span class="sd">        length-2 tuple is taken as ``(obs_size, cond_size)`` so the two</span>
+<span class="sd">        inputs can use different patch sizes. Use ``1`` for an input that</span>
+<span class="sd">        is not patchified.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple of int</span>
+<span class="sd">        ``(obs_size, cond_size)``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;size must be an int or a length-2 (obs, cond) tuple, got </span><span class="si">{</span><span class="n">size</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">size</span></div>
+
+
+
 <div class="viewcode-block" id="init_ids_2d">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.init_ids_2d">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">init_ids_2d</span><span class="p">(</span><span class="n">dim</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">semantic_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">img_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">init_ids_2d</span><span class="p">(</span><span class="n">dim</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">semantic_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build 2D positional IDs for a patchified image grid.</span>
+
+<span class="sd">    The grid has one entry per patch, i.e. ``(dim[0] // size, dim[1] // size)``,</span>
+<span class="sd">    matching ``patchify_2d(x, size=size)``. ``size`` is the patch edge length;</span>
+<span class="sd">    use ``size=1`` for no patchification (one token per pixel).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">img_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">size</span><span class="p">,</span> <span class="n">dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">size</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
     <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">semantic_id</span>
-    <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-    <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">size</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">img_ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">size</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
     <span class="n">img_ids</span> <span class="o">=</span> <span class="n">repeat</span><span class="p">(</span><span class="n">img_ids</span><span class="p">,</span> <span class="s2">&quot;h w c -&gt; b (h w) c&quot;</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="n">dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">dim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="n">size</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">img_ids</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">dim</span></div>
 
@@ -900,11 +952,37 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;b (h ph) (w pw) c -&gt; b (h w) (c ph pw)&quot;</span><span class="p">,</span> <span class="n">ph</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">size</span><span class="p">)</span></div>
 
 
-<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">static_argnames</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">])</span>
+
+<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">static_argnames</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="s2">&quot;grid&quot;</span><span class="p">])</span>
 <div class="viewcode-block" id="depatchify_2d">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.depatchify_2d">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">depatchify_2d</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;b (h w) (c ph pw) -&gt; b (h ph) (w pw) c&quot;</span><span class="p">,</span> <span class="n">ph</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">size</span><span class="p">)</span></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">depatchify_2d</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Inverse of :func:`patchify_2d`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : Array</span>
+<span class="sd">        Patchified tensor of shape ``(B, h*w, C*size*size)``.</span>
+<span class="sd">    size : int</span>
+<span class="sd">        Patch edge length used by :func:`patchify_2d`.</span>
+<span class="sd">    grid : tuple of int, optional</span>
+<span class="sd">        The ``(h, w)`` patch grid. The grid cannot be inferred from the token</span>
+<span class="sd">        count alone, so it is required for non-square grids. If ``None``, a</span>
+<span class="sd">        square grid (``h == w``) is assumed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">n</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">side</span> <span class="o">*</span> <span class="n">side</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Cannot infer a square grid from </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> tokens; pass grid=(h, w).&quot;</span>
+            <span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">w</span> <span class="o">=</span> <span class="n">side</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">grid</span>
+    <span class="k">return</span> <span class="n">rearrange</span><span class="p">(</span>
+        <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;b (h w) (c ph pw) -&gt; b (h ph) (w pw) c&quot;</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">ph</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">size</span>
+    <span class="p">)</span></div>
 
 
 
@@ -945,7 +1023,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="_resolve_embedding_ids">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._resolve_embedding_ids">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_embedding_ids</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">semantic_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_embedding_ids</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">semantic_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve ID embeddings by strategy name.</span>
 
 <span class="sd">    Parameters</span>
@@ -957,6 +1035,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        &quot;pos2d&quot;, &quot;rope2d&quot;).</span>
 <span class="sd">    semantic_id : int</span>
 <span class="sd">        Semantic identifier for the token group (0=obs, 1=cond).</span>
+<span class="sd">    size : int, optional</span>
+<span class="sd">        Patch edge length for 2D strategies (default 2). Ignored for 1D</span>
+<span class="sd">        strategies. Use 1 for no patchification.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -973,7 +1054,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">_EMBEDDINGS_1D</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="n">semantic_id</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">_EMBEDDINGS_2D</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">init_ids_2d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="n">semantic_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">init_ids_2d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="n">semantic_id</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown id embedding strategy: </span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
@@ -1157,8 +1238,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1196,7 +1277,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
 </p></div>
       
     </div>

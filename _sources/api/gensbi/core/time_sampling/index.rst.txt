@@ -1,0 +1,68 @@
+gensbi.core.time_sampling
+=========================
+
+.. py:module:: gensbi.core.time_sampling
+
+.. autoapi-nested-parse::
+
+   Training-time timestep samplers for flow matching.
+
+   A small, pure helper so the timestep distribution is a configurable knob on
+   :class:`~gensbi.core.flow_matching.FlowMatchingMethod` without touching the
+   loss, path, or models.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.core.time_sampling.sample_time
+
+
+Module Contents
+---------------
+
+.. py:function:: sample_time(key, n, *, dist='uniform', logitnorm_mean=0.0, logitnorm_std=1.0)
+
+   
+   Sample ``n`` flow-matching timesteps in ``(0, 1)``.
+
+   :param key:
+   :type key: jax.random.PRNGKey
+   :param n: Number of timesteps (batch size).
+   :type n: int
+   :param dist: ``"uniform"`` (default) -> ``jax.random.uniform(key, (n,))``, bit-identical
+                to the previous inline sampling so existing runs are unchanged.
+                ``"logitnormal"`` -> ``sigmoid(logitnorm_mean + logitnorm_std * N(0, 1))``
+                (SD3 / Esser et al.); concentrates mass near ``sigmoid(logitnorm_mean)``.
+                The reference's ``lognorm_t`` flag is a misnomer for this logit-normal sampler.
+   :type dist: str
+   :param logitnorm_mean: Mean/std of the underlying normal (used only for ``"logitnormal"``).
+   :type logitnorm_mean: float
+   :param logitnorm_std: Mean/std of the underlying normal (used only for ``"logitnormal"``).
+   :type logitnorm_std: float
+
+   :returns: Shape ``(n,)`` timesteps.
+   :rtype: jax.Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

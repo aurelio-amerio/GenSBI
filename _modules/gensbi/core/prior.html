@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -843,29 +843,36 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="make_gaussian_prior">
 <a class="viewcode-back" href="../../../api/gensbi/core/prior/index.html#gensbi.core.prior.make_gaussian_prior">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">make_gaussian_prior</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_gaussian_prior</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">ch</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Gaussian prior as a numpyro distribution.</span>
 
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    dim : int</span>
-<span class="sd">        Feature dimension.</span>
-<span class="sd">    ch : int</span>
-<span class="sd">        Channel dimension.</span>
-<span class="sd">    mu : float</span>
-<span class="sd">        Prior mean (broadcast to all dimensions).</span>
-<span class="sd">    sigma : float</span>
-<span class="sd">        Prior std (broadcast to all dimensions).</span>
+<span class="sd">    Two call forms:</span>
+
+<span class="sd">    - ``make_gaussian_prior(dim, ch)`` — legacy rank-2 form,</span>
+<span class="sd">      ``event_shape=(dim, ch)``.</span>
+<span class="sd">    - ``make_gaussian_prior(event_shape)`` — a single tuple of any rank,</span>
+<span class="sd">      e.g. ``(H, W, C)`` for pixel-space fields.</span>
+
+<span class="sd">    ``mu`` and ``sigma`` are keyword-only: ``make_gaussian_prior(H, W, C)``</span>
+<span class="sd">    raises ``TypeError`` instead of silently reading ``C`` as the mean.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    dist.Independent</span>
-<span class="sd">        ``Independent(Normal(loc, scale), 2)`` with</span>
-<span class="sd">        ``event_shape=(dim, ch)``.</span>
+<span class="sd">        ``Independent(Normal(loc, scale), len(event_shape))``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">loc</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">dim</span><span class="p">,</span> <span class="n">ch</span><span class="p">),</span> <span class="n">mu</span><span class="p">)</span>
-    <span class="n">scale</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">dim</span><span class="p">,</span> <span class="n">ch</span><span class="p">),</span> <span class="n">sigma</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">Independent</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">ch</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;pass (dim, ch) as two ints or a single event_shape tuple, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;got dim=</span><span class="si">{</span><span class="n">dim</span><span class="si">!r}</span><span class="s2"> with ch=None&quot;</span>
+            <span class="p">)</span>
+        <span class="n">event_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">event_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">ch</span><span class="p">)</span>
+    <span class="n">loc</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">event_shape</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dist</span><span class="o">.</span><span class="n">Independent</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_shape</span><span class="p">))</span></div>
 
 
 
@@ -917,8 +924,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -956,7 +963,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
 </p></div>
       
     </div>

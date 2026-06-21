@@ -1,0 +1,323 @@
+gensbi.experimental.models.fielddit
+===================================
+
+.. py:module:: gensbi.experimental.models.fielddit
+
+.. autoapi-nested-parse::
+
+   
+   FieldDiT: conditional flow-matching for 2D field-level inference (Phase 1).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/experimental/models/fielddit/blocks/index
+   /api/gensbi/experimental/models/fielddit/codec/index
+   /api/gensbi/experimental/models/fielddit/cond/index
+   /api/gensbi/experimental/models/fielddit/core/index
+   /api/gensbi/experimental/models/fielddit/model/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.fielddit.FieldDiT
+   gensbi.experimental.models.fielddit.FieldDiTParams
+   gensbi.experimental.models.fielddit.RopeIds
+
+
+Package Contents
+----------------
+
+.. py:class:: FieldDiT(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Conditional flow-matching network for 2D fields (pixel space).
+
+   Forward: ``(t, obs=field, cond) -> velocity field`` of the same shape. The
+   conv encoder is modulated by time only (or by the full ``vec`` when
+   ``cond_modulates_encoder=True``); the decoder and the MMDiT core are
+   modulated by ``vec = time (+ cond summary if flagged-C) (+ guidance)``. The
+   meeting-grid rope2d obs ids and absolute cond ids are built internally.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(t, obs, cond, obs_ids=None, cond_ids=None, conditioned=True, guidance=None)
+
+
+   .. py:attribute:: cond_dim
+
+
+   .. py:attribute:: cond_embedder
+
+
+   .. py:attribute:: cond_ids
+
+
+   .. py:attribute:: cond_modulates_encoder
+
+
+   .. py:attribute:: core
+
+
+   .. py:attribute:: decoder
+
+
+   .. py:attribute:: encoder
+
+
+   .. py:attribute:: field_shape
+
+
+   .. py:attribute:: guidance_embed
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: obs_ids
+
+
+   .. py:attribute:: param_dtype
+
+
+   .. py:attribute:: time_in
+
+
+   .. py:attribute:: token_grid
+
+
+   .. py:attribute:: tokenizer
+
+
+   .. py:attribute:: untokenizer
+
+
+   .. py:attribute:: use_cond_summary_in_vec
+
+
+.. py:class:: FieldDiTParams
+
+   
+   Configuration for :class:`FieldDiT` (mirrors the style of ``Flux1Params``).
+
+   The meeting-grid token count is **derived** from ``field_shape``,
+   ``encoder_widths`` (depth) and ``patch_size`` — it is not prescribed:
+   ``tokens = (H / (2**D * p)) * (W / (2**D * p))`` with ``D = len(encoder_widths) - 1``.
+
+   Note: ``rngs`` is a live ``nnx.Rngs`` stream (mirrors ``Flux1Params``).
+   Constructing two models from the *same* params object yields *different*
+   weights, because the stream advances; build a fresh ``FieldDiTParams``
+   (or a fresh ``nnx.Rngs(seed)``) per model for reproducibility.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: axes_dim
+      :type:  Optional[List[int]]
+      :value: None
+
+
+
+   .. py:attribute:: cond_dim
+      :type:  int
+
+
+   .. py:attribute:: cond_in_channels
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: cond_modulates_encoder
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: depth
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: depth_single_blocks
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: encoder_widths
+      :type:  Tuple[int, Ellipsis]
+
+
+   .. py:attribute:: field_shape
+      :type:  Tuple[int, int]
+
+
+   .. py:attribute:: guidance_embed
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: in_channels
+      :type:  int
+
+
+   .. py:attribute:: mlp_ratio
+      :type:  float
+      :value: 4.0
+
+
+
+   .. py:attribute:: norm_groups
+      :type:  int
+      :value: 8
+
+
+
+   .. py:attribute:: num_heads
+      :type:  int
+      :value: 12
+
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
+
+
+   .. py:attribute:: patch_size
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: qkv_bias
+      :type:  bool
+      :value: False
+
+
+
+   .. py:attribute:: res_blocks_down
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: res_blocks_up
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: theta
+      :type:  Optional[int]
+      :value: None
+
+
+
+   .. py:attribute:: use_cond_summary_in_vec
+      :type:  bool
+      :value: True
+
+
+
+   .. py:attribute:: vec_in_dim
+      :type:  Optional[int]
+      :value: None
+
+
+
+.. py:class:: RopeIds(value, *, hijax = None, ref = None, eager_sharding = None, **metadata)
+
+   Bases: :py:obj:`flax.nnx.Variable`
+
+
+   
+   Integer rope/positional id buffers.
+
+   A dedicated Variable type so the ids are (a) filterable with
+   ``nnx.state(model, RopeIds)``, (b) excluded from ``nnx.Param`` state, and
+   (c) safe from blanket float-dtype casts applied to the parameter state.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

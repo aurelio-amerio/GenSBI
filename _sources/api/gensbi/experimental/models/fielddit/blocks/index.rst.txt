@@ -1,0 +1,157 @@
+gensbi.experimental.models.fielddit.blocks
+==========================================
+
+.. py:module:: gensbi.experimental.models.fielddit.blocks
+
+.. autoapi-nested-parse::
+
+   AdaGN-zero modulated residual conv block for the FieldDiT conv codec.
+
+   Ported (not imported) from the reference SiD2 ``ResidualBlock2D`` (Keras) and
+   GenSBI's ``ResnetBlock2D``: FiLM scale/shift over GroupNorm, plus a
+   conditioning-predicted *gate* (zero-initialized) so each block is identity at
+   initialization (``out = residual + gate * h``).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.fielddit.blocks.ConvModulation
+   gensbi.experimental.models.fielddit.blocks.ModulatedResBlock2D
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.experimental.models.fielddit.blocks._safe_groups
+
+
+Module Contents
+---------------
+
+.. py:class:: ConvModulation(vec_dim, channels, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Project a global ``vec`` to (scale, shift, gate) for an NHWC feature map.
+
+   Mirrors Flux1's ``Modulation`` (zero-init linear => neutral modulation /
+   closed gate at init), but reshapes outputs to ``(B, 1, 1, C)`` so they
+   broadcast over the spatial dims.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(vec)
+
+
+   .. py:attribute:: channels
+
+
+   .. py:attribute:: lin
+
+
+.. py:class:: ModulatedResBlock2D(in_channels, out_channels, vec_dim, norm_groups, rngs, param_dtype = jnp.bfloat16)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   SiD2-style residual conv block with AdaGN-zero modulation (NHWC).
+
+   Structure: ``norm1 -> silu -> conv1 -> norm2 -> FiLM(scale,shift) -> silu
+   -> conv2``, returned as ``residual + gate * h``. ``norm2`` has its own
+   affine disabled (the predicted scale/shift is the sole affine). The gate is
+   zero-initialized, giving (a) identity at init and (b) condition-dependent
+   block strength.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, vec)
+
+
+   .. py:attribute:: conv1
+
+
+   .. py:attribute:: conv2
+
+
+   .. py:attribute:: in_channels
+
+
+   .. py:attribute:: mod
+
+
+   .. py:attribute:: norm1
+
+
+   .. py:attribute:: norm2
+
+
+   .. py:attribute:: out_channels
+
+
+.. py:function:: _safe_groups(num_features, groups)
+
+   
+   A common divisor of ``num_features`` and ``groups`` via gcd.
+
+   Returns a value that always divides ``num_features`` and is <= ``groups``,
+   so GroupNorm never breaks on small or unusual channel counts.  It is *not*
+   guaranteed to be the largest such divisor.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
