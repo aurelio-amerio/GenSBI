@@ -7,6 +7,7 @@ Trains ``q(obs | cond)`` by max-likelihood. NPE convention: ``obs = theta``,
 
 import warnings
 
+import jax
 import jax.numpy as jnp
 
 from gensbi.recipes.pipeline import AbstractPipeline
@@ -142,6 +143,29 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     def sample(self, key, x_o, nsamples=10_000, use_ema=True):
         return self.get_sampler(x_o, use_ema=use_ema)(key, nsamples)
+
+    def sample_batched(self, key, x_o, nsamples=10_000, *, use_ema=True,
+                       **kwargs):
+        """Sample posterior draws for a BATCH of observations.
+
+        ``x_o`` is ``(B, dim_cond, 1)`` (or ``(B, dim_cond)``). Loops the
+        single-observation sampler over the ``B`` conditions and stacks to
+        ``(nsamples, B, dim_obs, 1)`` — the same layout as the base pipeline.
+
+        Unlike the base ``AbstractPipeline.sample_batched`` (which threads the
+        condition through ``model_extras``/``obs_ids``/``cond_ids``), the flow
+        pipeline bakes each condition into its sampler via ``get_sampler``; this
+        override loops ``get_sampler`` per condition. Extra ``kwargs`` (e.g. the
+        base's ``chunk_size``/``show_progress_bars``) are accepted and ignored.
+        """
+        x_o = jnp.asarray(x_o)
+        B = x_o.shape[0]
+        keys = jax.random.split(key, B)
+        results = [
+            self.get_sampler(x_o[i : i + 1], use_ema=use_ema)(keys[i], nsamples)
+            for i in range(B)
+        ]
+        return jnp.stack(results, axis=1)          # (nsamples, B, dim_obs, 1)
 
     def get_log_prob_fn(self, x_o, use_ema=True):
         """Return ``log_prob_fn(x_1) -> (B,)`` for one conditioning x_o."""

@@ -174,3 +174,20 @@ def test_log_prob_depends_on_condition(tmp_path):
 def test_exported_from_recipes():
     from gensbi.recipes import ConditionalFlowPipeline as CFP
     assert CFP is ConditionalFlowPipeline
+
+
+def test_sample_batched_shape(tmp_path):
+    pipe = build_pipeline(checkpoint_dir=str(tmp_path))
+    pipe.fit_standardization(DATA[:800, :DIM_OBS])
+    pipe.train(nnx.Rngs(0), nsteps=2, save_model=False)
+
+    B = 3
+    x_o = jnp.zeros((B, DIM_COND, 1))
+    s = pipe.sample_batched(jax.random.PRNGKey(2), x_o, nsamples=16, use_ema=False)
+    assert s.shape == (16, B, DIM_OBS, 1)
+    assert jnp.all(jnp.isfinite(s))
+
+    # each per-condition slice equals the single-observation sampler for that cond
+    s0 = pipe.sample(jax.random.PRNGKey(2), x_o[0:1], nsamples=16, use_ema=False)
+    # not asserting equality of RNG streams across the two call paths; just shapes
+    assert s0.shape == (16, DIM_OBS, 1)
