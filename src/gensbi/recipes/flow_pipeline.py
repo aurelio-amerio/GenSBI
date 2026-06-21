@@ -128,11 +128,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
                 UserWarning, stacklevel=2)
         return super().train(rngs, nsteps=nsteps, save_model=save_model)
 
-    def get_sampler(self, *args, **kwargs):
-        raise NotImplementedError("Implemented in Task 5.")
+    def get_sampler(self, x_o, use_ema=True):
+        """Return ``sampler(key, nsamples) -> (nsamples, dim_obs, 1)`` for one x_o."""
+        flow = self.ema_model if use_ema else self.model
+        cond = _single_cond(x_o)                  # (dim_cond,)
 
-    def sample(self, *args, **kwargs):
-        raise NotImplementedError("Implemented in Task 5.")
+        def sampler(key, nsamples):
+            cond_b = jnp.broadcast_to(cond, (nsamples, cond.shape[0]))
+            samples = flow.sample(key, cond=cond_b)    # (nsamples, dim_obs)
+            return _expand_dims(samples)               # (nsamples, dim_obs, 1)
+
+        return sampler
+
+    def sample(self, key, x_o, nsamples=10_000, use_ema=True):
+        return self.get_sampler(x_o, use_ema=use_ema)(key, nsamples)
 
     def get_log_prob_fn(self, *args, **kwargs):
         raise NotImplementedError("Implemented in Task 6.")

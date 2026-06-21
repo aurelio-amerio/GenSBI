@@ -125,3 +125,17 @@ def test_train_warns_without_standardization(tmp_path):
     pipe = build_pipeline(checkpoint_dir=str(tmp_path))
     with pytest.warns(UserWarning, match="fit_standardization"):
         pipe.train(nnx.Rngs(0), nsteps=1, save_model=False)
+
+
+def test_sample_shape(tmp_path):
+    pipe = build_pipeline(checkpoint_dir=str(tmp_path))
+    pipe.fit_standardization(DATA[:800, :DIM_OBS])
+    pipe.train(nnx.Rngs(0), nsteps=2, save_model=False)
+
+    x_o = jnp.zeros((1, DIM_COND, 1))
+    s = pipe.sample(jax.random.PRNGKey(1), x_o, nsamples=64, use_ema=False)
+    assert s.shape == (64, DIM_OBS, 1)
+    assert jnp.all(jnp.isfinite(s))
+
+    s_ema = pipe.sample(jax.random.PRNGKey(1), x_o, nsamples=64, use_ema=True)
+    assert s_ema.shape == (64, DIM_OBS, 1)
