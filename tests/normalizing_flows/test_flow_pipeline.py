@@ -169,3 +169,8 @@ def test_log_prob_depends_on_condition(tmp_path):
     lp_a = pipe.log_prob(x_1, jnp.zeros((1, DIM_COND, 1)), use_ema=False)
     lp_b = pipe.log_prob(x_1, jnp.ones((1, DIM_COND, 1)), use_ema=False)
     assert not jnp.allclose(lp_a, lp_b)
+
+
+def test_exported_from_recipes():
+    from gensbi.recipes import ConditionalFlowPipeline as CFP
+    assert CFP is ConditionalFlowPipeline
