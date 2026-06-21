@@ -19,6 +19,7 @@ from flax import nnx
 from jax import Array
 from jax.typing import DTypeLike
 
+from gensbi.normalizing_flows.bijections.base import Bijection
 from gensbi.normalizing_flows.bijections.masked_linear import MaskedLinear
 from gensbi.normalizing_flows.bijections.masks import make_mask
 
@@ -105,3 +106,37 @@ class MADE(nnx.Module):
             h = self.activation(layer(h))
         out = self.output_layer(h)
         return out.reshape(self.dim, self.num_params)
+
+
+class MaskedAutoregressive(Bijection):
+    """MADE conditioner + elementwise transformer = one autoregressive flow step.
+
+    inverse (data->noise) is one MADE pass (fast); forward (noise->data) is a
+    sequential ``lax.scan`` over dims (slow).
+    """
+
+    def __init__(self, dim, cond_dim, transformer, nn_width, nn_depth, rngs,
+                 zero_init: bool = True):
+        self.dim = dim
+        self.transformer = transformer
+        self.made = MADE(dim=dim, cond_dim=cond_dim,
+                         num_params=transformer.num_params,
+                         nn_width=nn_width, nn_depth=nn_depth,
+                         zero_init=zero_init, rngs=rngs)
+
+    def inverse(self, x: Array, cond: Array | None = None):
+        params = self.made(x, cond)              # (dim, num_params), single pass
+        return self.transformer.inverse(x, params)
+
+    def forward(self, u: Array, cond: Array | None = None):
+        def body(x, i):
+            params = self.made(x, cond)
+            x_i = self.transformer.forward_dim(u[i], params[i])
+            return x.at[i].set(x_i), None
+
+        x0 = jnp.zeros_like(u)
+        x, _ = jax.lax.scan(body, x0, jnp.arange(self.dim))
+        # log-det from the completed x (forward logdet = +sum(a))
+        params = self.made(x, cond)
+        _, logdet = self.transformer.forward(u, params)
+        return x, logdet
