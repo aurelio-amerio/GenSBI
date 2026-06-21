@@ -38,7 +38,11 @@ def test_made_is_autoregressive():
 
 
 def test_made_depends_on_cond_densely():
-    """Every output must depend on the conditioning vector (FiLM is live)."""
+    """Every output (incl. dim 0) must depend on cond (concat conditioning live).
+
+    This is the guardrail for the rank-(-1) concatenation scheme: routing cond
+    only through a hidden-stream modulation would leave dim 0 unconditioned.
+    """
     made = _made(dim=5, cond_dim=3, num_params=2)
     x = jnp.linspace(-1, 1, 5)
 
@@ -48,3 +52,29 @@ def test_made_depends_on_cond_densely():
     J = jax.jacobian(out_flat)(jnp.array([0.1, -0.2, 0.3]))  # (dim*np, cond_dim)
     # no output row is entirely independent of cond
     assert jnp.all(jnp.any(jnp.abs(J) > 1e-6, axis=1))
+
+
+def test_made_zero_init_is_identity_warmstart():
+    """zero_init=True (the default/production path) zeros the output params."""
+    made = MADE(dim=5, cond_dim=3, num_params=2, nn_width=32, nn_depth=2,
+                zero_init=True, rngs=nnx.Rngs(0))
+    out = made(jnp.linspace(-1, 1, 5), jnp.array([0.1, -0.2, 0.3]))
+    assert jnp.all(out == 0.0)
+
+
+def test_made_unconditional_path():
+    """cond_dim=0 builds an unconditional conditioner callable without cond."""
+    made = MADE(dim=4, cond_dim=0, num_params=2, nn_width=16, nn_depth=2,
+                zero_init=False, rngs=nnx.Rngs(0))
+    out = made(jnp.linspace(-1, 1, 4))
+    assert out.shape == (4, 2)
+
+
+def test_made_requires_cond_when_conditional():
+    """A conditional MADE must reject a missing cond rather than silently run."""
+    made = _made(dim=5, cond_dim=3)
+    try:
+        made(jnp.linspace(-1, 1, 5))
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError when cond is None for cond_dim > 0")
