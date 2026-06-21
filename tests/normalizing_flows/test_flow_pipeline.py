@@ -98,3 +98,30 @@ def test_loss_fn_has_param_gradients():
     leaves = jax.tree_util.tree_leaves(grads)
     assert len(leaves) > 0
     assert any(jnp.any(jnp.abs(g) > 0) for g in leaves)
+
+
+from gensbi.normalizing_flows.bijections.standardize import Standardize
+
+
+def _get_std(flow):
+    return [b for b in flow.chain.bijections if isinstance(b, Standardize)][0]
+
+
+def test_fit_standardization_sets_both_models():
+    pipe = build_pipeline()
+    theta = DATA[:800, :DIM_OBS]                 # (800, DIM_OBS, 1)
+    pipe.fit_standardization(theta)
+
+    expected_mean = jnp.mean(theta[..., 0], axis=0)
+    expected_std = jnp.std(theta[..., 0], axis=0)
+    for flow in (pipe.model, pipe.ema_model):
+        sb = _get_std(flow)
+        assert jnp.allclose(sb.mean.value, expected_mean, atol=1e-4)
+        assert jnp.allclose(sb.std.value, expected_std, atol=1e-4)
+    assert pipe._standardized is True
+
+
+def test_train_warns_without_standardization(tmp_path):
+    pipe = build_pipeline(checkpoint_dir=str(tmp_path))
+    with pytest.warns(UserWarning, match="fit_standardization"):
+        pipe.train(nnx.Rngs(0), nsteps=1, save_model=False)

@@ -100,6 +100,34 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         return loss_fn
 
+    def fit_standardization(self, obs_data):
+        """Set the Standardize buffers from training-obs stats (call BEFORE train).
+
+        ``obs_data`` is ``(N, dim_obs)`` or ``(N, dim_obs, 1)`` (the autoregressive
+        target, i.e. theta for NPE). Sets the buffer on both ``model`` and
+        ``ema_model`` (EMA only averages Params, so its non-Param buffer must be
+        set here too).
+        """
+        obs = jnp.asarray(obs_data)
+        if obs.ndim == 3:
+            obs = _squeeze_ch(obs)
+        mean = jnp.mean(obs, axis=0)
+        std = jnp.std(obs, axis=0)
+        std = jnp.where(std < 1e-6, 1.0, std)     # guard zero-variance dims
+        self.model.set_standardization(mean, std)
+        self.ema_model.set_standardization(mean, std)
+        self._standardized = True
+
+    def train(self, rngs, nsteps=None, save_model=True):
+        if not self._standardized:
+            warnings.warn(
+                "fit_standardization() was not called before train(); the "
+                "Standardize bijection stays at identity. Call "
+                "pipeline.fit_standardization(theta_train) first if you want "
+                "input standardization.",
+                UserWarning, stacklevel=2)
+        return super().train(rngs, nsteps=nsteps, save_model=save_model)
+
     def get_sampler(self, *args, **kwargs):
         raise NotImplementedError("Implemented in Task 5.")
 
