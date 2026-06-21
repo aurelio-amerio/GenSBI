@@ -54,6 +54,52 @@ def _inv_softplus(y: Array) -> Array:
     return jnp.log(jnp.expm1(y))
 
 
+def _rqs_apply(z: Array, x_knots: Array, y_knots: Array, derivatives: Array,
+               inverse: bool):
+    """Apply the RQ spline (or its inverse) to a scalar ``z``.
+
+    Returns ``(out, logderiv)`` where ``logderiv = log(dy/dx)`` evaluated at the
+    relevant x (the same forward derivative is used for both directions; the
+    caller flips its sign for ``forward``). Outside ``[-B, B]`` the map is the
+    identity (logderiv 0).
+    """
+    lo, hi = x_knots[0], x_knots[-1]
+    in_bounds = (z >= lo) & (z <= hi)
+    n_bins = x_knots.shape[0] - 1
+
+    if not inverse:                                  # z is x; bins on x_knots
+        k = jnp.clip(jnp.searchsorted(x_knots, z) - 1, 0, n_bins - 1)
+    else:                                            # z is y; bins on y_knots
+        k = jnp.clip(jnp.searchsorted(y_knots, z) - 1, 0, n_bins - 1)
+
+    xk, xk1 = x_knots[k], x_knots[k + 1]
+    yk, yk1 = y_knots[k], y_knots[k + 1]
+    dk, dk1 = derivatives[k], derivatives[k + 1]
+    w = xk1 - xk
+    s = (yk1 - yk) / w                               # bin slope
+
+    if not inverse:
+        xi = jnp.clip((z - xk) / w, 0.0, 1.0)
+        num = (yk1 - yk) * (s * xi ** 2 + dk * xi * (1 - xi))
+        den = s + (dk1 + dk - 2 * s) * xi * (1 - xi)
+        out_in = yk + num / den
+    else:
+        dy = z - yk
+        c2 = dk1 + dk - 2 * s
+        a = (yk1 - yk) * (s - dk) + dy * c2
+        b = (yk1 - yk) * dk - dy * c2
+        c = -s * dy
+        disc = jnp.clip(b ** 2 - 4 * a * c, 0.0)
+        xi = jnp.clip((2 * c) / (-b - jnp.sqrt(disc)), 0.0, 1.0)
+        out_in = xk + xi * w
+
+    out = jnp.where(in_bounds, out_in, z)
+    num_d = s ** 2 * (dk1 * xi ** 2 + 2 * s * xi * (1 - xi) + dk * (1 - xi) ** 2)
+    den_d = (s + (dk1 + dk - 2 * s) * xi * (1 - xi)) ** 2
+    deriv = jnp.where(in_bounds, num_d / den_d, 1.0)
+    return out, jnp.log(deriv)
+
+
 class RQSpline:
     """Elementwise monotonic rational-quadratic spline on ``[-B, B]``.
 
@@ -96,3 +142,26 @@ class RQSpline:
             raw_d + _inv_softplus(1.0 - self.min_derivative))
         derivatives = jnp.concatenate([jnp.ones(1), d_inner, jnp.ones(1)])
         return x_knots, y_knots, derivatives
+
+    def _fwd_scalar(self, x: Array, params: Array):
+        x_knots, y_knots, d = self._knots(params)
+        return _rqs_apply(x, x_knots, y_knots, d, inverse=False)
+
+    def _inv_scalar(self, u: Array, params: Array):
+        x_knots, y_knots, d = self._knots(params)
+        return _rqs_apply(u, x_knots, y_knots, d, inverse=True)
+
+    def inverse(self, x: Array, params: Array):
+        """data -> noise (fast). logdet = +sum log g'(x)."""
+        u, logderiv = jax.vmap(self._fwd_scalar)(x, params)
+        return u, jnp.sum(logderiv)
+
+    def forward(self, u: Array, params: Array):
+        """noise -> data. logdet = -sum log g'(x)."""
+        x, logderiv = jax.vmap(self._inv_scalar)(u, params)
+        return x, -jnp.sum(logderiv)
+
+    def forward_dim(self, u_i: Array, params_i: Array) -> Array:
+        """Scalar noise->data for one dim (used by the sequential sampling scan)."""
+        x_i, _ = self._inv_scalar(u_i, params_i)
+        return x_i

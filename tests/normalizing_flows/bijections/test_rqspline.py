@@ -39,3 +39,48 @@ def test_zero_params_give_identity_knots():
     # uniform bins => x_knots == y_knots, and all derivatives == 1
     assert jnp.allclose(x_knots, y_knots, atol=1e-5)
     assert jnp.allclose(d, jnp.ones(K + 1), atol=1e-5)
+
+
+def _rand_params(key, spline):
+    return jax.random.normal(key, (spline.num_params,))
+
+
+def test_scalar_roundtrip_inside_interval():
+    spline = RQSpline(num_bins=8, range_bound=5.0)
+    params = _rand_params(jax.random.PRNGKey(1), spline)
+    xs = jnp.linspace(-4.5, 4.5, 50)
+    for x in xs:
+        u, _ = spline._fwd_scalar(x, params)
+        x_rec, _ = spline._inv_scalar(u, params)
+        assert jnp.allclose(x_rec, x, atol=1e-4), (x, x_rec)
+
+
+def test_scalar_logdet_matches_autodiff():
+    spline = RQSpline(num_bins=8, range_bound=5.0)
+    params = _rand_params(jax.random.PRNGKey(2), spline)
+    for x in jnp.linspace(-4.0, 4.0, 25):
+        _, logderiv = spline._fwd_scalar(x, params)
+        g = jax.grad(lambda z: spline._fwd_scalar(z, params)[0])(x)
+        assert jnp.allclose(logderiv, jnp.log(jnp.abs(g)), atol=1e-4), (x, logderiv, g)
+
+
+def test_tails_are_identity():
+    spline = RQSpline(num_bins=8, range_bound=5.0)
+    params = _rand_params(jax.random.PRNGKey(3), spline)
+    for x in [-8.0, 7.5]:
+        u, logderiv = spline._fwd_scalar(jnp.array(x), params)
+        assert jnp.allclose(u, x)              # identity outside [-B, B]
+        assert jnp.allclose(logderiv, 0.0)
+
+
+def test_vector_inverse_forward_roundtrip():
+    spline = RQSpline(num_bins=6, range_bound=4.0)
+    dim = 4
+    key = jax.random.PRNGKey(4)
+    kp, kx = jax.random.split(key)
+    params = jax.random.normal(kp, (dim, spline.num_params))
+    x = jax.random.uniform(kx, (dim,), minval=-3.5, maxval=3.5)
+    u, ld_inv = spline.inverse(x, params)
+    x_rec, ld_fwd = spline.forward(u, params)
+    assert jnp.allclose(x_rec, x, atol=1e-4)
+    assert jnp.allclose(ld_inv + ld_fwd, 0.0, atol=1e-4)   # logdets cancel
