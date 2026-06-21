@@ -5,5 +5,6 @@ density model, with exact ``log_prob`` and one-pass conditional ``sample``.
 """
 
 from gensbi.normalizing_flows.flow import Flow, make_maf
+from gensbi.normalizing_flows.bijections.transformers import Affine, RQSpline
 
-__all__ = ["Flow", "make_maf"]
+__all__ = ["Flow", "make_maf", "Affine", "RQSpline"]

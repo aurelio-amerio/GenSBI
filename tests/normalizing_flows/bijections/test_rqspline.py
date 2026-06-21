@@ -84,3 +84,9 @@ def test_vector_inverse_forward_roundtrip():
     x_rec, ld_fwd = spline.forward(u, params)
     assert jnp.allclose(x_rec, x, atol=1e-4)
     assert jnp.allclose(ld_inv + ld_fwd, 0.0, atol=1e-4)   # logdets cancel
+
+
+def test_rqspline_exported():
+    from gensbi.normalizing_flows.bijections import RQSpline as A
+    from gensbi.normalizing_flows import RQSpline as B
+    assert A is RQSpline and B is RQSpline

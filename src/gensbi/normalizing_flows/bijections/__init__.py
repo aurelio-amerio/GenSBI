@@ -6,9 +6,9 @@ from gensbi.normalizing_flows.bijections.made import MADE, MaskedAutoregressive
 from gensbi.normalizing_flows.bijections.masked_linear import MaskedLinear
 from gensbi.normalizing_flows.bijections.permutation import Permutation
 from gensbi.normalizing_flows.bijections.standardize import Standardize
-from gensbi.normalizing_flows.bijections.transformers import Affine
+from gensbi.normalizing_flows.bijections.transformers import Affine, RQSpline
 
 __all__ = [
     "Bijection", "Mask", "Chain", "MADE", "MaskedAutoregressive",
-    "MaskedLinear", "Permutation", "Standardize", "Affine",
+    "MaskedLinear", "Permutation", "Standardize", "Affine", "RQSpline",
 ]
