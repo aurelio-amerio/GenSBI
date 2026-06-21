@@ -49,3 +49,22 @@ class NLEPosterior:
             return -(log_like + log_prior)
 
         return U
+
+    def sample(self, key, x_o, nsamples=None):
+        """Draw posterior samples via NUTS. Returns ``(n, dim_theta, 1)``.
+
+        Uses the potential-function route: ``init_params`` is a single draw from
+        the prior, so ``mcmc.get_samples()`` returns a raw ``(n, dim_theta)`` array.
+        """
+        from numpyro.infer import MCMC, NUTS
+
+        n = self.num_samples if nsamples is None else nsamples
+        potential = self.potential(x_o)
+        kernel = NUTS(potential_fn=potential)
+        mcmc = MCMC(kernel, num_warmup=self.num_warmup, num_samples=n,
+                    num_chains=self.num_chains, progress_bar=False)
+        key, key_init = jax.random.split(key)
+        init_params = self.prior.sample(key_init, ())        # (dim_theta,)
+        mcmc.run(key, init_params=init_params)
+        samples = jnp.asarray(mcmc.get_samples())            # (n, dim_theta)
+        return _expand_dims(samples)                         # (n, dim_theta, 1)
