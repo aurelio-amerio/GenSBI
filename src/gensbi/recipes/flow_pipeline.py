@@ -87,7 +87,18 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     # --- methods implemented in later tasks (Tasks 3, 5, 6) ---
     def get_loss_fn(self):
-        raise NotImplementedError("Implemented in Task 3.")
+        """Return ``loss_fn(model, batch, key) -> scalar`` (key unused).
+
+        ``batch = (obs, cond)`` each ``(B, dim, 1)``. NPE: obs=theta, cond=x.
+        Loss is the mean negative log-likelihood ``-mean(log q(obs | cond))``.
+        """
+        def loss_fn(model, batch, key):
+            obs, cond = batch
+            obs = _squeeze_ch(obs)        # (B, dim_obs)
+            cond = _squeeze_ch(cond)      # (B, dim_cond)
+            return -jnp.mean(model.log_prob(obs, cond))
+
+        return loss_fn
 
     def get_sampler(self, *args, **kwargs):
         raise NotImplementedError("Implemented in Task 5.")

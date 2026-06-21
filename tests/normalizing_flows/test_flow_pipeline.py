@@ -73,3 +73,28 @@ def test_init_and_wrap():
 def test_stubs_raise():
     with pytest.raises(NotImplementedError):
         ConditionalFlowPipeline.get_default_params(2, 3, 1, 1)
+
+
+def test_loss_fn_scalar_and_finite():
+    pipe = build_pipeline()
+    loss_fn = pipe.get_loss_fn()
+    obs = jnp.asarray(DATA[:32, :DIM_OBS])      # (32, DIM_OBS, 1)
+    cond = jnp.asarray(DATA[:32, DIM_OBS:])     # (32, DIM_COND, 1)
+    loss = loss_fn(pipe.model, (obs, cond), key=jax.random.PRNGKey(0))
+    assert loss.shape == ()
+    assert jnp.isfinite(loss)
+
+
+def test_loss_fn_has_param_gradients():
+    # The flow's MaskedLinear kernels are nnx.Param; grads must flow to them.
+    pipe = build_pipeline()
+    loss_fn = pipe.get_loss_fn()
+    obs = jnp.asarray(DATA[:32, :DIM_OBS])
+    cond = jnp.asarray(DATA[:32, DIM_OBS:])
+    # zero_init=True zeroes the MADE OUTPUT layer, so at init the OUTPUT-layer
+    # weights carry the gradient (hidden/input grads are 0 until the output
+    # moves off zero). It suffices that SOME Param leaf has a non-zero gradient.
+    grads = nnx.grad(loss_fn)(pipe.model, (obs, cond), jax.random.PRNGKey(0))
+    leaves = jax.tree_util.tree_leaves(grads)
+    assert len(leaves) > 0
+    assert any(jnp.any(jnp.abs(g) > 0) for g in leaves)
