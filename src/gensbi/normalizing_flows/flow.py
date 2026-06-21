@@ -54,6 +54,20 @@ class Flow(nnx.Module):
             return jax.vmap(lambda ui: single(ui, None))(u)
         return jax.vmap(single)(u, cond)
 
+    def set_standardization(self, mean, std) -> None:
+        """Set the data-end Standardize bijection's mean/std buffers in place.
+
+        Raises ValueError if the flow was built with ``standardize=False``.
+        """
+        mean = jnp.asarray(mean)
+        std = jnp.asarray(std)
+        for b in self.chain.bijections:
+            if isinstance(b, Standardize):
+                b.set_stats(mean, std)
+                return
+        raise ValueError(
+            "Flow has no Standardize bijection (built with standardize=False).")
+
 
 def make_maf(rngs, dim, cond_dim=0, n_layers=5, transformer=None,
              nn_width=64, nn_depth=2, permutation="reverse",

@@ -63,3 +63,29 @@ def test_masks_are_not_params():
     # masks ARE present as buffers
     masks = nnx.state(flow, Mask)
     assert len(jax.tree_util.tree_leaves(masks)) > 0
+
+
+def test_set_standardization_sets_buffers():
+    import jax.numpy as jnp
+    from flax import nnx
+    from gensbi.normalizing_flows import make_maf
+    from gensbi.normalizing_flows.bijections.standardize import Standardize
+
+    flow = make_maf(nnx.Rngs(0), dim=3, cond_dim=2, n_layers=2, standardize=True)
+    mean = jnp.array([1.0, -2.0, 0.5])
+    std = jnp.array([2.0, 0.5, 3.0])
+    flow.set_standardization(mean, std)
+
+    std_bij = [b for b in flow.chain.bijections if isinstance(b, Standardize)][0]
+    assert jnp.allclose(std_bij.mean.value, mean)
+    assert jnp.allclose(std_bij.std.value, std)
+
+
+def test_set_standardization_raises_without_bijection():
+    import pytest
+    from flax import nnx
+    from gensbi.normalizing_flows import make_maf
+
+    flow = make_maf(nnx.Rngs(0), dim=2, cond_dim=1, n_layers=2, standardize=False)
+    with pytest.raises(ValueError):
+        flow.set_standardization([0.0, 0.0], [1.0, 1.0])
