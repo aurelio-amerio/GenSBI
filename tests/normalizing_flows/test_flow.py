@@ -89,3 +89,25 @@ def test_set_standardization_raises_without_bijection():
     flow = make_maf(nnx.Rngs(0), dim=2, cond_dim=1, n_layers=2, standardize=False)
     with pytest.raises(ValueError):
         flow.set_standardization([0.0, 0.0], [1.0, 1.0])
+
+
+def test_zero_init_spline_flow_is_standard_normal():
+    import jax
+    import jax.numpy as jnp
+    from flax import nnx
+    from gensbi.normalizing_flows import make_maf
+    from gensbi.normalizing_flows.bijections.transformers import RQSpline
+    from gensbi.core.prior import make_gaussian_prior
+
+    dim, cond_dim = 3, 2
+    flow = make_maf(nnx.Rngs(0), dim=dim, cond_dim=cond_dim, n_layers=4,
+                    transformer=RQSpline(num_bins=8, range_bound=5.0),
+                    standardize=True, zero_init=True)
+    base = make_gaussian_prior((dim,))
+
+    x = jax.random.normal(jax.random.PRNGKey(1), (16, dim))
+    cond = jax.random.normal(jax.random.PRNGKey(2), (16, cond_dim))
+    lp = flow.log_prob(x, cond)
+    lp_base = jax.vmap(base.log_prob)(x)
+    # zero-init spline is the identity => flow density == base density
+    assert jnp.allclose(lp, lp_base, atol=1e-4)
