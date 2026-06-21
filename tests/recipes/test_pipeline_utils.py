@@ -12,7 +12,7 @@ import pytest
 
 from gensbi.recipes.joint_pipeline import sample_condition_mask
 
-from gensbi.recipes.utils import init_ids_1d, init_ids_2d, init_ids_joint
+from gensbi.recipes.utils import init_ids_1d, init_ids_2d, init_ids_joint, _normalize_patch_size
 
 
 def test_sample_condition_mask():
@@ -57,6 +57,30 @@ def test_init_ids_2d():
     return
 
 
+def test_normalize_patch_size():
+    assert _normalize_patch_size(8) == (8, 8)
+    assert _normalize_patch_size(2) == (2, 2)
+    assert _normalize_patch_size((8, 1)) == (8, 1)
+    assert _normalize_patch_size([4, 2]) == (4, 2)
+    with pytest.raises(ValueError):
+        _normalize_patch_size((1, 2, 3))
+
+
+def test_init_ids_2d_with_patch_size():
+    dim = (16, 16)
+    # patch size 8 -> 2x2 = 4 tokens
+    ids, dim_ = init_ids_2d(dim, size=8)
+    assert ids.shape == (1, (16 // 8) * (16 // 8), 3)
+    assert dim_ == 4
+    # default size=2 is unchanged (backward compat)
+    ids2, dim2 = init_ids_2d(dim)
+    assert dim2 == (16 // 2) * (16 // 2)
+    assert ids2.shape == (1, 64, 3)
+    # size=1 means no patchification: one token per pixel
+    _, dim1 = init_ids_2d(dim, size=1)
+    assert dim1 == 16 * 16
+
+
 def test_init_ids_joint():
     dim_obs = 3
     dim_cond = 4
@@ -72,6 +96,7 @@ def test_init_ids_joint():
 
 from gensbi.recipes.utils import (
     patchify_2d,
+    depatchify_2d,
     _resolve_embedding_ids,
     build_edm_path,
     build_sm_path,
@@ -120,4 +145,45 @@ def test_parse_training_config_ema_decay_in_optimizer():
         result = parse_training_config(f.name)
 
     assert result["ema_decay"] == 0.123
+
+
+def test_resolve_embedding_ids_patch_size():
+    # 2D strategy uses size -> 16/8 * 16/8 = 4 tokens
+    ids, dim_ = _resolve_embedding_ids((16, 16), "rope2d", semantic_id=0, size=8)
+    assert dim_ == 4
+    assert ids.shape == (1, 4, 3)
+    # 1D strategy ignores size by construction (routes to init_ids_1d)
+    ids1, dim1 = _resolve_embedding_ids(5, "absolute", semantic_id=0, size=8)
+    assert dim1 == 5
+    assert ids1.shape == (1, 5, 2)  # semantic_id given -> last dim is 2
+
+
+def test_depatchify_2d_roundtrip_square():
+    x = jax.random.normal(jax.random.PRNGKey(0), (2, 16, 16, 3))
+    patched = patchify_2d(x, size=2)            # (2, 64, 12)
+    restored = depatchify_2d(patched, size=2, grid=(8, 8))
+    assert restored.shape == x.shape
+    assert jnp.allclose(restored, x)
+
+
+def test_depatchify_2d_roundtrip_nonsquare():
+    x = jax.random.normal(jax.random.PRNGKey(1), (2, 16, 8, 3))
+    patched = patchify_2d(x, size=2)            # (2, 32, 12)
+    restored = depatchify_2d(patched, size=2, grid=(8, 4))
+    assert restored.shape == x.shape
+    assert jnp.allclose(restored, x)
+
+
+def test_depatchify_2d_infers_square_when_grid_omitted():
+    x = jax.random.normal(jax.random.PRNGKey(2), (2, 16, 16, 3))
+    patched = patchify_2d(x, size=2)
+    restored = depatchify_2d(patched, size=2)   # grid=None => assume square
+    assert restored.shape == x.shape
+    assert jnp.allclose(restored, x)
+
+
+def test_depatchify_2d_raises_for_nonsquare_when_grid_omitted():
+    x = jax.random.normal(jax.random.PRNGKey(3), (1, 6, 12))  # 6 tokens, not a square
+    with pytest.raises(ValueError, match="Cannot infer a square grid"):
+        depatchify_2d(x, size=2)  # grid=None
 

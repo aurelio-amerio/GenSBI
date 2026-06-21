@@ -1,4 +1,8 @@
 from .vae_pipeline import VAE1DPipeline, VAE2DPipeline
+from gensbi.experimental.recipes.field_pipeline import (
+    FieldConditionalPipeline,
+    FieldConditionalWrapper,
+)
 
 # from .latent_conditional_pipeline import ConditionalLatentFlowPipeline, ConditionalLatentDiffusionPipeline
 
@@ -7,6 +11,8 @@ from .vae_pipeline import VAE1DPipeline, VAE2DPipeline
 __all__ = [
     "VAE1DPipeline",
     "VAE2DPipeline",
+    "FieldConditionalPipeline",
+    "FieldConditionalWrapper",
     # "ConditionalLatentFlowPipeline",
     # "ConditionalLatentDiffusionPipeline",
     # "Flux1LatentFlowPipeline",

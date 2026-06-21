@@ -18,6 +18,7 @@ from gensbi.flow_matching.path.scheduler import CondOTScheduler
 from gensbi.flow_matching.solver.fm_ode_solver import FMODESolver
 
 from gensbi.flow_matching.loss import FMLoss
+from gensbi.core.time_sampling import sample_time
 
 
 class FlowMatchingMethod(GenerativeMethod):
@@ -33,6 +34,12 @@ class FlowMatchingMethod(GenerativeMethod):
         ``log_prob(x)``. Validated against ``event_shape`` in
         :meth:`build_path`. If ``None``, a standard normal prior is
         constructed automatically.
+    time_dist : str, optional
+        Training-time timestep distribution used in :meth:`prepare_batch`.
+        ``"uniform"`` (default) is bit-identical to the previous behaviour;
+        ``"logitnormal"`` draws ``sigmoid(logitnorm_mean + logitnorm_std * N(0, 1))``.
+    logitnorm_mean, logitnorm_std : float, optional
+        Mean/std of the underlying normal for ``time_dist="logitnormal"``.
 
     Examples
     --------
@@ -51,9 +58,17 @@ class FlowMatchingMethod(GenerativeMethod):
     >>> method = FlowMatchingMethod(prior=prior)
     """
 
-    def __init__(self, prior=None):
+    def __init__(self, prior=None, *, time_dist="uniform",
+                 logitnorm_mean=0.0, logitnorm_std=1.0):
+        if time_dist not in ("uniform", "logitnormal"):
+            raise ValueError(
+                f"time_dist must be 'uniform' or 'logitnormal', got {time_dist!r}"
+            )
         self._user_prior = prior
         self.prior = None
+        self.time_dist = time_dist
+        self.logitnorm_mean = float(logitnorm_mean)
+        self.logitnorm_std = float(logitnorm_std)
 
     def build_path(self, config, event_shape):
         """Build an affine probability path with the CondOT scheduler.
@@ -85,7 +100,7 @@ class FlowMatchingMethod(GenerativeMethod):
                 )
             self.prior = self._user_prior
         else:
-            self.prior = make_gaussian_prior(*event_shape)
+            self.prior = make_gaussian_prior(tuple(event_shape))
         return AffineProbPath(scheduler=CondOTScheduler())
 
     def build_loss(self, path, weights=None):
@@ -122,11 +137,16 @@ class FlowMatchingMethod(GenerativeMethod):
         -------
         tuple
             ``(x_0, x_1, t)`` where ``x_0`` is drawn from the prior and
-            ``t`` is uniform in ``[0, 1)``.
+            ``t`` follows ``time_dist`` (uniform in ``[0, 1)`` by default).
         """
         rng_x0, rng_t = jax.random.split(key)
         x_0 = self.prior.sample(rng_x0, (x_1.shape[0],))
-        t = jax.random.uniform(rng_t, (x_1.shape[0],))
+        t = sample_time(
+            rng_t, x_1.shape[0],
+            dist=self.time_dist,
+            logitnorm_mean=self.logitnorm_mean,
+            logitnorm_std=self.logitnorm_std,
+        )
         return (x_0, x_1, t)
 
     def get_default_solver(self):

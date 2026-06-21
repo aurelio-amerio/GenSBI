@@ -38,3 +38,29 @@ def test_is_gaussian_prior_false():
 
     prior = dist.Uniform(0, 1)
     assert not is_gaussian_prior(prior)
+
+
+def test_legacy_two_int_form():
+    prior = make_gaussian_prior(5, 1)
+    assert prior.event_shape == (5, 1)
+    assert is_gaussian_prior(prior)
+
+
+def test_event_shape_tuple_form():
+    prior = make_gaussian_prior((8, 8, 2))
+    assert prior.event_shape == (8, 8, 2)
+    assert is_gaussian_prior(prior)
+    s = prior.sample(jax.random.PRNGKey(0), (4,))
+    assert s.shape == (4, 8, 8, 2)
+
+
+def test_three_positional_ints_raise():
+    """make_gaussian_prior(H, W, C) used to silently read C as the MEAN."""
+    with pytest.raises(TypeError):
+        make_gaussian_prior(8, 8, 2)
+
+
+def test_mu_sigma_keywords():
+    prior = make_gaussian_prior((4, 4, 1), mu=2.0, sigma=3.0)
+    assert jnp.allclose(prior.base_dist.loc, 2.0)
+    assert jnp.allclose(prior.base_dist.scale, 3.0)

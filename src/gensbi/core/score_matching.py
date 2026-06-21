@@ -70,9 +70,9 @@ class ScoreMatchingMethod(GenerativeMethod):
         path = build_sm_path(self.sde_type, config)
 
         if self.sde_type == "VP":
-            self.prior = make_gaussian_prior(*event_shape)
+            self.prior = make_gaussian_prior(tuple(event_shape))
         else:  # VE
-            self.prior = make_gaussian_prior(*event_shape, sigma=path.scheduler.sigma_max)
+            self.prior = make_gaussian_prior(tuple(event_shape), sigma=path.scheduler.sigma_max)
 
         return path
 

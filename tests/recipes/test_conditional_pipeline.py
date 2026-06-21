@@ -129,3 +129,56 @@ class TestSampleBatchWarning:
             except (ValueError, Exception):
                 # Mock model may fail on broadcast; we only care about the warning
                 pass
+
+
+# ---------------------------------------------------------------------------
+# Patch-size threading tests
+# ---------------------------------------------------------------------------
+
+
+def test_conditional_pipeline_patch_size():
+    """size threads to obs_ids for a 2D obs strategy; cond (1D) is unaffected."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = ConditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+
+        p = ConditionalPipeline(
+            model=MockConditionalModel(),
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=(16, 16),
+            dim_cond=3,
+            method=FlowMatchingMethod(),
+            id_embedding_strategy=("rope2d", "absolute"),
+            size=8,
+            training_config=training_config,
+        )
+        # obs: 16//8 * 16//8 = 4 patch tokens
+        assert p.obs_ids.shape[1] == 4
+        assert p.dim_obs == 4
+        # cond is 1D -> size ignored, 3 tokens
+        assert p.cond_ids.shape[1] == 3
+        assert p.dim_cond == 3
+
+
+def test_conditional_pipeline_patch_size_tuple():
+    """A tuple lets obs and cond differ; cond 1D still ignores its entry."""
+    home = os.path.expanduser("~")
+    with tempfile.TemporaryDirectory(dir=home) as model_dir:
+        training_config = ConditionalPipeline.get_default_training_config()
+        training_config["checkpoint_dir"] = model_dir
+
+        p = ConditionalPipeline(
+            model=MockConditionalModel(),
+            train_dataset=train_dataset,
+            val_dataset=val_dataset,
+            dim_obs=(16, 16),
+            dim_cond=3,
+            method=FlowMatchingMethod(),
+            id_embedding_strategy=("rope2d", "absolute"),
+            size=(8, 1),
+            training_config=training_config,
+        )
+        assert p.obs_ids.shape[1] == 4
+        assert p.cond_ids.shape[1] == 3

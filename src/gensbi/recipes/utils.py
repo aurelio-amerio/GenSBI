@@ -24,6 +24,23 @@ def init_ids_joint(dim_obs: int, dim_cond: int):
 
 
 def init_ids_1d(dim: int, semantic_id: Union[int, None] = None):
+    """Build 1D positional IDs, returning ``(ids, dim)``.
+
+    ``ids`` is ``(1, dim, 1)`` when ``semantic_id is None`` (position only), or
+    ``(1, dim, 2)`` otherwise, with the position at axis 0 and the semantic id
+    at axis 1.
+
+    FIXME (axis-order footgun): this places the semantic id on the LAST axis,
+    which is the *reverse* of :func:`init_ids_2d` (semantic at axis 0, then h, w
+    -- the established convention). The two are safe in isolation, but they do
+    NOT line up if 1D and 2D ids are ever fed into the same RoPE grid (e.g.
+    FieldDiT Phase-2 obs+cond co-tokenization with a shared ``EmbedND``, where
+    ``axes_dim[i]`` is matched to ids axis ``i``). This should be unified to the
+    2D convention (semantic at axis 0). It is not changed here because callers
+    that pass ``semantic_id`` -- notably the Flux1 ``rope1d`` path via
+    :func:`init_ids` -- and any code indexing ``ids[..., k]`` must be updated in
+    lockstep.
+    """
     if semantic_id is None:
         ids = np.zeros((1, dim, 1), dtype=np.int32)
     else:
@@ -35,14 +52,46 @@ def init_ids_1d(dim: int, semantic_id: Union[int, None] = None):
     return jnp.array(ids, dtype=jnp.int32), dim
 
 
-def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0):
-    img_ids = np.zeros((dim[0] // 2, dim[1] // 2, 3), dtype=np.int32)
+def _normalize_patch_size(size):
+    """Normalize a patch-size spec into an ``(obs, cond)`` tuple.
+
+    Parameters
+    ----------
+    size : int or tuple of int
+        A single int is broadcast to both inputs (``8 -> (8, 8)``). A
+        length-2 tuple is taken as ``(obs_size, cond_size)`` so the two
+        inputs can use different patch sizes. Use ``1`` for an input that
+        is not patchified.
+
+    Returns
+    -------
+    tuple of int
+        ``(obs_size, cond_size)``.
+    """
+    if isinstance(size, int):
+        return (size, size)
+    size = tuple(size)
+    if len(size) != 2:
+        raise ValueError(
+            f"size must be an int or a length-2 (obs, cond) tuple, got {size!r}"
+        )
+    return size
+
+
+def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0, size: int = 2):
+    """Build 2D positional IDs for a patchified image grid.
+
+    The grid has one entry per patch, i.e. ``(dim[0] // size, dim[1] // size)``,
+    matching ``patchify_2d(x, size=size)``. ``size`` is the patch edge length;
+    use ``size=1`` for no patchification (one token per pixel).
+    """
+    img_ids = np.zeros((dim[0] // size, dim[1] // size, 3), dtype=np.int32)
     img_ids[..., 0] = semantic_id
-    img_ids[..., 1] = img_ids[..., 1] + np.arange(dim[0] // 2)[:, None]
-    img_ids[..., 2] = img_ids[..., 2] + np.arange(dim[1] // 2)[None, :]
+    img_ids[..., 1] = img_ids[..., 1] + np.arange(dim[0] // size)[:, None]
+    img_ids[..., 2] = img_ids[..., 2] + np.arange(dim[1] // size)[None, :]
     img_ids = repeat(img_ids, "h w c -> b (h w) c", b=1)
 
-    dim = (dim[0] // 2) * (dim[1] // 2)
+    dim = (dim[0] // size) * (dim[1] // size)
 
     return jnp.array(img_ids, dtype=jnp.int32), dim
 
@@ -51,9 +100,35 @@ def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0):
 def patchify_2d(x: Array, size=2):
     return rearrange(x, "b (h ph) (w pw) c -> b (h w) (c ph pw)", ph=size, pw=size)
 
-@jax.jit(static_argnames=["size"])
-def depatchify_2d(x: Array, size=2):
-    return rearrange(x, "b (h w) (c ph pw) -> b (h ph) (w pw) c", ph=size, pw=size)
+
+@jax.jit(static_argnames=["size", "grid"])
+def depatchify_2d(x: Array, size=2, grid=None):
+    """Inverse of :func:`patchify_2d`.
+
+    Parameters
+    ----------
+    x : Array
+        Patchified tensor of shape ``(B, h*w, C*size*size)``.
+    size : int
+        Patch edge length used by :func:`patchify_2d`.
+    grid : tuple of int, optional
+        The ``(h, w)`` patch grid. The grid cannot be inferred from the token
+        count alone, so it is required for non-square grids. If ``None``, a
+        square grid (``h == w``) is assumed.
+    """
+    if grid is None:
+        n = x.shape[1]
+        side = int(round(n ** 0.5))
+        if side * side != n:
+            raise ValueError(
+                f"Cannot infer a square grid from {n} tokens; pass grid=(h, w)."
+            )
+        h = w = side
+    else:
+        h, w = grid
+    return rearrange(
+        x, "b (h w) (c ph pw) -> b (h ph) (w pw) c", h=h, w=w, ph=size, pw=size
+    )
 
 
 def scale_lr(batch_size, base_lr=1e-4, reference_batch_size=256):
@@ -82,7 +157,7 @@ _EMBEDDINGS_1D = {"absolute", "pos1d", "rope1d"}
 _EMBEDDINGS_2D = {"pos2d", "rope2d"}
 
 
-def _resolve_embedding_ids(dim, strategy: str, semantic_id: int):
+def _resolve_embedding_ids(dim, strategy: str, semantic_id: int, size: int = 2):
     """Resolve ID embeddings by strategy name.
 
     Parameters
@@ -94,6 +169,9 @@ def _resolve_embedding_ids(dim, strategy: str, semantic_id: int):
         "pos2d", "rope2d").
     semantic_id : int
         Semantic identifier for the token group (0=obs, 1=cond).
+    size : int, optional
+        Patch edge length for 2D strategies (default 2). Ignored for 1D
+        strategies. Use 1 for no patchification.
 
     Returns
     -------
@@ -110,7 +188,7 @@ def _resolve_embedding_ids(dim, strategy: str, semantic_id: int):
     if strategy in _EMBEDDINGS_1D:
         return init_ids_1d(dim, semantic_id=semantic_id)
     elif strategy in _EMBEDDINGS_2D:
-        return init_ids_2d(dim, semantic_id=semantic_id)
+        return init_ids_2d(dim, semantic_id=semantic_id, size=size)
     else:
         raise ValueError(f"Unknown id embedding strategy: {strategy}")
 

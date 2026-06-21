@@ -39,7 +39,12 @@ import yaml
 
 from gensbi.recipes.pipeline import AbstractPipeline
 
-from gensbi.recipes.utils import _resolve_embedding_ids, build_edm_path, build_sm_path
+from gensbi.recipes.utils import (
+    _resolve_embedding_ids,
+    _normalize_patch_size,
+    build_edm_path,
+    build_sm_path,
+)
 
 import warnings
 
@@ -80,6 +85,12 @@ class ConditionalPipeline(AbstractPipeline):
     id_embedding_strategy : tuple of str, optional
         Embedding strategy for observation and conditioning IDs.
         Default is ``("absolute", "absolute")``.
+    size : int or tuple of int, optional
+        Patch edge length for 2D ID-embedding strategies. Default is ``2``.
+        A single ``int`` is broadcast to both obs and cond (``8 -> (8, 8)``).
+        A length-2 tuple ``(obs_size, cond_size)`` lets the two inputs differ.
+        Use ``1`` to disable patchification for an input. Ignored for 1D
+        strategies (``"absolute"``, ``"pos1d"``, ``"rope1d"``).
     params : optional
         Model parameters (stored but not used directly).
     training_config : dict, optional
@@ -109,6 +120,7 @@ class ConditionalPipeline(AbstractPipeline):
         ch_obs=1,
         ch_cond=1,
         id_embedding_strategy=("absolute", "absolute"),
+        size=2,
         params=None,
         training_config=None,
     ):
@@ -134,11 +146,12 @@ class ConditionalPipeline(AbstractPipeline):
             training_config=training_config,
         )
 
+        obs_size, cond_size = _normalize_patch_size(size)
         self.obs_ids, self.dim_obs = _resolve_embedding_ids(
-            dim_obs, id_embedding_strategy[0], semantic_id=0
+            dim_obs, id_embedding_strategy[0], semantic_id=0, size=obs_size
         )
         self.cond_ids, self.dim_cond = _resolve_embedding_ids(
-            dim_cond, id_embedding_strategy[1], semantic_id=1
+            dim_cond, id_embedding_strategy[1], semantic_id=1, size=cond_size
         )
 
         self.path = method.build_path(self.training_config, event_shape=(self.dim_obs, self.ch_obs))

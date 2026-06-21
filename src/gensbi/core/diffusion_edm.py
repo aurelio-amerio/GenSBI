@@ -65,7 +65,7 @@ class DiffusionEDMMethod(GenerativeMethod):
         EDMPath
             The configured diffusion path.
         """
-        self.prior = make_gaussian_prior(*event_shape)
+        self.prior = make_gaussian_prior(tuple(event_shape))
         return build_edm_path(self.sde, config)
 
     def build_loss(self, path, weights=None):
