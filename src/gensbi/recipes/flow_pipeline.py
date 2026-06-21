@@ -143,8 +143,17 @@ class ConditionalFlowPipeline(AbstractPipeline):
     def sample(self, key, x_o, nsamples=10_000, use_ema=True):
         return self.get_sampler(x_o, use_ema=use_ema)(key, nsamples)
 
-    def get_log_prob_fn(self, *args, **kwargs):
-        raise NotImplementedError("Implemented in Task 6.")
+    def get_log_prob_fn(self, x_o, use_ema=True):
+        """Return ``log_prob_fn(x_1) -> (B,)`` for one conditioning x_o."""
+        flow = self.ema_model if use_ema else self.model
+        cond = _single_cond(x_o)                  # (dim_cond,)
 
-    def log_prob(self, *args, **kwargs):
-        raise NotImplementedError("Implemented in Task 6.")
+        def log_prob_fn(x_1):
+            obs = _squeeze_ch(x_1)                 # (B, dim_obs)
+            cond_b = jnp.broadcast_to(cond, (obs.shape[0], cond.shape[0]))
+            return flow.log_prob(obs, cond_b)      # (B,)
+
+        return log_prob_fn
+
+    def log_prob(self, x_1, x_o, use_ema=True):
+        return self.get_log_prob_fn(x_o, use_ema=use_ema)(x_1)

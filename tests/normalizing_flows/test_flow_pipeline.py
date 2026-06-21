@@ -139,3 +139,33 @@ def test_sample_shape(tmp_path):
 
     s_ema = pipe.sample(jax.random.PRNGKey(1), x_o, nsamples=64, use_ema=True)
     assert s_ema.shape == (64, DIM_OBS, 1)
+
+
+def test_log_prob_shape(tmp_path):
+    pipe = build_pipeline(checkpoint_dir=str(tmp_path))
+    pipe.fit_standardization(DATA[:800, :DIM_OBS])
+    pipe.train(nnx.Rngs(0), nsteps=2, save_model=False)
+
+    x_1 = jnp.zeros((5, DIM_OBS, 1))
+    x_o = jnp.zeros((1, DIM_COND, 1))
+    lp = pipe.log_prob(x_1, x_o, use_ema=False)
+    assert lp.shape == (5,)
+    assert jnp.all(jnp.isfinite(lp))
+
+
+def test_log_prob_depends_on_condition(tmp_path):
+    # Test the property on a LIVE flow (zero_init=False) so cond-dependence is
+    # present immediately and does not rely on training dynamics. Phase-0
+    # conditioning is concat-at-rank −1, so every output dim depends on cond.
+    flow = make_maf(nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND, n_layers=4,
+                    nn_width=32, nn_depth=2, standardize=True, zero_init=False)
+    cfg = ConditionalFlowPipeline.get_default_training_config()
+    cfg["checkpoint_dir"] = str(tmp_path)
+    pipe = ConditionalFlowPipeline(
+        flow, _make_ds(DATA[:800]), _make_ds(DATA[800:]),
+        DIM_OBS, DIM_COND, ch_obs=1, ch_cond=1, training_config=cfg)
+
+    x_1 = jnp.zeros((5, DIM_OBS, 1))
+    lp_a = pipe.log_prob(x_1, jnp.zeros((1, DIM_COND, 1)), use_ema=False)
+    lp_b = pipe.log_prob(x_1, jnp.ones((1, DIM_COND, 1)), use_ema=False)
+    assert not jnp.allclose(lp_a, lp_b)
