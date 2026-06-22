@@ -77,8 +77,8 @@ def test_set_standardization_sets_buffers():
     flow.set_standardization(mean, std)
 
     std_bij = [b for b in flow.chain.bijections if isinstance(b, Standardize)][0]
-    assert jnp.allclose(std_bij.mean.value, mean)
-    assert jnp.allclose(std_bij.std.value, std)
+    assert jnp.allclose(std_bij.mean[...], mean)
+    assert jnp.allclose(std_bij.std[...], std)
 
 
 def test_set_standardization_raises_without_bijection():

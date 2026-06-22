@@ -116,8 +116,8 @@ def test_fit_standardization_sets_both_models():
     expected_std = jnp.std(theta[..., 0], axis=0)
     for flow in (pipe.model, pipe.ema_model):
         sb = _get_std(flow)
-        assert jnp.allclose(sb.mean.value, expected_mean, atol=1e-4)
-        assert jnp.allclose(sb.std.value, expected_std, atol=1e-4)
+        assert jnp.allclose(sb.mean[...], expected_mean, atol=1e-4)
+        assert jnp.allclose(sb.std[...], expected_std, atol=1e-4)
     assert pipe._standardized is True
 
 

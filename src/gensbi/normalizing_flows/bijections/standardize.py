@@ -18,13 +18,13 @@ class Standardize(Bijection):
         self.std = Mask(jnp.ones((dim,)))
 
     def set_stats(self, mean: Array, std: Array) -> None:
-        self.mean.value = jnp.asarray(mean, dtype=self.mean.value.dtype)
-        self.std.value = jnp.asarray(std, dtype=self.std.value.dtype)
+        self.mean[...] = jnp.asarray(mean, dtype=self.mean[...].dtype)
+        self.std[...] = jnp.asarray(std, dtype=self.std[...].dtype)
 
     def inverse(self, x: Array, cond: Array | None = None):
-        u = (x - self.mean.value) / self.std.value
-        return u, -jnp.sum(jnp.log(self.std.value))
+        u = (x - self.mean[...]) / self.std[...]
+        return u, -jnp.sum(jnp.log(self.std[...]))
 
     def forward(self, u: Array, cond: Array | None = None):
-        x = u * self.std.value + self.mean.value
-        return x, jnp.sum(jnp.log(self.std.value))
+        x = u * self.std[...] + self.mean[...]
+        return x, jnp.sum(jnp.log(self.std[...]))

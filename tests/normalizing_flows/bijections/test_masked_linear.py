@@ -31,7 +31,7 @@ def test_masked_linear_grad_is_zero_on_masked_weights():
 
     grads = nnx.grad(loss)(layer, jnp.ones((3,)))
     # gradient w.r.t. masked-out kernel entries (column 1) must be exactly zero
-    assert jnp.all(grads["linear"]["kernel"].value[:, 1] == 0.0)
+    assert jnp.all(grads["linear"]["kernel"][...][:, 1] == 0.0)
 
 
 def test_mask_is_not_a_param():

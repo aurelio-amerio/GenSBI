@@ -88,10 +88,10 @@ class MADE(nnx.Module):
                                          rngs=rngs, param_dtype=param_dtype)
         if zero_init:
             # Identity warm-start: zero output params -> affine is identity.
-            self.output_layer.linear.kernel.value = jnp.zeros_like(
-                self.output_layer.linear.kernel.value)
-            self.output_layer.linear.bias.value = jnp.zeros_like(
-                self.output_layer.linear.bias.value)
+            self.output_layer.linear.kernel[...] = jnp.zeros_like(
+                self.output_layer.linear.kernel[...])
+            self.output_layer.linear.bias[...] = jnp.zeros_like(
+                self.output_layer.linear.bias[...])
 
     def __call__(self, x: Array, cond: Array | None = None) -> Array:
         if self.cond_dim > 0:

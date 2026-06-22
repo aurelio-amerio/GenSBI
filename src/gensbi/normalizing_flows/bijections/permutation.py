@@ -27,7 +27,7 @@ class Permutation(Bijection):
         return cls(jax.random.permutation(rngs.params(), dim))
 
     def inverse(self, x: Array, cond: Array | None = None):
-        return x[self.perm.value], jnp.array(0.0)
+        return x[self.perm[...]], jnp.array(0.0)
 
     def forward(self, u: Array, cond: Array | None = None):
-        return u[self.inv_perm.value], jnp.array(0.0)
+        return u[self.inv_perm[...]], jnp.array(0.0)

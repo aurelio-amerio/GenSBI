@@ -31,5 +31,5 @@ class MaskedLinear(nnx.Module):
         self.mask = Mask(jnp.asarray(mask, dtype=param_dtype))
 
     def __call__(self, x: Array) -> Array:
-        masked_kernel = self.linear.kernel.value * self.mask.value
-        return x @ masked_kernel + self.linear.bias.value
+        masked_kernel = self.linear.kernel[...] * self.mask[...]
+        return x @ masked_kernel + self.linear.bias[...]
