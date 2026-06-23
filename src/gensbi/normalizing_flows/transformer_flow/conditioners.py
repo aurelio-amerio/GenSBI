@@ -20,7 +20,6 @@ class VectorConditioner(nnx.Module):
 
     def __init__(self, cond_dim: int, channels: int, rngs: nnx.Rngs):
         self.cond_dim = cond_dim
-        self.channels = channels
         if cond_dim > 0:
             self.l1 = nnx.Linear(cond_dim, channels, rngs=rngs)
             self.l2 = nnx.Linear(channels, channels, rngs=rngs)

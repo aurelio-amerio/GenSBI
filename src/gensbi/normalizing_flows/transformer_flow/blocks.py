@@ -8,6 +8,8 @@ import jax.numpy as jnp
 from flax import nnx
 from jax import Array
 
+from gensbi.normalizing_flows.bijections.base import Mask
+
 
 class AttentionBlock(nnx.Module):
     """Pre-norm residual block: causal self-attention + MLP.
@@ -40,9 +42,6 @@ class AttentionBlock(nnx.Module):
         x = x + self.proj(attn.reshape(B, T, C))
         h = self.mlp_out(jax.nn.gelu(self.mlp_in(self.norm2(x))))
         return x + h
-
-
-from gensbi.normalizing_flows.bijections.base import Mask
 
 
 class MetaBlock(nnx.Module):
