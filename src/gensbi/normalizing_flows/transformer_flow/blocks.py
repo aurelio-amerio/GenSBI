@@ -40,3 +40,73 @@ class AttentionBlock(nnx.Module):
         x = x + self.proj(attn.reshape(B, T, C))
         h = self.mlp_out(jax.nn.gelu(self.mlp_in(self.norm2(x))))
         return x + h
+
+
+from gensbi.normalizing_flows.bijections.base import Mask
+
+
+class MetaBlock(nnx.Module):
+    """One exact autoregressive bijection over a token sequence.
+
+    inverse (data→noise): per-token affine ``z = (x − b)·exp(−a)`` with
+    ``(a, b)`` produced by causal attention + shift-by-one, so token i's params
+    depend only on tokens < i ⇒ triangular Jacobian, ``logdet = −Σ a``.
+    forward (noise→data): sequential scan re-running the causal pass on the
+    partially-built sequence (mirrors ``MaskedAutoregressive.forward``).
+    """
+
+    def __init__(self, F, channels, T, perm, inv_perm, conditioner,
+                 num_layers, head_dim, expansion, rngs, zero_init=True):
+        self.F = F
+        self.T = T
+        self.perm = Mask(jnp.asarray(perm, dtype=jnp.int32))
+        self.inv_perm = Mask(jnp.asarray(inv_perm, dtype=jnp.int32))
+        self.conditioner = conditioner
+        self.proj_in = nnx.Linear(F, channels, rngs=rngs)
+        self.pos_embed = nnx.Param(
+            jax.random.normal(rngs.params(), (T, channels)) * 1e-2)
+        self.attn_blocks = nnx.List(
+            [AttentionBlock(channels, head_dim, expansion, rngs)
+             for _ in range(num_layers)])
+        self.proj_out = nnx.Linear(channels, 2 * F, rngs=rngs)
+        if zero_init:
+            self.proj_out.kernel[...] = jnp.zeros_like(self.proj_out.kernel[...])
+            self.proj_out.bias[...] = jnp.zeros_like(self.proj_out.bias[...])
+
+    def _params(self, x_perm: Array, cond: Array | None):
+        """(a, b) for the permuted tokens; shifted so params[i] sees tokens < i."""
+        signal = self.conditioner.embed(cond)
+        h = self.proj_in(x_perm) + self.pos_embed[...][None]   # (B, T, C)
+        h = self.conditioner.inject(h, signal)
+        for blk in self.attn_blocks:
+            h = blk(h)
+        out = self.proj_out(h)                                 # (B, T, 2F)
+        out = jnp.concatenate(
+            [jnp.zeros_like(out[:, :1]), out[:, :-1]], axis=1)  # shift-by-one
+        a, b = jnp.split(out, 2, axis=-1)                      # each (B, T, F)
+        return a, b
+
+    def inverse(self, x: Array, cond: Array | None = None):
+        x = x.reshape(x.shape[0], self.T, self.F)
+        xp = x[:, self.perm[...]]
+        a, b = self._params(xp, cond)
+        z = (xp - b) * jnp.exp(-a)
+        logdet = -jnp.sum(a, axis=(1, 2))                      # (B,)
+        z = z[:, self.inv_perm[...]]
+        return z, logdet
+
+    def forward(self, z: Array, cond: Array | None = None):
+        z = z.reshape(z.shape[0], self.T, self.F)
+        zp = z[:, self.perm[...]]
+
+        def body(x, i):
+            a, b = self._params(x, cond)        # a[:,i],b[:,i] depend on tokens < i
+            xi = zp[:, i, :] * jnp.exp(a[:, i, :]) + b[:, i, :]
+            return x.at[:, i, :].set(xi), None
+
+        x = jnp.zeros_like(zp)
+        x, _ = jax.lax.scan(body, x, jnp.arange(self.T))
+        a, _ = self._params(x, cond)
+        logdet = jnp.sum(a, axis=(1, 2))                       # (B,), +Σa
+        x = x[:, self.inv_perm[...]]
+        return x, logdet
