@@ -8,8 +8,17 @@ model in the existing `normalizing_flows/` track alongside the MAF/NSF flows.
 Reference algorithm: TarFlow — *Normalizing Flows are Capable Generative Models*
 (Zhai et al. 2024, arXiv:2412.06329). Source notes:
 `docs/superpowers/notes/tarflow_port_handout.md`. Reference implementation:
-`reference/ml-tarflow` (PyTorch, Apple; "All Rights Reserved" — **clean-room
-reimplementation**, no code vendored, paper cited).
+`reference/ml-tarflow` (PyTorch, Apple).
+
+**Licensing:** despite its "All Rights Reserved" header, the Apple license body
+is **permissive** (BSD-style): it grants use, modification, and redistribution
+provided the notice is retained and Apple's name is not used to endorse derived
+works. GenSBI is Apache-2.0, which is compatible. So this is a **faithful
+adaptation** of the reference (not a strict clean-room reimplementation), with
+Apple's copyright notice + license text retained verbatim in
+`src/gensbi/normalizing_flows/transformer_flow/LICENSE.apple` and a short
+attribution header in the adapted source files. The class is named
+`TransformerFlow` (descriptive; avoids using Apple's marks to promote the work).
 
 ## 1. Goal & scope
 
