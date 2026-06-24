@@ -122,3 +122,15 @@ def test_prefix_zero_init_identity():
     z, logdet = blk.inverse(x, cond)
     assert jnp.allclose(z, x, atol=1e-6)
     assert jnp.allclose(logdet, 0.0, atol=1e-6)
+
+
+def test_prefix_conditions_output():
+    """The prefix must actually condition (a,b): different conditions must give
+    different z. Guards against a regression that silently ignores the prefix."""
+    blk = _make_prefix(F=1, zero_init=False)
+    x = jax.random.normal(jax.random.PRNGKey(9), (2, 4, 1))
+    cond1 = jnp.broadcast_to(jnp.array([0.3, -0.4]), (2, 2))
+    cond2 = jnp.broadcast_to(jnp.array([-0.7, 0.9]), (2, 2))
+    z1, _ = blk.inverse(x, cond1)
+    z2, _ = blk.inverse(x, cond2)
+    assert not jnp.allclose(z1, z2, atol=1e-6)
