@@ -79,6 +79,17 @@ class MetaBlock(nnx.Module):
             self.proj_out.kernel[...] = jnp.zeros_like(self.proj_out.kernel[...])
             self.proj_out.bias[...] = jnp.zeros_like(self.proj_out.bias[...])
 
+    def _prefix_mask(self, M: int, T: int) -> Array:
+        """Prefix-LM mask over [prefix(M); modeled(T)]: modeled is causal and
+        sees all prefix; prefix is bidirectional among itself and never sees
+        modeled (cond→x blocked)."""
+        S = M + T
+        idx = jnp.arange(S)
+        is_modeled_q = idx[:, None] >= M
+        is_prefix_k = idx[None, :] < M
+        causal = idx[None, :] <= idx[:, None]
+        return jnp.where(is_modeled_q, is_prefix_k | causal, is_prefix_k)
+
     def _params(self, x_perm: Array, cond: Array | None):
         """(a, b) for the permuted tokens. SOS input-shift makes token i's
         params depend only on tokens < i (and the condition)."""
@@ -89,8 +100,16 @@ class MetaBlock(nnx.Module):
         h = self.proj_in(x_in) + self.pos_embed[...][None]      # (B, T, C)
         if bias is not None:
             h = h + bias[:, None, :]
-        for blk in self.attn_blocks:
-            h = blk(h)                                          # is_causal
+        if prefix is not None:
+            M = prefix.shape[1]
+            h = jnp.concatenate([prefix, h], axis=1)            # (B, M+T, C)
+            mask = self._prefix_mask(M, self.T)
+            for blk in self.attn_blocks:
+                h = blk(h, mask)
+            h = h[:, M:]                                        # (B, T, C) strip
+        else:
+            for blk in self.attn_blocks:
+                h = blk(h)
         out = self.proj_out(h)                                  # (B, T, 2F)
         a, b = jnp.split(out, 2, axis=-1)                       # each (B, T, F)
         return a, b
