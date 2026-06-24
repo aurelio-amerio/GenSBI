@@ -33,12 +33,15 @@ class AttentionBlock(nnx.Module):
         self.mlp_in = nnx.Linear(channels, channels * expansion, rngs=rngs)
         self.mlp_out = nnx.Linear(channels * expansion, channels, rngs=rngs)
 
-    def __call__(self, x: Array) -> Array:
+    def __call__(self, x: Array, mask: Array | None = None) -> Array:
         B, T, C = x.shape
         h = self.norm1(x)
         qkv = self.qkv(h).reshape(B, T, 3, self.num_heads, self.head_dim)
         q, k, v = qkv[:, :, 0], qkv[:, :, 1], qkv[:, :, 2]   # (B, T, nh, hd)
-        attn = jax.nn.dot_product_attention(q, k, v, is_causal=True)
+        if mask is None:
+            attn = jax.nn.dot_product_attention(q, k, v, is_causal=True)
+        else:
+            attn = jax.nn.dot_product_attention(q, k, v, mask=mask[None, None])
         x = x + self.proj(attn.reshape(B, T, C))
         h = self.mlp_out(jax.nn.gelu(self.mlp_in(self.norm2(x))))
         return x + h
