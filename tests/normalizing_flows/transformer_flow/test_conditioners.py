@@ -23,3 +23,35 @@ def test_missing_cond_raises():
     c = VectorConditioner(3, 8, rngs=nnx.Rngs(0))
     with pytest.raises(ValueError):
         c.embed(None)
+
+
+from gensbi.normalizing_flows.transformer_flow.conditioners import (
+    VectorPrefixConditioner, ImagePrefixConditioner,
+)
+
+
+def test_vector_prefix_shapes():
+    c = VectorPrefixConditioner(cond_dim=3, channels=8, num_tokens=2, rngs=nnx.Rngs(0))
+    assert c.M == 2
+    cond = jax.random.normal(jax.random.PRNGKey(1), (4, 3))
+    bias, prefix = c.embed(cond)
+    assert bias is None
+    assert prefix.shape == (4, 2, 8)
+
+
+def test_image_prefix_shapes():
+    # cond image 8x8x2, patch 2 -> M = 16 tokens
+    c = ImagePrefixConditioner(cond_channels=2, patch_size=2, channels=8,
+                               num_tokens=16, rngs=nnx.Rngs(0))
+    assert c.M == 16
+    cond = jax.random.normal(jax.random.PRNGKey(2), (4, 8, 8, 2))
+    bias, prefix = c.embed(cond)
+    assert bias is None
+    assert prefix.shape == (4, 16, 8)
+
+
+def test_prefix_depends_on_condition():
+    c = VectorPrefixConditioner(cond_dim=3, channels=8, num_tokens=1, rngs=nnx.Rngs(0))
+    _, p1 = c.embed(jnp.zeros((2, 3)))
+    _, p2 = c.embed(jnp.ones((2, 3)))
+    assert not jnp.allclose(p1, p2)
