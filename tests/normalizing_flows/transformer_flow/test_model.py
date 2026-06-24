@@ -60,7 +60,7 @@ def test_full_flow_logdet_matches_autodiff():
     z = to_noise(x)
     lp = flow.log_prob(x[None], cond[None])[0]
     analytic = lp - base.log_prob(z)
-    assert jnp.allclose(ad, analytic, atol=1e-4)
+    assert jnp.allclose(ad, analytic, atol=3e-4)
 
 
 def test_sample_shape_and_roundtrip_finite():

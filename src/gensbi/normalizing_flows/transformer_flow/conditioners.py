@@ -24,15 +24,12 @@ class VectorConditioner(nnx.Module):
             self.l1 = nnx.Linear(cond_dim, channels, rngs=rngs)
             self.l2 = nnx.Linear(channels, channels, rngs=rngs)
 
-    def embed(self, cond: Array | None) -> Array | None:
+    def embed(self, cond: Array | None):
+        """Return ``(bias, prefix)``; VectorConditioner only sets ``bias``."""
         if self.cond_dim == 0:
-            return None
+            return (None, None)
         if cond is None:
             raise ValueError(
                 "cond is required: this conditioner was built with cond_dim > 0")
-        return self.l2(jax.nn.silu(self.l1(cond)))
-
-    def inject(self, tokens: Array, signal: Array | None) -> Array:
-        if signal is None:
-            return tokens
-        return tokens + signal[:, None, :]
+        bias = self.l2(jax.nn.silu(self.l1(cond)))
+        return (bias, None)

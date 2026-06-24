@@ -1,6 +1,8 @@
 """Transformer blocks for the transformer flow.
 
 Adapted from apple/ml-tarflow (TarFlow); see transformer_flow/LICENSE.apple.
+Prefix-concatenation conditioning and SOS shift adapted from apple/ml-starflow
+(STARFlow); see transformer_flow/LICENSE.starflow.
 """
 
 import jax
@@ -65,6 +67,8 @@ class MetaBlock(nnx.Module):
         self.inv_perm = Mask(jnp.asarray(inv_perm, dtype=jnp.int32))
         self.conditioner = conditioner
         self.proj_in = nnx.Linear(F, channels, rngs=rngs)
+        self.sos_embed = nnx.Param(
+            jax.random.normal(rngs.params(), (1, 1, F)) * 1e-2)
         self.pos_embed = nnx.Param(
             jax.random.normal(rngs.params(), (T, channels)) * 1e-2)
         self.attn_blocks = nnx.List(
@@ -76,16 +80,19 @@ class MetaBlock(nnx.Module):
             self.proj_out.bias[...] = jnp.zeros_like(self.proj_out.bias[...])
 
     def _params(self, x_perm: Array, cond: Array | None):
-        """(a, b) for the permuted tokens; shifted so params[i] sees tokens < i."""
-        signal = self.conditioner.embed(cond)
-        h = self.proj_in(x_perm) + self.pos_embed[...][None]   # (B, T, C)
-        h = self.conditioner.inject(h, signal)
+        """(a, b) for the permuted tokens. SOS input-shift makes token i's
+        params depend only on tokens < i (and the condition)."""
+        bias, prefix = self.conditioner.embed(cond)
+        B = x_perm.shape[0]
+        sos = jnp.broadcast_to(self.sos_embed[...], (B, 1, self.F))
+        x_in = jnp.concatenate([sos, x_perm[:, :-1]], axis=1)   # (B, T, F)
+        h = self.proj_in(x_in) + self.pos_embed[...][None]      # (B, T, C)
+        if bias is not None:
+            h = h + bias[:, None, :]
         for blk in self.attn_blocks:
-            h = blk(h)
-        out = self.proj_out(h)                                 # (B, T, 2F)
-        out = jnp.concatenate(
-            [jnp.zeros_like(out[:, :1]), out[:, :-1]], axis=1)  # shift-by-one
-        a, b = jnp.split(out, 2, axis=-1)                      # each (B, T, F)
+            h = blk(h)                                          # is_causal
+        out = self.proj_out(h)                                  # (B, T, 2F)
+        a, b = jnp.split(out, 2, axis=-1)                       # each (B, T, F)
         return a, b
 
     def inverse(self, x: Array, cond: Array | None = None):
