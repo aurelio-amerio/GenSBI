@@ -68,8 +68,8 @@ class TransformerFlow(nnx.Module):
         x = z
         for blk in reversed(self.blocks):
             x, _ = blk.forward(x, cond)
-        x = self.tokenizer.detokenize(x)                     # (B, dim)
-        return x * self.std[...] + self.mean[...]            # un-standardize
+        x = self.tokenizer.detokenize(x)                     # (B, *example_shape)
+        return x * self.std[...] + self.mean[...]
 
     def set_standardization(self, mean, std) -> None:
         if not self._standardize:

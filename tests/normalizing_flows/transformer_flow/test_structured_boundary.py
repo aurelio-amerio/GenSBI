@@ -7,7 +7,6 @@ import jax.numpy as jnp
 from flax import nnx
 import numpy as np
 import grain
-import pytest
 
 from gensbi.normalizing_flows import make_tarflow
 from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline

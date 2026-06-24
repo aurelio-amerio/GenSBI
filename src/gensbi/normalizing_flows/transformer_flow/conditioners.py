@@ -1,6 +1,7 @@
 """Conditioning seams for the transformer flow.
 
 Adapted from apple/ml-tarflow (TarFlow); see transformer_flow/LICENSE.apple.
+Prefix-concatenation conditioning adapted from apple/ml-starflow (STARFlow); see transformer_flow/LICENSE.starflow.
 
 v1 ``VectorConditioner`` is the continuous analog of TarFlow's ``class_embed``:
 an MLP embeds the condition to a ``channels``-vector that is broadcast-added to
@@ -41,7 +42,6 @@ class VectorPrefixConditioner(nnx.Module):
     """Vector condition → ``num_tokens`` prefix tokens ``(B, M, channels)``."""
 
     def __init__(self, cond_dim: int, channels: int, num_tokens: int, rngs: nnx.Rngs):
-        self.cond_dim = cond_dim
         self.channels = channels
         self.M = num_tokens
         self.proj = nnx.Linear(cond_dim, channels * num_tokens, rngs=rngs)
