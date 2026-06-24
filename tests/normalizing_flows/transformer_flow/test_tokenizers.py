@@ -27,3 +27,38 @@ def test_roundtrip_identity():
 def test_block_size_must_divide_dim():
     with pytest.raises(ValueError):
         VectorTokenizer(dim=5, block_size=2)
+
+
+import jax
+from gensbi.normalizing_flows.transformer_flow.tokenizers import ImageTokenizer
+from gensbi.recipes.utils import patchify_2d
+
+
+def test_vector_tokenizer_example_shape():
+    tok = VectorTokenizer(dim=6, block_size=1)
+    assert tok.example_shape == (6,)
+
+
+def test_image_tokenizer_shapes():
+    tok = ImageTokenizer(height=8, width=8, channels=2, patch_size=2)
+    assert (tok.T, tok.F) == (16, 8)          # T=(8/2)^2=16, F=2*2*2=8
+    assert tok.example_shape == (8, 8, 2)
+    x = jax.random.normal(jax.random.PRNGKey(0), (3, 8, 8, 2))
+    assert tok.tokenize(x).shape == (3, 16, 8)
+
+
+def test_image_tokenizer_matches_patchify_2d():
+    tok = ImageTokenizer(height=8, width=8, channels=2, patch_size=2)
+    x = jax.random.normal(jax.random.PRNGKey(1), (3, 8, 8, 2))
+    assert jnp.allclose(tok.tokenize(x), patchify_2d(x, size=2))
+
+
+def test_image_tokenizer_roundtrip():
+    tok = ImageTokenizer(height=8, width=8, channels=2, patch_size=2)
+    x = jax.random.normal(jax.random.PRNGKey(2), (3, 8, 8, 2))
+    assert jnp.allclose(tok.detokenize(tok.tokenize(x)), x, atol=1e-6)
+
+
+def test_image_tokenizer_non_divisible_raises():
+    with pytest.raises(ValueError):
+        ImageTokenizer(height=7, width=8, channels=1, patch_size=2)
