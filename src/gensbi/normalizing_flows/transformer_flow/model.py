@@ -15,8 +15,12 @@ from jax import Array
 
 from gensbi.normalizing_flows.bijections.base import Mask
 from gensbi.normalizing_flows.transformer_flow.blocks import MetaBlock
-from gensbi.normalizing_flows.transformer_flow.conditioners import VectorConditioner
-from gensbi.normalizing_flows.transformer_flow.tokenizers import VectorTokenizer
+from gensbi.normalizing_flows.transformer_flow.conditioners import (
+    VectorConditioner, VectorPrefixConditioner, ImagePrefixConditioner,
+)
+from gensbi.normalizing_flows.transformer_flow.tokenizers import (
+    VectorTokenizer, ImageTokenizer,
+)
 
 _LOG2PI = jnp.log(2.0 * jnp.pi)
 
@@ -31,18 +35,25 @@ class TransformerFlow(nnx.Module):
         self.cond_dim = cond_dim
         self.T = tokenizer.T
         self.F = tokenizer.F
+        self.example_shape = tokenizer.example_shape
         self._standardize = standardize
-        self.mean = Mask(jnp.zeros((dim,)))
-        self.std = Mask(jnp.ones((dim,)))
+        self.mean = Mask(jnp.zeros(self.example_shape))
+        self.std = Mask(jnp.ones(self.example_shape))
 
     def _base_log_prob(self, z: Array) -> Array:
         # z: (B, T, F); standard normal over (T, F)
         return -0.5 * jnp.sum(z ** 2, axis=(1, 2)) - 0.5 * self.T * self.F * _LOG2PI
 
+    def _ensure_batched(self, x: Array) -> Array:
+        x = jnp.asarray(x)
+        if x.ndim == len(self.example_shape):
+            x = x[None]
+        return x
+
     def log_prob(self, x: Array, cond: Array | None = None) -> Array:
-        x = jnp.atleast_2d(x)
+        x = self._ensure_batched(x)
         u = (x - self.mean[...]) / self.std[...]              # standardize
-        logdet = -jnp.sum(jnp.log(self.std[...]))            # scalar
+        logdet = -jnp.sum(jnp.log(self.std[...]))            # over all elements
         z = self.tokenizer.tokenize(u)                       # (B, T, F)
         total = jnp.broadcast_to(logdet, (x.shape[0],))
         for blk in self.blocks:
@@ -68,12 +79,36 @@ class TransformerFlow(nnx.Module):
         self.std[...] = jnp.asarray(std, dtype=self.std[...].dtype)
 
 
-def make_tarflow(rngs, dim, cond_dim=0, channels=64, num_blocks=8,
-                 layers_per_block=2, head_dim=16, block_size=1,
-                 permutation="flip", standardize=True, zero_init=True):
-    """Build a TransformerFlow stack (mirrors ``make_maf``)."""
-    tokenizer = VectorTokenizer(dim, block_size)
+def make_tarflow(rngs, dim=None, cond_dim=0, *, modeled="vector",
+                 img_size=None, patch_size=None, img_channels=1,
+                 cond="add", cond_img_size=None, cond_patch_size=None,
+                 cond_channels=1, prefix_tokens=1,
+                 channels=64, num_blocks=8, layers_per_block=2, head_dim=16,
+                 block_size=1, permutation="flip", standardize=True,
+                 zero_init=True):
+    """Build a TransformerFlow stack. ``modeled`` selects the tokenizer
+    (vector/image); ``cond`` selects the conditioner (additive bias /
+    vector-prefix / image-prefix). Vector defaults reproduce v1."""
+    if modeled == "vector":
+        tokenizer = VectorTokenizer(dim, block_size)
+    elif modeled == "image":
+        tokenizer = ImageTokenizer(img_size, img_size, img_channels, patch_size)
+    else:
+        raise ValueError(f"unknown modeled {modeled!r}")
     T, F = tokenizer.T, tokenizer.F
+
+    def make_cond():
+        if cond == "add":
+            return VectorConditioner(cond_dim, channels, rngs=rngs)
+        if cond == "vector_prefix":
+            return VectorPrefixConditioner(cond_dim, channels, prefix_tokens,
+                                           rngs=rngs)
+        if cond == "image_prefix":
+            m = (cond_img_size // cond_patch_size) ** 2
+            return ImagePrefixConditioner(cond_channels, cond_patch_size,
+                                          channels, m, rngs=rngs)
+        raise ValueError(f"unknown cond {cond!r}")
+
     blocks = []
     for i in range(num_blocks):
         if permutation == "flip":
@@ -82,10 +117,9 @@ def make_tarflow(rngs, dim, cond_dim=0, channels=64, num_blocks=8,
             perm = jax.random.permutation(rngs.params(), T)
         else:
             raise ValueError(f"unknown permutation {permutation!r}")
-        conditioner = VectorConditioner(cond_dim, channels, rngs=rngs)
         blocks.append(MetaBlock(
             F=F, channels=channels, T=T, perm=perm, inv_perm=jnp.argsort(perm),
-            conditioner=conditioner, num_layers=layers_per_block,
+            conditioner=make_cond(), num_layers=layers_per_block,
             head_dim=head_dim, expansion=4, rngs=rngs, zero_init=zero_init))
     return TransformerFlow(blocks, tokenizer, dim, cond_dim,
                            standardize=standardize)

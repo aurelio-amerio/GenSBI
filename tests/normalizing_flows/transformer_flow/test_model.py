@@ -121,3 +121,65 @@ def test_set_standardization_raises_when_disabled():
     flow = _flow(standardize=False)
     with pytest.raises(ValueError):
         flow.set_standardization(jnp.zeros(4), jnp.ones(4))
+
+
+def test_image_modeled_log_prob_and_sample():
+    # Use num_blocks=1: a deep random-init (no zero_init) image flow overflows
+    # float32 (exp(a) compounds across 16 tokens × 4 features), same as the
+    # vector test_sample_shape_and_roundtrip_finite.  Shape and finiteness are
+    # the axes being tested here; depth is exercised once the model is trained.
+    flow = make_tarflow(nnx.Rngs(0), cond_dim=2, modeled="image", img_size=8,
+                        patch_size=2, img_channels=1, channels=16, num_blocks=1,
+                        layers_per_block=2, head_dim=8, zero_init=False)
+    x = jax.random.normal(jax.random.PRNGKey(1), (5, 8, 8, 1))
+    cond = jax.random.normal(jax.random.PRNGKey(2), (5, 2))
+    lp = flow.log_prob(x, cond)
+    assert lp.shape == (5,) and jnp.all(jnp.isfinite(lp))
+    s = flow.sample(jax.random.PRNGKey(3), cond=cond)
+    assert s.shape == (5, 8, 8, 1)
+
+
+def test_image_modeled_zero_init_is_base():
+    flow = make_tarflow(nnx.Rngs(0), cond_dim=2, modeled="image", img_size=8,
+                        patch_size=2, img_channels=1, channels=16, num_blocks=4,
+                        layers_per_block=2, head_dim=8, zero_init=True)
+    x = jax.random.normal(jax.random.PRNGKey(1), (4, 8, 8, 1))
+    cond = jax.random.normal(jax.random.PRNGKey(2), (4, 2))
+    lp = flow.log_prob(x, cond)
+    # zero-init ⇒ identity flow ⇒ standard normal over the 8*8*1 elements
+    expected = -0.5 * jnp.sum(x ** 2, axis=(1, 2, 3)) - 0.5 * 64 * jnp.log(2 * jnp.pi)
+    assert jnp.allclose(lp, expected, atol=1e-4)
+
+
+def test_image_condition_npe_depends_on_condition():
+    # NPE: modeled theta vector (dim=2), condition = 8x8x1 image via prefix
+    flow = make_tarflow(nnx.Rngs(0), dim=2, modeled="vector", cond="image_prefix",
+                        cond_img_size=8, cond_patch_size=2, cond_channels=1,
+                        channels=16, num_blocks=4, layers_per_block=2, head_dim=8,
+                        zero_init=False)
+    theta = jax.random.normal(jax.random.PRNGKey(1), (5, 2))
+    img_a = jnp.zeros((5, 8, 8, 1))
+    img_b = jnp.ones((5, 8, 8, 1))
+    assert not jnp.allclose(flow.log_prob(theta, img_a), flow.log_prob(theta, img_b))
+    s = flow.sample(jax.random.PRNGKey(4), cond=img_a)
+    assert s.shape == (5, 2)
+
+
+def test_vector_path_unchanged():
+    # the v1 default vector path still builds and runs
+    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=4,
+                        layers_per_block=2, head_dim=8)
+    x = jax.random.normal(jax.random.PRNGKey(1), (8, 4))
+    cond = jax.random.normal(jax.random.PRNGKey(2), (8, 2))
+    assert flow.log_prob(x, cond).shape == (8,)
+
+
+def test_image_set_standardization_shape():
+    flow = make_tarflow(nnx.Rngs(0), cond_dim=2, modeled="image", img_size=8,
+                        patch_size=2, img_channels=1, channels=16, num_blocks=2,
+                        layers_per_block=1, head_dim=8)
+    mean = jnp.zeros((8, 8, 1))
+    std = jnp.ones((8, 8, 1)) * 2.0
+    flow.set_standardization(mean, std)
+    assert flow.mean[...].shape == (8, 8, 1)
+    assert jnp.allclose(flow.std[...], std)
