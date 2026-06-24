@@ -56,12 +56,21 @@ class ConditionalFlowPipeline(AbstractPipeline):
     """
 
     def __init__(self, model, train_dataset, val_dataset, dim_obs, dim_cond,
-                 ch_obs=1, ch_cond=1, params=None, training_config=None):
+                 ch_obs=1, ch_cond=1, params=None, training_config=None,
+                 structured_obs=False, structured_cond=False):
         super().__init__(
             model, train_dataset, val_dataset, dim_obs, dim_cond,
             ch_obs=ch_obs, ch_cond=ch_cond, params=params,
             training_config=training_config)
         self._standardized = False
+        self.structured_obs = structured_obs
+        self.structured_cond = structured_cond
+
+    def _prep_obs(self, x):
+        return x if self.structured_obs else _squeeze_ch(x)
+
+    def _prep_cond(self, x):
+        return x if self.structured_cond else _squeeze_ch(x)
 
     # --- abstract methods the flow pipeline does not use (mirror ConditionalPipeline) ---
     @classmethod
@@ -95,8 +104,8 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """
         def loss_fn(model, batch, key):
             obs, cond = batch
-            obs = _squeeze_ch(obs)        # (B, dim_obs)
-            cond = _squeeze_ch(cond)      # (B, dim_cond)
+            obs = self._prep_obs(obs)
+            cond = self._prep_cond(cond)
             return -jnp.mean(model.log_prob(obs, cond))
 
         return loss_fn
@@ -110,7 +119,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         set here too).
         """
         obs = jnp.asarray(obs_data)
-        if obs.ndim == 3:
+        if not self.structured_obs and obs.ndim == 3:
             obs = _squeeze_ch(obs)
         mean = jnp.mean(obs, axis=0)
         std = jnp.std(obs, axis=0)
@@ -130,9 +139,23 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return super().train(rngs, nsteps=nsteps, save_model=save_model)
 
     def get_sampler(self, x_o, use_ema=True):
-        """Return ``sampler(key, nsamples) -> (nsamples, dim_obs, 1)`` for one x_o."""
+        """Return ``sampler(key, nsamples) -> (nsamples, dim_obs, 1)`` for one x_o.
+
+        When ``structured_cond=True``, returns ``(nsamples, dim_obs)`` instead
+        (the model's conditioner owns the shape; no ``_expand_dims``).
+        """
         flow = self.ema_model if use_ema else self.model
-        cond = _single_cond(x_o)                  # (dim_cond,)
+        if self.structured_cond:
+            cond = jnp.asarray(x_o)
+            if cond.ndim >= 1 and cond.shape[0] == 1:
+                cond = cond[0]                       # strip singleton batch
+
+            def sampler(key, nsamples):
+                cond_b = jnp.broadcast_to(cond, (nsamples,) + cond.shape)
+                return flow.sample(key, cond=cond_b)  # (nsamples, dim_obs)
+            return sampler
+
+        cond = _single_cond(x_o)                      # (dim_cond,)  [v1 path]
 
         def sampler(key, nsamples):
             cond_b = jnp.broadcast_to(cond, (nsamples, cond.shape[0]))
@@ -170,10 +193,21 @@ class ConditionalFlowPipeline(AbstractPipeline):
     def get_log_prob_fn(self, x_o, use_ema=True):
         """Return ``log_prob_fn(x_1) -> (B,)`` for one conditioning x_o."""
         flow = self.ema_model if use_ema else self.model
-        cond = _single_cond(x_o)                  # (dim_cond,)
+        if self.structured_cond:
+            cond = jnp.asarray(x_o)
+            if cond.ndim >= 1 and cond.shape[0] == 1:
+                cond = cond[0]
+
+            def log_prob_fn(x_1):
+                obs = self._prep_obs(x_1)
+                cond_b = jnp.broadcast_to(cond, (obs.shape[0],) + cond.shape)
+                return flow.log_prob(obs, cond_b)
+            return log_prob_fn
+
+        cond = _single_cond(x_o)                  # (dim_cond,)  [v1 path]
 
         def log_prob_fn(x_1):
-            obs = _squeeze_ch(x_1)                 # (B, dim_obs)
+            obs = self._prep_obs(x_1)              # (B, dim_obs)
             cond_b = jnp.broadcast_to(cond, (obs.shape[0], cond.shape[0]))
             return flow.log_prob(obs, cond_b)      # (B,)
 

@@ -29,22 +29,26 @@ class NLEPosterior:
     """
 
     def __init__(self, flow, prior, *, num_warmup=500, num_samples=1000,
-                 num_chains=1):
+                 num_chains=1, structured_obs=False):
         self.flow = flow
         self.prior = prior
         self.num_warmup = num_warmup
         self.num_samples = num_samples
         self.num_chains = num_chains
+        self.structured_obs = structured_obs
 
     def potential(self, x_o):
         """Return ``U(theta) = -(log q(x_o|theta) + log p(theta))`` for one x_o."""
-        x_o = jnp.atleast_1d(jnp.squeeze(jnp.asarray(x_o)))   # (dim_x,)
+        if self.structured_obs:
+            x_o = jnp.asarray(x_o)
+        else:
+            x_o = jnp.atleast_1d(jnp.squeeze(jnp.asarray(x_o)))   # (dim_x,)
         flow = self.flow
         prior = self.prior
 
         def U(theta):
             theta = jnp.asarray(theta)
-            log_like = flow.log_prob(x_o[None, :], theta[None, :])[0]
+            log_like = flow.log_prob(x_o[None], theta[None, :])[0]
             log_prior = prior.log_prob(theta)
             return -(log_like + log_prior)
 
