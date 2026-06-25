@@ -55,9 +55,12 @@ class AttentionBlock(nnx.Module):
 class MetaBlock(nnx.Module):
     """One exact autoregressive bijection over a token sequence.
 
-    inverse (data→noise): per-token affine ``z = (x − b)·exp(−a)`` with
+    inverse (data→noise): per-token affine ``z = (x − b)·inv_scale`` with
     ``(a, b)`` produced by causal attention + shift-by-one, so token i's params
-    depend only on tokens < i ⇒ triangular Jacobian, ``logdet = −Σ a``.
+    depend only on tokens < i ⇒ triangular Jacobian, ``logdet = −Σ log_scale``.
+    The ``(scale, inv_scale, log_scale)`` triple comes from ``_affine``: softplus
+    by default (bounded tail, identity at zero-init), or legacy ``exp``
+    (``scale=exp(a)``, ``log_scale=a``) when ``use_softplus=False``.
     forward (noise→data): sequential scan re-running the causal pass on the
     partially-built sequence (mirrors ``MaskedAutoregressive.forward``).
     """

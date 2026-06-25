@@ -52,6 +52,11 @@ def test_affine_is_float32():
     blk = _block(use_softplus=True)
     scale, inv_scale, log_scale = blk._affine(jnp.zeros((1, 3), dtype=jnp.float32))
     assert scale.dtype == jnp.float32
+    # non-f32 input must be promoted to float32 inside _affine (binding constraint)
+    s_bf, inv_bf, log_bf = blk._affine(jnp.zeros((1, 3), dtype=jnp.bfloat16))
+    assert s_bf.dtype == jnp.float32
+    assert inv_bf.dtype == jnp.float32
+    assert log_bf.dtype == jnp.float32
 
 
 def test_soft_clip_bounds_params():
