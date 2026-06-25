@@ -85,7 +85,7 @@ def make_tarflow(rngs, dim=None, cond_dim=0, *, modeled="vector",
                  cond_channels=1, prefix_tokens=1,
                  channels=64, num_blocks=8, layers_per_block=2, head_dim=16,
                  block_size=1, permutation="flip", standardize=True,
-                 zero_init=True):
+                 zero_init=True, use_softplus=True, soft_clip=4.0):
     """Build a TransformerFlow stack. ``modeled`` selects the tokenizer
     (vector/image); ``cond`` selects the conditioner (additive bias /
     vector-prefix / image-prefix). Vector defaults reproduce v1."""
@@ -120,6 +120,7 @@ def make_tarflow(rngs, dim=None, cond_dim=0, *, modeled="vector",
         blocks.append(MetaBlock(
             F=F, channels=channels, T=T, perm=perm, inv_perm=jnp.argsort(perm),
             conditioner=make_cond(), num_layers=layers_per_block,
-            head_dim=head_dim, expansion=4, rngs=rngs, zero_init=zero_init))
+            head_dim=head_dim, expansion=4, rngs=rngs, zero_init=zero_init,
+            use_softplus=use_softplus, soft_clip=soft_clip))
     return TransformerFlow(blocks, tokenizer, dim, cond_dim,
                            standardize=standardize)

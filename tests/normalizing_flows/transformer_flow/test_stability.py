@@ -94,3 +94,17 @@ def test_block_roundtrip_softplus():
     x, _ = blk.forward(z, None)
     z2, _ = blk.inverse(x, None)
     assert jnp.allclose(z2.reshape(5, 4, 1), z, atol=1e-4)
+
+
+def test_make_tarflow_defaults_and_override():
+    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=3,
+                        layers_per_block=2, head_dim=8)
+    for blk in flow.blocks:
+        assert blk.use_softplus is True
+        assert blk.soft_clip == 4.0
+    flow2 = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=2,
+                         layers_per_block=2, head_dim=8,
+                         use_softplus=False, soft_clip=0.0)
+    for blk in flow2.blocks:
+        assert blk.use_softplus is False
+        assert blk.soft_clip == 0.0
