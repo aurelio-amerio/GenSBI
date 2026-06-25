@@ -52,3 +52,45 @@ def test_affine_is_float32():
     blk = _block(use_softplus=True)
     scale, inv_scale, log_scale = blk._affine(jnp.zeros((1, 3), dtype=jnp.float32))
     assert scale.dtype == jnp.float32
+
+
+def test_soft_clip_bounds_params():
+    blk = _block(use_softplus=True, soft_clip=4.0)
+    # blow up proj_out so the raw output is far outside [-4, 4]
+    blk.proj_out.kernel[...] = blk.proj_out.kernel[...] + 50.0
+    blk.proj_out.bias[...] = blk.proj_out.bias[...] + 50.0
+    xp = jax.random.normal(jax.random.PRNGKey(3), (4, 4, 1))
+    a, b = blk._params(xp, None)
+    assert jnp.max(jnp.abs(a)) <= 4.0 + 1e-4
+    assert jnp.max(jnp.abs(b)) <= 4.0 + 1e-4
+
+
+def test_block_inverse_uses_softplus_when_enabled():
+    # RED DRIVER: before the rewire, inverse uses exp(-a); after, softplus.
+    blk = _block(use_softplus=True, soft_clip=0.0, zero_init=False)  # no clip: isolate softplus
+    xp = jax.random.normal(jax.random.PRNGKey(1), (6, 4, 1))
+    a, b = blk._params(xp, None)
+    s = jax.nn.softplus(a + INV_SOFTPLUS_1)
+    z_ref = (xp - b) / s                        # perm is identity here (arange)
+    z, ld = blk.inverse(xp, None)
+    assert jnp.allclose(z, z_ref, atol=1e-5)
+    assert jnp.allclose(ld, -jnp.sum(jnp.log(s), axis=(1, 2)), atol=1e-5)
+
+
+def test_block_exp_inverse_matches_bare_exp():
+    # GUARD: use_softplus=False + soft_clip=0 still equals literal (xp-b)*exp(-a).
+    blk = _block(use_softplus=False, soft_clip=0.0, zero_init=False)
+    xp = jax.random.normal(jax.random.PRNGKey(1), (6, 4, 1))
+    a, b = blk._params(xp, None)
+    z, ld = blk.inverse(xp, None)
+    assert jnp.allclose(z, (xp - b) * jnp.exp(-a), atol=1e-5)
+    assert jnp.allclose(ld, -jnp.sum(a, axis=(1, 2)), atol=1e-5)
+
+
+def test_block_roundtrip_softplus():
+    # GUARD: forward and inverse stay mutually consistent (fails if only one is rewired).
+    blk = _block(use_softplus=True, soft_clip=4.0, zero_init=False)
+    z = jax.random.normal(jax.random.PRNGKey(7), (5, 4, 1))
+    x, _ = blk.forward(z, None)
+    z2, _ = blk.inverse(x, None)
+    assert jnp.allclose(z2.reshape(5, 4, 1), z, atol=1e-4)

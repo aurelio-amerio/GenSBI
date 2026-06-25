@@ -131,6 +131,8 @@ class MetaBlock(nnx.Module):
             for blk in self.attn_blocks:
                 h = blk(h)
         out = self.proj_out(h)                                  # (B, T, 2F)
+        if self.soft_clip > 0:
+            out = self.soft_clip * jnp.tanh(out / self.soft_clip)
         a, b = jnp.split(out, 2, axis=-1)                       # each (B, T, F)
         return a, b
 
@@ -138,9 +140,10 @@ class MetaBlock(nnx.Module):
         x = x.reshape(x.shape[0], self.T, self.F)
         xp = x[:, self.perm[...]]
         a, b = self._params(xp, cond)
-        z = (xp - b) * jnp.exp(-a)
-        logdet = -jnp.sum(a, axis=(1, 2))                      # (B,)
-        z = z[:, self.inv_perm[...]]
+        scale, inv_scale, log_scale = self._affine(a)
+        z = (xp.astype(jnp.float32) - b.astype(jnp.float32)) * inv_scale
+        logdet = -jnp.sum(log_scale, axis=(1, 2))              # (B,)
+        z = z[:, self.inv_perm[...]].astype(xp.dtype)
         return z, logdet
 
     def forward(self, z: Array, cond: Array | None = None):
@@ -149,12 +152,14 @@ class MetaBlock(nnx.Module):
 
         def body(x, i):
             a, b = self._params(x, cond)        # a[:,i],b[:,i] depend on tokens < i
-            xi = zp[:, i, :] * jnp.exp(a[:, i, :]) + b[:, i, :]
-            return x.at[:, i, :].set(xi), None
+            scale, _, _ = self._affine(a)
+            xi = zp[:, i, :] * scale[:, i, :] + b[:, i, :].astype(jnp.float32)
+            return x.at[:, i, :].set(xi.astype(x.dtype)), None
 
         x = jnp.zeros_like(zp)
         x, _ = jax.lax.scan(body, x, jnp.arange(self.T))
         a, _ = self._params(x, cond)
-        logdet = jnp.sum(a, axis=(1, 2))                       # (B,), +Σa
+        _, _, log_scale = self._affine(a)
+        logdet = jnp.sum(log_scale, axis=(1, 2))               # (B,), +Σ log_scale
         x = x[:, self.inv_perm[...]]
         return x, logdet
