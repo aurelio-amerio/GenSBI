@@ -150,3 +150,18 @@ def test_softplus_block_logdet_matches_numerical():
     _, num = jnp.linalg.slogdet(jax.jacobian(to_noise)(x[0]))
     _, ld = blk.inverse(x, None)
     assert jnp.allclose(ld[0], num, atol=1e-4)
+
+
+def test_stability_flags_are_static_not_ema_state():
+    # use_softplus/soft_clip are plain Python config, not nnx state captured by EMA.
+    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=2,
+                        layers_per_block=2, head_dim=8)
+    state = nnx.state(flow, nnx.Param)
+    leaves = jax.tree_util.tree_leaves(state)
+    assert len(leaves) > 0, "expected Param leaves; got none — model may be misconfigured"
+    # all Param leaves are float arrays; no bool/None smuggled in from the new flags
+    assert all(jnp.issubdtype(jnp.asarray(l).dtype, jnp.floating) for l in leaves)
+    # flags survive as block attributes (graphdef), not as Param state
+    assert flow.blocks[0].use_softplus is True
+    assert flow.blocks[0].soft_clip == 4.0
+    assert isinstance(flow.blocks[0].soft_clip, float)

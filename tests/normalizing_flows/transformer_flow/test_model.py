@@ -38,7 +38,7 @@ def test_zero_init_flow_is_standard_normal():
 
 def test_full_flow_logdet_matches_autodiff():
     dim, cond_dim = 4, 2
-    # The composition logdet is exactly the sum of per-block (-Sum a); per-block
+    # The composition logdet is exactly the sum of per-block (-Sum log_scale); per-block
     # correctness is verified in Task 4. This cross-check builds the ASSEMBLED
     # composition Jacobian and takes its slogdet, which is only well-conditioned
     # at shallow depth -- at 4 random-init blocks the assembled 4x4 Jacobian is
