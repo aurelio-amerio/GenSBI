@@ -12,6 +12,7 @@ from jax import Array
 
 from gensbi.normalizing_flows.bijections.base import Mask
 
+# TODO: everywhere else, the standard is to give the per head dim and num heads (or channels and num heads). it might be convenient to uniform this module 
 
 class AttentionBlock(nnx.Module):
     """Pre-norm residual block: causal self-attention + MLP.
