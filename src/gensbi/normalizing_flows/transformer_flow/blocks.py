@@ -12,7 +12,9 @@ from jax import Array
 
 from gensbi.normalizing_flows.bijections.base import Mask
 
-# TODO: everywhere else, the standard is to give the per head dim and num heads (or channels and num heads). it might be convenient to uniform this module 
+INV_SOFTPLUS_1 = 0.541324854612918  # softplus(INV_SOFTPLUS_1) == 1.0 -> identity at zero-init
+
+# TODO: everywhere else, the standard is to give the per head dim and num heads (or channels and num heads). it might be convenient to uniform this module
 
 class AttentionBlock(nnx.Module):
     """Pre-norm residual block: causal self-attention + MLP.
@@ -61,8 +63,11 @@ class MetaBlock(nnx.Module):
     """
 
     def __init__(self, F, channels, T, perm, inv_perm, conditioner,
-                 num_layers, head_dim, expansion, rngs, zero_init=True):
+                 num_layers, head_dim, expansion, rngs, zero_init=True,
+                 use_softplus=True, soft_clip=4.0):
         self.F = F
+        self.use_softplus = use_softplus
+        self.soft_clip = soft_clip
         self.T = T
         self.perm = Mask(jnp.asarray(perm, dtype=jnp.int32))
         self.inv_perm = Mask(jnp.asarray(inv_perm, dtype=jnp.int32))
@@ -90,6 +95,20 @@ class MetaBlock(nnx.Module):
         is_prefix_k = idx[None, :] < M
         causal = idx[None, :] <= idx[:, None]
         return jnp.where(is_modeled_q, is_prefix_k | causal, is_prefix_k)
+
+    def _affine(self, a: Array):
+        """Map raw log-scale ``a`` -> ``(scale, inv_scale, log_scale)`` in float32.
+
+        ``scale`` plays the role of ``exp(a)`` ("1/sigma"): inverse multiplies by
+        ``inv_scale``, forward multiplies by ``scale``, logdet sums ``log_scale``.
+        softplus mode bounds the positive-scale tail and its gradient; the
+        ``INV_SOFTPLUS_1`` offset makes it the identity at ``a == 0``.
+        """
+        a = a.astype(jnp.float32)
+        if self.use_softplus:
+            s = jax.nn.softplus(a + INV_SOFTPLUS_1)
+            return s, 1.0 / s, jnp.log(s)
+        return jnp.exp(a), jnp.exp(-a), a
 
     def _params(self, x_perm: Array, cond: Array | None):
         """(a, b) for the permuted tokens. SOS input-shift makes token i's
