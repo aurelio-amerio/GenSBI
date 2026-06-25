@@ -108,3 +108,45 @@ def test_make_tarflow_defaults_and_override():
     for blk in flow2.blocks:
         assert blk.use_softplus is False
         assert blk.soft_clip == 0.0
+
+
+def _force_large_neg_a(flow, val=-60.0):
+    # Make block 0 output a constant, very negative log-scale `a` regardless of input
+    # (kernel is already 0 from zero_init; override the a-half of the bias).
+    F = flow.F
+    blk = flow.blocks[0]
+    bias = np.zeros((2 * F,), dtype=np.float32)
+    bias[:F] = val
+    blk.proj_out.bias[...] = jnp.asarray(bias)
+
+
+def test_default_is_finite_where_legacy_exp_overflows():
+    x = jax.random.normal(jax.random.PRNGKey(1), (8, 4))
+
+    legacy = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=0, channels=16, num_blocks=3,
+                          layers_per_block=2, head_dim=8,
+                          use_softplus=False, soft_clip=0.0)   # bare exp, no clip
+    _force_large_neg_a(legacy)
+    lp_legacy = legacy.log_prob(x)
+    assert not bool(jnp.all(jnp.isfinite(lp_legacy)))          # exp(-(-60)) overflows
+
+    new = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=0, channels=16, num_blocks=3,
+                       layers_per_block=2, head_dim=8)          # default softplus+soft_clip
+    _force_large_neg_a(new)
+    lp_new = new.log_prob(x)
+    assert bool(jnp.all(jnp.isfinite(lp_new)))                 # clip+softplus keep it finite
+
+
+def test_softplus_block_logdet_matches_numerical():
+    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=0, channels=16, num_blocks=1,
+                        layers_per_block=2, head_dim=8, zero_init=False)  # softplus default
+    blk = flow.blocks[0]
+    x = jnp.array([[0.5, -1.0, 0.3, 0.8]])
+
+    def to_noise(xv):
+        z, _ = blk.inverse(xv[None], None)
+        return z.reshape(-1)
+
+    _, num = jnp.linalg.slogdet(jax.jacobian(to_noise)(x[0]))
+    _, ld = blk.inverse(x, None)
+    assert jnp.allclose(ld[0], num, atol=1e-4)
