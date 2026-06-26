@@ -54,7 +54,7 @@ Severs the `normalizing_flows → recipes` edge. No model code depends on `model
 
 **Files:**
 - Create: `src/gensbi/models/core/__init__.py`, `src/gensbi/models/core/patching.py`
-- Modify: `src/gensbi/recipes/utils.py` (remove the two functions), `src/gensbi/normalizing_flows/transformer_flow/tokenizers.py:11`, `src/gensbi/normalizing_flows/transformer_flow/conditioners.py:18`, `src/gensbi/experimental/models/fielddit/codec.py:14`, `src/gensbi/experimental/models/glue/embedder.py:6`, `src/gensbi/models/flux1/model.py:68` (docstring)
+- Modify: `src/gensbi/recipes/utils.py` (remove the two functions), `src/gensbi/normalizing_flows/transformer_flow/tokenizers.py:11`, `src/gensbi/normalizing_flows/transformer_flow/conditioners.py:18`, `src/gensbi/experimental/models/fielddit/codec.py:14`, `src/gensbi/experimental/models/glue/embedder.py:6`, `src/gensbi/models/flux1/model.py:68` (docstring), `tests/recipes/test_pipeline_utils.py:98-99` (test-side patchify import)
 - Create: `tests/models/core/__init__.py`, `tests/models/core/test_patching.py`, `tests/test_import_smoke.py`
 
 **Interfaces:**
@@ -136,6 +136,7 @@ In each file, change the import to `from gensbi.models.core.patching import ...`
 - `experimental/models/fielddit/codec.py:14`: `from gensbi.models.core.patching import patchify_2d, depatchify_2d`
 - `experimental/models/glue/embedder.py:6`: `from gensbi.models.core.patching import patchify_2d`
 - `models/flux1/model.py:68` (docstring): change `gensbi.recipes.utils.patchify_2d` to `gensbi.models.core.patching.patchify_2d`
+- `tests/recipes/test_pipeline_utils.py`: this test imports `patchify_2d, depatchify_2d` inside a `from gensbi.recipes.utils import (...)` block (lines 98-99). Remove those two names from that block and add a separate `from gensbi.models.core.patching import patchify_2d, depatchify_2d`. Its 5 patchify tests then validate the new location unchanged.
 
 - [ ] **Step 6: Write the patching round-trip test**
 
@@ -186,8 +187,8 @@ def test_import_normalizing_flows_clean():
 
 - [ ] **Step 8: Run tests**
 
-Run: `pytest tests/models/core/test_patching.py tests/test_import_smoke.py tests/normalizing_flows/transformer_flow/test_tokenizers.py tests/normalizing_flows/transformer_flow/test_conditioners.py -v`
-Expected: PASS (patchify works at the new path; existing tokenizer/conditioner tests still pass via the repointed import; no cycle).
+Run: `pytest tests/models/core/test_patching.py tests/test_import_smoke.py tests/recipes/test_pipeline_utils.py tests/normalizing_flows/transformer_flow/test_tokenizers.py tests/normalizing_flows/transformer_flow/test_conditioners.py tests/experimental/models/fielddit/test_codec.py tests/experimental/models/glue/test_embedder.py -v`
+Expected: PASS (patchify works at the new path; the repointed `test_pipeline_utils.py`, tokenizer/conditioner, and experimental fielddit/glue tests still pass; no cycle).
 
 - [ ] **Step 9: Commit**
 
@@ -1075,15 +1076,15 @@ Expected: only `__init__.py` and `bijections/*.py` (`base`, `chain`, `permutatio
 Run: `pytest tests/test_import_smoke.py -v`
 Expected: PASS (both `import gensbi.models` and `import gensbi.normalizing_flows` succeed in a clean process).
 
-- [ ] **Step 4: Full NF suite**
+- [ ] **Step 4: Focused NF pass (fast inner check before the long run)**
 
-Run: `pytest tests/models tests/normalizing_flows -v`
+Run: `pytest tests/models tests/normalizing_flows -q`
 Expected: PASS (all relocated + new NF tests green).
 
-- [ ] **Step 5: General-pipeline regression (the user-facing contract)**
+- [ ] **Step 5: Full regular suite on CPU (the comprehensive gate)**
 
-Run: `pytest tests/recipes tests/flow_matching tests/core -q`
-Expected: PASS (Flux1/Simformer/Flux1Joint/unified pipelines unaffected by the `patchify` relocation and NF restructure).
+Run: `pytest tests -q`
+Expected: PASS. Runs the **entire** suite (uses the configured `-n 2`), covering the full blast radius — `tests/experimental` (fielddit/glue import the relocated `patchify`), `tests/diffusion`, `tests/diagnostics`, `tests/utils`, `tests/recipes` + `tests/flow_matching` + `tests/core` (general-pipeline contract), and the NF suite. Includes the 4 `slow`-marked pipeline tests (CPU-runnable, a few minutes). For a faster inner loop during development, `pytest tests -q -m "not slow"` skips them, but the final gate runs the full suite.
 
 - [ ] **Step 6: Commit (if Step 1 required fixes; otherwise skip)**
 
@@ -1105,7 +1106,7 @@ git commit -m "test(nf): final verification — full suite green, no import cycl
 - Head convention `(head_dim, num_heads)`, channels derived, default preserves 64, `blocks.py:17` TODO resolved — Task 5 (Params) + Task 6 Step 7 (blocks). ✓
 - Sever `normalizing_flows → recipes`; acyclic; smoke test — Task 1 + `tests/test_import_smoke.py`, run every task. ✓
 - LICENSE attribution travels to `models/tarflow/` — Task 6 Step 6. ✓
-- General pipelines stay green — Task 7 Step 5. ✓
+- General pipelines stay green + full blast radius (incl. `tests/experimental` fielddit/glue, `test_pipeline_utils` patchify) — Task 7 Step 5 runs the entire suite on CPU. ✓
 - EMA/buffer-seam survives the `Mask` move into `TarFlow` — covered by relocating `test_stability.py` (which asserts the EMA/buffer seam) in Task 6 Step 4 and running it in Step 5.
 
 **Placeholder scan:** No `TBD`/`TODO`/"handle edge cases" in steps; all new modules and new tests have complete code; relocations give exact `git mv` + import edits; call-site rewrites give an exact rule + worked example + file/line list.
