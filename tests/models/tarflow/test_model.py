@@ -1,19 +1,18 @@
-# tests/normalizing_flows/transformer_flow/test_model.py
+# tests/models/tarflow/test_model.py
 import jax
 import jax.numpy as jnp
 from flax import nnx
 from scipy.integrate import trapezoid
 import pytest
 
-from gensbi.normalizing_flows.transformer_flow.model import (
-    TransformerFlow, make_tarflow,
-)
+from gensbi.models import TarFlow, TarFlowParams
 from gensbi.core.prior import make_gaussian_prior
 
 
 def _flow(dim=4, cond_dim=2, num_blocks=4, **kw):
-    return make_tarflow(nnx.Rngs(0), dim=dim, cond_dim=cond_dim, channels=16,
-                        num_blocks=num_blocks, layers_per_block=2, head_dim=8, **kw)
+    return TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=dim, cond_dim=cond_dim,
+                                 head_dim=8, num_heads=2, num_blocks=num_blocks,
+                                 layers_per_block=2, **kw))
 
 
 def test_log_prob_shape_and_finite():
@@ -81,9 +80,9 @@ def test_density_integrates_to_one_2d():
     # we verify normalization on the zero_init identity flow (an exact standard
     # normal). The logdet's contribution to normalization is covered by
     # test_full_flow_logdet_matches_autodiff.
-    flow = make_tarflow(nnx.Rngs(0), dim=2, cond_dim=1, channels=16,
-                        num_blocks=4, layers_per_block=2, head_dim=8,
-                        zero_init=True)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=2, cond_dim=1, head_dim=8,
+                                 num_heads=2, num_blocks=4, layers_per_block=2,
+                                 zero_init=True))
     g = jnp.linspace(-8.0, 8.0, 161)
     xx, yy = jnp.meshgrid(g, g)
     grid = jnp.stack([xx.ravel(), yy.ravel()], axis=-1)        # (N, 2)
@@ -102,8 +101,8 @@ def test_log_prob_depends_on_condition():
 
 
 def test_unconditional_flow():
-    flow = make_tarflow(nnx.Rngs(0), dim=3, cond_dim=0, channels=16,
-                        num_blocks=2, layers_per_block=1, head_dim=8)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=0, head_dim=8,
+                                 num_heads=2, num_blocks=2, layers_per_block=1))
     x = jax.random.normal(jax.random.PRNGKey(1), (6, 3))
     assert flow.log_prob(x).shape == (6,)
 
@@ -128,9 +127,10 @@ def test_image_modeled_log_prob_and_sample():
     # float32 (exp(a) compounds across 16 tokens × 4 features), same as the
     # vector test_sample_shape_and_roundtrip_finite.  Shape and finiteness are
     # the axes being tested here; depth is exercised once the model is trained.
-    flow = make_tarflow(nnx.Rngs(0), cond_dim=2, modeled="image", img_size=8,
-                        patch_size=2, img_channels=1, channels=16, num_blocks=1,
-                        layers_per_block=2, head_dim=8, zero_init=False)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), cond_dim=2, modeled="image",
+                                 img_size=8, patch_size=2, img_channels=1,
+                                 head_dim=8, num_heads=2, num_blocks=1,
+                                 layers_per_block=2, zero_init=False))
     x = jax.random.normal(jax.random.PRNGKey(1), (5, 8, 8, 1))
     cond = jax.random.normal(jax.random.PRNGKey(2), (5, 2))
     lp = flow.log_prob(x, cond)
@@ -140,9 +140,10 @@ def test_image_modeled_log_prob_and_sample():
 
 
 def test_image_modeled_zero_init_is_base():
-    flow = make_tarflow(nnx.Rngs(0), cond_dim=2, modeled="image", img_size=8,
-                        patch_size=2, img_channels=1, channels=16, num_blocks=4,
-                        layers_per_block=2, head_dim=8, zero_init=True)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), cond_dim=2, modeled="image",
+                                 img_size=8, patch_size=2, img_channels=1,
+                                 head_dim=8, num_heads=2, num_blocks=4,
+                                 layers_per_block=2, zero_init=True))
     x = jax.random.normal(jax.random.PRNGKey(1), (4, 8, 8, 1))
     cond = jax.random.normal(jax.random.PRNGKey(2), (4, 2))
     lp = flow.log_prob(x, cond)
@@ -153,10 +154,11 @@ def test_image_modeled_zero_init_is_base():
 
 def test_image_condition_npe_depends_on_condition():
     # NPE: modeled theta vector (dim=2), condition = 8x8x1 image via prefix
-    flow = make_tarflow(nnx.Rngs(0), dim=2, modeled="vector", cond="image_prefix",
-                        cond_img_size=8, cond_patch_size=2, cond_channels=1,
-                        channels=16, num_blocks=4, layers_per_block=2, head_dim=8,
-                        zero_init=False)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=2, modeled="vector",
+                                 cond="image_prefix", cond_img_size=8,
+                                 cond_patch_size=2, cond_channels=1, head_dim=8,
+                                 num_heads=2, num_blocks=4, layers_per_block=2,
+                                 zero_init=False))
     theta = jax.random.normal(jax.random.PRNGKey(1), (5, 2))
     img_a = jnp.zeros((5, 8, 8, 1))
     img_b = jnp.ones((5, 8, 8, 1))
@@ -167,17 +169,18 @@ def test_image_condition_npe_depends_on_condition():
 
 def test_vector_path_unchanged():
     # the v1 default vector path still builds and runs
-    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=4,
-                        layers_per_block=2, head_dim=8)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=2, head_dim=8,
+                                 num_heads=2, num_blocks=4, layers_per_block=2))
     x = jax.random.normal(jax.random.PRNGKey(1), (8, 4))
     cond = jax.random.normal(jax.random.PRNGKey(2), (8, 2))
     assert flow.log_prob(x, cond).shape == (8,)
 
 
 def test_image_set_standardization_shape():
-    flow = make_tarflow(nnx.Rngs(0), cond_dim=2, modeled="image", img_size=8,
-                        patch_size=2, img_channels=1, channels=16, num_blocks=2,
-                        layers_per_block=1, head_dim=8)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), cond_dim=2, modeled="image",
+                                 img_size=8, patch_size=2, img_channels=1,
+                                 head_dim=8, num_heads=2, num_blocks=2,
+                                 layers_per_block=1))
     mean = jnp.zeros((8, 8, 1))
     std = jnp.ones((8, 8, 1)) * 2.0
     flow.set_standardization(mean, std)

@@ -1,4 +1,4 @@
-# tests/normalizing_flows/transformer_flow/test_pipeline_integration.py
+# tests/models/tarflow/test_pipeline_integration.py
 import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
@@ -8,7 +8,7 @@ from flax import nnx
 import numpy as np
 import grain
 
-from gensbi.normalizing_flows import make_tarflow
+from gensbi.models import TarFlow, TarFlowParams
 from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline
 from gensbi.inference import NLEPosterior
 from gensbi.core.prior import make_gaussian_prior
@@ -33,9 +33,9 @@ def _ds(arr, bs=128):
 
 
 def _pipe(tmp_path):
-    flow = make_tarflow(nnx.Rngs(0), dim=M, cond_dim=D, channels=16,
-                        num_blocks=4, layers_per_block=2, head_dim=8,
-                        standardize=True)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=M, cond_dim=D, head_dim=8,
+                                 num_heads=2, num_blocks=4, layers_per_block=2,
+                                 standardize=True))
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(val_every=1, checkpoint_dir=str(tmp_path)))
     return ConditionalFlowPipeline(flow, _ds(DATA[:800]), _ds(DATA[800:]),
@@ -83,9 +83,9 @@ def test_train_smoke_and_log_prob(tmp_path):
 
 
 def test_nle_potential_value_and_grad(tmp_path):
-    flow = make_tarflow(nnx.Rngs(0), dim=M, cond_dim=D, channels=16,
-                        num_blocks=3, layers_per_block=1, head_dim=8,
-                        zero_init=False)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=M, cond_dim=D, head_dim=8,
+                                 num_heads=2, num_blocks=3, layers_per_block=1,
+                                 zero_init=False))
     prior = make_gaussian_prior((D,))
     post = NLEPosterior(flow, prior)
     U = post.potential(jnp.array([0.5, -0.5, 0.2]))

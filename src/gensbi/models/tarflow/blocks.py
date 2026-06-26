@@ -1,8 +1,8 @@
 """Transformer blocks for the transformer flow.
 
-Adapted from apple/ml-tarflow (TarFlow); see transformer_flow/LICENSE.apple.
+Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.
 Prefix-concatenation conditioning and SOS shift adapted from apple/ml-starflow
-(STARFlow); see transformer_flow/LICENSE.starflow.
+(STARFlow); see models/tarflow/LICENSE.starflow.
 """
 
 import jax
@@ -14,7 +14,6 @@ from gensbi.normalizing_flows.bijections.base import Mask
 
 INV_SOFTPLUS_1 = 0.541324854612918  # softplus(INV_SOFTPLUS_1) == 1.0 -> identity at zero-init
 
-# TODO: everywhere else, the standard is to give the per head dim and num heads (or channels and num heads). it might be convenient to uniform this module
 
 class AttentionBlock(nnx.Module):
     """Pre-norm residual block: causal self-attention + MLP.
@@ -23,14 +22,13 @@ class AttentionBlock(nnx.Module):
     not leak future tokens into earlier ones.
     """
 
-    def __init__(self, channels: int, head_dim: int, expansion: int,
+    def __init__(self, channels: int, num_heads: int, expansion: int,
                  rngs: nnx.Rngs):
-        if channels % head_dim != 0:
+        if channels % num_heads != 0:
             raise ValueError(
-                f"channels ({channels}) must be a multiple of head_dim "
-                f"({head_dim})")
-        self.num_heads = channels // head_dim
-        self.head_dim = head_dim
+                f"channels ({channels}) must be a multiple of num_heads ({num_heads})")
+        self.num_heads = num_heads
+        self.head_dim = channels // num_heads
         self.norm1 = nnx.LayerNorm(channels, rngs=rngs)
         self.qkv = nnx.Linear(channels, 3 * channels, rngs=rngs)
         self.proj = nnx.Linear(channels, channels, rngs=rngs)
@@ -66,7 +64,7 @@ class MetaBlock(nnx.Module):
     """
 
     def __init__(self, F, channels, T, perm, inv_perm, conditioner,
-                 num_layers, head_dim, expansion, rngs, zero_init=True,
+                 num_layers, num_heads, expansion, rngs, zero_init=True,
                  use_softplus=True, soft_clip=4.0):
         self.F = F
         self.use_softplus = use_softplus
@@ -81,7 +79,7 @@ class MetaBlock(nnx.Module):
         self.pos_embed = nnx.Param(
             jax.random.normal(rngs.params(), (T, channels)) * 1e-2)
         self.attn_blocks = nnx.List(
-            [AttentionBlock(channels, head_dim, expansion, rngs)
+            [AttentionBlock(channels, num_heads, expansion, rngs)
              for _ in range(num_layers)])
         self.proj_out = nnx.Linear(channels, 2 * F, rngs=rngs)
         if zero_init:

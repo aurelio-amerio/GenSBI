@@ -50,7 +50,7 @@ def main():
     from flax import nnx
 
     from gensbi.core.prior import make_gaussian_prior
-    from gensbi.normalizing_flows import make_tarflow
+    from gensbi.models import TarFlow, TarFlowParams
     from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline
     from gensbi.inference import NLEPosterior
 
@@ -112,16 +112,16 @@ def main():
     train_data = data[:n_train]
     val_data = data[n_train:]
 
-    flow = make_tarflow(
-        nnx.Rngs(args.seed),
+    flow = TarFlow(TarFlowParams(
+        rngs=nnx.Rngs(args.seed),
         dim=M,
         cond_dim=D,
-        channels=args.channels,
+        head_dim=args.head_dim,
+        num_heads=args.channels // args.head_dim,
         num_blocks=args.num_blocks,
         layers_per_block=2,
-        head_dim=args.head_dim,
         standardize=True,
-    )
+    ))
 
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(

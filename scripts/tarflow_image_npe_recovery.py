@@ -33,7 +33,7 @@ def main():
     import numpy as np
     import grain
     from flax import nnx
-    from gensbi.normalizing_flows import make_tarflow
+    from gensbi.models import TarFlow, TarFlowParams
     from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline
 
     smoke = args.smoke
@@ -69,11 +69,13 @@ def main():
         return (idx.shuffle(0).repeat().to_iter_dataset().batch(256)
                 .map(lambda i: (obs_n[np.array(i)], cond_n[np.array(i)])))
 
-    flow = make_tarflow(nnx.Rngs(args.seed), dim=D, modeled="vector",
-                        cond="image_prefix", cond_img_size=H, cond_patch_size=2,
-                        cond_channels=Ch, channels=args.channels,
-                        num_blocks=args.num_blocks, layers_per_block=2,
-                        head_dim=args.head_dim, standardize=True)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(args.seed), dim=D,
+                                 modeled="vector", cond="image_prefix",
+                                 cond_img_size=H, cond_patch_size=2,
+                                 cond_channels=Ch, head_dim=args.head_dim,
+                                 num_heads=args.channels // args.head_dim,
+                                 num_blocks=args.num_blocks, layers_per_block=2,
+                                 standardize=True))
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(nsteps=nsteps, val_every=val_every, max_lr=3e-4,
                     checkpoint_dir=tempfile.mkdtemp(), early_stopping=False))

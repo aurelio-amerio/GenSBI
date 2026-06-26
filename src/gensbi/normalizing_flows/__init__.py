@@ -1,10 +1,13 @@
-"""Discrete (autoregressive) normalizing flows for GenSBI.
+"""Pure normalizing-flow abstractions (bijections + change-of-variables).
 
-A parallel track to the flow-matching/diffusion methods: the flow IS the
-density model, with exact ``log_prob`` and one-pass conditional ``sample``.
+Concrete flow models live under ``gensbi.models`` (``MAFlow``, ``TarFlow``).
 """
 
-from gensbi.normalizing_flows.bijections.transformers import Affine, RQSpline
-from gensbi.normalizing_flows.transformer_flow import TransformerFlow, make_tarflow
+from gensbi.normalizing_flows.bijections import (
+    Bijection, Mask, Chain, Permutation, Standardize, Affine, RQSpline,
+)
 
-__all__ = ["Affine", "RQSpline", "TransformerFlow", "make_tarflow"]
+__all__ = [
+    "Bijection", "Mask", "Chain", "Permutation", "Standardize",
+    "Affine", "RQSpline",
+]

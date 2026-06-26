@@ -1,11 +1,11 @@
-# tests/normalizing_flows/transformer_flow/test_stability.py
+# tests/models/tarflow/test_stability.py
 import jax
 import jax.numpy as jnp
 import numpy as np
 from flax import nnx
 
-from gensbi.normalizing_flows.transformer_flow.model import make_tarflow
-from gensbi.normalizing_flows.transformer_flow.blocks import MetaBlock, INV_SOFTPLUS_1
+from gensbi.models import TarFlow, TarFlowParams
+from gensbi.models.tarflow.blocks import MetaBlock, INV_SOFTPLUS_1
 
 
 class _NullCond(nnx.Module):
@@ -16,7 +16,7 @@ class _NullCond(nnx.Module):
 def _block(use_softplus=True, soft_clip=4.0, F=1, channels=16, zero_init=True):
     return MetaBlock(
         F=F, channels=channels, T=4, perm=jnp.arange(4), inv_perm=jnp.arange(4),
-        conditioner=_NullCond(), num_layers=1, head_dim=8, expansion=4,
+        conditioner=_NullCond(), num_layers=1, num_heads=2, expansion=4,
         rngs=nnx.Rngs(0), zero_init=zero_init, use_softplus=use_softplus, soft_clip=soft_clip,
     )
 
@@ -101,15 +101,15 @@ def test_block_roundtrip_softplus():
     assert jnp.allclose(z2.reshape(5, 4, 1), z, atol=1e-4)
 
 
-def test_make_tarflow_defaults_and_override():
-    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=3,
-                        layers_per_block=2, head_dim=8)
+def test_tarflow_defaults_and_override():
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=2, head_dim=8,
+                                 num_heads=2, num_blocks=3, layers_per_block=2))
     for blk in flow.blocks:
         assert blk.use_softplus is True
         assert blk.soft_clip == 4.0
-    flow2 = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=2,
-                         layers_per_block=2, head_dim=8,
-                         use_softplus=False, soft_clip=0.0)
+    flow2 = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=2, head_dim=8,
+                                  num_heads=2, num_blocks=2, layers_per_block=2,
+                                  use_softplus=False, soft_clip=0.0))
     for blk in flow2.blocks:
         assert blk.use_softplus is False
         assert blk.soft_clip == 0.0
@@ -128,23 +128,25 @@ def _force_large_neg_a(flow, val=-60.0):
 def test_default_is_finite_where_legacy_exp_overflows():
     x = jax.random.normal(jax.random.PRNGKey(1), (8, 4))
 
-    legacy = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=0, channels=16, num_blocks=3,
-                          layers_per_block=2, head_dim=8,
-                          use_softplus=False, soft_clip=0.0)   # bare exp, no clip
+    legacy = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=0, head_dim=8,
+                                   num_heads=2, num_blocks=3, layers_per_block=2,
+                                   use_softplus=False, soft_clip=0.0))   # bare exp, no clip
     _force_large_neg_a(legacy)
     lp_legacy = legacy.log_prob(x)
     assert not bool(jnp.all(jnp.isfinite(lp_legacy)))          # exp(-(-60)) overflows
 
-    new = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=0, channels=16, num_blocks=3,
-                       layers_per_block=2, head_dim=8)          # default softplus+soft_clip
+    new = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=0, head_dim=8,
+                                num_heads=2, num_blocks=3,
+                                layers_per_block=2))          # default softplus+soft_clip
     _force_large_neg_a(new)
     lp_new = new.log_prob(x)
     assert bool(jnp.all(jnp.isfinite(lp_new)))                 # clip+softplus keep it finite
 
 
 def test_softplus_block_logdet_matches_numerical():
-    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=0, channels=16, num_blocks=1,
-                        layers_per_block=2, head_dim=8, zero_init=False)  # softplus default
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=0, head_dim=8,
+                                 num_heads=2, num_blocks=1, layers_per_block=2,
+                                 zero_init=False))  # softplus default
     blk = flow.blocks[0]
     x = jnp.array([[0.5, -1.0, 0.3, 0.8]])
 
@@ -159,8 +161,8 @@ def test_softplus_block_logdet_matches_numerical():
 
 def test_stability_flags_are_static_not_ema_state():
     # use_softplus/soft_clip are plain Python config, not nnx state captured by EMA.
-    flow = make_tarflow(nnx.Rngs(0), dim=4, cond_dim=2, channels=16, num_blocks=2,
-                        layers_per_block=2, head_dim=8)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=2, head_dim=8,
+                                 num_heads=2, num_blocks=2, layers_per_block=2))
     state = nnx.state(flow, nnx.Param)
     leaves = jax.tree_util.tree_leaves(state)
     assert len(leaves) > 0, "expected Param leaves; got none — model may be misconfigured"

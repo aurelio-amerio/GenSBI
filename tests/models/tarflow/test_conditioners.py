@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 import pytest
-from gensbi.normalizing_flows.transformer_flow.conditioners import VectorConditioner
+from gensbi.models.tarflow.conditioners import VectorConditioner
 
 
 def test_embed_returns_bias_prefix_tuple():
@@ -25,7 +25,7 @@ def test_missing_cond_raises():
         c.embed(None)
 
 
-from gensbi.normalizing_flows.transformer_flow.conditioners import (
+from gensbi.models.tarflow.conditioners import (
     VectorPrefixConditioner, ImagePrefixConditioner,
 )
 

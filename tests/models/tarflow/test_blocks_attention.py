@@ -1,18 +1,18 @@
 import jax
 import jax.numpy as jnp
 from flax import nnx
-from gensbi.normalizing_flows.transformer_flow.blocks import AttentionBlock
+from gensbi.models.tarflow.blocks import AttentionBlock
 
 
 def test_output_shape():
-    blk = AttentionBlock(channels=8, head_dim=4, expansion=2, rngs=nnx.Rngs(0))
+    blk = AttentionBlock(channels=8, num_heads=2, expansion=2, rngs=nnx.Rngs(0))
     x = jax.random.normal(jax.random.PRNGKey(1), (2, 5, 8))
     assert blk(x).shape == (2, 5, 8)
 
 
 def test_attention_is_causal():
     """output[i] must not depend on input[j] for j > i (causal mask)."""
-    blk = AttentionBlock(channels=8, head_dim=4, expansion=2, rngs=nnx.Rngs(0))
+    blk = AttentionBlock(channels=8, num_heads=2, expansion=2, rngs=nnx.Rngs(0))
     T, C = 4, 8
     x0 = jax.random.normal(jax.random.PRNGKey(2), (1, T, C))
 
@@ -26,7 +26,7 @@ def test_attention_is_causal():
 
 
 def test_explicit_tril_mask_matches_is_causal():
-    blk = AttentionBlock(channels=8, head_dim=4, expansion=2, rngs=nnx.Rngs(0))
+    blk = AttentionBlock(channels=8, num_heads=2, expansion=2, rngs=nnx.Rngs(0))
     T = 5
     x = jax.random.normal(jax.random.PRNGKey(3), (2, T, 8))
     tril = jnp.tril(jnp.ones((T, T), dtype=bool))
@@ -35,7 +35,7 @@ def test_explicit_tril_mask_matches_is_causal():
 
 def test_prefix_mask_blocks_prefix_from_seeing_modeled():
     """With a prefix-LM mask, prefix-row outputs must not depend on modeled inputs."""
-    blk = AttentionBlock(channels=8, head_dim=4, expansion=2, rngs=nnx.Rngs(0))
+    blk = AttentionBlock(channels=8, num_heads=2, expansion=2, rngs=nnx.Rngs(0))
     M, T = 2, 3
     S = M + T
     idx = jnp.arange(S)

@@ -1,7 +1,7 @@
 """Conditioning seams for the transformer flow.
 
-Adapted from apple/ml-tarflow (TarFlow); see transformer_flow/LICENSE.apple.
-Prefix-concatenation conditioning adapted from apple/ml-starflow (STARFlow); see transformer_flow/LICENSE.starflow.
+Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.
+Prefix-concatenation conditioning adapted from apple/ml-starflow (STARFlow); see models/tarflow/LICENSE.starflow.
 
 v1 ``VectorConditioner`` is the continuous analog of TarFlow's ``class_embed``:
 an MLP embeds the condition to a ``channels``-vector that is broadcast-added to

@@ -1,4 +1,4 @@
-# tests/normalizing_flows/transformer_flow/test_structured_boundary.py
+# tests/models/tarflow/test_structured_boundary.py
 import os
 os.environ["JAX_PLATFORMS"] = "cpu"
 
@@ -8,7 +8,7 @@ from flax import nnx
 import numpy as np
 import grain
 
-from gensbi.normalizing_flows import make_tarflow
+from gensbi.models import TarFlow, TarFlowParams
 from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline
 from gensbi.inference import NLEPosterior
 from gensbi.core.prior import make_gaussian_prior
@@ -31,9 +31,10 @@ def _ds_field(bs=64):
 
 
 def _field_pipe(tmp_path):
-    flow = make_tarflow(nnx.Rngs(0), cond_dim=D, modeled="image", img_size=H,
-                        patch_size=2, img_channels=Ch, channels=16, num_blocks=4,
-                        layers_per_block=2, head_dim=8, standardize=True)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), cond_dim=D, modeled="image",
+                                 img_size=H, patch_size=2, img_channels=Ch,
+                                 head_dim=8, num_heads=2, num_blocks=4,
+                                 layers_per_block=2, standardize=True))
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(val_every=1, checkpoint_dir=str(tmp_path)))
     return ConditionalFlowPipeline(flow, _ds_field(), _ds_field(),
@@ -63,9 +64,10 @@ def test_field_fit_standardization_image_shape(tmp_path):
 
 def test_field_nle_potential_structured_xo(tmp_path):
     # zero_init=True: identity flow, finite log_prob for untrained weights on CPU
-    flow = make_tarflow(nnx.Rngs(0), cond_dim=D, modeled="image", img_size=H,
-                        patch_size=2, img_channels=Ch, channels=16, num_blocks=3,
-                        layers_per_block=1, head_dim=8, zero_init=True)
+    flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), cond_dim=D, modeled="image",
+                                 img_size=H, patch_size=2, img_channels=Ch,
+                                 head_dim=8, num_heads=2, num_blocks=3,
+                                 layers_per_block=1, zero_init=True))
     prior = make_gaussian_prior((D,))
     post = NLEPosterior(flow, prior, structured_obs=True)
     x_o = jnp.zeros((H, W, Ch))

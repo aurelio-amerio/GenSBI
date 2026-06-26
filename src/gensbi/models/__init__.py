@@ -22,6 +22,8 @@ from .wrappers import JointWrapper, ConditionalWrapper, UnconditionalWrapper
 
 from .maf import MAFlowParams, MAFlow
 
+from .tarflow import TarFlowParams, TarFlow
+
 __all__ = [
     "Flux1",
     "Flux1Params",
@@ -34,4 +36,6 @@ __all__ = [
     "UnconditionalWrapper",
     "MAFlowParams",
     "MAFlow",
+    "TarFlowParams",
+    "TarFlow",
 ]

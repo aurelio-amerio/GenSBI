@@ -1,9 +1,9 @@
 import jax
 import jax.numpy as jnp
 from flax import nnx
-from gensbi.normalizing_flows.transformer_flow.blocks import MetaBlock
-from gensbi.normalizing_flows.transformer_flow.conditioners import VectorConditioner
-from gensbi.normalizing_flows.transformer_flow.conditioners import VectorPrefixConditioner
+from gensbi.models.tarflow.blocks import MetaBlock
+from gensbi.models.tarflow.conditioners import VectorConditioner
+from gensbi.models.tarflow.conditioners import VectorPrefixConditioner
 
 
 def _make(T=4, F=1, channels=8, cond_dim=2, zero_init=True, rngs=None):
@@ -12,7 +12,7 @@ def _make(T=4, F=1, channels=8, cond_dim=2, zero_init=True, rngs=None):
     inv_perm = jnp.argsort(perm)
     cond = VectorConditioner(cond_dim, channels, rngs=rngs)
     return MetaBlock(F=F, channels=channels, T=T, perm=perm, inv_perm=inv_perm,
-                     conditioner=cond, num_layers=2, head_dim=4, expansion=2,
+                     conditioner=cond, num_layers=2, num_heads=2, expansion=2,
                      rngs=rngs, zero_init=zero_init)
 
 
@@ -72,7 +72,7 @@ def _make_prefix(T=4, F=1, channels=8, cond_dim=2, num_tokens=2, zero_init=False
     cond = VectorPrefixConditioner(cond_dim, channels, num_tokens, rngs=rngs)
     return MetaBlock(F=F, channels=channels, T=T, perm=perm,
                      inv_perm=jnp.argsort(perm), conditioner=cond, num_layers=2,
-                     head_dim=4, expansion=2, rngs=rngs, zero_init=zero_init)
+                     num_heads=2, expansion=2, rngs=rngs, zero_init=zero_init)
 
 
 def test_prefix_inverse_is_triangular():
