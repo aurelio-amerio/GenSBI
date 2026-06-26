@@ -20,6 +20,8 @@ from .flux1joint import (
 
 from .wrappers import JointWrapper, ConditionalWrapper, UnconditionalWrapper
 
+from .maf import MAFlowParams, MAFlow
+
 __all__ = [
     "Flux1",
     "Flux1Params",
@@ -30,4 +32,6 @@ __all__ = [
     "JointWrapper",
     "ConditionalWrapper",
     "UnconditionalWrapper",
+    "MAFlowParams",
+    "MAFlow",
 ]
