@@ -48,6 +48,29 @@
 
 ---
 
+### Task 0: Baseline full-suite snapshot (before any changes)
+
+Establish the "no unexpected regression" reference: which tests pass/fail on the current branch HEAD, in this CPU environment, *before* the refactor. Some tests may already fail or skip on CPU (e.g. GPU-oriented experimental tests); recording that now prevents misattributing them to the refactor in Task 8.
+
+**Files:** none (read-only).
+
+- [ ] **Step 1: Confirm clean starting state**
+
+Run: `git status --short`
+Expected: only untracked `reference/` directories — no modified tracked files.
+
+- [ ] **Step 2: Run the entire suite and capture the result (~20 min, background)**
+
+This exceeds the 10-minute foreground command cap, so run it in the **background** and poll for completion. Tee the output to a scratch file:
+Run: `pytest tests 2>&1 | tee "$SCRATCH/baseline_pytest.txt"` (background; `$SCRATCH` = the session scratchpad dir)
+Expected: a final summary line, e.g. `N passed, K skipped, M failed`.
+
+- [ ] **Step 3: Record the baseline failing set**
+
+From `baseline_pytest.txt`, note the IDs of any tests that **fail** at baseline (the `FAILED ...` lines). This list is the regression reference for Task 8: if the baseline is fully green, Task 8 must be fully green; otherwise Task 8 must introduce **no new** failures beyond this list. (No commit — this is a read-only snapshot.)
+
+---
+
 ### Task 1: Move `patchify` to `models/core/`
 
 Severs the `normalizing_flows → recipes` edge. No model code depends on `models/` yet, so this is a safe foundational move.
@@ -1081,10 +1104,10 @@ Expected: PASS (both `import gensbi.models` and `import gensbi.normalizing_flows
 Run: `pytest tests/models tests/normalizing_flows -q`
 Expected: PASS (all relocated + new NF tests green).
 
-- [ ] **Step 5: Full regular suite on CPU (the comprehensive gate)**
+- [ ] **Step 5: Blast-radius check (fast — general pipelines + experimental, no slow)**
 
-Run: `pytest tests -q`
-Expected: PASS. Runs the **entire** suite (uses the configured `-n 2`), covering the full blast radius — `tests/experimental` (fielddit/glue import the relocated `patchify`), `tests/diffusion`, `tests/diagnostics`, `tests/utils`, `tests/recipes` + `tests/flow_matching` + `tests/core` (general-pipeline contract), and the NF suite. Includes the 4 `slow`-marked pipeline tests (CPU-runnable, a few minutes). For a faster inner loop during development, `pytest tests -q -m "not slow"` skips them, but the final gate runs the full suite.
+Run: `pytest tests/recipes tests/flow_matching tests/core tests/experimental -q -m "not slow"`
+Expected: PASS. Confirms the general-pipeline contract and the experimental fielddit/glue (which import the relocated `patchify`) are unaffected. The exhaustive incl-slow run is the dedicated final gate in **Task 8**.
 
 - [ ] **Step 6: Commit (if Step 1 required fixes; otherwise skip)**
 
@@ -1092,6 +1115,42 @@ Expected: PASS. Runs the **entire** suite (uses the configured `-n 2`), covering
 git add -A
 git commit -m "test(nf): final verification — full suite green, no import cycles, NF=bijections-only"
 ```
+
+---
+
+### Task 8: Final full-suite regression gate (the very last step)
+
+The exhaustive safety net: run the **entire** GenSBI test suite from a clean, fully-committed tree and confirm zero regressions against the Task 0 baseline. Run this only after every other task is committed.
+
+**Files:** none (read-only). **Precondition:** Tasks 1–7 complete and committed.
+
+- [ ] **Step 1: Confirm clean, committed state**
+
+Run: `git status --short`
+Expected: only untracked `reference/` directories — no modified or staged tracked files. (If anything is uncommitted, the gate is invalid — commit or stash first.)
+
+- [ ] **Step 2: Run the entire suite incl. slow (~20 min, background)**
+
+This exceeds the 10-minute foreground command cap — run in the **background** and poll to completion. Tee to a scratch file:
+Run: `pytest tests 2>&1 | tee "$SCRATCH/final_pytest.txt"` (background; includes the 4 `slow`-marked tests; uses the configured `-n 2`)
+Expected: a summary line with **`0 failed`** and no errors.
+
+- [ ] **Step 3: Compare against the Task 0 baseline**
+
+Diff the `FAILED ...` lines in `final_pytest.txt` against the Task 0 baseline failing set.
+- Fully-green baseline ⇒ `final_pytest.txt` must be fully green.
+- Non-empty baseline ⇒ no failure may appear that was **not** already in the baseline (pre-existing CPU-only failures may remain; **new** ones are regressions).
+The total pass *count* will legitimately differ from baseline — the refactor moved/renamed tests, removed the `make_*` parity tests, and rewrote `test_exports`. Count drift is expected; **new failures are not**.
+
+- [ ] **Step 4: Triage any new failure (do not skip)**
+
+If a test that was green at baseline now fails, STOP — do not declare done. Classify it:
+- Missed import/call-site update → apply the matching rewrite rule from Task 4 (MAF) or Task 6 (TarFlow), re-commit, re-run from Step 2.
+- Genuine behavioural regression → diagnose and fix (use superpowers:systematic-debugging), re-commit, re-run from Step 2.
+
+- [ ] **Step 5: Declare complete**
+
+Only when Step 2 reports zero failures/errors and Step 3 shows no new failures vs. baseline. The restructure is verified end-to-end with no unexpected regression.
 
 ---
 
@@ -1106,7 +1165,8 @@ git commit -m "test(nf): final verification — full suite green, no import cycl
 - Head convention `(head_dim, num_heads)`, channels derived, default preserves 64, `blocks.py:17` TODO resolved — Task 5 (Params) + Task 6 Step 7 (blocks). ✓
 - Sever `normalizing_flows → recipes`; acyclic; smoke test — Task 1 + `tests/test_import_smoke.py`, run every task. ✓
 - LICENSE attribution travels to `models/tarflow/` — Task 6 Step 6. ✓
-- General pipelines stay green + full blast radius (incl. `tests/experimental` fielddit/glue, `test_pipeline_utils` patchify) — Task 7 Step 5 runs the entire suite on CPU. ✓
+- General pipelines stay green + full blast radius (incl. `tests/experimental` fielddit/glue, `test_pipeline_utils` patchify) — Task 7 Step 5 (fast check) + Task 8 (entire suite incl. slow, vs. Task 0 baseline). ✓
+- No unexpected regression — Task 0 captures a baseline; Task 8 gates on zero new failures across the whole suite. ✓
 - EMA/buffer-seam survives the `Mask` move into `TarFlow` — covered by relocating `test_stability.py` (which asserts the EMA/buffer seam) in Task 6 Step 4 and running it in Step 5.
 
 **Placeholder scan:** No `TBD`/`TODO`/"handle edge cases" in steps; all new modules and new tests have complete code; relocations give exact `git mv` + import edits; call-site rewrites give an exact rule + worked example + file/line list.
