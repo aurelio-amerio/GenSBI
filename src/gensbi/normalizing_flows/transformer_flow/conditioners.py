@@ -15,7 +15,7 @@ import jax
 from flax import nnx
 from jax import Array
 
-from gensbi.recipes.utils import patchify_2d
+from gensbi.models.core.patching import patchify_2d
 
 
 class VectorConditioner(nnx.Module):

@@ -3,7 +3,7 @@ from jax import Array
 from jax import numpy as jnp
 from flax import nnx
 
-from gensbi.recipes.utils import patchify_2d
+from gensbi.models.core.patching import patchify_2d
 
 from gensbi.experimental.models.autoencoders import AutoEncoder1D, AutoEncoder2D
 from gensbi.models import Flux1

@@ -31,7 +31,7 @@ def test_block_size_must_divide_dim():
 
 import jax
 from gensbi.normalizing_flows.transformer_flow.tokenizers import ImageTokenizer
-from gensbi.recipes.utils import patchify_2d
+from gensbi.models.core.patching import patchify_2d
 
 
 def test_vector_tokenizer_example_shape():

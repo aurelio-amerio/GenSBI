@@ -65,7 +65,7 @@ class Flux1Params:
     **Preprocessing for Images/2D Data**:
 
     - **Patchification**: 2D images must be patchified (flattened into a sequence of tokens) before passing them to the model.
-      Use `gensbi.recipes.utils.patchify_2d` for this purpose.
+      Use `gensbi.models.core.patching.patchify_2d` for this purpose.
     - **Normalization**: To speed up convergence, ensure data is normalized to 0 mean and unit variance.
 
     .. note::

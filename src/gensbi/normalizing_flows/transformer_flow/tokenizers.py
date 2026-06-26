@@ -8,7 +8,7 @@ learned lossy encoder — so the change-of-variables stays exact.
 """
 
 from jax import Array
-from gensbi.recipes.utils import patchify_2d, depatchify_2d
+from gensbi.models.core.patching import patchify_2d, depatchify_2d
 
 
 class VectorTokenizer:

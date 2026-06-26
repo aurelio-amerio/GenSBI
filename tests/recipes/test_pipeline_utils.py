@@ -94,9 +94,8 @@ def test_init_ids_joint():
 # Tests for uncovered lines in recipes/utils.py
 # ---------------------------------------------------------------------------
 
+from gensbi.models.core.patching import patchify_2d, depatchify_2d
 from gensbi.recipes.utils import (
-    patchify_2d,
-    depatchify_2d,
     _resolve_embedding_ids,
     build_edm_path,
     build_sm_path,

@@ -11,7 +11,7 @@ import jax.numpy as jnp
 from flax import nnx
 from jax.typing import DTypeLike
 
-from gensbi.recipes.utils import patchify_2d, depatchify_2d
+from gensbi.models.core.patching import patchify_2d, depatchify_2d
 from gensbi.experimental.models.fielddit.blocks import (
     ModulatedResBlock2D,
     _safe_groups,
