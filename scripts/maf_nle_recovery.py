@@ -48,7 +48,7 @@ def main():
     from flax import nnx
 
     from gensbi.core.prior import make_gaussian_prior
-    from gensbi.normalizing_flows import make_maf
+    from gensbi.models import MAFlow, MAFlowParams
     from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline
     from gensbi.inference import NLEPosterior
 
@@ -109,15 +109,15 @@ def main():
     train_data = data[:n_train]
     val_data = data[n_train:]
 
-    flow = make_maf(
-        nnx.Rngs(args.seed),
+    flow = MAFlow(MAFlowParams(
+        rngs=nnx.Rngs(args.seed),
         dim=M,
         cond_dim=D,
         n_layers=args.n_layers,
         nn_width=args.nn_width,
         nn_depth=2,
         standardize=True,
-    )
+    ))
 
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(

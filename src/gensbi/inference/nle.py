@@ -20,7 +20,7 @@ class NLEPosterior:
     ----------
     flow : object
         Anything exposing ``log_prob(x, cond) -> (B,)`` with x the observation
-        and cond the parameter (an NLE-trained ``Flow``).
+        and cond the parameter (an NLE-trained flow model (``MAFlow``/``TarFlow``)).
     prior : numpyro.distributions.Distribution
         Prior over theta; ``prior.log_prob(theta)`` returns a scalar and
         ``prior.sample(key, ())`` returns ``(dim_theta,)``.

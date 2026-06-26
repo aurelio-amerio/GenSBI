@@ -42,12 +42,12 @@ def _single_cond(x_o):
 
 
 class ConditionalFlowPipeline(AbstractPipeline):
-    """Max-likelihood NPE pipeline wrapping a Phase-0 ``Flow``.
+    """Max-likelihood NPE pipeline wrapping an ``MAFlow``.
 
     Parameters
     ----------
-    model : Flow
-        A pre-built flow (e.g. ``make_maf(rngs, dim=dim_obs, cond_dim=dim_cond)``).
+    model : MAFlow
+        A pre-built flow (e.g. ``MAFlow(MAFlowParams(rngs=rngs, dim=dim_obs, cond_dim=dim_cond))``).
     train_dataset, val_dataset : iterable
         Yield ``(obs, cond)`` batches of shape ``(B, dim, 1)`` each.
     dim_obs, dim_cond : int
@@ -76,18 +76,18 @@ class ConditionalFlowPipeline(AbstractPipeline):
     @classmethod
     def init_pipeline_from_config(cls, *args, **kwargs):
         raise NotImplementedError(
-            "ConditionalFlowPipeline takes a pre-built Flow; build it with "
-            "make_maf and pass it as model=.")
+            "ConditionalFlowPipeline takes a pre-built flow; build a `MAFlow` "
+            "and pass it as model=.")
 
     def _make_model(self, params):
         raise NotImplementedError(
-            "Pass a pre-built Flow as model=; the flow pipeline does not build "
+            "Pass a pre-built MAFlow as model=; the flow pipeline does not build "
             "models from params.")
 
     @classmethod
     def get_default_params(cls, *args, **kwargs):
         raise NotImplementedError(
-            "ConditionalFlowPipeline takes a pre-built Flow; there are no model "
+            "ConditionalFlowPipeline takes a pre-built MAFlow; there are no model "
             "params to default.")
 
     # --- the flow IS the model: no wrapper ---

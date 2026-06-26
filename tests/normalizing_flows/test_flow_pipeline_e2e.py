@@ -8,7 +8,7 @@ import numpy as np
 import grain
 import pytest
 
-from gensbi.normalizing_flows import make_maf
+from gensbi.models import MAFlow, MAFlowParams
 from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline
 
 D = 2          # dim theta
@@ -45,8 +45,8 @@ def test_npe_recovers_linear_gaussian(tmp_path):
         return (grain.MapDataset.source(np.array(arr)).shuffle(0).repeat()
                 .to_iter_dataset().batch(256).map(split_obs_cond))
 
-    flow = make_maf(nnx.Rngs(0), dim=D, cond_dim=M,
-                    n_layers=6, nn_width=64, nn_depth=2, standardize=True)
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=D, cond_dim=M,
+                               n_layers=6, nn_width=64, nn_depth=2, standardize=True))
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(nsteps=4000, val_every=200, max_lr=3e-4,
                     checkpoint_dir=str(tmp_path), early_stopping=False))

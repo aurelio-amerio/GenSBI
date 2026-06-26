@@ -7,7 +7,7 @@ from flax import nnx
 import pytest
 
 from gensbi.core.prior import make_gaussian_prior
-from gensbi.normalizing_flows import make_maf
+from gensbi.models import MAFlow, MAFlowParams
 from gensbi.inference import NLEPosterior
 
 
@@ -20,8 +20,8 @@ class GaussianMock:
 def test_potential_value_and_grad_real_flow():
     dim = 2
     # zero_init=False so the flow actually depends on theta -> non-trivial grad.
-    flow = make_maf(nnx.Rngs(0), dim=dim, cond_dim=dim,
-                    n_layers=3, nn_width=16, zero_init=False)
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=dim, cond_dim=dim,
+                               n_layers=3, nn_width=16, zero_init=False))
     prior = make_gaussian_prior((dim,))
     post = NLEPosterior(flow, prior)
 
@@ -50,8 +50,8 @@ def test_sample_shape_and_prior_recovery():
     # zero_init=True (default): q(x|theta) is theta-independent (identity flow),
     # so the posterior collapses to the prior. Exercises NUTS + the real flow.
     dim = 2
-    flow = make_maf(nnx.Rngs(0), dim=dim, cond_dim=dim,
-                    n_layers=3, nn_width=16, zero_init=True)
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=dim, cond_dim=dim,
+                               n_layers=3, nn_width=16, zero_init=True))
     prior = make_gaussian_prior((dim,))
     post = NLEPosterior(flow, prior, num_warmup=300, num_samples=800)
 

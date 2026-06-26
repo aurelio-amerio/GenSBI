@@ -1,5 +1,5 @@
 import jax.numpy as jnp
-from gensbi.normalizing_flows.bijections.masks import make_mask
+from gensbi.models.maf.masks import make_mask
 
 
 def test_make_mask_non_strict_is_ge():

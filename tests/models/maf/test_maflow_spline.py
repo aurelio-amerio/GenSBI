@@ -6,15 +6,15 @@ import jax.numpy as jnp
 from flax import nnx
 from scipy.integrate import trapezoid
 
-from gensbi.normalizing_flows import make_maf
+from gensbi.models import MAFlow, MAFlowParams
 from gensbi.normalizing_flows.bijections.transformers import RQSpline
 
 
 def _spline_flow(dim, cond_dim, **kw):
-    return make_maf(nnx.Rngs(0), dim=dim, cond_dim=cond_dim, n_layers=4,
-                    nn_width=32, nn_depth=2,
-                    transformer=RQSpline(num_bins=8, range_bound=6.0),
-                    standardize=True, zero_init=False, **kw)
+    return MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=dim, cond_dim=cond_dim,
+                               n_layers=4, nn_width=32, nn_depth=2,
+                               transformer=RQSpline(num_bins=8, range_bound=6.0),
+                               standardize=True, zero_init=False, **kw))
 
 
 def test_spline_flow_invertibility():
@@ -40,9 +40,10 @@ def test_spline_flow_logdet_matches_autodiff():
 
 
 def test_spline_flow_1d_density_integrates_to_one():
-    flow = make_maf(nnx.Rngs(0), dim=1, cond_dim=0, n_layers=4, nn_width=32,
-                    transformer=RQSpline(num_bins=8, range_bound=6.0),
-                    standardize=True, zero_init=False)
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=1, cond_dim=0, n_layers=4,
+                               nn_width=32,
+                               transformer=RQSpline(num_bins=8, range_bound=6.0),
+                               standardize=True, zero_init=False))
     grid = jnp.linspace(-8.0, 8.0, 4001)[:, None]       # (G, 1)
     dens = jnp.exp(flow.log_prob(grid))                 # (G,)
     integral = trapezoid(dens, grid[:, 0])

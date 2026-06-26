@@ -8,7 +8,7 @@ import numpy as np
 import grain
 import pytest
 
-from gensbi.normalizing_flows import make_maf
+from gensbi.models import MAFlow, MAFlowParams
 from gensbi.recipes.flow_pipeline import (
     ConditionalFlowPipeline, _squeeze_ch, _single_cond,
 )
@@ -35,8 +35,8 @@ def _make_ds(arr, bs=128):
 
 
 def build_pipeline(**cfg):
-    flow = make_maf(nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND,
-                    n_layers=4, nn_width=32, nn_depth=2, standardize=True)
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND,
+                               n_layers=4, nn_width=32, nn_depth=2, standardize=True))
     train_ds = _make_ds(DATA[:800])
     val_ds = _make_ds(DATA[800:])
     training_config = ConditionalFlowPipeline.get_default_training_config()
@@ -157,8 +157,9 @@ def test_log_prob_depends_on_condition(tmp_path):
     # Test the property on a LIVE flow (zero_init=False) so cond-dependence is
     # present immediately and does not rely on training dynamics. Phase-0
     # conditioning is concat-at-rank −1, so every output dim depends on cond.
-    flow = make_maf(nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND, n_layers=4,
-                    nn_width=32, nn_depth=2, standardize=True, zero_init=False)
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND,
+                               n_layers=4, nn_width=32, nn_depth=2,
+                               standardize=True, zero_init=False))
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg["checkpoint_dir"] = str(tmp_path)
     pipe = ConditionalFlowPipeline(

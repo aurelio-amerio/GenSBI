@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from flax import nnx
 
 from gensbi.normalizing_flows.bijections.base import Mask
-from gensbi.normalizing_flows.bijections.masked_linear import MaskedLinear
+from gensbi.models.maf.masked_linear import MaskedLinear
 
 
 def test_masked_linear_zeros_out_masked_connections():

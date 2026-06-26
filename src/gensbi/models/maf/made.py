@@ -20,8 +20,8 @@ from jax import Array
 from jax.typing import DTypeLike
 
 from gensbi.normalizing_flows.bijections.base import Bijection
-from gensbi.normalizing_flows.bijections.masked_linear import MaskedLinear
-from gensbi.normalizing_flows.bijections.masks import make_mask
+from gensbi.models.maf.masked_linear import MaskedLinear
+from gensbi.models.maf.masks import make_mask
 
 
 def _rank_vectors(dim, nn_width, num_params, cond_dim):

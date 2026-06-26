@@ -14,7 +14,7 @@ from jax import Array
 
 from gensbi.core.prior import make_gaussian_prior
 from gensbi.normalizing_flows.bijections.base import Bijection
-from gensbi.normalizing_flows.bijections.made import MaskedAutoregressive
+from gensbi.models.maf.made import MaskedAutoregressive
 from gensbi.normalizing_flows.bijections.chain import Chain
 from gensbi.normalizing_flows.bijections.permutation import Permutation
 from gensbi.normalizing_flows.bijections.standardize import Standardize

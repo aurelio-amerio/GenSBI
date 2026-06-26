@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
-from gensbi.normalizing_flows.bijections.made import MaskedAutoregressive
+from gensbi.models.maf.made import MaskedAutoregressive
 from gensbi.normalizing_flows.bijections.transformers import Affine
 
 

@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
-from gensbi.normalizing_flows.bijections.made import MADE
+from gensbi.models.maf.made import MADE
 
 
 def _made(dim=5, cond_dim=3, num_params=2, seed=0):
