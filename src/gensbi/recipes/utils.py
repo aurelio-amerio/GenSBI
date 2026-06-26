@@ -1,9 +1,7 @@
-import jax
 from jax import numpy as jnp
 import numpy as np
 from typing import Union, Tuple
-from einops import repeat, rearrange
-from jax import Array
+from einops import repeat
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import (

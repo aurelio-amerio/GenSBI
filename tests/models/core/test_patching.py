@@ -1,3 +1,4 @@
+import pytest
 import jax.numpy as jnp
 from gensbi.models.core.patching import patchify_2d, depatchify_2d
 
@@ -10,7 +11,13 @@ def test_patchify_shape_and_roundtrip():
     assert jnp.allclose(xr, x)
 
 
-def test_depatchify_nonsquare_requires_grid():
+def test_depatchify_nonsquare_with_grid():
     p = jnp.zeros((1, 6, 8))                       # 6 = 3*2 patches, not square
     xr = depatchify_2d(p, size=2, grid=(2, 3))
     assert xr.shape == (1, 4, 6, 2)
+
+
+def test_depatchify_nonsquare_raises_without_grid():
+    p = jnp.zeros((1, 6, 8))            # 6 tokens: not a perfect square
+    with pytest.raises(ValueError, match="Cannot infer a square grid"):
+        depatchify_2d(p, size=2)
