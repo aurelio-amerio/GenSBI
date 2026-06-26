@@ -333,7 +333,7 @@ from gensbi.models.core.tokenizers import VectorTokenizer, ImageTokenizer
 ```bash
 git mv tests/normalizing_flows/transformer_flow/test_tokenizers.py tests/models/core/test_tokenizers.py
 ```
-In the moved file, change the two `from gensbi.normalizing_flows.transformer_flow.tokenizers import ...` lines (1, 33) to `from gensbi.models.core.tokenizers import ...`. (Its `patchify_2d` import at line 34 already points at `gensbi.models.core.patching` from Task 1.)
+In the moved file, change the two `from gensbi.normalizing_flows.transformer_flow.tokenizers import ...` lines (`VectorTokenizer` at line 3, `ImageTokenizer` at line 33) to `from gensbi.models.core.tokenizers import ...`. (Its `patchify_2d` import at line 34 already points at `gensbi.models.core.patching` from Task 1.)
 
 - [ ] **Step 5: Run tests**
 
@@ -573,7 +573,7 @@ Switch all MAF call sites to the new API, delete the old container/factory, then
 - Delete: `src/gensbi/normalizing_flows/flow.py`
 - Modify: `src/gensbi/normalizing_flows/__init__.py`, `src/gensbi/recipes/flow_pipeline.py` (docstring + `NotImplementedError` wording), `tests/models/maf/test_maflow.py` (drop the `make_maf` parity test)
 - Move: `bijections/{made,masked_linear,masks}.py` → `models/maf/`; tests `tests/normalizing_flows/bijections/{test_made,test_masked_autoregressive,test_masked_linear,test_masks}.py` → `tests/models/maf/`
-- Modify: `src/gensbi/normalizing_flows/bijections/__init__.py`, `src/gensbi/models/maf/model.py` (repoint `MaskedAutoregressive` import)
+- Modify: `src/gensbi/normalizing_flows/bijections/__init__.py`, `src/gensbi/models/maf/model.py` (repoint `MaskedAutoregressive` import), `tests/normalizing_flows/bijections/test_chain.py:6` (repoint `MaskedAutoregressive` import; stays in place)
 
 **Interfaces:**
 - Consumes: `MAFlow`, `MAFlowParams` from Task 3.
@@ -598,7 +598,7 @@ flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=dim, cond_dim=dim, n_layers=4, 
 git mv tests/normalizing_flows/test_flow.py tests/models/maf/test_maflow_density.py
 git mv tests/normalizing_flows/test_flow_spline_battery.py tests/models/maf/test_maflow_spline.py
 ```
-Apply the rewrite rule to every `make_maf(...)` call in both moved files (`test_flow.py` lines 11/21/32/43/58/74/89/103; `test_flow_spline_battery.py` lines 14/43), and swap the `make_maf` import to `from gensbi.models import MAFlow, MAFlowParams`. The spline file keeps its existing `from gensbi.normalizing_flows.bijections.transformers import RQSpline` import (Tier-1, unchanged) and passes `transformer=RQSpline(num_bins=8, range_bound=6.0)`.
+Apply the rewrite rule to every `make_maf(...)` call in both moved files (`test_flow.py` lines 11/21/32/43/58/74/89/103; `test_flow_spline_battery.py` lines 14/43), and swap every `from gensbi.normalizing_flows import make_maf` to `from gensbi.models import MAFlow, MAFlowParams` — note `test_flow.py` has **function-local** copies of that import at lines 71, 87, 98 in addition to the top-level one at line 6; repoint all of them. The spline file keeps its existing `from gensbi.normalizing_flows.bijections.transformers import RQSpline` import (Tier-1, unchanged) and passes `transformer=RQSpline(num_bins=8, range_bound=6.0)`.
 
 - [ ] **Step 3: Drop the parity test (its dependency is being removed)**
 
@@ -613,7 +613,7 @@ Edit `src/gensbi/normalizing_flows/__init__.py` — remove the `from gensbi.norm
 
 - [ ] **Step 5: Update `flow_pipeline.py` wording**
 
-In `src/gensbi/recipes/flow_pipeline.py`: docstring line 50 `make_maf(rngs, dim=dim_obs, cond_dim=dim_cond)` → `MAFlow(MAFlowParams(rngs=rngs, dim=dim_obs, cond_dim=dim_cond))`. The `NotImplementedError` at line ~80 references `make_maf` ("build it with make_maf and pass it as model=") → "build a `MAFlow` and pass it as `model=`." (The line ~84 message references "Flow", not `make_maf` — update that prose to "a `MAFlow`" too for consistency, optional.)
+In `src/gensbi/recipes/flow_pipeline.py`: docstring line 50 `make_maf(rngs, dim=dim_obs, cond_dim=dim_cond)` → `MAFlow(MAFlowParams(rngs=rngs, dim=dim_obs, cond_dim=dim_cond))`. The `NotImplementedError` at line ~80 references `make_maf` ("build it with make_maf and pass it as model=") → "build a `MAFlow` and pass it as `model=`." Also update the prose that names the deleted `Flow` class — lines 45 ("wrapping a Phase-0 `Flow`") and 49 ("model : Flow") and the line ~84 message — to say `MAFlow` (docstring-only; no test impact, but keeps references valid).
 
 - [ ] **Step 6: Run tests (verify the cut-over before relocating machinery)**
 
@@ -634,6 +634,7 @@ from gensbi.models.maf.masks import make_mask
 ```
 (its `from gensbi.normalizing_flows.bijections.base import Bijection` stays — `base` is Tier-1). `masked_linear.py` keeps `from gensbi.normalizing_flows.bijections.base import Mask`.
 In `models/maf/model.py`, change `from gensbi.normalizing_flows.bijections.made import MaskedAutoregressive` → `from gensbi.models.maf.made import MaskedAutoregressive`.
+Also repoint the one **staying** Tier-1 test that reaches into the moved machinery: `tests/normalizing_flows/bijections/test_chain.py:6` (`from gensbi.normalizing_flows.bijections.made import MaskedAutoregressive`) → `from gensbi.models.maf.made import MaskedAutoregressive`. (It stays in `tests/normalizing_flows/bijections/` — it's a `Chain` test — but builds `MaskedAutoregressive` layers, so its import must follow `made.py` to `models/maf`.)
 
 - [ ] **Step 8: Trim `bijections/__init__.py`**
 
@@ -974,9 +975,9 @@ git mv tests/normalizing_flows/transformer_flow/test_conditioners.py tests/model
 git mv tests/normalizing_flows/transformer_flow/test_pipeline_integration.py tests/models/tarflow/test_pipeline_integration.py
 ```
 Apply, in the moved files:
-- **`make_tarflow` call sites** (`test_model.py`, `test_stability.py`, `test_structured_integration.py`, `test_structured_boundary.py`, `test_pipeline_integration.py`): apply the call-site rewrite rule; swap imports to `from gensbi.models import TarFlow, TarFlowParams`. Rename `test_stability.py::test_make_tarflow_defaults_and_override` → `test_tarflow_defaults_and_override`. Example (`test_pipeline_integration.py`): `make_tarflow(nnx.Rngs(0), dim=M, cond_dim=D, channels=16, num_blocks=2)` → `TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=M, cond_dim=D, head_dim=16, num_heads=1, num_blocks=2))` (channels 16, head_dim default 16 ⇒ num_heads 1).
+- **`make_tarflow` call sites** (`test_model.py`, `test_stability.py`, `test_structured_integration.py`, `test_structured_boundary.py`, `test_pipeline_integration.py`): apply the call-site rewrite rule; swap imports to `from gensbi.models import TarFlow, TarFlowParams`. Rename `test_stability.py::test_make_tarflow_defaults_and_override` → `test_tarflow_defaults_and_override`. Example (real call at `test_pipeline_integration.py:36-37`): `make_tarflow(nnx.Rngs(0), dim=M, cond_dim=D, channels=16, num_blocks=4, layers_per_block=2, head_dim=8)` → `TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=M, cond_dim=D, head_dim=8, num_heads=2, num_blocks=4, layers_per_block=2))` (channels 16 ÷ head_dim 8 ⇒ num_heads 2).
 - **Direct block imports** (`test_stability.py:8`, `test_blocks_attention.py`, `test_blocks_meta.py`): change `from gensbi.normalizing_flows.transformer_flow.blocks import ...` → `from gensbi.models.tarflow.blocks import ...` (this includes `MetaBlock, INV_SOFTPLUS_1`).
-- **Direct conditioner imports** (`test_conditioners.py`): change `from gensbi.normalizing_flows.transformer_flow.conditioners import ...` → `from gensbi.models.tarflow.conditioners import ...`.
+- **Direct conditioner imports** (`test_conditioners.py`, and `test_blocks_meta.py:5-6` which imports `VectorConditioner`/`VectorPrefixConditioner`): change `from gensbi.normalizing_flows.transformer_flow.conditioners import ...` → `from gensbi.models.tarflow.conditioners import ...`.
 - **Direct block construction with `head_dim`** → convert to `num_heads`:
   - `test_stability.py` `_block` helper: `MetaBlock(..., head_dim=8, ...)` with `channels=16` → `MetaBlock(..., num_heads=2, ...)`.
   - `test_blocks_attention.py` / `test_blocks_meta.py`: any `AttentionBlock(channels, head_dim, ...)` / `MetaBlock(..., head_dim=HD, ...)` → pass `num_heads = channels // HD` (the block tests use `channels=8, head_dim=4` ⇒ `num_heads=2`).
@@ -1020,8 +1021,8 @@ git commit -m "refactor(nf): migrate TarFlow to models/tarflow (atomic), drop Tr
 
 - [ ] **Step 1: Confirm no stale references remain**
 
-Run: `grep -rn "make_maf\|make_tarflow\|TransformerFlow\|normalizing_flows.flow\|transformer_flow\|recipes.utils import.*patchify" src/ tests/ scripts/ | grep -v __pycache__`
-Expected: no hits (other than unrelated substrings). Fix any that appear by applying the matching rewrite rule from Task 4 or 5.
+Run: `grep -rn "make_maf\|make_tarflow\|TransformerFlow\|normalizing_flows.flow\|transformer_flow\|bijections.made\|bijections.masked_linear\|bijections.masks\|recipes.utils import.*patchify" src/ tests/ scripts/ | grep -v __pycache__`
+Expected: no hits (other than unrelated substrings). Fix any that appear by applying the matching rewrite rule from Task 4 or 5. (The `bijections.made`/`masked_linear`/`masks` patterns catch any straggler still importing the relocated MAF machinery from the old Tier-1 path.)
 
 - [ ] **Step 2: Confirm `normalizing_flows/` is bijections-only**
 
