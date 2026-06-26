@@ -29,6 +29,8 @@ TarFlow). It is the first step toward a uniform interface across both modelling 
 - Keep all **general pipelines** (Flux1, Simformer, Flux1Joint, the unified pipelines)
   compiling and passing — that is the only user-facing contract.
 - Behaviour-identical refactor: NF numerics unchanged; verified by the test suite.
+  The one deliberate API change is the TarFlow head parameterization (decision 8),
+  which preserves the default architecture.
 
 ## Non-goals (explicit follow-ups)
 
@@ -56,6 +58,16 @@ TarFlow). It is the first step toward a uniform interface across both modelling 
    never imports from `models/`.
 6. **Breaking changes allowed** (major release); general pipelines must stay green.
 7. **Names:** classes `MAFlow` / `TarFlow`; params `MAFlowParams` / `TarFlowParams`.
+8. **TarFlow head parameterization: `(head_dim, num_heads)`, `channels` derived.**
+   Expose the per-head dim and head count (Flux1-style), deriving total width
+   `channels = head_dim * num_heads`; only two of the three are independent. This
+   resolves the standing `blocks.py:17` TODO and normalizes `AttentionBlock` /
+   `MetaBlock` to take `num_heads`. The default `(head_dim=16, num_heads=4)`
+   reproduces the prior `channels=64` architecture exactly. There is no global
+   head convention yet: Flux1 uses `(head_dim, num_heads)`, PixelDiT uses the dual
+   `(channels, num_heads)`. We adopt Flux1's as the candidate house standard;
+   reconciling PixelDiT is a separate follow-up (it does not touch the general
+   pipelines' behaviour, but is its own change).
 
 ## Component taxonomy
 
@@ -194,10 +206,10 @@ build `nnx` modules — that is the model's `__init__`, which has `rngs`). This 
 | `cond_patch_size` | `int \| None` | `None` | required for `cond="image_prefix"` |
 | `cond_channels` | `int` | `1` | |
 | `prefix_tokens` | `int` | `1` | |
-| `channels` | `int` | `64` | |
+| `head_dim` | `int` | `16` | per-head attention dim (independent knob, Flux1-style) |
+| `num_heads` | `int` | `4` | head count; width `channels = head_dim * num_heads` is derived; default (16, 4) ⇒ channels 64 |
 | `num_blocks` | `int` | `8` | |
 | `layers_per_block` | `int` | `2` | |
-| `head_dim` | `int` | `16` | |
 | `block_size` | `int` | `1` | |
 | `permutation` | `str` | `"flip"` | `"flip"` \| `"random"` |
 | `standardize` | `bool` | `True` | |
@@ -206,7 +218,8 @@ build `nnx` modules — that is the model's `__init__`, which has `rngs`). This 
 | `soft_clip` | `float` | `4.0` | |
 
 `__post_init__`: validate `modeled` / `cond` enums and the presence of the fields each
-combination requires (the validation `make_tarflow` does inline today).
+combination requires (the validation `make_tarflow` does inline today); compute the
+derived width `channels = head_dim * num_heads`.
 
 `TarFlow(nnx.Module).__init__(params)`: runs the current `make_tarflow` body — build the
 tokenizer (`VectorTokenizer` / `ImageTokenizer` from `models/core`), the per-block
@@ -225,9 +238,12 @@ and the `MetaBlock` stack with per-block permutations. Folds in `TransformerFlow
    (absorbing `flow.py`'s `Flow` density logic and the `make_maf` body). `__init__.py`
    re-exports the pair.
 3. **`models/tarflow/`**: move `blocks.py`, `conditioners.py` from `transformer_flow/`
-   (point `conditioners` at `models.core.patching`). Add `model.py` with `TarFlowParams`
-   + `TarFlow` (absorbing `TransformerFlow` + the `make_tarflow` body + the Apple/STARFlow
-   LICENSE attribution header). `__init__.py` re-exports the pair.
+   (point `conditioners` at `models.core.patching`). Normalize `AttentionBlock` /
+   `MetaBlock` to take `num_heads` instead of `head_dim` (derive `head_dim` / use the
+   `channels = head_dim * num_heads` width), resolving the `blocks.py:17` TODO. Add
+   `model.py` with `TarFlowParams` + `TarFlow` (absorbing `TransformerFlow` + the
+   `make_tarflow` body + the Apple/STARFlow LICENSE attribution header). `__init__.py`
+   re-exports the pair.
 4. **`normalizing_flows/`**: delete `flow.py` and the `transformer_flow/` subpackage.
    Trim `bijections/__init__.py` and `normalizing_flows/__init__.py` to Tier-1 exports
    (`Bijection`, `Mask`, `Chain`, `Permutation`, `Standardize`, `Affine`, `RQSpline`).
@@ -242,7 +258,9 @@ and the `MetaBlock` stack with per-block permutations. Folds in `TransformerFlow
      `make_maf` → `MAFlow(MAFlowParams(...))` (wording only; behaviour unchanged).
 7. **Tests & scripts**: rewrite NF call sites `make_maf(rngs, dim=…)` →
    `MAFlow(MAFlowParams(rngs=…, dim=…))` and `make_tarflow(...)` →
-   `TarFlow(TarFlowParams(...))`; update imports to `gensbi.models`. Move machinery tests
+   `TarFlow(TarFlowParams(...))`; update imports to `gensbi.models`. TarFlow call sites
+   that passed `channels`/`head_dim` adopt `(head_dim, num_heads)` with
+   `num_heads = channels // head_dim` to preserve each test's architecture. Move machinery tests
    alongside their code (`tests/models/maf/`, `tests/models/tarflow/`); pure-bijection
    tests stay under `tests/normalizing_flows/bijections/`. Affected: the `test_flow*`,
    `test_nle`, and `transformer_flow/test_*` suites, and `scripts/{maf,tarflow}_*_recovery.py`.
