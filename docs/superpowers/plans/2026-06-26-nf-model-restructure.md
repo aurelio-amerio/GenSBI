@@ -613,7 +613,7 @@ Edit `src/gensbi/normalizing_flows/__init__.py` — remove the `from gensbi.norm
 
 - [ ] **Step 5: Update `flow_pipeline.py` wording**
 
-In `src/gensbi/recipes/flow_pipeline.py`: docstring line 50 `make_maf(rngs, dim=dim_obs, cond_dim=dim_cond)` → `MAFlow(MAFlowParams(rngs=rngs, dim=dim_obs, cond_dim=dim_cond))`. The `NotImplementedError` at line ~80 references `make_maf` ("build it with make_maf and pass it as model=") → "build a `MAFlow` and pass it as `model=`." Also update the prose that names the deleted `Flow` class — lines 45 ("wrapping a Phase-0 `Flow`") and 49 ("model : Flow") and the line ~84 message — to say `MAFlow` (docstring-only; no test impact, but keeps references valid).
+In `src/gensbi/recipes/flow_pipeline.py`: docstring line 50 `make_maf(rngs, dim=dim_obs, cond_dim=dim_cond)` → `MAFlow(MAFlowParams(rngs=rngs, dim=dim_obs, cond_dim=dim_cond))`. The `NotImplementedError` at line ~80 references `make_maf` ("build it with make_maf and pass it as model=") → "build a `MAFlow` and pass it as `model=`." Also update the prose that names the deleted `Flow` class — lines 45 ("wrapping a Phase-0 `Flow`") and 49 ("model : Flow") and the line ~84 message — to say `MAFlow` (docstring-only; no test impact, but keeps references valid). Likewise fix the stale `Flow` reference in `src/gensbi/inference/nle.py:23` ("an NLE-trained `Flow`") → "an NLE-trained flow model (`MAFlow`/`TarFlow`)".
 
 - [ ] **Step 6: Run tests (verify the cut-over before relocating machinery)**
 
@@ -708,7 +708,7 @@ git mv src/gensbi/normalizing_flows/transformer_flow/conditioners.py src/gensbi/
 git mv src/gensbi/normalizing_flows/transformer_flow/LICENSE.apple src/gensbi/models/tarflow/LICENSE.apple
 git mv src/gensbi/normalizing_flows/transformer_flow/LICENSE.starflow src/gensbi/models/tarflow/LICENSE.starflow
 ```
-`blocks.py` keeps `from gensbi.normalizing_flows.bijections.base import Mask` (Tier-1). `conditioners.py` keeps `from gensbi.models.core.patching import patchify_2d` (set in Task 1). No other import edits in these two files yet.
+`blocks.py` keeps `from gensbi.normalizing_flows.bijections.base import Mask` (Tier-1). `conditioners.py` keeps `from gensbi.models.core.patching import patchify_2d` (set in Task 1). No other import edits in these two files yet. **Also update the internal path references** that travel with the moved files: in the `blocks.py`/`conditioners.py` module docstrings change `see transformer_flow/LICENSE.*` → `see models/tarflow/LICENSE.*`, and in `LICENSE.apple` change the `gensbi.normalizing_flows.transformer_flow` path string → `gensbi.models.tarflow` (doc/license text only; no functional effect, but keeps the Task 6 stale-reference grep clean).
 
 - [ ] **Step 2: Delete the `transformer_flow` package + trim `normalizing_flows/__init__.py`**
 
@@ -981,6 +981,7 @@ Apply, in the moved files:
 - **Direct block construction with `head_dim`** → convert to `num_heads`:
   - `test_stability.py` `_block` helper: `MetaBlock(..., head_dim=8, ...)` with `channels=16` → `MetaBlock(..., num_heads=2, ...)`.
   - `test_blocks_attention.py` / `test_blocks_meta.py`: any `AttentionBlock(channels, head_dim, ...)` / `MetaBlock(..., head_dim=HD, ...)` → pass `num_heads = channels // HD` (the block tests use `channels=8, head_dim=4` ⇒ `num_heads=2`).
+- **Stale top-of-file path comments:** the first line of `test_model.py`, `test_stability.py`, `test_structured_integration.py`, `test_structured_boundary.py`, `test_pipeline_integration.py` is a `# tests/normalizing_flows/transformer_flow/...` path comment — update each to its new `# tests/models/tarflow/...` path (or delete it) so it doesn't trip the Task 6 stale-reference grep.
 
 - [ ] **Step 8: Rewrite the exports test**
 
@@ -1022,7 +1023,7 @@ git commit -m "refactor(nf): migrate TarFlow to models/tarflow (atomic), drop Tr
 - [ ] **Step 1: Confirm no stale references remain**
 
 Run: `grep -rn "make_maf\|make_tarflow\|TransformerFlow\|normalizing_flows.flow\|transformer_flow\|bijections.made\|bijections.masked_linear\|bijections.masks\|recipes.utils import.*patchify" src/ tests/ scripts/ | grep -v __pycache__`
-Expected: no hits (other than unrelated substrings). Fix any that appear by applying the matching rewrite rule from Task 4 or 5. (The `bijections.made`/`masked_linear`/`masks` patterns catch any straggler still importing the relocated MAF machinery from the old Tier-1 path.)
+Expected: **no functional hits** (no import or call site). Benign **doc/comment/license** substring matches of `transformer_flow` are acceptable *only if* they are prose (a docstring, a LICENSE attribution, or a path comment) — and Task 5 Steps 1/7 should already have repointed those, so ideally this returns nothing. Fix any *import or call* hit by applying the matching rewrite rule from Task 4 or 5. (The `bijections.made`/`masked_linear`/`masks` patterns catch any straggler still importing the relocated MAF machinery from the old Tier-1 path.)
 
 - [ ] **Step 2: Confirm `normalizing_flows/` is bijections-only**
 
