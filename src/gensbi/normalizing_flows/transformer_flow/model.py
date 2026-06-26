@@ -18,9 +18,7 @@ from gensbi.normalizing_flows.transformer_flow.blocks import MetaBlock
 from gensbi.normalizing_flows.transformer_flow.conditioners import (
     VectorConditioner, VectorPrefixConditioner, ImagePrefixConditioner,
 )
-from gensbi.normalizing_flows.transformer_flow.tokenizers import (
-    VectorTokenizer, ImageTokenizer,
-)
+from gensbi.models.core.tokenizers import VectorTokenizer, ImageTokenizer
 
 _LOG2PI = jnp.log(2.0 * jnp.pi)
 

@@ -1,10 +1,11 @@
-"""Invertible tokenizers for the transformer flow (the modeled-variable seam).
+"""Invertible tokenizers — the modeled-variable reshape seam.
 
-Adapted from apple/ml-tarflow (TarFlow); see transformer_flow/LICENSE.apple.
+Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.
 
 A tokenizer maps the modeled variable to a token sequence ``(B, T, F)`` and back.
 It MUST be volume-preserving (a fixed invertible reshape, log-det 0) — never a
-learned lossy encoder — so the change-of-variables stays exact.
+learned lossy encoder — so the change-of-variables stays exact. Pure reshape, no
+parameters, which is why it is a shared core primitive.
 """
 
 from jax import Array

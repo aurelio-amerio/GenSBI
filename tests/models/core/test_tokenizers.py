@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import pytest
-from gensbi.normalizing_flows.transformer_flow.tokenizers import VectorTokenizer
+from gensbi.models.core.tokenizers import VectorTokenizer
 
 
 def test_shapes_scalar_per_token():
@@ -30,7 +30,7 @@ def test_block_size_must_divide_dim():
 
 
 import jax
-from gensbi.normalizing_flows.transformer_flow.tokenizers import ImageTokenizer
+from gensbi.models.core.tokenizers import ImageTokenizer
 from gensbi.models.core.patching import patchify_2d
 
 
