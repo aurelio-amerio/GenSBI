@@ -33,6 +33,7 @@ import os
 
 
 from gensbi.utils.misc import get_colored_value
+from gensbi.utils.serialization import save_safetensors, load_safetensors
 
 
 class ModelEMA(nnx.Optimizer):
@@ -562,6 +563,26 @@ class AbstractPipeline(abc.ABC):
 
         print("Restored model from checkpoint")
         return
+
+    def export_safetensors(self, path, *, ema=True, metadata=None):
+        """Export trained weights to a single ``.safetensors`` file.
+
+        ``ema=True`` (default) exports the EMA model -- usually the weights you
+        want for inference and for sharing. Pass ``ema=False`` for the primary
+        model. This is a thin wrapper over
+        :func:`gensbi.utils.serialization.save_safetensors`.
+        """
+        model = self.ema_model if ema else self.model
+        save_safetensors(model, path, metadata=metadata)
+
+    def import_safetensors(self, path, *, ema=True, strict=True):
+        """Load weights from a ``.safetensors`` file into this pipeline in place.
+
+        ``ema=True`` (default) loads into the EMA model. Thin wrapper over
+        :func:`gensbi.utils.serialization.load_safetensors`.
+        """
+        model = self.ema_model if ema else self.model
+        load_safetensors(model, path, strict=strict)
 
     @abc.abstractmethod
     def _wrap_model(self):

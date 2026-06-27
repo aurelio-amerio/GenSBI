@@ -156,3 +156,45 @@ def test_load_safetensors_is_reexported_from_utils():
     from gensbi.utils import save_safetensors as s, load_safetensors as l
 
     assert callable(s) and callable(l)
+
+
+# --- Task 3 test (pipeline convenience via lightweight stub) ---
+def test_pipeline_export_import_selects_ema(tmp_path):
+    from gensbi.recipes.pipeline import AbstractPipeline
+
+    class _Stub:  # stands in for a pipeline; only .model / .ema_model are used
+        pass
+
+    src = _Stub()
+    src.model = _TinyNet(0)       # primary weights
+    src.ema_model = _TinyNet(1)   # ema weights (distinct)
+
+    # default ema=True exports the EMA model
+    ema_path = tmp_path / "ema.safetensors"
+    AbstractPipeline.export_safetensors(src, ema_path)
+    tgt = _Stub()
+    tgt.model = _TinyNet(2)
+    tgt.ema_model = _TinyNet(3)
+    AbstractPipeline.import_safetensors(tgt, ema_path)  # loads into tgt.ema_model
+    assert all(
+        np.array_equal(np.asarray(a), np.asarray(b))
+        for a, b in zip(
+            jax.tree.leaves(nnx.state(src.ema_model)),
+            jax.tree.leaves(nnx.state(tgt.ema_model)),
+        )
+    )
+
+    # ema=False selects the primary model on both export and import
+    primary_path = tmp_path / "primary.safetensors"
+    AbstractPipeline.export_safetensors(src, primary_path, ema=False)
+    tgt2 = _Stub()
+    tgt2.model = _TinyNet(4)
+    tgt2.ema_model = _TinyNet(5)
+    AbstractPipeline.import_safetensors(tgt2, primary_path, ema=False)
+    assert all(
+        np.array_equal(np.asarray(a), np.asarray(b))
+        for a, b in zip(
+            jax.tree.leaves(nnx.state(src.model)),
+            jax.tree.leaves(nnx.state(tgt2.model)),
+        )
+    )
