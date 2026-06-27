@@ -69,4 +69,10 @@ class NLEPosterior:
         )
 
     def sample(self, key, x_o, sampler=None, *, return_info=False):
-        raise NotImplementedError("sampler dispatch added in Task 2")
+        """Draw posterior samples. Returns (n, dim, 1), or (samples, info) if return_info."""
+        from gensbi.inference.samplers import MCLMC
+        sampler = sampler if sampler is not None else MCLMC()
+        target = self.build_target(x_o)
+        samples, info = sampler.run(key, target)
+        samples = _expand_dims(samples)          # (n, dim) -> (n, dim, 1)
+        return (samples, info) if return_info else samples

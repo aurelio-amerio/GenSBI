@@ -1,5 +1,6 @@
 """Inference wrappers: NLE posterior sampling over trained density flows."""
 
 from gensbi.inference.posterior import NLEPosterior, PosteriorTarget
+from gensbi.inference.samplers import Sampler, MCLMC, MclmcInfo
 
-__all__ = ["NLEPosterior", "PosteriorTarget"]
+__all__ = ["NLEPosterior", "PosteriorTarget", "Sampler", "MCLMC", "MclmcInfo"]
