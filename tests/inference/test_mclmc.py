@@ -66,8 +66,27 @@ def test_return_info():
     assert info.num_samples == 200 and jnp.isfinite(info.L) and jnp.isfinite(info.step_size)
 
 
-def test_adjusted_not_yet_implemented():
-    post = NLEPosterior(GaussianMock(), make_gaussian_prior((2,)))
-    with pytest.raises(NotImplementedError):
-        post.sample(jax.random.PRNGKey(4), jnp.array([1.0, -1.0]),
-                    sampler=MCLMC(adjusted=True, num_samples=10, num_tuning_steps=10))
+def test_adjusted_is_the_default():
+    dim = 2
+    post = NLEPosterior(GaussianMock(), make_gaussian_prior((dim,)))
+    assert MCLMC().adjusted is True
+
+
+def test_adjusted_analytic_gaussian_recovery():
+    dim = 2
+    post = NLEPosterior(GaussianMock(), make_gaussian_prior((dim,)))
+    x_o = jnp.array([1.0, -1.0])
+    # default sampler == adjusted MCLMC; exercised via the one-liner
+    s = post.sample(jax.random.PRNGKey(5), x_o,
+                    sampler=MCLMC(num_samples=3000, num_tuning_steps=2000))[..., 0]
+    assert jnp.allclose(jnp.mean(s, axis=0), x_o / 2, atol=0.15)
+    assert jnp.allclose(jnp.var(s, axis=0), 0.5 * jnp.ones(dim), atol=0.2)
+
+
+def test_adjusted_reports_acceptance_rate():
+    dim = 2
+    post = NLEPosterior(GaussianMock(), make_gaussian_prior((dim,)))
+    _, info = post.sample(jax.random.PRNGKey(6), jnp.array([1.0, -1.0]),
+                          sampler=MCLMC(num_samples=400, num_tuning_steps=600),
+                          return_info=True)
+    assert 0.0 <= info.acceptance_rate <= 1.0

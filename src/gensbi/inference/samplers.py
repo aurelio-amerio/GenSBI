@@ -7,6 +7,16 @@ import jax
 import jax.numpy as jnp
 
 
+def _rescale(mu):
+    """Map a mean trajectory length to a uniform-integer draw scale.
+
+    From the blackjax adjusted-MCLMC tutorial: choosing the number of integration
+    steps as ceil(U(0,1) * _rescale(L/step_size)) keeps the average near the tuned L.
+    """
+    k = jax.lax.max(1, jnp.round(jnp.log(2 * mu - 1) / jnp.log(2)).astype(int))
+    return mu / k
+
+
 class Sampler(ABC):
     """Turns a PosteriorTarget into posterior samples."""
 
@@ -98,4 +108,36 @@ class MCLMC(Sampler):
         return states.position, info
 
     def _run_adjusted(self, key, target):
-        raise NotImplementedError("adjusted MCLMC added in Task 3")
+        import blackjax
+        from blackjax.mcmc.integrators import isokinetic_mclachlan
+
+        pos_key, init_key, tune_key, run_key = jax.random.split(key, 4)
+        position = target.prior.sample(pos_key, ())
+        init_state = blackjax.mcmc.adjusted_mclmc_dynamic.init(
+            position=position, logdensity_fn=target.log_posterior,
+            random_generator_arg=init_key)
+
+        def kernel(rng_key, state, avg_num_integration_steps, step_size, inverse_mass_matrix):
+            return blackjax.mcmc.adjusted_mclmc_dynamic.build_kernel(
+                integration_steps_fn=lambda k: jnp.ceil(
+                    jax.random.uniform(k) * _rescale(avg_num_integration_steps)),
+                inverse_mass_matrix=inverse_mass_matrix,
+            )(rng_key=rng_key, state=state, step_size=step_size,
+              logdensity_fn=target.log_posterior)
+
+        state, params, _ = blackjax.adjusted_mclmc_find_L_and_step_size(
+            mclmc_kernel=kernel, num_steps=self.num_tuning_steps, state=init_state,
+            rng_key=tune_key, target=self.target_acceptance,
+            diagonal_preconditioning=self.diagonal_preconditioning)
+
+        alg = blackjax.adjusted_mclmc_dynamic(
+            logdensity_fn=target.log_posterior, step_size=params.step_size,
+            integration_steps_fn=lambda k: jnp.ceil(
+                jax.random.uniform(k) * _rescale(params.L / params.step_size)),
+            inverse_mass_matrix=params.inverse_mass_matrix)
+
+        states, infos = _inference_loop(run_key, alg.step, state, self.num_samples)
+        info = MclmcInfo(L=params.L, step_size=params.step_size,
+                         acceptance_rate=jnp.mean(infos.acceptance_rate),
+                         num_samples=self.num_samples, num_chains=self.num_chains)
+        return states.position, info
