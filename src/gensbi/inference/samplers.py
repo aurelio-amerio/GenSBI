@@ -181,7 +181,24 @@ class TemperedSMC(Sampler):
             params = dict(step_size=self.inner_step_size, inverse_mass_matrix=imm)
             return step_fn, init_fn, params
         if self.inner_kernel == "mclmc":
-            raise NotImplementedError("mclmc inner kernel added in Task 5")
+            from blackjax.mcmc.integrators import isokinetic_mclachlan
+            import blackjax
+
+            def step_fn(rng_key, state, logdensity_fn, step_size,
+                        num_integration_steps, inverse_mass_matrix):
+                # Build the adjusted-MCLMC kernel bound to the *tempered* logdensity
+                # SMC injects at each temperature.
+                kernel = blackjax.mcmc.adjusted_mclmc.build_kernel(
+                    logdensity_fn=logdensity_fn, integrator=isokinetic_mclachlan,
+                    inverse_mass_matrix=inverse_mass_matrix)
+                return kernel(rng_key, state, step_size=step_size,
+                              num_integration_steps=num_integration_steps)
+
+            init_fn = blackjax.mcmc.adjusted_mclmc.init   # (position, logdensity_fn) -> HMCState
+            params = dict(step_size=self.inner_step_size,
+                          num_integration_steps=self.inner_num_integration_steps,
+                          inverse_mass_matrix=imm)
+            return step_fn, init_fn, params
         raise ValueError(f"unknown inner_kernel {self.inner_kernel!r}")
 
     def run(self, key, target):

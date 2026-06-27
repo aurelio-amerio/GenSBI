@@ -64,8 +64,34 @@ def test_smc_info_has_log_evidence():
     assert jnp.isclose(info.final_tempering_param, 1.0, atol=1e-6)
 
 
-def test_smc_mclmc_not_yet_implemented():
+def test_smc_mclmc_is_the_default_inner_kernel():
+    assert TemperedSMC().inner_kernel == "mclmc"
+
+
+def test_smc_mclmc_recovers_both_modes():
+    dim = 2
+    post = NLEPosterior(BimodalMock(mu=3.0), make_gaussian_prior((dim,), sigma=5.0))
+    # default inner kernel == adjusted MCLMC
+    s = post.sample(jax.random.PRNGKey(7), jnp.zeros(dim),
+                    sampler=TemperedSMC(num_particles=2000, inner_step_size=0.5,
+                                        inner_num_integration_steps=10))[..., 0]
+    frac_pos = jnp.mean(jnp.all(s > 0, axis=1).astype(float))
+    frac_neg = jnp.mean(jnp.all(s < 0, axis=1).astype(float))
+    assert frac_pos > 0.3 and frac_neg > 0.3
+
+
+def test_smc_mclmc_analytic_gaussian_recovery():
+    dim = 2
+    post = NLEPosterior(GaussianMock(), make_gaussian_prior((dim,)))
+    x_o = jnp.array([1.0, -1.0])
+    s = post.sample(jax.random.PRNGKey(8), x_o,
+                    sampler=TemperedSMC(num_particles=2000, inner_step_size=0.5,
+                                        inner_num_integration_steps=10))[..., 0]
+    assert jnp.allclose(jnp.mean(s, axis=0), x_o / 2, atol=0.2)
+
+
+def test_smc_unknown_kernel_raises():
     post = NLEPosterior(GaussianMock(), make_gaussian_prior((2,)))
-    with pytest.raises(NotImplementedError):
-        post.sample(jax.random.PRNGKey(3), jnp.array([1.0, -1.0]),
-                    sampler=TemperedSMC(inner_kernel="mclmc", num_particles=100))
+    with pytest.raises(ValueError):
+        post.sample(jax.random.PRNGKey(4), jnp.array([1.0, -1.0]),
+                    sampler=TemperedSMC(inner_kernel="foo", num_particles=100))
