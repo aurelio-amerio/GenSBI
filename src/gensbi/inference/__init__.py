@@ -1,5 +1,5 @@
-"""Inference wrappers built on the normalizing-flows density core."""
+"""Inference wrappers: NLE posterior sampling over trained density flows."""
 
-from gensbi.inference.nle import NLEPosterior
+from gensbi.inference.posterior import NLEPosterior, PosteriorTarget
 
-__all__ = ["NLEPosterior"]
+__all__ = ["NLEPosterior", "PosteriorTarget"]
