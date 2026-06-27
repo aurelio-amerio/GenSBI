@@ -143,10 +143,12 @@ def main():
     x_o = jnp.array([1.0, -0.5, 0.3])
     mean_a, cov_a = _analytic_posterior(x_o)
 
+    from gensbi.inference import MCLMC
     prior = make_gaussian_prior((D,))
-    post = NLEPosterior(pipe.ema_model, prior, num_warmup=num_warmup, num_samples=num_samples)
+    post = NLEPosterior(pipe.ema_model, prior)
     sample_key = jax.random.PRNGKey(7)
-    s = post.sample(sample_key, x_o)[..., 0]  # (n, D)
+    s = post.sample(sample_key, x_o,
+                    sampler=MCLMC(num_samples=num_samples, num_tuning_steps=num_warmup))[..., 0]
 
     mean_s = jnp.mean(s, axis=0)
     cov_s = jnp.cov(s.T)

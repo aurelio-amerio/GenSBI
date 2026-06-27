@@ -93,10 +93,10 @@ def main():
     theta_o = jnp.array([0.7, -0.4])
     x_o = (theta_o @ G.T).reshape(H, Wd, Ch)
     mean_a, cov_a = analytic_posterior(x_o.reshape(-1))
-    post = NLEPosterior(pipe.ema_model, make_gaussian_prior((D,)),
-                        num_warmup=num_warmup, num_samples=num_samples,
-                        structured_obs=True)
-    s = post.sample(jax.random.PRNGKey(7), x_o)[..., 0]
+    from gensbi.inference import MCLMC
+    post = NLEPosterior(pipe.ema_model, make_gaussian_prior((D,)), structured_obs=True)
+    s = post.sample(jax.random.PRNGKey(7), x_o,
+                    sampler=MCLMC(num_samples=num_samples, num_tuning_steps=num_warmup))[..., 0]
     mean_s, cov_s = jnp.mean(s, axis=0), jnp.cov(s.T)
     print(f"mode={'SMOKE' if smoke else 'FULL'} elapsed={time.time()-t0:.1f}s")
     print(f"analytic mean {mean_a}  achieved {mean_s}")
