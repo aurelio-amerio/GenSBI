@@ -141,3 +141,76 @@ class MCLMC(Sampler):
                          acceptance_rate=jnp.mean(infos.acceptance_rate),
                          num_samples=self.num_samples, num_chains=self.num_chains)
         return states.position, info
+
+
+@dataclass(frozen=True)
+class SmcInfo:
+    log_evidence: float
+    num_temperature_steps: int
+    final_tempering_param: float
+
+
+class TemperedSMC(Sampler):
+    """Adaptive tempered SMC for (possibly multimodal) posteriors.
+
+    Walks particles along p(theta) * q(x_o|theta)^beta for beta: 0 -> 1, choosing the
+    beta-ladder adaptively to hold target_ess. Inner rejuvenation kernel is adjusted
+    MCLMC by default (Task 5); NUTS is the fallback.
+    """
+
+    def __init__(self, *, num_particles=1000, target_ess=0.5, num_mcmc_steps=10,
+                 inner_kernel="mclmc", inner_step_size=0.1,
+                 inner_num_integration_steps=5, inner_inverse_mass_matrix=None):
+        self.num_particles = num_particles
+        self.target_ess = target_ess
+        self.num_mcmc_steps = num_mcmc_steps
+        self.inner_kernel = inner_kernel
+        self.inner_step_size = inner_step_size
+        self.inner_num_integration_steps = inner_num_integration_steps
+        self.inner_inverse_mass_matrix = inner_inverse_mass_matrix
+
+    def _inner(self, target):
+        """Return (mcmc_step_fn, mcmc_init_fn, mcmc_parameters) for the inner kernel."""
+        import blackjax
+        imm = self.inner_inverse_mass_matrix
+        if imm is None:
+            imm = jnp.ones(target.dim)
+        if self.inner_kernel == "nuts":
+            step_fn = blackjax.nuts.build_kernel()
+            init_fn = blackjax.nuts.init
+            params = dict(step_size=self.inner_step_size, inverse_mass_matrix=imm)
+            return step_fn, init_fn, params
+        if self.inner_kernel == "mclmc":
+            raise NotImplementedError("mclmc inner kernel added in Task 5")
+        raise ValueError(f"unknown inner_kernel {self.inner_kernel!r}")
+
+    def run(self, key, target):
+        import blackjax
+
+        init_key, smc_key = jax.random.split(key)
+        step_fn, init_fn, params = self._inner(target)
+        smc = blackjax.adaptive_tempered_smc(
+            logprior_fn=target.log_prior, loglikelihood_fn=target.log_likelihood,
+            mcmc_step_fn=step_fn, mcmc_init_fn=init_fn,
+            mcmc_parameters=blackjax.smc.extend_params(params),
+            resampling_fn=blackjax.smc.resampling.systematic,
+            target_ess=self.target_ess, num_mcmc_steps=self.num_mcmc_steps,
+        )
+        init_particles = target.prior.sample(init_key, (self.num_particles,))
+        state = smc.init(init_particles)
+
+        def cond(carry):
+            _, st, _, _ = carry
+            return st.tempering_param < 1.0
+
+        def body(carry):
+            k, st, n, logZ = carry
+            k, sub = jax.random.split(k)
+            st, info = smc.step(sub, st)
+            return k, st, n + 1, logZ + info.log_likelihood_increment
+
+        _, final, nsteps, logZ = jax.lax.while_loop(
+            cond, body, (smc_key, state, 0, 0.0))
+        info = SmcInfo(log_evidence=logZ, num_temperature_steps=nsteps,
+                       final_tempering_param=final.tempering_param)
+        return final.particles, info
