@@ -82,7 +82,7 @@ def test_train_smoke_and_log_prob(tmp_path):
     assert lp.shape == (5,) and jnp.all(jnp.isfinite(lp))
 
 
-def test_nle_potential_value_and_grad(tmp_path):
+def test_nle_log_posterior_value_and_grad(tmp_path):
     flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=M, cond_dim=D, head_dim=8,
                                  num_heads=2, num_blocks=3, layers_per_block=1,
                                  zero_init=False))

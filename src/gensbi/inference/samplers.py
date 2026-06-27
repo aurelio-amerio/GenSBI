@@ -37,7 +37,6 @@ class MclmcInfo:
 
 def _inference_loop(rng_key, step_fn, initial_state, num_samples):
     """Run a blackjax SamplingAlgorithm.step for num_samples via lax.scan."""
-    @jax.jit
     def one_step(state, k):
         state, info = step_fn(k, state)
         return state, (state, info)
@@ -102,14 +101,13 @@ class MCLMC(Sampler):
         alg = blackjax.mclmc(target.log_posterior, L=params.L, step_size=params.step_size,
                              inverse_mass_matrix=params.inverse_mass_matrix)
         states, _ = _inference_loop(run_key, alg.step, state, self.num_samples)
-        info = MclmcInfo(L=params.L, step_size=params.step_size,
-                         acceptance_rate=jnp.nan, num_samples=self.num_samples,
+        info = MclmcInfo(L=float(params.L), step_size=float(params.step_size),
+                         acceptance_rate=float(jnp.nan), num_samples=self.num_samples,
                          num_chains=self.num_chains)
         return states.position, info
 
     def _run_adjusted(self, key, target):
         import blackjax
-        from blackjax.mcmc.integrators import isokinetic_mclachlan
 
         pos_key, init_key, tune_key, run_key = jax.random.split(key, 4)
         position = target.prior.sample(pos_key, ())
@@ -137,8 +135,8 @@ class MCLMC(Sampler):
             inverse_mass_matrix=params.inverse_mass_matrix)
 
         states, infos = _inference_loop(run_key, alg.step, state, self.num_samples)
-        info = MclmcInfo(L=params.L, step_size=params.step_size,
-                         acceptance_rate=jnp.mean(infos.acceptance_rate),
+        info = MclmcInfo(L=float(params.L), step_size=float(params.step_size),
+                         acceptance_rate=float(jnp.mean(infos.acceptance_rate)),
                          num_samples=self.num_samples, num_chains=self.num_chains)
         return states.position, info
 
@@ -182,7 +180,6 @@ class TemperedSMC(Sampler):
             return step_fn, init_fn, params
         if self.inner_kernel == "mclmc":
             from blackjax.mcmc.integrators import isokinetic_mclachlan
-            import blackjax
 
             def step_fn(rng_key, state, logdensity_fn, step_size,
                         num_integration_steps, inverse_mass_matrix):
@@ -228,6 +225,6 @@ class TemperedSMC(Sampler):
 
         _, final, nsteps, logZ = jax.lax.while_loop(
             cond, body, (smc_key, state, 0, 0.0))
-        info = SmcInfo(log_evidence=logZ, num_temperature_steps=nsteps,
-                       final_tempering_param=final.tempering_param)
+        info = SmcInfo(log_evidence=float(logZ), num_temperature_steps=int(nsteps),
+                       final_tempering_param=float(final.tempering_param))
         return final.particles, info

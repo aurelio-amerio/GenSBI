@@ -28,7 +28,7 @@ def _iter(obs, cond, bs=64):
             .map(lambda i: (obs[np.array(i)], cond[np.array(i)])))
 
 
-def test_field_nle_train_smoke_and_nuts(tmp_path):
+def test_field_nle_train_smoke_and_mclmc(tmp_path):
     flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), cond_dim=D, modeled="image",
                                  img_size=H, patch_size=2, img_channels=Ch,
                                  head_dim=8, num_heads=2, num_blocks=4,

@@ -62,7 +62,7 @@ def test_field_fit_standardization_image_shape(tmp_path):
     assert pipe._standardized is True
 
 
-def test_field_nle_potential_structured_xo(tmp_path):
+def test_field_nle_log_posterior_structured_xo(tmp_path):
     # zero_init=True: identity flow, finite log_prob for untrained weights on CPU
     flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), cond_dim=D, modeled="image",
                                  img_size=H, patch_size=2, img_channels=Ch,

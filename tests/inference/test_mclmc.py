@@ -3,7 +3,6 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-import pytest
 from flax import nnx
 
 from gensbi.core.prior import make_gaussian_prior
@@ -67,8 +66,6 @@ def test_return_info():
 
 
 def test_adjusted_is_the_default():
-    dim = 2
-    post = NLEPosterior(GaussianMock(), make_gaussian_prior((dim,)))
     assert MCLMC().adjusted is True
 
 

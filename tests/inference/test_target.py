@@ -3,7 +3,6 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
-import pytest
 
 from gensbi.core.prior import make_gaussian_prior
 from gensbi.inference.posterior import NLEPosterior, PosteriorTarget
