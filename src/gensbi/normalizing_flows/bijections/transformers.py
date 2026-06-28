@@ -16,9 +16,20 @@ def _clamp(a: Array, lo: float, hi: float) -> Array:
 class Affine:
     """Elementwise affine transform with log-scale clamping.
 
-    params layout per dim: ``[shift mu, log-scale a]`` (``num_params == 2``).
-    forward (noise->data): ``x = u * exp(a) + mu``, logdet ``= +sum(a)``.
-    inverse (data->noise): ``u = (x - mu) * exp(-a)``, logdet ``= -sum(a)``.
+    The parameter layout per dimension is ``[shift mu, log-scale a]``
+    (``num_params == 2``).  Log-scale values are clamped to
+    ``[clamp_min, clamp_max]`` before exponentiation using a straight-through
+    gradient (NumPyro IAF trick).
+
+    Forward (noise→data): ``x = u * exp(a) + mu``; logabsdet = ``+sum(a)``.
+    Inverse (data→noise): ``u = (x - mu) * exp(-a)``; logabsdet = ``-sum(a)``.
+
+    Parameters
+    ----------
+    clamp_min : float, optional
+        Lower bound for log-scale clamping.  Default is -5.0.
+    clamp_max : float, optional
+        Upper bound for log-scale clamping.  Default is 3.0.
     """
 
     num_params = 2
@@ -33,17 +44,67 @@ class Affine:
         return mu, a
 
     def forward(self, u: Array, params: Array) -> tuple[Array, Array]:
+        """Map noise to data: ``x = u * exp(a) + mu``.
+
+        Parameters
+        ----------
+        u : Array
+            Noise-space input of shape ``(dim,)``.
+        params : Array
+            Per-dimension parameters of shape ``(dim, 2)``; column 0 is the
+            shift ``mu`` and column 1 is the log-scale ``a``.
+
+        Returns
+        -------
+        x : Array
+            Data-space output.
+        logabsdet : Array
+            Sum of clamped log-scales: ``sum(a)``.
+        """
         mu, a = self._split(params)
         x = u * jnp.exp(a) + mu
         return x, jnp.sum(a)
 
     def inverse(self, x: Array, params: Array) -> tuple[Array, Array]:
+        """Map data to noise: ``u = (x - mu) * exp(-a)``.
+
+        Parameters
+        ----------
+        x : Array
+            Data-space input of shape ``(dim,)``.
+        params : Array
+            Per-dimension parameters of shape ``(dim, 2)``; column 0 is the
+            shift ``mu`` and column 1 is the log-scale ``a``.
+
+        Returns
+        -------
+        u : Array
+            Noise-space output.
+        logabsdet : Array
+            Negative sum of clamped log-scales: ``-sum(a)``.
+        """
         mu, a = self._split(params)
         u = (x - mu) * jnp.exp(-a)
         return u, -jnp.sum(a)
 
     def forward_dim(self, u_i: Array, params_i: Array) -> Array:
-        """Scalar forward for one dim (used by the sequential sampling scan)."""
+        """Scalar noise-to-data transform for a single dimension.
+
+        Used by the sequential sampling scan in the autoregressive loop.
+
+        Parameters
+        ----------
+        u_i : Array
+            Scalar noise-space value for one dimension.
+        params_i : Array
+            Parameter vector of length 2 for the same dimension; index 0 is
+            the shift ``mu``, index 1 is the log-scale ``a``.
+
+        Returns
+        -------
+        x_i : Array
+            Scalar data-space output: ``u_i * exp(a) + mu``.
+        """
         mu = params_i[0]
         a = _clamp(params_i[1], self.clamp_min, self.clamp_max)
         return u_i * jnp.exp(a) + mu
@@ -103,13 +164,30 @@ def _rqs_apply(z: Array, x_knots: Array, y_knots: Array, derivatives: Array,
 class RQSpline:
     """Elementwise monotonic rational-quadratic spline on ``[-B, B]``.
 
-    Linear tails outside the interval. Same ``(value, params)`` interface as
-    :class:`Affine`. params layout per dim (length ``3K-1``):
-    ``[widths(K), heights(K), inner_derivatives(K-1)]``.
+    Linear (identity) tails outside the spline interval.  The mapping is
+    parameterised per dimension; with zero-initialised parameters the spline
+    reduces to the identity, so the flow warm-starts as a standard normal
+    (same warm-start contract as :class:`Affine`).
 
-    With zero params (the ``zero_init`` MADE output) the spline is the identity,
-    so the flow warm-starts as a standard normal (same contract as Affine).
-    Reference: Durkan et al. 2019 (https://arxiv.org/abs/1906.04032).
+    The parameter layout per dimension is
+    ``[widths(K), heights(K), inner_derivatives(K-1)]`` of total length
+    ``3K - 1``.  Reference: Durkan et al. 2019
+    (https://arxiv.org/abs/1906.04032).
+
+    Parameters
+    ----------
+    num_bins : int, optional
+        Number of spline bins ``K``.  Default is 8.
+    range_bound : float, optional
+        Half-width ``B`` of the spline interval ``[-B, B]``.  Default is 5.0.
+    min_bin_width : float, optional
+        Minimum fractional bin width after softmax normalisation.
+        Default is 1e-3.
+    min_bin_height : float, optional
+        Minimum fractional bin height after softmax normalisation.
+        Default is 1e-3.
+    min_derivative : float, optional
+        Minimum knot derivative value.  Default is 1e-3.
     """
 
     def __init__(self, num_bins: int = 8, range_bound: float = 5.0,
@@ -152,16 +230,65 @@ class RQSpline:
         return _rqs_apply(u, x_knots, y_knots, d, inverse=True)
 
     def inverse(self, x: Array, params: Array):
-        """data -> noise (fast). logdet = +sum log g'(x)."""
+        """Map data to noise (fast vectorised spline pass).
+
+        Parameters
+        ----------
+        x : Array
+            Data-space input of shape ``(dim,)``.
+        params : Array
+            Per-dimension spline parameters of shape ``(dim, 3K-1)``.
+
+        Returns
+        -------
+        u : Array
+            Noise-space output.
+        logabsdet : Array
+            Positive sum of log-derivatives of the spline at each input:
+            ``+sum(log g'(x))``, where ``g'`` is the forward spline derivative
+            (data→noise direction).
+        """
         u, logderiv = jax.vmap(self._fwd_scalar)(x, params)
         return u, jnp.sum(logderiv)
 
     def forward(self, u: Array, params: Array):
-        """noise -> data. logdet = -sum log g'(x)."""
+        """Map noise to data (vectorised inverse spline pass).
+
+        Parameters
+        ----------
+        u : Array
+            Noise-space input of shape ``(dim,)``.
+        params : Array
+            Per-dimension spline parameters of shape ``(dim, 3K-1)``.
+
+        Returns
+        -------
+        x : Array
+            Data-space output.
+        logabsdet : Array
+            Negative sum of log-derivatives of the spline: ``-sum(log g'(x))``,
+            where ``g'`` is the forward spline derivative evaluated at the
+            corresponding data-space position.
+        """
         x, logderiv = jax.vmap(self._inv_scalar)(u, params)
         return x, -jnp.sum(logderiv)
 
     def forward_dim(self, u_i: Array, params_i: Array) -> Array:
-        """Scalar noise->data for one dim (used by the sequential sampling scan)."""
+        """Scalar noise-to-data transform for a single dimension.
+
+        Used by the sequential sampling scan in the autoregressive loop.
+
+        Parameters
+        ----------
+        u_i : Array
+            Scalar noise-space value for one dimension.
+        params_i : Array
+            Spline parameter vector of length ``3K-1`` for the same dimension.
+
+        Returns
+        -------
+        x_i : Array
+            Scalar data-space output.
+        """
         x_i, _ = self._inv_scalar(u_i, params_i)
         return x_i
