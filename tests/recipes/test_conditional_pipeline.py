@@ -118,17 +118,28 @@ class TestModelExtrasConflict:
 
 
 class TestSampleBatchWarning:
-    def test_batch_xo_warns(self, pipeline):
-        """sample() with batch x_o (shape > 1) emits UserWarning."""
+    def test_sample_batch_xo_warns_and_takes_first(self, pipeline):
+        """sample() with batch x_o warns and uses the first condition (no error)."""
         x_o_batch = jnp.zeros((5, dim_cond, 1))  # batch dim > 1
         with pytest.warns(UserWarning, match="batch dimension"):
-            try:
-                pipeline.sample(
-                    jax.random.PRNGKey(1), x_o_batch, nsamples=4,
-                )
-            except (ValueError, Exception):
-                # Mock model may fail on broadcast; we only care about the warning
-                pass
+            s = pipeline.sample(jax.random.PRNGKey(1), x_o_batch, nsamples=4)
+        assert s.shape[0] == 4  # one well-defined single-condition draw
+
+    def test_get_sampler_batch_xo_warns(self, pipeline):
+        with pytest.warns(UserWarning, match="batch dimension"):
+            pipeline.get_sampler(jnp.zeros((5, dim_cond, 1)))
+
+    def test_get_log_prob_fn_batch_xo_warns(self, pipeline):
+        with pytest.warns(UserWarning, match="batch dimension"):
+            pipeline.get_log_prob_fn(jnp.zeros((5, dim_cond, 1)))
+
+    def test_sample_batched_does_not_warn(self, pipeline, recwarn):
+        """sample_batched calls get_sampler with B==1 per condition — no warning."""
+        x_o = jnp.zeros((3, dim_cond, 1))
+        pipeline.sample_batched(jax.random.PRNGKey(2), x_o, 4,
+                                show_progress_bars=False)
+        assert not any(
+            "batch dimension" in str(w.message) for w in recwarn.list)
 
 
 # ---------------------------------------------------------------------------

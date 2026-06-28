@@ -49,6 +49,28 @@ from gensbi.recipes.utils import (
 import warnings
 
 
+def _single_cond_fm(x_o):
+    """Reduce a batched conditioning input to a single observation.
+
+    The conditional pipeline's single-observation methods (``sample``,
+    ``get_sampler``, ``log_prob``, ``get_log_prob_fn``) condition on ONE
+    observation. If ``x_o`` carries a leading batch axis > 1, warn and take the
+    first observation (use ``sample_batched`` for many conditions). The size-1
+    batch axis is preserved so ``_expand_dims`` and the model broadcast
+    correctly.
+    """
+    x_o = jnp.asarray(x_o)
+    n = x_o.shape[0] if x_o.ndim >= 1 else 1
+    if n > 1:
+        warnings.warn(
+            f"x_o has batch dimension {n} > 1. sample()/log_prob() use a single "
+            "condition. To use multiple conditions, use sample_batched() instead.",
+            UserWarning, stacklevel=3,
+        )
+        x_o = x_o[0:1]
+    return x_o
+
+
 # ---------------------------------------------------------------------------
 # Unified ConditionalPipeline (Phase 2)
 # ---------------------------------------------------------------------------
@@ -220,7 +242,7 @@ class ConditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        cond = _expand_dims(x_o)
+        cond = _expand_dims(_single_cond_fm(x_o))
 
         _PROTECTED = {"cond", "obs_ids", "cond_ids"}
         extras = {
@@ -272,15 +294,6 @@ class ConditionalPipeline(AbstractPipeline):
             Samples of shape ``(nsamples, dim_obs, ch_obs)``.
         """
 
-        x_o_shape = x_o.shape[0] if hasattr(x_o, "shape") else len(x_o)
-        if x_o_shape > 1:
-            warnings.warn(
-                f"x_o has batch dimension {x_o_shape} > 1. "
-                "sample() draws all samples for a single condition. "
-                "To sample for multiple conditions, use sample_batched() instead.",
-                UserWarning,
-                stacklevel=2,
-            )
         sampler = self.get_sampler(x_o, use_ema=use_ema, **sampler_kwargs)
         return sampler(key, nsamples)
 
@@ -305,7 +318,7 @@ class ConditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        cond = _expand_dims(x_o)
+        cond = _expand_dims(_single_cond_fm(x_o))
 
         _PROTECTED = {"cond", "obs_ids", "cond_ids"}
         extras = {
