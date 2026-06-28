@@ -33,14 +33,15 @@ class VectorTokenizer:
         If ``block_size`` does not divide ``dim``.
     """
 
-    def __init__(self, dim: int, block_size: int = 1):
+    def __init__(self, dim: int, block_size: int = 1, channels: int = 1):
         if dim % block_size != 0:
             raise ValueError(
                 f"block_size ({block_size}) must divide dim ({dim})")
         self.dim = dim
-        self.F = block_size
+        self.channels = channels
+        self.F = block_size * channels
         self.T = dim // block_size
-        self.example_shape = (dim,)
+        self.example_shape = (dim,) if channels == 1 else (dim, channels)
 
     def tokenize(self, x: Array) -> Array:
         """Reshape a flat vector into a token sequence.
@@ -59,7 +60,7 @@ class VectorTokenizer:
         return x.reshape(x.shape[0], self.T, self.F)
 
     def detokenize(self, tokens: Array) -> Array:
-        """Flatten a token sequence back into a vector.
+        """Flatten a token sequence back into a (channelled) vector.
 
         Parameters
         ----------
@@ -69,9 +70,13 @@ class VectorTokenizer:
         Returns
         -------
         Array
-            Flat vector of shape ``(B, dim)``.
+            Vector of shape ``(B, dim)`` when ``channels == 1``, or
+            ``(B, dim, channels)`` when ``channels > 1``.
         """
-        return tokens.reshape(tokens.shape[0], self.dim)
+        B = tokens.shape[0]
+        if self.channels == 1:
+            return tokens.reshape(B, self.dim)
+        return tokens.reshape(B, self.dim, self.channels)
 
 
 class ImageTokenizer:

@@ -4,6 +4,7 @@ from flax import nnx
 from gensbi.models.tarflow.blocks import MetaBlock
 from gensbi.models.tarflow.conditioners import VectorConditioner
 from gensbi.models.tarflow.conditioners import VectorPrefixConditioner
+from gensbi.models import TarFlow, TarFlowParams
 
 
 def _make(T=4, F=1, channels=8, cond_dim=2, zero_init=True, rngs=None):
@@ -154,3 +155,28 @@ def test_prefix_conditions_output():
     z1, _ = blk.inverse(x, cond1)
     z2, _ = blk.inverse(x, cond2)
     assert not jnp.allclose(z1, z2, atol=1e-6)
+
+
+def test_tarflow_vector_channels_one_unchanged():
+    m = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), modeled="vector", dim=4,
+                              num_blocks=2, head_dim=8, num_heads=2))
+    x = jnp.zeros((3, 4))
+    assert m.log_prob(x).shape == (3,)
+    assert m.sample(jax.random.PRNGKey(0), nsamples=3).shape == (3, 4)
+
+
+def test_tarflow_vector_multichannel():
+    m = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), modeled="vector", dim=4,
+                              vec_channels=2, num_blocks=2, head_dim=8,
+                              num_heads=2))
+    x = jnp.zeros((3, 4, 2))
+    assert m.log_prob(x).shape == (3,)                 # scalar per sample
+    assert m.sample(jax.random.PRNGKey(0), nsamples=3).shape == (3, 4, 2)
+
+
+def test_tarflow_set_standardization_per_channel():
+    m = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), modeled="vector", dim=4,
+                              vec_channels=2, num_blocks=2, head_dim=8,
+                              num_heads=2, standardize=True))
+    m.set_standardization(jnp.array([1.0, 2.0]), jnp.array([1.0, 1.0]))  # (C,)
+    assert m.log_prob(jnp.zeros((2, 4, 2))).shape == (2,)

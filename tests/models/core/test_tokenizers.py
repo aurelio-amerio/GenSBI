@@ -62,3 +62,19 @@ def test_image_tokenizer_roundtrip():
 def test_image_tokenizer_non_divisible_raises():
     with pytest.raises(ValueError):
         ImageTokenizer(height=7, width=8, channels=1, patch_size=2)
+
+
+def test_vector_tokenizer_channels_one_unchanged():
+    tok = VectorTokenizer(dim=6, block_size=2)
+    assert tok.F == 2 and tok.T == 3 and tok.example_shape == (6,)
+    x = jnp.arange(2 * 6).reshape(2, 6).astype(jnp.float32)
+    assert jnp.array_equal(tok.detokenize(tok.tokenize(x)), x)
+
+
+def test_vector_tokenizer_channels_roundtrip():
+    tok = VectorTokenizer(dim=6, block_size=2, channels=2)
+    assert tok.F == 4 and tok.T == 3 and tok.example_shape == (6, 2)
+    x = jnp.arange(2 * 6 * 2).reshape(2, 6, 2).astype(jnp.float32)
+    z = tok.tokenize(x)
+    assert z.shape == (2, 3, 4)
+    assert jnp.array_equal(tok.detokenize(z), x)

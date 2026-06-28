@@ -115,6 +115,7 @@ class TarFlowParams:
     img_size: int | None = None
     patch_size: int | None = None
     img_channels: int = 1
+    vec_channels: int = 1
     cond: str = "add"
     cond_img_size: int | None = None
     cond_patch_size: int | None = None
@@ -166,7 +167,8 @@ class TarFlow(nnx.Module):
         channels = params.channels
 
         if params.modeled == "vector":
-            tokenizer = VectorTokenizer(params.dim, params.block_size)
+            tokenizer = VectorTokenizer(params.dim, params.block_size,
+                                        params.vec_channels)
         else:
             tokenizer = ImageTokenizer(params.img_size, params.img_size,
                                        params.img_channels, params.patch_size)
@@ -303,5 +305,7 @@ class TarFlow(nnx.Module):
         """
         if not self._standardize:
             raise ValueError("TarFlow built with standardize=False")
-        self.mean[...] = jnp.asarray(mean, dtype=self.mean[...].dtype)
-        self.std[...] = jnp.asarray(std, dtype=self.std[...].dtype)
+        self.mean[...] = jnp.broadcast_to(
+            jnp.asarray(mean, dtype=self.mean[...].dtype), self.example_shape)
+        self.std[...] = jnp.broadcast_to(
+            jnp.asarray(std, dtype=self.std[...].dtype), self.example_shape)
