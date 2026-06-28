@@ -298,7 +298,8 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Returns
         -------
         samples : Array
-            Posterior samples of shape ``(nsamples, B, dim_obs, 1)``.
+            Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` (or
+            ``(nsamples, B, dim_obs)`` when ``structured_cond=True``).
         """
         x_o = jnp.asarray(x_o)
         B = x_o.shape[0]

@@ -92,7 +92,7 @@ def load_safetensors(model, path, *, strict: bool = True):
         Target model, rebuilt from its ``Params``.
     path : str | os.PathLike
         Source ``.safetensors`` file.
-    strict : bool
+    strict : bool, optional
         If True (default), the file's key set must equal the model's and
         every shared key must match shape (``ValueError`` otherwise). If
         False, only the intersection is loaded; model leaves absent from
