@@ -109,12 +109,13 @@ Builds run in the `gensbi` mamba environment, which has the full toolchain
 `sphinxext-rediraffe`, `sphinx-togglebutton`, `sphinx-favicon`) — the same set
 CI installs from the `[docs]` group.
 
-1. **Baseline.** Build the docs from `main` once and capture the warning set.
-2. **Branch build.** Build the docs from `maf`, capture warnings, and diff
-   against the baseline filtered to the touched module paths. Any new
-   `autoapi` / `napoleon` / `numpydoc` warning referencing a touched file is a
-   failure to fix.
-3. **Spot-check** the rendered HTML for the new subpackages
+1. **Branch build.** Build the docs from `maf` (no branch swapping, no `main`
+   baseline build). Capture the warning set and filter to the touched module
+   paths. Any `autoapi` / `napoleon` / `numpydoc` warning referencing a touched
+   file is a failure to fix. Because pre-existing modules are not edited, any
+   long-standing unrelated warnings they emit are ignored — only warnings on the
+   files this pass touches gate completion.
+2. **Spot-check** the rendered HTML for the new subpackages
    (`normalizing_flows`, `models/maf`, `models/tarflow`, `models/core`,
    `inference`) to confirm Parameters/Returns sections render as expected.
 
