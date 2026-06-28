@@ -83,8 +83,8 @@ def save_safetensors(
 def load_safetensors(model, path, *, strict: bool = True):
     """Load weights from a ``.safetensors`` file into ``model`` in place.
 
-    The caller must have reconstructed ``model`` from its ``Params`` first; that
-    model is the structural schema. Returns ``model``.
+    The caller must have reconstructed ``model`` from its ``Params`` first;
+    that model is the structural schema.
 
     Parameters
     ----------
@@ -93,10 +93,17 @@ def load_safetensors(model, path, *, strict: bool = True):
     path : str | os.PathLike
         Source ``.safetensors`` file.
     strict : bool
-        If True (default), the file's key set must equal the model's and every
-        shared key must match shape (``ValueError`` otherwise). If False, only
-        the intersection is loaded; model leaves absent from the file keep their
-        current values and file keys absent from the model are ignored.
+        If True (default), the file's key set must equal the model's and
+        every shared key must match shape (``ValueError`` otherwise). If
+        False, only the intersection is loaded; model leaves absent from
+        the file keep their current values and file keys absent from the
+        model are ignored.
+
+    Returns
+    -------
+    model : nnx.Module
+        The same ``model`` object, updated in place with the loaded
+        weights.
     """
     loaded = load_file(str(path))  # {str: jax.Array}
 

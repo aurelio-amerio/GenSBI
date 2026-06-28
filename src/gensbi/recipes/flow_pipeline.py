@@ -75,6 +75,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
     # --- abstract methods the flow pipeline does not use (mirror ConditionalPipeline) ---
     @classmethod
     def init_pipeline_from_config(cls, *args, **kwargs):
+        """Not implemented: the flow pipeline requires a pre-built model.
+
+        Raises
+        ------
+        NotImplementedError
+            Always. Construct an ``MAFlow`` and pass it as ``model=`` to the
+            pipeline constructor instead.
+        """
         raise NotImplementedError(
             "ConditionalFlowPipeline takes a pre-built flow; build a `MAFlow` "
             "and pass it as model=.")
@@ -86,6 +94,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     @classmethod
     def get_default_params(cls, *args, **kwargs):
+        """Not implemented: the flow pipeline takes a pre-built ``MAFlow``.
+
+        Raises
+        ------
+        NotImplementedError
+            Always. There are no default model params to return; construct an
+            ``MAFlow`` directly and pass it as ``model=``.
+        """
         raise NotImplementedError(
             "ConditionalFlowPipeline takes a pre-built MAFlow; there are no model "
             "params to default.")
@@ -97,10 +113,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     # --- methods implemented in later tasks (Tasks 3, 5, 6) ---
     def get_loss_fn(self):
-        """Return ``loss_fn(model, batch, key) -> scalar`` (key unused).
+        """Return the max-likelihood loss function for training.
 
-        ``batch = (obs, cond)`` each ``(B, dim, 1)``. NPE: obs=theta, cond=x.
-        Loss is the mean negative log-likelihood ``-mean(log q(obs | cond))``.
+        Returns a closure ``loss_fn(model, batch, key) -> Array`` that
+        computes the mean negative log-likelihood
+        ``-mean(log q(obs | cond))``.  ``batch = (obs, cond)`` with each
+        element of shape ``(B, dim, 1)``.  NPE convention: ``obs = theta``,
+        ``cond = x``.  The ``key`` argument is accepted for interface
+        compatibility but is unused.
+
+        Returns
+        -------
+        loss_fn : Callable
+            A function ``(model, batch, key) -> Array`` returning the scalar
+            mean negative log-likelihood.
         """
         def loss_fn(model, batch, key):
             obs, cond = batch
@@ -111,12 +137,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return loss_fn
 
     def fit_standardization(self, obs_data):
-        """Set the Standardize buffers from training-obs stats (call BEFORE train).
+        """Fit the Standardize bijection buffers from training observations.
 
-        ``obs_data`` is ``(N, dim_obs)`` or ``(N, dim_obs, 1)`` (the autoregressive
-        target, i.e. theta for NPE). Sets the buffer on both ``model`` and
-        ``ema_model`` (EMA only averages Params, so its non-Param buffer must be
-        set here too).
+        Computes per-dimension mean and standard deviation of ``obs_data``
+        and stores them as buffers on both the live model and the EMA model.
+        EMA only averages ``Param`` variables, so the non-Param buffers must
+        be set explicitly here.  Must be called before :meth:`train` when
+        input standardization is desired.
+
+        Parameters
+        ----------
+        obs_data : Array
+            Training observations of shape ``(N, dim_obs)`` or
+            ``(N, dim_obs, 1)`` (the autoregressive target; e.g. theta for
+            NPE).
         """
         obs = jnp.asarray(obs_data)
         if not self.structured_obs and obs.ndim == 3:
@@ -129,6 +163,29 @@ class ConditionalFlowPipeline(AbstractPipeline):
         self._standardized = True
 
     def train(self, rngs, nsteps=None, save_model=True):
+        """Train the flow model, warning if standardization was skipped.
+
+        Delegates to :meth:`AbstractPipeline.train` after checking that
+        :meth:`fit_standardization` was called.
+
+        Parameters
+        ----------
+        rngs : nnx.Rngs
+            Random number generators for training and validation steps.
+        nsteps : int or None, optional
+            Number of training steps.  If ``None``, taken from
+            ``training_config["nsteps"]``.  Default is ``None``.
+        save_model : bool, optional
+            If ``True`` (default), serialise the model to disk after
+            training.
+
+        Returns
+        -------
+        loss_array : list
+            Per-step training losses.
+        val_loss_array : list
+            Validation losses recorded at each validation checkpoint.
+        """
         if not self._standardized:
             warnings.warn(
                 "fit_standardization() was not called before train(); the "
@@ -139,10 +196,29 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return super().train(rngs, nsteps=nsteps, save_model=save_model)
 
     def get_sampler(self, x_o, use_ema=True):
-        """Return ``sampler(key, nsamples) -> (nsamples, dim_obs, 1)`` for one x_o.
+        """Return a sampler closure for a single conditioning observation.
 
-        When ``structured_cond=True``, returns ``(nsamples, dim_obs)`` instead
-        (the model's conditioner owns the shape; no ``_expand_dims``).
+        When ``structured_cond=True``, the returned sampler produces
+        ``(nsamples, dim_obs)`` instead of ``(nsamples, dim_obs, 1)``
+        because the model's conditioner owns the shape (no
+        ``_expand_dims``).
+
+        Parameters
+        ----------
+        x_o : Array
+            Single observation used as the conditioning input.  Shape
+            ``(dim_cond,)`` or ``(1, dim_cond)`` for the tabular path;
+            broader shapes are accepted when ``structured_cond=True``.
+        use_ema : bool, optional
+            If ``True`` (default), use the EMA model; otherwise use the
+            live model.
+
+        Returns
+        -------
+        sampler : Callable
+            A function ``(key, nsamples) -> Array`` of shape
+            ``(nsamples, dim_obs, 1)`` (or ``(nsamples, dim_obs)`` when
+            ``structured_cond=True``).
         """
         flow = self.ema_model if use_ema else self.model
         if self.structured_cond:
@@ -165,21 +241,64 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return sampler
 
     def sample(self, key, x_o, nsamples=10_000, use_ema=True):
+        """Draw posterior samples for a single conditioning observation.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key.
+        x_o : Array
+            Single conditioning observation.
+        nsamples : int, optional
+            Number of posterior samples to draw.  Default is 10 000.
+        use_ema : bool, optional
+            If ``True`` (default), use the EMA model.
+
+        Returns
+        -------
+        samples : Array
+            Posterior samples of shape ``(nsamples, dim_obs, 1)`` (or
+            ``(nsamples, dim_obs)`` when ``structured_cond=True``).
+        """
         return self.get_sampler(x_o, use_ema=use_ema)(key, nsamples)
 
     def sample_batched(self, key, x_o, nsamples=10_000, *, use_ema=True,
                        **kwargs):
-        """Sample posterior draws for a BATCH of observations.
+        """Draw posterior samples for a batch of conditioning observations.
 
-        ``x_o`` is ``(B, dim_cond, 1)`` (or ``(B, dim_cond)``). Loops the
-        single-observation sampler over the ``B`` conditions and stacks to
-        ``(nsamples, B, dim_obs, 1)`` — the same layout as the base pipeline.
+        Loops the single-observation sampler over the ``B`` conditions and
+        stacks results to ``(nsamples, B, dim_obs, 1)`` — the same layout
+        as the base pipeline.
 
-        Unlike the base ``AbstractPipeline.sample_batched`` (which threads the
-        condition through ``model_extras``/``obs_ids``/``cond_ids``), the flow
-        pipeline bakes each condition into its sampler via ``get_sampler``; this
-        override loops ``get_sampler`` per condition. Extra ``kwargs`` (e.g. the
-        base's ``chunk_size``/``show_progress_bars``) are accepted and ignored.
+        Unlike :class:`~gensbi.recipes.pipeline.AbstractPipeline`
+        ``sample_batched`` (which threads the condition through
+        ``model_extras``/``obs_ids``/``cond_ids``), this override bakes
+        each condition into a :meth:`get_sampler` closure.  Extra
+        ``kwargs`` (e.g. ``chunk_size``/``show_progress_bars``) are
+        accepted and silently ignored.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key split across the ``B`` conditions.
+        x_o : Array
+            Batch of observations of shape ``(B, dim_cond, 1)`` or
+            ``(B, dim_cond)``.
+        nsamples : int, optional
+            Number of posterior samples per observation.  Default is
+            10 000.
+        use_ema : bool, optional
+            If ``True`` (default), use the EMA model.
+        **kwargs : dict, optional
+            Extra keyword arguments accepted for interface compatibility
+            and silently ignored (e.g. ``chunk_size`` and
+            ``show_progress_bars`` from
+            :class:`~gensbi.recipes.pipeline.AbstractPipeline`).
+
+        Returns
+        -------
+        samples : Array
+            Posterior samples of shape ``(nsamples, B, dim_obs, 1)``.
         """
         x_o = jnp.asarray(x_o)
         B = x_o.shape[0]
@@ -191,7 +310,22 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return jnp.stack(results, axis=1)          # (nsamples, B, dim_obs, 1)
 
     def get_log_prob_fn(self, x_o, use_ema=True):
-        """Return ``log_prob_fn(x_1) -> (B,)`` for one conditioning x_o."""
+        """Return a log-probability closure for a single conditioning observation.
+
+        Parameters
+        ----------
+        x_o : Array
+            Single conditioning observation.
+        use_ema : bool, optional
+            If ``True`` (default), use the EMA model.
+
+        Returns
+        -------
+        log_prob_fn : Callable
+            A function ``(x_1) -> Array`` of shape ``(B,)`` evaluating
+            the conditional log-probability ``log q(x_1 | x_o)`` for a
+            batch of ``B`` parameter vectors.
+        """
         flow = self.ema_model if use_ema else self.model
         if self.structured_cond:
             cond = jnp.asarray(x_o)
@@ -214,4 +348,21 @@ class ConditionalFlowPipeline(AbstractPipeline):
         return log_prob_fn
 
     def log_prob(self, x_1, x_o, use_ema=True):
+        """Evaluate the conditional log-probability for a batch of samples.
+
+        Parameters
+        ----------
+        x_1 : Array
+            Batch of parameter vectors of shape ``(B, dim_obs)`` or
+            ``(B, dim_obs, 1)``.
+        x_o : Array
+            Single conditioning observation.
+        use_ema : bool, optional
+            If ``True`` (default), use the EMA model.
+
+        Returns
+        -------
+        log_prob : Array
+            Log-probabilities of shape ``(B,)``.
+        """
         return self.get_log_prob_fn(x_o, use_ema=use_ema)(x_1)
