@@ -13,13 +13,6 @@ class Mask(nnx.Variable):
     that optimizers and EMA utilities skip it while checkpointing still
     saves and restores it.  Typical use: autoregressive masks in
     :class:`~gensbi.models.maf.made.MaskedAutoregressive`.
-
-    Parameters
-    ----------
-    *args : object
-        Forwarded to :class:`~flax.nnx.Variable` (typically the buffer value).
-    **kwargs : object
-        Forwarded to :class:`~flax.nnx.Variable`.
     """
 
 
