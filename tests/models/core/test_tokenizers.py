@@ -78,3 +78,8 @@ def test_vector_tokenizer_channels_roundtrip():
     z = tok.tokenize(x)
     assert z.shape == (2, 3, 4)
     assert jnp.array_equal(tok.detokenize(z), x)
+
+
+def test_vector_tokenizer_channels_zero_raises():
+    with pytest.raises(ValueError):
+        VectorTokenizer(dim=6, channels=0)

@@ -294,3 +294,43 @@ def test_fit_standardization_per_channel_axis():
     obs = jax.random.normal(jax.random.PRNGKey(3), (64, DIM_OBS, 2))
     pipe.fit_standardization(obs, axis=(0, 1))          # per-channel stats
     assert pipe._standardized
+
+
+def _build_multichannel_both_pipeline():
+    """Pipeline with ch_obs=2 AND ch_cond=2 — both passthrough paths active."""
+    CH = 2
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND,
+                               channels=CH, cond_channels=CH,
+                               n_layers=4, nn_width=32, nn_depth=2,
+                               standardize=True))
+    # obs and cond both carry a channel axis (N, dim, CH)
+    theta_c = jnp.broadcast_to(_theta[:, :, None], (N, DIM_OBS, CH))
+    x_c = jnp.broadcast_to(_x[:, :, None], (N, DIM_COND, CH))
+
+    def gen(arr_obs, arr_cond, bs=128):
+        idx = grain.MapDataset.source(np.arange(arr_obs.shape[0]))
+        return (idx.shuffle(0).repeat().to_iter_dataset().batch(bs)
+                .map(lambda i: (np.array(arr_obs)[i], np.array(arr_cond)[i])))
+
+    train_ds = gen(theta_c[:800], x_c[:800])
+    val_ds = gen(theta_c[800:], x_c[800:])
+    tc = ConditionalFlowPipeline.get_default_training_config()
+    tc["val_every"] = 1
+    return ConditionalFlowPipeline(
+        flow, train_ds, val_ds, DIM_OBS, DIM_COND,
+        ch_obs=CH, ch_cond=CH, training_config=tc)
+
+
+def test_multichannel_both_sample_and_logprob_shapes():
+    """Both _obs_passthrough and _cond_passthrough active (ch_obs=ch_cond=2)."""
+    pipe = _build_multichannel_both_pipeline()
+    assert pipe._obs_passthrough
+    assert pipe._cond_passthrough
+
+    # single cond must carry a leading batch axis + channel axis
+    x_o = jnp.zeros((1, DIM_COND, 2))
+    s = pipe.sample(jax.random.PRNGKey(0), x_o, nsamples=7)
+    assert s.shape == (7, DIM_OBS, 2)           # channel axis preserved
+
+    lp = pipe.log_prob(jnp.zeros((7, DIM_OBS, 2)), x_o)
+    assert lp.shape == (7,)                     # one scalar per sample

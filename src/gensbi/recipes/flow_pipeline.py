@@ -107,10 +107,15 @@ class ConditionalFlowPipeline(AbstractPipeline):
     model : MAFlow
         A pre-built flow (e.g. ``MAFlow(MAFlowParams(rngs=rngs, dim=dim_obs, cond_dim=dim_cond))``).
     train_dataset, val_dataset : iterable
-        Yield ``(obs, cond)`` batches of shape ``(B, dim, 1)`` each.
+        Yield ``(obs, cond)`` batches.  Shape is ``(B, dim, C)`` for each
+        variable (``C = 1`` for the tabular path; see ``ch_obs``/``ch_cond``).
     dim_obs, dim_cond : int
-    ch_obs, ch_cond : int
-        Must both be 1 (tabular SBI). Default 1.
+    ch_obs, ch_cond : int, optional
+        Channel count for the obs and cond variables.  Default 1 (tabular SBI).
+        Values > 1 enable the ``(B, dim, C)`` channel-passthrough path: the
+        channel axis is preserved and forwarded to the flow unchanged (the flow
+        must be built with matching ``channels``/``cond_channels`` in
+        :class:`~gensbi.models.MAFlowParams`).
     structured_obs, structured_cond : bool, optional
         If ``True``, the modeled variable / condition keeps its native
         structured shape (the model owns it) instead of the tabular
@@ -301,9 +306,11 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Returns
         -------
         sampler : Callable
-            A function ``(key, nsamples) -> Array`` of shape
-            ``(nsamples, dim_obs, 1)`` (or ``(nsamples, dim_obs)`` when
-            ``structured_cond=True``).
+            A function ``(key, nsamples) -> Array``.  Shape is
+            ``(nsamples, dim_obs, 1)`` for the tabular path (``ch_obs == 1``
+            and ``structured_cond=False``), ``(nsamples, dim_obs, C)`` when
+            ``ch_obs > 1`` (channel-passthrough), or the model's native output
+            shape when ``structured_cond=True`` or ``structured_obs=True``.
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
@@ -414,7 +421,10 @@ class ConditionalFlowPipeline(AbstractPipeline):
         log_prob_fn : Callable
             A function ``(x_1) -> Array`` of shape ``(B,)`` evaluating
             the conditional log-probability ``log q(x_1 | x_o)`` for a
-            batch of ``B`` parameter vectors.
+            batch of ``B`` parameter vectors.  ``x_1`` has shape
+            ``(B, dim_obs)`` or ``(B, dim_obs, 1)`` on the tabular path,
+            or ``(B, dim_obs, C)`` when ``ch_obs > 1``
+            (channel-passthrough).
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model

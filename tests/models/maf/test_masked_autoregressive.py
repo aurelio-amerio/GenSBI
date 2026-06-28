@@ -79,3 +79,10 @@ def test_maf_set_standardization_per_channel_broadcast():
                                standardize=True))
     flow.set_standardization(jnp.array([1.0, 2.0]), jnp.array([1.0, 1.0]))  # (C,)
     assert flow.log_prob(jnp.zeros((2, 3, 2))).shape == (2,)
+
+
+def test_maf_unconditional_multichannel_sample_shape():
+    """Unconditional MAFlow with channels=2 must return (nsamples, dim, C)."""
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=3, channels=2))
+    s = flow.sample(jax.random.PRNGKey(0), nsamples=4)
+    assert s.shape == (4, 3, 2)

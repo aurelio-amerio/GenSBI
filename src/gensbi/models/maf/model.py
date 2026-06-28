@@ -135,15 +135,19 @@ class MAFlow(nnx.Module):
         Parameters
         ----------
         x : Array
-            Data batch of shape ``(batch, dim)``.
+            Data batch.  Shape ``(B, dim)`` when ``channels == 1``, or
+            ``(B, dim, C)`` when ``channels > 1`` (the channel axis is
+            flattened internally to ``(B, dim * C)``).
         cond : Array or None, optional
-            Conditioning batch of shape ``(batch, cond_dim)``, or ``None`` for
-            an unconditional model.
+            Conditioning batch of shape ``(B, cond_dim)`` for
+            ``cond_channels == 1``, or ``(B, cond_dim, C_cond)`` for
+            ``cond_channels > 1`` (also flattened internally).  Pass
+            ``None`` for an unconditional model.
 
         Returns
         -------
         Array
-            Log-probability of shape ``(batch,)``.
+            Log-probability of shape ``(B,)``.
         """
         base = self._base()
         x = jnp.asarray(x)
@@ -168,8 +172,10 @@ class MAFlow(nnx.Module):
         key : jax.random.PRNGKey
             Random key.
         cond : Array or None, optional
-            Conditioning batch of shape ``(nsamples, cond_dim)``.  If provided,
-            the number of samples is inferred from ``cond.shape[0]`` and
+            Conditioning batch of shape ``(nsamples, cond_dim)`` for
+            ``cond_channels == 1``, or ``(nsamples, cond_dim, C_cond)`` for
+            ``cond_channels > 1`` (flattened internally).  If provided, the
+            number of samples is inferred from ``cond.shape[0]`` and
             ``nsamples`` is ignored.
         nsamples : int or None, optional
             Number of samples to draw.  Required when ``cond`` is ``None``.
@@ -177,7 +183,8 @@ class MAFlow(nnx.Module):
         Returns
         -------
         Array
-            Sample array of shape ``(nsamples, dim)``.
+            Sample array of shape ``(nsamples, dim)`` when ``channels == 1``,
+            or ``(nsamples, dim, C)`` when ``channels > 1``.
         """
         base = self._base()
         if cond is not None:

@@ -25,18 +25,25 @@ class VectorTokenizer:
     dim : int
         Total feature dimension of the input vector.
     block_size : int, optional
-        Number of features per token. Must divide ``dim``. Default is 1.
+        Number of features per token.  Must divide ``dim``.  Default is 1.
+    channels : int, optional
+        Number of channels in the input.  Default is 1 (flat vector
+        ``(B, dim)``).  When > 1 the input is ``(B, dim, C)`` and each
+        token carries ``F = block_size * channels`` features.
 
     Raises
     ------
     ValueError
-        If ``block_size`` does not divide ``dim``.
+        If ``block_size`` does not divide ``dim``, or if ``channels < 1``.
     """
 
     def __init__(self, dim: int, block_size: int = 1, channels: int = 1):
         if dim % block_size != 0:
             raise ValueError(
                 f"block_size ({block_size}) must divide dim ({dim})")
+        if channels < 1:
+            raise ValueError(
+                f"channels must be >= 1, got {channels}")
         self.dim = dim
         self.channels = channels
         self.F = block_size * channels
@@ -49,13 +56,14 @@ class VectorTokenizer:
         Parameters
         ----------
         x : Array
-            Input of shape ``(B, dim)``.
+            Input of shape ``(B, dim)`` when ``channels == 1``, or
+            ``(B, dim, C)`` when ``channels > 1``.
 
         Returns
         -------
         Array
             Token sequence of shape ``(B, T, F)`` where
-            ``T = dim // block_size`` and ``F = block_size``.
+            ``T = dim // block_size`` and ``F = block_size * channels``.
         """
         return x.reshape(x.shape[0], self.T, self.F)
 
