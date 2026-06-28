@@ -19,7 +19,7 @@ import numpy as np
 from flax import nnx
 import flax.traverse_util as tu
 from safetensors import safe_open
-from safetensors.flax import load_file, save_file
+from safetensors.flax import save_file
 
 _SEP = "."
 _DEFAULT_METADATA = {"format": "gensbi", "version": "1", "framework": "flax-nnx"}
@@ -105,10 +105,10 @@ def load_safetensors(model, path, *, strict: bool = True):
         The same ``model`` object, updated in place with the loaded
         weights.
     """
-    loaded = load_file(str(path))  # {str: jax.Array}
-
+    # Read tensors and metadata from a single open handle (one filesystem open).
     with safe_open(str(path), framework="flax") as f:
         saved_meta = f.metadata() or {}
+        loaded = {k: f.get_tensor(k) for k in f.keys()}  # {str: jax.Array}
     saved_class = saved_meta.get("model_class")
     target_class = type(model).__name__
     if saved_class is not None and saved_class != target_class:

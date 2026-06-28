@@ -12,9 +12,30 @@ def _rescale(mu):
 
     From the blackjax adjusted-MCLMC tutorial: choosing the number of integration
     steps as ceil(U(0,1) * _rescale(L/step_size)) keeps the average near the tuned L.
+
+    ``mu`` must satisfy ``2 * mu - 1 > 0`` (i.e. ``mu > 0.5``); see
+    :func:`_check_rescale_domain` for the host-side guard applied to the tuned value.
     """
     k = jax.lax.max(1, jnp.round(jnp.log(2 * mu - 1) / jnp.log(2)).astype(int))
     return mu / k
+
+
+def _check_rescale_domain(mu):
+    """Raise if the tuned ``mu = L / step_size`` is outside ``_rescale``'s domain.
+
+    ``_rescale`` takes ``log(2 * mu - 1)``, which is non-finite for ``mu <= 0.5``.
+    A host-side check on the tuned value turns an otherwise silent all-NaN
+    posterior into an explicit error. (The in-tuning average is left to blackjax;
+    this is a convenience sampler, not a fully hardened MCMC engine.)
+    """
+    mu = float(mu)
+    if 2.0 * mu - 1.0 <= 0.0:
+        raise ValueError(
+            f"adjusted-MCLMC tuning produced L/step_size = {mu:.4g} <= 0.5, for "
+            f"which the integration-step rescaling log(2*mu - 1) is undefined; "
+            f"the run would yield all-NaN samples. This usually means tuning did "
+            f"not converge — try increasing num_tuning_steps, increasing "
+            f"num_samples, or using MCLMC(adjusted=False).")
 
 
 class Sampler(ABC):
@@ -206,6 +227,7 @@ class MCLMC(Sampler):
             mclmc_kernel=kernel, num_steps=self.num_tuning_steps, state=init_state,
             rng_key=tune_key, target=self.target_acceptance,
             diagonal_preconditioning=self.diagonal_preconditioning)
+        _check_rescale_domain(params.L / params.step_size)
 
         alg = blackjax.adjusted_mclmc_dynamic(
             logdensity_fn=target.log_posterior, step_size=params.step_size,

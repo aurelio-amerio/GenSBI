@@ -173,10 +173,24 @@ class MetaBlock(nnx.Module):
             return s, 1.0 / s, jnp.log(s)
         return jnp.exp(a), jnp.exp(-a), a
 
-    def _params(self, x_perm: Array, cond: Array | None):
-        """(a, b) for the permuted tokens. SOS input-shift makes token i's
-        params depend only on tokens < i (and the condition)."""
+    def _embed_cond(self, cond: Array | None):
+        """Condition-only signals ``(bias, prefix, mask)`` for :meth:`_params_core`.
+
+        These depend on ``cond`` but not on the modeled tokens, so the sampling
+        scan computes them once instead of re-running the (potentially expensive,
+        e.g. image-patchify) conditioner and rebuilding the prefix mask at every
+        token step.
+        """
         bias, prefix = self.conditioner.embed(cond)
+        mask = self._prefix_mask(prefix.shape[1], self.T) if prefix is not None else None
+        return bias, prefix, mask
+
+    def _params_core(self, x_perm: Array, bias, prefix, mask):
+        """(a, b) for the permuted tokens given precomputed conditioning.
+
+        SOS input-shift makes token i's params depend only on tokens < i (and the
+        condition). ``bias``/``prefix``/``mask`` come from :meth:`_embed_cond`.
+        """
         B = x_perm.shape[0]
         sos = jnp.broadcast_to(self.sos_embed[...], (B, 1, self.F))
         x_in = jnp.concatenate([sos, x_perm[:, :-1]], axis=1)   # (B, T, F)
@@ -186,7 +200,6 @@ class MetaBlock(nnx.Module):
         if prefix is not None:
             M = prefix.shape[1]
             h = jnp.concatenate([prefix, h], axis=1)            # (B, M+T, C)
-            mask = self._prefix_mask(M, self.T)
             for blk in self.attn_blocks:
                 h = blk(h, mask)
             h = h[:, M:]                                        # (B, T, C) strip
@@ -198,6 +211,11 @@ class MetaBlock(nnx.Module):
             out = self.soft_clip * jnp.tanh(out / self.soft_clip)
         a, b = jnp.split(out, 2, axis=-1)                       # each (B, T, F)
         return a, b
+
+    def _params(self, x_perm: Array, cond: Array | None):
+        """(a, b) for the permuted tokens (single-shot; embeds the condition)."""
+        bias, prefix, mask = self._embed_cond(cond)
+        return self._params_core(x_perm, bias, prefix, mask)
 
     def inverse(self, x: Array, cond: Array | None = None):
         """Map data to noise (the density-evaluation direction).
@@ -261,17 +279,19 @@ class MetaBlock(nnx.Module):
         """
         z = z.reshape(z.shape[0], self.T, self.F)
         zp = z[:, self.perm[...]]
+        bias, prefix, mask = self._embed_cond(cond)            # constant over the scan
 
         def body(x, i):
-            a, b = self._params(x, cond)        # a[:,i],b[:,i] depend on tokens < i
-            scale, _, _ = self._affine(a)
+            # a[:,i],b[:,i] depend only on tokens < i, so log_scale[:,i] is final at
+            # step i: accumulate it here instead of a second full pass after the scan.
+            a, b = self._params_core(x, bias, prefix, mask)
+            scale, _, log_scale = self._affine(a)
             xi = zp[:, i, :] * scale[:, i, :] + b[:, i, :].astype(jnp.float32)
-            return x.at[:, i, :].set(xi.astype(x.dtype)), None
+            x = x.at[:, i, :].set(xi.astype(x.dtype))
+            return x, log_scale[:, i, :]                        # (B, F)
 
         x = jnp.zeros_like(zp)
-        x, _ = jax.lax.scan(body, x, jnp.arange(self.T))
-        a, _ = self._params(x, cond)
-        _, _, log_scale = self._affine(a)
-        logdet = jnp.sum(log_scale, axis=(1, 2))               # (B,), +Σ log_scale
+        x, log_scale_steps = jax.lax.scan(body, x, jnp.arange(self.T))  # (T, B, F)
+        logdet = jnp.sum(log_scale_steps, axis=(0, 2))         # (B,), +Σ log_scale
         x = x[:, self.inv_perm[...]]
         return x, logdet

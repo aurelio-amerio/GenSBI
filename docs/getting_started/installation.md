@@ -42,7 +42,10 @@ For GPU support:
 pip install gensbi[cuda12]
 ```
 
-If you want to run the examples, install the GenSBI-examples repository:
+If you want to run the [example notebooks](https://github.com/aurelio-amerio/GenSBI-examples),
+install the `examples` extra, which pulls in `sbibm-jax[loader]` (the
+`sbibm_jax` package providing the SBIBM task loaders and datasets the notebooks
+use):
 
 ```bash
 uv add gensbi[examples]
@@ -60,7 +63,7 @@ pip install gensbi[cuda12,examples]
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.12+
 - JAX
 - Flax
 - (See `pyproject.toml` for full requirements)

@@ -10,7 +10,7 @@ import pytest
 
 from gensbi.models import MAFlow, MAFlowParams
 from gensbi.recipes.flow_pipeline import (
-    ConditionalFlowPipeline, _squeeze_ch, _single_cond,
+    ConditionalFlowPipeline, _squeeze_ch, _single_cond, _structured_cond,
 )
 
 DIM_OBS = 2
@@ -58,6 +58,15 @@ def test_squeeze_ch():
 def test_single_cond():
     assert _single_cond(jnp.zeros((1, DIM_COND, 1))).shape == (DIM_COND,)
     assert _single_cond(jnp.zeros((DIM_COND,))).shape == (DIM_COND,)
+
+
+def test_single_cond_batched_warns_and_takes_first():
+    # flow-matching convention: batch axis > 1 warns and uses the first obs.
+    x_o = jnp.arange(3 * DIM_COND).reshape(3, DIM_COND)
+    with pytest.warns(UserWarning, match="batch dimension"):
+        out = _single_cond(x_o)
+    assert out.shape == (DIM_COND,)
+    assert jnp.array_equal(out, x_o[0])
 
 
 def test_init_and_wrap():
@@ -170,6 +179,24 @@ def test_log_prob_depends_on_condition(tmp_path):
     lp_a = pipe.log_prob(x_1, jnp.zeros((1, DIM_COND, 1)), use_ema=False)
     lp_b = pipe.log_prob(x_1, jnp.ones((1, DIM_COND, 1)), use_ema=False)
     assert not jnp.allclose(lp_a, lp_b)
+
+
+def test_structured_cond_strips_only_batch_axis():
+    # The leading batch axis is stripped unconditionally; a genuine size-1
+    # data axis (here H == 1) must be preserved, not mistaken for the batch.
+    img = jnp.arange(1 * 1 * 4 * 2).reshape(1, 1, 4, 2)   # (B=1, H=1, W=4, C=2)
+    out = _structured_cond(img)
+    assert out.shape == (1, 4, 2)                         # H==1 preserved
+    assert jnp.array_equal(out, img[0])
+
+    # A batch axis of size > 1 warns (flow-matching convention) and uses the first.
+    batched = jnp.arange(3 * 5).reshape(3, 5)
+    with pytest.warns(UserWarning, match="batch dimension"):
+        first = _structured_cond(batched)
+    assert jnp.array_equal(first, batched[0])
+
+    with pytest.raises(ValueError):
+        _structured_cond(jnp.asarray(1.0))               # scalar: no batch axis
 
 
 def test_exported_from_recipes():

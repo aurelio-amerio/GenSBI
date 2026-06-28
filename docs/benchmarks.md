@@ -15,7 +15,7 @@ The following five SBIBM tasks cover a range of parameter dimensionalities and p
 | SLCP | 5 | 8 | Complex multimodal geometry (4 modes) |
 | Bernoulli GLM | 10 | 10 | Discrete data, correlated prior |
 
-All benchmark datasets are available on [HuggingFace](https://huggingface.co/datasets/aurelio-amerio/SBI-benchmarks), and the [`gensbi-examples`](https://github.com/aurelio-amerio/GenSBI-examples) package provides utilities and notebooks to reproduce every result shown here.
+All benchmark datasets are available on [HuggingFace](https://huggingface.co/datasets/aurelio-amerio/SBI-benchmarks). The [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository provides the notebooks to reproduce every result shown here, and the `examples` extra (`pip install gensbi[examples]`) installs `sbibm-jax[loader]`, which provides the SBIBM task loaders and datasets they use.
 
 
 ## Evaluation Metric: C2ST

@@ -87,10 +87,11 @@ class Affine:
         u = (x - mu) * jnp.exp(-a)
         return u, -jnp.sum(a)
 
-    def forward_dim(self, u_i: Array, params_i: Array) -> Array:
+    def forward_dim(self, u_i: Array, params_i: Array) -> tuple[Array, Array]:
         """Scalar noise-to-data transform for a single dimension.
 
-        Used by the sequential sampling scan in the autoregressive loop.
+        Used by the sequential sampling scan in the autoregressive loop, which
+        accumulates the per-dimension log-determinant as it goes.
 
         Parameters
         ----------
@@ -104,10 +105,12 @@ class Affine:
         -------
         x_i : Array
             Scalar data-space output: ``u_i * exp(a) + mu``.
+        logabsdet_i : Array
+            Forward log-determinant contribution for this dimension: ``a``.
         """
         mu = params_i[0]
         a = _clamp(params_i[1], self.clamp_min, self.clamp_max)
-        return u_i * jnp.exp(a) + mu
+        return u_i * jnp.exp(a) + mu, a
 
 
 def _inv_softplus(y: Array) -> Array:
@@ -273,10 +276,11 @@ class RQSpline:
         x, logderiv = jax.vmap(self._inv_scalar)(u, params)
         return x, -jnp.sum(logderiv)
 
-    def forward_dim(self, u_i: Array, params_i: Array) -> Array:
+    def forward_dim(self, u_i: Array, params_i: Array) -> tuple[Array, Array]:
         """Scalar noise-to-data transform for a single dimension.
 
-        Used by the sequential sampling scan in the autoregressive loop.
+        Used by the sequential sampling scan in the autoregressive loop, which
+        accumulates the per-dimension log-determinant as it goes.
 
         Parameters
         ----------
@@ -289,6 +293,9 @@ class RQSpline:
         -------
         x_i : Array
             Scalar data-space output.
+        logabsdet_i : Array
+            Forward log-determinant contribution for this dimension:
+            ``-log g'(x_i)`` (matching :meth:`forward`).
         """
-        x_i, _ = self._inv_scalar(u_i, params_i)
-        return x_i
+        x_i, logderiv = self._inv_scalar(u_i, params_i)
+        return x_i, -logderiv

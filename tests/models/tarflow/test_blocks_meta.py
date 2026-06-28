@@ -65,6 +65,17 @@ def test_forward_inverse_roundtrip():
     assert jnp.allclose(x_rt, x, atol=1e-4)
 
 
+def test_forward_logdet_matches_inverse():
+    """forward logdet (accumulated in the scan) must equal -inverse logdet at the
+    round-trip point, for F>1 (guards the in-scan logdet accumulation)."""
+    blk = _make(F=2, channels=8, zero_init=False)
+    z = jax.random.normal(jax.random.PRNGKey(11), (3, 4, 2))
+    cond = jax.random.normal(jax.random.PRNGKey(12), (3, 2))
+    x, fwd_ld = blk.forward(z, cond)
+    _, inv_ld = blk.inverse(x, cond)
+    assert jnp.allclose(fwd_ld, -inv_ld, atol=1e-4)
+
+
 def _make_prefix(T=4, F=1, channels=8, cond_dim=2, num_tokens=2, zero_init=False,
                  rngs=None):
     rngs = rngs or nnx.Rngs(0)
@@ -113,6 +124,15 @@ def test_prefix_roundtrip():
     z, _ = blk.inverse(x, cond)
     x_rt, _ = blk.forward(z, cond)
     assert jnp.allclose(x_rt, x, atol=1e-4)
+
+
+def test_prefix_forward_logdet_matches_inverse():
+    blk = _make_prefix(F=2, channels=8, zero_init=False)
+    z = jax.random.normal(jax.random.PRNGKey(13), (3, 4, 2))
+    cond = jax.random.normal(jax.random.PRNGKey(14), (3, 2))
+    x, fwd_ld = blk.forward(z, cond)
+    _, inv_ld = blk.inverse(x, cond)
+    assert jnp.allclose(fwd_ld, -inv_ld, atol=1e-4)
 
 
 def test_prefix_zero_init_identity():

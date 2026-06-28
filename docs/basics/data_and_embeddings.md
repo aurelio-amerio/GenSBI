@@ -36,10 +36,10 @@ To ensure efficient training and optimal performance, it is **highly advisable**
 
 Transformers process sequences, not grids. If you are using 2D image data, you **must patchify** it before passing it to the model (or pipeline).
 
-The function `gensbi.recipes.utils.patchify_2d` flattens a 2D image into a sequence of tokens.
+The function `gensbi.models.core.patching.patchify_2d` flattens a 2D image into a sequence of tokens.
 
 ```python
-from gensbi.recipes.utils import patchify_2d
+from gensbi.models.core.patching import patchify_2d
 
 # Input shape: (Batch, Height, Width, Channels)
 # e.g., (32, 64, 64, 3)
@@ -131,7 +131,7 @@ GenSBI provides first-class support for 2D data (like images from telescopes or 
 
 The models process data as a sequence of tokens. A standard 2D image must be broken down into patches.
 
-Use `gensbi.recipes.utils.patchify_2d` to convert your image tensors `(Batch, H, W, C)` into token sequences `(Batch, Num_Tokens, Features)`.
+Use `gensbi.models.core.patching.patchify_2d` to convert your image tensors `(Batch, H, W, C)` into token sequences `(Batch, Num_Tokens, Features)`.
 
 **Example Workflow:**
 

@@ -39,7 +39,7 @@ This page addresses common issues and frequently asked questions when using GenS
    pip install gensbi
    ```
 
-2. Check your Python version (requires Python 3.11+).
+2. Check your Python version (requires Python 3.12+).
 
 ## Training Issues
 

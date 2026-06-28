@@ -1,14 +1,15 @@
 import jax
 import jax.numpy as jnp
+import pytest
 from flax import nnx
 
 from gensbi.models.maf.made import MaskedAutoregressive
-from gensbi.normalizing_flows.bijections.transformers import Affine
+from gensbi.normalizing_flows.bijections.transformers import Affine, RQSpline
 
 
-def _ma(dim=5, cond_dim=3, seed=0):
+def _ma(dim=5, cond_dim=3, seed=0, transformer=None):
     return MaskedAutoregressive(
-        dim=dim, cond_dim=cond_dim, transformer=Affine(),
+        dim=dim, cond_dim=cond_dim, transformer=transformer or Affine(),
         nn_width=32, nn_depth=2, zero_init=False, rngs=nnx.Rngs(seed),
     )
 
@@ -36,3 +37,15 @@ def test_logdet_matches_autodiff_jacobian():
     _, ad_logdet = jnp.linalg.slogdet(jax.jacobian(inv_only)(x))
     _, analytic_logdet = ma.inverse(x, cond)
     assert jnp.allclose(ad_logdet, analytic_logdet, atol=1e-4)
+
+
+@pytest.mark.parametrize("transformer", [Affine(), RQSpline(num_bins=6)])
+def test_forward_logdet_matches_inverse(transformer):
+    """forward logdet (accumulated in the scan) must equal -inverse logdet at the
+    round-trip point, across transformer types (Affine, RQSpline)."""
+    ma = _ma(dim=5, transformer=transformer)
+    cond = jnp.array([0.1, -0.2, 0.3])
+    u = jnp.array([0.5, -1.0, 0.2, 1.3, -0.7])
+    x, fwd_logdet = ma.forward(u, cond)
+    _, inv_logdet = ma.inverse(x, cond)
+    assert jnp.allclose(fwd_logdet, -inv_logdet, atol=1e-4)

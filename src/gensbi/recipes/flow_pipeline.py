@@ -28,9 +28,29 @@ def _squeeze_ch(x):
     raise ValueError(f"expected (B, dim) or (B, dim, 1), got shape {tuple(x.shape)}")
 
 
+def _warn_if_batched(n):
+    """Warn (flow-matching convention) when a single-observation method is given
+    a leading batch axis > 1; the caller then proceeds with the first observation."""
+    if n > 1:
+        warnings.warn(
+            f"x_o has batch dimension {n} > 1. sample()/log_prob() use a single "
+            "condition. To use multiple conditions, use sample_batched() instead.",
+            UserWarning, stacklevel=3,
+        )
+
+
 def _single_cond(x_o):
-    """Reduce a single conditioning observation to a 1-D ``(dim_cond,)`` vector."""
-    x_o = jnp.squeeze(jnp.asarray(x_o))
+    """Reduce a single conditioning observation to a 1-D ``(dim_cond,)`` vector.
+
+    Mirrors the flow-matching pipeline convention: ``x_o`` carries a leading
+    batch axis (size 1 for one observation); a batch axis > 1 warns and the
+    first observation is used.
+    """
+    x_o = jnp.asarray(x_o)
+    if x_o.ndim >= 2:
+        _warn_if_batched(x_o.shape[0])
+        x_o = x_o[0]                       # take the first observation
+    x_o = jnp.squeeze(x_o)
     if x_o.ndim == 0:
         x_o = x_o[None]
     if x_o.ndim != 1:
@@ -39,6 +59,27 @@ def _single_cond(x_o):
             f"{tuple(jnp.asarray(x_o).shape)}. sample()/log_prob() take ONE "
             f"observation at a time.")
     return x_o
+
+
+def _structured_cond(x_o):
+    """Strip the leading batch axis from a single structured observation.
+
+    For ``structured_cond=True`` the conditioner owns the per-observation
+    shape, so ``x_o`` carries a leading batch axis (size 1 for one observation,
+    as produced by e.g. ``x_o[i:i+1]``). That axis is removed unconditionally —
+    never by a ``shape[0] == 1`` heuristic — so a genuine size-1 *data* axis
+    (e.g. a ``(1, 1, W, C)`` image with ``H == 1``) is never mistaken for the
+    batch axis and silently dropped. Mirroring the flow-matching pipeline, a
+    batch axis > 1 warns and the first observation is used.
+    """
+    cond = jnp.asarray(x_o)
+    if cond.ndim < 1:
+        raise ValueError(
+            "structured_cond x_o must carry a leading batch axis (e.g. shape "
+            f"(1,) + per_observation_shape); got a scalar of shape "
+            f"{tuple(cond.shape)}.")
+    _warn_if_batched(cond.shape[0])
+    return cond[0]                        # take the first observation
 
 
 class ConditionalFlowPipeline(AbstractPipeline):
@@ -53,6 +94,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
     dim_obs, dim_cond : int
     ch_obs, ch_cond : int
         Must both be 1 (tabular SBI). Default 1.
+    structured_obs, structured_cond : bool, optional
+        If ``True``, the modeled variable / condition keeps its native
+        structured shape (the model owns it) instead of the tabular
+        ``(B, dim, 1)`` layout. Default ``False``.
+
+    Notes
+    -----
+    Following the flow-matching pipelines, every single-observation method
+    (:meth:`sample`, :meth:`log_prob`, :meth:`get_sampler`,
+    :meth:`get_log_prob_fn`) expects ``x_o`` to carry a **leading batch axis**
+    (size 1 for one observation; tabular ``x_o`` may also be a bare
+    ``(dim_cond,)`` vector). A batch axis > 1 emits a ``UserWarning`` and the
+    first observation is used — pass a batch of conditions to
+    :meth:`sample_batched` instead.
     """
 
     def __init__(self, model, train_dataset, val_dataset, dim_obs, dim_cond,
@@ -207,8 +262,13 @@ class ConditionalFlowPipeline(AbstractPipeline):
         ----------
         x_o : Array
             Single observation used as the conditioning input.  Shape
-            ``(dim_cond,)`` or ``(1, dim_cond)`` for the tabular path;
-            broader shapes are accepted when ``structured_cond=True``.
+            ``(dim_cond,)`` or ``(1, dim_cond)`` for the tabular path.  When
+            ``structured_cond=True`` the conditioner owns the per-observation
+            shape and ``x_o`` must carry a leading batch axis of size 1, i.e.
+            ``(1,) + per_observation_shape`` (e.g. ``(1, H, W, C)``); that
+            batch axis is stripped, so a genuine size-1 data axis is preserved.
+            A leading batch axis > 1 emits a ``UserWarning`` and the first
+            observation is used (use :meth:`sample_batched` for many conditions).
         use_ema : bool, optional
             If ``True`` (default), use the EMA model; otherwise use the
             live model.
@@ -222,9 +282,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """
         flow = self.ema_model if use_ema else self.model
         if self.structured_cond:
-            cond = jnp.asarray(x_o)
-            if cond.ndim >= 1 and cond.shape[0] == 1:
-                cond = cond[0]                       # strip singleton batch
+            cond = _structured_cond(x_o)             # strip the leading batch axis
 
             def sampler(key, nsamples):
                 cond_b = jnp.broadcast_to(cond, (nsamples,) + cond.shape)
@@ -248,7 +306,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         key : jax.random.PRNGKey
             Random key.
         x_o : Array
-            Single conditioning observation.
+            Single conditioning observation carrying a leading batch axis of
+            size 1 (see :meth:`get_sampler` for the shape convention). A batch
+            axis > 1 warns and the first observation is used.
         nsamples : int, optional
             Number of posterior samples to draw.  Default is 10 000.
         use_ema : bool, optional
@@ -316,7 +376,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Parameters
         ----------
         x_o : Array
-            Single conditioning observation.
+            Single conditioning observation carrying a leading batch axis of
+            size 1 (see :meth:`get_sampler` for the shape convention). A batch
+            axis > 1 warns and the first observation is used.
         use_ema : bool, optional
             If ``True`` (default), use the EMA model.
 
@@ -329,9 +391,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """
         flow = self.ema_model if use_ema else self.model
         if self.structured_cond:
-            cond = jnp.asarray(x_o)
-            if cond.ndim >= 1 and cond.shape[0] == 1:
-                cond = cond[0]
+            cond = _structured_cond(x_o)             # strip the leading batch axis
 
             def log_prob_fn(x_1):
                 obs = self._prep_obs(x_1)
@@ -357,7 +417,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
             Batch of parameter vectors of shape ``(B, dim_obs)`` or
             ``(B, dim_obs, 1)``.
         x_o : Array
-            Single conditioning observation.
+            Single conditioning observation carrying a leading batch axis of
+            size 1 (see :meth:`get_sampler` for the shape convention). A batch
+            axis > 1 warns and the first observation is used.
         use_ema : bool, optional
             If ``True`` (default), use the EMA model.
 

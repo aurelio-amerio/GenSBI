@@ -5,9 +5,21 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
+import pytest
+
 from gensbi.core.prior import make_gaussian_prior
 from gensbi.models import MAFlow, MAFlowParams
 from gensbi.inference import NLEPosterior, MCLMC
+from gensbi.inference.samplers import _check_rescale_domain
+
+
+def test_check_rescale_domain_guard():
+    # mu > 0.5 is in-domain (no raise); mu <= 0.5 raises with a clear message.
+    _check_rescale_domain(2.0)
+    _check_rescale_domain(0.5 + 1e-3)
+    for bad in (0.5, 0.25, 0.0):
+        with pytest.raises(ValueError, match="L/step_size"):
+            _check_rescale_domain(bad)
 
 
 class GaussianMock:

@@ -206,8 +206,9 @@ class MaskedAutoregressive(Bijection):
 
         Runs a sequential ``lax.scan`` over dimensions: each step calls the
         MADE network on the partially-built output to obtain parameters for
-        the next dimension.  The log-absolute-determinant is computed in a
-        final parallel pass once all dimensions are filled.
+        the next dimension.  Because dimension ``i``'s parameters depend only on
+        dimensions ``< i`` (already final), the per-dimension log-determinant is
+        accumulated inside the scan, avoiding a second full MADE pass.
 
         Parameters
         ----------
@@ -225,12 +226,12 @@ class MaskedAutoregressive(Bijection):
         """
         def body(x, i):
             params = self.made(x, cond)
-            x_i = self.transformer.forward_dim(u[i], params[i])
-            return x.at[i].set(x_i), None
+            # params[i] depends only on x[<i] (already final), so x_i and its
+            # logdet contribution are final at step i.
+            x_i, logdet_i = self.transformer.forward_dim(u[i], params[i])
+            return x.at[i].set(x_i), logdet_i
 
         x0 = jnp.zeros_like(u)
-        x, _ = jax.lax.scan(body, x0, jnp.arange(self.dim))
-        # log-det from the completed x (forward logdet = +sum(a))
-        params = self.made(x, cond)
-        _, logdet = self.transformer.forward(u, params)
+        x, logdet_steps = jax.lax.scan(body, x0, jnp.arange(self.dim))
+        logdet = jnp.sum(logdet_steps)                    # forward logdet = +sum(a)
         return x, logdet
