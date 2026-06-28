@@ -27,6 +27,39 @@ class MAFlowParams:
 
     Only ``rngs`` and ``dim`` are required. ``transformer`` defaults to
     ``Affine()`` (pass ``RQSpline()`` for a spline flow).
+
+    Parameters
+    ----------
+    rngs : nnx.Rngs
+        Flax RNG container used to initialise all trainable parameters.
+    dim : int
+        Dimensionality of the target variable.
+    cond_dim : int, optional
+        Dimensionality of the conditioning input.  Default is 0 (unconditional).
+    n_layers : int, optional
+        Number of :class:`~gensbi.models.maf.made.MaskedAutoregressive` layers.
+        Default is 5.
+    transformer : Bijection or None, optional
+        Elementwise bijection used by each autoregressive layer.  If ``None``
+        (default), an
+        :class:`~gensbi.normalizing_flows.bijections.transformers.Affine`
+        bijection is constructed automatically in ``__post_init__``.
+    nn_width : int, optional
+        Width of each hidden layer in the MADE conditioner network.
+        Default is 64.
+    nn_depth : int, optional
+        Number of hidden layers in the MADE conditioner network.  Default is 2.
+    permutation : str, optional
+        Permutation applied between autoregressive layers.  ``"reverse"``
+        (default) reverses the dimension ordering; ``"random"`` applies a
+        random shuffle sampled at construction time.
+    standardize : bool, optional
+        If ``True`` (default), append a
+        :class:`~gensbi.normalizing_flows.bijections.standardize.Standardize`
+        bijection at the data end of the chain.
+    zero_init : bool, optional
+        If ``True`` (default), zero-initialise the output layer of each MADE
+        network so the flow starts as an identity transform.
     """
 
     rngs: nnx.Rngs
@@ -48,11 +81,22 @@ class MAFlowParams:
 
 
 class MAFlow(nnx.Module):
-    """Affine/spline MAF over ``(batch, dim)`` data, optionally conditioned.
+    """Masked Autoregressive Flow for exact density evaluation and sampling.
 
-    ``log_prob(x, cond) = base.log_prob(u) + logdet`` with
-    ``u, logdet = chain.inverse(x, cond)``; the base is a standard normal over
-    ``(dim,)`` built lazily so it never enters nnx state.
+    Stacks :class:`~gensbi.models.maf.made.MaskedAutoregressive` layers
+    separated by permutations, with an optional data-end
+    :class:`~gensbi.normalizing_flows.bijections.standardize.Standardize`
+    bijection, over a standard-normal base distribution.
+
+    Log-density follows the change-of-variables formula:
+    ``log_prob(x, cond) = base.log_prob(u) + logdet``, where
+    ``u, logdet = chain.inverse(x, cond)``.  The base distribution is built
+    lazily and never enters ``nnx`` state.
+
+    Parameters
+    ----------
+    params : MAFlowParams
+        Full architecture configuration; see :class:`MAFlowParams`.
     """
 
     def __init__(self, params: MAFlowParams):
@@ -79,6 +123,21 @@ class MAFlow(nnx.Module):
         return make_gaussian_prior((self.dim,))
 
     def log_prob(self, x: Array, cond: Array | None = None) -> Array:
+        """Compute the change-of-variables log-density for a batch of samples.
+
+        Parameters
+        ----------
+        x : Array
+            Data batch of shape ``(batch, dim)``.
+        cond : Array or None, optional
+            Conditioning batch of shape ``(batch, cond_dim)``, or ``None`` for
+            an unconditional model.
+
+        Returns
+        -------
+        Array
+            Log-probability of shape ``(batch,)``.
+        """
         base = self._base()
 
         def single(x_i, cond_i):
@@ -90,6 +149,24 @@ class MAFlow(nnx.Module):
         return jax.vmap(single)(x, cond)
 
     def sample(self, key, cond: Array | None = None, nsamples: int | None = None) -> Array:
+        """Draw samples from the flow.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key.
+        cond : Array or None, optional
+            Conditioning batch of shape ``(nsamples, cond_dim)``.  If provided,
+            the number of samples is inferred from ``cond.shape[0]`` and
+            ``nsamples`` is ignored.
+        nsamples : int or None, optional
+            Number of samples to draw.  Required when ``cond`` is ``None``.
+
+        Returns
+        -------
+        Array
+            Sample array of shape ``(nsamples, dim)``.
+        """
         base = self._base()
         if cond is not None:
             nsamples = cond.shape[0]

@@ -53,14 +53,26 @@ class MADE(nnx.Module):
 
     Parameters
     ----------
-    dim : int               Autoregressive (target) dimension.
-    cond_dim : int          Conditioning dimension; 0 for unconditional.
-    num_params : int        Transform params per dim (Affine: 2).
-    nn_width, nn_depth : int
+    dim : int
+        Autoregressive (target) dimension.
+    cond_dim : int
+        Conditioning dimension; 0 for unconditional.
+    num_params : int
+        Transform parameters per dimension (e.g. 2 for an Affine transformer).
+    nn_width : int
+        Width of each masked hidden layer.
+    nn_depth : int
+        Number of masked hidden layers.
     rngs : nnx.Rngs
-    zero_init : bool        Identity warm-start: zero the output layer so all
-                            transform params start at 0 (Affine -> identity).
-                            Default True; tests pass False so the net is live.
+        Flax RNG container for parameter initialisation.
+    zero_init : bool, optional
+        If ``True`` (default), zero-initialise the output layer so that all
+        transform parameters start at 0 (Affine becomes the identity).
+    param_dtype : DTypeLike, optional
+        Dtype for all kernel and bias parameters.  Default is ``float32``.
+    activation : callable, optional
+        Element-wise activation applied after each hidden layer.
+        Default is :func:`jax.nn.silu`.
     """
 
     def __init__(self, dim, cond_dim, num_params, nn_width, nn_depth, rngs,
@@ -94,6 +106,21 @@ class MADE(nnx.Module):
                 self.output_layer.linear.bias[...])
 
     def __call__(self, x: Array, cond: Array | None = None) -> Array:
+        """Compute the transform-parameter array from input and optional conditioning.
+
+        Parameters
+        ----------
+        x : Array
+            Data input of shape ``(dim,)``.
+        cond : Array or None, optional
+            Conditioning input of shape ``(cond_dim,)``, or ``None`` for an
+            unconditional conditioner.  Required when ``cond_dim > 0``.
+
+        Returns
+        -------
+        Array
+            Transform-parameter array of shape ``(dim, num_params)``.
+        """
         if self.cond_dim > 0:
             if cond is None:
                 raise ValueError(
@@ -109,10 +136,32 @@ class MADE(nnx.Module):
 
 
 class MaskedAutoregressive(Bijection):
-    """MADE conditioner + elementwise transformer = one autoregressive flow step.
+    """MADE conditioner coupled with an elementwise transformer: one MAF layer.
 
-    inverse (data->noise) is one MADE pass (fast); forward (noise->data) is a
-    sequential ``lax.scan`` over dims (slow).
+    Implements the :class:`~gensbi.normalizing_flows.bijections.base.Bijection`
+    contract.  :meth:`inverse` maps data to noise in a single parallel MADE
+    pass (fast); :meth:`forward` maps noise to data via a sequential
+    ``lax.scan`` over dimensions (slow).
+
+    Parameters
+    ----------
+    dim : int
+        Dimensionality of the target variable.
+    cond_dim : int
+        Dimensionality of the conditioning input; 0 for unconditional.
+    transformer : Bijection
+        Elementwise bijection (e.g.
+        :class:`~gensbi.normalizing_flows.bijections.transformers.Affine`)
+        whose parameters are predicted by the MADE network.
+    nn_width : int
+        Width of each hidden layer in the MADE network.
+    nn_depth : int
+        Number of hidden layers in the MADE network.
+    rngs : nnx.Rngs
+        Flax RNG container for parameter initialisation.
+    zero_init : bool, optional
+        If ``True`` (default), zero-initialise the MADE output layer so that
+        the flow starts as an identity transform.
     """
 
     def __init__(self, dim, cond_dim, transformer, nn_width, nn_depth, rngs,
@@ -125,10 +174,50 @@ class MaskedAutoregressive(Bijection):
                          zero_init=zero_init, rngs=rngs)
 
     def inverse(self, x: Array, cond: Array | None = None):
+        """Map data to noise (the density-evaluation direction).
+
+        Runs a single parallel MADE forward pass to obtain the transform
+        parameters, then applies the elementwise transformer inverse to ``x``.
+
+        Parameters
+        ----------
+        x : Array
+            Data-space input of shape ``(dim,)``.
+        cond : Array or None, optional
+            Conditioning input, or ``None`` for an unconditional map.
+
+        Returns
+        -------
+        u : Array
+            Noise-space output of shape ``(dim,)``.
+        logabsdet : Array
+            Log absolute determinant of the Jacobian of the inverse map.
+        """
         params = self.made(x, cond)              # (dim, num_params), single pass
         return self.transformer.inverse(x, params)
 
     def forward(self, u: Array, cond: Array | None = None):
+        """Map noise to data (the sampling direction).
+
+        Runs a sequential ``lax.scan`` over dimensions: each step calls the
+        MADE network on the partially-built output to obtain parameters for
+        the next dimension.  The log-absolute-determinant is computed in a
+        final parallel pass once all dimensions are filled.
+
+        Parameters
+        ----------
+        u : Array
+            Noise-space input of shape ``(dim,)``.
+        cond : Array or None, optional
+            Conditioning input, or ``None`` for an unconditional map.
+
+        Returns
+        -------
+        x : Array
+            Data-space output of shape ``(dim,)``.
+        logabsdet : Array
+            Log absolute determinant of the Jacobian of the forward map.
+        """
         def body(x, i):
             params = self.made(x, cond)
             x_i = self.transformer.forward_dim(u[i], params[i])
