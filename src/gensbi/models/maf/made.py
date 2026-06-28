@@ -120,6 +120,11 @@ class MADE(nnx.Module):
         -------
         Array
             Transform-parameter array of shape ``(dim, num_params)``.
+
+        Raises
+        ------
+        ValueError
+            If ``cond_dim > 0`` and ``cond`` is ``None``.
         """
         if self.cond_dim > 0:
             if cond is None:
