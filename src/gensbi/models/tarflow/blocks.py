@@ -16,10 +16,22 @@ INV_SOFTPLUS_1 = 0.541324854612918  # softplus(INV_SOFTPLUS_1) == 1.0 -> identit
 
 
 class AttentionBlock(nnx.Module):
-    """Pre-norm residual block: causal self-attention + MLP.
+    """Pre-norm residual block combining causal self-attention and an MLP.
 
-    LayerNorm is over the channel axis only (never across tokens), so it does
-    not leak future tokens into earlier ones.
+    LayerNorm is applied over the channel axis only (not across tokens),
+    so no future-token information leaks into earlier positions.
+
+    Parameters
+    ----------
+    channels : int
+        Token embedding width. Must be divisible by ``num_heads``.
+    num_heads : int
+        Number of attention heads.
+    expansion : int
+        MLP hidden-size multiplier; the MLP has ``channels * expansion``
+        neurons in its hidden layer.
+    rngs : nnx.Rngs
+        Flax RNG container used to initialize all sub-layers.
     """
 
     def __init__(self, channels: int, num_heads: int, expansion: int,
@@ -37,6 +49,21 @@ class AttentionBlock(nnx.Module):
         self.mlp_out = nnx.Linear(channels * expansion, channels, rngs=rngs)
 
     def __call__(self, x: Array, mask: Array | None = None) -> Array:
+        """Apply pre-norm residual self-attention followed by a residual MLP.
+
+        Parameters
+        ----------
+        x : Array
+            Token sequence of shape ``(B, T, C)``.
+        mask : Array or None, optional
+            Attention mask of shape broadcastable to ``(1, 1, T, T)``, e.g. a
+            prefix-causal mask. If ``None``, a standard causal mask is used.
+
+        Returns
+        -------
+        Array
+            Output token sequence of shape ``(B, T, C)``.
+        """
         B, T, C = x.shape
         h = self.norm1(x)
         qkv = self.qkv(h).reshape(B, T, 3, self.num_heads, self.head_dim)
@@ -53,14 +80,49 @@ class AttentionBlock(nnx.Module):
 class MetaBlock(nnx.Module):
     """One exact autoregressive bijection over a token sequence.
 
-    inverse (data→noise): per-token affine ``z = (x − b)·inv_scale`` with
-    ``(a, b)`` produced by causal attention + shift-by-one, so token i's params
-    depend only on tokens < i ⇒ triangular Jacobian, ``logdet = −Σ log_scale``.
-    The ``(scale, inv_scale, log_scale)`` triple comes from ``_affine``: softplus
-    by default (bounded tail, identity at zero-init), or legacy ``exp``
-    (``scale=exp(a)``, ``log_scale=a``) when ``use_softplus=False``.
-    forward (noise→data): sequential scan re-running the causal pass on the
-    partially-built sequence (mirrors ``MaskedAutoregressive.forward``).
+    Implements the :class:`~gensbi.normalizing_flows.bijections.base.Bijection`
+    direction contract: :meth:`inverse` maps data to noise (density-evaluation
+    direction) via a single parallel affine pass with a triangular Jacobian;
+    :meth:`forward` maps noise to data (sampling direction) via a sequential
+    causal scan that re-runs the attention pass at each token position.
+
+    The affine scale is computed via softplus by default (bounded tail,
+    identity at zero-init) or via ``exp`` when ``use_softplus=False`` (legacy).
+
+    Parameters
+    ----------
+    F : int
+        Feature dimension per token (number of input channels per token).
+    channels : int
+        Internal embedding width for the transformer blocks.
+    T : int
+        Number of tokens in the sequence.
+    perm : Array
+        Token permutation applied before the affine transform.
+    inv_perm : Array
+        Inverse permutation of ``perm``; applied after the affine transform.
+    conditioner : VectorConditioner or VectorPrefixConditioner or ImagePrefixConditioner
+        Module that provides ``(bias, prefix)`` conditioning signals via its
+        ``embed`` method.
+    num_layers : int
+        Number of :class:`AttentionBlock` layers stacked inside this block.
+    num_heads : int
+        Number of attention heads passed to each :class:`AttentionBlock`.
+    expansion : int
+        MLP expansion factor passed to each :class:`AttentionBlock`.
+    rngs : nnx.Rngs
+        Flax RNG container used to initialize all sub-layers.
+    zero_init : bool, optional
+        If ``True`` (default), initialize the output projection ``proj_out``
+        to zero so the block starts as the identity map.
+    use_softplus : bool, optional
+        If ``True`` (default), use softplus to compute the affine scale
+        (numerically stable, bounded tail). If ``False``, use ``exp``
+        (legacy behavior).
+    soft_clip : float, optional
+        Soft-clip magnitude applied via ``tanh`` to raw network outputs
+        before splitting into ``(a, b)``. Default is ``4.0``. Set to ``0``
+        to disable clipping.
     """
 
     def __init__(self, F, channels, T, perm, inv_perm, conditioner,
@@ -138,6 +200,31 @@ class MetaBlock(nnx.Module):
         return a, b
 
     def inverse(self, x: Array, cond: Array | None = None):
+        """Map data to noise (the density-evaluation direction).
+
+        Applies a per-token parallel affine transform
+        ``z = (x − b) · inv_scale`` after permuting tokens. Token ``i``'s
+        parameters ``(a, b)`` depend only on tokens at positions ``< i``
+        (causal attention on a shift-by-one input), giving a triangular
+        Jacobian computable in a single forward pass.
+
+        Parameters
+        ----------
+        x : Array
+            Data-space token sequence of shape ``(B, T, F)`` or a flat array
+            that will be reshaped to ``(B, T, F)``.
+        cond : Array or None, optional
+            Conditioning input, or ``None`` for an unconditional transform.
+
+        Returns
+        -------
+        z : Array
+            Noise-space output of shape ``(B, T, F)``.
+        logabsdet : Array
+            Log absolute determinant of the Jacobian of the inverse map,
+            shape ``(B,)``. Equal to ``-Σ log_scale`` over token and feature
+            dimensions.
+        """
         x = x.reshape(x.shape[0], self.T, self.F)
         xp = x[:, self.perm[...]]
         a, b = self._params(xp, cond)
@@ -148,6 +235,30 @@ class MetaBlock(nnx.Module):
         return z, logdet
 
     def forward(self, z: Array, cond: Array | None = None):
+        """Map noise to data (the sampling direction).
+
+        Sequentially scans over token positions via ``jax.lax.scan``,
+        re-running the causal attention pass at each step so that token
+        ``i``'s parameters are conditioned on already-generated tokens
+        ``0, …, i-1`` (mirrors ``MaskedAutoregressive.forward``).
+
+        Parameters
+        ----------
+        z : Array
+            Noise-space token sequence of shape ``(B, T, F)`` or a flat array
+            that will be reshaped to ``(B, T, F)``.
+        cond : Array or None, optional
+            Conditioning input, or ``None`` for an unconditional transform.
+
+        Returns
+        -------
+        x : Array
+            Data-space output of shape ``(B, T, F)``.
+        logabsdet : Array
+            Log absolute determinant of the Jacobian of the forward map,
+            shape ``(B,)``. Equal to ``+Σ log_scale`` over token and feature
+            dimensions.
+        """
         z = z.reshape(z.shape[0], self.T, self.F)
         zp = z[:, self.perm[...]]
 

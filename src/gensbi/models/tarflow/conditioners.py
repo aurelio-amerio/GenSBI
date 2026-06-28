@@ -19,7 +19,22 @@ from gensbi.models.core.patching import patchify_2d
 
 
 class VectorConditioner(nnx.Module):
-    """MLP(cond) → per-token additive bias. ``cond_dim == 0`` ⇒ unconditional."""
+    """Embed a vector condition as a per-token additive bias.
+
+    A two-layer MLP maps the condition to a ``channels``-dimensional vector
+    that is broadcast-added to every token in the sequence. When
+    ``cond_dim == 0`` the conditioner is unconditional and :meth:`embed`
+    returns ``(None, None)``.
+
+    Parameters
+    ----------
+    cond_dim : int
+        Condition dimensionality. Set to ``0`` for an unconditional model.
+    channels : int
+        Output channel width matching the transformer embedding dimension.
+    rngs : nnx.Rngs
+        Flax RNG container for linear layer initialization.
+    """
 
     def __init__(self, cond_dim: int, channels: int, rngs: nnx.Rngs):
         self.cond_dim = cond_dim
@@ -28,7 +43,27 @@ class VectorConditioner(nnx.Module):
             self.l2 = nnx.Linear(channels, channels, rngs=rngs)
 
     def embed(self, cond: Array | None):
-        """Return ``(bias, prefix)``; VectorConditioner only sets ``bias``."""
+        """Embed the condition into a per-token additive bias.
+
+        Parameters
+        ----------
+        cond : Array or None
+            Condition vector of shape ``(B, cond_dim)``, or ``None`` when the
+            model is unconditional (``cond_dim == 0``).
+
+        Returns
+        -------
+        bias : Array or None
+            Per-token additive bias of shape ``(B, channels)``, or ``None``
+            when ``cond_dim == 0``.
+        prefix : None
+            This conditioner does not produce prefix tokens; always ``None``.
+
+        Raises
+        ------
+        ValueError
+            If ``cond`` is ``None`` when ``cond_dim > 0``.
+        """
         if self.cond_dim == 0:
             return (None, None)
         if cond is None:
@@ -39,7 +74,23 @@ class VectorConditioner(nnx.Module):
 
 
 class VectorPrefixConditioner(nnx.Module):
-    """Vector condition → ``num_tokens`` prefix tokens ``(B, M, channels)``."""
+    """Embed a vector condition as prefix tokens prepended to the sequence.
+
+    A linear projection maps the condition to ``num_tokens`` prefix tokens of
+    width ``channels``, with learned positional embeddings added.
+
+    Parameters
+    ----------
+    cond_dim : int
+        Condition dimensionality.
+    channels : int
+        Output channel width matching the transformer embedding dimension.
+    num_tokens : int
+        Number of prefix tokens to produce (``M``).
+    rngs : nnx.Rngs
+        Flax RNG container for linear layer and positional embedding
+        initialization.
+    """
 
     def __init__(self, cond_dim: int, channels: int, num_tokens: int, rngs: nnx.Rngs):
         self.channels = channels
@@ -49,6 +100,27 @@ class VectorPrefixConditioner(nnx.Module):
             jax.random.normal(rngs.params(), (num_tokens, channels)) * 1e-2)
 
     def embed(self, cond: Array | None):
+        """Embed the condition into prefix tokens.
+
+        Parameters
+        ----------
+        cond : Array or None
+            Condition vector of shape ``(B, cond_dim)``.
+
+        Returns
+        -------
+        bias : None
+            This conditioner does not produce a per-token additive bias;
+            always ``None``.
+        prefix : Array or None
+            Prefix token sequence of shape ``(B, num_tokens, channels)`` with
+            learned positional embeddings added.
+
+        Raises
+        ------
+        ValueError
+            If ``cond`` is ``None``.
+        """
         if cond is None:
             raise ValueError("cond is required for VectorPrefixConditioner")
         B = cond.shape[0]
@@ -57,7 +129,28 @@ class VectorPrefixConditioner(nnx.Module):
 
 
 class ImagePrefixConditioner(nnx.Module):
-    """Image condition ``(B, H, W, C)`` → ``M = (H/p)(W/p)`` prefix tokens."""
+    """Embed an image condition as prefix tokens prepended to the sequence.
+
+    Patchifies a spatial image ``(B, H, W, C)`` into
+    ``M = (H / patch_size) * (W / patch_size)`` flat patch vectors, projects
+    each patch to ``channels`` dimensions, and adds learned positional
+    embeddings.
+
+    Parameters
+    ----------
+    cond_channels : int
+        Number of channels in the conditioning image.
+    patch_size : int
+        Spatial size of each square patch (height and width in pixels).
+    channels : int
+        Output channel width matching the transformer embedding dimension.
+    num_tokens : int
+        Number of prefix tokens; must equal
+        ``(H / patch_size) * (W / patch_size)``.
+    rngs : nnx.Rngs
+        Flax RNG container for projection layer and positional embedding
+        initialization.
+    """
 
     def __init__(self, cond_channels: int, patch_size: int, channels: int,
                  num_tokens: int, rngs: nnx.Rngs):
@@ -70,6 +163,27 @@ class ImagePrefixConditioner(nnx.Module):
             jax.random.normal(rngs.params(), (num_tokens, channels)) * 1e-2)
 
     def embed(self, cond: Array | None):
+        """Patchify an image condition and embed it as prefix tokens.
+
+        Parameters
+        ----------
+        cond : Array or None
+            Image condition of shape ``(B, H, W, C)``.
+
+        Returns
+        -------
+        bias : None
+            This conditioner does not produce a per-token additive bias;
+            always ``None``.
+        prefix : Array or None
+            Prefix token sequence of shape ``(B, num_tokens, channels)`` with
+            learned positional embeddings added.
+
+        Raises
+        ------
+        ValueError
+            If ``cond`` is ``None``.
+        """
         if cond is None:
             raise ValueError("cond is required for ImagePrefixConditioner")
         patches = patchify_2d(cond, size=self.patch_size)      # (B, M, in_f)

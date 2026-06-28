@@ -30,9 +30,82 @@ _LOG2PI = jnp.log(2.0 * jnp.pi)
 class TarFlowParams:
     """Architecture parameters for :class:`TarFlow`.
 
-    ``modeled`` selects the tokenizer (vector/image); ``cond`` selects the
-    conditioner (additive bias / vector-prefix / image-prefix). Head sizing is
-    ``(head_dim, num_heads)`` with ``channels = head_dim * num_heads`` derived.
+    ``modeled`` selects the tokenizer (``"vector"`` or ``"image"``); ``cond``
+    selects the conditioner (``"add"``, ``"vector_prefix"``, or
+    ``"image_prefix"``). Head sizing follows the Flux1 convention: specify
+    ``head_dim`` and ``num_heads``; total width
+    ``channels = head_dim * num_heads`` is derived in ``__post_init__``.
+
+    Parameters
+    ----------
+    rngs : nnx.Rngs
+        Flax RNG container passed to all sub-modules during construction.
+    dim : int or None, optional
+        Feature dimension of each input vector. Required when
+        ``modeled="vector"``. Default is ``None``.
+    cond_dim : int, optional
+        Dimensionality of the conditioning vector. Set to ``0`` for an
+        unconditional model. Default is ``0``.
+    modeled : str, optional
+        Tokenizer type: ``"vector"`` (1-D data) or ``"image"`` (spatial data).
+        Default is ``"vector"``.
+    img_size : int or None, optional
+        Spatial size (height = width) of the modeled image. Required when
+        ``modeled="image"``. Default is ``None``.
+    patch_size : int or None, optional
+        Patch size for the image tokenizer. Required when
+        ``modeled="image"``. Default is ``None``.
+    img_channels : int, optional
+        Number of channels in the modeled image. Default is ``1``.
+    cond : str, optional
+        Conditioning strategy: ``"add"`` (per-token additive bias via
+        :class:`~gensbi.models.tarflow.conditioners.VectorConditioner`),
+        ``"vector_prefix"`` (prefix tokens from a vector via
+        :class:`~gensbi.models.tarflow.conditioners.VectorPrefixConditioner`),
+        or ``"image_prefix"`` (prefix tokens from an image via
+        :class:`~gensbi.models.tarflow.conditioners.ImagePrefixConditioner`).
+        Default is ``"add"``.
+    cond_img_size : int or None, optional
+        Spatial size of the conditioning image. Required when
+        ``cond="image_prefix"``. Default is ``None``.
+    cond_patch_size : int or None, optional
+        Patch size for the image conditioning tokenizer. Required when
+        ``cond="image_prefix"``. Default is ``None``.
+    cond_channels : int, optional
+        Number of channels in the conditioning image. Default is ``1``.
+    prefix_tokens : int, optional
+        Number of prefix tokens produced by ``cond="vector_prefix"``.
+        Default is ``1``.
+    head_dim : int, optional
+        Dimension per attention head. Default is ``16``.
+    num_heads : int, optional
+        Number of attention heads per block. Default is ``4``.
+    num_blocks : int, optional
+        Number of :class:`~gensbi.models.tarflow.blocks.MetaBlock` layers.
+        Default is ``8``.
+    layers_per_block : int, optional
+        Number of :class:`~gensbi.models.tarflow.blocks.AttentionBlock`
+        layers inside each :class:`~gensbi.models.tarflow.blocks.MetaBlock`.
+        Default is ``2``.
+    block_size : int, optional
+        Token grouping factor for the vector tokenizer. Default is ``1``.
+    permutation : str, optional
+        Token permutation strategy per block: ``"flip"`` (alternate
+        forward/reverse order) or ``"random"`` (independently sampled per
+        block). Default is ``"flip"``.
+    standardize : bool, optional
+        If ``True`` (default), apply mean/std standardization to inputs and
+        outputs. Enables :meth:`TarFlow.set_standardization`.
+    zero_init : bool, optional
+        If ``True`` (default), initialize ``proj_out`` weights to zero so
+        each :class:`~gensbi.models.tarflow.blocks.MetaBlock` starts as the
+        identity map.
+    use_softplus : bool, optional
+        If ``True`` (default), use softplus for the affine scale (numerically
+        stable, bounded tail). If ``False``, use ``exp`` (legacy behavior).
+    soft_clip : float, optional
+        Soft-clip magnitude applied via ``tanh`` to raw network outputs before
+        splitting into ``(a, b)``. Default is ``4.0``.
     """
 
     rngs: nnx.Rngs
@@ -75,7 +148,18 @@ class TarFlowParams:
 
 
 class TarFlow(nnx.Module):
-    """Stack of MetaBlocks + tokenizer + standardization + N(0, I) base."""
+    """Transformer autoregressive normalizing flow density model.
+
+    Stacks :class:`~gensbi.models.tarflow.blocks.MetaBlock` bijections with
+    alternating token permutations on top of a tokenizer and an isotropic
+    Gaussian base distribution. Supports both vector and image data, with
+    optional input standardization.
+
+    Parameters
+    ----------
+    params : TarFlowParams
+        Architecture and initialization parameters.
+    """
 
     def __init__(self, params: TarFlowParams):
         rngs = params.rngs
@@ -133,6 +217,28 @@ class TarFlow(nnx.Module):
         return x
 
     def log_prob(self, x: Array, cond: Array | None = None) -> Array:
+        """Compute the log-probability of data under the model.
+
+        Applies standardization, tokenizes the input, then runs each
+        :class:`~gensbi.models.tarflow.blocks.MetaBlock`'s
+        :meth:`~gensbi.models.tarflow.blocks.MetaBlock.inverse` transform
+        (data→noise direction), accumulating the log-absolute-determinant
+        terms, and finally evaluates the base Gaussian log-probability.
+
+        Parameters
+        ----------
+        x : Array
+            Data samples of shape ``(B, *example_shape)`` or a single
+            unbatched sample that will be promoted to a batch of one.
+        cond : Array or None, optional
+            Conditioning input of shape ``(B, cond_dim)``, or ``None`` for
+            an unconditional model.
+
+        Returns
+        -------
+        Array
+            Log-probabilities of shape ``(B,)``.
+        """
         x = self._ensure_batched(x)
         u = (x - self.mean[...]) / self.std[...]
         logdet = -jnp.sum(jnp.log(self.std[...]))
@@ -144,6 +250,29 @@ class TarFlow(nnx.Module):
         return self._base_log_prob(z) + total
 
     def sample(self, key, cond: Array | None = None, nsamples: int | None = None):
+        """Draw samples from the model.
+
+        Samples noise from ``N(0, I)``, then applies each
+        :class:`~gensbi.models.tarflow.blocks.MetaBlock`'s
+        :meth:`~gensbi.models.tarflow.blocks.MetaBlock.forward` transform
+        (noise→data direction) in reverse block order, detokenizes the
+        result, and applies the inverse standardization.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key for noise sampling.
+        cond : Array or None, optional
+            Conditioning input of shape ``(B, cond_dim)``. If provided,
+            ``nsamples`` is inferred from ``cond.shape[0]``.
+        nsamples : int or None, optional
+            Number of samples to draw. Required when ``cond`` is ``None``.
+
+        Returns
+        -------
+        Array
+            Samples of shape ``(B, *example_shape)``.
+        """
         if cond is not None:
             nsamples = cond.shape[0]
         z = jax.random.normal(key, (nsamples, self.T, self.F))
@@ -154,6 +283,24 @@ class TarFlow(nnx.Module):
         return x * self.std[...] + self.mean[...]
 
     def set_standardization(self, mean, std) -> None:
+        """Set the mean and standard deviation for input standardization.
+
+        Parameters
+        ----------
+        mean : Array
+            Per-element mean of shape ``example_shape``.
+        std : Array
+            Per-element standard deviation of shape ``example_shape``.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If the model was built with ``standardize=False``.
+        """
         if not self._standardize:
             raise ValueError("TarFlow built with standardize=False")
         self.mean[...] = jnp.asarray(mean, dtype=self.mean[...].dtype)
