@@ -137,12 +137,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
         self._standardized = False
         self.structured_obs = structured_obs
         self.structured_cond = structured_cond
+        self._obs_passthrough = structured_obs or ch_obs > 1
+        self._cond_passthrough = structured_cond or ch_cond > 1
 
     def _prep_obs(self, x):
-        return x if self.structured_obs else _squeeze_ch(x)
+        return x if self._obs_passthrough else _squeeze_ch(x)
 
     def _prep_cond(self, x):
-        return x if self.structured_cond else _squeeze_ch(x)
+        return x if self._cond_passthrough else _squeeze_ch(x)
 
     # --- abstract methods the flow pipeline does not use (mirror ConditionalPipeline) ---
     @classmethod
@@ -208,7 +210,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         return loss_fn
 
-    def fit_standardization(self, obs_data):
+    def fit_standardization(self, obs_data, axis=0):
         """Fit the Standardize bijection buffers from training observations.
 
         Computes per-dimension mean and standard deviation of ``obs_data``
@@ -222,13 +224,19 @@ class ConditionalFlowPipeline(AbstractPipeline):
         obs_data : Array
             Training observations of shape ``(N, dim_obs)`` or
             ``(N, dim_obs, 1)`` (the autoregressive target; e.g. theta for
-            NPE).
+            NPE).  For multichannel flows (``ch_obs > 1``) the shape is
+            ``(N, dim_obs, C)`` and ``axis=(0, 1)`` yields per-channel stats.
+        axis : int or tuple of int, optional
+            Reduction axis or axes for the mean/std computation.  Default
+            is ``0`` (per-dimension stats over the batch), which is the
+            correct choice for the tabular (``C == 1``) path.  Pass
+            ``axis=(0, 1)`` for per-channel standardization when ``C > 1``.
         """
         obs = jnp.asarray(obs_data)
-        if not self.structured_obs and obs.ndim == 3:
+        if not self._obs_passthrough and obs.ndim == 3:
             obs = _squeeze_ch(obs)
-        mean = jnp.mean(obs, axis=0)
-        std = jnp.std(obs, axis=0)
+        mean = jnp.mean(obs, axis=axis)
+        std = jnp.std(obs, axis=axis)
         std = jnp.where(std < 1e-6, 1.0, std)     # guard zero-variance dims
         self.model.set_standardization(mean, std)
         self.ema_model.set_standardization(mean, std)
@@ -299,20 +307,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
-        if self.structured_cond:
+        if self._cond_passthrough:
             cond = _structured_cond(x_o)             # strip the leading batch axis
 
             def sampler(key, nsamples):
                 cond_b = jnp.broadcast_to(cond, (nsamples,) + cond.shape)
-                return flow.sample(key, cond=cond_b)  # (nsamples, dim_obs)
+                return flow.sample(key, cond=cond_b)  # model owns the output shape
             return sampler
 
-        cond = _single_cond(x_o)                      # (dim_cond,)  [v1 path]
+        cond = _single_cond(x_o)                      # (dim_cond,)  [tabular path]
 
         def sampler(key, nsamples):
             cond_b = jnp.broadcast_to(cond, (nsamples, cond.shape[0]))
-            samples = flow.sample(key, cond=cond_b)    # (nsamples, dim_obs)
-            return _expand_dims(samples)               # (nsamples, dim_obs, 1)
+            samples = flow.sample(key, cond=cond_b)    # (nsamples, dim_obs[, C])
+            return samples if self._obs_passthrough else _expand_dims(samples)
 
         return sampler
 
@@ -410,7 +418,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
-        if self.structured_cond:
+        if self._cond_passthrough:
             cond = _structured_cond(x_o)             # strip the leading batch axis
 
             def log_prob_fn(x_1):
@@ -419,12 +427,12 @@ class ConditionalFlowPipeline(AbstractPipeline):
                 return flow.log_prob(obs, cond_b)
             return log_prob_fn
 
-        cond = _single_cond(x_o)                  # (dim_cond,)  [v1 path]
+        cond = _single_cond(x_o)                  # (dim_cond,)  [tabular path]
 
         def log_prob_fn(x_1):
-            obs = self._prep_obs(x_1)              # (B, dim_obs)
+            obs = self._prep_obs(x_1)             # (B, dim_obs[, C])
             cond_b = jnp.broadcast_to(cond, (obs.shape[0], cond.shape[0]))
-            return flow.log_prob(obs, cond_b)      # (B,)
+            return flow.log_prob(obs, cond_b)     # (B,)
 
         return log_prob_fn
 

@@ -245,3 +245,52 @@ def test_known_calls_do_not_warn(recwarn):
     pipe.get_sampler(jnp.zeros((1, DIM_COND)))
     assert not any(
         "ignores unsupported" in str(w.message) for w in recwarn.list)
+
+
+# ---------------------------------------------------------------------------
+# Multichannel passthrough tests (Task 5)
+# ---------------------------------------------------------------------------
+
+def _build_multichannel_pipeline():
+    CH = 2
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND,
+                               channels=CH, n_layers=4, nn_width=32, nn_depth=2,
+                               standardize=True))
+    # obs carries a channel axis (N, DIM_OBS, CH); cond stays tabular (N, DIM_COND, 1)
+    theta_c = jnp.broadcast_to(_theta[:, :, None], (N, DIM_OBS, CH))
+    data = (theta_c, jnp.broadcast_to(_x[:, :, None], (N, DIM_COND, 1)))
+
+    def gen(arr_obs, arr_cond, bs=128):
+        idx = grain.MapDataset.source(np.arange(arr_obs.shape[0]))
+        return (idx.shuffle(0).repeat().to_iter_dataset().batch(bs)
+                .map(lambda i: (np.array(arr_obs)[i], np.array(arr_cond)[i])))
+
+    train_ds = gen(data[0][:800], data[1][:800])
+    val_ds = gen(data[0][800:], data[1][800:])
+    tc = ConditionalFlowPipeline.get_default_training_config()
+    tc["val_every"] = 1
+    return ConditionalFlowPipeline(
+        flow, train_ds, val_ds, DIM_OBS, DIM_COND,
+        ch_obs=CH, ch_cond=1, training_config=tc)
+
+
+def test_multichannel_prep_obs_passthrough():
+    pipe = _build_multichannel_pipeline()
+    x = jnp.zeros((5, DIM_OBS, 2))
+    assert pipe._prep_obs(x).shape == (5, DIM_OBS, 2)   # NOT squeezed
+
+
+def test_multichannel_sample_and_logprob_shapes():
+    pipe = _build_multichannel_pipeline()
+    x_o = jnp.zeros((1, DIM_COND, 1))
+    s = pipe.sample(jax.random.PRNGKey(0), x_o, nsamples=7)
+    assert s.shape == (7, DIM_OBS, 2)                   # channel axis preserved
+    lp = pipe.log_prob(jnp.zeros((7, DIM_OBS, 2)), x_o)
+    assert lp.shape == (7,)                             # one scalar per sample
+
+
+def test_fit_standardization_per_channel_axis():
+    pipe = _build_multichannel_pipeline()
+    obs = jax.random.normal(jax.random.PRNGKey(3), (64, DIM_OBS, 2))
+    pipe.fit_standardization(obs, axis=(0, 1))          # per-channel stats
+    assert pipe._standardized
