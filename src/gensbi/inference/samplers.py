@@ -18,16 +18,59 @@ def _rescale(mu):
 
 
 class Sampler(ABC):
-    """Turns a PosteriorTarget into posterior samples."""
+    """Abstract base class for posterior samplers.
+
+    Subclasses consume a :class:`~gensbi.inference.posterior.PosteriorTarget`
+    and return an array of posterior samples together with a sampler-specific
+    info object.
+    """
 
     @abstractmethod
     def run(self, key, target):
-        """Return (samples (n, dim), info)."""
+        """Draw posterior samples from a log-density target.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key.
+        target : PosteriorTarget
+            Posterior target produced by
+            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+
+        Returns
+        -------
+        samples : Array
+            Posterior samples of shape ``(n, dim)``.
+        info : object
+            Sampler-specific diagnostics.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract method; subclasses must override it.
+        """
         raise NotImplementedError
 
 
 @dataclass(frozen=True)
 class MclmcInfo:
+    """Tuning parameters and diagnostics from an MCLMC run.
+
+    Parameters
+    ----------
+    L : float
+        Tuned trajectory length.
+    step_size : float
+        Tuned integrator step size.
+    acceptance_rate : float
+        Mean Metropolis acceptance rate over the sampling run.
+        ``float('nan')`` for the unadjusted variant.
+    num_samples : int
+        Number of samples drawn per chain.
+    num_chains : int
+        Number of independent chains.
+    """
+
     L: float
     step_size: float
     acceptance_rate: float
@@ -46,10 +89,29 @@ def _inference_loop(rng_key, step_fn, initial_state, num_samples):
 
 
 class MCLMC(Sampler):
-    """Microcanonical Langevin Monte Carlo.
+    """Microcanonical Langevin Monte Carlo sampler.
 
-    adjusted=True (default, added in Task 3) is MH-corrected / asymptotically exact.
-    adjusted=False is the faster unadjusted variant (biased by the discretization).
+    ``adjusted=True`` (the default) applies an MH correction for
+    asymptotically exact sampling.  ``adjusted=False`` uses the faster
+    unadjusted variant, which is biased by the discretization error.
+
+    Parameters
+    ----------
+    adjusted : bool, optional
+        Whether to apply an MH correction.  Default is ``True``.
+    num_samples : int, optional
+        Number of posterior samples to collect per chain.  Default is 1000.
+    num_tuning_steps : int, optional
+        Number of warmup steps for the L / step-size tuning loop.
+        Default is 5000.
+    num_chains : int, optional
+        Number of independent MCLMC chains.  Default is 1.
+    target_acceptance : float, optional
+        Target Metropolis acceptance rate for the adjusted variant.
+        Default is 0.9.
+    diagonal_preconditioning : bool, optional
+        Whether to use diagonal preconditioning during tuning.
+        Default is ``True``.
     """
 
     def __init__(self, *, adjusted=True, num_samples=1000, num_tuning_steps=5000,
@@ -62,6 +124,23 @@ class MCLMC(Sampler):
         self.diagonal_preconditioning = diagonal_preconditioning
 
     def run(self, key, target):
+        """Draw posterior samples using MCLMC.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key.
+        target : PosteriorTarget
+            Posterior target produced by
+            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+
+        Returns
+        -------
+        samples : Array
+            Posterior samples of shape ``(num_chains * num_samples, dim)``.
+        info : MclmcInfo
+            Tuning parameters and diagnostic information.
+        """
         # Python loop over chains (not vmap): _run_single returns a plain MclmcInfo
         # dataclass, which is not a registered pytree and cannot be a vmap output.
         # num_chains is small, so the loop cost is negligible.
@@ -143,17 +222,50 @@ class MCLMC(Sampler):
 
 @dataclass(frozen=True)
 class SmcInfo:
+    """Diagnostics from an adaptive tempered SMC run.
+
+    Parameters
+    ----------
+    log_evidence : float
+        Log marginal likelihood estimate accumulated over tempering steps.
+    num_temperature_steps : int
+        Number of temperature increments taken from beta=0 to beta=1.
+    final_tempering_param : float
+        Final value of the tempering parameter beta (should be 1.0).
+    """
+
     log_evidence: float
     num_temperature_steps: int
     final_tempering_param: float
 
 
 class TemperedSMC(Sampler):
-    """Adaptive tempered SMC for (possibly multimodal) posteriors.
+    """Adaptive tempered Sequential Monte Carlo for (possibly multimodal) posteriors.
 
-    Walks particles along p(theta) * q(x_o|theta)^beta for beta: 0 -> 1, choosing the
-    beta-ladder adaptively to hold target_ess. Inner rejuvenation kernel is adjusted
-    MCLMC by default (Task 5); NUTS is the fallback.
+    Walks particles along ``p(theta) * q(x_o | theta)^beta`` for beta from 0
+    to 1, choosing the beta ladder adaptively to maintain ``target_ess``.  The
+    inner rejuvenation kernel is adjusted MCLMC by default; NUTS is available
+    as a fallback.
+
+    Parameters
+    ----------
+    num_particles : int, optional
+        Number of SMC particles.  Default is 1000.
+    target_ess : float, optional
+        Target effective sample size ratio in ``(0, 1)``, used to adapt the
+        temperature increments.  Default is 0.5.
+    num_mcmc_steps : int, optional
+        Number of inner MCMC rejuvenation steps per temperature.  Default is 10.
+    inner_kernel : str, optional
+        Inner MCMC kernel: ``"mclmc"`` (adjusted MCLMC, default) or
+        ``"nuts"``.
+    inner_step_size : float, optional
+        Step size for the inner MCMC kernel.  Default is 0.1.
+    inner_num_integration_steps : int, optional
+        Number of integration steps for the inner MCLMC kernel.  Default is 5.
+    inner_inverse_mass_matrix : Array or None, optional
+        Inverse mass matrix for the inner kernel.  If ``None``, defaults to a
+        vector of ones of length ``target.dim``.  Default is ``None``.
     """
 
     def __init__(self, *, num_particles=1000, target_ess=0.5, num_mcmc_steps=10,
@@ -199,6 +311,23 @@ class TemperedSMC(Sampler):
         raise ValueError(f"unknown inner_kernel {self.inner_kernel!r}")
 
     def run(self, key, target):
+        """Draw posterior samples using adaptive tempered SMC.
+
+        Parameters
+        ----------
+        key : jax.random.PRNGKey
+            Random key.
+        target : PosteriorTarget
+            Posterior target produced by
+            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+
+        Returns
+        -------
+        samples : Array
+            Posterior samples of shape ``(num_particles, dim)``.
+        info : SmcInfo
+            SMC diagnostics including log evidence and tempering statistics.
+        """
         import blackjax
 
         init_key, smc_key = jax.random.split(key)
