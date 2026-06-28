@@ -12,7 +12,14 @@ class Mask(nnx.Variable):
     A non-:class:`~flax.nnx.Param` :class:`~flax.nnx.Variable` subclass so
     that optimizers and EMA utilities skip it while checkpointing still
     saves and restores it.  Typical use: autoregressive masks in
-    :class:`~gensbi.normalizing_flows.models.maf.MaskedAutoregressive`.
+    :class:`~gensbi.models.maf.made.MaskedAutoregressive`.
+
+    Parameters
+    ----------
+    *args : object
+        Forwarded to :class:`~flax.nnx.Variable` (typically the buffer value).
+    **kwargs : object
+        Forwarded to :class:`~flax.nnx.Variable`.
     """
 
 

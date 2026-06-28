@@ -112,7 +112,7 @@ class VectorPrefixConditioner(nnx.Module):
         bias : None
             This conditioner does not produce a per-token additive bias;
             always ``None``.
-        prefix : Array or None
+        prefix : Array
             Prefix token sequence of shape ``(B, num_tokens, channels)`` with
             learned positional embeddings added.
 
@@ -175,7 +175,7 @@ class ImagePrefixConditioner(nnx.Module):
         bias : None
             This conditioner does not produce a per-token additive bias;
             always ``None``.
-        prefix : Array or None
+        prefix : Array
             Prefix token sequence of shape ``(B, num_tokens, channels)`` with
             learned positional embeddings added.
 

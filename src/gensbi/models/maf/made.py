@@ -70,7 +70,7 @@ class MADE(nnx.Module):
         transform parameters start at 0 (Affine becomes the identity).
     param_dtype : DTypeLike, optional
         Dtype for all kernel and bias parameters.  Default is ``float32``.
-    activation : callable, optional
+    activation : Callable, optional
         Element-wise activation applied after each hidden layer.
         Default is :func:`jax.nn.silu`.
     """

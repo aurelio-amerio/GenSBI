@@ -38,7 +38,7 @@ class Permutation(Bijection):
         Returns
         -------
         Permutation
-            A :class:`Permutation` whose :meth:`inverse` reverses the input.
+            A :class:`Permutation` that reverses the dimension order.
         """
         return cls(jnp.arange(dim)[::-1])
 
