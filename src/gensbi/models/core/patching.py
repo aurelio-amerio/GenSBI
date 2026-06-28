@@ -11,6 +11,26 @@ from einops import rearrange
 
 @jax.jit(static_argnames=["size"])
 def patchify_2d(x: Array, size=2):
+    """Patchify a 2D image into a sequence of non-overlapping patches.
+
+    Invertible 2D patchify via einops reshape. The inverse operation is
+    :func:`depatchify_2d`.
+
+    Parameters
+    ----------
+    x : Array
+        Image of shape ``(B, H, W, C)``. ``H`` and ``W`` must each be
+        divisible by ``size``.
+    size : int, optional
+        Patch edge length. Default is 2.
+
+    Returns
+    -------
+    Array
+        Token sequence of shape ``(B, T, F)`` where
+        ``T = (H // size) * (W // size)`` and ``F = C * size * size``.
+        Tokens are in raster (row-major) order.
+    """
     return rearrange(x, "b (h ph) (w pw) c -> b (h w) (c ph pw)", ph=size, pw=size)
 
 
@@ -28,6 +48,17 @@ def depatchify_2d(x: Array, size=2, grid=None):
         The ``(h, w)`` patch grid. The grid cannot be inferred from the token
         count alone, so it is required for non-square grids. If ``None``, a
         square grid (``h == w``) is assumed.
+
+    Returns
+    -------
+    Array
+        Image of shape ``(B, H, W, C)`` where ``H = h * size`` and
+        ``W = w * size``.
+
+    Raises
+    ------
+    ValueError
+        If ``grid`` is ``None`` and the token count is not a perfect square.
     """
     if grid is None:
         n = x.shape[1]

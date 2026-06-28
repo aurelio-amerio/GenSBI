@@ -13,8 +13,25 @@ from gensbi.models.core.patching import patchify_2d, depatchify_2d
 
 
 class VectorTokenizer:
-    """Reshape a vector ``(B, dim)`` into ``T = dim // block_size`` tokens of
-    ``F = block_size`` features. Pure reshape: invertible, log-det 0."""
+    """Reshape a flat vector into a token sequence.
+
+    Maps ``(B, dim)`` vectors to ``(B, T, F)`` token sequences via a
+    volume-preserving reshape (log-det 0, no learned parameters). The number
+    of tokens is ``T = dim // block_size`` and each token has ``F = block_size``
+    features.
+
+    Parameters
+    ----------
+    dim : int
+        Total feature dimension of the input vector.
+    block_size : int, optional
+        Number of features per token. Must divide ``dim``. Default is 1.
+
+    Raises
+    ------
+    ValueError
+        If ``block_size`` does not divide ``dim``.
+    """
 
     def __init__(self, dim: int, block_size: int = 1):
         if dim % block_size != 0:
@@ -26,16 +43,62 @@ class VectorTokenizer:
         self.example_shape = (dim,)
 
     def tokenize(self, x: Array) -> Array:
+        """Reshape a flat vector into a token sequence.
+
+        Parameters
+        ----------
+        x : Array
+            Input of shape ``(B, dim)``.
+
+        Returns
+        -------
+        Array
+            Token sequence of shape ``(B, T, F)`` where
+            ``T = dim // block_size`` and ``F = block_size``.
+        """
         return x.reshape(x.shape[0], self.T, self.F)
 
     def detokenize(self, tokens: Array) -> Array:
+        """Flatten a token sequence back into a vector.
+
+        Parameters
+        ----------
+        tokens : Array
+            Token sequence of shape ``(B, T, F)``.
+
+        Returns
+        -------
+        Array
+            Flat vector of shape ``(B, dim)``.
+        """
         return tokens.reshape(tokens.shape[0], self.dim)
 
 
 class ImageTokenizer:
-    """Patchify an image ``(B, H, W, C)`` into ``T = (H/p)(W/p)`` tokens of
-    ``F = C*p*p`` features via :func:`patchify_2d`. Pure reshape: invertible,
-    log-det 0. Raster causal order (fixed by ``patchify_2d``)."""
+    """Patchify a 2D image into a token sequence via :func:`patchify_2d`.
+
+    Maps ``(B, H, W, C)`` images to ``(B, T, F)`` token sequences where
+    ``T = (H // patch_size) * (W // patch_size)`` and
+    ``F = C * patch_size * patch_size``. Pure reshape: volume-preserving
+    (log-det 0, no learned parameters). Tokens are in raster (row-major)
+    causal order as fixed by :func:`patchify_2d`.
+
+    Parameters
+    ----------
+    height : int
+        Image height in pixels. Must be divisible by ``patch_size``.
+    width : int
+        Image width in pixels. Must be divisible by ``patch_size``.
+    channels : int
+        Number of image channels.
+    patch_size : int
+        Patch edge length in pixels. Must divide both ``height`` and ``width``.
+
+    Raises
+    ------
+    ValueError
+        If ``patch_size`` does not divide ``height`` or ``width``.
+    """
 
     def __init__(self, height: int, width: int, channels: int, patch_size: int):
         if height % patch_size != 0 or width % patch_size != 0:
@@ -52,7 +115,33 @@ class ImageTokenizer:
         self.example_shape = (height, width, channels)
 
     def tokenize(self, x: Array) -> Array:
+        """Patchify an image into a token sequence.
+
+        Parameters
+        ----------
+        x : Array
+            Image of shape ``(B, H, W, C)``.
+
+        Returns
+        -------
+        Array
+            Token sequence of shape ``(B, T, F)`` where
+            ``T = (H // patch_size) * (W // patch_size)`` and
+            ``F = C * patch_size * patch_size``.
+        """
         return patchify_2d(x, size=self.patch_size)
 
     def detokenize(self, tokens: Array) -> Array:
+        """Reconstruct an image from a token sequence.
+
+        Parameters
+        ----------
+        tokens : Array
+            Token sequence of shape ``(B, T, F)``.
+
+        Returns
+        -------
+        Array
+            Image of shape ``(B, H, W, C)``.
+        """
         return depatchify_2d(tokens, size=self.patch_size, grid=self.grid)
