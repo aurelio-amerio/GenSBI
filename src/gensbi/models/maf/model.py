@@ -72,6 +72,8 @@ class MAFlowParams:
     permutation: str = "reverse"
     standardize: bool = True
     zero_init: bool = True
+    channels: int = 1
+    cond_channels: int = 1
 
     def __post_init__(self):
         if self.transformer is None:
@@ -102,25 +104,30 @@ class MAFlow(nnx.Module):
     def __init__(self, params: MAFlowParams):
         rngs = params.rngs
         dim = params.dim
+        self.channels = params.channels
+        self.cond_channels = params.cond_channels
+        flat_dim = dim * self.channels
+        flat_cond_dim = params.cond_dim * self.cond_channels
         bijections = []
         for i in range(params.n_layers):
             bijections.append(
-                MaskedAutoregressive(dim, params.cond_dim, params.transformer,
+                MaskedAutoregressive(flat_dim, flat_cond_dim, params.transformer,
                                      params.nn_width, params.nn_depth, rngs,
                                      zero_init=params.zero_init))
             if i < params.n_layers - 1:
                 if params.permutation == "reverse":
-                    bijections.append(Permutation.reverse(dim))
+                    bijections.append(Permutation.reverse(flat_dim))
                 else:
-                    bijections.append(Permutation.random(dim, rngs))
+                    bijections.append(Permutation.random(flat_dim, rngs))
         if params.standardize:
-            bijections.append(Standardize(dim))
+            bijections.append(Standardize(flat_dim))
         self.chain = Chain(bijections)
         self.dim = dim
+        self.flat_dim = flat_dim
         self.cond_dim = params.cond_dim
 
     def _base(self):
-        return make_gaussian_prior((self.dim,))
+        return make_gaussian_prior((self.flat_dim,))
 
     def log_prob(self, x: Array, cond: Array | None = None) -> Array:
         """Compute the change-of-variables log-density for a batch of samples.
@@ -139,6 +146,11 @@ class MAFlow(nnx.Module):
             Log-probability of shape ``(batch,)``.
         """
         base = self._base()
+        x = jnp.asarray(x)
+        x = x.reshape(x.shape[0], -1)
+        if cond is not None:
+            cond = jnp.asarray(cond)
+            cond = cond.reshape(cond.shape[0], -1)
 
         def single(x_i, cond_i):
             u, logdet = self.chain.inverse(x_i, cond_i)
@@ -169,6 +181,8 @@ class MAFlow(nnx.Module):
         """
         base = self._base()
         if cond is not None:
+            cond = jnp.asarray(cond)
+            cond = cond.reshape(cond.shape[0], -1)
             nsamples = cond.shape[0]
         u = base.sample(key, (nsamples,))
 
@@ -177,16 +191,21 @@ class MAFlow(nnx.Module):
             return x
 
         if cond is None:
-            return jax.vmap(lambda ui: single(ui, None))(u)
-        return jax.vmap(single)(u, cond)
+            x = jax.vmap(lambda ui: single(ui, None))(u)
+        else:
+            x = jax.vmap(single)(u, cond)
+        if self.channels > 1:
+            x = x.reshape(x.shape[0], self.dim, self.channels)
+        return x
 
     def set_standardization(self, mean, std) -> None:
         """Set the data-end Standardize bijection's mean/std buffers in place.
 
         Raises ValueError if built with ``standardize=False``.
         """
-        mean = jnp.asarray(mean)
-        std = jnp.asarray(std)
+        target = (self.dim,) if self.channels == 1 else (self.dim, self.channels)
+        mean = jnp.broadcast_to(jnp.asarray(mean), target).reshape(-1)
+        std = jnp.broadcast_to(jnp.asarray(std), target).reshape(-1)
         for b in self.chain.bijections:
             if isinstance(b, Standardize):
                 b.set_stats(mean, std)

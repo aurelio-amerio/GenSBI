@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import pytest
 from flax import nnx
 
+from gensbi.models import MAFlow, MAFlowParams
 from gensbi.models.maf.made import MaskedAutoregressive
 from gensbi.normalizing_flows.bijections.transformers import Affine, RQSpline
 
@@ -49,3 +50,32 @@ def test_forward_logdet_matches_inverse(transformer):
     x, fwd_logdet = ma.forward(u, cond)
     _, inv_logdet = ma.inverse(x, cond)
     assert jnp.allclose(fwd_logdet, -inv_logdet, atol=1e-4)
+
+
+def test_maf_channels_one_unchanged():
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=2))
+    x = jnp.zeros((4, 3)); cond = jnp.zeros((4, 2))
+    assert flow.log_prob(x, cond).shape == (4,)
+    assert flow.sample(jax.random.PRNGKey(0), cond=cond).shape == (4, 3)
+
+
+def test_maf_multichannel_obs_logprob_and_sample():
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=2, channels=2))
+    x = jnp.zeros((4, 3, 2)); cond = jnp.zeros((4, 2))
+    assert flow.log_prob(x, cond).shape == (4,)         # scalar per sample
+    s = flow.sample(jax.random.PRNGKey(0), cond=cond)
+    assert s.shape == (4, 3, 2)                          # channel axis restored
+
+
+def test_maf_multichannel_cond_flattens():
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=2,
+                               cond_channels=2))
+    x = jnp.zeros((4, 3)); cond = jnp.zeros((4, 2, 2))
+    assert flow.log_prob(x, cond).shape == (4,)
+
+
+def test_maf_set_standardization_per_channel_broadcast():
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=3, channels=2,
+                               standardize=True))
+    flow.set_standardization(jnp.array([1.0, 2.0]), jnp.array([1.0, 1.0]))  # (C,)
+    assert flow.log_prob(jnp.zeros((2, 3, 2))).shape == (2,)
