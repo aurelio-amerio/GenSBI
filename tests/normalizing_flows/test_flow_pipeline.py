@@ -219,3 +219,29 @@ def test_sample_batched_shape(tmp_path):
     s0 = pipe.sample(jax.random.PRNGKey(2), x_o[0:1], nsamples=16, use_ema=False)
     # not asserting equality of RNG streams across the two call paths; just shapes
     assert s0.shape == (16, DIM_OBS, 1)
+
+
+def test_get_sampler_warns_on_unknown_kwarg():
+    pipe = build_pipeline()
+    with pytest.warns(UserWarning, match="ignores unsupported keyword"):
+        pipe.get_sampler(jnp.zeros((1, DIM_COND)), step_size=0.1)
+
+
+def test_get_log_prob_fn_warns_on_unknown_kwarg():
+    pipe = build_pipeline()
+    with pytest.warns(UserWarning, match="ignores unsupported keyword"):
+        pipe.get_log_prob_fn(jnp.zeros((1, DIM_COND)), nsteps=10)
+
+
+def test_sample_batched_warns_on_unknown_kwarg():
+    pipe = build_pipeline()
+    with pytest.warns(UserWarning, match="ignores unsupported keyword"):
+        pipe.sample_batched(jax.random.PRNGKey(0), jnp.zeros((2, DIM_COND)), 4,
+                            solver="dopri5")
+
+
+def test_known_calls_do_not_warn(recwarn):
+    pipe = build_pipeline()
+    pipe.get_sampler(jnp.zeros((1, DIM_COND)))
+    assert not any(
+        "ignores unsupported" in str(w.message) for w in recwarn.list)

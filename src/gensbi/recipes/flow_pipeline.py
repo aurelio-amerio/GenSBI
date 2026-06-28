@@ -82,6 +82,23 @@ def _structured_cond(x_o):
     return cond[0]                        # take the first observation
 
 
+def _warn_unused_kwargs(kwargs):
+    """Warn that solver-style kwargs are ignored by the (solver-free) flow.
+
+    The flow pipeline mirrors the flow-matching surface (which accepts
+    ``**sampler_kwargs``), but a normalizing flow has no ODE/SDE solver, so
+    arguments like ``step_size``/``nsteps``/``solver`` do not apply and are
+    silently ignored apart from this warning.
+    """
+    if kwargs:
+        keys = ", ".join(sorted(kwargs))
+        warnings.warn(
+            f"flow pipeline ignores unsupported keyword argument(s): {keys}. "
+            "A normalizing flow has no solver, so these have no effect.",
+            UserWarning, stacklevel=3,
+        )
+
+
 class ConditionalFlowPipeline(AbstractPipeline):
     """Max-likelihood NPE pipeline wrapping an ``MAFlow``.
 
@@ -250,7 +267,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
                 UserWarning, stacklevel=2)
         return super().train(rngs, nsteps=nsteps, save_model=save_model)
 
-    def get_sampler(self, x_o, use_ema=True):
+    def get_sampler(self, x_o, use_ema=True, **kwargs):
         """Return a sampler closure for a single conditioning observation.
 
         When ``structured_cond=True``, the returned sampler produces
@@ -280,6 +297,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             ``(nsamples, dim_obs, 1)`` (or ``(nsamples, dim_obs)`` when
             ``structured_cond=True``).
         """
+        _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
         if self.structured_cond:
             cond = _structured_cond(x_o)             # strip the leading batch axis
@@ -298,7 +316,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         return sampler
 
-    def sample(self, key, x_o, nsamples=10_000, use_ema=True):
+    def sample(self, key, x_o, nsamples=10_000, use_ema=True, **kwargs):
         """Draw posterior samples for a single conditioning observation.
 
         Parameters
@@ -320,7 +338,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             Posterior samples of shape ``(nsamples, dim_obs, 1)`` (or
             ``(nsamples, dim_obs)`` when ``structured_cond=True``).
         """
-        return self.get_sampler(x_o, use_ema=use_ema)(key, nsamples)
+        return self.get_sampler(x_o, use_ema=use_ema, **kwargs)(key, nsamples)
 
     def sample_batched(self, key, x_o, nsamples=10_000, *, use_ema=True,
                        **kwargs):
@@ -361,6 +379,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` (or
             ``(nsamples, B, dim_obs)`` when ``structured_cond=True``).
         """
+        _warn_unused_kwargs(kwargs)
         x_o = jnp.asarray(x_o)
         B = x_o.shape[0]
         keys = jax.random.split(key, B)
@@ -370,7 +389,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         ]
         return jnp.stack(results, axis=1)          # (nsamples, B, dim_obs, 1)
 
-    def get_log_prob_fn(self, x_o, use_ema=True):
+    def get_log_prob_fn(self, x_o, use_ema=True, **kwargs):
         """Return a log-probability closure for a single conditioning observation.
 
         Parameters
@@ -389,6 +408,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             the conditional log-probability ``log q(x_1 | x_o)`` for a
             batch of ``B`` parameter vectors.
         """
+        _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
         if self.structured_cond:
             cond = _structured_cond(x_o)             # strip the leading batch axis
@@ -408,7 +428,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
         return log_prob_fn
 
-    def log_prob(self, x_1, x_o, use_ema=True):
+    def log_prob(self, x_1, x_o, use_ema=True, **kwargs):
         """Evaluate the conditional log-probability for a batch of samples.
 
         Parameters
@@ -428,4 +448,4 @@ class ConditionalFlowPipeline(AbstractPipeline):
         log_prob : Array
             Log-probabilities of shape ``(B,)``.
         """
-        return self.get_log_prob_fn(x_o, use_ema=use_ema)(x_1)
+        return self.get_log_prob_fn(x_o, use_ema=use_ema, **kwargs)(x_1)
