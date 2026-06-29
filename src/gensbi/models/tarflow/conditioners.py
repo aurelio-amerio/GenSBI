@@ -3,7 +3,7 @@
 Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.
 Prefix-concatenation conditioning adapted from apple/ml-starflow (STARFlow); see models/tarflow/LICENSE.starflow.
 
-v1 ``VectorConditioner`` is the continuous analog of TarFlow's ``class_embed``:
+``AdditiveBiasConditioner`` is the continuous analog of TarFlow's ``class_embed``:
 an MLP embeds the condition to a ``channels``-vector that is broadcast-added to
 every token. The signal depends only on the condition (constant w.r.t. the
 modeled variable), so it shifts the affine params without breaking the
@@ -18,7 +18,7 @@ from jax import Array
 from gensbi.models.core.patching import patchify_2d
 
 
-class VectorConditioner(nnx.Module):
+class AdditiveBiasConditioner(nnx.Module):
     """Embed a vector condition as a per-token additive bias.
 
     A two-layer MLP maps the condition to a ``channels``-dimensional vector
@@ -73,7 +73,7 @@ class VectorConditioner(nnx.Module):
         return (bias, None)
 
 
-class VectorPrefixConditioner(nnx.Module):
+class VectorConditioner(nnx.Module):
     """Embed a vector condition as prefix tokens prepended to the sequence.
 
     A linear projection maps the condition to ``num_tokens`` prefix tokens of
@@ -122,13 +122,13 @@ class VectorPrefixConditioner(nnx.Module):
             If ``cond`` is ``None``.
         """
         if cond is None:
-            raise ValueError("cond is required for VectorPrefixConditioner")
+            raise ValueError("cond is required for VectorConditioner")
         B = cond.shape[0]
         h = self.proj(cond).reshape(B, self.M, self.channels)
         return (None, h + self.pos[...][None])
 
 
-class ImagePrefixConditioner(nnx.Module):
+class ImageConditioner(nnx.Module):
     """Embed an image condition as prefix tokens prepended to the sequence.
 
     Patchifies a spatial image ``(B, H, W, C)`` into
@@ -185,6 +185,6 @@ class ImagePrefixConditioner(nnx.Module):
             If ``cond`` is ``None``.
         """
         if cond is None:
-            raise ValueError("cond is required for ImagePrefixConditioner")
+            raise ValueError("cond is required for ImageConditioner")
         patches = patchify_2d(cond, size=self.patch_size)      # (B, M, in_f)
         return (None, self.proj(patches) + self.pos[...][None])

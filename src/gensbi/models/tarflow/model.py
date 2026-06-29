@@ -19,7 +19,7 @@ from jax import Array
 from gensbi.models.core.tokenizers import VectorTokenizer, ImageTokenizer
 from gensbi.models.tarflow.blocks import MetaBlock
 from gensbi.models.tarflow.conditioners import (
-    VectorConditioner, VectorPrefixConditioner, ImagePrefixConditioner,
+    AdditiveBiasConditioner, VectorConditioner, ImageConditioner,
 )
 from gensbi.normalizing_flows.bijections.base import Mask
 
@@ -31,8 +31,8 @@ class TarFlowParams:
     """Architecture parameters for :class:`TarFlow`.
 
     ``modeled`` selects the tokenizer (``"vector"`` or ``"image"``); ``cond``
-    selects the conditioner (``"add"``, ``"vector_prefix"``, or
-    ``"image_prefix"``). Head sizing follows the Flux1 convention: specify
+    selects the conditioner (``"bias"``, ``"vector"``, or
+    ``"image"``). Head sizing follows the Flux1 convention: specify
     ``head_dim`` and ``num_heads``; total width
     ``channels = head_dim * num_heads`` is derived in ``__post_init__``.
 
@@ -58,23 +58,23 @@ class TarFlowParams:
     img_channels : int, optional
         Number of channels in the modeled image. Default is ``1``.
     cond : str, optional
-        Conditioning strategy: ``"add"`` (per-token additive bias via
+        Conditioning strategy: ``"bias"`` (per-token additive bias via
+        :class:`~gensbi.models.tarflow.conditioners.AdditiveBiasConditioner`),
+        ``"vector"`` (prefix tokens from a vector via
         :class:`~gensbi.models.tarflow.conditioners.VectorConditioner`),
-        ``"vector_prefix"`` (prefix tokens from a vector via
-        :class:`~gensbi.models.tarflow.conditioners.VectorPrefixConditioner`),
-        or ``"image_prefix"`` (prefix tokens from an image via
-        :class:`~gensbi.models.tarflow.conditioners.ImagePrefixConditioner`).
-        Default is ``"add"``.
+        or ``"image"`` (prefix tokens from an image via
+        :class:`~gensbi.models.tarflow.conditioners.ImageConditioner`).
+        Default is ``"bias"``.
     cond_img_size : int or None, optional
         Spatial size of the conditioning image. Required when
-        ``cond="image_prefix"``. Default is ``None``.
+        ``cond="image"``. Default is ``None``.
     cond_patch_size : int or None, optional
         Patch size for the image conditioning tokenizer. Required when
-        ``cond="image_prefix"``. Default is ``None``.
+        ``cond="image"``. Default is ``None``.
     cond_channels : int, optional
         Number of channels in the conditioning image. Default is ``1``.
     prefix_tokens : int, optional
-        Number of prefix tokens produced by ``cond="vector_prefix"``.
+        Number of prefix tokens produced by ``cond="vector"``.
         Default is ``1``.
     head_dim : int, optional
         Dimension per attention head. Default is ``16``.
@@ -116,7 +116,7 @@ class TarFlowParams:
     patch_size: int | None = None
     img_channels: int = 1
     vec_channels: int = 1
-    cond: str = "add"
+    cond: str = "bias"
     cond_img_size: int | None = None
     cond_patch_size: int | None = None
     cond_channels: int = 1
@@ -139,10 +139,10 @@ class TarFlowParams:
             raise ValueError("modeled='vector' requires dim")
         if self.modeled == "image" and (self.img_size is None or self.patch_size is None):
             raise ValueError("modeled='image' requires img_size and patch_size")
-        if self.cond not in ("add", "vector_prefix", "image_prefix"):
+        if self.cond not in ("bias", "vector", "image"):
             raise ValueError(f"unknown cond {self.cond!r}")
-        if self.cond == "image_prefix" and (self.cond_img_size is None or self.cond_patch_size is None):
-            raise ValueError("cond='image_prefix' requires cond_img_size and cond_patch_size")
+        if self.cond == "image" and (self.cond_img_size is None or self.cond_patch_size is None):
+            raise ValueError("cond='image' requires cond_img_size and cond_patch_size")
         if self.permutation not in ("flip", "random"):
             raise ValueError(f"unknown permutation {self.permutation!r}")
         self.channels = self.head_dim * self.num_heads
@@ -175,15 +175,15 @@ class TarFlow(nnx.Module):
         T, F = tokenizer.T, tokenizer.F
 
         def make_cond():
-            if params.cond == "add":
-                return VectorConditioner(params.cond_dim, channels, rngs=rngs)
-            if params.cond == "vector_prefix":
-                return VectorPrefixConditioner(params.cond_dim, channels,
-                                               params.prefix_tokens, rngs=rngs)
+            if params.cond == "bias":
+                return AdditiveBiasConditioner(params.cond_dim, channels, rngs=rngs)
+            if params.cond == "vector":
+                return VectorConditioner(params.cond_dim, channels,
+                                         params.prefix_tokens, rngs=rngs)
             m = (params.cond_img_size // params.cond_patch_size) ** 2
-            return ImagePrefixConditioner(params.cond_channels,
-                                          params.cond_patch_size, channels, m,
-                                          rngs=rngs)
+            return ImageConditioner(params.cond_channels,
+                                    params.cond_patch_size, channels, m,
+                                    rngs=rngs)
 
         blocks = []
         for i in range(params.num_blocks):

@@ -155,7 +155,7 @@ def test_image_modeled_zero_init_is_base():
 def test_image_condition_npe_depends_on_condition():
     # NPE: modeled theta vector (dim=2), condition = 8x8x1 image via prefix
     flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=2, modeled="vector",
-                                 cond="image_prefix", cond_img_size=8,
+                                 cond="image", cond_img_size=8,
                                  cond_patch_size=2, cond_channels=1, head_dim=8,
                                  num_heads=2, num_blocks=4, layers_per_block=2,
                                  zero_init=False))

@@ -12,7 +12,7 @@ def test_params_channels_derived_and_validation():
     with pytest.raises(ValueError):
         TarFlowParams(rngs=nnx.Rngs(0), modeled="image")  # img_size/patch_size missing
     with pytest.raises(ValueError):
-        TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond="image_prefix")  # cond img args missing
+        TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond="image")  # cond img args missing
 
 
 def test_default_head_gives_channels_64():

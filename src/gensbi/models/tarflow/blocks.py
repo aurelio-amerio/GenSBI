@@ -101,7 +101,7 @@ class MetaBlock(nnx.Module):
         Token permutation applied before the affine transform.
     inv_perm : Array
         Inverse permutation of ``perm``; applied after the affine transform.
-    conditioner : VectorConditioner or VectorPrefixConditioner or ImagePrefixConditioner
+    conditioner : AdditiveBiasConditioner or VectorConditioner or ImageConditioner
         Module that provides ``(bias, prefix)`` conditioning signals via its
         ``embed`` method.
     num_layers : int

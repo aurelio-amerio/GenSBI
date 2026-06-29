@@ -52,7 +52,7 @@ def test_field_nle_train_smoke_and_mclmc(tmp_path):
 def test_image_npe_train_smoke_and_sample(tmp_path):
     # NPE: obs = theta vector, cond = image
     flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=D, modeled="vector",
-                                 cond="image_prefix", cond_img_size=H,
+                                 cond="image", cond_img_size=H,
                                  cond_patch_size=2, cond_channels=Ch, head_dim=8,
                                  num_heads=2, num_blocks=4, layers_per_block=2,
                                  standardize=True))
