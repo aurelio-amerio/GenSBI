@@ -176,7 +176,8 @@ class TarFlow(nnx.Module):
 
         def make_cond():
             if params.cond == "bias":
-                return AdditiveBiasConditioner(params.cond_dim, channels, rngs=rngs)
+                return AdditiveBiasConditioner(params.cond_dim, channels, rngs=rngs,
+                                               cond_channels=params.cond_channels)
             if params.cond == "vector":
                 return VectorConditioner(params.cond_dim, channels,
                                          params.prefix_tokens, rngs=rngs)

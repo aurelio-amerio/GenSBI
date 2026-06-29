@@ -12,6 +12,7 @@ triangular Jacobian. A plain 2-layer MLP is used (not ``MLPEmbedder``, whose
 """
 
 import jax
+import jax.numpy as jnp
 from flax import nnx
 from jax import Array
 
@@ -36,10 +37,12 @@ class AdditiveBiasConditioner(nnx.Module):
         Flax RNG container for linear layer initialization.
     """
 
-    def __init__(self, cond_dim: int, channels: int, rngs: nnx.Rngs):
+    def __init__(self, cond_dim: int, channels: int, rngs: nnx.Rngs,
+                 cond_channels: int = 1):
         self.cond_dim = cond_dim
+        self.cond_channels = cond_channels
         if cond_dim > 0:
-            self.l1 = nnx.Linear(cond_dim, channels, rngs=rngs)
+            self.l1 = nnx.Linear(cond_dim * cond_channels, channels, rngs=rngs)
             self.l2 = nnx.Linear(channels, channels, rngs=rngs)
 
     def embed(self, cond: Array | None):
@@ -48,8 +51,9 @@ class AdditiveBiasConditioner(nnx.Module):
         Parameters
         ----------
         cond : Array or None
-            Condition vector of shape ``(B, cond_dim)``, or ``None`` when the
-            model is unconditional (``cond_dim == 0``).
+            Condition vector of shape ``(B, cond_dim)`` or
+            ``(B, cond_dim, C_cond)``, or ``None`` when the model is
+            unconditional (``cond_dim == 0``).
 
         Returns
         -------
@@ -69,6 +73,7 @@ class AdditiveBiasConditioner(nnx.Module):
         if cond is None:
             raise ValueError(
                 "cond is required: this conditioner was built with cond_dim > 0")
+        cond = jnp.asarray(cond).reshape(cond.shape[0], -1)    # (B, cond_dim*C_cond)
         bias = self.l2(jax.nn.silu(self.l1(cond)))
         return (bias, None)
 

@@ -55,3 +55,12 @@ def test_prefix_depends_on_condition():
     _, p1 = c.embed(jnp.zeros((2, 3)))
     _, p2 = c.embed(jnp.ones((2, 3)))
     assert not jnp.allclose(p1, p2)
+
+
+def test_additive_bias_channel_carrying_cond():
+    cond_dim, cond_channels, channels, B = 3, 2, 8, 4
+    c = AdditiveBiasConditioner(cond_dim, channels, rngs=nnx.Rngs(0),
+                                cond_channels=cond_channels)
+    cond = jax.random.normal(jax.random.PRNGKey(1), (B, cond_dim, cond_channels))
+    bias, prefix = c.embed(cond)
+    assert bias.shape == (B, channels) and prefix is None
