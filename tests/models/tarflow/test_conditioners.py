@@ -30,13 +30,13 @@ from gensbi.models.tarflow.conditioners import (
 )
 
 
-def test_vector_prefix_shapes():
-    c = VectorConditioner(cond_dim=3, channels=8, num_tokens=2, rngs=nnx.Rngs(0))
-    assert c.M == 2
-    cond = jax.random.normal(jax.random.PRNGKey(1), (4, 3))
+def test_vector_conditioner_per_coordinate_tokens():
+    cond_dim, cond_channels, channels, B = 3, 2, 8, 4
+    c = VectorConditioner(cond_dim, cond_channels, channels, rngs=nnx.Rngs(0))
+    assert c.M == cond_dim
+    cond = jax.random.normal(jax.random.PRNGKey(1), (B, cond_dim, cond_channels))
     bias, prefix = c.embed(cond)
-    assert bias is None
-    assert prefix.shape == (4, 2, 8)
+    assert bias is None and prefix.shape == (B, cond_dim, channels)
 
 
 def test_image_conditioner_shapes():
@@ -50,10 +50,10 @@ def test_image_conditioner_shapes():
     assert prefix.shape == (4, 16, 8)
 
 
-def test_prefix_depends_on_condition():
-    c = VectorConditioner(cond_dim=3, channels=8, num_tokens=1, rngs=nnx.Rngs(0))
-    _, p1 = c.embed(jnp.zeros((2, 3)))
-    _, p2 = c.embed(jnp.ones((2, 3)))
+def test_vector_conditioner_depends_on_condition():
+    c = VectorConditioner(3, 1, 8, rngs=nnx.Rngs(0))
+    _, p1 = c.embed(jnp.zeros((2, 3, 1)))
+    _, p2 = c.embed(jnp.ones((2, 3, 1)))
     assert not jnp.allclose(p1, p2)
 
 

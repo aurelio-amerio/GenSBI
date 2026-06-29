@@ -73,9 +73,6 @@ class TarFlowParams:
         ``cond="image"``. Default is ``None``.
     cond_channels : int, optional
         Number of channels in the conditioning image. Default is ``1``.
-    prefix_tokens : int, optional
-        Number of prefix tokens produced by ``cond="vector"``.
-        Default is ``1``.
     head_dim : int, optional
         Dimension per attention head. Default is ``16``.
     num_heads : int, optional
@@ -120,7 +117,6 @@ class TarFlowParams:
     cond_img_size: int | None = None
     cond_patch_size: int | None = None
     cond_channels: int = 1
-    prefix_tokens: int = 1
     head_dim: int = 16
     num_heads: int = 4
     num_blocks: int = 8
@@ -179,8 +175,8 @@ class TarFlow(nnx.Module):
                 return AdditiveBiasConditioner(params.cond_dim, channels, rngs=rngs,
                                                cond_channels=params.cond_channels)
             if params.cond == "vector":
-                return VectorConditioner(params.cond_dim, channels,
-                                         params.prefix_tokens, rngs=rngs)
+                return VectorConditioner(params.cond_dim, params.cond_channels,
+                                         channels, rngs=rngs)
             m = (params.cond_img_size // params.cond_patch_size) ** 2
             return ImageConditioner(params.cond_channels,
                                     params.cond_patch_size, channels, m,

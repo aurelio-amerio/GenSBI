@@ -79,38 +79,44 @@ class AdditiveBiasConditioner(nnx.Module):
 
 
 class VectorConditioner(nnx.Module):
-    """Embed a vector condition as prefix tokens prepended to the sequence.
+    """Embed a vector condition as one prefix token per coordinate.
 
-    A linear projection maps the condition to ``num_tokens`` prefix tokens of
-    width ``channels``, with learned positional embeddings added.
+    Each of the ``cond_dim`` coordinates is a token of ``C_cond`` channels; a
+    shared ``Linear(cond_channels, channels)`` projects each to the transformer
+    width, plus per-coordinate positional embeddings. Produces ``M = cond_dim``
+    prefix tokens (no flatten).
 
     Parameters
     ----------
     cond_dim : int
-        Condition dimensionality.
+        Condition dimensionality (number of coordinates / prefix tokens).
+    cond_channels : int
+        Number of channels per coordinate in the input condition
+        ``(B, cond_dim, cond_channels)``.
     channels : int
         Output channel width matching the transformer embedding dimension.
-    num_tokens : int
-        Number of prefix tokens to produce (``M``).
     rngs : nnx.Rngs
         Flax RNG container for linear layer and positional embedding
         initialization.
     """
 
-    def __init__(self, cond_dim: int, channels: int, num_tokens: int, rngs: nnx.Rngs):
+    def __init__(self, cond_dim: int, cond_channels: int, channels: int,
+                 rngs: nnx.Rngs):
+        self.cond_dim = cond_dim
+        self.cond_channels = cond_channels
         self.channels = channels
-        self.M = num_tokens
-        self.proj = nnx.Linear(cond_dim, channels * num_tokens, rngs=rngs)
+        self.M = cond_dim
+        self.proj = nnx.Linear(cond_channels, channels, rngs=rngs)
         self.pos = nnx.Param(
-            jax.random.normal(rngs.params(), (num_tokens, channels)) * 1e-2)
+            jax.random.normal(rngs.params(), (cond_dim, channels)) * 1e-2)
 
     def embed(self, cond: Array | None):
-        """Embed the condition into prefix tokens.
+        """Embed the condition into per-coordinate prefix tokens.
 
         Parameters
         ----------
         cond : Array or None
-            Condition vector of shape ``(B, cond_dim)``.
+            Condition array of shape ``(B, cond_dim, C_cond)``.
 
         Returns
         -------
@@ -118,7 +124,7 @@ class VectorConditioner(nnx.Module):
             This conditioner does not produce a per-token additive bias;
             always ``None``.
         prefix : Array
-            Prefix token sequence of shape ``(B, num_tokens, channels)`` with
+            Prefix token sequence of shape ``(B, cond_dim, channels)`` with
             learned positional embeddings added.
 
         Raises
@@ -128,9 +134,8 @@ class VectorConditioner(nnx.Module):
         """
         if cond is None:
             raise ValueError("cond is required for VectorConditioner")
-        B = cond.shape[0]
-        h = self.proj(cond).reshape(B, self.M, self.channels)
-        return (None, h + self.pos[...][None])
+        cond = jnp.asarray(cond)                       # (B, cond_dim, C_cond)
+        return (None, self.proj(cond) + self.pos[...][None])
 
 
 class ImageConditioner(nnx.Module):

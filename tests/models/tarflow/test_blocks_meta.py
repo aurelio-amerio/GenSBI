@@ -77,11 +77,11 @@ def test_forward_logdet_matches_inverse():
     assert jnp.allclose(fwd_ld, -inv_ld, atol=1e-4)
 
 
-def _make_prefix(T=4, F=1, channels=8, cond_dim=2, num_tokens=2, zero_init=False,
+def _make_prefix(T=4, F=1, channels=8, cond_dim=2, cond_channels=1, zero_init=False,
                  rngs=None):
     rngs = rngs or nnx.Rngs(0)
     perm = jnp.arange(T)
-    cond = VectorConditioner(cond_dim, channels, num_tokens, rngs=rngs)
+    cond = VectorConditioner(cond_dim, cond_channels, channels, rngs=rngs)
     return MetaBlock(F=F, channels=channels, T=T, perm=perm,
                      inv_perm=jnp.argsort(perm), conditioner=cond, num_layers=2,
                      num_heads=2, expansion=2, rngs=rngs, zero_init=zero_init)
@@ -92,10 +92,10 @@ def test_prefix_inverse_is_triangular():
     blk = _make_prefix(F=1, zero_init=False)
     T = 4
     x0 = jax.random.normal(jax.random.PRNGKey(3), (T, 1))
-    cond = jnp.array([0.3, -0.4])
+    cond = jnp.array([0.3, -0.4])[:, None]   # (2, 1)
 
     def f(x):
-        z, _ = blk.inverse(x[None], cond[None])
+        z, _ = blk.inverse(x[None], cond[None])  # (1, 2, 1)
         return z[0, :, 0]
 
     J = jax.jacrev(f)(x0[:, 0])
@@ -107,10 +107,10 @@ def test_prefix_inverse_is_triangular():
 def test_prefix_logdet_matches_autodiff():
     blk = _make_prefix(F=1, zero_init=False)
     x0 = jax.random.normal(jax.random.PRNGKey(4), (4, 1))
-    cond = jnp.array([0.3, -0.4])
+    cond = jnp.array([0.3, -0.4])[:, None]   # (2, 1)
 
     def f(x):
-        z, _ = blk.inverse(x[None], cond[None])
+        z, _ = blk.inverse(x[None], cond[None])  # (1, 2, 1)
         return z[0, :, 0]
 
     _, ad = jnp.linalg.slogdet(jax.jacobian(f)(x0[:, 0]))
@@ -121,7 +121,7 @@ def test_prefix_logdet_matches_autodiff():
 def test_prefix_roundtrip():
     blk = _make_prefix(F=1, zero_init=False)
     x = jax.random.normal(jax.random.PRNGKey(5), (3, 4, 1))
-    cond = jax.random.normal(jax.random.PRNGKey(6), (3, 2))
+    cond = jax.random.normal(jax.random.PRNGKey(6), (3, 2, 1))
     z, _ = blk.inverse(x, cond)
     x_rt, _ = blk.forward(z, cond)
     assert jnp.allclose(x_rt, x, atol=1e-4)
@@ -130,7 +130,7 @@ def test_prefix_roundtrip():
 def test_prefix_forward_logdet_matches_inverse():
     blk = _make_prefix(F=2, channels=8, zero_init=False)
     z = jax.random.normal(jax.random.PRNGKey(13), (3, 4, 2))
-    cond = jax.random.normal(jax.random.PRNGKey(14), (3, 2))
+    cond = jax.random.normal(jax.random.PRNGKey(14), (3, 2, 1))
     x, fwd_ld = blk.forward(z, cond)
     _, inv_ld = blk.inverse(x, cond)
     assert jnp.allclose(fwd_ld, -inv_ld, atol=1e-4)
@@ -139,7 +139,7 @@ def test_prefix_forward_logdet_matches_inverse():
 def test_prefix_zero_init_identity():
     blk = _make_prefix(zero_init=True)
     x = jax.random.normal(jax.random.PRNGKey(7), (3, 4, 1))
-    cond = jax.random.normal(jax.random.PRNGKey(8), (3, 2))
+    cond = jax.random.normal(jax.random.PRNGKey(8), (3, 2, 1))
     z, logdet = blk.inverse(x, cond)
     assert jnp.allclose(z, x, atol=1e-6)
     assert jnp.allclose(logdet, 0.0, atol=1e-6)
@@ -150,8 +150,8 @@ def test_prefix_conditions_output():
     different z. Guards against a regression that silently ignores the prefix."""
     blk = _make_prefix(F=1, zero_init=False)
     x = jax.random.normal(jax.random.PRNGKey(9), (2, 4, 1))
-    cond1 = jnp.broadcast_to(jnp.array([0.3, -0.4]), (2, 2))
-    cond2 = jnp.broadcast_to(jnp.array([-0.7, 0.9]), (2, 2))
+    cond1 = jnp.broadcast_to(jnp.array([0.3, -0.4])[:, None], (2, 2, 1))
+    cond2 = jnp.broadcast_to(jnp.array([-0.7, 0.9])[:, None], (2, 2, 1))
     z1, _ = blk.inverse(x, cond1)
     z2, _ = blk.inverse(x, cond2)
     assert not jnp.allclose(z1, z2, atol=1e-6)
