@@ -35,6 +35,11 @@ class AdditiveBiasConditioner(nnx.Module):
         Output channel width matching the transformer embedding dimension.
     rngs : nnx.Rngs
         Flax RNG container for linear layer initialization.
+    cond_channels : int, optional
+        Number of channels in the conditioning input ``(B, cond_dim, C_cond)``.
+        Default is ``1``.  The input linear layer is widened to accept
+        ``cond_dim * cond_channels`` features, folding the channel axis before
+        the MLP (same flattening performed in :meth:`embed`).
     """
 
     def __init__(self, cond_dim: int, channels: int, rngs: nnx.Rngs,

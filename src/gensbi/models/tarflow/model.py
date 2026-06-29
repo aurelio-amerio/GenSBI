@@ -230,8 +230,10 @@ class TarFlow(nnx.Module):
             Data samples of shape ``(B, *example_shape)`` or a single
             unbatched sample that will be promoted to a batch of one.
         cond : Array or None, optional
-            Conditioning input of shape ``(B, cond_dim)``, or ``None`` for
-            an unconditional model.
+            Conditioning batch of shape ``(B, cond_dim)`` for
+            ``cond_channels == 1``, or ``(B, cond_dim, C_cond)`` for
+            ``cond_channels > 1`` (flattened internally by the conditioner).
+            Pass ``None`` for an unconditional model.
 
         Returns
         -------
@@ -262,8 +264,10 @@ class TarFlow(nnx.Module):
         key : jax.random.PRNGKey
             Random key for noise sampling.
         cond : Array or None, optional
-            Conditioning input of shape ``(B, cond_dim)``. If provided,
-            ``nsamples`` is inferred from ``cond.shape[0]``.
+            Conditioning batch of shape ``(nsamples, cond_dim)`` for
+            ``cond_channels == 1``, or ``(nsamples, cond_dim, C_cond)`` for
+            ``cond_channels > 1`` (flattened internally by the conditioner).
+            If provided, ``nsamples`` is inferred from ``cond.shape[0]``.
         nsamples : int or None, optional
             Number of samples to draw. Required when ``cond`` is ``None``.
 

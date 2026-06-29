@@ -66,6 +66,11 @@ def test_single_obs_batched_warns_and_takes_first():
     assert out.shape == (DIM_COND, 1) and jnp.array_equal(out, x_o[0])
 
 
+def test_single_obs_rejects_rank_lt_2():
+    with pytest.raises(ValueError):
+        _single_obs(jnp.zeros((DIM_COND,)))
+
+
 def test_init_and_wrap():
     pipe = build_pipeline()
     assert isinstance(pipe, ConditionalFlowPipeline)

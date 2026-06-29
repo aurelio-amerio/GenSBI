@@ -12,7 +12,7 @@ def test_shapes_scalar_per_token():
 def test_shapes_block_per_token():
     tok = VectorTokenizer(dim=6, block_size=2)
     assert (tok.T, tok.F) == (3, 2)
-    x = jnp.arange(12.0).reshape(2, 6)
+    x = jnp.arange(12.0).reshape(2, 6, 1)
     assert tok.tokenize(x).shape == (2, 3, 2)
 
 
