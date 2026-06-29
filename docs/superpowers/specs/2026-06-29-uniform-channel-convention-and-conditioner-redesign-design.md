@@ -315,7 +315,7 @@ implementation detail to be resolved during coding; the contract above is bindin
 - **TarFlow benchmarks** (the three from Part 1b): add `vec_channels`/
   `cond_channels` as needed (default 1); pass channel-carrying inference
   conditions `(1, cond_dim, 1)`.
-- **Gate:** smoke-train all six scripts (3 MAF + 3 TarFlow, two_moons + slcp) a few
+- **Gate:** smoke-train all six scripts on CPU (3 MAF + 3 TarFlow, two_moons + slcp) a few
   steps each to confirm end-to-end wiring. Heavier full-training runs remain the
   owner's GPU responsibility.
 
