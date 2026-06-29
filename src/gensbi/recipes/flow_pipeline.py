@@ -11,21 +11,17 @@ import jax
 import jax.numpy as jnp
 
 from gensbi.recipes.pipeline import AbstractPipeline
-from gensbi.utils.math import _expand_dims
 
 
-def _squeeze_ch(x):
-    """``(B, dim, 1) -> (B, dim)``; pass ``(B, dim)`` through. Asserts ch == 1."""
+def _require_channel(x, name="input"):
+    """Enforce a tabular channel axis (B, dim, C); reject a bare (B, dim)."""
     x = jnp.asarray(x)
-    if x.ndim == 3:
-        if x.shape[-1] != 1:
-            raise ValueError(
-                f"flow pipeline requires a singleton channel axis (ch == 1), "
-                f"got shape {x.shape}")
-        return x[..., 0]
-    if x.ndim == 2:
-        return x
-    raise ValueError(f"expected (B, dim) or (B, dim, 1), got shape {tuple(x.shape)}")
+    if x.ndim < 3:
+        raise ValueError(
+            f"{name} must carry a channel axis (B, dim, C); got shape "
+            f"{tuple(x.shape)}. A bare (B, dim) is not accepted — add a trailing "
+            f"channel axis (e.g. x[..., None] for C=1).")
+    return x
 
 
 def _warn_if_batched(n):
@@ -39,47 +35,16 @@ def _warn_if_batched(n):
         )
 
 
-def _single_cond(x_o):
-    """Reduce a single conditioning observation to a 1-D ``(dim_cond,)`` vector.
-
-    Mirrors the flow-matching pipeline convention: ``x_o`` carries a leading
-    batch axis (size 1 for one observation); a batch axis > 1 warns and the
-    first observation is used.
-    """
+def _single_obs(x_o):
+    """Strip the leading batch axis from ONE observation, keeping the channel
+    (and any structured) axes. Warn + take-first on a batch axis > 1."""
     x_o = jnp.asarray(x_o)
-    if x_o.ndim >= 2:
-        _warn_if_batched(x_o.shape[0])
-        x_o = x_o[0]                       # take the first observation
-    x_o = jnp.squeeze(x_o)
-    if x_o.ndim == 0:
-        x_o = x_o[None]
-    if x_o.ndim != 1:
+    if x_o.ndim < 2:
         raise ValueError(
-            f"x_o must reduce to a single (dim_cond,) vector; got shape "
-            f"{tuple(jnp.asarray(x_o).shape)}. sample()/log_prob() take ONE "
-            f"observation at a time.")
-    return x_o
-
-
-def _structured_cond(x_o):
-    """Strip the leading batch axis from a single structured observation.
-
-    For ``structured_cond=True`` the conditioner owns the per-observation
-    shape, so ``x_o`` carries a leading batch axis (size 1 for one observation,
-    as produced by e.g. ``x_o[i:i+1]``). That axis is removed unconditionally —
-    never by a ``shape[0] == 1`` heuristic — so a genuine size-1 *data* axis
-    (e.g. a ``(1, 1, W, C)`` image with ``H == 1``) is never mistaken for the
-    batch axis and silently dropped. Mirroring the flow-matching pipeline, a
-    batch axis > 1 warns and the first observation is used.
-    """
-    cond = jnp.asarray(x_o)
-    if cond.ndim < 1:
-        raise ValueError(
-            "structured_cond x_o must carry a leading batch axis (e.g. shape "
-            f"(1,) + per_observation_shape); got a scalar of shape "
-            f"{tuple(cond.shape)}.")
-    _warn_if_batched(cond.shape[0])
-    return cond[0]                        # take the first observation
+            "x_o must carry a leading batch axis (e.g. (1, dim_cond, C)); got "
+            f"shape {tuple(x_o.shape)}.")
+    _warn_if_batched(x_o.shape[0])
+    return x_o[0]
 
 
 def _warn_unused_kwargs(kwargs):
@@ -123,13 +88,13 @@ class ConditionalFlowPipeline(AbstractPipeline):
 
     Notes
     -----
-    Following the flow-matching pipelines, every single-observation method
-    (:meth:`sample`, :meth:`log_prob`, :meth:`get_sampler`,
-    :meth:`get_log_prob_fn`) expects ``x_o`` to carry a **leading batch axis**
-    (size 1 for one observation; tabular ``x_o`` may also be a bare
-    ``(dim_cond,)`` vector). A batch axis > 1 emits a ``UserWarning`` and the
-    first observation is used — pass a batch of conditions to
-    :meth:`sample_batched` instead.
+    Every single-observation method (:meth:`sample`, :meth:`log_prob`,
+    :meth:`get_sampler`, :meth:`get_log_prob_fn`) expects ``x_o`` to carry a
+    **leading batch axis** (size 1 for one observation) **and a channel axis**:
+    shape ``(1, dim_cond, C)`` for tabular, or ``(1,) + per_obs_shape`` for
+    structured. A bare ``(B, dim)`` tensor is rejected — add ``[..., None]``
+    for ``C = 1``. A batch axis > 1 emits a ``UserWarning`` and the first
+    observation is used — pass a batch to :meth:`sample_batched` instead.
     """
 
     def __init__(self, model, train_dataset, val_dataset, dim_obs, dim_cond,
@@ -142,14 +107,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
         self._standardized = False
         self.structured_obs = structured_obs
         self.structured_cond = structured_cond
-        self._obs_passthrough = structured_obs or ch_obs > 1
-        self._cond_passthrough = structured_cond or ch_cond > 1
 
     def _prep_obs(self, x):
-        return x if self._obs_passthrough else _squeeze_ch(x)
+        x = jnp.asarray(x)
+        return x if self.structured_obs else _require_channel(x, "obs")
 
     def _prep_cond(self, x):
-        return x if self._cond_passthrough else _squeeze_ch(x)
+        x = jnp.asarray(x)
+        return x if self.structured_cond else _require_channel(x, "cond")
 
     # --- abstract methods the flow pipeline does not use (mirror ConditionalPipeline) ---
     @classmethod
@@ -238,8 +203,6 @@ class ConditionalFlowPipeline(AbstractPipeline):
             ``axis=(0, 1)`` for per-channel standardization when ``C > 1``.
         """
         obs = jnp.asarray(obs_data)
-        if not self._obs_passthrough and obs.ndim == 3:
-            obs = _squeeze_ch(obs)
         mean = jnp.mean(obs, axis=axis)
         std = jnp.std(obs, axis=axis)
         std = jnp.where(std < 1e-6, 1.0, std)     # guard zero-variance dims
@@ -283,20 +246,12 @@ class ConditionalFlowPipeline(AbstractPipeline):
     def get_sampler(self, x_o, use_ema=True, **kwargs):
         """Return a sampler closure for a single conditioning observation.
 
-        When ``structured_cond=True``, the returned sampler produces
-        ``(nsamples, dim_obs)`` instead of ``(nsamples, dim_obs, 1)``
-        because the model's conditioner owns the shape (no
-        ``_expand_dims``).
-
         Parameters
         ----------
         x_o : Array
-            Single observation used as the conditioning input.  Shape
-            ``(dim_cond,)`` or ``(1, dim_cond)`` for the tabular path.  When
-            ``structured_cond=True`` the conditioner owns the per-observation
-            shape and ``x_o`` must carry a leading batch axis of size 1, i.e.
-            ``(1,) + per_observation_shape`` (e.g. ``(1, H, W, C)``); that
-            batch axis is stripped, so a genuine size-1 data axis is preserved.
+            Single conditioning observation.  Must carry a leading batch axis
+            and a channel axis for tabular cond: shape ``(1, dim_cond, C)``.
+            For structured cond: ``(1,) + per_observation_shape``.
             A leading batch axis > 1 emits a ``UserWarning`` and the first
             observation is used (use :meth:`sample_batched` for many conditions).
         use_ema : bool, optional
@@ -306,29 +261,17 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Returns
         -------
         sampler : Callable
-            A function ``(key, nsamples) -> Array``.  Shape is
-            ``(nsamples, dim_obs, 1)`` for the tabular path (``ch_obs == 1``
-            and ``structured_cond=False``), ``(nsamples, dim_obs, C)`` when
-            ``ch_obs > 1`` (channel-passthrough), or the model's native output
-            shape when ``structured_cond=True`` or ``structured_obs=True``.
+            A function ``(key, nsamples) -> Array`` returning the model's
+            native output shape ``(nsamples, dim_obs, C)`` (channel always
+            carried).
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
-        if self._cond_passthrough:
-            cond = _structured_cond(x_o)             # strip the leading batch axis
-
-            def sampler(key, nsamples):
-                cond_b = jnp.broadcast_to(cond, (nsamples,) + cond.shape)
-                return flow.sample(key, cond=cond_b)  # model owns the output shape
-            return sampler
-
-        cond = _single_cond(x_o)                      # (dim_cond,)  [tabular path]
+        cond = _single_obs(x_o)                          # (cond_dim, C_cond) or (H,W,C)
 
         def sampler(key, nsamples):
-            cond_b = jnp.broadcast_to(cond, (nsamples, cond.shape[0]))
-            samples = flow.sample(key, cond=cond_b)    # (nsamples, dim_obs[, C])
-            return samples if self._obs_passthrough else _expand_dims(samples)
-
+            cond_b = jnp.broadcast_to(cond, (nsamples,) + cond.shape)
+            return flow.sample(key, cond=cond_b)         # model owns (nsamples, dim, C)
         return sampler
 
     def sample(self, key, x_o, nsamples=10_000, use_ema=True, **kwargs):
@@ -360,7 +303,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """Draw posterior samples for a batch of conditioning observations.
 
         Loops the single-observation sampler over the ``B`` conditions and
-        stacks results to ``(nsamples, B, dim_obs, 1)`` — the same layout
+        stacks results to ``(nsamples, B, dim_obs, C)`` — the same layout
         as the base pipeline.
 
         Unlike :class:`~gensbi.recipes.pipeline.AbstractPipeline`
@@ -428,22 +371,12 @@ class ConditionalFlowPipeline(AbstractPipeline):
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
-        if self._cond_passthrough:
-            cond = _structured_cond(x_o)             # strip the leading batch axis
-
-            def log_prob_fn(x_1):
-                obs = self._prep_obs(x_1)
-                cond_b = jnp.broadcast_to(cond, (obs.shape[0],) + cond.shape)
-                return flow.log_prob(obs, cond_b)
-            return log_prob_fn
-
-        cond = _single_cond(x_o)                  # (dim_cond,)  [tabular path]
+        cond = _single_obs(x_o)
 
         def log_prob_fn(x_1):
-            obs = self._prep_obs(x_1)             # (B, dim_obs[, C])
-            cond_b = jnp.broadcast_to(cond, (obs.shape[0], cond.shape[0]))
-            return flow.log_prob(obs, cond_b)     # (B,)
-
+            obs = self._prep_obs(x_1)
+            cond_b = jnp.broadcast_to(cond, (obs.shape[0],) + cond.shape)
+            return flow.log_prob(obs, cond_b)            # (B,)
         return log_prob_fn
 
     def log_prob(self, x_1, x_o, use_ema=True, **kwargs):

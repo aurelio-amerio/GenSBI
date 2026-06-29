@@ -46,11 +46,12 @@ def _field_pipe(tmp_path):
 def test_field_loss_finite_and_grads(tmp_path):
     pipe = _field_pipe(tmp_path)
     loss_fn = pipe.get_loss_fn()
-    obs = jnp.asarray(_x[:32])           # (32, H, W, Ch)
-    cond = jnp.asarray(_theta[:32])      # (32, D)
+    obs = jnp.asarray(_x[:32])                    # (32, H, W, Ch)
+    cond = jnp.asarray(_theta[:32])[..., None]    # (32, D, 1)
     loss = loss_fn(pipe.model, (obs, cond), key=jax.random.PRNGKey(0))
     assert loss.shape == () and jnp.isfinite(loss)
     grads = nnx.grad(loss_fn)(pipe.model, (obs, cond), jax.random.PRNGKey(0))
+
     leaves = jax.tree_util.tree_leaves(grads)
     assert any(jnp.any(jnp.abs(g) > 0) for g in leaves)
 

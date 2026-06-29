@@ -6,9 +6,7 @@ from gensbi.models.core.tokenizers import VectorTokenizer
 def test_shapes_scalar_per_token():
     tok = VectorTokenizer(dim=6, block_size=1)
     assert (tok.T, tok.F) == (6, 1)
-    x = jnp.arange(12.0).reshape(2, 6)
-    t = tok.tokenize(x)
-    assert t.shape == (2, 6, 1)
+    assert tok.tokenize(jnp.arange(12.0).reshape(2, 6, 1)).shape == (2, 6, 1)
 
 
 def test_shapes_block_per_token():
@@ -20,7 +18,7 @@ def test_shapes_block_per_token():
 
 def test_roundtrip_identity():
     tok = VectorTokenizer(dim=6, block_size=2)
-    x = jnp.arange(12.0).reshape(2, 6)
+    x = jnp.arange(12.0).reshape(2, 6, 1)
     assert jnp.allclose(tok.detokenize(tok.tokenize(x)), x)
 
 
@@ -35,8 +33,7 @@ from gensbi.models.core.patching import patchify_2d
 
 
 def test_vector_tokenizer_example_shape():
-    tok = VectorTokenizer(dim=6, block_size=1)
-    assert tok.example_shape == (6,)
+    assert VectorTokenizer(dim=6, block_size=1).example_shape == (6, 1)
 
 
 def test_image_tokenizer_shapes():
@@ -66,8 +63,8 @@ def test_image_tokenizer_non_divisible_raises():
 
 def test_vector_tokenizer_channels_one_unchanged():
     tok = VectorTokenizer(dim=6, block_size=2)
-    assert tok.F == 2 and tok.T == 3 and tok.example_shape == (6,)
-    x = jnp.arange(2 * 6).reshape(2, 6).astype(jnp.float32)
+    assert tok.F == 2 and tok.T == 3 and tok.example_shape == (6, 1)
+    x = jnp.arange(2 * 6).reshape(2, 6, 1).astype(jnp.float32)
     assert jnp.array_equal(tok.detokenize(tok.tokenize(x)), x)
 
 

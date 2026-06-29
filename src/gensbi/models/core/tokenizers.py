@@ -13,12 +13,17 @@ from gensbi.models.core.patching import patchify_2d, depatchify_2d
 
 
 class VectorTokenizer:
-    """Reshape a flat vector into a token sequence.
+    """Reshape a channel-carrying vector into a token sequence.
 
-    Maps ``(B, dim)`` vectors to ``(B, T, F)`` token sequences via a
+    Maps ``(B, dim, C)`` tensors to ``(B, T, F)`` token sequences via a
     volume-preserving reshape (log-det 0, no learned parameters). The number
-    of tokens is ``T = dim // block_size`` and each token has ``F = block_size``
-    features.
+    of tokens is ``T = dim // block_size`` and each token has
+    ``F = block_size * channels`` features. ``C = 1`` gives ``(B, dim, 1)``
+    input — a trailing channel axis is always required.
+
+    ``example_shape`` is always ``(dim, channels)`` (e.g. ``(dim, 1)`` for
+    the standard tabular path). ``detokenize`` always returns
+    ``(B, dim, channels)``; the channel axis is never collapsed.
 
     Parameters
     ----------
@@ -27,9 +32,8 @@ class VectorTokenizer:
     block_size : int, optional
         Number of features per token.  Must divide ``dim``.  Default is 1.
     channels : int, optional
-        Number of channels in the input.  Default is 1 (flat vector
-        ``(B, dim)``).  When > 1 the input is ``(B, dim, C)`` and each
-        token carries ``F = block_size * channels`` features.
+        Number of channels.  Default is 1 (``C = 1 → (dim, 1)`` shape).
+        Each token carries ``F = block_size * channels`` features.
 
     Raises
     ------
@@ -48,16 +52,16 @@ class VectorTokenizer:
         self.channels = channels
         self.F = block_size * channels
         self.T = dim // block_size
-        self.example_shape = (dim,) if channels == 1 else (dim, channels)
+        self.example_shape = (dim, channels)
 
     def tokenize(self, x: Array) -> Array:
-        """Reshape a flat vector into a token sequence.
+        """Reshape a channel-carrying vector into a token sequence.
 
         Parameters
         ----------
         x : Array
-            Input of shape ``(B, dim)`` when ``channels == 1``, or
-            ``(B, dim, C)`` when ``channels > 1``.
+            Input of shape ``(B, dim, C)`` where ``C`` is the channel count
+            (``C = 1`` for the standard tabular path gives ``(B, dim, 1)``).
 
         Returns
         -------
@@ -68,7 +72,7 @@ class VectorTokenizer:
         return x.reshape(x.shape[0], self.T, self.F)
 
     def detokenize(self, tokens: Array) -> Array:
-        """Flatten a token sequence back into a (channelled) vector.
+        """Flatten a token sequence back into a channel-carrying vector.
 
         Parameters
         ----------
@@ -78,12 +82,10 @@ class VectorTokenizer:
         Returns
         -------
         Array
-            Vector of shape ``(B, dim)`` when ``channels == 1``, or
-            ``(B, dim, channels)`` when ``channels > 1``.
+            Vector of shape ``(B, dim, channels)`` for all ``C >= 1``
+            (``C = 1`` gives ``(B, dim, 1)``; never collapsed to ``(B, dim)``).
         """
         B = tokens.shape[0]
-        if self.channels == 1:
-            return tokens.reshape(B, self.dim)
         return tokens.reshape(B, self.dim, self.channels)
 
 

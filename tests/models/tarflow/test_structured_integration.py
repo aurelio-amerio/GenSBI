@@ -35,7 +35,8 @@ def test_field_nle_train_smoke_and_mclmc(tmp_path):
                                  layers_per_block=2, standardize=True))
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(val_every=1, checkpoint_dir=str(tmp_path)))
-    pipe = ConditionalFlowPipeline(flow, _iter(_x, _theta), _iter(_x, _theta),
+    _theta_c = _theta[..., None]   # (N, D, 1) — channel-carrying cond
+    pipe = ConditionalFlowPipeline(flow, _iter(_x, _theta_c), _iter(_x, _theta_c),
                                    dim_obs=H * W * Ch, dim_cond=D,
                                    structured_obs=True, training_config=cfg)
     pipe.fit_standardization(_x)
@@ -58,12 +59,13 @@ def test_image_npe_train_smoke_and_sample(tmp_path):
                                  standardize=True))
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(val_every=1, checkpoint_dir=str(tmp_path)))
-    pipe = ConditionalFlowPipeline(flow, _iter(_theta, _x), _iter(_theta, _x),
+    _theta_ch = _theta[..., None]   # (N, D, 1) — channel-carrying obs stream
+    pipe = ConditionalFlowPipeline(flow, _iter(_theta_ch, _x), _iter(_theta_ch, _x),
                                    dim_obs=D, dim_cond=H * W * Ch,
                                    structured_cond=True, training_config=cfg)
-    pipe.fit_standardization(_theta)        # standardize the modeled theta
+    pipe.fit_standardization(_theta_ch)     # standardize the modeled theta
     pipe.train(nnx.Rngs(0), nsteps=2, save_model=False)
     s = pipe.sample(jax.random.PRNGKey(3), _x[0:1], nsamples=16, use_ema=False)
-    assert s.shape == (16, D) and jnp.all(jnp.isfinite(s))
-    lp = pipe.log_prob(_theta[:5], _x[0:1], use_ema=False)
+    assert s.shape == (16, D, 1) and jnp.all(jnp.isfinite(s))
+    lp = pipe.log_prob(_theta_ch[:5], _x[0:1], use_ema=False)
     assert lp.shape == (5,) and jnp.all(jnp.isfinite(lp))

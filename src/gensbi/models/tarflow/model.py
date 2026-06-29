@@ -285,15 +285,26 @@ class TarFlow(nnx.Module):
         x = self.tokenizer.detokenize(x)
         return x * self.std[...] + self.mean[...]
 
+    def _fit_stat(self, s, dtype):
+        s = jnp.asarray(s, dtype=dtype)
+        es = self.example_shape
+        if s.ndim == 1 and s.shape[0] == es[0]:
+            s = s.reshape((es[0],) + (1,) * (len(es) - 1))   # (dim,) -> (dim,1,...)
+        return jnp.broadcast_to(s, es)
+
     def set_standardization(self, mean, std) -> None:
         """Set the mean and standard deviation for input standardization.
+
+        Accepts shapes ``(dim,)`` (broadcast to ``(dim, 1)``), ``(dim, 1)``,
+        ``(C,)`` (per-channel broadcast), or a scalar broadcastable to
+        ``example_shape``.
 
         Parameters
         ----------
         mean : Array
-            Per-element mean of shape ``example_shape``.
+            Mean broadcastable to ``example_shape``.
         std : Array
-            Per-element standard deviation of shape ``example_shape``.
+            Standard deviation broadcastable to ``example_shape``.
 
         Returns
         -------
@@ -306,7 +317,5 @@ class TarFlow(nnx.Module):
         """
         if not self._standardize:
             raise ValueError("TarFlow built with standardize=False")
-        self.mean[...] = jnp.broadcast_to(
-            jnp.asarray(mean, dtype=self.mean[...].dtype), self.example_shape)
-        self.std[...] = jnp.broadcast_to(
-            jnp.asarray(std, dtype=self.std[...].dtype), self.example_shape)
+        self.mean[...] = self._fit_stat(mean, self.mean[...].dtype)
+        self.std[...] = self._fit_stat(std, self.std[...].dtype)

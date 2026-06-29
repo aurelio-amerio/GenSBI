@@ -64,8 +64,8 @@ def test_grads_flow_to_params(tmp_path):
 def test_fit_standardization_sets_both_models(tmp_path):
     pipe = _pipe(tmp_path)
     pipe.fit_standardization(DATA[:800, :M])     # standardize x
-    exp_mean = jnp.mean(DATA[:800, :M, 0], axis=0)
-    exp_std = jnp.std(DATA[:800, :M, 0], axis=0)
+    exp_mean = jnp.mean(DATA[:800, :M], axis=0)  # (M, 1)
+    exp_std = jnp.std(DATA[:800, :M], axis=0)    # (M, 1)
     for flow in (pipe.model, pipe.ema_model):
         assert jnp.allclose(flow.mean[...], exp_mean, atol=1e-4)
         assert jnp.allclose(flow.std[...], exp_std, atol=1e-4)

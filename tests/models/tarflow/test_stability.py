@@ -126,7 +126,7 @@ def _force_large_neg_a(flow, val=-60.0):
 
 
 def test_default_is_finite_where_legacy_exp_overflows():
-    x = jax.random.normal(jax.random.PRNGKey(1), (8, 4))
+    x = jax.random.normal(jax.random.PRNGKey(1), (8, 4, 1))
 
     legacy = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=0, head_dim=8,
                                    num_heads=2, num_blocks=3, layers_per_block=2,

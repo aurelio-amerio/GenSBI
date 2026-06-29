@@ -160,9 +160,9 @@ def test_prefix_conditions_output():
 def test_tarflow_vector_channels_one_unchanged():
     m = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), modeled="vector", dim=4,
                               num_blocks=2, head_dim=8, num_heads=2))
-    x = jnp.zeros((3, 4))
+    x = jnp.zeros((3, 4, 1))
     assert m.log_prob(x).shape == (3,)
-    assert m.sample(jax.random.PRNGKey(0), nsamples=3).shape == (3, 4)
+    assert m.sample(jax.random.PRNGKey(0), nsamples=3).shape == (3, 4, 1)
 
 
 def test_tarflow_vector_multichannel():

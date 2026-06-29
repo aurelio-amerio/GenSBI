@@ -72,8 +72,9 @@ class NLEPosterior:
         Parameters
         ----------
         x_o : Array
-            Observed data.  Squeezed to shape ``(dim_x,)`` unless
-            ``structured_obs=True``.
+            Observed data.  For non-structured: squeezed then promoted to
+            ``(dim_x, 1)`` (channel-carrying).  For ``structured_obs=True``:
+            kept as-is (image/field shape).
 
         Returns
         -------
@@ -81,9 +82,9 @@ class NLEPosterior:
             Frozen log-density container for ``x_o``.
         """
         if self.structured_obs:
-            x_o = jnp.asarray(x_o)
+            x_o = jnp.asarray(x_o)                                   # (H, W, C)
         else:
-            x_o = jnp.atleast_1d(jnp.squeeze(jnp.asarray(x_o)))   # (dim_x,)
+            x_o = jnp.atleast_1d(jnp.squeeze(jnp.asarray(x_o)))[..., None]   # (dim_x, 1)
         flow = self.flow
         prior = self.prior
         dim = int(prior.event_shape[0])
@@ -93,7 +94,7 @@ class NLEPosterior:
 
         def log_likelihood(theta):
             theta = jnp.asarray(theta)
-            return flow.log_prob(x_o[None], theta[None, :])[0]
+            return flow.log_prob(x_o[None], theta[None, :, None])[0]   # cond (1,dim,1)
 
         def log_posterior(theta):
             return log_likelihood(theta) + log_prior(theta)

@@ -12,7 +12,8 @@ from gensbi.inference import NLEPosterior, TemperedSMC
 
 class GaussianMock:
     def log_prob(self, x, cond):
-        return -0.5 * jnp.sum((x - cond) ** 2, axis=-1)
+        diff = (x - cond).reshape(x.shape[0], -1)     # flatten all non-batch dims
+        return -0.5 * jnp.sum(diff ** 2, axis=-1)     # (B,)
 
 
 class BimodalMock:
@@ -24,8 +25,9 @@ class BimodalMock:
         self.mu, self.sigma = mu, sigma
 
     def log_prob(self, x, cond):
-        a = -0.5 * jnp.sum(((cond - self.mu) / self.sigma) ** 2, axis=-1)
-        b = -0.5 * jnp.sum(((cond + self.mu) / self.sigma) ** 2, axis=-1)
+        cf = cond.reshape(cond.shape[0], -1)           # flatten all non-batch dims
+        a = -0.5 * jnp.sum(((cf - self.mu) / self.sigma) ** 2, axis=-1)
+        b = -0.5 * jnp.sum(((cf + self.mu) / self.sigma) ** 2, axis=-1)
         return jax.scipy.special.logsumexp(jnp.stack([a, b], axis=-1), axis=-1)
 
 

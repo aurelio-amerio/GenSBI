@@ -10,7 +10,7 @@ import pytest
 
 from gensbi.models import MAFlow, MAFlowParams
 from gensbi.recipes.flow_pipeline import (
-    ConditionalFlowPipeline, _squeeze_ch, _single_cond, _structured_cond,
+    ConditionalFlowPipeline, _require_channel, _single_obs,
 )
 
 DIM_OBS = 2
@@ -47,26 +47,23 @@ def build_pipeline(**cfg):
         ch_obs=1, ch_cond=1, training_config=training_config)
 
 
-def test_squeeze_ch():
-    x = jnp.zeros((4, DIM_OBS, 1))
-    assert _squeeze_ch(x).shape == (4, DIM_OBS)
-    assert _squeeze_ch(jnp.zeros((4, DIM_OBS))).shape == (4, DIM_OBS)
+def test_require_channel_rejects_bare_2d():
+    assert _require_channel(jnp.zeros((4, DIM_OBS, 1)), "obs").shape == (4, DIM_OBS, 1)
     with pytest.raises(ValueError):
-        _squeeze_ch(jnp.zeros((4, DIM_OBS, 2)))
+        _require_channel(jnp.zeros((4, DIM_OBS)), "obs")
 
 
-def test_single_cond():
-    assert _single_cond(jnp.zeros((1, DIM_COND, 1))).shape == (DIM_COND,)
-    assert _single_cond(jnp.zeros((DIM_COND,))).shape == (DIM_COND,)
+def test_single_obs_keeps_channel_strips_batch():
+    assert _single_obs(jnp.zeros((1, DIM_COND, 1))).shape == (DIM_COND, 1)
+    img = jnp.arange(1*1*4*2).reshape(1, 1, 4, 2)
+    assert _single_obs(img).shape == (1, 4, 2)               # H==1 preserved
 
 
-def test_single_cond_batched_warns_and_takes_first():
-    # flow-matching convention: batch axis > 1 warns and uses the first obs.
-    x_o = jnp.arange(3 * DIM_COND).reshape(3, DIM_COND)
+def test_single_obs_batched_warns_and_takes_first():
+    x_o = jnp.arange(3 * DIM_COND).reshape(3, DIM_COND, 1)
     with pytest.warns(UserWarning, match="batch dimension"):
-        out = _single_cond(x_o)
-    assert out.shape == (DIM_COND,)
-    assert jnp.array_equal(out, x_o[0])
+        out = _single_obs(x_o)
+    assert out.shape == (DIM_COND, 1) and jnp.array_equal(out, x_o[0])
 
 
 def test_init_and_wrap():
@@ -181,23 +178,6 @@ def test_log_prob_depends_on_condition(tmp_path):
     assert not jnp.allclose(lp_a, lp_b)
 
 
-def test_structured_cond_strips_only_batch_axis():
-    # The leading batch axis is stripped unconditionally; a genuine size-1
-    # data axis (here H == 1) must be preserved, not mistaken for the batch.
-    img = jnp.arange(1 * 1 * 4 * 2).reshape(1, 1, 4, 2)   # (B=1, H=1, W=4, C=2)
-    out = _structured_cond(img)
-    assert out.shape == (1, 4, 2)                         # H==1 preserved
-    assert jnp.array_equal(out, img[0])
-
-    # A batch axis of size > 1 warns (flow-matching convention) and uses the first.
-    batched = jnp.arange(3 * 5).reshape(3, 5)
-    with pytest.warns(UserWarning, match="batch dimension"):
-        first = _structured_cond(batched)
-    assert jnp.array_equal(first, batched[0])
-
-    with pytest.raises(ValueError):
-        _structured_cond(jnp.asarray(1.0))               # scalar: no batch axis
-
 
 def test_exported_from_recipes():
     from gensbi.recipes import ConditionalFlowPipeline as CFP
@@ -224,25 +204,25 @@ def test_sample_batched_shape(tmp_path):
 def test_get_sampler_warns_on_unknown_kwarg():
     pipe = build_pipeline()
     with pytest.warns(UserWarning, match="ignores unsupported keyword"):
-        pipe.get_sampler(jnp.zeros((1, DIM_COND)), step_size=0.1)
+        pipe.get_sampler(jnp.zeros((1, DIM_COND, 1)), step_size=0.1)
 
 
 def test_get_log_prob_fn_warns_on_unknown_kwarg():
     pipe = build_pipeline()
     with pytest.warns(UserWarning, match="ignores unsupported keyword"):
-        pipe.get_log_prob_fn(jnp.zeros((1, DIM_COND)), nsteps=10)
+        pipe.get_log_prob_fn(jnp.zeros((1, DIM_COND, 1)), nsteps=10)
 
 
 def test_sample_batched_warns_on_unknown_kwarg():
     pipe = build_pipeline()
     with pytest.warns(UserWarning, match="ignores unsupported keyword"):
-        pipe.sample_batched(jax.random.PRNGKey(0), jnp.zeros((2, DIM_COND)), 4,
+        pipe.sample_batched(jax.random.PRNGKey(0), jnp.zeros((2, DIM_COND, 1)), 4,
                             solver="dopri5")
 
 
 def test_known_calls_do_not_warn(recwarn):
     pipe = build_pipeline()
-    pipe.get_sampler(jnp.zeros((1, DIM_COND)))
+    pipe.get_sampler(jnp.zeros((1, DIM_COND, 1)))
     assert not any(
         "ignores unsupported" in str(w.message) for w in recwarn.list)
 
@@ -322,10 +302,8 @@ def _build_multichannel_both_pipeline():
 
 
 def test_multichannel_both_sample_and_logprob_shapes():
-    """Both _obs_passthrough and _cond_passthrough active (ch_obs=ch_cond=2)."""
+    """Both ch_obs=ch_cond=2 active."""
     pipe = _build_multichannel_both_pipeline()
-    assert pipe._obs_passthrough
-    assert pipe._cond_passthrough
 
     # single cond must carry a leading batch axis + channel axis
     x_o = jnp.zeros((1, DIM_COND, 2))

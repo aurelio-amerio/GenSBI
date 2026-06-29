@@ -17,7 +17,7 @@ def test_params_defaults_and_validation():
 
 def test_maflow_sample_shape_and_standardize():
     flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=2, n_layers=3))
-    c = jax.random.normal(jax.random.key(0), (7, 2))
-    s = flow.sample(jax.random.key(1), cond=c)
-    assert s.shape == (7, 4)
-    flow.set_standardization(jnp.ones(4), 2.0 * jnp.ones(4))   # no raise
+    c = jax.random.normal(jax.random.key(0), (7, 2, 1))
+    assert flow.sample(jax.random.key(1), cond=c).shape == (7, 4, 1)
+    assert flow.log_prob(jnp.zeros((5, 4, 1)), jnp.zeros((5, 2, 1))).shape == (5,)
+    flow.set_standardization(jnp.ones((4, 1)), 2.0 * jnp.ones((4, 1)))

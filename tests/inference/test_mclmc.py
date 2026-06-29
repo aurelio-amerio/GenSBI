@@ -25,7 +25,8 @@ def test_check_rescale_domain_guard():
 class GaussianMock:
     """log q(x | theta) = N(x; theta, I); with prior N(0, I) => posterior N(x_o/2, 0.5 I)."""
     def log_prob(self, x, cond):
-        return -0.5 * jnp.sum((x - cond) ** 2, axis=-1)
+        diff = (x - cond).reshape(x.shape[0], -1)     # flatten all non-batch dims
+        return -0.5 * jnp.sum(diff ** 2, axis=-1)     # (B,)
 
 
 def test_unadjusted_prior_recovery_real_flow():

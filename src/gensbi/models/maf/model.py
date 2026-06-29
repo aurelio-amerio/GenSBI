@@ -183,8 +183,8 @@ class MAFlow(nnx.Module):
         Returns
         -------
         Array
-            Sample array of shape ``(nsamples, dim)`` when ``channels == 1``,
-            or ``(nsamples, dim, C)`` when ``channels > 1``.
+            Sample array of shape ``(nsamples, dim, channels)`` for all ``C >= 1``
+            (``C = 1`` gives ``(nsamples, dim, 1)``; channel axis is never collapsed).
         """
         base = self._base()
         if cond is not None:
@@ -201,18 +201,27 @@ class MAFlow(nnx.Module):
             x = jax.vmap(lambda ui: single(ui, None))(u)
         else:
             x = jax.vmap(single)(u, cond)
-        if self.channels > 1:
-            x = x.reshape(x.shape[0], self.dim, self.channels)
+        x = x.reshape(x.shape[0], self.dim, self.channels)   # always carry the channel
         return x
+
+    @staticmethod
+    def _fit_stat(s, es):
+        s = jnp.asarray(s)
+        if s.ndim == 1 and s.shape[0] == es[0]:
+            s = s.reshape((es[0],) + (1,) * (len(es) - 1))
+        return jnp.broadcast_to(s, es)
 
     def set_standardization(self, mean, std) -> None:
         """Set the data-end Standardize bijection's mean/std buffers in place.
 
+        Accepts shapes ``(dim,)`` (broadcast to ``(dim, 1)``), ``(dim, 1)``,
+        or a scalar broadcastable to ``(dim, channels)``.
+
         Raises ValueError if built with ``standardize=False``.
         """
-        target = (self.dim,) if self.channels == 1 else (self.dim, self.channels)
-        mean = jnp.broadcast_to(jnp.asarray(mean), target).reshape(-1)
-        std = jnp.broadcast_to(jnp.asarray(std), target).reshape(-1)
+        es = (self.dim, self.channels)
+        mean = self._fit_stat(mean, es).reshape(-1)
+        std = self._fit_stat(std, es).reshape(-1)
         for b in self.chain.bijections:
             if isinstance(b, Standardize):
                 b.set_stats(mean, std)

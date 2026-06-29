@@ -24,9 +24,9 @@ def test_tarflow_log_prob_and_sample_shapes():
     flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=2,
                                  head_dim=8, num_heads=2, num_blocks=2,
                                  layers_per_block=1))
-    x = jax.random.normal(jax.random.key(1), (3, 4))
+    x = jax.random.normal(jax.random.key(1), (3, 4, 1))
     c = jax.random.normal(jax.random.key(2), (3, 2))
     lp = flow.log_prob(x, c)
     assert lp.shape == (3,) and bool(jnp.all(jnp.isfinite(lp)))
     s = flow.sample(jax.random.key(3), cond=c)
-    assert s.shape == (3, 4)
+    assert s.shape == (3, 4, 1)

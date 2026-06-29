@@ -11,7 +11,8 @@ from gensbi.inference.posterior import NLEPosterior, PosteriorTarget
 class GaussianMock:
     """log q(x | theta) = sum_i N(x_i; theta_i, 1) (batched over rows)."""
     def log_prob(self, x, cond):
-        return -0.5 * jnp.sum((x - cond) ** 2, axis=-1)   # (B,)
+        diff = (x - cond).reshape(x.shape[0], -1)     # flatten all non-batch dims
+        return -0.5 * jnp.sum(diff ** 2, axis=-1)     # (B,)
 
 
 def test_build_target_decomposition_and_finiteness():
@@ -53,7 +54,8 @@ def test_structured_obs_keeps_observation_shape():
         def log_prob(self, x, cond):
             # assert x retained its (B, H, W) structure
             assert x.shape == (1, H, W)
-            return -0.5 * jnp.sum(cond ** 2, axis=-1)  # (B,)
+            cond_flat = cond.reshape(cond.shape[0], -1)
+            return -0.5 * jnp.sum(cond_flat ** 2, axis=-1)  # (B,)
 
     prior = make_gaussian_prior((dim,))
     post = NLEPosterior(ImageFlow(), prior, structured_obs=True)

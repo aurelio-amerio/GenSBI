@@ -22,7 +22,7 @@ def test_sample_shape_and_roundtrip_consistency():
                                nn_width=16, nn_depth=1))
     cond = jnp.zeros((5, 2))
     samples = flow.sample(jax.random.PRNGKey(3), cond=cond, nsamples=5)
-    assert samples.shape == (5, 3)
+    assert samples.shape == (5, 3, 1)
     # log_prob of samples is finite (forward then inverse must be consistent)
     assert jnp.all(jnp.isfinite(flow.log_prob(samples, cond)))
 

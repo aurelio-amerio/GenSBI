@@ -54,9 +54,9 @@ def test_forward_logdet_matches_inverse(transformer):
 
 def test_maf_channels_one_unchanged():
     flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=2))
-    x = jnp.zeros((4, 3)); cond = jnp.zeros((4, 2))
+    x = jnp.zeros((4, 3, 1)); cond = jnp.zeros((4, 2))
     assert flow.log_prob(x, cond).shape == (4,)
-    assert flow.sample(jax.random.PRNGKey(0), cond=cond).shape == (4, 3)
+    assert flow.sample(jax.random.PRNGKey(0), cond=cond).shape == (4, 3, 1)
 
 
 def test_maf_multichannel_obs_logprob_and_sample():
