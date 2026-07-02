@@ -7,7 +7,6 @@ Trains ``q(obs | cond)`` by max-likelihood. NPE convention: ``obs = theta``,
 
 import warnings
 
-import jax
 import jax.numpy as jnp
 
 from gensbi.recipes.pipeline import AbstractPipeline
@@ -270,24 +269,21 @@ class ConditionalFlowPipeline(AbstractPipeline):
                        **kwargs):
         """Draw posterior samples for a batch of conditioning observations.
 
-        Loops the single-observation sampler over the ``B`` conditions and
-        stacks results to ``(nsamples, B, dim_obs, C)`` — the same layout
-        as the base pipeline.
-
-        Unlike :class:`~gensbi.recipes.pipeline.AbstractPipeline`
-        ``sample_batched`` (which threads the condition through
-        ``model_extras``/``obs_ids``/``cond_ids``), this override bakes
-        each condition into a :meth:`get_sampler` closure.  Extra
-        ``kwargs`` (e.g. ``chunk_size``/``show_progress_bars``) are
-        accepted and silently ignored.
+        Draws all ``B`` conditions in **one** batched autoregressive pass:
+        each condition is repeated ``nsamples`` times and concatenated into
+        a single ``(B * nsamples, ...)`` batch fed to the flow's ``sample``,
+        rather than looping the single-observation sampler ``B`` times.
+        Memory scales with the product ``B * nsamples``.
 
         Parameters
         ----------
         key : jax.random.PRNGKey
-            Random key split across the ``B`` conditions.
+            Random key for the batched sampling pass.
         x_o : Array
-            Batch of observations of shape ``(B, dim_cond, 1)`` or
-            ``(B, dim_cond)``.
+            Batch of observations. For tabular cond: shape
+            ``(B, dim_cond, C)`` (a bare ``(B, dim_cond)`` raises
+            ``ValueError`` — add a trailing channel axis). For structured
+            cond: ``(B,) + per_obs_shape``.
         nsamples : int, optional
             Number of posterior samples per observation.  Default is
             10 000.
@@ -303,17 +299,20 @@ class ConditionalFlowPipeline(AbstractPipeline):
         -------
         samples : Array
             Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` (or
-            ``(nsamples, B, dim_obs)`` when ``structured_cond=True``).
+            ``(nsamples, B, dim_obs)`` when ``structured_cond=True``), with
+            ``out[:, i]`` the samples for condition ``i`` — the same
+            layout as the previous per-condition loop.
         """
         _warn_unused_kwargs(kwargs)
+        flow = self.ema_model if use_ema else self.model
         x_o = jnp.asarray(x_o)
+        if not self.structured_cond:
+            x_o = _require_channel(x_o, "x_o")
         B = x_o.shape[0]
-        keys = jax.random.split(key, B)
-        results = [
-            self.get_sampler(x_o[i : i + 1], use_ema=use_ema)(keys[i], nsamples)
-            for i in range(B)
-        ]
-        return jnp.stack(results, axis=1)          # (nsamples, B, dim_obs, 1)
+        cond = jnp.repeat(x_o, nsamples, axis=0)      # (B*nsamples, ...): c0 x nsamples, c1 x nsamples, ...
+        samples = flow.sample(key, cond=cond)          # (B*nsamples, dim_obs, C) — ONE batched AR pass
+        samples = samples.reshape((B, nsamples) + samples.shape[1:])
+        return jnp.moveaxis(samples, 0, 1)             # (nsamples, B, dim_obs, C)
 
     def get_log_prob_fn(self, x_o, use_ema=True, **kwargs):
         """Return a log-probability closure for a single conditioning observation.

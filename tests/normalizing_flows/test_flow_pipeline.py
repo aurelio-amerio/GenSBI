@@ -244,6 +244,36 @@ def test_sample_batched_shape(tmp_path):
     assert s0.shape == (16, DIM_OBS, 1)
 
 
+class _EchoFlow:
+    """Stub flow whose sample() echoes its condition — makes the
+    condition->column routing of sample_batched exactly checkable."""
+    def sample(self, key, cond):
+        return cond
+
+
+def test_sample_batched_routes_each_condition_to_its_column():
+    pipe = build_pipeline()
+    pipe.ema_model = _EchoFlow()
+    B, nsamples = 3, 5
+    x_o = jnp.stack([jnp.full((DIM_COND, 1), float(i)) for i in range(B)])
+    out = pipe.sample_batched(jax.random.PRNGKey(0), x_o, nsamples)
+    assert out.shape == (nsamples, B, DIM_COND, 1)
+    for i in range(B):
+        assert jnp.all(out[:, i] == float(i))
+
+
+def test_sample_batched_shape_with_real_flow():
+    pipe = build_pipeline()
+    out = pipe.sample_batched(jax.random.PRNGKey(0), jnp.zeros((2, DIM_COND, 1)), 7)
+    assert out.shape == (7, 2, DIM_OBS, 1)
+
+
+def test_sample_batched_rejects_channelless_xo():
+    pipe = build_pipeline()
+    with pytest.raises(ValueError, match="channel axis"):
+        pipe.sample_batched(jax.random.PRNGKey(0), jnp.zeros((2, DIM_COND)), 4)
+
+
 def test_get_sampler_warns_on_unknown_kwarg():
     pipe = build_pipeline()
     with pytest.warns(UserWarning, match="ignores unsupported keyword"):
