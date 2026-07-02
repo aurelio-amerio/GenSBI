@@ -11,6 +11,7 @@ Selecting the appropriate model is crucial for balancing computational efficienc
 | **Flux1** | Most applications | High (>10) | Excellent | Scalable, memory-efficient, RoPE embeddings | Only for conditional models |
 | **Simformer** | Rapid prototyping | Low (<10) | Good | Explicit embeddings, simple, fast for low-dim | Poor scaling to high-dim |
 | **Flux1Joint** | Joint modeling | Medium-High | Good | Explicit joint learning, scalable | Slightly less complex than Flux1 (no double stream layers)|
+| **MAFlow / TarFlow** (experimental) | Exact likelihoods, NLE | Low-Medium (MAFlow), Medium-High (TarFlow) | Good | One-pass exact log-prob, no ODE solve, MCMC-ready NLE | Experimental API; autoregressive sampling |
 
 ### When to Use Each Model
 
@@ -29,11 +30,14 @@ Selecting the appropriate model is crucial for balancing computational efficienc
   - Your problem is likelihood-dominated
   - You have medium to high dimensional problems (4-100 dimensions)
 
+- **MAFlow / TarFlow** (experimental): Use when you need exact, cheap likelihood evaluations — likelihood-dominated problems, NLE with MCMC posterior sampling, or fast repeated `log_prob` calls. See [Normalizing Flows](/advanced/normalizing_flows).
+
 ## Model Descriptions
 
 - **Flux1**: The robust default choice for most applications. It excels at solving inverse problems involving high-dimensional data and complex posterior distributions. Unlike `Simformer`, `Flux1` embeds only the data explicitly and relies on Rotary Positional Embeddings (RoPE) for variable identification. This approach is significantly more memory-efficient and scales better to higher dimensions.
 - **Simformer**: A lightweight transformer model optimized for low-dimensional data and rapid prototyping. It explicitly models the joint distribution of all variables by embedding values, variable IDs, and condition masks separately. This explicit embedding strategy is highly effective for low-dimensional data (fewer than ~10 dimensions) as it compresses the data less than RoPE, but it is less computationally efficient for high-dimensional problems.
 - **Flux1Joint**: Combines the joint-distribution modeling capabilities of `Simformer` with the scalable architecture of `Flux1`. It adopts the `Flux1` embedding strategy (explicit data embedding + RoPE for IDs), making it ideal for high-dimensional problems where explicitly learning the joint reconstruction of variables is crucial. While it outperforms `Simformer` on complex, high-dimensional tasks, `Simformer` is often preferable for very low-dimensional problems (less than 4 dimensions) due to its superior explicit ID embedding.
+- **MAFlow / TarFlow** (experimental): Discrete normalizing flows. `MAFlow` is a masked-autoregressive flow (MADE layers, affine or spline transformers) for tabular problems; `TarFlow` is a transformer autoregressive flow (a port of Apple's TarFlow/STARFlow) that scales further and supports image-valued variables and conditions. Both give exact log-densities in one forward pass and integrate with `ConditionalFlowPipeline` and `NLEPosterior`. See [Normalizing Flows](/advanced/normalizing_flows).
 
 ## ID Embedding Strategies
 

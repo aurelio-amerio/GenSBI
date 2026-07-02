@@ -29,6 +29,7 @@ GenSBI provides three main model architectures:
 - **Flux1**: A double-stream transformer using Rotary Position Embeddings (RoPE). Best for high-dimensional problems.
 - **Simformer**: A single-stream transformer that explicitly embeds variable IDs. Best for low-dimensional problems.
 - **Flux1Joint**: A single-stream variant of Flux1 for explicit joint modeling. Good for likelihood-dominated problems.
+- **MAFlow / TarFlow** (experimental): Discrete normalizing flows (masked-autoregressive and transformer-autoregressive) with exact one-pass likelihoods — no ODE integration. Enable NPE and, uniquely, NLE with MCMC posterior sampling. See [Normalizing Flows](/advanced/normalizing_flows).
 
 **For detailed comparisons and selection guides, see [Model Cards](/basics/model_cards).**
 
