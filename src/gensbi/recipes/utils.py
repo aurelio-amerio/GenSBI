@@ -1,3 +1,4 @@
+import warnings
 from jax import numpy as jnp
 import numpy as np
 from typing import Union, Tuple
@@ -351,3 +352,20 @@ def parse_training_config(config_path: str):
         training_config["ema_decay"] = opt_params["ema_decay"]
 
     return training_config
+
+
+_MOVED_TO_PATCHING = ("patchify_2d", "depatchify_2d")
+
+
+def __getattr__(name):
+    # Deprecated aliases: the functions moved to gensbi.models.core.patching,
+    # but main's published docs teach this import path. Keep one release cycle.
+    if name in _MOVED_TO_PATCHING:
+        warnings.warn(
+            f"gensbi.recipes.utils.{name} has moved to "
+            "gensbi.models.core.patching; this alias will be removed in a "
+            "future release.",
+            DeprecationWarning, stacklevel=2)
+        from gensbi.models.core import patching
+        return getattr(patching, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

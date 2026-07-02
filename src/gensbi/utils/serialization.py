@@ -6,8 +6,6 @@ caller has already reconstructed from its ``Params``. The file stores a flat
 ``{str: array}`` table (nnx state paths joined with ``"."``) plus a small
 provenance ``metadata`` blob; it does *not* carry enough information to rebuild
 the model architecture (an explicit non-goal).
-
-See ``docs/superpowers/specs/2026-06-27-safetensors-serialization-design.md``.
 """
 
 from __future__ import annotations

@@ -15,6 +15,23 @@ from gensbi.recipes.joint_pipeline import sample_condition_mask
 from gensbi.recipes.utils import init_ids_1d, init_ids_2d, init_ids_joint, _normalize_patch_size
 
 
+def test_patchify_2d_deprecated_reexport():
+    import gensbi.recipes.utils as recipes_utils
+    from gensbi.models.core.patching import depatchify_2d, patchify_2d
+
+    with pytest.warns(DeprecationWarning, match="moved to gensbi.models.core.patching"):
+        assert recipes_utils.patchify_2d is patchify_2d
+    with pytest.warns(DeprecationWarning, match="moved to gensbi.models.core.patching"):
+        assert recipes_utils.depatchify_2d is depatchify_2d
+
+
+def test_recipes_utils_unknown_attribute_still_raises():
+    import gensbi.recipes.utils as recipes_utils
+
+    with pytest.raises(AttributeError):
+        recipes_utils.does_not_exist
+
+
 def test_sample_condition_mask():
     key = jax.random.PRNGKey(0)
     num_samples = 10
