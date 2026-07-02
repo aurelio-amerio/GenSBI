@@ -7,12 +7,12 @@ from gensbi.models.tarflow.conditioners import VectorConditioner
 from gensbi.models import TarFlow, TarFlowParams
 
 
-def _make(T=4, F=1, channels=8, cond_dim=2, zero_init=True, rngs=None):
+def _make(T=4, F=1, channels=8, cond_dim=2, zero_init=True, rngs=None, perm=None):
     rngs = rngs or nnx.Rngs(0)
-    perm = jnp.arange(T)                     # identity perm
-    inv_perm = jnp.argsort(perm)
+    if perm is None:
+        perm = jnp.arange(T)                 # identity perm
     cond = AdditiveBiasConditioner(cond_dim, channels, rngs=rngs)
-    return MetaBlock(F=F, channels=channels, T=T, perm=perm, inv_perm=inv_perm,
+    return MetaBlock(F=F, channels=channels, T=T, perm=perm,
                      conditioner=cond, num_layers=2, num_heads=2, expansion=2,
                      rngs=rngs, zero_init=zero_init)
 
@@ -83,7 +83,7 @@ def _make_prefix(T=4, F=1, channels=8, cond_dim=2, cond_channels=1, zero_init=Fa
     perm = jnp.arange(T)
     cond = VectorConditioner(cond_dim, cond_channels, channels, rngs=rngs)
     return MetaBlock(F=F, channels=channels, T=T, perm=perm,
-                     inv_perm=jnp.argsort(perm), conditioner=cond, num_layers=2,
+                     conditioner=cond, num_layers=2,
                      num_heads=2, expansion=2, rngs=rngs, zero_init=zero_init)
 
 
@@ -180,3 +180,9 @@ def test_tarflow_set_standardization_per_channel():
                               num_heads=2, standardize=True))
     m.set_standardization(jnp.array([1.0, 2.0]), jnp.array([1.0, 1.0]))  # (C,)
     assert m.log_prob(jnp.zeros((2, 4, 2))).shape == (2,)
+
+
+def test_metablock_derives_inverse_permutation():
+    perm = jax.random.permutation(jax.random.PRNGKey(3), 4)
+    block = _make(perm=perm)
+    assert jnp.array_equal(block.inv_perm[...], jnp.argsort(perm))

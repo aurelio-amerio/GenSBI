@@ -189,7 +189,7 @@ class TarFlow(nnx.Module):
             else:
                 perm = jax.random.permutation(rngs.params(), T)
             blocks.append(MetaBlock(
-                F=F, channels=channels, T=T, perm=perm, inv_perm=jnp.argsort(perm),
+                F=F, channels=channels, T=T, perm=perm,
                 conditioner=make_cond(), num_layers=params.layers_per_block,
                 num_heads=params.num_heads, expansion=4, rngs=rngs,
                 zero_init=params.zero_init, use_softplus=params.use_softplus,

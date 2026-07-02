@@ -98,9 +98,8 @@ class MetaBlock(nnx.Module):
     T : int
         Number of tokens in the sequence.
     perm : Array
-        Token permutation applied before the affine transform.
-    inv_perm : Array
-        Inverse permutation of ``perm``; applied after the affine transform.
+        Token permutation applied before the affine transform. The inverse
+        permutation is derived internally via ``argsort``.
     conditioner : AdditiveBiasConditioner or VectorConditioner or ImageConditioner
         Module that provides ``(bias, prefix)`` conditioning signals via its
         ``embed`` method.
@@ -125,15 +124,16 @@ class MetaBlock(nnx.Module):
         to disable clipping.
     """
 
-    def __init__(self, F, channels, T, perm, inv_perm, conditioner,
+    def __init__(self, F, channels, T, perm, conditioner,
                  num_layers, num_heads, expansion, rngs, zero_init=True,
                  use_softplus=True, soft_clip=4.0):
         self.F = F
         self.use_softplus = use_softplus
         self.soft_clip = soft_clip
         self.T = T
-        self.perm = Mask(jnp.asarray(perm, dtype=jnp.int32))
-        self.inv_perm = Mask(jnp.asarray(inv_perm, dtype=jnp.int32))
+        perm = jnp.asarray(perm, dtype=jnp.int32)
+        self.perm = Mask(perm)
+        self.inv_perm = Mask(jnp.argsort(perm))
         self.conditioner = conditioner
         self.proj_in = nnx.Linear(F, channels, rngs=rngs)
         self.sos_embed = nnx.Param(

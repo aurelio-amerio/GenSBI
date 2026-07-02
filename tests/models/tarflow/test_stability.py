@@ -15,7 +15,7 @@ class _NullCond(nnx.Module):
 
 def _block(use_softplus=True, soft_clip=4.0, F=1, channels=16, zero_init=True):
     return MetaBlock(
-        F=F, channels=channels, T=4, perm=jnp.arange(4), inv_perm=jnp.arange(4),
+        F=F, channels=channels, T=4, perm=jnp.arange(4),
         conditioner=_NullCond(), num_layers=1, num_heads=2, expansion=4,
         rngs=nnx.Rngs(0), zero_init=zero_init, use_softplus=use_softplus, soft_clip=soft_clip,
     )
