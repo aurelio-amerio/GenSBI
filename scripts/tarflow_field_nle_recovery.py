@@ -83,8 +83,8 @@ def main():
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(nsteps=nsteps, val_every=val_every, max_lr=3e-4,
                     checkpoint_dir=tempfile.mkdtemp(), early_stopping=False))
-    pipe = ConditionalFlowPipeline(flow, make_ds(x[:n_train], theta[:n_train]),
-                                   make_ds(x[n_train:], theta[n_train:]),
+    pipe = ConditionalFlowPipeline(flow, make_ds(x[:n_train], theta[:n_train][..., None]),
+                                   make_ds(x[n_train:], theta[n_train:][..., None]),
                                    dim_obs=Mdim, dim_cond=D, structured_obs=True,
                                    training_config=cfg)
     pipe.fit_standardization(x[:n_train])
