@@ -13,6 +13,7 @@ from flax import nnx
 from jax import Array
 
 from gensbi.core.prior import make_gaussian_prior
+from gensbi.models.core.stats import fit_stat
 from gensbi.normalizing_flows.bijections.base import Bijection
 from gensbi.models.maf.made import MaskedAutoregressive
 from gensbi.normalizing_flows.bijections.chain import Chain
@@ -204,24 +205,18 @@ class MAFlow(nnx.Module):
         x = x.reshape(x.shape[0], self.dim, self.channels)   # always carry the channel
         return x
 
-    @staticmethod
-    def _fit_stat(s, es):
-        s = jnp.asarray(s)
-        if s.ndim == 1 and s.shape[0] == es[0]:
-            s = s.reshape((es[0],) + (1,) * (len(es) - 1))
-        return jnp.broadcast_to(s, es)
-
     def set_standardization(self, mean, std) -> None:
         """Set the data-end Standardize bijection's mean/std buffers in place.
 
         Accepts shapes ``(dim,)`` (broadcast to ``(dim, 1)``), ``(dim, 1)``,
-        or a scalar broadcastable to ``(dim, channels)``.
+        ``(C,)`` (per-channel broadcast), or a scalar broadcastable to
+        ``(dim, channels)``.
 
         Raises ValueError if built with ``standardize=False``.
         """
         es = (self.dim, self.channels)
-        mean = self._fit_stat(mean, es).reshape(-1)
-        std = self._fit_stat(std, es).reshape(-1)
+        mean = fit_stat(mean, es).reshape(-1)
+        std = fit_stat(std, es).reshape(-1)
         for b in self.chain.bijections:
             if isinstance(b, Standardize):
                 b.set_stats(mean, std)
