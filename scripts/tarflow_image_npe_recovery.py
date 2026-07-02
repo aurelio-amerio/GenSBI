@@ -70,7 +70,7 @@ def main():
                 .map(lambda i: (obs_n[np.array(i)], cond_n[np.array(i)])))
 
     flow = TarFlow(TarFlowParams(rngs=nnx.Rngs(args.seed), dim=D,
-                                 modeled="vector", cond="image_prefix",
+                                 modeled="vector", cond="image",
                                  cond_img_size=H, cond_patch_size=2,
                                  cond_channels=Ch, head_dim=args.head_dim,
                                  num_heads=args.channels // args.head_dim,
@@ -79,17 +79,17 @@ def main():
     cfg = ConditionalFlowPipeline.get_default_training_config()
     cfg.update(dict(nsteps=nsteps, val_every=val_every, max_lr=3e-4,
                     checkpoint_dir=tempfile.mkdtemp(), early_stopping=False))
-    pipe = ConditionalFlowPipeline(flow, make_ds(theta[:n_train], x[:n_train]),
-                                   make_ds(theta[n_train:], x[n_train:]),
+    pipe = ConditionalFlowPipeline(flow, make_ds(theta[:n_train][..., None], x[:n_train]),
+                                   make_ds(theta[n_train:][..., None], x[n_train:]),
                                    dim_obs=D, dim_cond=Mdim, structured_cond=True,
                                    training_config=cfg)
-    pipe.fit_standardization(theta[:n_train])
+    pipe.fit_standardization(theta[:n_train][..., None])
     pipe.train(nnx.Rngs(args.seed), nsteps=nsteps, save_model=False)
 
     theta_o = jnp.array([0.7, -0.4])
     x_o = (theta_o @ G.T).reshape(1, H, Wd, Ch)
     mean_a, cov_a = analytic_posterior(x_o.reshape(-1))
-    s = pipe.sample(jax.random.PRNGKey(7), x_o, nsamples=num_samples)
+    s = pipe.sample(jax.random.PRNGKey(7), x_o, nsamples=num_samples)[..., 0]
     mean_s, cov_s = jnp.mean(s, axis=0), jnp.cov(s.T)
     print(f"mode={'SMOKE' if smoke else 'FULL'} elapsed={time.time()-t0:.1f}s")
     print(f"analytic mean {mean_a}  achieved {mean_s}")
