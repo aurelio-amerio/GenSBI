@@ -5,19 +5,38 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
+import math
 import pytest
 
 from gensbi.core.prior import make_gaussian_prior
 from gensbi.models import MAFlow, MAFlowParams
 from gensbi.inference import NLEPosterior, MCLMC
-from gensbi.inference.samplers import _check_rescale_domain
+from gensbi.inference.samplers import _check_rescale_domain, _rescale
+
+
+def _expected_ceil_uniform(s):
+    """Closed-form E[ceil(U(0,1) * s)] for s = k + frac, k = floor(s)."""
+    k = math.floor(s)
+    frac = s - k
+    return (k * (k + 1) / 2 + frac * (k + 1)) / s
+
+
+@pytest.mark.parametrize("mu", [1.0, 1.5, 5.3, 15.0])
+def test_rescale_gives_exact_mean_step_count(mu):
+    s = float(_rescale(mu))
+    assert _expected_ceil_uniform(s) == pytest.approx(mu, rel=1e-6)
+
+
+def test_rescale_matches_blackjax_reference_at_15():
+    # blackjax adjusted_mclmc_dynamic: k = floor(2mu-1); x = k(mu-(k+1)/2)/(k+1-mu).
+    # At mu=15 the fractional part is 0, so s = 2*mu - 1 = 29 exactly.
+    assert float(_rescale(15.0)) == pytest.approx(29.0)
 
 
 def test_check_rescale_domain_guard():
-    # mu > 0.5 is in-domain (no raise); mu <= 0.5 raises with a clear message.
-    _check_rescale_domain(2.0)
-    _check_rescale_domain(0.5 + 1e-3)
-    for bad in (0.5, 0.25, 0.0):
+    _check_rescale_domain(2.0)      # fine
+    _check_rescale_domain(1.0)      # boundary: s=1, always one step
+    for bad in (0.999, 0.5, 0.0, -3.0):
         with pytest.raises(ValueError, match="L/step_size"):
             _check_rescale_domain(bad)
 

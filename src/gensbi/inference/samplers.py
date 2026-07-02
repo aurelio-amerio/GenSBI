@@ -10,31 +10,34 @@ import jax.numpy as jnp
 def _rescale(mu):
     """Map a mean trajectory length to a uniform-integer draw scale.
 
-    From the blackjax adjusted-MCLMC tutorial: choosing the number of integration
-    steps as ceil(U(0,1) * _rescale(L/step_size)) keeps the average near the tuned L.
+    From blackjax's ``adjusted_mclmc_dynamic``: drawing the number of
+    integration steps as ``ceil(U(0,1) * _rescale(L/step_size))`` makes the
+    average number of steps exactly ``mu = L / step_size``.
 
-    ``mu`` must satisfy ``2 * mu - 1 > 0`` (i.e. ``mu > 0.5``); see
-    :func:`_check_rescale_domain` for the host-side guard applied to the tuned value.
+    ``mu`` must satisfy ``mu >= 1``; see :func:`_check_rescale_domain` for the
+    host-side guard applied to the tuned value.
     """
-    k = jax.lax.max(1, jnp.round(jnp.log(2 * mu - 1) / jnp.log(2)).astype(int))
-    return mu / k
+    k = jnp.floor(2 * mu - 1)
+    x = k * (mu - 0.5 * (k + 1)) / (k + 1 - mu)
+    return k + x
 
 
 def _check_rescale_domain(mu):
     """Raise if the tuned ``mu = L / step_size`` is outside ``_rescale``'s domain.
 
-    ``_rescale`` takes ``log(2 * mu - 1)``, which is non-finite for ``mu <= 0.5``.
-    A host-side check on the tuned value turns an otherwise silent all-NaN
-    posterior into an explicit error. (The in-tuning average is left to blackjax;
-    this is a convenience sampler, not a fully hardened MCMC engine.)
+    For ``mu < 1``, ``floor(2 * mu - 1) == 0`` and ``_rescale`` returns 0, so
+    the integration-step draw ``ceil(U(0,1) * 0)`` is 0 — a chain that never
+    moves. A host-side check on the tuned value turns that silent failure into
+    an explicit error. (The in-tuning average is left to blackjax; this is a
+    convenience sampler, not a fully hardened MCMC engine.)
     """
     mu = float(mu)
-    if 2.0 * mu - 1.0 <= 0.0:
+    if mu < 1.0:
         raise ValueError(
-            f"adjusted-MCLMC tuning produced L/step_size = {mu:.4g} <= 0.5, for "
-            f"which the integration-step rescaling log(2*mu - 1) is undefined; "
-            f"the run would yield all-NaN samples. This usually means tuning did "
-            f"not converge — try increasing num_tuning_steps, increasing "
+            f"adjusted-MCLMC tuning produced L/step_size = {mu:.4g} < 1, for "
+            f"which the randomized integration-step count rounds to zero and "
+            f"the chain would never move. This usually means tuning did not "
+            f"converge — try increasing num_tuning_steps, increasing "
             f"num_samples, or using MCLMC(adjusted=False).")
 
 
