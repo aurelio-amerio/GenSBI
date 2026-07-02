@@ -262,6 +262,27 @@ def test_sample_batched_routes_each_condition_to_its_column():
         assert jnp.all(out[:, i] == float(i))
 
 
+def test_sample_batched_structured_cond_routes_each_condition_to_its_column():
+    # structured_cond=True: bare structured x_o shapes are legal (no channel
+    # axis required) -- _require_channel must NOT fire for this shape, and
+    # routing must still map condition i -> output column i.
+    flow = MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=DIM_OBS, cond_dim=DIM_COND,
+                               n_layers=4, nn_width=32, nn_depth=2, standardize=True))
+    cfg = ConditionalFlowPipeline.get_default_training_config()
+    pipe = ConditionalFlowPipeline(
+        flow, _make_ds(DATA[:800]), _make_ds(DATA[800:]),
+        DIM_OBS, DIM_COND, ch_obs=1, ch_cond=1, training_config=cfg,
+        structured_cond=True)
+    pipe.ema_model = _EchoFlow()
+
+    B = 3
+    x_o = jnp.stack([jnp.full((2, 4), float(i)) for i in range(B)])  # (3, 2, 4)
+    out = pipe.sample_batched(jax.random.PRNGKey(0), x_o, nsamples=5)
+    assert out.shape == (5, B, 2, 4)
+    for i in range(B):
+        assert jnp.all(out[:, i] == x_o[i])
+
+
 def test_sample_batched_shape_with_real_flow():
     pipe = build_pipeline()
     out = pipe.sample_batched(jax.random.PRNGKey(0), jnp.zeros((2, DIM_COND, 1)), 7)

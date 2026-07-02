@@ -61,7 +61,7 @@ class TarFlowParams:
     cond : str, optional
         Conditioning strategy: ``"bias"`` (per-token additive bias via
         :class:`~gensbi.models.tarflow.conditioners.AdditiveBiasConditioner`),
-        ``"vector"`` (prefix tokens from a vector via
+        ``"vector"`` (one condition token per modeled coordinate via
         :class:`~gensbi.models.tarflow.conditioners.VectorConditioner`),
         or ``"image"`` (prefix tokens from an image via
         :class:`~gensbi.models.tarflow.conditioners.ImageConditioner`).

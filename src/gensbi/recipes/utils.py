@@ -130,10 +130,11 @@ def _single_obs(x_o, *, channel, name="x_o"):
     if channel == "require":
         x_o = _require_channel(x_o, name)
     elif channel == "promote":
+        orig_shape = tuple(x_o.shape)
         x_o = _expand_dims(x_o)
         if x_o.ndim < 3:
             raise ValueError(
-                f"{name} must be at least 1-D (dim,); got shape {tuple(x_o.shape)}.")
+                f"{name} must be at least 1-D (dim,); got shape {orig_shape}.")
     elif channel == "none":
         if x_o.ndim < 2:
             raise ValueError(

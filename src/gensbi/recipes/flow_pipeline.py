@@ -260,8 +260,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Returns
         -------
         samples : Array
-            Posterior samples of shape ``(nsamples, dim_obs, 1)`` (or
-            ``(nsamples, dim_obs)`` when ``structured_cond=True``).
+            Posterior samples of shape ``(nsamples, dim_obs, 1)`` for the
+            tabular default (``C = 1``), or ``(nsamples, dim_obs, C)`` for
+            ``ch_obs = C`` — the channel axis is always carried for a
+            vector-modeled variable regardless of ``structured_cond`` (a
+            structured condition changes only ``x_o``'s expected shape, not
+            the modeled variable's). When ``structured_obs=True``, samples
+            instead have shape ``(nsamples,) + per_obs_shape``, the model's
+            native structured output.
         """
         return self.get_sampler(x_o, use_ema=use_ema, **kwargs)(key, nsamples)
 
@@ -298,10 +304,16 @@ class ConditionalFlowPipeline(AbstractPipeline):
         Returns
         -------
         samples : Array
-            Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` (or
-            ``(nsamples, B, dim_obs)`` when ``structured_cond=True``), with
-            ``out[:, i]`` the samples for condition ``i`` — the same
-            layout as the previous per-condition loop.
+            Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` for the
+            tabular default (``C = 1``), or ``(nsamples, B, dim_obs, C)`` for
+            ``ch_obs = C`` — the channel axis is always carried for a
+            vector-modeled variable regardless of ``structured_cond`` (a
+            structured condition changes only ``x_o``'s expected shape, not
+            the modeled variable's). When ``structured_obs=True``, samples
+            instead have shape ``(nsamples, B) + per_obs_shape``, the
+            model's native structured output. In both cases ``out[:, i]``
+            is the samples for condition ``i`` — the same layout as the
+            previous per-condition loop.
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model

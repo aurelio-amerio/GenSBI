@@ -14,6 +14,11 @@ def fit_stat(s, example_shape, dtype=None):
     - ``(C,)`` — broadcast along the leading axes (per-channel stats);
     - scalar — broadcast everywhere.
 
+    Ambiguous case: when ``s`` is 1-D and ``C == dim``, the ``(dim,)``
+    per-dimension interpretation wins over the ``(C,)`` per-channel one,
+    since the shape-match check below tests ``s.shape[0] == example_shape[0]``
+    (i.e. against ``dim``) first.
+
     Parameters
     ----------
     s : array-like
