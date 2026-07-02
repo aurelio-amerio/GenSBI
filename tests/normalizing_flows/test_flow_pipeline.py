@@ -9,9 +9,8 @@ import grain
 import pytest
 
 from gensbi.models import MAFlow, MAFlowParams
-from gensbi.recipes.flow_pipeline import (
-    ConditionalFlowPipeline, _require_channel, _single_obs,
-)
+from gensbi.recipes.flow_pipeline import ConditionalFlowPipeline
+from gensbi.recipes.utils import _require_channel, _single_obs
 
 DIM_OBS = 2
 DIM_COND = 3
@@ -53,22 +52,61 @@ def test_require_channel_rejects_bare_2d():
         _require_channel(jnp.zeros((4, DIM_OBS)), "obs")
 
 
-def test_single_obs_keeps_channel_strips_batch():
-    assert _single_obs(jnp.zeros((1, DIM_COND, 1))).shape == (DIM_COND, 1)
-    img = jnp.arange(1*1*4*2).reshape(1, 1, 4, 2)
-    assert _single_obs(img).shape == (1, 4, 2)               # H==1 preserved
+def test_single_obs_require_keeps_batch_and_channel():
+    out = _single_obs(jnp.zeros((1, DIM_COND, 1)), channel="require")
+    assert out.shape == (1, DIM_COND, 1)
 
 
-def test_single_obs_batched_warns_and_takes_first():
+def test_single_obs_none_keeps_structured_shape():
+    img = jnp.arange(1 * 1 * 4 * 2).reshape(1, 1, 4, 2)
+    assert _single_obs(img, channel="none").shape == (1, 1, 4, 2)
+
+
+def test_single_obs_batched_raises():
     x_o = jnp.arange(3 * DIM_COND).reshape(3, DIM_COND, 1)
-    with pytest.warns(UserWarning, match="batch dimension"):
-        out = _single_obs(x_o)
-    assert out.shape == (DIM_COND, 1) and jnp.array_equal(out, x_o[0])
+    with pytest.raises(ValueError, match="single observation"):
+        _single_obs(x_o, channel="require")
+    with pytest.raises(ValueError, match="single observation"):
+        _single_obs(x_o, channel="none")
 
 
-def test_single_obs_rejects_rank_lt_2():
+def test_single_obs_require_rejects_channelless():
+    # (1, dim): documented contract violation -> the class-docstring ValueError
+    with pytest.raises(ValueError, match="channel axis"):
+        _single_obs(jnp.zeros((1, DIM_COND)), channel="require")
+    # (dim, C): must NOT be misread as `dim` observations (review Finding 3)
+    with pytest.raises(ValueError, match="channel axis"):
+        _single_obs(jnp.zeros((DIM_COND, 2)), channel="require")
+
+
+def test_single_obs_promote_1d_and_2d():
+    assert _single_obs(jnp.zeros((DIM_COND,)), channel="promote").shape == (1, DIM_COND, 1)
+    assert _single_obs(jnp.zeros((1, DIM_COND)), channel="promote").shape == (1, DIM_COND, 1)
+
+
+def test_single_obs_none_rejects_rank_lt_2():
     with pytest.raises(ValueError):
-        _single_obs(jnp.zeros((DIM_COND,)))
+        _single_obs(jnp.zeros((DIM_COND,)), channel="none")
+
+
+def test_get_sampler_rejects_channelless_xo():
+    pipe = build_pipeline()
+    with pytest.raises(ValueError, match="channel axis"):
+        pipe.get_sampler(jnp.zeros((1, DIM_COND)))
+    with pytest.raises(ValueError, match="channel axis"):
+        pipe.get_sampler(jnp.zeros((DIM_COND, 2)))
+
+
+def test_get_log_prob_fn_rejects_channelless_xo():
+    pipe = build_pipeline()
+    with pytest.raises(ValueError, match="channel axis"):
+        pipe.get_log_prob_fn(jnp.zeros((1, DIM_COND)))
+
+
+def test_get_sampler_batched_xo_raises():
+    pipe = build_pipeline()
+    with pytest.raises(ValueError, match="single observation"):
+        pipe.get_sampler(jnp.zeros((5, DIM_COND, 1)))
 
 
 def test_init_and_wrap():

@@ -31,7 +31,6 @@ from gensbi.models import ConditionalWrapper
 from einops import repeat
 
 from gensbi.models.flux1 import model
-from gensbi.utils.model_wrapping import _expand_dims
 
 import os
 
@@ -44,31 +43,8 @@ from gensbi.recipes.utils import (
     _normalize_patch_size,
     build_edm_path,
     build_sm_path,
+    _single_obs,
 )
-
-import warnings
-
-
-def _single_cond_fm(x_o):
-    """Reduce a batched conditioning input to a single observation.
-
-    The conditional pipeline's single-observation methods (``sample``,
-    ``get_sampler``, ``log_prob``, ``get_log_prob_fn``) condition on ONE
-    observation. If ``x_o`` carries a leading batch axis > 1, warn and take the
-    first observation (use ``sample_batched`` for many conditions). The size-1
-    batch axis is preserved so ``_expand_dims`` and the model broadcast
-    correctly.
-    """
-    x_o = jnp.asarray(x_o)
-    n = x_o.shape[0] if x_o.ndim >= 1 else 1
-    if n > 1:
-        warnings.warn(
-            f"x_o has batch dimension {n} > 1. sample()/log_prob() use a single "
-            "condition. To use multiple conditions, use sample_batched() instead.",
-            UserWarning, stacklevel=3,
-        )
-        x_o = x_o[0:1]
-    return x_o
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +218,7 @@ class ConditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        cond = _expand_dims(_single_cond_fm(x_o))
+        cond = _single_obs(x_o, channel="promote")
 
         _PROTECTED = {"cond", "obs_ids", "cond_ids"}
         extras = {
@@ -318,7 +294,7 @@ class ConditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        cond = _expand_dims(_single_cond_fm(x_o))
+        cond = _single_obs(x_o, channel="promote")
 
         _PROTECTED = {"cond", "obs_ids", "cond_ids"}
         extras = {

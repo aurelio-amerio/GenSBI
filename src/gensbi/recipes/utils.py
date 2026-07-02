@@ -3,6 +3,8 @@ import numpy as np
 from typing import Union, Tuple
 from einops import repeat
 
+from gensbi.utils.math import _expand_dims
+
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import (
     EDMScheduler,
@@ -92,6 +94,59 @@ def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0, size: int = 2):
     dim = (dim[0] // size) * (dim[1] // size)
 
     return jnp.array(img_ids, dtype=jnp.int32), dim
+
+
+def _require_channel(x, name="input"):
+    """Enforce a tabular channel axis (B, dim, C); reject a bare (B, dim)."""
+    x = jnp.asarray(x)
+    if x.ndim < 3:
+        raise ValueError(
+            f"{name} must carry a channel axis (B, dim, C); got shape "
+            f"{tuple(x.shape)}. A bare (B, dim) is not accepted — add a trailing "
+            f"channel axis (e.g. x[..., None] for C=1).")
+    return x
+
+
+def _single_obs(x_o, *, channel, name="x_o"):
+    """Canonicalize a single conditioning observation, then enforce batch == 1.
+
+    Shape handling comes FIRST so a misshaped input can never be misread as a
+    batch (e.g. ``(dim, C)`` read as ``dim`` observations):
+
+    - ``channel="require"``: tabular flow-pipeline contract — input must
+      already carry batch and channel axes ``(1, dim, C)``; channel-less input
+      raises ``ValueError`` (same :func:`_require_channel` as training).
+    - ``channel="promote"``: FM-pipeline contract — lenient promotion:
+      ``(dim,) -> (1, dim, 1)`` and ``(B, dim) -> (B, dim, 1)``.
+    - ``channel="none"``: structured inputs — the model owns the trailing
+      shape; only a leading batch axis (``ndim >= 2``) is required.
+
+    A leading batch axis > 1 then raises ``ValueError``: single-observation
+    methods never silently discard observations — use ``sample_batched``.
+    Returns the canonicalized array with its size-1 batch axis kept.
+    """
+    x_o = jnp.asarray(x_o)
+    if channel == "require":
+        x_o = _require_channel(x_o, name)
+    elif channel == "promote":
+        x_o = _expand_dims(x_o)
+        if x_o.ndim < 3:
+            raise ValueError(
+                f"{name} must be at least 1-D (dim,); got shape {tuple(x_o.shape)}.")
+    elif channel == "none":
+        if x_o.ndim < 2:
+            raise ValueError(
+                f"{name} must carry a leading batch axis (e.g. (1,) + "
+                f"per_observation_shape); got shape {tuple(x_o.shape)}.")
+    else:
+        raise ValueError(f"unknown channel mode {channel!r}")
+    if x_o.shape[0] > 1:
+        raise ValueError(
+            f"{name} has a leading batch axis of size {x_o.shape[0]} > 1, but "
+            "this method conditions on a single observation and will not "
+            "silently discard the rest. Use sample_batched() for a batch of "
+            "conditions.")
+    return x_o
 
 
 def scale_lr(batch_size, base_lr=1e-4, reference_batch_size=256):
