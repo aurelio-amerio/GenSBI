@@ -34,6 +34,8 @@ def main():
                         help="Hidden width of MADE networks (default: 64).")
     parser.add_argument("--atol", type=float, default=0.15,
                         help="Recovery tolerance for allclose checks (default: 0.15).")
+    parser.add_argument("--results-file", type=str, default=None,
+                        help="If set, also write the stats/verdict report to this text file.")
     args = parser.parse_args()
 
     # Set platform before importing JAX so the backend choice takes effect.
@@ -63,20 +65,34 @@ def main():
 
     D, M, SIGMA = 2, 3, 0.5
 
-    print("=" * 60)
-    print("MAF NLE recovery")
-    print(f"  mode        : {'SMOKE' if smoke else 'FULL'}")
-    print(f"  n_data      : {n_data}")
-    print(f"  nsteps      : {nsteps}")
-    print(f"  num_warmup  : {num_warmup}")
-    print(f"  num_samples : {num_samples}")
-    print(f"  n_layers    : {args.n_layers}")
-    print(f"  nn_width    : {args.nn_width}")
-    print(f"  atol        : {args.atol}")
-    print(f"  seed        : {args.seed}")
-    print(f"  platform    : {jax.default_backend()}")
-    print(f"  checkpoint  : {checkpoint_dir}")
-    print("=" * 60)
+    report_lines = []
+
+    def emit(line=""):
+        print(line)
+        report_lines.append(line)
+
+    def write_report():
+        if args.results_file:
+            import os
+            d = os.path.dirname(os.path.abspath(args.results_file))
+            os.makedirs(d, exist_ok=True)
+            with open(args.results_file, "w") as fh:
+                fh.write("\n".join(report_lines) + "\n")
+
+    emit("=" * 60)
+    emit("MAF NLE recovery")
+    emit(f"  mode        : {'SMOKE' if smoke else 'FULL'}")
+    emit(f"  n_data      : {n_data}")
+    emit(f"  nsteps      : {nsteps}")
+    emit(f"  num_warmup  : {num_warmup}")
+    emit(f"  num_samples : {num_samples}")
+    emit(f"  n_layers    : {args.n_layers}")
+    emit(f"  nn_width    : {args.nn_width}")
+    emit(f"  atol        : {args.atol}")
+    emit(f"  seed        : {args.seed}")
+    emit(f"  platform    : {jax.default_backend()}")
+    emit(f"  checkpoint  : {checkpoint_dir}")
+    emit("=" * 60)
 
     G = jnp.array([[1.0, 0.5], [0.0, 1.0], [0.5, -1.0]])  # (M, D)
 
@@ -155,25 +171,28 @@ def main():
 
     elapsed = time.time() - t0
 
-    print(f"\nAnalytic posterior mean : {mean_a}")
-    print(f"Achieved posterior mean : {mean_s}")
-    print(f"\nAnalytic posterior cov :\n{cov_a}")
-    print(f"Achieved posterior cov :\n{cov_s}")
-    print(f"\nElapsed: {elapsed:.1f}s")
+    emit(f"\nAnalytic posterior mean : {mean_a}")
+    emit(f"Achieved posterior mean : {mean_s}")
+    emit(f"\nAnalytic posterior cov :\n{cov_a}")
+    emit(f"Achieved posterior cov :\n{cov_s}")
+    emit(f"\nElapsed: {elapsed:.1f}s")
 
     if smoke:
         assert jnp.all(jnp.isfinite(mean_s)), "mean_s contains non-finite values"
         assert jnp.all(jnp.isfinite(cov_s)), "cov_s contains non-finite values"
-        print("\nSMOKE OK")
+        emit("\nSMOKE OK")
+        write_report()
         sys.exit(0)
     else:
         mean_ok = bool(jnp.allclose(mean_s, mean_a, atol=args.atol))
         cov_ok = bool(jnp.allclose(cov_s, cov_a, atol=args.atol))
         if mean_ok and cov_ok:
-            print("\nRECOVERY PASS")
+            emit("\nRECOVERY PASS")
+            write_report()
             sys.exit(0)
         else:
-            print(f"\nRECOVERY FAIL  (mean_ok={mean_ok}, cov_ok={cov_ok})")
+            emit(f"\nRECOVERY FAIL  (mean_ok={mean_ok}, cov_ok={cov_ok})")
+            write_report()
             sys.exit(1)
 
 

@@ -22,6 +22,8 @@ def main():
     p.add_argument("--channels", type=int, default=64)
     p.add_argument("--head-dim", type=int, default=16)
     p.add_argument("--atol", type=float, default=0.25)
+    p.add_argument("--results-file", type=str, default=None,
+                   help="If set, also write the stats/verdict report to this text file.")
     args = p.parse_args()
 
     if args.platform is not None:
@@ -59,6 +61,34 @@ def main():
         mean = cov @ (G.T @ x_o_flat) / SIGMA ** 2
         return mean, cov
 
+    report_lines = []
+
+    def emit(line=""):
+        print(line)
+        report_lines.append(line)
+
+    def write_report():
+        if args.results_file:
+            import os
+            d = os.path.dirname(os.path.abspath(args.results_file))
+            os.makedirs(d, exist_ok=True)
+            with open(args.results_file, "w") as fh:
+                fh.write("\n".join(report_lines) + "\n")
+
+    emit("=" * 60)
+    emit("TransformerFlow image-NPE recovery")
+    emit(f"  mode        : {'SMOKE' if smoke else 'FULL'}")
+    emit(f"  n_data      : {n_data}")
+    emit(f"  nsteps      : {nsteps}")
+    emit(f"  num_samples : {num_samples}")
+    emit(f"  num_blocks  : {args.num_blocks}")
+    emit(f"  channels    : {args.channels}")
+    emit(f"  head_dim    : {args.head_dim}")
+    emit(f"  atol        : {args.atol}")
+    emit(f"  seed        : {args.seed}")
+    emit(f"  platform    : {jax.default_backend()}")
+    emit("=" * 60)
+
     t0 = time.time()
     theta, x = simulate(jax.random.PRNGKey(args.seed), n_data)
     n_train = int(n_data * 0.9)
@@ -91,16 +121,16 @@ def main():
     mean_a, cov_a = analytic_posterior(x_o.reshape(-1))
     s = pipe.sample(jax.random.PRNGKey(7), x_o, nsamples=num_samples)[..., 0]
     mean_s, cov_s = jnp.mean(s, axis=0), jnp.cov(s.T)
-    print(f"mode={'SMOKE' if smoke else 'FULL'} elapsed={time.time()-t0:.1f}s")
-    print(f"analytic mean {mean_a}  achieved {mean_s}")
-    print(f"analytic cov\n{cov_a}\nachieved\n{cov_s}")
+    emit(f"\nelapsed={time.time()-t0:.1f}s")
+    emit(f"analytic mean {mean_a}  achieved {mean_s}")
+    emit(f"analytic cov\n{cov_a}\nachieved\n{cov_s}")
 
     if smoke:
         assert jnp.all(jnp.isfinite(mean_s)) and jnp.all(jnp.isfinite(cov_s))
-        print("SMOKE OK"); sys.exit(0)
+        emit("\nSMOKE OK"); write_report(); sys.exit(0)
     ok = bool(jnp.allclose(mean_s, mean_a, atol=args.atol)
               and jnp.allclose(cov_s, cov_a, atol=args.atol))
-    print("RECOVERY PASS" if ok else "RECOVERY FAIL"); sys.exit(0 if ok else 1)
+    emit("\nRECOVERY PASS" if ok else "\nRECOVERY FAIL"); write_report(); sys.exit(0 if ok else 1)
 
 
 if __name__ == "__main__":

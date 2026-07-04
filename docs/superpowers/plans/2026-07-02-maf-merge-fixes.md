@@ -127,8 +127,7 @@ git commit -m "fix(inference): correct _rescale to blackjax adjusted-MCLMC step-
 ```
 
 ---
-
-### Task 2: Shared `_single_obs` canonicalization + hard-error batch policy
+do rd-error batch policy
 
 **Files:**
 - Modify: `src/gensbi/recipes/utils.py` (add `_require_channel`, `_single_obs`)
