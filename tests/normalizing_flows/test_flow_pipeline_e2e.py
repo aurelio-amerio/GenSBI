@@ -35,7 +35,7 @@ def split_obs_cond(d):
     return d[:, :D], d[:, D:]
 
 
-@pytest.mark.slow
+@pytest.mark.extraslow
 def test_npe_recovers_linear_gaussian(tmp_path):
     key = jax.random.PRNGKey(0)
     theta, x = _simulate(key, 20_000)
