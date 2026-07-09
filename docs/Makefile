@@ -77,6 +77,8 @@ download:
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/flow_flux1joint/slcp_flow_flux1joint.ipynb
 	curl -L -o notebooks/slcp_flow_simformer.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/flow_simformer/slcp_flow_simformer.ipynb
+	curl -L -o notebooks/slcp_tarflow_nle.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/tarflow_NLE/slcp_tarflow_nle.ipynb
 
 	# Two Moons
 	curl -L -o notebooks/two_moons_diffusion_flux.ipynb \
