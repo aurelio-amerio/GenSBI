@@ -1,9 +1,10 @@
-import jax
+import warnings
 from jax import numpy as jnp
 import numpy as np
 from typing import Union, Tuple
-from einops import repeat, rearrange
-from jax import Array
+from einops import repeat
+
+from gensbi.utils.math import _expand_dims
 
 from gensbi.diffusion.path import EDMPath
 from gensbi.diffusion.path.scheduler import (
@@ -96,39 +97,58 @@ def init_ids_2d(dim: Tuple[int, int], semantic_id: int = 0, size: int = 2):
     return jnp.array(img_ids, dtype=jnp.int32), dim
 
 
-@jax.jit(static_argnames=["size"])
-def patchify_2d(x: Array, size=2):
-    return rearrange(x, "b (h ph) (w pw) c -> b (h w) (c ph pw)", ph=size, pw=size)
+def _require_channel(x, name="input"):
+    """Enforce a tabular channel axis (B, dim, C); reject a bare (B, dim)."""
+    x = jnp.asarray(x)
+    if x.ndim < 3:
+        raise ValueError(
+            f"{name} must carry a channel axis (B, dim, C); got shape "
+            f"{tuple(x.shape)}. A bare (B, dim) is not accepted — add a trailing "
+            f"channel axis (e.g. x[..., None] for C=1).")
+    return x
 
 
-@jax.jit(static_argnames=["size", "grid"])
-def depatchify_2d(x: Array, size=2, grid=None):
-    """Inverse of :func:`patchify_2d`.
+def _single_obs(x_o, *, channel, name="x_o"):
+    """Canonicalize a single conditioning observation, then enforce batch == 1.
 
-    Parameters
-    ----------
-    x : Array
-        Patchified tensor of shape ``(B, h*w, C*size*size)``.
-    size : int
-        Patch edge length used by :func:`patchify_2d`.
-    grid : tuple of int, optional
-        The ``(h, w)`` patch grid. The grid cannot be inferred from the token
-        count alone, so it is required for non-square grids. If ``None``, a
-        square grid (``h == w``) is assumed.
+    Shape handling comes FIRST so a misshaped input can never be misread as a
+    batch (e.g. ``(dim, C)`` read as ``dim`` observations):
+
+    - ``channel="require"``: tabular flow-pipeline contract — input must
+      already carry batch and channel axes ``(1, dim, C)``; channel-less input
+      raises ``ValueError`` (same :func:`_require_channel` as training).
+    - ``channel="promote"``: FM-pipeline contract — lenient promotion:
+      ``(dim,) -> (1, dim, 1)`` and ``(B, dim) -> (B, dim, 1)``.
+    - ``channel="none"``: structured inputs — the model owns the trailing
+      shape; only a leading batch axis (``ndim >= 2``) is required.
+
+    A leading batch axis > 1 then raises ``ValueError``: single-observation
+    methods never silently discard observations — use ``sample_batched``.
+    Returns the canonicalized array with its size-1 batch axis kept.
     """
-    if grid is None:
-        n = x.shape[1]
-        side = int(round(n ** 0.5))
-        if side * side != n:
+    x_o = jnp.asarray(x_o)
+    if channel == "require":
+        x_o = _require_channel(x_o, name)
+    elif channel == "promote":
+        orig_shape = tuple(x_o.shape)
+        x_o = _expand_dims(x_o)
+        if x_o.ndim < 3:
             raise ValueError(
-                f"Cannot infer a square grid from {n} tokens; pass grid=(h, w)."
-            )
-        h = w = side
+                f"{name} must be at least 1-D (dim,); got shape {orig_shape}.")
+    elif channel == "none":
+        if x_o.ndim < 2:
+            raise ValueError(
+                f"{name} must carry a leading batch axis (e.g. (1,) + "
+                f"per_observation_shape); got shape {tuple(x_o.shape)}.")
     else:
-        h, w = grid
-    return rearrange(
-        x, "b (h w) (c ph pw) -> b (h ph) (w pw) c", h=h, w=w, ph=size, pw=size
-    )
+        raise ValueError(f"unknown channel mode {channel!r}")
+    if x_o.shape[0] > 1:
+        raise ValueError(
+            f"{name} has a leading batch axis of size {x_o.shape[0]} > 1, but "
+            "this method conditions on a single observation and will not "
+            "silently discard the rest. Use sample_batched() for a batch of "
+            "conditions.")
+    return x_o
 
 
 def scale_lr(batch_size, base_lr=1e-4, reference_batch_size=256):
@@ -333,3 +353,20 @@ def parse_training_config(config_path: str):
         training_config["ema_decay"] = opt_params["ema_decay"]
 
     return training_config
+
+
+_MOVED_TO_PATCHING = ("patchify_2d", "depatchify_2d")
+
+
+def __getattr__(name):
+    # Deprecated aliases: the functions moved to gensbi.models.core.patching,
+    # but main's published docs teach this import path. Keep one release cycle.
+    if name in _MOVED_TO_PATCHING:
+        warnings.warn(
+            f"gensbi.recipes.utils.{name} has moved to "
+            "gensbi.models.core.patching; this alias will be removed in a "
+            "future release.",
+            DeprecationWarning, stacklevel=2)
+        from gensbi.models.core import patching
+        return getattr(patching, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

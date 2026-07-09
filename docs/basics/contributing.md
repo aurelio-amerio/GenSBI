@@ -23,7 +23,7 @@ Feel free to [open an issue](https://github.com/aurelio-amerio/GenSBI/issues) to
     ```
 
     ```{note}
-    Python 3.11 or higher is required.
+    Python 3.12 or higher is required.
     ```
 
 ## Requirements for Contributions

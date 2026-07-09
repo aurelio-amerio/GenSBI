@@ -376,7 +376,7 @@ def check_tarp(
     midindex = alpha.shape[0] // 2
     atc = (ecp[midindex:] - alpha[midindex:]).sum().item()
 
-    kstest_pvals: float = kstest(np.array(ecp), np.array(alpha))[1]  # type: ignore
+    kstest_pvals = float(kstest(np.array(ecp), np.array(alpha))[1])  # type: ignore
 
     return atc, kstest_pvals
 

@@ -105,3 +105,12 @@ posterior_samples = pipeline.sample_batched(
 # Returns: (num_posterior_samples, B, dim_obs, ch_obs)
 # e.g. (1000, B, dim_obs, 1)
 ```
+
+## Exact-Likelihood Inference with Normalizing Flows (experimental)
+
+GenSBI also ships discrete normalizing flows (`MAFlow`, `TarFlow`) whose
+log-density is exact and available in a single forward pass — no ODE solve.
+They expose the same `sample`/`sample_batched`/`log_prob` surface through
+`ConditionalFlowPipeline`, and enable neural likelihood estimation (NLE)
+with MCMC posterior sampling via `gensbi.inference.NLEPosterior`. See the
+[Normalizing Flows guide](/advanced/normalizing_flows).

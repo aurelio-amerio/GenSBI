@@ -3,7 +3,7 @@ Tests for ``gensbi.recipes.conditional_pipeline`` — edge cases.
 
 Covers:
 - model_extras conflict detection in get_sampler / get_log_prob_fn
-- Batch x_o warning in sample()
+- Single-observation policy: batched x_o raises; 1-D x_o is promoted
 """
 
 import os
@@ -117,18 +117,34 @@ class TestModelExtrasConflict:
 # ---------------------------------------------------------------------------
 
 
-class TestSampleBatchWarning:
-    def test_batch_xo_warns(self, pipeline):
-        """sample() with batch x_o (shape > 1) emits UserWarning."""
-        x_o_batch = jnp.zeros((5, dim_cond, 1))  # batch dim > 1
-        with pytest.warns(UserWarning, match="batch dimension"):
-            try:
-                pipeline.sample(
-                    jax.random.PRNGKey(1), x_o_batch, nsamples=4,
-                )
-            except (ValueError, Exception):
-                # Mock model may fail on broadcast; we only care about the warning
-                pass
+class TestSingleObservationPolicy:
+    def test_sample_batch_xo_raises(self, pipeline):
+        """Batched x_o raises: single-observation methods never silently
+        discard observations (reverses the 4cc400b warn+take-first policy)."""
+        x_o_batch = jnp.zeros((5, dim_cond, 1))
+        with pytest.raises(ValueError, match="single observation"):
+            pipeline.sample(jax.random.PRNGKey(1), x_o_batch, nsamples=4)
+
+    def test_get_sampler_batch_xo_raises(self, pipeline):
+        with pytest.raises(ValueError, match="single observation"):
+            pipeline.get_sampler(jnp.zeros((5, dim_cond, 1)))
+
+    def test_get_log_prob_fn_batch_xo_raises(self, pipeline):
+        with pytest.raises(ValueError, match="single observation"):
+            pipeline.get_log_prob_fn(jnp.zeros((5, dim_cond, 1)))
+
+    def test_sample_1d_xo_promoted_not_truncated(self, pipeline):
+        """Regression (review Finding 2): a bare (dim_cond,) observation is
+        promoted to (1, dim_cond, 1) — not read as a batch and truncated to
+        its first scalar coordinate."""
+        s = pipeline.sample(jax.random.PRNGKey(1), jnp.zeros(dim_cond), nsamples=4)
+        assert s.shape[0] == 4
+
+    def test_sample_batched_unaffected(self, pipeline, recwarn):
+        x_o = jnp.zeros((3, dim_cond, 1))
+        pipeline.sample_batched(jax.random.PRNGKey(2), x_o, 4,
+                                show_progress_bars=False)
+        assert not any("batch" in str(w.message) for w in recwarn.list)
 
 
 # ---------------------------------------------------------------------------

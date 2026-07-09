@@ -10,6 +10,7 @@ from .flux1 import Flux1FlowPipeline, Flux1DiffusionPipeline, Flux1SMPipeline
 from .conditional_pipeline import ConditionalPipeline
 from .joint_pipeline import JointPipeline
 from .unconditional_pipeline import UnconditionalPipeline
+from .flow_pipeline import ConditionalFlowPipeline
 
 
 __all__ = [
@@ -26,6 +27,7 @@ __all__ = [
     "ConditionalPipeline",
     "JointPipeline",
     "UnconditionalPipeline",
+    "ConditionalFlowPipeline",
 
     "VAE1DPipeline",
     "VAE2DPipeline",

@@ -31,7 +31,6 @@ from gensbi.models import ConditionalWrapper
 from einops import repeat
 
 from gensbi.models.flux1 import model
-from gensbi.utils.model_wrapping import _expand_dims
 
 import os
 
@@ -44,9 +43,8 @@ from gensbi.recipes.utils import (
     _normalize_patch_size,
     build_edm_path,
     build_sm_path,
+    _single_obs,
 )
-
-import warnings
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +218,7 @@ class ConditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        cond = _expand_dims(x_o)
+        cond = _single_obs(x_o, channel="promote")
 
         _PROTECTED = {"cond", "obs_ids", "cond_ids"}
         extras = {
@@ -272,15 +270,6 @@ class ConditionalPipeline(AbstractPipeline):
             Samples of shape ``(nsamples, dim_obs, ch_obs)``.
         """
 
-        x_o_shape = x_o.shape[0] if hasattr(x_o, "shape") else len(x_o)
-        if x_o_shape > 1:
-            warnings.warn(
-                f"x_o has batch dimension {x_o_shape} > 1. "
-                "sample() draws all samples for a single condition. "
-                "To sample for multiple conditions, use sample_batched() instead.",
-                UserWarning,
-                stacklevel=2,
-            )
         sampler = self.get_sampler(x_o, use_ema=use_ema, **sampler_kwargs)
         return sampler(key, nsamples)
 
@@ -305,7 +294,7 @@ class ConditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        cond = _expand_dims(x_o)
+        cond = _single_obs(x_o, channel="promote")
 
         _PROTECTED = {"cond", "obs_ids", "cond_ids"}
         extras = {

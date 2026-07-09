@@ -30,7 +30,7 @@ See the [Installation Guide](/getting_started/installation) for more options, in
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.12+
 - JAX
 - Flax
 - (See `pyproject.toml` for full requirements)
