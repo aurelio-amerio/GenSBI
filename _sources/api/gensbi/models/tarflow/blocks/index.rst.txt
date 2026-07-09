@@ -1,0 +1,452 @@
+gensbi.models.tarflow.blocks
+============================
+
+.. py:module:: gensbi.models.tarflow.blocks
+
+.. autoapi-nested-parse::
+
+   Transformer blocks for the transformer flow.
+
+   Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.
+   Prefix-concatenation conditioning and SOS shift adapted from apple/ml-starflow
+   (STARFlow); see models/tarflow/LICENSE.starflow.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   gensbi.models.tarflow.blocks.INV_SOFTPLUS_1
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.tarflow.blocks.AttentionBlock
+   gensbi.models.tarflow.blocks.MetaBlock
+
+
+Module Contents
+---------------
+
+.. py:class:: AttentionBlock(channels, num_heads, expansion, rngs)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Pre-norm residual block combining causal self-attention and an MLP.
+
+   LayerNorm is applied over the channel axis only (not across tokens),
+   so no future-token information leaks into earlier positions.
+
+   :param channels: Token embedding width. Must be divisible by ``num_heads``.
+   :type channels: int
+   :param num_heads: Number of attention heads.
+   :type num_heads: int
+   :param expansion: MLP hidden-size multiplier; the MLP has ``channels * expansion``
+                     neurons in its hidden layer.
+   :type expansion: int
+   :param rngs: Flax RNG container used to initialize all sub-layers.
+   :type rngs: nnx.Rngs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, mask = None)
+
+      
+      Apply pre-norm residual self-attention followed by a residual MLP.
+
+      :param x: Token sequence of shape ``(B, T, C)``.
+      :type x: Array
+      :param mask: Attention mask of shape broadcastable to ``(1, 1, T, T)``, e.g. a
+                   prefix-causal mask. If ``None``, a standard causal mask is used.
+      :type mask: Array or None, optional
+
+      :returns: Output token sequence of shape ``(B, T, C)``.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: head_dim
+
+
+   .. py:attribute:: mlp_in
+
+
+   .. py:attribute:: mlp_out
+
+
+   .. py:attribute:: norm1
+
+
+   .. py:attribute:: norm2
+
+
+   .. py:attribute:: num_heads
+
+
+   .. py:attribute:: proj
+
+
+   .. py:attribute:: qkv
+
+
+.. py:class:: MetaBlock(F, channels, T, perm, conditioner, num_layers, num_heads, expansion, rngs, zero_init=True, use_softplus=True, soft_clip=4.0)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   One exact autoregressive bijection over a token sequence.
+
+   Implements the :class:`~gensbi.normalizing_flows.bijections.base.Bijection`
+   direction contract: :meth:`inverse` maps data to noise (density-evaluation
+   direction) via a single parallel affine pass with a triangular Jacobian;
+   :meth:`forward` maps noise to data (sampling direction) via a sequential
+   causal scan that re-runs the attention pass at each token position.
+
+   The affine scale is computed via softplus by default (bounded tail,
+   identity at zero-init) or via ``exp`` when ``use_softplus=False`` (legacy).
+
+   :param F: Feature dimension per token (number of input channels per token).
+   :type F: int
+   :param channels: Internal embedding width for the transformer blocks.
+   :type channels: int
+   :param T: Number of tokens in the sequence.
+   :type T: int
+   :param perm: Token permutation applied before the affine transform. The inverse
+                permutation is derived internally via ``argsort``.
+   :type perm: Array
+   :param conditioner: Module that provides ``(bias, prefix)`` conditioning signals via its
+                       ``embed`` method.
+   :type conditioner: AdditiveBiasConditioner or VectorConditioner or ImageConditioner
+   :param num_layers: Number of :class:`AttentionBlock` layers stacked inside this block.
+   :type num_layers: int
+   :param num_heads: Number of attention heads passed to each :class:`AttentionBlock`.
+   :type num_heads: int
+   :param expansion: MLP expansion factor passed to each :class:`AttentionBlock`.
+   :type expansion: int
+   :param rngs: Flax RNG container used to initialize all sub-layers.
+   :type rngs: nnx.Rngs
+   :param zero_init: If ``True`` (default), initialize the output projection ``proj_out``
+                     to zero so the block starts as the identity map.
+   :type zero_init: bool, optional
+   :param use_softplus: If ``True`` (default), use softplus to compute the affine scale
+                        (numerically stable, bounded tail). If ``False``, use ``exp``
+                        (legacy behavior).
+   :type use_softplus: bool, optional
+   :param soft_clip: Soft-clip magnitude applied via ``tanh`` to raw network outputs
+                     before splitting into ``(a, b)``. Default is ``4.0``. Set to ``0``
+                     to disable clipping.
+   :type soft_clip: float, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _affine(a)
+
+      
+      Map raw log-scale ``a`` -> ``(scale, inv_scale, log_scale)`` in float32.
+
+      ``scale`` plays the role of ``exp(a)`` ("1/sigma"): inverse multiplies by
+      ``inv_scale``, forward multiplies by ``scale``, logdet sums ``log_scale``.
+      softplus mode bounds the positive-scale tail and its gradient; the
+      ``INV_SOFTPLUS_1`` offset makes it the identity at ``a == 0``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _embed_cond(cond)
+
+      
+      Condition-only signals ``(bias, prefix, mask)`` for :meth:`_params_core`.
+
+      These depend on ``cond`` but not on the modeled tokens, so the sampling
+      scan computes them once instead of re-running the (potentially expensive,
+      e.g. image-patchify) conditioner and rebuilding the prefix mask at every
+      token step.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _params(x_perm, cond)
+
+      
+      (a, b) for the permuted tokens (single-shot; embeds the condition).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _params_core(x_perm, bias, prefix, mask)
+
+      
+      (a, b) for the permuted tokens given precomputed conditioning.
+
+      SOS input-shift makes token i's params depend only on tokens < i (and the
+      condition). ``bias``/``prefix``/``mask`` come from :meth:`_embed_cond`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _prefix_mask(M, T)
+
+      
+      Prefix-LM mask over [prefix(M); modeled(T)]: modeled is causal and
+      sees all prefix; prefix is bidirectional among itself and never sees
+      modeled (cond→x blocked).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: forward(z, cond = None)
+
+      
+      Map noise to data (the sampling direction).
+
+      Sequentially scans over token positions via ``jax.lax.scan``,
+      re-running the causal attention pass at each step so that token
+      ``i``'s parameters are conditioned on already-generated tokens
+      ``0, …, i-1`` (mirrors ``MaskedAutoregressive.forward``).
+
+      :param z: Noise-space token sequence of shape ``(B, T, F)`` or a flat array
+                that will be reshaped to ``(B, T, F)``.
+      :type z: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional transform.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Data-space output of shape ``(B, T, F)``.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the forward map,
+                  shape ``(B,)``. Equal to ``+Σ log_scale`` over token and feature
+                  dimensions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise (the density-evaluation direction).
+
+      Applies a per-token parallel affine transform
+      ``z = (x − b) · inv_scale`` after permuting tokens. Token ``i``'s
+      parameters ``(a, b)`` depend only on tokens at positions ``< i``
+      (causal attention on a shift-by-one input), giving a triangular
+      Jacobian computable in a single forward pass.
+
+      :param x: Data-space token sequence of shape ``(B, T, F)`` or a flat array
+                that will be reshaped to ``(B, T, F)``.
+      :type x: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional transform.
+      :type cond: Array or None, optional
+
+      :returns: * **z** (*Array*) -- Noise-space output of shape ``(B, T, F)``.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the inverse map,
+                  shape ``(B,)``. Equal to ``-Σ log_scale`` over token and feature
+                  dimensions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: F
+
+
+   .. py:attribute:: T
+
+
+   .. py:attribute:: attn_blocks
+
+
+   .. py:attribute:: conditioner
+
+
+   .. py:attribute:: inv_perm
+
+
+   .. py:attribute:: perm
+
+
+   .. py:attribute:: pos_embed
+
+
+   .. py:attribute:: proj_in
+
+
+   .. py:attribute:: proj_out
+
+
+   .. py:attribute:: soft_clip
+      :value: 4.0
+
+
+
+   .. py:attribute:: sos_embed
+
+
+   .. py:attribute:: use_softplus
+      :value: True
+
+
+
+.. py:data:: INV_SOFTPLUS_1
+   :value: 0.541324854612918
+
+

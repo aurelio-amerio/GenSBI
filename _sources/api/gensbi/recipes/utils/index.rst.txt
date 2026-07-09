@@ -11,6 +11,7 @@ Attributes
 
    gensbi.recipes.utils._EMBEDDINGS_1D
    gensbi.recipes.utils._EMBEDDINGS_2D
+   gensbi.recipes.utils._MOVED_TO_PATCHING
 
 
 Functions
@@ -18,21 +19,24 @@ Functions
 
 .. autoapisummary::
 
+   gensbi.recipes.utils.__getattr__
    gensbi.recipes.utils._normalize_patch_size
+   gensbi.recipes.utils._require_channel
    gensbi.recipes.utils._resolve_embedding_ids
+   gensbi.recipes.utils._single_obs
    gensbi.recipes.utils.build_edm_path
    gensbi.recipes.utils.build_sm_path
-   gensbi.recipes.utils.depatchify_2d
    gensbi.recipes.utils.init_ids_1d
    gensbi.recipes.utils.init_ids_2d
    gensbi.recipes.utils.init_ids_joint
    gensbi.recipes.utils.parse_training_config
-   gensbi.recipes.utils.patchify_2d
    gensbi.recipes.utils.scale_lr
 
 
 Module Contents
 ---------------
+
+.. py:function:: __getattr__(name)
 
 .. py:function:: _normalize_patch_size(size)
 
@@ -47,6 +51,29 @@ Module Contents
 
    :returns: ``(obs_size, cond_size)``.
    :rtype: tuple of int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _require_channel(x, name='input')
+
+   
+   Enforce a tabular channel axis (B, dim, C); reject a bare (B, dim).
+
 
 
 
@@ -85,6 +112,43 @@ Module Contents
              * **resolved_dim** (*int*) -- Resolved flat dimension.
 
    :raises ValueError: If ``strategy`` is not recognized.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _single_obs(x_o, *, channel, name='x_o')
+
+   
+   Canonicalize a single conditioning observation, then enforce batch == 1.
+
+   Shape handling comes FIRST so a misshaped input can never be misread as a
+   batch (e.g. ``(dim, C)`` read as ``dim`` observations):
+
+   - ``channel="require"``: tabular flow-pipeline contract — input must
+     already carry batch and channel axes ``(1, dim, C)``; channel-less input
+     raises ``ValueError`` (same :func:`_require_channel` as training).
+   - ``channel="promote"``: FM-pipeline contract — lenient promotion:
+     ``(dim,) -> (1, dim, 1)`` and ``(B, dim) -> (B, dim, 1)``.
+   - ``channel="none"``: structured inputs — the model owns the trailing
+     shape; only a leading batch axis (``ndim >= 2``) is required.
+
+   A leading batch axis > 1 then raises ``ValueError``: single-observation
+   methods never silently discard observations — use ``sample_batched``.
+   Returns the canonicalized array with its size-1 batch axis kept.
 
 
 
@@ -151,37 +215,6 @@ Module Contents
    :rtype: SMPath
 
    :raises ValueError: If ``sde_type`` is not one of ``{"VP", "VE"}``.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: depatchify_2d(x, size=2, grid=None)
-
-   
-   Inverse of :func:`patchify_2d`.
-
-   :param x: Patchified tensor of shape ``(B, h*w, C*size*size)``.
-   :type x: Array
-   :param size: Patch edge length used by :func:`patchify_2d`.
-   :type size: int
-   :param grid: The ``(h, w)`` patch grid. The grid cannot be inferred from the token
-                count alone, so it is required for non-square grids. If ``None``, a
-                square grid (``h == w``) is assumed.
-   :type grid: tuple of int, optional
 
 
 
@@ -296,8 +329,6 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: patchify_2d(x, size=2)
-
 .. py:function:: scale_lr(batch_size, base_lr=0.0001, reference_batch_size=256)
 
    
@@ -333,4 +364,8 @@ Module Contents
 .. py:data:: _EMBEDDINGS_1D
 
 .. py:data:: _EMBEDDINGS_2D
+
+.. py:data:: _MOVED_TO_PATCHING
+   :value: ('patchify_2d', 'depatchify_2d')
+
 

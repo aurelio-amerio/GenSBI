@@ -1,0 +1,303 @@
+gensbi.models.maf.made
+======================
+
+.. py:module:: gensbi.models.maf.made
+
+.. autoapi-nested-parse::
+
+   MADE conditioner with concatenation-based conditioning (flowjax-style).
+
+   Conditioning variables are concatenated onto the input and given autoregressive
+   rank -1 (below every data dimension), so every output -- including the first --
+   may depend on the condition while the condition depends on nothing. This is the
+   standard conditional-MAF approach (Papamakarios et al. 2017; flowjax). NO
+   cross-feature normalisation (LayerNorm/RMSNorm/GroupNorm): MADE hidden units
+   carry the autoregressive rank, so cross-unit statistics would mix ranks and
+   silently break the flow. See spec §6.
+
+   The conditioner is a single cohesive module behind the
+   ``(x, cond) -> (dim, num_params)`` interface; alternative conditioning schemes
+   (FiLM, T-NAF, ...) may be added later as drop-in conditioners.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.maf.made.MADE
+   gensbi.models.maf.made.MaskedAutoregressive
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.models.maf.made._rank_vectors
+
+
+Module Contents
+---------------
+
+.. py:class:: MADE(dim, cond_dim, num_params, nn_width, nn_depth, rngs, zero_init = True, param_dtype = jnp.float32, activation=jax.nn.silu)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Autoregressive conditioner: ``(x, cond) -> params`` of shape ``(dim, num_params)``.
+
+   Conditioning is by concatenation: ``cond`` is appended to ``x`` and given
+   autoregressive rank -1, so every output (incl. dim 0) may depend on it.
+
+   :param dim: Autoregressive (target) dimension.
+   :type dim: int
+   :param cond_dim: Conditioning dimension; 0 for unconditional.
+   :type cond_dim: int
+   :param num_params: Transform parameters per dimension (e.g. 2 for an Affine transformer).
+   :type num_params: int
+   :param nn_width: Width of each masked hidden layer.
+   :type nn_width: int
+   :param nn_depth: Number of masked hidden layers.
+   :type nn_depth: int
+   :param rngs: Flax RNG container for parameter initialisation.
+   :type rngs: nnx.Rngs
+   :param zero_init: If ``True`` (default), zero-initialise the output layer so that all
+                     transform parameters start at 0 (Affine becomes the identity).
+   :type zero_init: bool, optional
+   :param param_dtype: Dtype for all kernel and bias parameters.  Default is ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param activation: Element-wise activation applied after each hidden layer.
+                      Default is :func:`jax.nn.silu`.
+   :type activation: Callable, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(x, cond = None)
+
+      
+      Compute the transform-parameter array from input and optional conditioning.
+
+      :param x: Data input of shape ``(dim,)``.
+      :type x: Array
+      :param cond: Conditioning input of shape ``(cond_dim,)``, or ``None`` for an
+                   unconditional conditioner.  Required when ``cond_dim > 0``.
+      :type cond: Array or None, optional
+
+      :returns: Transform-parameter array of shape ``(dim, num_params)``.
+      :rtype: Array
+
+      :raises ValueError: If ``cond_dim > 0`` and ``cond`` is ``None``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: activation
+
+
+   .. py:attribute:: cond_dim
+
+
+   .. py:attribute:: dim
+
+
+   .. py:attribute:: hidden_layers
+
+
+   .. py:attribute:: input_layer
+
+
+   .. py:attribute:: num_params
+
+
+   .. py:attribute:: output_layer
+
+
+.. py:class:: MaskedAutoregressive(dim, cond_dim, transformer, nn_width, nn_depth, rngs, zero_init = True)
+
+   Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
+
+
+   
+   MADE conditioner coupled with an elementwise transformer: one MAF layer.
+
+   Implements the :class:`~gensbi.normalizing_flows.bijections.base.Bijection`
+   contract.  :meth:`inverse` maps data to noise in a single parallel MADE
+   pass (fast); :meth:`forward` maps noise to data via a sequential
+   ``lax.scan`` over dimensions (slow).
+
+   :param dim: Dimensionality of the target variable.
+   :type dim: int
+   :param cond_dim: Dimensionality of the conditioning input; 0 for unconditional.
+   :type cond_dim: int
+   :param transformer: Elementwise bijection (e.g.
+                       :class:`~gensbi.normalizing_flows.bijections.transformers.Affine`)
+                       whose parameters are predicted by the MADE network.
+   :type transformer: Bijection
+   :param nn_width: Width of each hidden layer in the MADE network.
+   :type nn_width: int
+   :param nn_depth: Number of hidden layers in the MADE network.
+   :type nn_depth: int
+   :param rngs: Flax RNG container for parameter initialisation.
+   :type rngs: nnx.Rngs
+   :param zero_init: If ``True`` (default), zero-initialise the MADE output layer so that
+                     the flow starts as an identity transform.
+   :type zero_init: bool, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+
+      
+      Map noise to data (the sampling direction).
+
+      Runs a sequential ``lax.scan`` over dimensions: each step calls the
+      MADE network on the partially-built output to obtain parameters for
+      the next dimension.  Because dimension ``i``'s parameters depend only on
+      dimensions ``< i`` (already final), the per-dimension log-determinant is
+      accumulated inside the scan, avoiding a second full MADE pass.
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional map.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Data-space output of shape ``(dim,)``.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the forward map.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise (the density-evaluation direction).
+
+      Runs a single parallel MADE forward pass to obtain the transform
+      parameters, then applies the elementwise transformer inverse to ``x``.
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional map.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Noise-space output of shape ``(dim,)``.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the inverse map.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: dim
+
+
+   .. py:attribute:: made
+
+
+   .. py:attribute:: transformer
+
+
+.. py:function:: _rank_vectors(dim, nn_width, num_params, cond_dim)
+
+   
+   0-indexed MADE ranks for input, hidden, and output units.
+
+   With conditioning (``cond_dim > 0``) the conditioning inputs get rank -1
+   (before every data dim) and hidden ranks are shifted into ``[-1, dim-2]`` so
+   some hidden units carry only the condition and can feed output dim 0.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

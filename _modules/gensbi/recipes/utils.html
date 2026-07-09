@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -274,6 +274,25 @@ let darkTheme = isDarkTheme();
 let modal = null;
 let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
 
 const runMermaid = async (rerun) => {
     console.log("Running mermaid diagrams, rerun =", rerun);
@@ -281,7 +300,15 @@ const runMermaid = async (rerun) => {
     let all_mermaids = document.querySelectorAll(".mermaid");
 
     if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
         all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
             if(!el.hasAttribute("data-original-code")) {
                 // store original code
                 // console.log(`Storing original code for first run: `, el.innerHTML);
@@ -298,35 +325,89 @@ const runMermaid = async (rerun) => {
                 el.setAttribute('data-original-code', el.innerHTML);
             }
         });
-        await mermaid.run();
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if ("False" === "True") {
+                                        addZoomToSvgs(d3.selectAll(""));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
     }
 
     all_mermaids = document.querySelectorAll(".mermaid");
-    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
     if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
         if(mermaids_to_add_zoom > 0) {
             var svgs = d3.selectAll("");
-            if(all_mermaids.length !== mermaids_processed.length) {
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
                 setTimeout(() => runMermaid(false), 200);
                 return;
-            } else if(svgs.size() !== mermaids_to_add_zoom) {
-                setTimeout(() => runMermaid(false), 200);
-                return;
-            } else {
-                svgs.each(function() {
-                    var svg = d3.select(this);
-                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
-                    var inner = svg.select("g");
-                    var zoom = d3.zoom().on("zoom", function(event) {
-                        inner.attr("transform", event.transform);
-                    });
-                    svg.call(zoom);
-                });
             }
+            addZoomToSvgs(svgs);
         }
-    } else if(all_mermaids.length !== mermaids_processed.length) {
+    } else if(mermaids_active.length !== mermaids_processed.length) {
         // Wait for mermaid to process all diagrams
         setTimeout(() => runMermaid(false), 200);
         return;
@@ -835,12 +916,13 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.recipes.utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">jnp</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">repeat</span><span class="p">,</span> <span class="n">rearrange</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">einops</span><span class="w"> </span><span class="kn">import</span> <span class="n">repeat</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">_expand_dims</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDMPath</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diffusion.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -945,44 +1027,63 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">static_argnames</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">])</span>
-<div class="viewcode-block" id="patchify_2d">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.patchify_2d">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">patchify_2d</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;b (h ph) (w pw) c -&gt; b (h w) (c ph pw)&quot;</span><span class="p">,</span> <span class="n">ph</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">size</span><span class="p">)</span></div>
+<div class="viewcode-block" id="_require_channel">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._require_channel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_require_channel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;input&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enforce a tabular channel axis (B, dim, C); reject a bare (B, dim).&quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must carry a channel axis (B, dim, C); got shape &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">. A bare (B, dim) is not accepted — add a trailing &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;channel axis (e.g. x[..., None] for C=1).&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span></div>
 
 
 
-<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">static_argnames</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="s2">&quot;grid&quot;</span><span class="p">])</span>
-<div class="viewcode-block" id="depatchify_2d">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.depatchify_2d">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">depatchify_2d</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Inverse of :func:`patchify_2d`.</span>
+<div class="viewcode-block" id="_single_obs">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._single_obs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_single_obs</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;x_o&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Canonicalize a single conditioning observation, then enforce batch == 1.</span>
 
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    x : Array</span>
-<span class="sd">        Patchified tensor of shape ``(B, h*w, C*size*size)``.</span>
-<span class="sd">    size : int</span>
-<span class="sd">        Patch edge length used by :func:`patchify_2d`.</span>
-<span class="sd">    grid : tuple of int, optional</span>
-<span class="sd">        The ``(h, w)`` patch grid. The grid cannot be inferred from the token</span>
-<span class="sd">        count alone, so it is required for non-square grids. If ``None``, a</span>
-<span class="sd">        square grid (``h == w``) is assumed.</span>
+<span class="sd">    Shape handling comes FIRST so a misshaped input can never be misread as a</span>
+<span class="sd">    batch (e.g. ``(dim, C)`` read as ``dim`` observations):</span>
+
+<span class="sd">    - ``channel=&quot;require&quot;``: tabular flow-pipeline contract — input must</span>
+<span class="sd">      already carry batch and channel axes ``(1, dim, C)``; channel-less input</span>
+<span class="sd">      raises ``ValueError`` (same :func:`_require_channel` as training).</span>
+<span class="sd">    - ``channel=&quot;promote&quot;``: FM-pipeline contract — lenient promotion:</span>
+<span class="sd">      ``(dim,) -&gt; (1, dim, 1)`` and ``(B, dim) -&gt; (B, dim, 1)``.</span>
+<span class="sd">    - ``channel=&quot;none&quot;``: structured inputs — the model owns the trailing</span>
+<span class="sd">      shape; only a leading batch axis (``ndim &gt;= 2``) is required.</span>
+
+<span class="sd">    A leading batch axis &gt; 1 then raises ``ValueError``: single-observation</span>
+<span class="sd">    methods never silently discard observations — use ``sample_batched``.</span>
+<span class="sd">    Returns the canonicalized array with its size-1 batch axis kept.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">side</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">n</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">side</span> <span class="o">*</span> <span class="n">side</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">channel</span> <span class="o">==</span> <span class="s2">&quot;require&quot;</span><span class="p">:</span>
+        <span class="n">x_o</span> <span class="o">=</span> <span class="n">_require_channel</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">channel</span> <span class="o">==</span> <span class="s2">&quot;promote&quot;</span><span class="p">:</span>
+        <span class="n">orig_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">x_o</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x_o</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Cannot infer a square grid from </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> tokens; pass grid=(h, w).&quot;</span>
-            <span class="p">)</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="n">w</span> <span class="o">=</span> <span class="n">side</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be at least 1-D (dim,); got shape </span><span class="si">{</span><span class="n">orig_shape</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">channel</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">x_o</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must carry a leading batch axis (e.g. (1,) + &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;per_observation_shape); got shape </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">grid</span>
-    <span class="k">return</span> <span class="n">rearrange</span><span class="p">(</span>
-        <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;b (h w) (c ph pw) -&gt; b (h ph) (w pw) c&quot;</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">ph</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">pw</span><span class="o">=</span><span class="n">size</span>
-    <span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown channel mode </span><span class="si">{</span><span class="n">channel</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> has a leading batch axis of size </span><span class="si">{</span><span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> &gt; 1, but &quot;</span>
+            <span class="s2">&quot;this method conditions on a single observation and will not &quot;</span>
+            <span class="s2">&quot;silently discard the rest. Use sample_batched() for a batch of &quot;</span>
+            <span class="s2">&quot;conditions.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x_o</span></div>
 
 
 
@@ -1209,6 +1310,29 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">return</span> <span class="n">training_config</span></div>
 
+
+
+<div class="viewcode-block" id="_MOVED_TO_PATCHING">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._MOVED_TO_PATCHING">[docs]</a>
+<span class="n">_MOVED_TO_PATCHING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;patchify_2d&quot;</span><span class="p">,</span> <span class="s2">&quot;depatchify_2d&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="__getattr__">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.__getattr__">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="c1"># Deprecated aliases: the functions moved to gensbi.models.core.patching,</span>
+    <span class="c1"># but main&#39;s published docs teach this import path. Keep one release cycle.</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_MOVED_TO_PATCHING</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;gensbi.recipes.utils.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> has moved to &quot;</span>
+            <span class="s2">&quot;gensbi.models.core.patching; this alias will be removed in a &quot;</span>
+            <span class="s2">&quot;future release.&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">patching</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">patching</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;module </span><span class="si">{</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s2"> has no attribute </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
 </pre></div>
 
                 </article>
@@ -1238,8 +1362,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1277,7 +1401,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
 </p></div>
       
     </div>

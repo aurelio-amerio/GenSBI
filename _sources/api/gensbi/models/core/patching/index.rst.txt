@@ -1,0 +1,101 @@
+gensbi.models.core.patching
+===========================
+
+.. py:module:: gensbi.models.core.patching
+
+.. autoapi-nested-parse::
+
+   Invertible 2D patchify/depatchify — pure einops reshapes (no learned state).
+
+   Moved out of recipes.utils so model/flow code can depend on it without pulling
+   in the recipes package (which imports gensbi.models, creating a cycle).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.models.core.patching.depatchify_2d
+   gensbi.models.core.patching.patchify_2d
+
+
+Module Contents
+---------------
+
+.. py:function:: depatchify_2d(x, size=2, grid=None)
+
+   
+   Inverse of :func:`patchify_2d`.
+
+   :param x: Patchified tensor of shape ``(B, h*w, C*size*size)``.
+   :type x: Array
+   :param size: Patch edge length used by :func:`patchify_2d`.
+   :type size: int
+   :param grid: The ``(h, w)`` patch grid. The grid cannot be inferred from the token
+                count alone, so it is required for non-square grids. If ``None``, a
+                square grid (``h == w``) is assumed.
+   :type grid: tuple of int, optional
+
+   :returns: Image of shape ``(B, H, W, C)`` where ``H = h * size`` and
+             ``W = w * size``.
+   :rtype: Array
+
+   :raises ValueError: If ``grid`` is ``None`` and the token count is not a perfect square.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: patchify_2d(x, size=2)
+
+   
+   Patchify a 2D image into a sequence of non-overlapping patches.
+
+   Invertible 2D patchify via einops reshape. The inverse operation is
+   :func:`depatchify_2d`.
+
+   :param x: Image of shape ``(B, H, W, C)``. ``H`` and ``W`` must each be
+             divisible by ``size``.
+   :type x: Array
+   :param size: Patch edge length. Default is 2.
+   :type size: int, optional
+
+   :returns: Token sequence of shape ``(B, T, F)`` where
+             ``T = (H // size) * (W // size)`` and ``F = C * size * size``.
+             Tokens are in raster (row-major) order.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

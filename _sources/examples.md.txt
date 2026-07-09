@@ -131,6 +131,7 @@ For this task, we train all three main models (**Flux1**, **Flux1Joint**, and **
 - Capturing complex, symmetric multimodal posteriors
 - Comparing Flux1, Flux1Joint, and Simformer performance
 - Understanding when joint distribution learning is beneficial over direct posterior estimation
+- Neural likelihood estimation with the experimental TarFlow normalizing flow + MCLMC posterior sampling
 
 ```{toctree}
 :maxdepth: 1
@@ -138,6 +139,7 @@ For this task, we train all three main models (**Flux1**, **Flux1Joint**, and **
 notebooks/slcp_flow_flux
 notebooks/slcp_flow_flux1joint
 notebooks/slcp_flow_simformer
+notebooks/slcp_tarflow_nle
 ```
 
 ## Advanced SBI examples with custom embedding networks

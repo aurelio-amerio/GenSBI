@@ -1,0 +1,644 @@
+gensbi.inference
+================
+
+.. py:module:: gensbi.inference
+
+.. autoapi-nested-parse::
+
+   
+   Inference wrappers: NLE posterior sampling over trained density flows.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/inference/posterior/index
+   /api/gensbi/inference/samplers/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.inference.MCLMC
+   gensbi.inference.MclmcInfo
+   gensbi.inference.NLEPosterior
+   gensbi.inference.PosteriorTarget
+   gensbi.inference.Sampler
+   gensbi.inference.SmcInfo
+   gensbi.inference.TemperedSMC
+
+
+Package Contents
+----------------
+
+.. py:class:: MCLMC(*, adjusted=True, num_samples=1000, num_tuning_steps=5000, num_chains=1, target_acceptance=0.9, diagonal_preconditioning=True)
+
+   Bases: :py:obj:`Sampler`
+
+
+   
+   Microcanonical Langevin Monte Carlo sampler.
+
+   ``adjusted=True`` (the default) applies an MH correction for
+   asymptotically exact sampling.  ``adjusted=False`` uses the faster
+   unadjusted variant, which is biased by the discretization error.
+
+   :param adjusted: Whether to apply an MH correction.  Default is ``True``.
+   :type adjusted: bool, optional
+   :param num_samples: Number of posterior samples to collect per chain.  Default is 1000.
+   :type num_samples: int, optional
+   :param num_tuning_steps: Number of warmup steps for the L / step-size tuning loop.
+                            Default is 5000.
+   :type num_tuning_steps: int, optional
+   :param num_chains: Number of independent MCLMC chains.  Default is 1.
+   :type num_chains: int, optional
+   :param target_acceptance: Target Metropolis acceptance rate for the adjusted variant.
+                             Default is 0.9.
+   :type target_acceptance: float, optional
+   :param diagonal_preconditioning: Whether to use diagonal preconditioning during tuning.
+                                    Default is ``True``.
+   :type diagonal_preconditioning: bool, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _run_adjusted(key, target)
+
+
+   .. py:method:: _run_single(key, target)
+
+
+   .. py:method:: _run_unadjusted(key, target)
+
+
+   .. py:method:: run(key, target)
+
+      
+      Draw posterior samples using MCLMC.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param target: Posterior target produced by
+                     :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+      :type target: PosteriorTarget
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(num_chains * num_samples, dim)``.
+                * **info** (*MclmcInfo*) -- Tuning parameters and diagnostic information.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: adjusted
+      :value: True
+
+
+
+   .. py:attribute:: diagonal_preconditioning
+      :value: True
+
+
+
+   .. py:attribute:: num_chains
+      :value: 1
+
+
+
+   .. py:attribute:: num_samples
+      :value: 1000
+
+
+
+   .. py:attribute:: num_tuning_steps
+      :value: 5000
+
+
+
+   .. py:attribute:: target_acceptance
+      :value: 0.9
+
+
+
+.. py:class:: MclmcInfo
+
+   
+   Tuning parameters and diagnostics from an MCLMC run.
+
+   :param L: Tuned trajectory length.
+   :type L: float
+   :param step_size: Tuned integrator step size.
+   :type step_size: float
+   :param acceptance_rate: Mean Metropolis acceptance rate over the sampling run.
+                           ``float('nan')`` for the unadjusted variant.
+   :type acceptance_rate: float
+   :param num_samples: Number of samples drawn per chain.
+   :type num_samples: int
+   :param num_chains: Number of independent chains.
+   :type num_chains: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: L
+      :type:  float
+
+
+   .. py:attribute:: acceptance_rate
+      :type:  float
+
+
+   .. py:attribute:: num_chains
+      :type:  int
+
+
+   .. py:attribute:: num_samples
+      :type:  int
+
+
+   .. py:attribute:: step_size
+      :type:  float
+
+
+.. py:class:: NLEPosterior(flow, prior, *, structured_obs = False)
+
+   
+   Amortized NLE posterior over a trained likelihood flow.
+
+   :param flow: Exposes ``log_prob(x, cond) -> (B,)`` (an NLE-trained ``MAFlow``/``TarFlow``).
+   :type flow: object
+   :param prior: Prior over theta; ``prior.log_prob(theta)`` is a scalar and
+                 ``prior.sample(key, ())`` returns ``(dim,)``.
+   :type prior: numpyro.distributions.Distribution
+   :param structured_obs: If ``True``, ``x_o`` keeps its (image/field) shape instead of being
+                          flattened.  Default is ``False``.
+   :type structured_obs: bool, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_target(x_o)
+
+      
+      Build a posterior target for a single observation.
+
+      :param x_o: Observed data.  For non-structured: squeezed then promoted to
+                  ``(dim_x, 1)`` (channel-carrying).  For ``structured_obs=True``:
+                  kept as-is (image/field shape).
+      :type x_o: Array
+
+      :returns: Frozen log-density container for ``x_o``.
+      :rtype: PosteriorTarget
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, sampler=None, *, return_info=False)
+
+      
+      Draw posterior samples for a single observation.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Observed data passed to :meth:`build_target`.
+      :type x_o: Array
+      :param sampler: Sampler instance to use.  If ``None``, defaults to
+                      :class:`~gensbi.inference.samplers.MCLMC`.  Default is ``None``.
+      :type sampler: Sampler or None, optional
+      :param return_info: If ``True``, return a ``(samples, info)`` tuple instead of just
+                          ``samples``.  Default is ``False``.
+      :type return_info: bool, optional
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(n, dim, 1)``.  When
+                  ``return_info=False`` (the default), this is the only return value.
+                * **info** (*object*) -- Sampler-specific info object
+                  (:class:`~gensbi.inference.samplers.MclmcInfo` or
+                  :class:`~gensbi.inference.samplers.SmcInfo`).  Only present when
+                  ``return_info=True``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: flow
+
+
+   .. py:attribute:: prior
+
+
+   .. py:attribute:: structured_obs
+      :value: False
+
+
+
+.. py:class:: PosteriorTarget
+
+   
+   Log-densities for one observation ``x_o``.
+
+   Frozen dataclass produced by :meth:`NLEPosterior.build_target`.  All
+   callables accept a flat parameter vector ``theta`` of shape ``(dim,)``.
+
+   :param log_prior: Log-prior density.  Signature: ``log_prior(theta) -> float``.
+   :type log_prior: Callable
+   :param log_likelihood: Log-likelihood ``log q(x_o | theta)`` from the NLE-trained flow.
+                          Signature: ``log_likelihood(theta) -> float``.
+   :type log_likelihood: Callable
+   :param log_posterior: Unnormalised log-posterior ``log_likelihood(theta) + log_prior(theta)``.
+                         Signature: ``log_posterior(theta) -> float``.
+   :type log_posterior: Callable
+   :param prior: Prior distribution; must expose ``sample(key, shape)`` and
+                 ``log_prob(theta)``.
+   :type prior: object
+   :param dim: Dimensionality of the parameter space.
+   :type dim: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: dim
+      :type:  int
+
+
+   .. py:attribute:: log_likelihood
+      :type:  Callable
+
+
+   .. py:attribute:: log_posterior
+      :type:  Callable
+
+
+   .. py:attribute:: log_prior
+      :type:  Callable
+
+
+   .. py:attribute:: prior
+      :type:  object
+
+
+.. py:class:: Sampler
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Abstract base class for posterior samplers.
+
+   Subclasses consume a :class:`~gensbi.inference.posterior.PosteriorTarget`
+   and return an array of posterior samples together with a sampler-specific
+   info object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: run(key, target)
+      :abstractmethod:
+
+
+      
+      Draw posterior samples from a log-density target.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param target: Posterior target produced by
+                     :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+      :type target: PosteriorTarget
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(n, dim)``.
+                * **info** (*object*) -- Sampler-specific diagnostics.
+
+      :raises NotImplementedError: This is an abstract method; subclasses must override it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: SmcInfo
+
+   
+   Diagnostics from an adaptive tempered SMC run.
+
+   :param log_evidence: Log marginal likelihood estimate accumulated over tempering steps.
+   :type log_evidence: float
+   :param num_temperature_steps: Number of temperature increments taken from beta=0 to beta=1.
+   :type num_temperature_steps: int
+   :param final_tempering_param: Final value of the tempering parameter beta (should be 1.0).
+   :type final_tempering_param: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: final_tempering_param
+      :type:  float
+
+
+   .. py:attribute:: log_evidence
+      :type:  float
+
+
+   .. py:attribute:: num_temperature_steps
+      :type:  int
+
+
+.. py:class:: TemperedSMC(*, num_particles=1000, target_ess=0.5, num_mcmc_steps=10, inner_kernel='mclmc', inner_step_size=0.1, inner_num_integration_steps=5, inner_inverse_mass_matrix=None)
+
+   Bases: :py:obj:`Sampler`
+
+
+   
+   Adaptive tempered Sequential Monte Carlo for (possibly multimodal) posteriors.
+
+   Walks particles along ``p(theta) * q(x_o | theta)^beta`` for beta from 0
+   to 1, choosing the beta ladder adaptively to maintain ``target_ess``.  The
+   inner rejuvenation kernel is adjusted MCLMC by default; NUTS is available
+   as a fallback.
+
+   :param num_particles: Number of SMC particles.  Default is 1000.
+   :type num_particles: int, optional
+   :param target_ess: Target effective sample size ratio in ``(0, 1)``, used to adapt the
+                      temperature increments.  Default is 0.5.
+   :type target_ess: float, optional
+   :param num_mcmc_steps: Number of inner MCMC rejuvenation steps per temperature.  Default is 10.
+   :type num_mcmc_steps: int, optional
+   :param inner_kernel: Inner MCMC kernel: ``"mclmc"`` (adjusted MCLMC, default) or
+                        ``"nuts"``.
+   :type inner_kernel: str, optional
+   :param inner_step_size: Step size for the inner MCMC kernel.  Default is 0.1.
+   :type inner_step_size: float, optional
+   :param inner_num_integration_steps: Number of integration steps for the inner MCLMC kernel.  Default is 5.
+   :type inner_num_integration_steps: int, optional
+   :param inner_inverse_mass_matrix: Inverse mass matrix for the inner kernel.  If ``None``, defaults to a
+                                     vector of ones of length ``target.dim``.  Default is ``None``.
+   :type inner_inverse_mass_matrix: Array or None, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _inner(target)
+
+      
+      Return (mcmc_step_fn, mcmc_init_fn, mcmc_parameters) for the inner kernel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: run(key, target)
+
+      
+      Draw posterior samples using adaptive tempered SMC.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param target: Posterior target produced by
+                     :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+      :type target: PosteriorTarget
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(num_particles, dim)``.
+                * **info** (*SmcInfo*) -- SMC diagnostics including log evidence and tempering statistics.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: inner_inverse_mass_matrix
+      :value: None
+
+
+
+   .. py:attribute:: inner_kernel
+      :value: 'mclmc'
+
+
+
+   .. py:attribute:: inner_num_integration_steps
+      :value: 5
+
+
+
+   .. py:attribute:: inner_step_size
+      :value: 0.1
+
+
+
+   .. py:attribute:: num_mcmc_steps
+      :value: 10
+
+
+
+   .. py:attribute:: num_particles
+      :value: 1000
+
+
+
+   .. py:attribute:: target_ess
+      :value: 0.5
+
+
+

@@ -2,7 +2,7 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "c3bf4af7",
+   "id": "58807e2c",
    "metadata": {},
    "source": [
     "# Two Moons Simformer Flow Matching Example"
@@ -10,7 +10,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "b74ba088",
+   "id": "e30911d6",
    "metadata": {},
    "source": [
     "---\n",
@@ -39,7 +39,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "190fdf40",
+   "id": "15937f4a",
    "metadata": {},
    "source": [
     "## 1. Introduction & Setup\n",
@@ -50,7 +50,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9d846cfa",
+   "id": "ada95d49",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -63,7 +63,7 @@
     "\n",
     "if colab:\n",
     "    # Install required packages and clone the repository\n",
-    "    !uv pip install --quiet \"gensbi[cuda12,examples]\"\n",
+    "    !uv pip install --quiet \"gensbi[cuda12,examples]\" \"sbibm-jax[loader]\"\n",
     "    !git clone --depth 1 https://github.com/aurelio-amerio/GenSBI-examples\n",
     "    %cd GenSBI-examples/examples/sbi-benchmarks/two_moons/flow_simformer"
    ]
@@ -71,7 +71,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "81be7c88",
+   "id": "a114bd5e",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -84,7 +84,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "9075f325",
+   "id": "00cb3b77",
    "metadata": {},
    "source": [
     "## 2. Task & Data Preparation \n",
@@ -95,7 +95,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ab09f568",
+   "id": "614d5825",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -106,7 +106,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "91e0bb48",
+   "id": "113cd801",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -120,7 +120,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "780842a3",
+   "id": "a5d0297c",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -136,7 +136,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "75476cf8",
+   "id": "8150d5f3",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -146,18 +146,18 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "14cfe626",
+   "id": "46324e88",
    "metadata": {},
    "outputs": [],
    "source": [
-    "from gensbi_examples.tasks import TwoMoons\n",
-    "task = TwoMoons(kind=\"conditional\")"
+    "from sbibm_jax.data import TaskDataset\n",
+    "task = TaskDataset(\"two_moons\", kind=\"conditional\")"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "543b3a2a",
+   "id": "96e8c65a",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -168,7 +168,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "954d0059",
+   "id": "1224870b",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -180,7 +180,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "36f26c0e",
+   "id": "da0e5572",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -191,15 +191,15 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b8228b09",
+   "id": "40a0ae86",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Set batch size for training. Larger batch sizes help prevent overfitting, but are limited by available GPU memory.\n",
     "batch_size = 4096\n",
     "# Create training and validation datasets using the Two Moons task object.\n",
-    "train_dataset = task.get_train_dataset(batch_size)\n",
-    "val_dataset = task.get_val_dataset(batch_size)\n",
+    "train_dataset = task.get_train_loader(batch_size, num_samples=nsamples)\n",
+    "val_dataset = task.get_val_loader(batch_size)\n",
     "\n",
     "# Create iterators for the training and validation datasets.\n",
     "dataset_iter = iter(train_dataset)\n",
@@ -208,7 +208,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "e15a5288",
+   "id": "579a7e1f",
    "metadata": {},
    "source": [
     "## 3. Model Configuration & Definition \n",
@@ -219,7 +219,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "efb965f8",
+   "id": "87649312",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -229,7 +229,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c090a803",
+   "id": "add9e58a",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -242,13 +242,13 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "08d71881",
+   "id": "6fa0bf87",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Extract dimensionality information from the task object.\n",
-    "dim_obs = task.dim_obs  # Number of parameters to infer\n",
-    "dim_cond = task.dim_cond    # Number of observed data dimensions\n",
+    "dim_obs = task.dim_theta  # Number of parameters to infer\n",
+    "dim_cond = task.dim_x    # Number of observed data dimensions\n",
     "\n",
     "dim_joint = dim_obs + dim_cond  # Joint dimension (for model input)"
    ]
@@ -256,7 +256,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3915a5ca",
+   "id": "14bc0516",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -272,7 +272,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "5db86229",
+   "id": "02b97d7c",
    "metadata": {},
    "source": [
     "## 4. Training \n",
@@ -283,7 +283,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e2e4c77d",
+   "id": "31b6a889",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -293,7 +293,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4ef12f69",
+   "id": "2187a1cb",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -302,7 +302,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "ed3ac959",
+   "id": "a53ded30",
    "metadata": {},
    "source": [
     "## 5. Evaluation & Visualization \n",
@@ -312,7 +312,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "d39b19dd",
+   "id": "aca1e406",
    "metadata": {},
    "source": [
     "### Section 5.1: Posterior Sampling\n",
@@ -323,7 +323,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "35c974a0",
+   "id": "ffd49eb9",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -344,7 +344,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9a730c68",
+   "id": "705ac774",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -354,7 +354,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "548eb18a",
+   "id": "f3efb36b",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -363,7 +363,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "39e5f6e4",
+   "id": "94eb50c8",
    "metadata": {},
    "source": [
     "### Section 5.2: Visualize Posterior Samples\n",
@@ -374,7 +374,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "aae3147f",
+   "id": "f75f0869",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -384,7 +384,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "989f3d3c",
+   "id": "0dd1799e",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -398,7 +398,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "6f3977e9",
+   "id": "09d4d324",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/marginals_ema_1.png\" width=400>\n",
@@ -411,7 +411,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "96979489",
+   "id": "fafe72ac",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -423,7 +423,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "87b14d3e",
+   "id": "4287a9e2",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -464,7 +464,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "dbcfab59",
+   "id": "08a09df7",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -475,7 +475,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "68de7285",
+   "id": "5684c7e1",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -489,7 +489,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "fe7eade8",
+   "id": "faf337d8",
    "metadata": {},
    "source": [
     "## 6. Posterior Calibration Checks"
@@ -498,7 +498,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "40bef1fd",
+   "id": "85368bdf",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -520,7 +520,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c1d69bc7",
+   "id": "aef8f67f",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -549,7 +549,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "4605a748",
+   "id": "d44e623c",
    "metadata": {},
    "source": [
     "### 6.1. Marginal coverage\n",
@@ -559,7 +559,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "cf44ef0d",
+   "id": "521fb383",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -570,7 +570,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "52cd61c3",
+   "id": "a6182d7a",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/marginal_coverage_1.png\" width=800>\n",
@@ -582,7 +582,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "483c9069",
+   "id": "38106b9d",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -603,7 +603,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "8df0cc4a",
+   "id": "5a523e25",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/tarp_1.png\" width=800>\n",
@@ -615,7 +615,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "66be6d02",
+   "id": "fd2590bf",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -632,7 +632,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "2a22959d",
+   "id": "998637d1",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/sbc_1.png\" width=500>\n",
@@ -644,7 +644,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "198c9fbd",
+   "id": "ed7648f8",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -671,7 +671,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "8026d7d7",
+   "id": "b17eabfd",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -711,7 +711,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "47050148",
+   "id": "ac20f4ff",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -725,7 +725,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "776c69e4",
+   "id": "46ece924",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/lc2st_1.png\" width=500>"

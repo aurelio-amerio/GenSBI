@@ -9,7 +9,7 @@ gensbi.utils
    Utility functions for GenSBI.
 
    This module provides general utility functions including mathematical operations,
-   model wrapping utilities, and plotting functions.
+   model wrapping utilities, plotting functions, and model serialization.
 
 
 
@@ -39,5 +39,91 @@ Submodules
    /api/gensbi/utils/misc/index
    /api/gensbi/utils/model_wrapping/index
    /api/gensbi/utils/plotting/index
+   /api/gensbi/utils/serialization/index
 
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.utils.load_safetensors
+   gensbi.utils.save_safetensors
+
+
+Package Contents
+----------------
+
+.. py:function:: load_safetensors(model, path, *, strict = True)
+
+   
+   Load weights from a ``.safetensors`` file into ``model`` in place.
+
+   The caller must have reconstructed ``model`` from its ``Params`` first;
+   that model is the structural schema.
+
+   :param model: Target model, rebuilt from its ``Params``.
+   :type model: nnx.Module
+   :param path: Source ``.safetensors`` file.
+   :type path: str | os.PathLike
+   :param strict: If True (default), the file's key set must equal the model's and
+                  every shared key must match shape (``ValueError`` otherwise). If
+                  False, only the intersection is loaded; model leaves absent from
+                  the file keep their current values and file keys absent from the
+                  model are ignored.
+   :type strict: bool, optional
+
+   :returns: **model** -- The same ``model`` object, updated in place with the loaded
+             weights.
+   :rtype: nnx.Module
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: save_safetensors(model, path, *, metadata = None, wrt=None)
+
+   
+   Save ``model``'s weights to a single ``.safetensors`` file.
+
+   :param model: Any flax nnx module.
+   :type model: nnx.Module
+   :param path: Destination ``.safetensors`` file.
+   :type path: str | os.PathLike
+   :param metadata: Extra provenance, stringified and merged over (overriding) the defaults
+                    ``format``/``version``/``framework``/``model_class``.
+   :type metadata: mapping, optional
+   :param wrt: Restrict the saved variable collections (e.g. ``nnx.Param``). Default
+               saves the full state.
+   :type wrt: nnx filter, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 

@@ -1,0 +1,204 @@
+gensbi.inference.posterior
+==========================
+
+.. py:module:: gensbi.inference.posterior
+
+.. autoapi-nested-parse::
+
+   NLE posterior target: build log-densities from a trained likelihood flow + prior.
+
+   The flow is NLE-trained (``obs = x``, ``cond = theta``), so ``flow.log_prob(x, theta)``
+   is ``log q(x | theta)``. ``NLEPosterior`` turns ``(flow, prior, x_o)`` into a
+   ``PosteriorTarget`` (separate log-prior / log-likelihood / log-posterior closures),
+   which a ``Sampler`` consumes. The flow params are frozen constants inside the
+   closures; only ``theta`` is traced/differentiated.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.inference.posterior.NLEPosterior
+   gensbi.inference.posterior.PosteriorTarget
+
+
+Module Contents
+---------------
+
+.. py:class:: NLEPosterior(flow, prior, *, structured_obs = False)
+
+   
+   Amortized NLE posterior over a trained likelihood flow.
+
+   :param flow: Exposes ``log_prob(x, cond) -> (B,)`` (an NLE-trained ``MAFlow``/``TarFlow``).
+   :type flow: object
+   :param prior: Prior over theta; ``prior.log_prob(theta)`` is a scalar and
+                 ``prior.sample(key, ())`` returns ``(dim,)``.
+   :type prior: numpyro.distributions.Distribution
+   :param structured_obs: If ``True``, ``x_o`` keeps its (image/field) shape instead of being
+                          flattened.  Default is ``False``.
+   :type structured_obs: bool, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build_target(x_o)
+
+      
+      Build a posterior target for a single observation.
+
+      :param x_o: Observed data.  For non-structured: squeezed then promoted to
+                  ``(dim_x, 1)`` (channel-carrying).  For ``structured_obs=True``:
+                  kept as-is (image/field shape).
+      :type x_o: Array
+
+      :returns: Frozen log-density container for ``x_o``.
+      :rtype: PosteriorTarget
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, sampler=None, *, return_info=False)
+
+      
+      Draw posterior samples for a single observation.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Observed data passed to :meth:`build_target`.
+      :type x_o: Array
+      :param sampler: Sampler instance to use.  If ``None``, defaults to
+                      :class:`~gensbi.inference.samplers.MCLMC`.  Default is ``None``.
+      :type sampler: Sampler or None, optional
+      :param return_info: If ``True``, return a ``(samples, info)`` tuple instead of just
+                          ``samples``.  Default is ``False``.
+      :type return_info: bool, optional
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(n, dim, 1)``.  When
+                  ``return_info=False`` (the default), this is the only return value.
+                * **info** (*object*) -- Sampler-specific info object
+                  (:class:`~gensbi.inference.samplers.MclmcInfo` or
+                  :class:`~gensbi.inference.samplers.SmcInfo`).  Only present when
+                  ``return_info=True``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: flow
+
+
+   .. py:attribute:: prior
+
+
+   .. py:attribute:: structured_obs
+      :value: False
+
+
+
+.. py:class:: PosteriorTarget
+
+   
+   Log-densities for one observation ``x_o``.
+
+   Frozen dataclass produced by :meth:`NLEPosterior.build_target`.  All
+   callables accept a flat parameter vector ``theta`` of shape ``(dim,)``.
+
+   :param log_prior: Log-prior density.  Signature: ``log_prior(theta) -> float``.
+   :type log_prior: Callable
+   :param log_likelihood: Log-likelihood ``log q(x_o | theta)`` from the NLE-trained flow.
+                          Signature: ``log_likelihood(theta) -> float``.
+   :type log_likelihood: Callable
+   :param log_posterior: Unnormalised log-posterior ``log_likelihood(theta) + log_prior(theta)``.
+                         Signature: ``log_posterior(theta) -> float``.
+   :type log_posterior: Callable
+   :param prior: Prior distribution; must expose ``sample(key, shape)`` and
+                 ``log_prob(theta)``.
+   :type prior: object
+   :param dim: Dimensionality of the parameter space.
+   :type dim: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: dim
+      :type:  int
+
+
+   .. py:attribute:: log_likelihood
+      :type:  Callable
+
+
+   .. py:attribute:: log_posterior
+      :type:  Callable
+
+
+   .. py:attribute:: log_prior
+      :type:  Callable
+
+
+   .. py:attribute:: prior
+      :type:  object
+
+

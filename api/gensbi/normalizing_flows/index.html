@@ -1,0 +1,1484 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>gensbi.normalizing_flows &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/gensbi/normalizing_flows/index';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="gensbi.normalizing_flows.bijections" href="bijections/index.html" />
+    <link rel="prev" title="gensbi.models.wrappers.unconditional" href="../models/wrappers/unconditional/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../getting_started/index.html">Quick Start</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/quick_start.html">15-minute quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/my_first_model.html">My First Model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../basics/index.html">Basics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/overview.html">Conceptual Overview: How GenSBI is Structured</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/data_and_embeddings.html">Data, IDs, and Embeddings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/model_cards.html">Model Cards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/training.html">Training Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/inference.html">Inference Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/validation.html">Validation Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../basics/contributing.html">Contributing to GenSBI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmarks.html">Benchmarks</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../advanced/index.html">Advanced Topics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../advanced/samplers.html">Samplers and Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../advanced/custom_models.html">Custom Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../advanced/normalizing_flows.html">Normalizing Flows (experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../advanced/methods_and_samplers.html">Methods and Samplers in GenSBI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../theoretical_overview/index.html">Theoretical Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../theoretical_overview/score_matching.html">Score-Based Generative Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../theoretical_overview/diffusion.html">EDM Diffusion Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../theoretical_overview/flow.html">Flow Matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../theoretical_overview/conditional.html">Conditional Density Estimation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../index.html">API Documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../core/index.html">gensbi.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../core/diffusion_edm/index.html">gensbi.core.diffusion_edm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/flow_matching/index.html">gensbi.core.flow_matching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/generative_method/index.html">gensbi.core.generative_method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/ode_solver/index.html">gensbi.core.ode_solver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/prior/index.html">gensbi.core.prior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/score_matching/index.html">gensbi.core.score_matching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/sde_solver/index.html">gensbi.core.sde_solver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core/time_sampling/index.html">gensbi.core.time_sampling</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../diagnostics/index.html">gensbi.diagnostics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../diagnostics/lc2st/index.html">gensbi.diagnostics.lc2st</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../diagnostics/marginal_coverage/index.html">gensbi.diagnostics.marginal_coverage</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../diagnostics/metrics/index.html">gensbi.diagnostics.metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../diagnostics/metrics/c2st/index.html">gensbi.diagnostics.metrics.c2st</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diagnostics/metrics/l1_l2/index.html">gensbi.diagnostics.metrics.l1_l2</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../diagnostics/sbc/index.html">gensbi.diagnostics.sbc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../diagnostics/tarp/index.html">gensbi.diagnostics.tarp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../diagnostics/utils/index.html">gensbi.diagnostics.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../diffusion/index.html">gensbi.diffusion</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../diffusion/loss/index.html">gensbi.diffusion.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/loss/edm_loss/index.html">gensbi.diffusion.loss.edm_loss</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/loss/sm_loss/index.html">gensbi.diffusion.loss.sm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../diffusion/path/index.html">gensbi.diffusion.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/path/edm_path/index.html">gensbi.diffusion.path.edm_path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/path/path/index.html">gensbi.diffusion.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/path/path_sample/index.html">gensbi.diffusion.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/path/scheduler/index.html">gensbi.diffusion.path.scheduler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/path/sm_path/index.html">gensbi.diffusion.path.sm_path</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../diffusion/solver/index.html">gensbi.diffusion.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/solver/edm_samplers/index.html">gensbi.diffusion.solver.edm_samplers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/solver/edm_solver/index.html">gensbi.diffusion.solver.edm_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/solver/sm_ode_solver/index.html">gensbi.diffusion.solver.sm_ode_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../diffusion/solver/sm_sde_solver/index.html">gensbi.diffusion.solver.sm_sde_solver</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../experimental/index.html">gensbi.experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../experimental/models/index.html">gensbi.experimental.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../experimental/models/autoencoders/index.html">gensbi.experimental.models.autoencoders</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../experimental/models/fielddit/index.html">gensbi.experimental.models.fielddit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../experimental/models/glue/index.html">gensbi.experimental.models.glue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../experimental/models/pixeldit/index.html">gensbi.experimental.models.pixeldit</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../experimental/recipes/index.html">gensbi.experimental.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../experimental/recipes/field_pipeline/index.html">gensbi.experimental.recipes.field_pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../experimental/recipes/vae_pipeline/index.html">gensbi.experimental.recipes.vae_pipeline</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../flow_matching/index.html">gensbi.flow_matching</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../flow_matching/loss/index.html">gensbi.flow_matching.loss</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/loss/fm_loss/index.html">gensbi.flow_matching.loss.fm_loss</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../flow_matching/path/index.html">gensbi.flow_matching.path</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/path/affine/index.html">gensbi.flow_matching.path.affine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/path/path/index.html">gensbi.flow_matching.path.path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/path/path_sample/index.html">gensbi.flow_matching.path.path_sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/path/scheduler/index.html">gensbi.flow_matching.path.scheduler</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../flow_matching/solver/index.html">gensbi.flow_matching.solver</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/solver/fm_ode_solver/index.html">gensbi.flow_matching.solver.fm_ode_solver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/solver/fm_sde_solver/index.html">gensbi.flow_matching.solver.fm_sde_solver</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../flow_matching/utils/index.html">gensbi.flow_matching.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../flow_matching/utils/utils/index.html">gensbi.flow_matching.utils.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../inference/index.html">gensbi.inference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../inference/posterior/index.html">gensbi.inference.posterior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../inference/samplers/index.html">gensbi.inference.samplers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../models/index.html">gensbi.models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/core/index.html">gensbi.models.core</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/core/patching/index.html">gensbi.models.core.patching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/core/stats/index.html">gensbi.models.core.stats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/core/tokenizers/index.html">gensbi.models.core.tokenizers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/embedding/index.html">gensbi.models.embedding</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/embedding/embedding/index.html">gensbi.models.embedding.embedding</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/flux1/index.html">gensbi.models.flux1</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/flux1/layers/index.html">gensbi.models.flux1.layers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/flux1/math/index.html">gensbi.models.flux1.math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/flux1/model/index.html">gensbi.models.flux1.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/flux1joint/index.html">gensbi.models.flux1joint</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/flux1joint/model/index.html">gensbi.models.flux1joint.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/maf/index.html">gensbi.models.maf</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/maf/made/index.html">gensbi.models.maf.made</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/maf/masked_linear/index.html">gensbi.models.maf.masked_linear</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/maf/masks/index.html">gensbi.models.maf.masks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/maf/model/index.html">gensbi.models.maf.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/simformer/index.html">gensbi.models.simformer</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/simformer/model/index.html">gensbi.models.simformer.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/simformer/transformer/index.html">gensbi.models.simformer.transformer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/tarflow/index.html">gensbi.models.tarflow</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/tarflow/blocks/index.html">gensbi.models.tarflow.blocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/tarflow/conditioners/index.html">gensbi.models.tarflow.conditioners</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/tarflow/model/index.html">gensbi.models.tarflow.model</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../models/wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../models/wrappers/conditional/index.html">gensbi.models.wrappers.conditional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/wrappers/joint/index.html">gensbi.models.wrappers.joint</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../models/wrappers/unconditional/index.html">gensbi.models.wrappers.unconditional</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">gensbi.normalizing_flows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="bijections/index.html">gensbi.normalizing_flows.bijections</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="bijections/base/index.html">gensbi.normalizing_flows.bijections.base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bijections/chain/index.html">gensbi.normalizing_flows.bijections.chain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bijections/permutation/index.html">gensbi.normalizing_flows.bijections.permutation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bijections/standardize/index.html">gensbi.normalizing_flows.bijections.standardize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bijections/transformers/index.html">gensbi.normalizing_flows.bijections.transformers</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../recipes/index.html">gensbi.recipes</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/conditional_pipeline/index.html">gensbi.recipes.conditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/flow_pipeline/index.html">gensbi.recipes.flow_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/flux1/index.html">gensbi.recipes.flux1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/pipeline/index.html">gensbi.recipes.pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/simformer/index.html">gensbi.recipes.simformer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/unconditional_pipeline/index.html">gensbi.recipes.unconditional_pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recipes/utils/index.html">gensbi.recipes.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../solver/index.html">gensbi.solver</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../utils/index.html">gensbi.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../utils/math/index.html">gensbi.utils.math</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils/misc/index.html">gensbi.utils.misc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils/model_wrapping/index.html">gensbi.utils.model_wrapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils/plotting/index.html">gensbi.utils.plotting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../utils/serialization/index.html">gensbi.utils.serialization</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../documentation/index.html" class="nav-link">Documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.normalizing_flows</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-gensbi.normalizing_flows">
+<span id="gensbi-normalizing-flows"></span><h1>gensbi.normalizing_flows<a class="headerlink" href="#module-gensbi.normalizing_flows" title="Link to this heading">#</a></h1>
+<p>Pure normalizing-flow abstractions (bijections + change-of-variables).</p>
+<p>Concrete flow models live under <code class="docutils literal notranslate"><span class="pre">gensbi.models</span></code> (<code class="docutils literal notranslate"><span class="pre">MAFlow</span></code>, <code class="docutils literal notranslate"><span class="pre">TarFlow</span></code>).</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bijections/index.html">gensbi.normalizing_flows.bijections</a></li>
+</ul>
+</div>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.normalizing_flows.Affine" title="gensbi.normalizing_flows.Affine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Affine</span></code></a></p></td>
+<td><p>Elementwise affine transform with log-scale clamping.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.normalizing_flows.Bijection" title="gensbi.normalizing_flows.Bijection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Bijection</span></code></a></p></td>
+<td><p>Invertible map between a noise variable and a data variable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.normalizing_flows.Chain" title="gensbi.normalizing_flows.Chain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Chain</span></code></a></p></td>
+<td><p>Sequential composition of bijections.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.normalizing_flows.Mask" title="gensbi.normalizing_flows.Mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Mask</span></code></a></p></td>
+<td><p>Fixed (non-trainable) buffer for bijection metadata.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.normalizing_flows.Permutation" title="gensbi.normalizing_flows.Permutation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Permutation</span></code></a></p></td>
+<td><p>Reorder dimensions; conditioning is ignored; log-det is always 0.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.normalizing_flows.RQSpline" title="gensbi.normalizing_flows.RQSpline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RQSpline</span></code></a></p></td>
+<td><p>Elementwise monotonic rational-quadratic spline on <code class="docutils literal notranslate"><span class="pre">[-B,</span> <span class="pre">B]</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.normalizing_flows.Standardize" title="gensbi.normalizing_flows.Standardize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Standardize</span></code></a></p></td>
+<td><p>Fixed affine standardization using non-trainable mean and std buffers.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.normalizing_flows.</span></span><span class="sig-name descname"><span class="pre">Affine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clamp_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#Affine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Affine" title="Link to this definition">#</a></dt>
+<dd><p>Elementwise affine transform with log-scale clamping.</p>
+<p>The parameter layout per dimension is <code class="docutils literal notranslate"><span class="pre">[shift</span> <span class="pre">mu,</span> <span class="pre">log-scale</span> <span class="pre">a]</span></code>
+(<code class="docutils literal notranslate"><span class="pre">num_params</span> <span class="pre">==</span> <span class="pre">2</span></code>).  Log-scale values are clamped to
+<code class="docutils literal notranslate"><span class="pre">[clamp_min,</span> <span class="pre">clamp_max]</span></code> before exponentiation using a straight-through
+gradient (NumPyro IAF trick).</p>
+<p>Forward (noise→data): <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">u</span> <span class="pre">*</span> <span class="pre">exp(a)</span> <span class="pre">+</span> <span class="pre">mu</span></code>; logabsdet = <code class="docutils literal notranslate"><span class="pre">+sum(a)</span></code>.
+Inverse (data→noise): <code class="docutils literal notranslate"><span class="pre">u</span> <span class="pre">=</span> <span class="pre">(x</span> <span class="pre">-</span> <span class="pre">mu)</span> <span class="pre">*</span> <span class="pre">exp(-a)</span></code>; logabsdet = <code class="docutils literal notranslate"><span class="pre">-sum(a)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clamp_min</strong> (<em>float</em><em>, </em><em>optional</em>) – Lower bound for log-scale clamping.  Default is -5.0.</p></li>
+<li><p><strong>clamp_max</strong> (<em>float</em><em>, </em><em>optional</em>) – Upper bound for log-scale clamping.  Default is 3.0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine._split">
+<span class="sig-name descname"><span class="pre">_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#Affine._split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Affine._split" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>jax.Array</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[jax.Array, jax.Array]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#Affine.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Affine.forward" title="Link to this definition">#</a></dt>
+<dd><p>Map noise to data: <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">u</span> <span class="pre">*</span> <span class="pre">exp(a)</span> <span class="pre">+</span> <span class="pre">mu</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>params</strong> (<em>Array</em>) – Per-dimension parameters of shape <code class="docutils literal notranslate"><span class="pre">(dim,</span> <span class="pre">2)</span></code>; column 0 is the
+shift <code class="docutils literal notranslate"><span class="pre">mu</span></code> and column 1 is the log-scale <code class="docutils literal notranslate"><span class="pre">a</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Sum of clamped log-scales: <code class="docutils literal notranslate"><span class="pre">sum(a)</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[jax.Array, jax.Array]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine.forward_dim">
+<span class="sig-name descname"><span class="pre">forward_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_i</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#Affine.forward_dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Affine.forward_dim" title="Link to this definition">#</a></dt>
+<dd><p>Scalar noise-to-data transform for a single dimension.</p>
+<p>Used by the sequential sampling scan in the autoregressive loop, which
+accumulates the per-dimension log-determinant as it goes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u_i</strong> (<em>Array</em>) – Scalar noise-space value for one dimension.</p></li>
+<li><p><strong>params_i</strong> (<em>Array</em>) – Parameter vector of length 2 for the same dimension; index 0 is
+the shift <code class="docutils literal notranslate"><span class="pre">mu</span></code>, index 1 is the log-scale <code class="docutils literal notranslate"><span class="pre">a</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x_i</strong> (<em>Array</em>) – Scalar data-space output: <code class="docutils literal notranslate"><span class="pre">u_i</span> <span class="pre">*</span> <span class="pre">exp(a)</span> <span class="pre">+</span> <span class="pre">mu</span></code>.</p></li>
+<li><p><strong>logabsdet_i</strong> (<em>Array</em>) – Forward log-determinant contribution for this dimension: <code class="docutils literal notranslate"><span class="pre">a</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[jax.Array, jax.Array]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#Affine.inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Affine.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Map data to noise: <code class="docutils literal notranslate"><span class="pre">u</span> <span class="pre">=</span> <span class="pre">(x</span> <span class="pre">-</span> <span class="pre">mu)</span> <span class="pre">*</span> <span class="pre">exp(-a)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>params</strong> (<em>Array</em>) – Per-dimension parameters of shape <code class="docutils literal notranslate"><span class="pre">(dim,</span> <span class="pre">2)</span></code>; column 0 is the
+shift <code class="docutils literal notranslate"><span class="pre">mu</span></code> and column 1 is the log-scale <code class="docutils literal notranslate"><span class="pre">a</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Negative sum of clamped log-scales: <code class="docutils literal notranslate"><span class="pre">-sum(a)</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[jax.Array, jax.Array]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine.clamp_max">
+<span class="sig-name descname"><span class="pre">clamp_max</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3.0</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Affine.clamp_max" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine.clamp_min">
+<span class="sig-name descname"><span class="pre">clamp_min</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-5.0</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Affine.clamp_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Affine.num_params">
+<span class="sig-name descname"><span class="pre">num_params</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Affine.num_params" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Bijection">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.normalizing_flows.</span></span><span class="sig-name descname"><span class="pre">Bijection</span></span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/base.html#Bijection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Bijection" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>Invertible map between a noise variable and a data variable.</p>
+<p>Subclasses implement a differentiable bijection with a direction
+convention fixed across the library: <a class="reference internal" href="#gensbi.normalizing_flows.Bijection.forward" title="gensbi.normalizing_flows.Bijection.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a> maps noise to data
+(the sampling direction) and <a class="reference internal" href="#gensbi.normalizing_flows.Bijection.inverse" title="gensbi.normalizing_flows.Bijection.inverse"><code class="xref py py-meth docutils literal notranslate"><span class="pre">inverse()</span></code></a> maps data to noise (the
+density-evaluation direction). Both directions also return the log
+absolute determinant of the Jacobian of the transform they apply.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Bijection.forward">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/base.html#Bijection.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Bijection.forward" title="Link to this definition">#</a></dt>
+<dd><p>Map noise to data (the sampling direction).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space input.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Conditioning input, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for an unconditional map.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Log absolute determinant of the Jacobian of the forward map.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>NotImplementedError</strong> – This is an abstract method; subclasses must override it.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[jax.Array, jax.Array]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Bijection.inverse">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/base.html#Bijection.inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Bijection.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Map data to noise (the density-evaluation direction).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space input.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Conditioning input, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for an unconditional map.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Log absolute determinant of the Jacobian of the inverse map.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>NotImplementedError</strong> – This is an abstract method; subclasses must override it.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[jax.Array, jax.Array]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Chain">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.normalizing_flows.</span></span><span class="sig-name descname"><span class="pre">Chain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bijections</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/chain.html#Chain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Chain" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Bijection" title="gensbi.normalizing_flows.bijections.base.Bijection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gensbi.normalizing_flows.bijections.base.Bijection</span></code></a></p>
+<p>Sequential composition of bijections.</p>
+<p>Applies bijections in the order given for <a class="reference internal" href="#gensbi.normalizing_flows.Chain.forward" title="gensbi.normalizing_flows.Chain.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a> (noise→data)
+and in reversed order for <a class="reference internal" href="#gensbi.normalizing_flows.Chain.inverse" title="gensbi.normalizing_flows.Chain.inverse"><code class="xref py py-meth docutils literal notranslate"><span class="pre">inverse()</span></code></a> (data→noise).  Log-absolute
+determinants accumulate by summation.  <code class="docutils literal notranslate"><span class="pre">bijections[-1]</span></code> is closest to
+data space; it is the last bijection applied in <a class="reference internal" href="#gensbi.normalizing_flows.Chain.forward" title="gensbi.normalizing_flows.Chain.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a> and the
+first applied in <a class="reference internal" href="#gensbi.normalizing_flows.Chain.inverse" title="gensbi.normalizing_flows.Chain.inverse"><code class="xref py py-meth docutils literal notranslate"><span class="pre">inverse()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bijections</strong> (<em>list</em><em> of </em><a class="reference internal" href="#gensbi.normalizing_flows.Bijection" title="gensbi.normalizing_flows.Bijection"><em>Bijection</em></a>) – Ordered list of bijections stored in noise→data (forward) order.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Chain.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/chain.html#Chain.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Chain.forward" title="Link to this definition">#</a></dt>
+<dd><p>Map noise to data by composing all bijections in order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space input.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Conditioning input passed to every bijection, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Accumulated log absolute determinant of the composed forward map.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Chain.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/chain.html#Chain.inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Chain.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Map data to noise by composing all bijections in reversed order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space input.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Conditioning input passed to every bijection, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Accumulated log absolute determinant of the composed inverse map.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Chain.bijections">
+<span class="sig-name descname"><span class="pre">bijections</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Chain.bijections" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Mask">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.normalizing_flows.</span></span><span class="sig-name descname"><span class="pre">Mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">hijax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eager_sharding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/base.html#Mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Mask" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Variable</span></code></p>
+<p>Fixed (non-trainable) buffer for bijection metadata.</p>
+<p>A non-<code class="xref py py-class docutils literal notranslate"><span class="pre">Param</span></code> <code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code> subclass so
+that optimizers and EMA utilities skip it while checkpointing still
+saves and restores it.  Typical use: autoregressive masks in
+<a class="reference internal" href="../models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive" title="gensbi.models.maf.made.MaskedAutoregressive"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaskedAutoregressive</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>A</em><em> | </em><em>VariableMetadata</em><em>[</em><em>A</em><em>]</em>)</p></li>
+<li><p><strong>hijax</strong> (<em>bool</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>ref</strong> (<em>bool</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>eager_sharding</strong> (<em>bool</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>metadata</strong> (<em>Any</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Permutation">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.normalizing_flows.</span></span><span class="sig-name descname"><span class="pre">Permutation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">perm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/permutation.html#Permutation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Permutation" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Bijection" title="gensbi.normalizing_flows.bijections.base.Bijection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gensbi.normalizing_flows.bijections.base.Bijection</span></code></a></p>
+<p>Reorder dimensions; conditioning is ignored; log-det is always 0.</p>
+<p>Both the permutation index array and its inverse are stored as
+<a class="reference internal" href="bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Mask" title="gensbi.normalizing_flows.bijections.base.Mask"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mask</span></code></a> buffers so that
+optimizers and EMA utilities skip them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>perm</strong> (<em>Array</em>) – Integer index array of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code> that defines the reordering.
+<code class="docutils literal notranslate"><span class="pre">perm[i]</span></code> is the source index for output position <code class="docutils literal notranslate"><span class="pre">i</span></code>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Permutation.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/permutation.html#Permutation.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Permutation.forward" title="Link to this definition">#</a></dt>
+<dd><p>Map noise to data by applying the inverse permutation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Ignored; present for interface compatibility.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Reordered data-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Zero scalar (permutations have unit Jacobian determinant).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Permutation.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/permutation.html#Permutation.inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Permutation.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Map data to noise by applying <code class="docutils literal notranslate"><span class="pre">perm</span></code> to reorder dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Ignored; present for interface compatibility.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Reordered noise-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Zero scalar (permutations have unit Jacobian determinant).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Permutation.random">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">random</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/permutation.html#Permutation.random"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Permutation.random" title="Link to this definition">#</a></dt>
+<dd><p>Construct a uniformly random permutation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim</strong> (<em>int</em>) – Number of dimensions.</p></li>
+<li><p><strong>rngs</strong> (<em>nnx.Rngs</em>) – Flax RNG container used to draw the random permutation index.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <a class="reference internal" href="#gensbi.normalizing_flows.Permutation" title="gensbi.normalizing_flows.Permutation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Permutation</span></code></a> with a randomly shuffled index array.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#gensbi.normalizing_flows.Permutation" title="gensbi.normalizing_flows.Permutation">Permutation</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Permutation.reverse">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">reverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/permutation.html#Permutation.reverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Permutation.reverse" title="Link to this definition">#</a></dt>
+<dd><p>Construct a permutation that reverses dimension order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dim</strong> (<em>int</em>) – Number of dimensions.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <a class="reference internal" href="#gensbi.normalizing_flows.Permutation" title="gensbi.normalizing_flows.Permutation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Permutation</span></code></a> that reverses the dimension order.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#gensbi.normalizing_flows.Permutation" title="gensbi.normalizing_flows.Permutation">Permutation</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Permutation.inv_perm">
+<span class="sig-name descname"><span class="pre">inv_perm</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Permutation.inv_perm" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Permutation.perm">
+<span class="sig-name descname"><span class="pre">perm</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Permutation.perm" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.normalizing_flows.</span></span><span class="sig-name descname"><span class="pre">RQSpline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">range_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_bin_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_bin_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_derivative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#RQSpline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline" title="Link to this definition">#</a></dt>
+<dd><p>Elementwise monotonic rational-quadratic spline on <code class="docutils literal notranslate"><span class="pre">[-B,</span> <span class="pre">B]</span></code>.</p>
+<p>Linear (identity) tails outside the spline interval.  The mapping is
+parameterised per dimension; with zero-initialised parameters the spline
+reduces to the identity, so the flow warm-starts as a standard normal
+(same warm-start contract as <a class="reference internal" href="#gensbi.normalizing_flows.Affine" title="gensbi.normalizing_flows.Affine"><code class="xref py py-class docutils literal notranslate"><span class="pre">Affine</span></code></a>).</p>
+<p>The parameter layout per dimension is
+<code class="docutils literal notranslate"><span class="pre">[widths(K),</span> <span class="pre">heights(K),</span> <span class="pre">inner_derivatives(K-1)]</span></code> of total length
+<code class="docutils literal notranslate"><span class="pre">3K</span> <span class="pre">-</span> <span class="pre">1</span></code>.  Reference: Durkan et al. 2019
+(<a class="reference external" href="https://arxiv.org/abs/1906.04032">https://arxiv.org/abs/1906.04032</a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_bins</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of spline bins <code class="docutils literal notranslate"><span class="pre">K</span></code>.  Default is 8.</p></li>
+<li><p><strong>range_bound</strong> (<em>float</em><em>, </em><em>optional</em>) – Half-width <code class="docutils literal notranslate"><span class="pre">B</span></code> of the spline interval <code class="docutils literal notranslate"><span class="pre">[-B,</span> <span class="pre">B]</span></code>.  Default is 5.0.</p></li>
+<li><p><strong>min_bin_width</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum fractional bin width after softmax normalisation.
+Default is 1e-3.</p></li>
+<li><p><strong>min_bin_height</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum fractional bin height after softmax normalisation.
+Default is 1e-3.</p></li>
+<li><p><strong>min_derivative</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum knot derivative value.  Default is 1e-3.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline._fwd_scalar">
+<span class="sig-name descname"><span class="pre">_fwd_scalar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#RQSpline._fwd_scalar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline._fwd_scalar" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>jax.Array</em>)</p></li>
+<li><p><strong>params</strong> (<em>jax.Array</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline._inv_scalar">
+<span class="sig-name descname"><span class="pre">_inv_scalar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#RQSpline._inv_scalar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline._inv_scalar" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u</strong> (<em>jax.Array</em>)</p></li>
+<li><p><strong>params</strong> (<em>jax.Array</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline._knots">
+<span class="sig-name descname"><span class="pre">_knots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#RQSpline._knots"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline._knots" title="Link to this definition">#</a></dt>
+<dd><p>Raw params -&gt; (x_knots, y_knots, derivatives), each over K+1 knots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>jax.Array</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#RQSpline.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.forward" title="Link to this definition">#</a></dt>
+<dd><p>Map noise to data (vectorised inverse spline pass).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>params</strong> (<em>Array</em>) – Per-dimension spline parameters of shape <code class="docutils literal notranslate"><span class="pre">(dim,</span> <span class="pre">3K-1)</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Negative sum of log-derivatives of the spline: <code class="docutils literal notranslate"><span class="pre">-sum(log</span> <span class="pre">g'(x))</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">g'</span></code> is the forward spline derivative evaluated at the
+corresponding data-space position.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.forward_dim">
+<span class="sig-name descname"><span class="pre">forward_dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_i</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#RQSpline.forward_dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.forward_dim" title="Link to this definition">#</a></dt>
+<dd><p>Scalar noise-to-data transform for a single dimension.</p>
+<p>Used by the sequential sampling scan in the autoregressive loop, which
+accumulates the per-dimension log-determinant as it goes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u_i</strong> (<em>Array</em>) – Scalar noise-space value for one dimension.</p></li>
+<li><p><strong>params_i</strong> (<em>Array</em>) – Spline parameter vector of length <code class="docutils literal notranslate"><span class="pre">3K-1</span></code> for the same dimension.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x_i</strong> (<em>Array</em>) – Scalar data-space output.</p></li>
+<li><p><strong>logabsdet_i</strong> (<em>Array</em>) – Forward log-determinant contribution for this dimension:
+<code class="docutils literal notranslate"><span class="pre">-log</span> <span class="pre">g'(x_i)</span></code> (matching <a class="reference internal" href="#gensbi.normalizing_flows.RQSpline.forward" title="gensbi.normalizing_flows.RQSpline.forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">forward()</span></code></a>).</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[jax.Array, jax.Array]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/transformers.html#RQSpline.inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Map data to noise (fast vectorised spline pass).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>params</strong> (<em>Array</em>) – Per-dimension spline parameters of shape <code class="docutils literal notranslate"><span class="pre">(dim,</span> <span class="pre">3K-1)</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Positive sum of log-derivatives of the spline at each input:
+<code class="docutils literal notranslate"><span class="pre">+sum(log</span> <span class="pre">g'(x))</span></code>, where <code class="docutils literal notranslate"><span class="pre">g'</span></code> is the forward spline derivative
+(data→noise direction).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.B">
+<span class="sig-name descname"><span class="pre">B</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5.0</span></span><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.B" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.min_bin_height">
+<span class="sig-name descname"><span class="pre">min_bin_height</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.min_bin_height" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.min_bin_width">
+<span class="sig-name descname"><span class="pre">min_bin_width</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.min_bin_width" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.min_derivative">
+<span class="sig-name descname"><span class="pre">min_derivative</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.001</span></span><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.min_derivative" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.num_bins">
+<span class="sig-name descname"><span class="pre">num_bins</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></span><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.num_bins" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.RQSpline.num_params">
+<span class="sig-name descname"><span class="pre">num_params</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">23</span></span><a class="headerlink" href="#gensbi.normalizing_flows.RQSpline.num_params" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Standardize">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.normalizing_flows.</span></span><span class="sig-name descname"><span class="pre">Standardize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/standardize.html#Standardize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Standardize" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Bijection" title="gensbi.normalizing_flows.bijections.base.Bijection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gensbi.normalizing_flows.bijections.base.Bijection</span></code></a></p>
+<p>Fixed affine standardization using non-trainable mean and std buffers.</p>
+<p>Buffers default to identity (mean 0, std 1) and can be updated in place
+via <a class="reference internal" href="#gensbi.normalizing_flows.Standardize.set_stats" title="gensbi.normalizing_flows.Standardize.set_stats"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_stats()</span></code></a>.  They are stored as
+<a class="reference internal" href="bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Mask" title="gensbi.normalizing_flows.bijections.base.Mask"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mask</span></code></a> variables so
+that optimizers and EMA utilities skip them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dim</strong> (<em>int</em>) – Dimension of the data vector (length of mean and std buffers).</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Standardize.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/standardize.html#Standardize.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Standardize.forward" title="Link to this definition">#</a></dt>
+<dd><p>Map noise to data by destandardizing: <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">u</span> <span class="pre">*</span> <span class="pre">std</span> <span class="pre">+</span> <span class="pre">mean</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Noise-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Ignored; present for interface compatibility.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Destandardized data-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Log absolute determinant of the forward map: <code class="docutils literal notranslate"><span class="pre">sum(log</span> <span class="pre">std)</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Standardize.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/standardize.html#Standardize.inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Standardize.inverse" title="Link to this definition">#</a></dt>
+<dd><p>Map data to noise by standardizing: <code class="docutils literal notranslate"><span class="pre">u</span> <span class="pre">=</span> <span class="pre">(x</span> <span class="pre">-</span> <span class="pre">mean)</span> <span class="pre">/</span> <span class="pre">std</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space input of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Ignored; present for interface compatibility.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>u</strong> (<em>Array</em>) – Standardized noise-space output.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Log absolute determinant of the inverse map: <code class="docutils literal notranslate"><span class="pre">-sum(log</span> <span class="pre">std)</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Standardize.set_stats">
+<span class="sig-name descname"><span class="pre">set_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/normalizing_flows/bijections/standardize.html#Standardize.set_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.normalizing_flows.Standardize.set_stats" title="Link to this definition">#</a></dt>
+<dd><p>Update the mean and standard-deviation buffers in place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mean</strong> (<em>Array</em>) – New mean values of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><strong>std</strong> (<em>Array</em>) – New standard-deviation values of shape <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>; must be
+strictly positive.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This method modifies the buffers in place and returns nothing.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Standardize.mean">
+<span class="sig-name descname"><span class="pre">mean</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Standardize.mean" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.normalizing_flows.Standardize.std">
+<span class="sig-name descname"><span class="pre">std</span></span><a class="headerlink" href="#gensbi.normalizing_flows.Standardize.std" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../models/wrappers/unconditional/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">gensbi.models.wrappers.unconditional</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="bijections/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">gensbi.normalizing_flows.bijections</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#package-contents">Package Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine"><code class="docutils literal notranslate"><span class="pre">Affine</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine._split"><code class="docutils literal notranslate"><span class="pre">Affine._split()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine.forward"><code class="docutils literal notranslate"><span class="pre">Affine.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine.forward_dim"><code class="docutils literal notranslate"><span class="pre">Affine.forward_dim()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine.inverse"><code class="docutils literal notranslate"><span class="pre">Affine.inverse()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine.clamp_max"><code class="docutils literal notranslate"><span class="pre">Affine.clamp_max</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine.clamp_min"><code class="docutils literal notranslate"><span class="pre">Affine.clamp_min</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Affine.num_params"><code class="docutils literal notranslate"><span class="pre">Affine.num_params</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Bijection"><code class="docutils literal notranslate"><span class="pre">Bijection</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Bijection.forward"><code class="docutils literal notranslate"><span class="pre">Bijection.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Bijection.inverse"><code class="docutils literal notranslate"><span class="pre">Bijection.inverse()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Chain"><code class="docutils literal notranslate"><span class="pre">Chain</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Chain.forward"><code class="docutils literal notranslate"><span class="pre">Chain.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Chain.inverse"><code class="docutils literal notranslate"><span class="pre">Chain.inverse()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Chain.bijections"><code class="docutils literal notranslate"><span class="pre">Chain.bijections</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Mask"><code class="docutils literal notranslate"><span class="pre">Mask</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Permutation"><code class="docutils literal notranslate"><span class="pre">Permutation</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Permutation.forward"><code class="docutils literal notranslate"><span class="pre">Permutation.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Permutation.inverse"><code class="docutils literal notranslate"><span class="pre">Permutation.inverse()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Permutation.random"><code class="docutils literal notranslate"><span class="pre">Permutation.random()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Permutation.reverse"><code class="docutils literal notranslate"><span class="pre">Permutation.reverse()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Permutation.inv_perm"><code class="docutils literal notranslate"><span class="pre">Permutation.inv_perm</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Permutation.perm"><code class="docutils literal notranslate"><span class="pre">Permutation.perm</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline"><code class="docutils literal notranslate"><span class="pre">RQSpline</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline._fwd_scalar"><code class="docutils literal notranslate"><span class="pre">RQSpline._fwd_scalar()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline._inv_scalar"><code class="docutils literal notranslate"><span class="pre">RQSpline._inv_scalar()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline._knots"><code class="docutils literal notranslate"><span class="pre">RQSpline._knots()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.forward"><code class="docutils literal notranslate"><span class="pre">RQSpline.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.forward_dim"><code class="docutils literal notranslate"><span class="pre">RQSpline.forward_dim()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.inverse"><code class="docutils literal notranslate"><span class="pre">RQSpline.inverse()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.B"><code class="docutils literal notranslate"><span class="pre">RQSpline.B</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.min_bin_height"><code class="docutils literal notranslate"><span class="pre">RQSpline.min_bin_height</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.min_bin_width"><code class="docutils literal notranslate"><span class="pre">RQSpline.min_bin_width</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.min_derivative"><code class="docutils literal notranslate"><span class="pre">RQSpline.min_derivative</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.num_bins"><code class="docutils literal notranslate"><span class="pre">RQSpline.num_bins</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.RQSpline.num_params"><code class="docutils literal notranslate"><span class="pre">RQSpline.num_params</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Standardize"><code class="docutils literal notranslate"><span class="pre">Standardize</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Standardize.forward"><code class="docutils literal notranslate"><span class="pre">Standardize.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Standardize.inverse"><code class="docutils literal notranslate"><span class="pre">Standardize.inverse()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Standardize.set_stats"><code class="docutils literal notranslate"><span class="pre">Standardize.set_stats()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Standardize.mean"><code class="docutils literal notranslate"><span class="pre">Standardize.mean</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.normalizing_flows.Standardize.std"><code class="docutils literal notranslate"><span class="pre">Standardize.std</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

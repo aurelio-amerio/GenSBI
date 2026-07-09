@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
     <script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
@@ -274,6 +274,25 @@ let darkTheme = isDarkTheme();
 let modal = null;
 let modalContent = null;
 let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
 
 const runMermaid = async (rerun) => {
     console.log("Running mermaid diagrams, rerun =", rerun);
@@ -281,7 +300,15 @@ const runMermaid = async (rerun) => {
     let all_mermaids = document.querySelectorAll(".mermaid");
 
     if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
         all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
             if(!el.hasAttribute("data-original-code")) {
                 // store original code
                 // console.log(`Storing original code for first run: `, el.innerHTML);
@@ -298,35 +325,89 @@ const runMermaid = async (rerun) => {
                 el.setAttribute('data-original-code', el.innerHTML);
             }
         });
-        await mermaid.run();
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if ("False" === "True") {
+                                        addZoomToSvgs(d3.selectAll(""));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
     }
 
     all_mermaids = document.querySelectorAll(".mermaid");
-    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
 
     if ("False" === "True") {
-        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
         if(mermaids_to_add_zoom > 0) {
             var svgs = d3.selectAll("");
-            if(all_mermaids.length !== mermaids_processed.length) {
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
                 setTimeout(() => runMermaid(false), 200);
                 return;
-            } else if(svgs.size() !== mermaids_to_add_zoom) {
-                setTimeout(() => runMermaid(false), 200);
-                return;
-            } else {
-                svgs.each(function() {
-                    var svg = d3.select(this);
-                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
-                    var inner = svg.select("g");
-                    var zoom = d3.zoom().on("zoom", function(event) {
-                        inner.attr("transform", event.transform);
-                    });
-                    svg.call(zoom);
-                });
             }
+            addZoomToSvgs(svgs);
         }
-    } else if(all_mermaids.length !== mermaids_processed.length) {
+    } else if(mermaids_active.length !== mermaids_processed.length) {
         // Wait for mermaid to process all diagrams
         setTimeout(() => runMermaid(false), 200);
         return;
@@ -1059,6 +1140,10 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.JointWrapper.__call__">(gensbi.models.JointWrapper method)</a>
 </li>
+        <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.__call__">(gensbi.models.maf.made.MADE method)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/masked_linear/index.html#gensbi.models.maf.masked_linear.MaskedLinear.__call__">(gensbi.models.maf.masked_linear.MaskedLinear method)</a>
+</li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.Simformer.__call__">(gensbi.models.Simformer method)</a>
 </li>
         <li><a href="api/gensbi/models/simformer/model/index.html#gensbi.models.simformer.model.Simformer.__call__">(gensbi.models.simformer.model.Simformer method)</a>
@@ -1070,6 +1155,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.__call__">(gensbi.models.simformer.transformer.DenseBlock method)</a>
 </li>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.__call__">(gensbi.models.simformer.transformer.Transformer method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.__call__">(gensbi.models.tarflow.blocks.AttentionBlock method)</a>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.UnconditionalWrapper.__call__">(gensbi.models.UnconditionalWrapper method)</a>
 </li>
@@ -1090,8 +1177,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ScoreToODEDrift.__call__">(gensbi.utils.model_wrapping.ScoreToODEDrift method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.__getattr__">__getattr__() (in module gensbi.recipes.utils)</a>
+</li>
       <li><a href="api/gensbi/experimental/models/fielddit/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.__post_init__">__post_init__() (gensbi.experimental.models.fielddit.FieldDiTParams method)</a>
 
       <ul>
@@ -1117,14 +1204,50 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.__post_init__">(gensbi.models.Flux1Params method)</a>
 </li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.__post_init__">(gensbi.models.maf.MAFlowParams method)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.__post_init__">(gensbi.models.maf.model.MAFlowParams method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.__post_init__">(gensbi.models.MAFlowParams method)</a>
+</li>
         <li><a href="api/gensbi/models/simformer/model/index.html#gensbi.models.simformer.model.SimformerParams.__post_init__">(gensbi.models.simformer.model.SimformerParams method)</a>
 </li>
         <li><a href="api/gensbi/models/simformer/index.html#gensbi.models.simformer.SimformerParams.__post_init__">(gensbi.models.simformer.SimformerParams method)</a>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.SimformerParams.__post_init__">(gensbi.models.SimformerParams method)</a>
 </li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.__post_init__">(gensbi.models.tarflow.model.TarFlowParams method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.__post_init__">(gensbi.models.tarflow.TarFlowParams method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.__post_init__">(gensbi.models.TarFlowParams method)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/index.html#gensbi.__version__">__version__ (in module gensbi)</a>
+</li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._affine">_affine() (gensbi.models.tarflow.blocks.MetaBlock method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow._base">_base() (gensbi.models.maf.MAFlow method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow._base">(gensbi.models.maf.model.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow._base">(gensbi.models.MAFlow method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow._base_log_prob">_base_log_prob() (gensbi.models.TarFlow method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow._base_log_prob">(gensbi.models.tarflow.model.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow._base_log_prob">(gensbi.models.tarflow.TarFlow method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers._check_rescale_domain">_check_rescale_domain() (in module gensbi.inference.samplers)</a>
+</li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers._clamp">_clamp() (in module gensbi.normalizing_flows.bijections.transformers)</a>
 </li>
       <li><a href="api/gensbi/diagnostics/marginal_coverage/index.html#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram">_compute_marginal_coverage_histogram() (in module gensbi.diagnostics.marginal_coverage)</a>
 </li>
@@ -1134,18 +1257,40 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._create_sbc_figure">_create_sbc_figure() (in module gensbi.diagnostics.sbc)</a>
 </li>
+      <li><a href="api/gensbi/utils/serialization/index.html#gensbi.utils.serialization._DEFAULT_METADATA">_DEFAULT_METADATA (in module gensbi.utils.serialization)</a>
+</li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._embed_cond">_embed_cond() (gensbi.models.tarflow.blocks.MetaBlock method)</a>
+</li>
       <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._EMBEDDINGS_1D">_EMBEDDINGS_1D (in module gensbi.recipes.utils)</a>
 </li>
       <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._EMBEDDINGS_2D">_EMBEDDINGS_2D (in module gensbi.recipes.utils)</a>
 </li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow._ensure_batched">_ensure_batched() (gensbi.models.TarFlow method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow._ensure_batched">(gensbi.models.tarflow.model.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow._ensure_batched">(gensbi.models.tarflow.TarFlow method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/utils/math/index.html#gensbi.utils.math._expand_dims">_expand_dims() (in module gensbi.utils.math)</a>
 </li>
       <li><a href="api/gensbi/utils/math/index.html#gensbi.utils.math._expand_time">_expand_time() (in module gensbi.utils.math)</a>
+</li>
+      <li><a href="api/gensbi/utils/serialization/index.html#gensbi.utils.serialization._flat_arrays">_flat_arrays() (in module gensbi.utils.serialization)</a>
 </li>
       <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1._flux1_config_from_path">_flux1_config_from_path() (in module gensbi.recipes.flux1)</a>
 </li>
       <li><a href="api/gensbi/recipes/flux1joint/index.html#gensbi.recipes.flux1joint._flux1joint_config_from_path">_flux1joint_config_from_path() (in module gensbi.recipes.flux1joint)</a>
 </li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline._fwd_scalar">_fwd_scalar() (gensbi.normalizing_flows.bijections.RQSpline method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline._fwd_scalar">(gensbi.normalizing_flows.bijections.transformers.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline._fwd_scalar">(gensbi.normalizing_flows.RQSpline method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules._get_1d_sincos_pos_embed_from_grid">_get_1d_sincos_pos_embed_from_grid() (in module gensbi.experimental.models.pixeldit.modules)</a>
 </li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._get_batch_sampler">_get_batch_sampler() (in module gensbi.recipes.pipeline)</a>
@@ -1164,6 +1309,36 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._get_optimizer">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers._inference_loop">_inference_loop() (in module gensbi.inference.samplers)</a>
+</li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC._inner">_inner() (gensbi.inference.samplers.TemperedSMC method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC._inner">(gensbi.inference.TemperedSMC method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline._inv_scalar">_inv_scalar() (gensbi.normalizing_flows.bijections.RQSpline method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline._inv_scalar">(gensbi.normalizing_flows.bijections.transformers.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline._inv_scalar">(gensbi.normalizing_flows.RQSpline method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers._inv_softplus">_inv_softplus() (in module gensbi.normalizing_flows.bijections.transformers)</a>
+</li>
+      <li><a href="api/gensbi/utils/serialization/index.html#gensbi.utils.serialization._join_key">_join_key() (in module gensbi.utils.serialization)</a>
+</li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline._knots">_knots() (gensbi.normalizing_flows.bijections.RQSpline method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline._knots">(gensbi.normalizing_flows.bijections.transformers.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline._knots">(gensbi.normalizing_flows.RQSpline method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model._LOG2PI">_LOG2PI (in module gensbi.models.tarflow.model)</a>
+</li>
       <li><a href="api/gensbi/diffusion/path/scheduler/sm_sde/index.html#gensbi.diffusion.path.scheduler.sm_sde.VESmScheduler._log_sigma_max">_log_sigma_max (gensbi.diffusion.path.scheduler.sm_sde.VESmScheduler attribute)</a>
 
       <ul>
@@ -1179,7 +1354,11 @@ window.runMermaid = runMermaid;</script>
       <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline._make_model">_make_model() (gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
 
       <ul>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline._make_model">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline._make_model">(gensbi.recipes.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline._make_model">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline._make_model">(gensbi.recipes.flux1.Flux1DiffusionPipeline method)</a>
 </li>
@@ -1228,7 +1407,13 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalPipeline._make_model">(gensbi.recipes.UnconditionalPipeline method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._MOVED_TO_PATCHING">_MOVED_TO_PATCHING (in module gensbi.recipes.utils)</a>
+</li>
       <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._normalize_patch_size">_normalize_patch_size() (in module gensbi.recipes.utils)</a>
+</li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._params">_params() (gensbi.models.tarflow.blocks.MetaBlock method)</a>
+</li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._params_core">_params_core() (gensbi.models.tarflow.blocks.MetaBlock method)</a>
 </li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting._parse_range">_parse_range() (in module gensbi.utils.plotting)</a>
 </li>
@@ -1254,6 +1439,20 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp._plot_tarp_credibility">_plot_tarp_credibility() (in module gensbi.diagnostics.tarp)</a>
 </li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._prefix_mask">_prefix_mask() (gensbi.models.tarflow.blocks.MetaBlock method)</a>
+</li>
+      <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline._prep_cond">_prep_cond() (gensbi.recipes.ConditionalFlowPipeline method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline._prep_cond">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline._prep_obs">_prep_obs() (gensbi.recipes.ConditionalFlowPipeline method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline._prep_obs">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._prepare_reduce_functions">_prepare_reduce_functions() (in module gensbi.diagnostics.sbc)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.MMDiTBlock._qkv">_qkv() (gensbi.experimental.models.pixeldit.blocks.MMDiTBlock method)</a>
@@ -1262,6 +1461,12 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.MMDiTBlock._qkv">(gensbi.experimental.models.pixeldit.MMDiTBlock method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made._rank_vectors">_rank_vectors() (in module gensbi.models.maf.made)</a>
+</li>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._require_channel">_require_channel() (in module gensbi.recipes.utils)</a>
+</li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers._rescale">_rescale() (in module gensbi.inference.samplers)</a>
+</li>
       <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st._resolve_classifier">_resolve_classifier() (in module gensbi.diagnostics.lc2st)</a>
 </li>
       <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._resolve_embedding_ids">_resolve_embedding_ids() (in module gensbi.recipes.utils)</a>
@@ -1270,20 +1475,66 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/experimental/models/pixeldit/rope/index.html#gensbi.experimental.models.pixeldit.rope._rotation_from_angles">_rotation_from_angles() (in module gensbi.experimental.models.pixeldit.rope)</a>
 </li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers._rqs_apply">_rqs_apply() (in module gensbi.normalizing_flows.bijections.transformers)</a>
+</li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC._run_adjusted">_run_adjusted() (gensbi.inference.MCLMC method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC._run_adjusted">(gensbi.inference.samplers.MCLMC method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._run_sbc">_run_sbc() (in module gensbi.diagnostics.sbc)</a>
 </li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC._run_single">_run_single() (gensbi.inference.MCLMC method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC._run_single">(gensbi.inference.samplers.MCLMC method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp._run_tarp_bootstrap">_run_tarp_bootstrap() (in module gensbi.diagnostics.tarp)</a>
 </li>
       <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp._run_tarp_single">_run_tarp_single() (in module gensbi.diagnostics.tarp)</a>
 </li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC._run_unadjusted">_run_unadjusted() (gensbi.inference.MCLMC method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC._run_unadjusted">(gensbi.inference.samplers.MCLMC method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._run_validation">_run_validation() (gensbi.recipes.pipeline.AbstractPipeline method)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/fielddit/blocks/index.html#gensbi.experimental.models.fielddit.blocks._safe_groups">_safe_groups() (in module gensbi.experimental.models.fielddit.blocks)</a>
 </li>
       <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._sbc_rank_plot">_sbc_rank_plot() (in module gensbi.diagnostics.sbc)</a>
 </li>
+      <li><a href="api/gensbi/utils/serialization/index.html#gensbi.utils.serialization._SEP">_SEP (in module gensbi.utils.serialization)</a>
+</li>
       <li><a href="api/gensbi/recipes/simformer/index.html#gensbi.recipes.simformer._simformer_config_from_path">_simformer_config_from_path() (in module gensbi.recipes.simformer)</a>
 </li>
+      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._single_obs">_single_obs() (in module gensbi.recipes.utils)</a>
+</li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine._split">_split() (gensbi.normalizing_flows.Affine method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine._split">(gensbi.normalizing_flows.bijections.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine._split">(gensbi.normalizing_flows.bijections.transformers.Affine method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow._standardize">_standardize (gensbi.models.TarFlow attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow._standardize">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow._standardize">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline._standardized">_standardized (gensbi.recipes.ConditionalFlowPipeline attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline._standardized">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules._timestep_embedding">_timestep_embedding() (in module gensbi.experimental.models.pixeldit.modules)</a>
 </li>
       <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp.TARPResult._to_z">_to_z() (gensbi.diagnostics.tarp.TARPResult method)</a>
@@ -1300,6 +1551,8 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.sbc._validate_sbc_inputs">_validate_sbc_inputs() (in module gensbi.diagnostics.sbc)</a>
 </li>
+      <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline._warn_unused_kwargs">_warn_unused_kwargs() (in module gensbi.recipes.flow_pipeline)</a>
+</li>
       <li><a href="api/gensbi/experimental/recipes/field_pipeline/index.html#gensbi.experimental.recipes.field_pipeline.FieldConditionalPipeline._wrap_model">_wrap_model() (gensbi.experimental.recipes.field_pipeline.FieldConditionalPipeline method)</a>
 
       <ul>
@@ -1307,7 +1560,11 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline._wrap_model">(gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
 </li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline._wrap_model">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline._wrap_model">(gensbi.recipes.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline._wrap_model">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointPipeline._wrap_model">(gensbi.recipes.joint_pipeline.JointPipeline method)</a>
 </li>
@@ -1330,12 +1587,20 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline">AbstractVAEPipeline (class in gensbi.experimental.recipes.vae_pipeline)</a>
 </li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MclmcInfo.acceptance_rate">acceptance_rate (gensbi.inference.MclmcInfo attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MclmcInfo.acceptance_rate">(gensbi.inference.samplers.MclmcInfo attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.act">act (gensbi.models.simformer.transformer.DenseBlock attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.act">(gensbi.models.simformer.transformer.Transformer attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.activation">activation (gensbi.models.maf.made.MADE attribute)</a>
+</li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.adaLN">adaLN (gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
 
       <ul>
@@ -1354,6 +1619,22 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.MMDiTBlock.adaLN_y">(gensbi.experimental.models.pixeldit.MMDiTBlock attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.AdditiveBiasConditioner">AdditiveBiasConditioner (class in gensbi.models.tarflow.conditioners)</a>
+</li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC.adjusted">adjusted (gensbi.inference.MCLMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC.adjusted">(gensbi.inference.samplers.MCLMC attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine">Affine (class in gensbi.normalizing_flows)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine">(class in gensbi.normalizing_flows.bijections)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine">(class in gensbi.normalizing_flows.bijections.transformers)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/flow_matching/path/index.html#gensbi.flow_matching.path.AffineProbPath">AffineProbPath (class in gensbi.flow_matching.path)</a>
@@ -1388,6 +1669,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VPSmScheduler.alpha_t">(gensbi.diffusion.path.scheduler.VPSmScheduler method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1/math/index.html#gensbi.models.flux1.math.apply_rope">apply_rope() (in module gensbi.models.flux1.math)</a>
 </li>
       <li><a href="api/gensbi/flow_matching/path/path/index.html#gensbi.flow_matching.path.path.ProbPath.assert_sample_shape">assert_sample_shape() (gensbi.flow_matching.path.path.ProbPath method)</a>
@@ -1404,12 +1687,14 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/flux1/math/index.html#gensbi.models.flux1.math.attention">(in module gensbi.models.flux1.math)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.attention_blocks">attention_blocks (gensbi.models.simformer.transformer.Transformer attribute)</a>
 </li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.AttentionBlock">AttentionBlock (class in gensbi.models.simformer.transformer)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock">(class in gensbi.models.tarflow.blocks)</a>
 </li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.attn">attn (gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
 
       <ul>
@@ -1418,6 +1703,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.AttentionBlock.attn">(gensbi.models.simformer.transformer.AttentionBlock attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.attn_blocks">attn_blocks (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+</li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.attn_dim">attn_dim (gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
 
       <ul>
@@ -1479,6 +1766,12 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="api/gensbi/models/embedding/index.html#gensbi.models.embedding.GaussianFourierEmbedding.B">(gensbi.models.embedding.GaussianFourierEmbedding attribute)</a>
 </li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.B">(gensbi.normalizing_flows.bijections.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.B">(gensbi.normalizing_flows.bijections.transformers.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.B">(gensbi.normalizing_flows.RQSpline attribute)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.base_color">base_color (in module gensbi.utils.plotting)</a>
 </li>
@@ -1530,12 +1823,44 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VPSmScheduler.beta_t">(gensbi.diffusion.path.scheduler.VPSmScheduler method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Bijection">Bijection (class in gensbi.normalizing_flows)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Bijection">(class in gensbi.normalizing_flows.bijections)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Bijection">(class in gensbi.normalizing_flows.bijections.base)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Chain.bijections">bijections (gensbi.normalizing_flows.bijections.Chain attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/chain/index.html#gensbi.normalizing_flows.bijections.chain.Chain.bijections">(gensbi.normalizing_flows.bijections.chain.Chain attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Chain.bijections">(gensbi.normalizing_flows.Chain attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.block_size">block_size (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.block_size">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.block_size">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.blocks">blocks (gensbi.models.TarFlow attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.blocks">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.blocks">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.Buffer">Buffer (class in gensbi.experimental.models.pixeldit.modules)</a>
 </li>
       <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.build_edm_path">build_edm_path() (in module gensbi.recipes.utils)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.build_log_prob_fn">build_log_prob_fn() (gensbi.core.flow_matching.FlowMatchingMethod method)</a>
 
       <ul>
@@ -1594,6 +1919,12 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/core/index.html#gensbi.core.GenerativeMethod.build_solver">(gensbi.core.GenerativeMethod method)</a>
 </li>
         <li><a href="api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.build_solver">(gensbi.core.score_matching.ScoreMatchingMethod method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.NLEPosterior.build_target">build_target() (gensbi.inference.NLEPosterior method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.NLEPosterior.build_target">(gensbi.inference.posterior.NLEPosterior method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -1726,8 +2057,50 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.SimformerSMPipeline.ch_obs">(gensbi.recipes.SimformerSMPipeline attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/models/fielddit/blocks/index.html#gensbi.experimental.models.fielddit.blocks.ConvModulation.channels">channels (gensbi.experimental.models.fielddit.blocks.ConvModulation attribute)</a>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Chain">Chain (class in gensbi.normalizing_flows)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Chain">(class in gensbi.normalizing_flows.bijections)</a>
 </li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/chain/index.html#gensbi.normalizing_flows.bijections.chain.Chain">(class in gensbi.normalizing_flows.bijections.chain)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.chain">chain (gensbi.models.maf.MAFlow attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.chain">(gensbi.models.maf.model.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.chain">(gensbi.models.MAFlow attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/experimental/models/fielddit/blocks/index.html#gensbi.experimental.models.fielddit.blocks.ConvModulation.channels">channels (gensbi.experimental.models.fielddit.blocks.ConvModulation attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.channels">(gensbi.models.core.ImageTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.channels">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer.channels">(gensbi.models.core.tokenizers.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer.channels">(gensbi.models.core.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.channels">(gensbi.models.maf.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.channels">(gensbi.models.maf.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.channels">(gensbi.models.maf.model.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.channels">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.channels">(gensbi.models.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.channels">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.channels">(gensbi.models.tarflow.conditioners.ImageConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.channels">(gensbi.models.tarflow.conditioners.VectorConditioner attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/metrics/index.html#gensbi.diagnostics.metrics.check_c2st">check_c2st() (in module gensbi.diagnostics.metrics)</a>
 
       <ul>
@@ -1754,6 +2127,22 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.DiagonalGaussian.chunk_dim">chunk_dim (gensbi.experimental.models.autoencoders.commons.DiagonalGaussian attribute)</a>
 </li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine.clamp_max">clamp_max (gensbi.normalizing_flows.Affine attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine.clamp_max">(gensbi.normalizing_flows.bijections.Affine attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine.clamp_max">(gensbi.normalizing_flows.bijections.transformers.Affine attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine.clamp_min">clamp_min (gensbi.normalizing_flows.Affine attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine.clamp_min">(gensbi.normalizing_flows.bijections.Affine attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine.clamp_min">(gensbi.normalizing_flows.bijections.transformers.Affine attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.clf">clf (gensbi.diagnostics.lc2st.EnsembleClassifier attribute)</a>
 </li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.cmap_lcontour">cmap_lcontour (in module gensbi.utils.plotting)</a>
@@ -1774,8 +2163,40 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/diagnostics/marginal_coverage/index.html#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage">compute_marginal_coverage() (in module gensbi.diagnostics.marginal_coverage)</a>
 </li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.cond">cond (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.cond">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.cond">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.cond_attn">cond_attn (gensbi.models.flux1.layers.DoubleStreamBlock attribute)</a>
 </li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.cond_channels">cond_channels (gensbi.models.maf.MAFlow attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.cond_channels">(gensbi.models.maf.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.cond_channels">(gensbi.models.maf.model.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.cond_channels">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.cond_channels">(gensbi.models.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.cond_channels">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.AdditiveBiasConditioner.cond_channels">(gensbi.models.tarflow.conditioners.AdditiveBiasConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.cond_channels">(gensbi.models.tarflow.conditioners.VectorConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.cond_channels">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.cond_channels">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.cond_channels">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.FieldDiT.cond_dim">cond_dim (gensbi.experimental.models.FieldDiT attribute)</a>
 
       <ul>
@@ -1801,7 +2222,39 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.PixelDiTParams.cond_dim">(gensbi.experimental.models.PixelDiTParams attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.cond_dim">(gensbi.models.maf.made.MADE attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.cond_dim">(gensbi.models.maf.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.cond_dim">(gensbi.models.maf.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.cond_dim">(gensbi.models.maf.model.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.cond_dim">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.cond_dim">(gensbi.models.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.cond_dim">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.cond_dim">(gensbi.models.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.AdditiveBiasConditioner.cond_dim">(gensbi.models.tarflow.conditioners.AdditiveBiasConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.cond_dim">(gensbi.models.tarflow.conditioners.VectorConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.cond_dim">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.cond_dim">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.cond_dim">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.cond_dim">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.cond_dim">(gensbi.models.TarFlowParams attribute)</a>
+</li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1joint/index.html#gensbi.models.flux1joint.Flux1JointParams.cond_emb_dim">cond_emb_dim (gensbi.models.flux1joint.Flux1JointParams attribute)</a>
 
       <ul>
@@ -1822,8 +2275,6 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/index.html#gensbi.models.SimformerParams.cond_emb_dim">(gensbi.models.SimformerParams attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.FieldDiT.cond_embedder">cond_embedder (gensbi.experimental.models.FieldDiT attribute)</a>
 
       <ul>
@@ -1860,6 +2311,14 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/core/index.html#gensbi.experimental.models.fielddit.core.MMDiTCore.cond_ids_embedder">cond_ids_embedder (gensbi.experimental.models.fielddit.core.MMDiTCore attribute)</a>
 </li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.cond_img_size">cond_img_size (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.cond_img_size">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.cond_img_size">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1.cond_in">cond_in (gensbi.models.Flux1 attribute)</a>
 
       <ul>
@@ -1912,6 +2371,14 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.cond_norm2">cond_norm2 (gensbi.models.flux1.layers.DoubleStreamBlock attribute)</a>
 </li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.cond_patch_size">cond_patch_size (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.cond_patch_size">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.cond_patch_size">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Simformer.condition_embedding">condition_embedding (gensbi.models.Simformer attribute)</a>
 
       <ul>
@@ -1924,6 +2391,12 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.JointPipeline.condition_mask_kind">(gensbi.recipes.JointPipeline attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline">ConditionalFlowPipeline (class in gensbi.recipes)</a>
+
+      <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline">(class in gensbi.recipes.flow_pipeline)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline">ConditionalPipeline (class in gensbi.recipes)</a>
@@ -1948,6 +2421,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/wrappers/index.html#gensbi.models.wrappers.JointWrapper.conditioned">(gensbi.models.wrappers.JointWrapper method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.conditioner">conditioner (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+</li>
       <li><a href="api/gensbi/flow_matching/path/index.html#gensbi.flow_matching.path.CondOTProbPath">CondOTProbPath (class in gensbi.flow_matching.path)</a>
 
       <ul>
@@ -2116,8 +2591,12 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock">DenseBlock (class in gensbi.models.simformer.transformer)</a>
 </li>
-      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.depatchify_2d">depatchify_2d() (in module gensbi.recipes.utils)</a>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.depatchify_2d">depatchify_2d() (in module gensbi.models.core)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/patching/index.html#gensbi.models.core.patching.depatchify_2d">(in module gensbi.models.core.patching)</a>
 </li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.ObsDecoder.depth">depth (gensbi.experimental.models.fielddit.codec.ObsDecoder attribute)</a>
 
       <ul>
@@ -2162,6 +2641,22 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.depth_single_blocks">(gensbi.models.Flux1Params attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.detokenize">detokenize() (gensbi.models.core.ImageTokenizer method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.detokenize">(gensbi.models.core.tokenizers.ImageTokenizer method)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer.detokenize">(gensbi.models.core.tokenizers.VectorTokenizer method)</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer.detokenize">(gensbi.models.core.VectorTokenizer method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC.diagonal_preconditioning">diagonal_preconditioning (gensbi.inference.MCLMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC.diagonal_preconditioning">(gensbi.inference.samplers.MCLMC attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.DiagonalGaussian">DiagonalGaussian (class in gensbi.experimental.models.autoencoders.commons)</a>
 </li>
       <li><a href="api/gensbi/diffusion/path/scheduler/sm_sde/index.html#gensbi.diffusion.path.scheduler.sm_sde.BaseSMSDE.diffusion">diffusion() (gensbi.diffusion.path.scheduler.sm_sde.BaseSMSDE method)</a>
@@ -2176,12 +2671,50 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VPSmScheduler.diffusion">(gensbi.diffusion.path.scheduler.VPSmScheduler method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod">DiffusionEDMMethod (class in gensbi.core.diffusion_edm)</a>
 </li>
-      <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.EmbedND.dim">dim (gensbi.models.flux1.layers.EmbedND attribute)</a>
+      <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.PosteriorTarget.dim">dim (gensbi.inference.posterior.PosteriorTarget attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.PosteriorTarget.dim">(gensbi.inference.PosteriorTarget attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer.dim">(gensbi.models.core.tokenizers.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer.dim">(gensbi.models.core.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.EmbedND.dim">(gensbi.models.flux1.layers.EmbedND attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.dim">(gensbi.models.maf.made.MADE attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive.dim">(gensbi.models.maf.made.MaskedAutoregressive attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.dim">(gensbi.models.maf.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.dim">(gensbi.models.maf.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.dim">(gensbi.models.maf.model.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.dim">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.dim">(gensbi.models.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.dim">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.dim">(gensbi.models.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.dim">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.dim">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.dim">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.dim">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.dim">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1/index.html#gensbi.models.flux1.Flux1Params.dim_cond">dim_cond (gensbi.models.flux1.Flux1Params attribute)</a>
 
       <ul>
@@ -2418,8 +2951,6 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.ema_step">ema_step() (in module gensbi.recipes.pipeline)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/embedding/index.html#gensbi.models.embedding.Embed">Embed (class in gensbi.models.embedding)</a>
 
       <ul>
@@ -2432,6 +2963,16 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.Embed.embed">(gensbi.models.embedding.embedding.Embed attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.AdditiveBiasConditioner.embed">embed() (gensbi.models.tarflow.conditioners.AdditiveBiasConditioner method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.embed">(gensbi.models.tarflow.conditioners.ImageConditioner method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.embed">(gensbi.models.tarflow.conditioners.VectorConditioner method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.Embedded1DModel">Embedded1DModel (class in gensbi.experimental.models)</a>
 
       <ul>
@@ -2542,6 +3083,22 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.FieldConditionalPipeline.event_shape">(gensbi.experimental.recipes.FieldConditionalPipeline attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.example_shape">example_shape (gensbi.models.core.ImageTokenizer attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.example_shape">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer.example_shape">(gensbi.models.core.tokenizers.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer.example_shape">(gensbi.models.core.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.example_shape">(gensbi.models.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.example_shape">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.example_shape">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.expand">expand (gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
 
       <ul>
@@ -2554,12 +3111,32 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/flow_matching/utils/utils/index.html#gensbi.flow_matching.utils.utils.expand_tensor_like">(in module gensbi.flow_matching.utils.utils)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.export_safetensors">export_safetensors() (gensbi.recipes.pipeline.AbstractPipeline method)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.F">F (gensbi.models.core.ImageTokenizer attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.F">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer.F">(gensbi.models.core.tokenizers.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer.F">(gensbi.models.core.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.F">(gensbi.models.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.F">(gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.F">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.F">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.BaseSDE.f">f() (gensbi.diffusion.path.scheduler.edm.BaseSDE method)</a>
 
       <ul>
@@ -2664,12 +3241,40 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1Joint.final_layer">(gensbi.models.flux1joint.model.Flux1Joint attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.SmcInfo.final_tempering_param">final_tempering_param (gensbi.inference.samplers.SmcInfo attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.SmcInfo.final_tempering_param">(gensbi.inference.SmcInfo attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.FinalLayer">FinalLayer (class in gensbi.experimental.models.pixeldit.modules)</a>
 </li>
       <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.EnsembleClassifier.fit">fit() (gensbi.diagnostics.lc2st.EnsembleClassifier method)</a>
 </li>
+      <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.fit_standardization">fit_standardization() (gensbi.recipes.ConditionalFlowPipeline method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.fit_standardization">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/core/stats/index.html#gensbi.models.core.stats.fit_stat">fit_stat() (in module gensbi.models.core.stats)</a>
+</li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.flat_dim">flat_dim (gensbi.models.maf.MAFlow attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.flat_dim">(gensbi.models.maf.model.MAFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.flat_dim">(gensbi.models.MAFlow attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.NLEPosterior.flow">flow (gensbi.inference.NLEPosterior attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.NLEPosterior.flow">(gensbi.inference.posterior.NLEPosterior attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod">FlowMatchingMethod (class in gensbi.core.flow_matching)</a>
 </li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1">Flux1 (class in gensbi.models)</a>
@@ -2756,6 +3361,62 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="api/gensbi/flow_matching/solver/fm_sde_solver/index.html#gensbi.flow_matching.solver.fm_sde_solver.FMSDESolver">(class in gensbi.flow_matching.solver.fm_sde_solver)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive.forward">forward() (gensbi.models.maf.made.MaskedAutoregressive method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.forward">(gensbi.models.tarflow.blocks.MetaBlock method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine.forward">(gensbi.normalizing_flows.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Bijection.forward">(gensbi.normalizing_flows.Bijection method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine.forward">(gensbi.normalizing_flows.bijections.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Bijection.forward">(gensbi.normalizing_flows.bijections.base.Bijection method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Bijection.forward">(gensbi.normalizing_flows.bijections.Bijection method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Chain.forward">(gensbi.normalizing_flows.bijections.Chain method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/chain/index.html#gensbi.normalizing_flows.bijections.chain.Chain.forward">(gensbi.normalizing_flows.bijections.chain.Chain method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Permutation.forward">(gensbi.normalizing_flows.bijections.Permutation method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#gensbi.normalizing_flows.bijections.permutation.Permutation.forward">(gensbi.normalizing_flows.bijections.permutation.Permutation method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.forward">(gensbi.normalizing_flows.bijections.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Standardize.forward">(gensbi.normalizing_flows.bijections.Standardize method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#gensbi.normalizing_flows.bijections.standardize.Standardize.forward">(gensbi.normalizing_flows.bijections.standardize.Standardize method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine.forward">(gensbi.normalizing_flows.bijections.transformers.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.forward">(gensbi.normalizing_flows.bijections.transformers.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Chain.forward">(gensbi.normalizing_flows.Chain method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Permutation.forward">(gensbi.normalizing_flows.Permutation method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.forward">(gensbi.normalizing_flows.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Standardize.forward">(gensbi.normalizing_flows.Standardize method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine.forward_dim">forward_dim() (gensbi.normalizing_flows.Affine method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine.forward_dim">(gensbi.normalizing_flows.bijections.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.forward_dim">(gensbi.normalizing_flows.bijections.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine.forward_dim">(gensbi.normalizing_flows.bijections.transformers.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.forward_dim">(gensbi.normalizing_flows.bijections.transformers.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.forward_dim">(gensbi.normalizing_flows.RQSpline method)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/simformer/model/index.html#gensbi.models.simformer.model.SimformerParams.fourier_features">fourier_features (gensbi.models.simformer.model.SimformerParams attribute)</a>
@@ -3315,10 +3976,59 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li>
+    gensbi.inference
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#module-gensbi.inference">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.inference.posterior
+
+      <ul>
+        <li><a href="api/gensbi/inference/posterior/index.html#module-gensbi.inference.posterior">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.inference.samplers
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#module-gensbi.inference.samplers">module</a>
+</li>
+      </ul></li>
+      <li>
     gensbi.models
 
       <ul>
         <li><a href="api/gensbi/models/index.html#module-gensbi.models">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.core
+
+      <ul>
+        <li><a href="api/gensbi/models/core/index.html#module-gensbi.models.core">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.core.patching
+
+      <ul>
+        <li><a href="api/gensbi/models/core/patching/index.html#module-gensbi.models.core.patching">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.core.stats
+
+      <ul>
+        <li><a href="api/gensbi/models/core/stats/index.html#module-gensbi.models.core.stats">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.core.tokenizers
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#module-gensbi.models.core.tokenizers">module</a>
 </li>
       </ul></li>
       <li>
@@ -3370,13 +4080,46 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/flux1joint/index.html#module-gensbi.models.flux1joint">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     gensbi.models.flux1joint.model
 
       <ul>
         <li><a href="api/gensbi/models/flux1joint/model/index.html#module-gensbi.models.flux1joint.model">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.maf
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/index.html#module-gensbi.models.maf">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.maf.made
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/made/index.html#module-gensbi.models.maf.made">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.maf.masked_linear
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/masked_linear/index.html#module-gensbi.models.maf.masked_linear">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.maf.masks
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/masks/index.html#module-gensbi.models.maf.masks">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.maf.model
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#module-gensbi.models.maf.model">module</a>
 </li>
       </ul></li>
       <li>
@@ -3393,11 +4136,41 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/simformer/model/index.html#module-gensbi.models.simformer.model">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     gensbi.models.simformer.transformer
 
       <ul>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#module-gensbi.models.simformer.transformer">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.tarflow
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#module-gensbi.models.tarflow">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.tarflow.blocks
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#module-gensbi.models.tarflow.blocks">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.tarflow.conditioners
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#module-gensbi.models.tarflow.conditioners">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.models.tarflow.model
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#module-gensbi.models.tarflow.model">module</a>
 </li>
       </ul></li>
       <li>
@@ -3429,6 +4202,55 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li>
+    gensbi.normalizing_flows
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/index.html#module-gensbi.normalizing_flows">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.normalizing_flows.bijections
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#module-gensbi.normalizing_flows.bijections">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.normalizing_flows.bijections.base
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/base/index.html#module-gensbi.normalizing_flows.bijections.base">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.normalizing_flows.bijections.chain
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/chain/index.html#module-gensbi.normalizing_flows.bijections.chain">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.normalizing_flows.bijections.permutation
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#module-gensbi.normalizing_flows.bijections.permutation">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.normalizing_flows.bijections.standardize
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#module-gensbi.normalizing_flows.bijections.standardize">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.normalizing_flows.bijections.transformers
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#module-gensbi.normalizing_flows.bijections.transformers">module</a>
+</li>
+      </ul></li>
+      <li>
     gensbi.recipes
 
       <ul>
@@ -3440,6 +4262,13 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#module-gensbi.recipes.conditional_pipeline">module</a>
+</li>
+      </ul></li>
+      <li>
+    gensbi.recipes.flow_pipeline
+
+      <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#module-gensbi.recipes.flow_pipeline">module</a>
 </li>
       </ul></li>
       <li>
@@ -3533,6 +4362,13 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/utils/plotting/index.html#module-gensbi.utils.plotting">module</a>
 </li>
       </ul></li>
+      <li>
+    gensbi.utils.serialization
+
+      <ul>
+        <li><a href="api/gensbi/utils/serialization/index.html#module-gensbi.utils.serialization">module</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.get_2d_sincos_pos_embed">get_2d_sincos_pos_embed() (in module gensbi.experimental.models.pixeldit.modules)</a>
 </li>
       <li><a href="api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.EDMPathSample.get_batch">get_batch() (gensbi.diffusion.path.path_sample.EDMPathSample method)</a>
@@ -3550,7 +4386,11 @@ window.runMermaid = runMermaid;</script>
       <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.get_default_params">get_default_params() (gensbi.recipes.conditional_pipeline.ConditionalPipeline class method)</a>
 
       <ul>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.get_default_params">(gensbi.recipes.ConditionalFlowPipeline class method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline.get_default_params">(gensbi.recipes.ConditionalPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.get_default_params">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline class method)</a>
 </li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.get_default_params">(gensbi.recipes.flux1.Flux1DiffusionPipeline class method)</a>
 </li>
@@ -3690,7 +4530,11 @@ window.runMermaid = runMermaid;</script>
       <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.get_log_prob_fn">get_log_prob_fn() (gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
 
       <ul>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.get_log_prob_fn">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline.get_log_prob_fn">(gensbi.recipes.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.get_log_prob_fn">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointPipeline.get_log_prob_fn">(gensbi.recipes.joint_pipeline.JointPipeline method)</a>
 </li>
@@ -3716,7 +4560,11 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.get_loss_fn">(gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
 </li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.get_loss_fn">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline.get_loss_fn">(gensbi.recipes.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.get_loss_fn">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointPipeline.get_loss_fn">(gensbi.recipes.joint_pipeline.JointPipeline method)</a>
 </li>
@@ -3740,7 +4588,11 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.get_sampler">(gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
 </li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.get_sampler">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline.get_sampler">(gensbi.recipes.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.get_sampler">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointPipeline.get_sampler">(gensbi.recipes.joint_pipeline.JointPipeline method)</a>
 </li>
@@ -3795,6 +4647,12 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/utils/misc/index.html#gensbi.utils.misc.GREEN">GREEN (in module gensbi.utils.misc)</a>
 </li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.grid">grid (gensbi.models.core.ImageTokenizer attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.grid">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.FieldDiT.guidance_embed">guidance_embed (gensbi.experimental.models.FieldDiT attribute)</a>
 
       <ul>
@@ -3838,10 +4696,26 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.MMDiTBlock.head_dim">(gensbi.experimental.models.pixeldit.MMDiTBlock attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.head_dim">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.head_dim">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.head_dim">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.head_dim">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.height">height (gensbi.models.core.ImageTokenizer attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.height">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.hidden_blocks">hidden_blocks (gensbi.models.simformer.transformer.DenseBlock attribute)</a>
 </li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SingleStreamBlock.hidden_dim">hidden_dim (gensbi.models.flux1.layers.SingleStreamBlock attribute)</a>
+</li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.hidden_layers">hidden_layers (gensbi.models.maf.made.MADE attribute)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/fielddit/core/index.html#gensbi.experimental.models.fielddit.core.MMDiTCore.hidden_size">hidden_size (gensbi.experimental.models.fielddit.core.MMDiTCore attribute)</a>
 
@@ -3954,6 +4828,32 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.Identity">Identity (class in gensbi.models.flux1.layers)</a>
+</li>
+      <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner">ImageConditioner (class in gensbi.models.tarflow.conditioners)</a>
+</li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer">ImageTokenizer (class in gensbi.models.core)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer">(class in gensbi.models.core.tokenizers)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.img_channels">img_channels (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.img_channels">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.img_channels">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.img_size">img_size (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.img_size">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.img_size">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.import_safetensors">import_safetensors() (gensbi.recipes.pipeline.AbstractPipeline method)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.in_ch_mult">in_ch_mult (gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D attribute)</a>
 
@@ -4070,7 +4970,11 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.init_pipeline_from_config">(gensbi.recipes.conditional_pipeline.ConditionalPipeline class method)</a>
 </li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.init_pipeline_from_config">(gensbi.recipes.ConditionalFlowPipeline class method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline.init_pipeline_from_config">(gensbi.recipes.ConditionalPipeline class method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.init_pipeline_from_config">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline class method)</a>
 </li>
         <li><a href="api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.init_pipeline_from_config">(gensbi.recipes.flux1.Flux1DiffusionPipeline class method)</a>
 </li>
@@ -4117,6 +5021,86 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.init_pipeline_from_config">(gensbi.recipes.unconditional_pipeline.UnconditionalPipeline class method)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalPipeline.init_pipeline_from_config">(gensbi.recipes.UnconditionalPipeline class method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.inner_inverse_mass_matrix">inner_inverse_mass_matrix (gensbi.inference.samplers.TemperedSMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.inner_inverse_mass_matrix">(gensbi.inference.TemperedSMC attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.inner_kernel">inner_kernel (gensbi.inference.samplers.TemperedSMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.inner_kernel">(gensbi.inference.TemperedSMC attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.inner_num_integration_steps">inner_num_integration_steps (gensbi.inference.samplers.TemperedSMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.inner_num_integration_steps">(gensbi.inference.TemperedSMC attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.inner_step_size">inner_step_size (gensbi.inference.samplers.TemperedSMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.inner_step_size">(gensbi.inference.TemperedSMC attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.input_layer">input_layer (gensbi.models.maf.made.MADE attribute)</a>
+</li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.inv_perm">inv_perm (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Permutation.inv_perm">(gensbi.normalizing_flows.bijections.Permutation attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#gensbi.normalizing_flows.bijections.permutation.Permutation.inv_perm">(gensbi.normalizing_flows.bijections.permutation.Permutation attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Permutation.inv_perm">(gensbi.normalizing_flows.Permutation attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.INV_SOFTPLUS_1">INV_SOFTPLUS_1 (in module gensbi.models.tarflow.blocks)</a>
+</li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive.inverse">inverse() (gensbi.models.maf.made.MaskedAutoregressive method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.inverse">(gensbi.models.tarflow.blocks.MetaBlock method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine.inverse">(gensbi.normalizing_flows.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Bijection.inverse">(gensbi.normalizing_flows.Bijection method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine.inverse">(gensbi.normalizing_flows.bijections.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Bijection.inverse">(gensbi.normalizing_flows.bijections.base.Bijection method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Bijection.inverse">(gensbi.normalizing_flows.bijections.Bijection method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Chain.inverse">(gensbi.normalizing_flows.bijections.Chain method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/chain/index.html#gensbi.normalizing_flows.bijections.chain.Chain.inverse">(gensbi.normalizing_flows.bijections.chain.Chain method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Permutation.inverse">(gensbi.normalizing_flows.bijections.Permutation method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#gensbi.normalizing_flows.bijections.permutation.Permutation.inverse">(gensbi.normalizing_flows.bijections.permutation.Permutation method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.inverse">(gensbi.normalizing_flows.bijections.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Standardize.inverse">(gensbi.normalizing_flows.bijections.Standardize method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#gensbi.normalizing_flows.bijections.standardize.Standardize.inverse">(gensbi.normalizing_flows.bijections.standardize.Standardize method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine.inverse">(gensbi.normalizing_flows.bijections.transformers.Affine method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.inverse">(gensbi.normalizing_flows.bijections.transformers.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Chain.inverse">(gensbi.normalizing_flows.Chain method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Permutation.inverse">(gensbi.normalizing_flows.Permutation method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.inverse">(gensbi.normalizing_flows.RQSpline method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Standardize.inverse">(gensbi.normalizing_flows.Standardize method)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.Modulation.is_double">is_double (gensbi.models.flux1.layers.Modulation attribute)</a>
@@ -4185,6 +5169,12 @@ window.runMermaid = runMermaid;</script>
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MclmcInfo.L">L (gensbi.inference.MclmcInfo attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MclmcInfo.L">(gensbi.inference.samplers.MclmcInfo attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/metrics/index.html#gensbi.diagnostics.metrics.l1">l1() (in module gensbi.diagnostics.metrics)</a>
 
       <ul>
@@ -4221,6 +5211,14 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.layer_norm">(gensbi.models.simformer.transformer.Transformer attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.layers_per_block">layers_per_block (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.layers_per_block">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.layers_per_block">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST">LC2ST (class in gensbi.diagnostics)</a>
 
       <ul>
@@ -4238,6 +5236,8 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.LastLayer.linear">(gensbi.models.flux1.layers.LastLayer attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/maf/masked_linear/index.html#gensbi.models.maf.masked_linear.MaskedLinear.linear">(gensbi.models.maf.masked_linear.MaskedLinear attribute)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SingleStreamBlock.linear1">linear1 (gensbi.models.flux1.layers.SingleStreamBlock attribute)</a>
 </li>
@@ -4249,10 +5249,58 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/flow_matching/path/scheduler/scheduler/index.html#gensbi.flow_matching.path.scheduler.scheduler.LinearVPScheduler">(class in gensbi.flow_matching.path.scheduler.scheduler)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.log_prob">log_prob() (gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
+      <li><a href="api/gensbi/utils/index.html#gensbi.utils.load_safetensors">load_safetensors() (in module gensbi.utils)</a>
 
       <ul>
+        <li><a href="api/gensbi/utils/serialization/index.html#gensbi.utils.serialization.load_safetensors">(in module gensbi.utils.serialization)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.SmcInfo.log_evidence">log_evidence (gensbi.inference.samplers.SmcInfo attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.SmcInfo.log_evidence">(gensbi.inference.SmcInfo attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.PosteriorTarget.log_likelihood">log_likelihood (gensbi.inference.posterior.PosteriorTarget attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.PosteriorTarget.log_likelihood">(gensbi.inference.PosteriorTarget attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.PosteriorTarget.log_posterior">log_posterior (gensbi.inference.posterior.PosteriorTarget attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.PosteriorTarget.log_posterior">(gensbi.inference.PosteriorTarget attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.PosteriorTarget.log_prior">log_prior (gensbi.inference.posterior.PosteriorTarget attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.PosteriorTarget.log_prior">(gensbi.inference.PosteriorTarget attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.log_prob">log_prob() (gensbi.models.maf.MAFlow method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.log_prob">(gensbi.models.maf.model.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.log_prob">(gensbi.models.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.log_prob">(gensbi.models.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.log_prob">(gensbi.models.tarflow.model.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.log_prob">(gensbi.models.tarflow.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.log_prob">(gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.log_prob">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline.log_prob">(gensbi.recipes.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.log_prob">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointPipeline.log_prob">(gensbi.recipes.joint_pipeline.JointPipeline method)</a>
 </li>
@@ -4265,8 +5313,6 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalPipeline.log_prob">(gensbi.recipes.UnconditionalPipeline method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.logitnorm_mean">logitnorm_mean (gensbi.core.flow_matching.FlowMatchingMethod attribute)</a>
 </li>
       <li><a href="api/gensbi/core/flow_matching/index.html#gensbi.core.flow_matching.FlowMatchingMethod.logitnorm_std">logitnorm_std (gensbi.core.flow_matching.FlowMatchingMethod attribute)</a>
@@ -4332,8 +5378,34 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VPEdmScheduler.M">(gensbi.diffusion.path.scheduler.VPEdmScheduler attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.M">(gensbi.models.tarflow.conditioners.ImageConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.M">(gensbi.models.tarflow.conditioners.VectorConditioner attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE">MADE (class in gensbi.models.maf.made)</a>
+</li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive.made">made (gensbi.models.maf.made.MaskedAutoregressive attribute)</a>
+</li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow">MAFlow (class in gensbi.models)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow">(class in gensbi.models.maf)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow">(class in gensbi.models.maf.model)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams">MAFlowParams (class in gensbi.models)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams">(class in gensbi.models.maf)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams">(class in gensbi.models.maf.model)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/core/prior/index.html#gensbi.core.prior.make_gaussian_prior">make_gaussian_prior() (in module gensbi.core.prior)</a>
+</li>
+      <li><a href="api/gensbi/models/maf/masks/index.html#gensbi.models.maf.masks.make_mask">make_mask() (in module gensbi.models.maf.masks)</a>
 </li>
       <li><a href="api/gensbi/diffusion/path/scheduler/sm_sde/index.html#gensbi.diffusion.path.scheduler.sm_sde.BaseSMSDE.marginal_mean_coeff">marginal_mean_coeff() (gensbi.diffusion.path.scheduler.sm_sde.BaseSMSDE method)</a>
 
@@ -4359,6 +5431,48 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VPSmScheduler.marginal_std">(gensbi.diffusion.path.scheduler.VPSmScheduler method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Mask">Mask (class in gensbi.normalizing_flows)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Mask">(class in gensbi.normalizing_flows.bijections)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Mask">(class in gensbi.normalizing_flows.bijections.base)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/masked_linear/index.html#gensbi.models.maf.masked_linear.MaskedLinear.mask">mask (gensbi.models.maf.masked_linear.MaskedLinear attribute)</a>
+</li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive">MaskedAutoregressive (class in gensbi.models.maf.made)</a>
+</li>
+      <li><a href="api/gensbi/models/maf/masked_linear/index.html#gensbi.models.maf.masked_linear.MaskedLinear">MaskedLinear (class in gensbi.models.maf.masked_linear)</a>
+</li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC">MCLMC (class in gensbi.inference)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC">(class in gensbi.inference.samplers)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MclmcInfo">MclmcInfo (class in gensbi.inference)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MclmcInfo">(class in gensbi.inference.samplers)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.mean">mean (gensbi.models.TarFlow attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.mean">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.mean">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Standardize.mean">(gensbi.normalizing_flows.bijections.Standardize attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#gensbi.normalizing_flows.bijections.standardize.Standardize.mean">(gensbi.normalizing_flows.bijections.standardize.Standardize attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Standardize.mean">(gensbi.normalizing_flows.Standardize attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock">MetaBlock (class in gensbi.models.tarflow.blocks)</a>
+</li>
       <li><a href="api/gensbi/experimental/recipes/field_pipeline/index.html#gensbi.experimental.recipes.field_pipeline.FieldConditionalPipeline.method">method (gensbi.experimental.recipes.field_pipeline.FieldConditionalPipeline attribute)</a>
 
       <ul>
@@ -4387,6 +5501,30 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D.mid">(gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.min_bin_height">min_bin_height (gensbi.normalizing_flows.bijections.RQSpline attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.min_bin_height">(gensbi.normalizing_flows.bijections.transformers.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.min_bin_height">(gensbi.normalizing_flows.RQSpline attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.min_bin_width">min_bin_width (gensbi.normalizing_flows.bijections.RQSpline attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.min_bin_width">(gensbi.normalizing_flows.bijections.transformers.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.min_bin_width">(gensbi.normalizing_flows.RQSpline attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.min_derivative">min_derivative (gensbi.normalizing_flows.bijections.RQSpline attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.min_derivative">(gensbi.normalizing_flows.bijections.transformers.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.min_derivative">(gensbi.normalizing_flows.RQSpline attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.mlp">mlp (gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
 
       <ul>
@@ -4398,9 +5536,17 @@ window.runMermaid = runMermaid;</script>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SingleStreamBlock.mlp_hidden_dim">mlp_hidden_dim (gensbi.models.flux1.layers.SingleStreamBlock attribute)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.TimestepConditioner.mlp_in">mlp_in (gensbi.experimental.models.pixeldit.modules.TimestepConditioner attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.mlp_in">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
 </li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.TimestepConditioner.mlp_out">mlp_out (gensbi.experimental.models.pixeldit.modules.TimestepConditioner attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.mlp_out">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
 </li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.mlp_ratio">mlp_ratio (gensbi.experimental.models.fielddit.FieldDiTParams attribute)</a>
 
       <ul>
@@ -4473,6 +5619,14 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.model_wrapped">model_wrapped (gensbi.recipes.pipeline.AbstractPipeline attribute)</a>
 </li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.modeled">modeled (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.modeled">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.modeled">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.ModelEMA">ModelEMA (class in gensbi.recipes.pipeline)</a>
 </li>
       <li><a href="api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ModelWrapper">ModelWrapper (class in gensbi.utils.model_wrapping)</a>
@@ -4637,7 +5791,21 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/flow_matching/utils/utils/index.html#module-gensbi.flow_matching.utils.utils">gensbi.flow_matching.utils.utils</a>
 </li>
+        <li><a href="api/gensbi/inference/index.html#module-gensbi.inference">gensbi.inference</a>
+</li>
+        <li><a href="api/gensbi/inference/posterior/index.html#module-gensbi.inference.posterior">gensbi.inference.posterior</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#module-gensbi.inference.samplers">gensbi.inference.samplers</a>
+</li>
         <li><a href="api/gensbi/models/index.html#module-gensbi.models">gensbi.models</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#module-gensbi.models.core">gensbi.models.core</a>
+</li>
+        <li><a href="api/gensbi/models/core/patching/index.html#module-gensbi.models.core.patching">gensbi.models.core.patching</a>
+</li>
+        <li><a href="api/gensbi/models/core/stats/index.html#module-gensbi.models.core.stats">gensbi.models.core.stats</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#module-gensbi.models.core.tokenizers">gensbi.models.core.tokenizers</a>
 </li>
         <li><a href="api/gensbi/models/embedding/index.html#module-gensbi.models.embedding">gensbi.models.embedding</a>
 </li>
@@ -4655,11 +5823,29 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/models/flux1joint/model/index.html#module-gensbi.models.flux1joint.model">gensbi.models.flux1joint.model</a>
 </li>
+        <li><a href="api/gensbi/models/maf/index.html#module-gensbi.models.maf">gensbi.models.maf</a>
+</li>
+        <li><a href="api/gensbi/models/maf/made/index.html#module-gensbi.models.maf.made">gensbi.models.maf.made</a>
+</li>
+        <li><a href="api/gensbi/models/maf/masked_linear/index.html#module-gensbi.models.maf.masked_linear">gensbi.models.maf.masked_linear</a>
+</li>
+        <li><a href="api/gensbi/models/maf/masks/index.html#module-gensbi.models.maf.masks">gensbi.models.maf.masks</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#module-gensbi.models.maf.model">gensbi.models.maf.model</a>
+</li>
         <li><a href="api/gensbi/models/simformer/index.html#module-gensbi.models.simformer">gensbi.models.simformer</a>
 </li>
         <li><a href="api/gensbi/models/simformer/model/index.html#module-gensbi.models.simformer.model">gensbi.models.simformer.model</a>
 </li>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#module-gensbi.models.simformer.transformer">gensbi.models.simformer.transformer</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#module-gensbi.models.tarflow">gensbi.models.tarflow</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#module-gensbi.models.tarflow.blocks">gensbi.models.tarflow.blocks</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#module-gensbi.models.tarflow.conditioners">gensbi.models.tarflow.conditioners</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#module-gensbi.models.tarflow.model">gensbi.models.tarflow.model</a>
 </li>
         <li><a href="api/gensbi/models/wrappers/index.html#module-gensbi.models.wrappers">gensbi.models.wrappers</a>
 </li>
@@ -4669,9 +5855,25 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/models/wrappers/unconditional/index.html#module-gensbi.models.wrappers.unconditional">gensbi.models.wrappers.unconditional</a>
 </li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#module-gensbi.normalizing_flows">gensbi.normalizing_flows</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#module-gensbi.normalizing_flows.bijections">gensbi.normalizing_flows.bijections</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/base/index.html#module-gensbi.normalizing_flows.bijections.base">gensbi.normalizing_flows.bijections.base</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/chain/index.html#module-gensbi.normalizing_flows.bijections.chain">gensbi.normalizing_flows.bijections.chain</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#module-gensbi.normalizing_flows.bijections.permutation">gensbi.normalizing_flows.bijections.permutation</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#module-gensbi.normalizing_flows.bijections.standardize">gensbi.normalizing_flows.bijections.standardize</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#module-gensbi.normalizing_flows.bijections.transformers">gensbi.normalizing_flows.bijections.transformers</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#module-gensbi.recipes">gensbi.recipes</a>
 </li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#module-gensbi.recipes.conditional_pipeline">gensbi.recipes.conditional_pipeline</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#module-gensbi.recipes.flow_pipeline">gensbi.recipes.flow_pipeline</a>
 </li>
         <li><a href="api/gensbi/recipes/flux1/index.html#module-gensbi.recipes.flux1">gensbi.recipes.flux1</a>
 </li>
@@ -4699,6 +5901,8 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/utils/plotting/index.html#module-gensbi.utils.plotting">gensbi.utils.plotting</a>
 </li>
+        <li><a href="api/gensbi/utils/serialization/index.html#module-gensbi.utils.serialization">gensbi.utils.serialization</a>
+</li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -4720,6 +5924,14 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="api/gensbi/flow_matching/path/scheduler/scheduler/index.html#gensbi.flow_matching.path.scheduler.scheduler.PolynomialConvexScheduler.n">(gensbi.flow_matching.path.scheduler.scheduler.PolynomialConvexScheduler attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.n_layers">n_layers (gensbi.models.maf.MAFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.n_layers">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.n_layers">(gensbi.models.MAFlowParams attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.n_mod">n_mod (gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
@@ -4762,6 +5974,28 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/flow_matching/path/scheduler/index.html#gensbi.flow_matching.path.scheduler.ScheduleTransformedModel.new_scheduler">(gensbi.flow_matching.path.scheduler.ScheduleTransformedModel attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.NLEPosterior">NLEPosterior (class in gensbi.inference)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.NLEPosterior">(class in gensbi.inference.posterior)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.nn_depth">nn_depth (gensbi.models.maf.MAFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.nn_depth">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.nn_depth">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.nn_width">nn_width (gensbi.models.maf.MAFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.nn_width">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.nn_width">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.noise">noise (gensbi.diffusion.path.path_sample.SMPathSample attribute)</a>, <a href="api/gensbi/diffusion/path/path_sample/index.html#id3">[1]</a>
 </li>
       <li><a href="api/gensbi/flow_matching/solver/index.html#gensbi.flow_matching.solver.NonSingularSolver">NonSingularSolver (class in gensbi.flow_matching.solver)</a>
@@ -4797,6 +6031,8 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.PiTBlock.norm1">(gensbi.experimental.models.pixeldit.PiTBlock attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.norm1">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.norm2">norm2 (gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D attribute)</a>
 
@@ -4808,6 +6044,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.norm2">(gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
 </li>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.PiTBlock.norm2">(gensbi.experimental.models.pixeldit.PiTBlock attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.norm2">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.LastLayer.norm_final">norm_final (gensbi.models.flux1.layers.LastLayer attribute)</a>
@@ -4850,8 +6088,6 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.MMDiTBlock.norm_y1">(gensbi.experimental.models.pixeldit.MMDiTBlock attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.MMDiTBlock.norm_y2">norm_y2 (gensbi.experimental.models.pixeldit.blocks.MMDiTBlock attribute)</a>
 
       <ul>
@@ -4862,6 +6098,34 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.null_distribution">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.num_bins">num_bins (gensbi.normalizing_flows.bijections.RQSpline attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.num_bins">(gensbi.normalizing_flows.bijections.transformers.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.num_bins">(gensbi.normalizing_flows.RQSpline attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.num_blocks">num_blocks (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.num_blocks">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.num_blocks">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC.num_chains">num_chains (gensbi.inference.MCLMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.MclmcInfo.num_chains">(gensbi.inference.MclmcInfo attribute)</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC.num_chains">(gensbi.inference.samplers.MCLMC attribute)</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MclmcInfo.num_chains">(gensbi.inference.samplers.MclmcInfo attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.num_ensemble">num_ensemble (gensbi.diagnostics.LC2ST attribute)</a>
@@ -4935,6 +6199,14 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.SimformerParams.num_heads">(gensbi.models.SimformerParams attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.num_heads">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.num_heads">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.num_heads">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.num_heads">(gensbi.models.TarFlowParams attribute)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/models/simformer/model/index.html#gensbi.models.simformer.model.SimformerParams.num_hidden_layers">num_hidden_layers (gensbi.models.simformer.model.SimformerParams attribute)</a>
 
@@ -4948,6 +6220,34 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.num_layers">num_layers (gensbi.models.simformer.transformer.Transformer attribute)</a>
 </li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.num_mcmc_steps">num_mcmc_steps (gensbi.inference.samplers.TemperedSMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.num_mcmc_steps">(gensbi.inference.TemperedSMC attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.num_params">num_params (gensbi.models.maf.made.MADE attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Affine.num_params">(gensbi.normalizing_flows.Affine attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Affine.num_params">(gensbi.normalizing_flows.bijections.Affine attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline.num_params">(gensbi.normalizing_flows.bijections.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.Affine.num_params">(gensbi.normalizing_flows.bijections.transformers.Affine attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline.num_params">(gensbi.normalizing_flows.bijections.transformers.RQSpline attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline.num_params">(gensbi.normalizing_flows.RQSpline attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.num_particles">num_particles (gensbi.inference.samplers.TemperedSMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.num_particles">(gensbi.inference.TemperedSMC attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoderParams.num_res_blocks">num_res_blocks (gensbi.experimental.models.AutoEncoderParams attribute)</a>, <a href="api/gensbi/experimental/models/index.html#id3">[1]</a>
 
       <ul>
@@ -4974,10 +6274,32 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D.num_resolutions">(gensbi.experimental.models.autoencoders.autoencoder_2d.Encoder2D attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC.num_samples">num_samples (gensbi.inference.MCLMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.MclmcInfo.num_samples">(gensbi.inference.MclmcInfo attribute)</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC.num_samples">(gensbi.inference.samplers.MCLMC attribute)</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MclmcInfo.num_samples">(gensbi.inference.samplers.MclmcInfo attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.SmcInfo.num_temperature_steps">num_temperature_steps (gensbi.inference.samplers.SmcInfo attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.SmcInfo.num_temperature_steps">(gensbi.inference.SmcInfo attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.num_trials_null">num_trials_null (gensbi.diagnostics.LC2ST attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.num_trials_null">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC.num_tuning_steps">num_tuning_steps (gensbi.inference.MCLMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC.num_tuning_steps">(gensbi.inference.samplers.MCLMC attribute)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -5092,6 +6414,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/simformer/index.html#gensbi.models.simformer.Simformer.output_fn">(gensbi.models.simformer.Simformer attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.output_layer">output_layer (gensbi.models.maf.made.MADE attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -5259,11 +6583,27 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.PixelDiTParams.patch_size">(gensbi.experimental.models.PixelDiTParams attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.patch_size">(gensbi.models.core.ImageTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.patch_size">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.patch_size">(gensbi.models.tarflow.conditioners.ImageConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.patch_size">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.patch_size">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.patch_size">(gensbi.models.TarFlowParams attribute)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.patchify">patchify() (in module gensbi.experimental.models.pixeldit.embedders)</a>
 </li>
-      <li><a href="api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.patchify_2d">patchify_2d() (in module gensbi.recipes.utils)</a>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.patchify_2d">patchify_2d() (in module gensbi.models.core)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/patching/index.html#gensbi.models.core.patching.patchify_2d">(in module gensbi.models.core.patching)</a>
 </li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.PatchTokenEmbedder">PatchTokenEmbedder (class in gensbi.experimental.models.pixeldit.embedders)</a>
 </li>
       <li><a href="api/gensbi/diffusion/loss/edm_loss/index.html#gensbi.diffusion.loss.edm_loss.EDMLoss.path">path (gensbi.diffusion.loss.edm_loss.EDMLoss attribute)</a>
@@ -5308,8 +6648,6 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/flow_matching/path/path_sample/index.html#gensbi.flow_matching.path.path_sample.PathSample">(class in gensbi.flow_matching.path.path_sample)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.SinusoidalPosEmbed1D.pe">pe (gensbi.models.embedding.embedding.SinusoidalPosEmbed1D attribute)</a>
 
       <ul>
@@ -5340,6 +6678,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.PixelDiT.pe_pit">(gensbi.experimental.models.pixeldit.PixelDiT attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.SinusoidalPosEmbed2D.pe_w">pe_w (gensbi.models.embedding.embedding.SinusoidalPosEmbed2D attribute)</a>
 
       <ul>
@@ -5348,10 +6688,40 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.PEMatrix">PEMatrix (class in gensbi.models.embedding.embedding)</a>
 </li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.perm">perm (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Permutation.perm">(gensbi.normalizing_flows.bijections.Permutation attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#gensbi.normalizing_flows.bijections.permutation.Permutation.perm">(gensbi.normalizing_flows.bijections.permutation.Permutation attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Permutation.perm">(gensbi.normalizing_flows.Permutation attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Permutation">Permutation (class in gensbi.normalizing_flows)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Permutation">(class in gensbi.normalizing_flows.bijections)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#gensbi.normalizing_flows.bijections.permutation.Permutation">(class in gensbi.normalizing_flows.bijections.permutation)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.LC2ST.permutation">permutation (gensbi.diagnostics.LC2ST attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.permutation">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.permutation">(gensbi.models.maf.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.permutation">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.permutation">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.permutation">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.permutation">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.permutation">(gensbi.models.TarFlowParams attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.permute_data">permute_data() (in module gensbi.diagnostics.lc2st)</a>
@@ -5474,12 +6844,28 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/flow_matching/path/scheduler/scheduler/index.html#gensbi.flow_matching.path.scheduler.scheduler.PolynomialConvexScheduler">(class in gensbi.flow_matching.path.scheduler.scheduler)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.PixelTokenEmbedder.pos_embed">pos_embed (gensbi.experimental.models.pixeldit.embedders.PixelTokenEmbedder attribute)</a>
+      <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.pos">pos (gensbi.models.tarflow.conditioners.ImageConditioner attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.pos">(gensbi.models.tarflow.conditioners.VectorConditioner attribute)</a>
 </li>
+      </ul></li>
+      <li><a href="api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.PixelTokenEmbedder.pos_embed">pos_embed (gensbi.experimental.models.pixeldit.embedders.PixelTokenEmbedder attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.pos_embed">(gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.post_modulation">post_modulation (gensbi.experimental.models.pixeldit.blocks.PiTBlock attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.PiTBlock.post_modulation">(gensbi.experimental.models.pixeldit.PiTBlock attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.PosteriorTarget">PosteriorTarget (class in gensbi.inference)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.PosteriorTarget">(class in gensbi.inference.posterior)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SingleStreamBlock.pre_norm">pre_norm (gensbi.models.flux1.layers.SingleStreamBlock attribute)</a>
@@ -5507,6 +6893,14 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.prior">(gensbi.core.score_matching.ScoreMatchingMethod attribute)</a>
 </li>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.NLEPosterior.prior">(gensbi.inference.NLEPosterior attribute)</a>
+</li>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.NLEPosterior.prior">(gensbi.inference.posterior.NLEPosterior attribute)</a>
+</li>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.PosteriorTarget.prior">(gensbi.inference.posterior.PosteriorTarget attribute)</a>
+</li>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.PosteriorTarget.prior">(gensbi.inference.PosteriorTarget attribute)</a>
+</li>
       </ul></li>
       <li><a href="api/gensbi/diagnostics/utils/index.html#gensbi.diagnostics.utils.probit">probit() (in module gensbi.diagnostics.utils)</a>
 </li>
@@ -5531,11 +6925,21 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SelfAttention.proj">(gensbi.models.flux1.layers.SelfAttention attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.proj">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.proj">(gensbi.models.tarflow.conditioners.ImageConditioner attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.proj">(gensbi.models.tarflow.conditioners.VectorConditioner attribute)</a>
+</li>
       </ul></li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.proj_in">proj_in (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+</li>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.proj_out">proj_out (gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.AttnBlock2D.proj_out">(gensbi.experimental.models.autoencoders.autoencoder_2d.AttnBlock2D attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.proj_out">(gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.MMDiTBlock.proj_x">proj_x (gensbi.experimental.models.pixeldit.blocks.MMDiTBlock attribute)</a>
@@ -5577,7 +6981,11 @@ window.runMermaid = runMermaid;</script>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.QKNorm">QKNorm (class in gensbi.models.flux1.layers)</a>
 </li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SelfAttention.qkv">qkv (gensbi.models.flux1.layers.SelfAttention attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.qkv">(gensbi.models.tarflow.blocks.AttentionBlock attribute)</a>
 </li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.qkv_bias">qkv_bias (gensbi.experimental.models.fielddit.FieldDiTParams attribute)</a>
 
       <ul>
@@ -5642,6 +7050,14 @@ window.runMermaid = runMermaid;</script>
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Permutation.random">random() (gensbi.normalizing_flows.bijections.Permutation class method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#gensbi.normalizing_flows.bijections.permutation.Permutation.random">(gensbi.normalizing_flows.bijections.permutation.Permutation class method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Permutation.random">(gensbi.normalizing_flows.Permutation class method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/utils/misc/index.html#gensbi.utils.misc.RED">RED (in module gensbi.utils.misc)</a>
 </li>
       <li><a href="api/gensbi/flow_matching/loss/fm_loss/index.html#gensbi.flow_matching.loss.fm_loss.FMLoss.reduction">reduction (gensbi.flow_matching.loss.fm_loss.FMLoss attribute)</a>
@@ -5720,6 +7136,14 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.restore_model">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Permutation.reverse">reverse() (gensbi.normalizing_flows.bijections.Permutation class method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/permutation/index.html#gensbi.normalizing_flows.bijections.permutation.Permutation.reverse">(gensbi.normalizing_flows.bijections.permutation.Permutation class method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Permutation.reverse">(gensbi.normalizing_flows.Permutation class method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.rgb_base">rgb_base (in module gensbi.utils.plotting)</a>
 </li>
       <li><a href="api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.EDMScheduler.rho">rho (gensbi.diffusion.path.scheduler.edm.EDMScheduler attribute)</a>
@@ -5775,6 +7199,12 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.Flux1Params.rngs">(gensbi.models.Flux1Params attribute)</a>
 </li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.rngs">(gensbi.models.maf.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.rngs">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.rngs">(gensbi.models.MAFlowParams attribute)</a>
+</li>
         <li><a href="api/gensbi/models/simformer/model/index.html#gensbi.models.simformer.model.SimformerParams.rngs">(gensbi.models.simformer.model.SimformerParams attribute)</a>
 </li>
         <li><a href="api/gensbi/models/simformer/index.html#gensbi.models.simformer.SimformerParams.rngs">(gensbi.models.simformer.SimformerParams attribute)</a>
@@ -5782,6 +7212,12 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.rngs">(gensbi.models.simformer.transformer.Transformer attribute)</a>
 </li>
         <li><a href="api/gensbi/models/index.html#gensbi.models.SimformerParams.rngs">(gensbi.models.SimformerParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.rngs">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.rngs">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.rngs">(gensbi.models.TarFlowParams attribute)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -5800,6 +7236,28 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.model.RopeIds">(class in gensbi.experimental.models.fielddit.model)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.RQSpline">RQSpline (class in gensbi.normalizing_flows)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.RQSpline">(class in gensbi.normalizing_flows.bijections)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/transformers/index.html#gensbi.normalizing_flows.bijections.transformers.RQSpline">(class in gensbi.normalizing_flows.bijections.transformers)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC.run">run() (gensbi.inference.MCLMC method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.Sampler.run">(gensbi.inference.Sampler method)</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC.run">(gensbi.inference.samplers.MCLMC method)</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.Sampler.run">(gensbi.inference.samplers.Sampler method)</a>
+</li>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.run">(gensbi.inference.samplers.TemperedSMC method)</a>
+</li>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.run">(gensbi.inference.TemperedSMC method)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.run_sbc">run_sbc() (in module gensbi.diagnostics)</a>
@@ -5889,9 +7347,29 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="api/gensbi/flow_matching/path/index.html#gensbi.flow_matching.path.ProbPath.sample">(gensbi.flow_matching.path.ProbPath method)</a>
 </li>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.NLEPosterior.sample">(gensbi.inference.NLEPosterior method)</a>
+</li>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.NLEPosterior.sample">(gensbi.inference.posterior.NLEPosterior method)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.sample">(gensbi.models.maf.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.sample">(gensbi.models.maf.model.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.sample">(gensbi.models.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.sample">(gensbi.models.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.sample">(gensbi.models.tarflow.model.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.sample">(gensbi.models.tarflow.TarFlow method)</a>
+</li>
         <li><a href="api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.sample">(gensbi.recipes.conditional_pipeline.ConditionalPipeline method)</a>
 </li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.sample">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalPipeline.sample">(gensbi.recipes.ConditionalPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.joint_pipeline.JointPipeline.sample">(gensbi.recipes.joint_pipeline.JointPipeline method)</a>
 </li>
@@ -5918,9 +7396,13 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/solver/index.html#gensbi.solver.Solver.sample">(gensbi.solver.Solver method)</a>
 </li>
       </ul></li>
-      <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.sample_batched">sample_batched() (gensbi.recipes.pipeline.AbstractPipeline method)</a>
+      <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.sample_batched">sample_batched() (gensbi.recipes.ConditionalFlowPipeline method)</a>
 
       <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample_batched">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.sample_batched">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.sample_batched">(gensbi.recipes.unconditional_pipeline.UnconditionalPipeline method)</a>
 </li>
         <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.UnconditionalPipeline.sample_batched">(gensbi.recipes.UnconditionalPipeline method)</a>
@@ -5994,10 +7476,22 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/core/time_sampling/index.html#gensbi.core.time_sampling.sample_time">sample_time() (in module gensbi.core.time_sampling)</a>
 </li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.Sampler">Sampler (class in gensbi.inference)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.Sampler">(class in gensbi.inference.samplers)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.save_model">save_model() (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
 
       <ul>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.save_model">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/utils/index.html#gensbi.utils.save_safetensors">save_safetensors() (in module gensbi.utils)</a>
+
+      <ul>
+        <li><a href="api/gensbi/utils/serialization/index.html#gensbi.utils.serialization.save_safetensors">(in module gensbi.utils.serialization)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/diagnostics/index.html#gensbi.diagnostics.sbc_rank_plot">sbc_rank_plot() (in module gensbi.diagnostics)</a>
@@ -6098,8 +7592,6 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod">ScoreMatchingMethod (class in gensbi.core.score_matching)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/utils/model_wrapping/index.html#gensbi.utils.model_wrapping.ScoreToODEDrift">ScoreToODEDrift (class in gensbi.utils.model_wrapping)</a>
 </li>
       <li><a href="api/gensbi/core/diffusion_edm/index.html#gensbi.core.diffusion_edm.DiffusionEDMMethod.sde">sde (gensbi.core.diffusion_edm.DiffusionEDMMethod attribute)</a>
@@ -6126,6 +7618,30 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/utils/plotting/index.html#gensbi.utils.plotting.set_default_style">set_default_style() (in module gensbi.utils.plotting)</a>
 </li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlow.set_standardization">set_standardization() (gensbi.models.maf.MAFlow method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlow.set_standardization">(gensbi.models.maf.model.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlow.set_standardization">(gensbi.models.MAFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.set_standardization">(gensbi.models.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.set_standardization">(gensbi.models.tarflow.model.TarFlow method)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.set_standardization">(gensbi.models.tarflow.TarFlow method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Standardize.set_stats">set_stats() (gensbi.normalizing_flows.bijections.Standardize method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#gensbi.normalizing_flows.bijections.standardize.Standardize.set_stats">(gensbi.normalizing_flows.bijections.standardize.Standardize method)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Standardize.set_stats">(gensbi.normalizing_flows.Standardize method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.ModulationOut.shift">shift (gensbi.models.flux1.layers.ModulationOut attribute)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.AutoEncoder1D.shift_factor">shift_factor (gensbi.experimental.models.AutoEncoder1D attribute)</a>
@@ -6342,6 +7858,12 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.skip_connection_mlp">skip_connection_mlp (gensbi.models.simformer.transformer.Transformer attribute)</a>
 </li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.SmcInfo">SmcInfo (class in gensbi.inference)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.SmcInfo">(class in gensbi.inference.samplers)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diffusion/loss/index.html#gensbi.diffusion.loss.SMLoss">SMLoss (class in gensbi.diffusion.loss)</a>
 
       <ul>
@@ -6390,10 +7912,80 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/flow_matching/path/scheduler/index.html#gensbi.flow_matching.path.scheduler.VPEdmScheduler.snr_inverse">(gensbi.flow_matching.path.scheduler.VPEdmScheduler method)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.soft_clip">soft_clip (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.soft_clip">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.soft_clip">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.soft_clip">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/solver/index.html#gensbi.solver.Solver">Solver (class in gensbi.solver)</a>
 </li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.sos_embed">sos_embed (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+</li>
+      <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Standardize">Standardize (class in gensbi.normalizing_flows)</a>
+
+      <ul>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Standardize">(class in gensbi.normalizing_flows.bijections)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#gensbi.normalizing_flows.bijections.standardize.Standardize">(class in gensbi.normalizing_flows.bijections.standardize)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.standardize">standardize (gensbi.models.maf.MAFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.standardize">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.standardize">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.standardize">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.standardize">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.standardize">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.std">std (gensbi.models.TarFlow attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.std">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.std">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/index.html#gensbi.normalizing_flows.bijections.Standardize.std">(gensbi.normalizing_flows.bijections.Standardize attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/bijections/standardize/index.html#gensbi.normalizing_flows.bijections.standardize.Standardize.std">(gensbi.normalizing_flows.bijections.standardize.Standardize attribute)</a>
+</li>
+        <li><a href="api/gensbi/normalizing_flows/index.html#gensbi.normalizing_flows.Standardize.std">(gensbi.normalizing_flows.Standardize attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/diffusion/path/path_sample/index.html#gensbi.diffusion.path.path_sample.SMPathSample.std_t">std_t (gensbi.diffusion.path.path_sample.SMPathSample attribute)</a>, <a href="api/gensbi/diffusion/path/path_sample/index.html#id4">[1]</a>
 </li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MclmcInfo.step_size">step_size (gensbi.inference.MclmcInfo attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MclmcInfo.step_size">(gensbi.inference.samplers.MclmcInfo attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.structured_cond">structured_cond (gensbi.recipes.ConditionalFlowPipeline attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.structured_cond">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.NLEPosterior.structured_obs">structured_obs (gensbi.inference.NLEPosterior attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/posterior/index.html#gensbi.inference.posterior.NLEPosterior.structured_obs">(gensbi.inference.posterior.NLEPosterior attribute)</a>
+</li>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.structured_obs">(gensbi.recipes.ConditionalFlowPipeline attribute)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.structured_obs">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/cond/index.html#gensbi.experimental.models.fielddit.cond.ScalarCondEmbedder.summary_proj">summary_proj (gensbi.experimental.models.fielddit.cond.ScalarCondEmbedder attribute)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.SwiGLU">SwiGLU (class in gensbi.experimental.models.pixeldit.modules)</a>
@@ -6424,12 +8016,58 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/flow_matching/path/index.html#gensbi.flow_matching.path.PathSample.t">(gensbi.flow_matching.path.PathSample attribute)</a>, <a href="api/gensbi/flow_matching/path/index.html#id1">[1]</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.T">T (gensbi.models.core.ImageTokenizer attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.T">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer.T">(gensbi.models.core.tokenizers.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer.T">(gensbi.models.core.VectorTokenizer attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.T">(gensbi.models.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.T">(gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.T">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.T">(gensbi.models.tarflow.TarFlow attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.PixelDiT.t_conditioner">t_conditioner (gensbi.experimental.models.PixelDiT attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.pixeldit.model.PixelDiT.t_conditioner">(gensbi.experimental.models.pixeldit.model.PixelDiT attribute)</a>
 </li>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.PixelDiT.t_conditioner">(gensbi.experimental.models.pixeldit.PixelDiT attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow">TarFlow (class in gensbi.models)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow">(class in gensbi.models.tarflow)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow">(class in gensbi.models.tarflow.model)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams">TarFlowParams (class in gensbi.models)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams">(class in gensbi.models.tarflow)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams">(class in gensbi.models.tarflow.model)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.MCLMC.target_acceptance">target_acceptance (gensbi.inference.MCLMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.MCLMC.target_acceptance">(gensbi.inference.samplers.MCLMC attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC.target_ess">target_ess (gensbi.inference.samplers.TemperedSMC attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC.target_ess">(gensbi.inference.TemperedSMC attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/flow_matching/path/affine/index.html#gensbi.flow_matching.path.affine.AffineProbPath.target_to_epsilon">target_to_epsilon() (gensbi.flow_matching.path.affine.AffineProbPath method)</a>
@@ -6446,6 +8084,12 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp.TARPResult">TARPResult (class in gensbi.diagnostics.tarp)</a>
 </li>
+      <li><a href="api/gensbi/inference/index.html#gensbi.inference.TemperedSMC">TemperedSMC (class in gensbi.inference)</a>
+
+      <ul>
+        <li><a href="api/gensbi/inference/samplers/index.html#gensbi.inference.samplers.TemperedSMC">(class in gensbi.inference.samplers)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.theta">theta (gensbi.experimental.models.fielddit.FieldDiTParams attribute)</a>
 
       <ul>
@@ -6514,6 +8158,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1Joint.time_in">(gensbi.models.flux1joint.model.Flux1Joint attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/diffusion/path/scheduler/edm/index.html#gensbi.diffusion.path.scheduler.edm.BaseSDE.time_schedule">time_schedule() (gensbi.diffusion.path.scheduler.edm.BaseSDE method)</a>
 
       <ul>
@@ -6530,8 +8176,6 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VPEdmScheduler.time_schedule">(gensbi.diffusion.path.scheduler.VPEdmScheduler method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.timestep_embedding">timestep_embedding() (in module gensbi.models.flux1.layers)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.TimestepConditioner">TimestepConditioner (class in gensbi.experimental.models.pixeldit.modules)</a>
@@ -6554,6 +8198,16 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/cond/index.html#gensbi.experimental.models.fielddit.cond.ScalarCondEmbedder.token_proj">token_proj (gensbi.experimental.models.fielddit.cond.ScalarCondEmbedder attribute)</a>
 </li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.tokenize">tokenize() (gensbi.models.core.ImageTokenizer method)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.tokenize">(gensbi.models.core.tokenizers.ImageTokenizer method)</a>
+</li>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer.tokenize">(gensbi.models.core.tokenizers.VectorTokenizer method)</a>
+</li>
+        <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer.tokenize">(gensbi.models.core.VectorTokenizer method)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.Tokenizer">Tokenizer (class in gensbi.experimental.models.fielddit.codec)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.FieldDiT.tokenizer">tokenizer (gensbi.experimental.models.FieldDiT attribute)</a>
@@ -6562,6 +8216,12 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/fielddit/index.html#gensbi.experimental.models.fielddit.FieldDiT.tokenizer">(gensbi.experimental.models.fielddit.FieldDiT attribute)</a>
 </li>
         <li><a href="api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.model.FieldDiT.tokenizer">(gensbi.experimental.models.fielddit.model.FieldDiT attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlow.tokenizer">(gensbi.models.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlow.tokenizer">(gensbi.models.tarflow.model.TarFlow attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlow.tokenizer">(gensbi.models.tarflow.TarFlow attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/models/index.html#gensbi.models.Simformer.total_tokens">total_tokens (gensbi.models.Simformer attribute)</a>
@@ -6575,6 +8235,10 @@ window.runMermaid = runMermaid;</script>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.train">train() (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
 
       <ul>
+        <li><a href="api/gensbi/recipes/index.html#gensbi.recipes.ConditionalFlowPipeline.train">(gensbi.recipes.ConditionalFlowPipeline method)</a>
+</li>
+        <li><a href="api/gensbi/recipes/flow_pipeline/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.train">(gensbi.recipes.flow_pipeline.ConditionalFlowPipeline method)</a>
+</li>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.train">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
 </li>
       </ul></li>
@@ -6626,9 +8290,17 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer">Transformer (class in gensbi.models.simformer.transformer)</a>
 </li>
-      <li><a href="api/gensbi/models/index.html#gensbi.models.Simformer.transformer">transformer (gensbi.models.Simformer attribute)</a>
+      <li><a href="api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive.transformer">transformer (gensbi.models.maf.made.MaskedAutoregressive attribute)</a>
 
       <ul>
+        <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.transformer">(gensbi.models.maf.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.transformer">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.transformer">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.Simformer.transformer">(gensbi.models.Simformer attribute)</a>
+</li>
         <li><a href="api/gensbi/models/simformer/model/index.html#gensbi.models.simformer.model.Simformer.transformer">(gensbi.models.simformer.model.Simformer attribute)</a>
 </li>
         <li><a href="api/gensbi/models/simformer/index.html#gensbi.models.simformer.Simformer.transformer">(gensbi.models.simformer.Simformer attribute)</a>
@@ -6694,8 +8366,6 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.ModelEMA.update">update() (gensbi.recipes.pipeline.ModelEMA method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.DiagonalGaussian.update_KL">update_KL (gensbi.experimental.models.autoencoders.commons.DiagonalGaussian attribute)</a>
 </li>
       <li><a href="api/gensbi/experimental/recipes/vae_pipeline/index.html#gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline.update_training_config">update_training_config() (gensbi.experimental.recipes.vae_pipeline.AbstractVAEPipeline method)</a>
@@ -6704,6 +8374,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.update_training_config">(gensbi.recipes.pipeline.AbstractPipeline method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Upsample1D">Upsample1D (class in gensbi.experimental.models.autoencoders.autoencoder_1d)</a>
 </li>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.Upsample2D">Upsample2D (class in gensbi.experimental.models.autoencoders.autoencoder_2d)</a>
@@ -6742,6 +8414,16 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.PixelDiTParams.use_pixel_abs_pos">(gensbi.experimental.models.pixeldit.PixelDiTParams attribute)</a>
 </li>
         <li><a href="api/gensbi/experimental/models/index.html#gensbi.experimental.models.PixelDiTParams.use_pixel_abs_pos">(gensbi.experimental.models.PixelDiTParams attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.use_softplus">use_softplus (gensbi.models.tarflow.blocks.MetaBlock attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.use_softplus">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.use_softplus">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.use_softplus">(gensbi.models.TarFlowParams attribute)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -6828,6 +8510,14 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/index.html#gensbi.models.SimformerParams.val_emb_dim">(gensbi.models.SimformerParams attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.vec_channels">vec_channels (gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.vec_channels">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.vec_channels">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/fielddit/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.vec_in_dim">vec_in_dim (gensbi.experimental.models.fielddit.FieldDiTParams attribute)</a>
@@ -6862,6 +8552,14 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/models/flux1joint/index.html#gensbi.models.flux1joint.Flux1Joint.vector_in">(gensbi.models.flux1joint.Flux1Joint attribute)</a>
 </li>
         <li><a href="api/gensbi/models/flux1joint/model/index.html#gensbi.models.flux1joint.model.Flux1Joint.vector_in">(gensbi.models.flux1joint.model.Flux1Joint attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner">VectorConditioner (class in gensbi.models.tarflow.conditioners)</a>
+</li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.VectorTokenizer">VectorTokenizer (class in gensbi.models.core)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.VectorTokenizer">(class in gensbi.models.core.tokenizers)</a>
 </li>
       </ul></li>
       <li><a href="api/gensbi/diffusion/path/scheduler/index.html#gensbi.diffusion.path.scheduler.VEEdmScheduler">VEEdmScheduler (class in gensbi.diffusion.path.scheduler)</a>
@@ -6944,6 +8642,12 @@ window.runMermaid = runMermaid;</script>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.widening_factor">widening_factor (gensbi.models.simformer.transformer.Transformer attribute)</a>
 </li>
+      <li><a href="api/gensbi/models/core/index.html#gensbi.models.core.ImageTokenizer.width">width (gensbi.models.core.ImageTokenizer attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/core/tokenizers/index.html#gensbi.models.core.tokenizers.ImageTokenizer.width">(gensbi.models.core.tokenizers.ImageTokenizer attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.ObsDecoder.widths">widths (gensbi.experimental.models.fielddit.codec.ObsDecoder attribute)</a>
 
       <ul>
@@ -7044,16 +8748,30 @@ window.runMermaid = runMermaid;</script>
         <li><a href="api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.lc2st.LC2ST.z_score">(gensbi.diagnostics.lc2st.LC2ST attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.z_shape">z_shape (gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D attribute)</a>
 
       <ul>
         <li><a href="api/gensbi/experimental/models/autoencoders/autoencoder_2d/index.html#gensbi.experimental.models.autoencoders.autoencoder_2d.Decoder2D.z_shape">(gensbi.experimental.models.autoencoders.autoencoder_2d.Decoder2D attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.tarp.TARPResult.z_upper">z_upper (gensbi.diagnostics.tarp.TARPResult property)</a>
 </li>
+      <li><a href="api/gensbi/models/maf/index.html#gensbi.models.maf.MAFlowParams.zero_init">zero_init (gensbi.models.maf.MAFlowParams attribute)</a>
+
+      <ul>
+        <li><a href="api/gensbi/models/maf/model/index.html#gensbi.models.maf.model.MAFlowParams.zero_init">(gensbi.models.maf.model.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.MAFlowParams.zero_init">(gensbi.models.MAFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/model/index.html#gensbi.models.tarflow.model.TarFlowParams.zero_init">(gensbi.models.tarflow.model.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/tarflow/index.html#gensbi.models.tarflow.TarFlowParams.zero_init">(gensbi.models.tarflow.TarFlowParams attribute)</a>
+</li>
+        <li><a href="api/gensbi/models/index.html#gensbi.models.TarFlowParams.zero_init">(gensbi.models.TarFlowParams attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/gensbi/experimental/models/pixeldit/model/index.html#gensbi.experimental.models.pixeldit.model.PixelDiTParams.zero_init_blocks">zero_init_blocks (gensbi.experimental.models.pixeldit.model.PixelDiTParams attribute)</a>
 
       <ul>
@@ -7100,8 +8818,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -7139,7 +8857,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
 </p></div>
       
     </div>

@@ -2,7 +2,7 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "72904f11",
+   "id": "a6394297",
    "metadata": {},
    "source": [
     "# SLCP Flux1 Flow Example\n",
@@ -12,7 +12,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "ab65f654",
+   "id": "fc86c5dc",
    "metadata": {},
    "source": [
     "---\n",
@@ -33,7 +33,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "9e5123e6",
+   "id": "6829b72a",
    "metadata": {},
    "source": [
     "## 1. Introduction & Setup\n",
@@ -44,7 +44,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ec9eca7e",
+   "id": "63d61414",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -57,7 +57,7 @@
     "\n",
     "if colab:\n",
     "    # Install required packages and clone the repository\n",
-    "    !uv pip install --quiet \"gensbi[cuda12,examples]\"\n",
+    "    !uv pip install --quiet \"gensbi[cuda12,examples]\" \"sbibm-jax[loader]\"\n",
     "    !git clone --depth 1 https://github.com/aurelio-amerio/GenSBI-examples\n",
     "    %cd GenSBI-examples/examples/sbi-benchmarks/slcp/flow_flux"
    ]
@@ -65,7 +65,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "21a1873c",
+   "id": "fbf028c0",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -78,7 +78,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "760ea519",
+   "id": "25ced406",
    "metadata": {},
    "source": [
     "## 2. Task & Data Preparation\n",
@@ -89,7 +89,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1aab1ffe",
+   "id": "f9e74142",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -100,7 +100,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3d3f1987",
+   "id": "e06e1636",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -114,7 +114,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e8dcd32f",
+   "id": "6a346874",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -130,7 +130,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ea9afbdf",
+   "id": "575739ee",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -140,18 +140,18 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a193fbce",
+   "id": "28edb7ae",
    "metadata": {},
    "outputs": [],
    "source": [
-    "from gensbi_examples.tasks import get_task\n",
-    "task = get_task(\"slcp\", kind=\"conditional\", use_prefetching=False)"
+    "from sbibm_jax.data import TaskDataset\n",
+    "task = TaskDataset(\"slcp\", kind=\"conditional\", use_prefetching=False)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1575ca92",
+   "id": "f9ea8408",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -162,7 +162,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3313ab6b",
+   "id": "434f8fd2",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -174,7 +174,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "d197da29",
+   "id": "54350cf2",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -185,15 +185,15 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ff32374b",
+   "id": "c2df35c3",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Set batch size for training. Larger batch sizes help prevent overfitting, but are limited by available GPU memory.\n",
     "batch_size = 4096\n",
     "# Create training and validation datasets using the SLCP task object.\n",
-    "train_dataset = task.get_train_dataset(batch_size)\n",
-    "val_dataset = task.get_val_dataset(batch_size)\n",
+    "train_dataset = task.get_train_loader(batch_size, num_samples=nsamples)\n",
+    "val_dataset = task.get_val_loader(batch_size)\n",
     "\n",
     "# Create iterators for the training and validation datasets.\n",
     "dataset_iter = iter(train_dataset)\n",
@@ -202,7 +202,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "d4a855a8",
+   "id": "b2d4eaaf",
    "metadata": {},
    "source": [
     "## 3. Model Configuration & Definition\n",
@@ -213,7 +213,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b6a4b008",
+   "id": "29f6e0a2",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -223,7 +223,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0a9b5a0f",
+   "id": "2dfc034c",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -236,13 +236,13 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "896c4de1",
+   "id": "e2a20df4",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Extract dimensionality information from the task object.\n",
-    "dim_obs = task.dim_obs  # Number of parameters to infer\n",
-    "dim_cond = task.dim_cond    # Number of observed data dimensions\n",
+    "dim_obs = task.dim_theta  # Number of parameters to infer\n",
+    "dim_cond = task.dim_x    # Number of observed data dimensions\n",
     "\n",
     "dim_joint = task.dim_joint  # Joint dimension (for model input)"
    ]
@@ -250,7 +250,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a09acd55",
+   "id": "1b3d85fe",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -266,7 +266,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "feb21122",
+   "id": "ea2c5113",
    "metadata": {},
    "source": [
     "## 4. Training\n",
@@ -277,7 +277,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a3752458",
+   "id": "30f6ea7c",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -287,7 +287,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3eea1644",
+   "id": "0899710b",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -296,7 +296,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "cf8f294b",
+   "id": "51b0f8fa",
    "metadata": {},
    "source": [
     "## 5. Evaluation & Visualization\n",
@@ -306,7 +306,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "3de91f1f",
+   "id": "7e0dbeb8",
    "metadata": {},
    "source": [
     "### Section 5.1: Posterior Sampling\n",
@@ -317,7 +317,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "52f38fcd",
+   "id": "a29a8784",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -338,7 +338,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "645d4c48",
+   "id": "ac437a9c",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -347,7 +347,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "4f0fd40e",
+   "id": "372d5a09",
    "metadata": {},
    "source": [
     "### Section 5.2: Visualize Posterior Samples\n",
@@ -358,7 +358,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "19147302",
+   "id": "29755727",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -368,7 +368,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0b2b776d",
+   "id": "2be953a3",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -382,7 +382,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "c8914525",
+   "id": "e14409fe",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/flow_flux/imgs/marginals_ema_1.png\" width=800>"
@@ -390,7 +390,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "1fd9724e",
+   "id": "a069964a",
    "metadata": {},
    "source": [
     "## 6. Posterior Calibration Checks"
@@ -398,7 +398,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "e284f878",
+   "id": "b37ac7b1",
    "metadata": {},
    "source": [
     "We report here the results of the posterior calibration tests. As an excercise, you can implement the tests as in the Two Moons example and compare the results."
@@ -406,7 +406,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "5804e351",
+   "id": "732634eb",
    "metadata": {},
    "source": [
     "**Average C2ST**: 0.6886 ± 0.0472"
@@ -414,7 +414,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "836461b9",
+   "id": "2cf74adc",
    "metadata": {},
    "source": [
     "**Marginal Coverage:** <br><br>\n",
@@ -423,7 +423,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "e6e17315",
+   "id": "7438cc5a",
    "metadata": {},
    "source": [
     "**TARP:** <br><br>\n",
@@ -432,7 +432,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "bb7fa00b",
+   "id": "61a85c4d",
    "metadata": {},
    "source": [
     "**SBC** <br><br>\n",
@@ -442,7 +442,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "d0b0578e",
+   "id": "16c5d4c3",
    "metadata": {},
    "source": [
     "**L-C2ST**<br><br>\n",

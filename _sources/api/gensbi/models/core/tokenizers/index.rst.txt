@@ -1,0 +1,277 @@
+gensbi.models.core.tokenizers
+=============================
+
+.. py:module:: gensbi.models.core.tokenizers
+
+.. autoapi-nested-parse::
+
+   Invertible tokenizers — the modeled-variable reshape seam.
+
+   Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.
+
+   A tokenizer maps the modeled variable to a token sequence ``(B, T, F)`` and back.
+   It MUST be volume-preserving (a fixed invertible reshape, log-det 0) — never a
+   learned lossy encoder — so the change-of-variables stays exact. Pure reshape, no
+   parameters, which is why it is a shared core primitive.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.core.tokenizers.ImageTokenizer
+   gensbi.models.core.tokenizers.VectorTokenizer
+
+
+Module Contents
+---------------
+
+.. py:class:: ImageTokenizer(height, width, channels, patch_size)
+
+   
+   Patchify a 2D image into a token sequence via :func:`patchify_2d`.
+
+   Maps ``(B, H, W, C)`` images to ``(B, T, F)`` token sequences where
+   ``T = (H // patch_size) * (W // patch_size)`` and
+   ``F = C * patch_size * patch_size``. Pure reshape: volume-preserving
+   (log-det 0, no learned parameters). Tokens are in raster (row-major)
+   causal order as fixed by :func:`patchify_2d`.
+
+   :param height: Image height in pixels. Must be divisible by ``patch_size``.
+   :type height: int
+   :param width: Image width in pixels. Must be divisible by ``patch_size``.
+   :type width: int
+   :param channels: Number of image channels.
+   :type channels: int
+   :param patch_size: Patch edge length in pixels. Must divide both ``height`` and ``width``.
+   :type patch_size: int
+
+   :raises ValueError: If ``patch_size`` does not divide ``height`` or ``width``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: detokenize(tokens)
+
+      
+      Reconstruct an image from a token sequence.
+
+      :param tokens: Token sequence of shape ``(B, T, F)``.
+      :type tokens: Array
+
+      :returns: Image of shape ``(B, H, W, C)``.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: tokenize(x)
+
+      
+      Patchify an image into a token sequence.
+
+      :param x: Image of shape ``(B, H, W, C)``.
+      :type x: Array
+
+      :returns: Token sequence of shape ``(B, T, F)`` where
+                ``T = (H // patch_size) * (W // patch_size)`` and
+                ``F = C * patch_size * patch_size``.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: F
+
+
+   .. py:attribute:: T
+
+
+   .. py:attribute:: channels
+
+
+   .. py:attribute:: example_shape
+
+
+   .. py:attribute:: grid
+
+
+   .. py:attribute:: height
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: width
+
+
+.. py:class:: VectorTokenizer(dim, block_size = 1, channels = 1)
+
+   
+   Reshape a channel-carrying vector into a token sequence.
+
+   Maps ``(B, dim, C)`` tensors to ``(B, T, F)`` token sequences via a
+   volume-preserving reshape (log-det 0, no learned parameters). The number
+   of tokens is ``T = dim // block_size`` and each token has
+   ``F = block_size * channels`` features. ``C = 1`` gives ``(B, dim, 1)``
+   input — a trailing channel axis is always required.
+
+   ``example_shape`` is always ``(dim, channels)`` (e.g. ``(dim, 1)`` for
+   the standard tabular path). ``detokenize`` always returns
+   ``(B, dim, channels)``; the channel axis is never collapsed.
+
+   :param dim: Total feature dimension of the input vector.
+   :type dim: int
+   :param block_size: Number of features per token.  Must divide ``dim``.  Default is 1.
+   :type block_size: int, optional
+   :param channels: Number of channels.  Default is 1 (``C = 1 → (dim, 1)`` shape).
+                    Each token carries ``F = block_size * channels`` features.
+   :type channels: int, optional
+
+   :raises ValueError: If ``block_size`` does not divide ``dim``, or if ``channels < 1``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: detokenize(tokens)
+
+      
+      Flatten a token sequence back into a channel-carrying vector.
+
+      :param tokens: Token sequence of shape ``(B, T, F)``.
+      :type tokens: Array
+
+      :returns: Vector of shape ``(B, dim, channels)`` for all ``C >= 1``
+                (``C = 1`` gives ``(B, dim, 1)``; never collapsed to ``(B, dim)``).
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: tokenize(x)
+
+      
+      Reshape a channel-carrying vector into a token sequence.
+
+      :param x: Input of shape ``(B, dim, C)`` where ``C`` is the channel count
+                (``C = 1`` for the standard tabular path gives ``(B, dim, 1)``).
+      :type x: Array
+
+      :returns: Token sequence of shape ``(B, T, F)`` where
+                ``T = dim // block_size`` and ``F = block_size * channels``.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: F
+      :value: 1
+
+
+
+   .. py:attribute:: T
+
+
+   .. py:attribute:: channels
+      :value: 1
+
+
+
+   .. py:attribute:: dim
+
+
+   .. py:attribute:: example_shape
+
+

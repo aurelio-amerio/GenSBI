@@ -1,0 +1,157 @@
+gensbi.normalizing_flows.bijections.standardize
+===============================================
+
+.. py:module:: gensbi.normalizing_flows.bijections.standardize
+
+.. autoapi-nested-parse::
+
+   Fixed affine standardization bijection (non-trainable mean/std buffers).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.normalizing_flows.bijections.standardize.Standardize
+
+
+Module Contents
+---------------
+
+.. py:class:: Standardize(dim)
+
+   Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
+
+
+   
+   Fixed affine standardization using non-trainable mean and std buffers.
+
+   Buffers default to identity (mean 0, std 1) and can be updated in place
+   via :meth:`set_stats`.  They are stored as
+   :class:`~gensbi.normalizing_flows.bijections.base.Mask` variables so
+   that optimizers and EMA utilities skip them.
+
+   :param dim: Dimension of the data vector (length of mean and std buffers).
+   :type dim: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+
+      
+      Map noise to data by destandardizing: ``x = u * std + mean``.
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Destandardized data-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the forward map: ``sum(log std)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise by standardizing: ``u = (x - mean) / std``.
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Standardized noise-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the inverse map: ``-sum(log std)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: set_stats(mean, std)
+
+      
+      Update the mean and standard-deviation buffers in place.
+
+      :param mean: New mean values of shape ``(dim,)``.
+      :type mean: Array
+      :param std: New standard-deviation values of shape ``(dim,)``; must be
+                  strictly positive.
+      :type std: Array
+
+      :returns: This method modifies the buffers in place and returns nothing.
+      :rtype: None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: mean
+
+
+   .. py:attribute:: std
+
+

@@ -1,0 +1,69 @@
+gensbi.models.maf.masks
+=======================
+
+.. py:module:: gensbi.models.maf.masks
+
+.. autoapi-nested-parse::
+
+   Rank-based binary masks for masked autoregressive networks.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.models.maf.masks.make_mask
+
+
+Module Contents
+---------------
+
+.. py:function:: make_mask(in_ranks, out_ranks, *, strict)
+
+   
+   Binary connectivity mask of shape ``(len(in_ranks), len(out_ranks))``.
+
+   ``mask[i, o]`` is True iff input unit ``i`` may feed output unit ``o``:
+   ``out_ranks[o] > in_ranks[i]`` when ``strict`` (final/output layer), else
+   ``out_ranks[o] >= in_ranks[i]`` (hidden layers). The ``(in, out)`` layout
+   matches an ``nnx.Linear`` kernel so it multiplies the weight directly.
+
+   :param in_ranks: Integer rank assigned to each input unit; shape ``(in_features,)``.
+                    Units with rank -1 (conditioning inputs) are allowed to feed every
+                    output unit.
+   :type in_ranks: Array
+   :param out_ranks: Integer rank assigned to each output unit; shape ``(out_features,)``.
+   :type out_ranks: Array
+   :param strict: If ``True``, use strict inequality (``out_rank > in_rank``), which is
+                  required for the output layer to enforce the autoregressive property.
+                  If ``False``, use non-strict inequality (``out_rank >= in_rank``),
+                  which is used for hidden layers so that units of the same rank may
+                  communicate.
+   :type strict: bool
+
+   :returns: Boolean mask of shape ``(in_features, out_features)`` where entry
+             ``[i, o]`` is ``True`` iff input unit ``i`` is permitted to influence
+             output unit ``o`` under the chosen rank inequality.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

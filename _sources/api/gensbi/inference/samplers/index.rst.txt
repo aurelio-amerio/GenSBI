@@ -1,0 +1,533 @@
+gensbi.inference.samplers
+=========================
+
+.. py:module:: gensbi.inference.samplers
+
+.. autoapi-nested-parse::
+
+   blackjax samplers consumed by NLEPosterior. blackjax imported lazily in run().
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.inference.samplers.MCLMC
+   gensbi.inference.samplers.MclmcInfo
+   gensbi.inference.samplers.Sampler
+   gensbi.inference.samplers.SmcInfo
+   gensbi.inference.samplers.TemperedSMC
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.inference.samplers._check_rescale_domain
+   gensbi.inference.samplers._inference_loop
+   gensbi.inference.samplers._rescale
+
+
+Module Contents
+---------------
+
+.. py:class:: MCLMC(*, adjusted=True, num_samples=1000, num_tuning_steps=5000, num_chains=1, target_acceptance=0.9, diagonal_preconditioning=True)
+
+   Bases: :py:obj:`Sampler`
+
+
+   
+   Microcanonical Langevin Monte Carlo sampler.
+
+   ``adjusted=True`` (the default) applies an MH correction for
+   asymptotically exact sampling.  ``adjusted=False`` uses the faster
+   unadjusted variant, which is biased by the discretization error.
+
+   :param adjusted: Whether to apply an MH correction.  Default is ``True``.
+   :type adjusted: bool, optional
+   :param num_samples: Number of posterior samples to collect per chain.  Default is 1000.
+   :type num_samples: int, optional
+   :param num_tuning_steps: Number of warmup steps for the L / step-size tuning loop.
+                            Default is 5000.
+   :type num_tuning_steps: int, optional
+   :param num_chains: Number of independent MCLMC chains.  Default is 1.
+   :type num_chains: int, optional
+   :param target_acceptance: Target Metropolis acceptance rate for the adjusted variant.
+                             Default is 0.9.
+   :type target_acceptance: float, optional
+   :param diagonal_preconditioning: Whether to use diagonal preconditioning during tuning.
+                                    Default is ``True``.
+   :type diagonal_preconditioning: bool, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _run_adjusted(key, target)
+
+
+   .. py:method:: _run_single(key, target)
+
+
+   .. py:method:: _run_unadjusted(key, target)
+
+
+   .. py:method:: run(key, target)
+
+      
+      Draw posterior samples using MCLMC.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param target: Posterior target produced by
+                     :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+      :type target: PosteriorTarget
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(num_chains * num_samples, dim)``.
+                * **info** (*MclmcInfo*) -- Tuning parameters and diagnostic information.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: adjusted
+      :value: True
+
+
+
+   .. py:attribute:: diagonal_preconditioning
+      :value: True
+
+
+
+   .. py:attribute:: num_chains
+      :value: 1
+
+
+
+   .. py:attribute:: num_samples
+      :value: 1000
+
+
+
+   .. py:attribute:: num_tuning_steps
+      :value: 5000
+
+
+
+   .. py:attribute:: target_acceptance
+      :value: 0.9
+
+
+
+.. py:class:: MclmcInfo
+
+   
+   Tuning parameters and diagnostics from an MCLMC run.
+
+   :param L: Tuned trajectory length.
+   :type L: float
+   :param step_size: Tuned integrator step size.
+   :type step_size: float
+   :param acceptance_rate: Mean Metropolis acceptance rate over the sampling run.
+                           ``float('nan')`` for the unadjusted variant.
+   :type acceptance_rate: float
+   :param num_samples: Number of samples drawn per chain.
+   :type num_samples: int
+   :param num_chains: Number of independent chains.
+   :type num_chains: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: L
+      :type:  float
+
+
+   .. py:attribute:: acceptance_rate
+      :type:  float
+
+
+   .. py:attribute:: num_chains
+      :type:  int
+
+
+   .. py:attribute:: num_samples
+      :type:  int
+
+
+   .. py:attribute:: step_size
+      :type:  float
+
+
+.. py:class:: Sampler
+
+   Bases: :py:obj:`abc.ABC`
+
+
+   
+   Abstract base class for posterior samplers.
+
+   Subclasses consume a :class:`~gensbi.inference.posterior.PosteriorTarget`
+   and return an array of posterior samples together with a sampler-specific
+   info object.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: run(key, target)
+      :abstractmethod:
+
+
+      
+      Draw posterior samples from a log-density target.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param target: Posterior target produced by
+                     :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+      :type target: PosteriorTarget
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(n, dim)``.
+                * **info** (*object*) -- Sampler-specific diagnostics.
+
+      :raises NotImplementedError: This is an abstract method; subclasses must override it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: SmcInfo
+
+   
+   Diagnostics from an adaptive tempered SMC run.
+
+   :param log_evidence: Log marginal likelihood estimate accumulated over tempering steps.
+   :type log_evidence: float
+   :param num_temperature_steps: Number of temperature increments taken from beta=0 to beta=1.
+   :type num_temperature_steps: int
+   :param final_tempering_param: Final value of the tempering parameter beta (should be 1.0).
+   :type final_tempering_param: float
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: final_tempering_param
+      :type:  float
+
+
+   .. py:attribute:: log_evidence
+      :type:  float
+
+
+   .. py:attribute:: num_temperature_steps
+      :type:  int
+
+
+.. py:class:: TemperedSMC(*, num_particles=1000, target_ess=0.5, num_mcmc_steps=10, inner_kernel='mclmc', inner_step_size=0.1, inner_num_integration_steps=5, inner_inverse_mass_matrix=None)
+
+   Bases: :py:obj:`Sampler`
+
+
+   
+   Adaptive tempered Sequential Monte Carlo for (possibly multimodal) posteriors.
+
+   Walks particles along ``p(theta) * q(x_o | theta)^beta`` for beta from 0
+   to 1, choosing the beta ladder adaptively to maintain ``target_ess``.  The
+   inner rejuvenation kernel is adjusted MCLMC by default; NUTS is available
+   as a fallback.
+
+   :param num_particles: Number of SMC particles.  Default is 1000.
+   :type num_particles: int, optional
+   :param target_ess: Target effective sample size ratio in ``(0, 1)``, used to adapt the
+                      temperature increments.  Default is 0.5.
+   :type target_ess: float, optional
+   :param num_mcmc_steps: Number of inner MCMC rejuvenation steps per temperature.  Default is 10.
+   :type num_mcmc_steps: int, optional
+   :param inner_kernel: Inner MCMC kernel: ``"mclmc"`` (adjusted MCLMC, default) or
+                        ``"nuts"``.
+   :type inner_kernel: str, optional
+   :param inner_step_size: Step size for the inner MCMC kernel.  Default is 0.1.
+   :type inner_step_size: float, optional
+   :param inner_num_integration_steps: Number of integration steps for the inner MCLMC kernel.  Default is 5.
+   :type inner_num_integration_steps: int, optional
+   :param inner_inverse_mass_matrix: Inverse mass matrix for the inner kernel.  If ``None``, defaults to a
+                                     vector of ones of length ``target.dim``.  Default is ``None``.
+   :type inner_inverse_mass_matrix: Array or None, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _inner(target)
+
+      
+      Return (mcmc_step_fn, mcmc_init_fn, mcmc_parameters) for the inner kernel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: run(key, target)
+
+      
+      Draw posterior samples using adaptive tempered SMC.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param target: Posterior target produced by
+                     :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+      :type target: PosteriorTarget
+
+      :returns: * **samples** (*Array*) -- Posterior samples of shape ``(num_particles, dim)``.
+                * **info** (*SmcInfo*) -- SMC diagnostics including log evidence and tempering statistics.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: inner_inverse_mass_matrix
+      :value: None
+
+
+
+   .. py:attribute:: inner_kernel
+      :value: 'mclmc'
+
+
+
+   .. py:attribute:: inner_num_integration_steps
+      :value: 5
+
+
+
+   .. py:attribute:: inner_step_size
+      :value: 0.1
+
+
+
+   .. py:attribute:: num_mcmc_steps
+      :value: 10
+
+
+
+   .. py:attribute:: num_particles
+      :value: 1000
+
+
+
+   .. py:attribute:: target_ess
+      :value: 0.5
+
+
+
+.. py:function:: _check_rescale_domain(mu)
+
+   
+   Raise if the tuned ``mu = L / step_size`` is outside ``_rescale``'s domain.
+
+   For ``mu < 1``, ``floor(2 * mu - 1) == 0`` and ``_rescale`` returns 0, so
+   the integration-step draw ``ceil(U(0,1) * 0)`` is 0 — a chain that never
+   moves. A host-side check on the tuned value turns that silent failure into
+   an explicit error. (The in-tuning average is left to blackjax; this is a
+   convenience sampler, not a fully hardened MCMC engine.)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _inference_loop(rng_key, step_fn, initial_state, num_samples)
+
+   
+   Run a blackjax SamplingAlgorithm.step for num_samples via lax.scan.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _rescale(mu)
+
+   
+   Map a mean trajectory length to a uniform-integer draw scale.
+
+   From blackjax's ``adjusted_mclmc_dynamic``: drawing the number of
+   integration steps as ``ceil(U(0,1) * _rescale(L/step_size))`` makes the
+   average number of steps exactly ``mu = L / step_size``.
+
+   ``mu`` must satisfy ``mu >= 1``; see :func:`_check_rescale_domain` for the
+   host-side guard applied to the tuned value.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

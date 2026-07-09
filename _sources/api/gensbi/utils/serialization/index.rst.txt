@@ -1,0 +1,170 @@
+gensbi.utils.serialization
+==========================
+
+.. py:module:: gensbi.utils.serialization
+
+.. autoapi-nested-parse::
+
+   Portable safetensors save/load for flax ``nnx`` models.
+
+   Exports the weights of any :class:`flax.nnx.Module` to a single,
+   framework-neutral ``.safetensors`` file, and loads them back into a model the
+   caller has already reconstructed from its ``Params``. The file stores a flat
+   ``{str: array}`` table (nnx state paths joined with ``"."``) plus a small
+   provenance ``metadata`` blob; it does *not* carry enough information to rebuild
+   the model architecture (an explicit non-goal).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   gensbi.utils.serialization._DEFAULT_METADATA
+   gensbi.utils.serialization._SEP
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.utils.serialization._flat_arrays
+   gensbi.utils.serialization._join_key
+   gensbi.utils.serialization.load_safetensors
+   gensbi.utils.serialization.save_safetensors
+
+
+Module Contents
+---------------
+
+.. py:function:: _flat_arrays(model, wrt)
+
+   
+   Flatten model state to ``{tuple_path: array}`` (ints preserved).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _join_key(path)
+
+   
+   Join an nnx state-path tuple into a safetensors string key.
+
+   Integer ``nnx.List`` indices are stringified; a non-integer component that
+   contains the ``"."`` separator is unrepresentable and raises ``ValueError``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: load_safetensors(model, path, *, strict = True)
+
+   
+   Load weights from a ``.safetensors`` file into ``model`` in place.
+
+   The caller must have reconstructed ``model`` from its ``Params`` first;
+   that model is the structural schema.
+
+   :param model: Target model, rebuilt from its ``Params``.
+   :type model: nnx.Module
+   :param path: Source ``.safetensors`` file.
+   :type path: str | os.PathLike
+   :param strict: If True (default), the file's key set must equal the model's and
+                  every shared key must match shape (``ValueError`` otherwise). If
+                  False, only the intersection is loaded; model leaves absent from
+                  the file keep their current values and file keys absent from the
+                  model are ignored.
+   :type strict: bool, optional
+
+   :returns: **model** -- The same ``model`` object, updated in place with the loaded
+             weights.
+   :rtype: nnx.Module
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: save_safetensors(model, path, *, metadata = None, wrt=None)
+
+   
+   Save ``model``'s weights to a single ``.safetensors`` file.
+
+   :param model: Any flax nnx module.
+   :type model: nnx.Module
+   :param path: Destination ``.safetensors`` file.
+   :type path: str | os.PathLike
+   :param metadata: Extra provenance, stringified and merged over (overriding) the defaults
+                    ``format``/``version``/``framework``/``model_class``.
+   :type metadata: mapping, optional
+   :param wrt: Restrict the saved variable collections (e.g. ``nnx.Param``). Default
+               saves the full state.
+   :type wrt: nnx filter, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: _DEFAULT_METADATA
+
+.. py:data:: _SEP
+   :value: '.'
+
+

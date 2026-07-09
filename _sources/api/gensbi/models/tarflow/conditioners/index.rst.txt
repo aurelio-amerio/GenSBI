@@ -1,0 +1,303 @@
+gensbi.models.tarflow.conditioners
+==================================
+
+.. py:module:: gensbi.models.tarflow.conditioners
+
+.. autoapi-nested-parse::
+
+   Conditioning seams for the transformer flow.
+
+   Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.
+   Prefix-concatenation conditioning adapted from apple/ml-starflow (STARFlow); see models/tarflow/LICENSE.starflow.
+
+   ``AdditiveBiasConditioner`` is the continuous analog of TarFlow's ``class_embed``:
+   an MLP embeds the condition to a ``channels``-vector that is broadcast-added to
+   every token. The signal depends only on the condition (constant w.r.t. the
+   modeled variable), so it shifts the affine params without breaking the
+   triangular Jacobian. A plain 2-layer MLP is used (not ``MLPEmbedder``, whose
+   ``hidden_dim % in_dim == 0`` constraint does not fit arbitrary ``cond_dim``).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.tarflow.conditioners.AdditiveBiasConditioner
+   gensbi.models.tarflow.conditioners.ImageConditioner
+   gensbi.models.tarflow.conditioners.VectorConditioner
+
+
+Module Contents
+---------------
+
+.. py:class:: AdditiveBiasConditioner(cond_dim, channels, rngs, cond_channels = 1)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Embed a vector condition as a per-token additive bias.
+
+   A two-layer MLP maps the condition to a ``channels``-dimensional vector
+   that is broadcast-added to every token in the sequence. When
+   ``cond_dim == 0`` the conditioner is unconditional and :meth:`embed`
+   returns ``(None, None)``.
+
+   :param cond_dim: Condition dimensionality. Set to ``0`` for an unconditional model.
+   :type cond_dim: int
+   :param channels: Output channel width matching the transformer embedding dimension.
+   :type channels: int
+   :param rngs: Flax RNG container for linear layer initialization.
+   :type rngs: nnx.Rngs
+   :param cond_channels: Number of channels in the conditioning input ``(B, cond_dim, C_cond)``.
+                         Default is ``1``.  The input linear layer is widened to accept
+                         ``cond_dim * cond_channels`` features, folding the channel axis before
+                         the MLP (same flattening performed in :meth:`embed`).
+   :type cond_channels: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: embed(cond)
+
+      
+      Embed the condition into a per-token additive bias.
+
+      :param cond: Condition vector of shape ``(B, cond_dim)`` or
+                   ``(B, cond_dim, C_cond)``, or ``None`` when the model is
+                   unconditional (``cond_dim == 0``).
+      :type cond: Array or None
+
+      :returns: * **bias** (*Array or None*) -- Per-token additive bias of shape ``(B, channels)``, or ``None``
+                  when ``cond_dim == 0``.
+                * **prefix** (*None*) -- This conditioner does not produce prefix tokens; always ``None``.
+
+      :raises ValueError: If ``cond`` is ``None`` when ``cond_dim > 0``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: cond_channels
+      :value: 1
+
+
+
+   .. py:attribute:: cond_dim
+
+
+.. py:class:: ImageConditioner(cond_channels, patch_size, channels, num_tokens, rngs)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Embed an image condition as prefix tokens prepended to the sequence.
+
+   Patchifies a spatial image ``(B, H, W, C)`` into
+   ``M = (H / patch_size) * (W / patch_size)`` flat patch vectors, projects
+   each patch to ``channels`` dimensions, and adds learned positional
+   embeddings.
+
+   :param cond_channels: Number of channels in the conditioning image.
+   :type cond_channels: int
+   :param patch_size: Spatial size of each square patch (height and width in pixels).
+   :type patch_size: int
+   :param channels: Output channel width matching the transformer embedding dimension.
+   :type channels: int
+   :param num_tokens: Number of prefix tokens; must equal
+                      ``(H / patch_size) * (W / patch_size)``.
+   :type num_tokens: int
+   :param rngs: Flax RNG container for projection layer and positional embedding
+                initialization.
+   :type rngs: nnx.Rngs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: embed(cond)
+
+      
+      Patchify an image condition and embed it as prefix tokens.
+
+      :param cond: Image condition of shape ``(B, H, W, C)``.
+      :type cond: Array or None
+
+      :returns: * **bias** (*None*) -- This conditioner does not produce a per-token additive bias;
+                  always ``None``.
+                * **prefix** (*Array*) -- Prefix token sequence of shape ``(B, num_tokens, channels)`` with
+                  learned positional embeddings added.
+
+      :raises ValueError: If ``cond`` is ``None``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: M
+
+
+   .. py:attribute:: channels
+
+
+   .. py:attribute:: patch_size
+
+
+   .. py:attribute:: pos
+
+
+   .. py:attribute:: proj
+
+
+.. py:class:: VectorConditioner(cond_dim, cond_channels, channels, rngs)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Embed a vector condition as one prefix token per coordinate.
+
+   Each of the ``cond_dim`` coordinates is a token of ``C_cond`` channels; a
+   shared ``Linear(cond_channels, channels)`` projects each to the transformer
+   width, plus per-coordinate positional embeddings. Produces ``M = cond_dim``
+   prefix tokens (no flatten).
+
+   :param cond_dim: Condition dimensionality (number of coordinates / prefix tokens).
+   :type cond_dim: int
+   :param cond_channels: Number of channels per coordinate in the input condition
+                         ``(B, cond_dim, cond_channels)``.
+   :type cond_channels: int
+   :param channels: Output channel width matching the transformer embedding dimension.
+   :type channels: int
+   :param rngs: Flax RNG container for linear layer and positional embedding
+                initialization.
+   :type rngs: nnx.Rngs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: embed(cond)
+
+      
+      Embed the condition into per-coordinate prefix tokens.
+
+      :param cond: Condition array of shape ``(B, cond_dim, C_cond)``.
+      :type cond: Array or None
+
+      :returns: * **bias** (*None*) -- This conditioner does not produce a per-token additive bias;
+                  always ``None``.
+                * **prefix** (*Array*) -- Prefix token sequence of shape ``(B, cond_dim, channels)`` with
+                  learned positional embeddings added.
+
+      :raises ValueError: If ``cond`` is ``None``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: M
+
+
+   .. py:attribute:: channels
+
+
+   .. py:attribute:: cond_channels
+
+
+   .. py:attribute:: cond_dim
+
+
+   .. py:attribute:: pos
+
+
+   .. py:attribute:: proj
+
+

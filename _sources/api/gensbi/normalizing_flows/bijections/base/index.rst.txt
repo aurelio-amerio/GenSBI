@@ -1,0 +1,156 @@
+gensbi.normalizing_flows.bijections.base
+========================================
+
+.. py:module:: gensbi.normalizing_flows.bijections.base
+
+.. autoapi-nested-parse::
+
+   Bijection abstract base and the non-trainable Mask variable type.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.normalizing_flows.bijections.base.Bijection
+   gensbi.normalizing_flows.bijections.base.Mask
+
+
+Module Contents
+---------------
+
+.. py:class:: Bijection
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Invertible map between a noise variable and a data variable.
+
+   Subclasses implement a differentiable bijection with a direction
+   convention fixed across the library: :meth:`forward` maps noise to data
+   (the sampling direction) and :meth:`inverse` maps data to noise (the
+   density-evaluation direction). Both directions also return the log
+   absolute determinant of the Jacobian of the transform they apply.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+      :abstractmethod:
+
+
+      
+      Map noise to data (the sampling direction).
+
+      :param u: Noise-space input.
+      :type u: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional map.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the forward map.
+
+      :raises NotImplementedError: This is an abstract method; subclasses must override it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+      :abstractmethod:
+
+
+      
+      Map data to noise (the density-evaluation direction).
+
+      :param x: Data-space input.
+      :type x: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional map.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the inverse map.
+
+      :raises NotImplementedError: This is an abstract method; subclasses must override it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: Mask(value, *, hijax = None, ref = None, eager_sharding = None, **metadata)
+
+   Bases: :py:obj:`flax.nnx.Variable`
+
+
+   
+   Fixed (non-trainable) buffer for bijection metadata.
+
+   A non-:class:`~flax.nnx.Param` :class:`~flax.nnx.Variable` subclass so
+   that optimizers and EMA utilities skip it while checkpointing still
+   saves and restores it.  Typical use: autoregressive masks in
+   :class:`~gensbi.models.maf.made.MaskedAutoregressive`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

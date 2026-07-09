@@ -1,0 +1,318 @@
+gensbi.models.maf.model
+=======================
+
+.. py:module:: gensbi.models.maf.model
+
+.. autoapi-nested-parse::
+
+   MAF: affine/spline masked-autoregressive normalizing flow.
+
+   Self-contained density model (absorbs the former ``Flow`` container and the
+   ``make_maf`` factory). Builds a Chain of (MaskedAutoregressive, Permutation)
+   layers + an optional data-end Standardize, over a standard-normal base.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.maf.model.MAFlow
+   gensbi.models.maf.model.MAFlowParams
+
+
+Module Contents
+---------------
+
+.. py:class:: MAFlow(params)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Masked Autoregressive Flow for exact density evaluation and sampling.
+
+   Stacks :class:`~gensbi.models.maf.made.MaskedAutoregressive` layers
+   separated by permutations, with an optional data-end
+   :class:`~gensbi.normalizing_flows.bijections.standardize.Standardize`
+   bijection, over a standard-normal base distribution.
+
+   Log-density follows the change-of-variables formula:
+   ``log_prob(x, cond) = base.log_prob(u) + logdet``, where
+   ``u, logdet = chain.inverse(x, cond)``.  The base distribution is built
+   lazily and never enters ``nnx`` state.
+
+   :param params: Full architecture configuration; see :class:`MAFlowParams`.
+   :type params: MAFlowParams
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _base()
+
+
+   .. py:method:: log_prob(x, cond = None)
+
+      
+      Compute the change-of-variables log-density for a batch of samples.
+
+      :param x: Data batch.  Shape ``(B, dim)`` when ``channels == 1``, or
+                ``(B, dim, C)`` when ``channels > 1`` (the channel axis is
+                flattened internally to ``(B, dim * C)``).
+      :type x: Array
+      :param cond: Conditioning batch of shape ``(B, cond_dim)`` for
+                   ``cond_channels == 1``, or ``(B, cond_dim, C_cond)`` for
+                   ``cond_channels > 1`` (also flattened internally).  Pass
+                   ``None`` for an unconditional model.
+      :type cond: Array or None, optional
+
+      :returns: Log-probability of shape ``(B,)``.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, cond = None, nsamples = None)
+
+      
+      Draw samples from the flow.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param cond: Conditioning batch of shape ``(nsamples, cond_dim)`` for
+                   ``cond_channels == 1``, or ``(nsamples, cond_dim, C_cond)`` for
+                   ``cond_channels > 1`` (flattened internally).  If provided, the
+                   number of samples is inferred from ``cond.shape[0]`` and
+                   ``nsamples`` is ignored.
+      :type cond: Array or None, optional
+      :param nsamples: Number of samples to draw.  Required when ``cond`` is ``None``.
+      :type nsamples: int or None, optional
+
+      :returns: Sample array of shape ``(nsamples, dim, channels)`` for all ``C >= 1``
+                (``C = 1`` gives ``(nsamples, dim, 1)``; channel axis is never collapsed).
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: set_standardization(mean, std)
+
+      
+      Set the data-end Standardize bijection's mean/std buffers in place.
+
+      Accepts shapes ``(dim,)`` (broadcast to ``(dim, 1)``), ``(dim, 1)``,
+      ``(C,)`` (per-channel broadcast), or a scalar broadcastable to
+      ``(dim, channels)``.
+
+      Raises ValueError if built with ``standardize=False``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: chain
+
+
+   .. py:attribute:: channels
+
+
+   .. py:attribute:: cond_channels
+
+
+   .. py:attribute:: cond_dim
+
+
+   .. py:attribute:: dim
+
+
+   .. py:attribute:: flat_dim
+
+
+.. py:class:: MAFlowParams
+
+   
+   Architecture parameters for :class:`MAFlow`.
+
+   Only ``rngs`` and ``dim`` are required. ``transformer`` defaults to
+   ``Affine()`` (pass ``RQSpline()`` for a spline flow).
+
+   :param rngs: Flax RNG container used to initialise all trainable parameters.
+   :type rngs: nnx.Rngs
+   :param dim: Dimensionality of the target variable.
+   :type dim: int
+   :param cond_dim: Dimensionality of the conditioning input.  Default is 0 (unconditional).
+   :type cond_dim: int, optional
+   :param n_layers: Number of :class:`~gensbi.models.maf.made.MaskedAutoregressive` layers.
+                    Default is 5.
+   :type n_layers: int, optional
+   :param transformer: Elementwise bijection used by each autoregressive layer.  If ``None``
+                       (default), an
+                       :class:`~gensbi.normalizing_flows.bijections.transformers.Affine`
+                       bijection is constructed automatically in ``__post_init__``.
+   :type transformer: Bijection or None, optional
+   :param nn_width: Width of each hidden layer in the MADE conditioner network.
+                    Default is 64.
+   :type nn_width: int, optional
+   :param nn_depth: Number of hidden layers in the MADE conditioner network.  Default is 2.
+   :type nn_depth: int, optional
+   :param permutation: Permutation applied between autoregressive layers.  ``"reverse"``
+                       (default) reverses the dimension ordering; ``"random"`` applies a
+                       random shuffle sampled at construction time.
+   :type permutation: str, optional
+   :param standardize: If ``True`` (default), append a
+                       :class:`~gensbi.normalizing_flows.bijections.standardize.Standardize`
+                       bijection at the data end of the chain.
+   :type standardize: bool, optional
+   :param zero_init: If ``True`` (default), zero-initialise the output layer of each MADE
+                     network so the flow starts as an identity transform.
+   :type zero_init: bool, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:attribute:: channels
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: cond_channels
+      :type:  int
+      :value: 1
+
+
+
+   .. py:attribute:: cond_dim
+      :type:  int
+      :value: 0
+
+
+
+   .. py:attribute:: dim
+      :type:  int
+
+
+   .. py:attribute:: n_layers
+      :type:  int
+      :value: 5
+
+
+
+   .. py:attribute:: nn_depth
+      :type:  int
+      :value: 2
+
+
+
+   .. py:attribute:: nn_width
+      :type:  int
+      :value: 64
+
+
+
+   .. py:attribute:: permutation
+      :type:  str
+      :value: 'reverse'
+
+
+
+   .. py:attribute:: rngs
+      :type:  flax.nnx.Rngs
+
+
+   .. py:attribute:: standardize
+      :type:  bool
+      :value: True
+
+
+
+   .. py:attribute:: transformer
+      :type:  gensbi.normalizing_flows.bijections.base.Bijection | None
+      :value: None
+
+
+
+   .. py:attribute:: zero_init
+      :type:  bool
+      :value: True
+
+
+

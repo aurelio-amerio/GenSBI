@@ -1,0 +1,70 @@
+gensbi.models.core.stats
+========================
+
+.. py:module:: gensbi.models.core.stats
+
+.. autoapi-nested-parse::
+
+   Shared standardization-statistic helpers for flow models.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.models.core.stats.fit_stat
+
+
+Module Contents
+---------------
+
+.. py:function:: fit_stat(s, example_shape, dtype=None)
+
+   
+   Broadcast a standardization statistic to ``example_shape``.
+
+   Accepted shapes for ``s`` (with ``example_shape = (dim, C, ...)``):
+
+   - ``(dim,)`` — reshaped to ``(dim, 1, ...)`` then broadcast
+     (per-dimension stats, the tabular default);
+   - ``(dim, C)`` / ``example_shape`` — used as-is;
+   - ``(C,)`` — broadcast along the leading axes (per-channel stats);
+   - scalar — broadcast everywhere.
+
+   Ambiguous case: when ``s`` is 1-D and ``C == dim``, the ``(dim,)``
+   per-dimension interpretation wins over the ``(C,)`` per-channel one,
+   since the shape-match check below tests ``s.shape[0] == example_shape[0]``
+   (i.e. against ``dim``) first.
+
+   :param s: Statistic (mean or std) to fit.
+   :type s: array-like
+   :param example_shape: Target per-example shape, e.g. ``(dim, channels)``.
+   :type example_shape: tuple of int
+   :param dtype: If given, cast ``s`` before broadcasting (used when writing into an
+                 existing buffer). Default is ``None``.
+   :type dtype: jnp.dtype or None, optional
+
+   :returns: ``s`` broadcast to ``example_shape``.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

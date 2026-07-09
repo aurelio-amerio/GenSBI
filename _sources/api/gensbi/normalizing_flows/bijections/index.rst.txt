@@ -1,0 +1,945 @@
+gensbi.normalizing_flows.bijections
+===================================
+
+.. py:module:: gensbi.normalizing_flows.bijections
+
+.. autoapi-nested-parse::
+
+   
+   Pure normalizing-flow bijection abstractions (Tier 1).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/gensbi/normalizing_flows/bijections/base/index
+   /api/gensbi/normalizing_flows/bijections/chain/index
+   /api/gensbi/normalizing_flows/bijections/permutation/index
+   /api/gensbi/normalizing_flows/bijections/standardize/index
+   /api/gensbi/normalizing_flows/bijections/transformers/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.normalizing_flows.bijections.Affine
+   gensbi.normalizing_flows.bijections.Bijection
+   gensbi.normalizing_flows.bijections.Chain
+   gensbi.normalizing_flows.bijections.Mask
+   gensbi.normalizing_flows.bijections.Permutation
+   gensbi.normalizing_flows.bijections.RQSpline
+   gensbi.normalizing_flows.bijections.Standardize
+
+
+Package Contents
+----------------
+
+.. py:class:: Affine(clamp_min = -5.0, clamp_max = 3.0)
+
+   
+   Elementwise affine transform with log-scale clamping.
+
+   The parameter layout per dimension is ``[shift mu, log-scale a]``
+   (``num_params == 2``).  Log-scale values are clamped to
+   ``[clamp_min, clamp_max]`` before exponentiation using a straight-through
+   gradient (NumPyro IAF trick).
+
+   Forward (noise→data): ``x = u * exp(a) + mu``; logabsdet = ``+sum(a)``.
+   Inverse (data→noise): ``u = (x - mu) * exp(-a)``; logabsdet = ``-sum(a)``.
+
+   :param clamp_min: Lower bound for log-scale clamping.  Default is -5.0.
+   :type clamp_min: float, optional
+   :param clamp_max: Upper bound for log-scale clamping.  Default is 3.0.
+   :type clamp_max: float, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _split(params)
+
+
+   .. py:method:: forward(u, params)
+
+      
+      Map noise to data: ``x = u * exp(a) + mu``.
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param params: Per-dimension parameters of shape ``(dim, 2)``; column 0 is the
+                     shift ``mu`` and column 1 is the log-scale ``a``.
+      :type params: Array
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Sum of clamped log-scales: ``sum(a)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: forward_dim(u_i, params_i)
+
+      
+      Scalar noise-to-data transform for a single dimension.
+
+      Used by the sequential sampling scan in the autoregressive loop, which
+      accumulates the per-dimension log-determinant as it goes.
+
+      :param u_i: Scalar noise-space value for one dimension.
+      :type u_i: Array
+      :param params_i: Parameter vector of length 2 for the same dimension; index 0 is
+                       the shift ``mu``, index 1 is the log-scale ``a``.
+      :type params_i: Array
+
+      :returns: * **x_i** (*Array*) -- Scalar data-space output: ``u_i * exp(a) + mu``.
+                * **logabsdet_i** (*Array*) -- Forward log-determinant contribution for this dimension: ``a``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, params)
+
+      
+      Map data to noise: ``u = (x - mu) * exp(-a)``.
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param params: Per-dimension parameters of shape ``(dim, 2)``; column 0 is the
+                     shift ``mu`` and column 1 is the log-scale ``a``.
+      :type params: Array
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Negative sum of clamped log-scales: ``-sum(a)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: clamp_max
+      :value: 3.0
+
+
+
+   .. py:attribute:: clamp_min
+      :value: -5.0
+
+
+
+   .. py:attribute:: num_params
+      :value: 2
+
+
+
+.. py:class:: Bijection
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   Invertible map between a noise variable and a data variable.
+
+   Subclasses implement a differentiable bijection with a direction
+   convention fixed across the library: :meth:`forward` maps noise to data
+   (the sampling direction) and :meth:`inverse` maps data to noise (the
+   density-evaluation direction). Both directions also return the log
+   absolute determinant of the Jacobian of the transform they apply.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+      :abstractmethod:
+
+
+      
+      Map noise to data (the sampling direction).
+
+      :param u: Noise-space input.
+      :type u: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional map.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the forward map.
+
+      :raises NotImplementedError: This is an abstract method; subclasses must override it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+      :abstractmethod:
+
+
+      
+      Map data to noise (the density-evaluation direction).
+
+      :param x: Data-space input.
+      :type x: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional map.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the inverse map.
+
+      :raises NotImplementedError: This is an abstract method; subclasses must override it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: Chain(bijections)
+
+   Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
+
+
+   
+   Sequential composition of bijections.
+
+   Applies bijections in the order given for :meth:`forward` (noise→data)
+   and in reversed order for :meth:`inverse` (data→noise).  Log-absolute
+   determinants accumulate by summation.  ``bijections[-1]`` is closest to
+   data space; it is the last bijection applied in :meth:`forward` and the
+   first applied in :meth:`inverse`.
+
+   :param bijections: Ordered list of bijections stored in noise→data (forward) order.
+   :type bijections: list of Bijection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+
+      
+      Map noise to data by composing all bijections in order.
+
+      :param u: Noise-space input.
+      :type u: Array
+      :param cond: Conditioning input passed to every bijection, or ``None``.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Accumulated log absolute determinant of the composed forward map.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise by composing all bijections in reversed order.
+
+      :param x: Data-space input.
+      :type x: Array
+      :param cond: Conditioning input passed to every bijection, or ``None``.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Accumulated log absolute determinant of the composed inverse map.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: bijections
+
+
+.. py:class:: Mask(value, *, hijax = None, ref = None, eager_sharding = None, **metadata)
+
+   Bases: :py:obj:`flax.nnx.Variable`
+
+
+   
+   Fixed (non-trainable) buffer for bijection metadata.
+
+   A non-:class:`~flax.nnx.Param` :class:`~flax.nnx.Variable` subclass so
+   that optimizers and EMA utilities skip it while checkpointing still
+   saves and restores it.  Typical use: autoregressive masks in
+   :class:`~gensbi.models.maf.made.MaskedAutoregressive`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:class:: Permutation(perm)
+
+   Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
+
+
+   
+   Reorder dimensions; conditioning is ignored; log-det is always 0.
+
+   Both the permutation index array and its inverse are stored as
+   :class:`~gensbi.normalizing_flows.bijections.base.Mask` buffers so that
+   optimizers and EMA utilities skip them.
+
+   :param perm: Integer index array of shape ``(dim,)`` that defines the reordering.
+                ``perm[i]`` is the source index for output position ``i``.
+   :type perm: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+
+      
+      Map noise to data by applying the inverse permutation.
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Reordered data-space output.
+                * **logabsdet** (*Array*) -- Zero scalar (permutations have unit Jacobian determinant).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise by applying ``perm`` to reorder dimensions.
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Reordered noise-space output.
+                * **logabsdet** (*Array*) -- Zero scalar (permutations have unit Jacobian determinant).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: random(dim, rngs)
+      :classmethod:
+
+
+      
+      Construct a uniformly random permutation.
+
+      :param dim: Number of dimensions.
+      :type dim: int
+      :param rngs: Flax RNG container used to draw the random permutation index.
+      :type rngs: nnx.Rngs
+
+      :returns: A :class:`Permutation` with a randomly shuffled index array.
+      :rtype: Permutation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: reverse(dim)
+      :classmethod:
+
+
+      
+      Construct a permutation that reverses dimension order.
+
+      :param dim: Number of dimensions.
+      :type dim: int
+
+      :returns: A :class:`Permutation` that reverses the dimension order.
+      :rtype: Permutation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: inv_perm
+
+
+   .. py:attribute:: perm
+
+
+.. py:class:: RQSpline(num_bins = 8, range_bound = 5.0, min_bin_width = 0.001, min_bin_height = 0.001, min_derivative = 0.001)
+
+   
+   Elementwise monotonic rational-quadratic spline on ``[-B, B]``.
+
+   Linear (identity) tails outside the spline interval.  The mapping is
+   parameterised per dimension; with zero-initialised parameters the spline
+   reduces to the identity, so the flow warm-starts as a standard normal
+   (same warm-start contract as :class:`Affine`).
+
+   The parameter layout per dimension is
+   ``[widths(K), heights(K), inner_derivatives(K-1)]`` of total length
+   ``3K - 1``.  Reference: Durkan et al. 2019
+   (https://arxiv.org/abs/1906.04032).
+
+   :param num_bins: Number of spline bins ``K``.  Default is 8.
+   :type num_bins: int, optional
+   :param range_bound: Half-width ``B`` of the spline interval ``[-B, B]``.  Default is 5.0.
+   :type range_bound: float, optional
+   :param min_bin_width: Minimum fractional bin width after softmax normalisation.
+                         Default is 1e-3.
+   :type min_bin_width: float, optional
+   :param min_bin_height: Minimum fractional bin height after softmax normalisation.
+                          Default is 1e-3.
+   :type min_bin_height: float, optional
+   :param min_derivative: Minimum knot derivative value.  Default is 1e-3.
+   :type min_derivative: float, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _fwd_scalar(x, params)
+
+
+   .. py:method:: _inv_scalar(u, params)
+
+
+   .. py:method:: _knots(params)
+
+      
+      Raw params -> (x_knots, y_knots, derivatives), each over K+1 knots.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: forward(u, params)
+
+      
+      Map noise to data (vectorised inverse spline pass).
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param params: Per-dimension spline parameters of shape ``(dim, 3K-1)``.
+      :type params: Array
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Negative sum of log-derivatives of the spline: ``-sum(log g'(x))``,
+                  where ``g'`` is the forward spline derivative evaluated at the
+                  corresponding data-space position.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: forward_dim(u_i, params_i)
+
+      
+      Scalar noise-to-data transform for a single dimension.
+
+      Used by the sequential sampling scan in the autoregressive loop, which
+      accumulates the per-dimension log-determinant as it goes.
+
+      :param u_i: Scalar noise-space value for one dimension.
+      :type u_i: Array
+      :param params_i: Spline parameter vector of length ``3K-1`` for the same dimension.
+      :type params_i: Array
+
+      :returns: * **x_i** (*Array*) -- Scalar data-space output.
+                * **logabsdet_i** (*Array*) -- Forward log-determinant contribution for this dimension:
+                  ``-log g'(x_i)`` (matching :meth:`forward`).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, params)
+
+      
+      Map data to noise (fast vectorised spline pass).
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param params: Per-dimension spline parameters of shape ``(dim, 3K-1)``.
+      :type params: Array
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Positive sum of log-derivatives of the spline at each input:
+                  ``+sum(log g'(x))``, where ``g'`` is the forward spline derivative
+                  (data→noise direction).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: B
+      :value: 5.0
+
+
+
+   .. py:attribute:: min_bin_height
+      :value: 0.001
+
+
+
+   .. py:attribute:: min_bin_width
+      :value: 0.001
+
+
+
+   .. py:attribute:: min_derivative
+      :value: 0.001
+
+
+
+   .. py:attribute:: num_bins
+      :value: 8
+
+
+
+   .. py:attribute:: num_params
+      :value: 23
+
+
+
+.. py:class:: Standardize(dim)
+
+   Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
+
+
+   
+   Fixed affine standardization using non-trainable mean and std buffers.
+
+   Buffers default to identity (mean 0, std 1) and can be updated in place
+   via :meth:`set_stats`.  They are stored as
+   :class:`~gensbi.normalizing_flows.bijections.base.Mask` variables so
+   that optimizers and EMA utilities skip them.
+
+   :param dim: Dimension of the data vector (length of mean and std buffers).
+   :type dim: int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+
+      
+      Map noise to data by destandardizing: ``x = u * std + mean``.
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Destandardized data-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the forward map: ``sum(log std)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise by standardizing: ``u = (x - mean) / std``.
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Standardized noise-space output.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the inverse map: ``-sum(log std)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: set_stats(mean, std)
+
+      
+      Update the mean and standard-deviation buffers in place.
+
+      :param mean: New mean values of shape ``(dim,)``.
+      :type mean: Array
+      :param std: New standard-deviation values of shape ``(dim,)``; must be
+                  strictly positive.
+      :type std: Array
+
+      :returns: This method modifies the buffers in place and returns nothing.
+      :rtype: None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: mean
+
+
+   .. py:attribute:: std
+
+

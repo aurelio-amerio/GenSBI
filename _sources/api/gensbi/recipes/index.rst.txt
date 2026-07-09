@@ -34,6 +34,7 @@ Submodules
    :maxdepth: 1
 
    /api/gensbi/recipes/conditional_pipeline/index
+   /api/gensbi/recipes/flow_pipeline/index
    /api/gensbi/recipes/flux1/index
    /api/gensbi/recipes/flux1joint/index
    /api/gensbi/recipes/joint_pipeline/index
@@ -48,6 +49,7 @@ Classes
 
 .. autoapisummary::
 
+   gensbi.recipes.ConditionalFlowPipeline
    gensbi.recipes.ConditionalPipeline
    gensbi.recipes.Flux1DiffusionPipeline
    gensbi.recipes.Flux1FlowPipeline
@@ -64,6 +66,532 @@ Classes
 
 Package Contents
 ----------------
+
+.. py:class:: ConditionalFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None, structured_obs=False, structured_cond=False)
+
+   Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
+
+
+   
+   Max-likelihood NPE pipeline wrapping an ``MAFlow``.
+
+   :param model: A pre-built flow (e.g. ``MAFlow(MAFlowParams(rngs=rngs, dim=dim_obs, cond_dim=dim_cond))``).
+   :type model: MAFlow
+   :param train_dataset: Yield ``(obs, cond)`` batches.  Shape is ``(B, dim, C)`` for each
+                         variable (``C = 1`` for the tabular path; see ``ch_obs``/``ch_cond``).
+   :type train_dataset: iterable
+   :param val_dataset: Yield ``(obs, cond)`` batches.  Shape is ``(B, dim, C)`` for each
+                       variable (``C = 1`` for the tabular path; see ``ch_obs``/``ch_cond``).
+   :type val_dataset: iterable
+   :param dim_obs:
+   :type dim_obs: int
+   :param dim_cond:
+   :type dim_cond: int
+   :param ch_obs: Channel count for the obs and cond variables.  Default 1 (tabular SBI).
+                  Values > 1 enable the ``(B, dim, C)`` channel-passthrough path: the
+                  channel axis is preserved and forwarded to the flow unchanged (the flow
+                  must be built with matching ``channels``/``cond_channels`` in
+                  :class:`~gensbi.models.MAFlowParams`).
+   :type ch_obs: int, optional
+   :param ch_cond: Channel count for the obs and cond variables.  Default 1 (tabular SBI).
+                   Values > 1 enable the ``(B, dim, C)`` channel-passthrough path: the
+                   channel axis is preserved and forwarded to the flow unchanged (the flow
+                   must be built with matching ``channels``/``cond_channels`` in
+                   :class:`~gensbi.models.MAFlowParams`).
+   :type ch_cond: int, optional
+   :param structured_obs: If ``True``, the modeled variable / condition keeps its native
+                          structured shape (the model owns it) instead of the tabular
+                          ``(B, dim, 1)`` layout. Default ``False``.
+   :type structured_obs: bool, optional
+   :param structured_cond: If ``True``, the modeled variable / condition keeps its native
+                           structured shape (the model owns it) instead of the tabular
+                           ``(B, dim, 1)`` layout. Default ``False``.
+   :type structured_cond: bool, optional
+
+   .. rubric:: Notes
+
+   Every single-observation method (:meth:`sample`, :meth:`log_prob`,
+   :meth:`get_sampler`, :meth:`get_log_prob_fn`) expects ``x_o`` to carry a
+   **leading batch axis** (size 1 for one observation) **and a channel axis**:
+   shape ``(1, dim_cond, C)`` for tabular, or ``(1,) + per_obs_shape`` for
+   structured. A bare ``(B, dim)`` tensor is rejected — add ``[..., None]``
+   for ``C = 1``. A batch axis > 1 raises ``ValueError`` — pass a batch to
+   :meth:`sample_batched` instead.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _make_model(params)
+      :abstractmethod:
+
+
+      
+      Create and return the model to be trained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _prep_cond(x)
+
+
+   .. py:method:: _prep_obs(x)
+
+
+   .. py:method:: _wrap_model()
+
+      
+      Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: fit_standardization(obs_data, axis=0)
+
+      
+      Fit the Standardize bijection buffers from training observations.
+
+      Computes per-dimension mean and standard deviation of ``obs_data``
+      and stores them as buffers on both the live model and the EMA model.
+      EMA only averages ``Param`` variables, so the non-Param buffers must
+      be set explicitly here.  Must be called before :meth:`train` when
+      input standardization is desired.
+
+      :param obs_data: Training observations of shape ``(N, dim_obs)`` or
+                       ``(N, dim_obs, 1)`` (the autoregressive target; e.g. theta for
+                       NPE).  For multichannel flows (``ch_obs > 1``) the shape is
+                       ``(N, dim_obs, C)`` and ``axis=(0, 1)`` yields per-channel stats.
+      :type obs_data: Array
+      :param axis: Reduction axis or axes for the mean/std computation.  Default
+                   is ``0`` (per-dimension stats over the batch), which is the
+                   correct choice for the tabular (``C == 1``) path.  Pass
+                   ``axis=(0, 1)`` for per-channel standardization when ``C > 1``.
+      :type axis: int or tuple of int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_default_params(*args, **kwargs)
+      :classmethod:
+
+      :abstractmethod:
+
+
+      
+      Not implemented: the flow pipeline takes a pre-built ``MAFlow``.
+
+      :raises NotImplementedError: Always. There are no default model params to return; construct an
+          ``MAFlow`` directly and pass it as ``model=``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_log_prob_fn(x_o, use_ema=True, **kwargs)
+
+      
+      Return a log-probability closure for a single conditioning observation.
+
+      :param x_o: Single conditioning observation carrying a leading batch axis of
+                  size 1 (see :meth:`get_sampler` for the shape convention). A leading
+                  batch axis > 1 raises ``ValueError``.
+      :type x_o: Array
+      :param use_ema: If ``True`` (default), use the EMA model.
+      :type use_ema: bool, optional
+
+      :returns: **log_prob_fn** -- A function ``(x_1) -> Array`` of shape ``(B,)`` evaluating
+                the conditional log-probability ``log q(x_1 | x_o)`` for a
+                batch of ``B`` parameter vectors.  ``x_1`` has shape
+                ``(B, dim_obs)`` or ``(B, dim_obs, 1)`` on the tabular path,
+                or ``(B, dim_obs, C)`` when ``ch_obs > 1``
+                (channel-passthrough).
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_loss_fn()
+
+      
+      Return the max-likelihood loss function for training.
+
+      Returns a closure ``loss_fn(model, batch, key) -> Array`` that
+      computes the mean negative log-likelihood
+      ``-mean(log q(obs | cond))``.  ``batch = (obs, cond)`` with each
+      element of shape ``(B, dim, 1)``.  NPE convention: ``obs = theta``,
+      ``cond = x``.  The ``key`` argument is accepted for interface
+      compatibility but is unused.
+
+      :returns: **loss_fn** -- A function ``(model, batch, key) -> Array`` returning the scalar
+                mean negative log-likelihood.
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: get_sampler(x_o, use_ema=True, **kwargs)
+
+      
+      Return a sampler closure for a single conditioning observation.
+
+      :param x_o: Single conditioning observation.  Must carry a leading batch axis
+                  and a channel axis for tabular cond: shape ``(1, dim_cond, C)``.
+                  For structured cond: ``(1,) + per_observation_shape``.
+                  A leading batch axis > 1 raises ``ValueError`` (use
+                  :meth:`sample_batched` for many conditions).
+      :type x_o: Array
+      :param use_ema: If ``True`` (default), use the EMA model; otherwise use the
+                      live model.
+      :type use_ema: bool, optional
+
+      :returns: **sampler** -- A function ``(key, nsamples) -> Array`` returning the model's
+                native output shape ``(nsamples, dim_obs, C)`` (channel always
+                carried).
+      :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: init_pipeline_from_config(*args, **kwargs)
+      :classmethod:
+
+      :abstractmethod:
+
+
+      
+      Not implemented: the flow pipeline requires a pre-built model.
+
+      :raises NotImplementedError: Always. Construct an ``MAFlow`` and pass it as ``model=`` to the
+          pipeline constructor instead.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: log_prob(x_1, x_o, use_ema=True, **kwargs)
+
+      
+      Evaluate the conditional log-probability for a batch of samples.
+
+      :param x_1: Batch of parameter vectors of shape ``(B, dim_obs)`` or
+                  ``(B, dim_obs, 1)``.
+      :type x_1: Array
+      :param x_o: Single conditioning observation carrying a leading batch axis of
+                  size 1 (see :meth:`get_sampler` for the shape convention). A leading
+                  batch axis > 1 raises ``ValueError``.
+      :type x_o: Array
+      :param use_ema: If ``True`` (default), use the EMA model.
+      :type use_ema: bool, optional
+
+      :returns: **log_prob** -- Log-probabilities of shape ``(B,)``.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(key, x_o, nsamples=10000, use_ema=True, **kwargs)
+
+      
+      Draw posterior samples for a single conditioning observation.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param x_o: Single conditioning observation carrying a leading batch axis of
+                  size 1 (see :meth:`get_sampler` for the shape convention). A leading
+                  batch axis > 1 raises ``ValueError``.
+      :type x_o: Array
+      :param nsamples: Number of posterior samples to draw.  Default is 10 000.
+      :type nsamples: int, optional
+      :param use_ema: If ``True`` (default), use the EMA model.
+      :type use_ema: bool, optional
+
+      :returns: **samples** -- Posterior samples of shape ``(nsamples, dim_obs, 1)`` for the
+                tabular default (``C = 1``), or ``(nsamples, dim_obs, C)`` for
+                ``ch_obs = C`` — the channel axis is always carried for a
+                vector-modeled variable regardless of ``structured_cond`` (a
+                structured condition changes only ``x_o``'s expected shape, not
+                the modeled variable's). When ``structured_obs=True``, samples
+                instead have shape ``(nsamples,) + per_obs_shape``, the model's
+                native structured output.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample_batched(key, x_o, nsamples=10000, *, use_ema=True, **kwargs)
+
+      
+      Draw posterior samples for a batch of conditioning observations.
+
+      Draws all ``B`` conditions in **one** batched autoregressive pass:
+      each condition is repeated ``nsamples`` times and concatenated into
+      a single ``(B * nsamples, ...)`` batch fed to the flow's ``sample``,
+      rather than looping the single-observation sampler ``B`` times.
+      Memory scales with the product ``B * nsamples``.
+
+      :param key: Random key for the batched sampling pass.
+      :type key: jax.random.PRNGKey
+      :param x_o: Batch of observations. For tabular cond: shape
+                  ``(B, dim_cond, C)`` (a bare ``(B, dim_cond)`` raises
+                  ``ValueError`` — add a trailing channel axis). For structured
+                  cond: ``(B,) + per_obs_shape``.
+      :type x_o: Array
+      :param nsamples: Number of posterior samples per observation.  Default is
+                       10 000.
+      :type nsamples: int, optional
+      :param use_ema: If ``True`` (default), use the EMA model.
+      :type use_ema: bool, optional
+      :param \*\*kwargs: Extra keyword arguments accepted for interface compatibility
+                         and silently ignored (e.g. ``chunk_size`` and
+                         ``show_progress_bars`` from
+                         :class:`~gensbi.recipes.pipeline.AbstractPipeline`).
+      :type \*\*kwargs: dict, optional
+
+      :returns: **samples** -- Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` for the
+                tabular default (``C = 1``), or ``(nsamples, B, dim_obs, C)`` for
+                ``ch_obs = C`` — the channel axis is always carried for a
+                vector-modeled variable regardless of ``structured_cond`` (a
+                structured condition changes only ``x_o``'s expected shape, not
+                the modeled variable's). When ``structured_obs=True``, samples
+                instead have shape ``(nsamples, B) + per_obs_shape``, the
+                model's native structured output. In both cases ``out[:, i]``
+                is the samples for condition ``i`` — the same layout as the
+                previous per-condition loop.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: train(rngs, nsteps=None, save_model=True)
+
+      
+      Train the flow model, warning if standardization was skipped.
+
+      Delegates to :meth:`AbstractPipeline.train` after checking that
+      :meth:`fit_standardization` was called.
+
+      :param rngs: Random number generators for training and validation steps.
+      :type rngs: nnx.Rngs
+      :param nsteps: Number of training steps.  If ``None``, taken from
+                     ``training_config["nsteps"]``.  Default is ``None``.
+      :type nsteps: int or None, optional
+      :param save_model: If ``True`` (default), serialise the model to disk after
+                         training.
+      :type save_model: bool, optional
+
+      :returns: * **loss_array** (*list*) -- Per-step training losses.
+                * **val_loss_array** (*list*) -- Validation losses recorded at each validation checkpoint.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: _standardized
+      :value: False
+
+
+
+   .. py:attribute:: structured_cond
+      :value: False
+
+
+
+   .. py:attribute:: structured_obs
+      :value: False
+
+
 
 .. py:class:: ConditionalPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), size=2, params=None, training_config=None)
 

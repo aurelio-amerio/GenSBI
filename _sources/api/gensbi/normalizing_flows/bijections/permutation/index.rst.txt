@@ -1,0 +1,189 @@
+gensbi.normalizing_flows.bijections.permutation
+===============================================
+
+.. py:module:: gensbi.normalizing_flows.bijections.permutation
+
+.. autoapi-nested-parse::
+
+   Permutation bijection (dimension reordering between flow layers).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.normalizing_flows.bijections.permutation.Permutation
+
+
+Module Contents
+---------------
+
+.. py:class:: Permutation(perm)
+
+   Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
+
+
+   
+   Reorder dimensions; conditioning is ignored; log-det is always 0.
+
+   Both the permutation index array and its inverse are stored as
+   :class:`~gensbi.normalizing_flows.bijections.base.Mask` buffers so that
+   optimizers and EMA utilities skip them.
+
+   :param perm: Integer index array of shape ``(dim,)`` that defines the reordering.
+                ``perm[i]`` is the source index for output position ``i``.
+   :type perm: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+
+      
+      Map noise to data by applying the inverse permutation.
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Reordered data-space output.
+                * **logabsdet** (*Array*) -- Zero scalar (permutations have unit Jacobian determinant).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise by applying ``perm`` to reorder dimensions.
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param cond: Ignored; present for interface compatibility.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Reordered noise-space output.
+                * **logabsdet** (*Array*) -- Zero scalar (permutations have unit Jacobian determinant).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: random(dim, rngs)
+      :classmethod:
+
+
+      
+      Construct a uniformly random permutation.
+
+      :param dim: Number of dimensions.
+      :type dim: int
+      :param rngs: Flax RNG container used to draw the random permutation index.
+      :type rngs: nnx.Rngs
+
+      :returns: A :class:`Permutation` with a randomly shuffled index array.
+      :rtype: Permutation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: reverse(dim)
+      :classmethod:
+
+
+      
+      Construct a permutation that reverses dimension order.
+
+      :param dim: Number of dimensions.
+      :type dim: int
+
+      :returns: A :class:`Permutation` that reverses the dimension order.
+      :rtype: Permutation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: inv_perm
+
+
+   .. py:attribute:: perm
+
+

@@ -1,0 +1,468 @@
+gensbi.normalizing_flows.bijections.transformers
+================================================
+
+.. py:module:: gensbi.normalizing_flows.bijections.transformers
+
+.. autoapi-nested-parse::
+
+   Elementwise transformers parameterised per-dimension by a conditioner.
+
+   Pure functions of (value, params) — no learnable state of their own.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.normalizing_flows.bijections.transformers.Affine
+   gensbi.normalizing_flows.bijections.transformers.RQSpline
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.normalizing_flows.bijections.transformers._clamp
+   gensbi.normalizing_flows.bijections.transformers._inv_softplus
+   gensbi.normalizing_flows.bijections.transformers._rqs_apply
+
+
+Module Contents
+---------------
+
+.. py:class:: Affine(clamp_min = -5.0, clamp_max = 3.0)
+
+   
+   Elementwise affine transform with log-scale clamping.
+
+   The parameter layout per dimension is ``[shift mu, log-scale a]``
+   (``num_params == 2``).  Log-scale values are clamped to
+   ``[clamp_min, clamp_max]`` before exponentiation using a straight-through
+   gradient (NumPyro IAF trick).
+
+   Forward (noise→data): ``x = u * exp(a) + mu``; logabsdet = ``+sum(a)``.
+   Inverse (data→noise): ``u = (x - mu) * exp(-a)``; logabsdet = ``-sum(a)``.
+
+   :param clamp_min: Lower bound for log-scale clamping.  Default is -5.0.
+   :type clamp_min: float, optional
+   :param clamp_max: Upper bound for log-scale clamping.  Default is 3.0.
+   :type clamp_max: float, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _split(params)
+
+
+   .. py:method:: forward(u, params)
+
+      
+      Map noise to data: ``x = u * exp(a) + mu``.
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param params: Per-dimension parameters of shape ``(dim, 2)``; column 0 is the
+                     shift ``mu`` and column 1 is the log-scale ``a``.
+      :type params: Array
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Sum of clamped log-scales: ``sum(a)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: forward_dim(u_i, params_i)
+
+      
+      Scalar noise-to-data transform for a single dimension.
+
+      Used by the sequential sampling scan in the autoregressive loop, which
+      accumulates the per-dimension log-determinant as it goes.
+
+      :param u_i: Scalar noise-space value for one dimension.
+      :type u_i: Array
+      :param params_i: Parameter vector of length 2 for the same dimension; index 0 is
+                       the shift ``mu``, index 1 is the log-scale ``a``.
+      :type params_i: Array
+
+      :returns: * **x_i** (*Array*) -- Scalar data-space output: ``u_i * exp(a) + mu``.
+                * **logabsdet_i** (*Array*) -- Forward log-determinant contribution for this dimension: ``a``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, params)
+
+      
+      Map data to noise: ``u = (x - mu) * exp(-a)``.
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param params: Per-dimension parameters of shape ``(dim, 2)``; column 0 is the
+                     shift ``mu`` and column 1 is the log-scale ``a``.
+      :type params: Array
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Negative sum of clamped log-scales: ``-sum(a)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: clamp_max
+      :value: 3.0
+
+
+
+   .. py:attribute:: clamp_min
+      :value: -5.0
+
+
+
+   .. py:attribute:: num_params
+      :value: 2
+
+
+
+.. py:class:: RQSpline(num_bins = 8, range_bound = 5.0, min_bin_width = 0.001, min_bin_height = 0.001, min_derivative = 0.001)
+
+   
+   Elementwise monotonic rational-quadratic spline on ``[-B, B]``.
+
+   Linear (identity) tails outside the spline interval.  The mapping is
+   parameterised per dimension; with zero-initialised parameters the spline
+   reduces to the identity, so the flow warm-starts as a standard normal
+   (same warm-start contract as :class:`Affine`).
+
+   The parameter layout per dimension is
+   ``[widths(K), heights(K), inner_derivatives(K-1)]`` of total length
+   ``3K - 1``.  Reference: Durkan et al. 2019
+   (https://arxiv.org/abs/1906.04032).
+
+   :param num_bins: Number of spline bins ``K``.  Default is 8.
+   :type num_bins: int, optional
+   :param range_bound: Half-width ``B`` of the spline interval ``[-B, B]``.  Default is 5.0.
+   :type range_bound: float, optional
+   :param min_bin_width: Minimum fractional bin width after softmax normalisation.
+                         Default is 1e-3.
+   :type min_bin_width: float, optional
+   :param min_bin_height: Minimum fractional bin height after softmax normalisation.
+                          Default is 1e-3.
+   :type min_bin_height: float, optional
+   :param min_derivative: Minimum knot derivative value.  Default is 1e-3.
+   :type min_derivative: float, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _fwd_scalar(x, params)
+
+
+   .. py:method:: _inv_scalar(u, params)
+
+
+   .. py:method:: _knots(params)
+
+      
+      Raw params -> (x_knots, y_knots, derivatives), each over K+1 knots.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: forward(u, params)
+
+      
+      Map noise to data (vectorised inverse spline pass).
+
+      :param u: Noise-space input of shape ``(dim,)``.
+      :type u: Array
+      :param params: Per-dimension spline parameters of shape ``(dim, 3K-1)``.
+      :type params: Array
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Negative sum of log-derivatives of the spline: ``-sum(log g'(x))``,
+                  where ``g'`` is the forward spline derivative evaluated at the
+                  corresponding data-space position.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: forward_dim(u_i, params_i)
+
+      
+      Scalar noise-to-data transform for a single dimension.
+
+      Used by the sequential sampling scan in the autoregressive loop, which
+      accumulates the per-dimension log-determinant as it goes.
+
+      :param u_i: Scalar noise-space value for one dimension.
+      :type u_i: Array
+      :param params_i: Spline parameter vector of length ``3K-1`` for the same dimension.
+      :type params_i: Array
+
+      :returns: * **x_i** (*Array*) -- Scalar data-space output.
+                * **logabsdet_i** (*Array*) -- Forward log-determinant contribution for this dimension:
+                  ``-log g'(x_i)`` (matching :meth:`forward`).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, params)
+
+      
+      Map data to noise (fast vectorised spline pass).
+
+      :param x: Data-space input of shape ``(dim,)``.
+      :type x: Array
+      :param params: Per-dimension spline parameters of shape ``(dim, 3K-1)``.
+      :type params: Array
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Positive sum of log-derivatives of the spline at each input:
+                  ``+sum(log g'(x))``, where ``g'`` is the forward spline derivative
+                  (data→noise direction).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: B
+      :value: 5.0
+
+
+
+   .. py:attribute:: min_bin_height
+      :value: 0.001
+
+
+
+   .. py:attribute:: min_bin_width
+      :value: 0.001
+
+
+
+   .. py:attribute:: min_derivative
+      :value: 0.001
+
+
+
+   .. py:attribute:: num_bins
+      :value: 8
+
+
+
+   .. py:attribute:: num_params
+      :value: 23
+
+
+
+.. py:function:: _clamp(a, lo, hi)
+
+   
+   Clamp with a straight-through gradient (NumPyro IAF trick).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _inv_softplus(y)
+
+   
+   Inverse of softplus: ``x`` such that ``softplus(x) == y`` (y > 0).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _rqs_apply(z, x_knots, y_knots, derivatives, inverse)
+
+   
+   Apply the RQ spline (or its inverse) to a scalar ``z``.
+
+   Returns ``(out, logderiv)`` where ``logderiv = log(dy/dx)`` evaluated at the
+   relevant x (the same forward derivative is used for both directions; the
+   caller flips its sign for ``forward``). Outside ``[-B, B]`` the map is the
+   identity (logderiv 0).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

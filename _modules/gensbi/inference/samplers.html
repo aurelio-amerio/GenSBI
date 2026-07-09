@@ -1,0 +1,1488 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gensbi.inference.samplers &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
+        all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if ("False" === "True") {
+                                        addZoomToSvgs(d3.selectAll(""));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? mermaids_active.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            }
+            addZoomToSvgs(svgs);
+        }
+    } else if(mermaids_active.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/gensbi/inference/samplers';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../gensbi.html" class="nav-link">gensbi</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">gensbi.inference.samplers</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for gensbi.inference.samplers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;blackjax samplers consumed by NLEPosterior. blackjax imported lazily in run().&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+
+<div class="viewcode-block" id="_rescale">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference._rescale">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_rescale</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Map a mean trajectory length to a uniform-integer draw scale.</span>
+
+<span class="sd">    From blackjax&#39;s ``adjusted_mclmc_dynamic``: drawing the number of</span>
+<span class="sd">    integration steps as ``ceil(U(0,1) * _rescale(L/step_size))`` makes the</span>
+<span class="sd">    average number of steps exactly ``mu = L / step_size``.</span>
+
+<span class="sd">    ``mu`` must satisfy ``mu &gt;= 1``; see :func:`_check_rescale_domain` for the</span>
+<span class="sd">    host-side guard applied to the tuned value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">mu</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="p">(</span><span class="n">mu</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">k</span> <span class="o">+</span> <span class="n">x</span></div>
+
+
+
+<div class="viewcode-block" id="_check_rescale_domain">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference._check_rescale_domain">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_rescale_domain</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise if the tuned ``mu = L / step_size`` is outside ``_rescale``&#39;s domain.</span>
+
+<span class="sd">    For ``mu &lt; 1``, ``floor(2 * mu - 1) == 0`` and ``_rescale`` returns 0, so</span>
+<span class="sd">    the integration-step draw ``ceil(U(0,1) * 0)`` is 0 — a chain that never</span>
+<span class="sd">    moves. A host-side check on the tuned value turns that silent failure into</span>
+<span class="sd">    an explicit error. (The in-tuning average is left to blackjax; this is a</span>
+<span class="sd">    convenience sampler, not a fully hardened MCMC engine.)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mu</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;adjusted-MCLMC tuning produced L/step_size = </span><span class="si">{</span><span class="n">mu</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2"> &lt; 1, for &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;which the randomized integration-step count rounds to zero and &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;the chain would never move. This usually means tuning did not &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;converge — try increasing num_tuning_steps, increasing &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;num_samples, or using MCLMC(adjusted=False).&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Sampler">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.Sampler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sampler</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for posterior samplers.</span>
+
+<span class="sd">    Subclasses consume a :class:`~gensbi.inference.posterior.PosteriorTarget`</span>
+<span class="sd">    and return an array of posterior samples together with a sampler-specific</span>
+<span class="sd">    info object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="Sampler.run">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.Sampler.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples from a log-density target.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        target : PosteriorTarget</span>
+<span class="sd">            Posterior target produced by</span>
+<span class="sd">            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : Array</span>
+<span class="sd">            Posterior samples of shape ``(n, dim)``.</span>
+<span class="sd">        info : object</span>
+<span class="sd">            Sampler-specific diagnostics.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError</span>
+<span class="sd">            This is an abstract method; subclasses must override it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+</div>
+
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="MclmcInfo">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MclmcInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tuning parameters and diagnostics from an MCLMC run.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    L : float</span>
+<span class="sd">        Tuned trajectory length.</span>
+<span class="sd">    step_size : float</span>
+<span class="sd">        Tuned integrator step size.</span>
+<span class="sd">    acceptance_rate : float</span>
+<span class="sd">        Mean Metropolis acceptance rate over the sampling run.</span>
+<span class="sd">        ``float(&#39;nan&#39;)`` for the unadjusted variant.</span>
+<span class="sd">    num_samples : int</span>
+<span class="sd">        Number of samples drawn per chain.</span>
+<span class="sd">    num_chains : int</span>
+<span class="sd">        Number of independent chains.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MclmcInfo.L">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo.L">[docs]</a>
+    <span class="n">L</span><span class="p">:</span> <span class="nb">float</span></div>
+
+<div class="viewcode-block" id="MclmcInfo.step_size">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo.step_size">[docs]</a>
+    <span class="n">step_size</span><span class="p">:</span> <span class="nb">float</span></div>
+
+<div class="viewcode-block" id="MclmcInfo.acceptance_rate">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo.acceptance_rate">[docs]</a>
+    <span class="n">acceptance_rate</span><span class="p">:</span> <span class="nb">float</span></div>
+
+<div class="viewcode-block" id="MclmcInfo.num_samples">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo.num_samples">[docs]</a>
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="MclmcInfo.num_chains">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo.num_chains">[docs]</a>
+    <span class="n">num_chains</span><span class="p">:</span> <span class="nb">int</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="_inference_loop">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference._inference_loop">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_inference_loop</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">initial_state</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a blackjax SamplingAlgorithm.step for num_samples via lax.scan.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">one_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+        <span class="n">state</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">step_fn</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">infos</span><span class="p">)</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">one_step</span><span class="p">,</span> <span class="n">initial_state</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">states</span><span class="p">,</span> <span class="n">infos</span></div>
+
+
+
+<div class="viewcode-block" id="MCLMC">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MCLMC</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Microcanonical Langevin Monte Carlo sampler.</span>
+
+<span class="sd">    ``adjusted=True`` (the default) applies an MH correction for</span>
+<span class="sd">    asymptotically exact sampling.  ``adjusted=False`` uses the faster</span>
+<span class="sd">    unadjusted variant, which is biased by the discretization error.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    adjusted : bool, optional</span>
+<span class="sd">        Whether to apply an MH correction.  Default is ``True``.</span>
+<span class="sd">    num_samples : int, optional</span>
+<span class="sd">        Number of posterior samples to collect per chain.  Default is 1000.</span>
+<span class="sd">    num_tuning_steps : int, optional</span>
+<span class="sd">        Number of warmup steps for the L / step-size tuning loop.</span>
+<span class="sd">        Default is 5000.</span>
+<span class="sd">    num_chains : int, optional</span>
+<span class="sd">        Number of independent MCLMC chains.  Default is 1.</span>
+<span class="sd">    target_acceptance : float, optional</span>
+<span class="sd">        Target Metropolis acceptance rate for the adjusted variant.</span>
+<span class="sd">        Default is 0.9.</span>
+<span class="sd">    diagonal_preconditioning : bool, optional</span>
+<span class="sd">        Whether to use diagonal preconditioning during tuning.</span>
+<span class="sd">        Default is ``True``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">adjusted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">num_tuning_steps</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
+                 <span class="n">num_chains</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">target_acceptance</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="MCLMC.adjusted">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.adjusted">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjusted</span> <span class="o">=</span> <span class="n">adjusted</span></div>
+
+<div class="viewcode-block" id="MCLMC.num_samples">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.num_samples">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span> <span class="o">=</span> <span class="n">num_samples</span></div>
+
+<div class="viewcode-block" id="MCLMC.num_tuning_steps">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.num_tuning_steps">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span> <span class="o">=</span> <span class="n">num_tuning_steps</span></div>
+
+<div class="viewcode-block" id="MCLMC.num_chains">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.num_chains">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span> <span class="o">=</span> <span class="n">num_chains</span></div>
+
+<div class="viewcode-block" id="MCLMC.target_acceptance">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.target_acceptance">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_acceptance</span> <span class="o">=</span> <span class="n">target_acceptance</span></div>
+
+<div class="viewcode-block" id="MCLMC.diagonal_preconditioning">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.diagonal_preconditioning">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span> <span class="o">=</span> <span class="n">diagonal_preconditioning</span></div>
+
+
+<div class="viewcode-block" id="MCLMC.run">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples using MCLMC.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        target : PosteriorTarget</span>
+<span class="sd">            Posterior target produced by</span>
+<span class="sd">            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : Array</span>
+<span class="sd">            Posterior samples of shape ``(num_chains * num_samples, dim)``.</span>
+<span class="sd">        info : MclmcInfo</span>
+<span class="sd">            Tuning parameters and diagnostic information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Python loop over chains (not vmap): _run_single returns a plain MclmcInfo</span>
+        <span class="c1"># dataclass, which is not a registered pytree and cannot be a vmap output.</span>
+        <span class="c1"># num_chains is small, so the loop cost is negligible.</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_single</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (num_chains*num_samples, dim)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">infos</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">MclmcInfo</span><span class="p">(</span>
+            <span class="n">L</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">L</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">]))),</span>
+            <span class="n">step_size</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">step_size</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">]))),</span>
+            <span class="n">acceptance_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">acceptance_rate</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">]))),</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">num_chains</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="MCLMC._run_single">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC._run_single">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjusted</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_adjusted</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_unadjusted</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MCLMC._run_unadjusted">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC._run_unadjusted">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_unadjusted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
+
+        <span class="n">pos_key</span><span class="p">,</span> <span class="n">mom_key</span><span class="p">,</span> <span class="n">tune_key</span><span class="p">,</span> <span class="n">run_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">pos_key</span><span class="p">,</span> <span class="p">())</span>
+        <span class="n">init_state</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">rng_key</span><span class="o">=</span><span class="n">mom_key</span><span class="p">)</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">inverse_mass_matrix</span><span class="p">:</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+            <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">,</span>
+            <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mclmc_find_L_and_step_size</span><span class="p">(</span>
+            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+            <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
+        <span class="n">alg</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mclmc</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">,</span>
+                             <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+        <span class="n">states</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_inference_loop</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">alg</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">MclmcInfo</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span><span class="p">),</span> <span class="n">step_size</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">),</span>
+                         <span class="n">acceptance_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span>
+                         <span class="n">num_chains</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">states</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="MCLMC._run_adjusted">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC._run_adjusted">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_adjusted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+
+        <span class="n">pos_key</span><span class="p">,</span> <span class="n">init_key</span><span class="p">,</span> <span class="n">tune_key</span><span class="p">,</span> <span class="n">run_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">pos_key</span><span class="p">,</span> <span class="p">())</span>
+        <span class="n">init_state</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+            <span class="n">random_generator_arg</span><span class="o">=</span><span class="n">init_key</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">avg_num_integration_steps</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+                <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">avg_num_integration_steps</span><span class="p">)),</span>
+                <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">,</span>
+            <span class="p">)(</span><span class="n">rng_key</span><span class="o">=</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+              <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">)</span>
+
+        <span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">adjusted_mclmc_find_L_and_step_size</span><span class="p">(</span>
+            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+            <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_acceptance</span><span class="p">,</span>
+            <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
+        <span class="n">_check_rescale_domain</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">)</span>
+
+        <span class="n">alg</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="p">(</span>
+            <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">,</span>
+            <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">)),</span>
+            <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+
+        <span class="n">states</span><span class="p">,</span> <span class="n">infos</span> <span class="o">=</span> <span class="n">_inference_loop</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">alg</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">MclmcInfo</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span><span class="p">),</span> <span class="n">step_size</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">),</span>
+                         <span class="n">acceptance_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">infos</span><span class="o">.</span><span class="n">acceptance_rate</span><span class="p">)),</span>
+                         <span class="n">num_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">num_chains</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">states</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">info</span></div>
+</div>
+
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="SmcInfo">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.SmcInfo">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SmcInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagnostics from an adaptive tempered SMC run.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    log_evidence : float</span>
+<span class="sd">        Log marginal likelihood estimate accumulated over tempering steps.</span>
+<span class="sd">    num_temperature_steps : int</span>
+<span class="sd">        Number of temperature increments taken from beta=0 to beta=1.</span>
+<span class="sd">    final_tempering_param : float</span>
+<span class="sd">        Final value of the tempering parameter beta (should be 1.0).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SmcInfo.log_evidence">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.SmcInfo.log_evidence">[docs]</a>
+    <span class="n">log_evidence</span><span class="p">:</span> <span class="nb">float</span></div>
+
+<div class="viewcode-block" id="SmcInfo.num_temperature_steps">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.SmcInfo.num_temperature_steps">[docs]</a>
+    <span class="n">num_temperature_steps</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="SmcInfo.final_tempering_param">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.SmcInfo.final_tempering_param">[docs]</a>
+    <span class="n">final_tempering_param</span><span class="p">:</span> <span class="nb">float</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TemperedSMC">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TemperedSMC</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adaptive tempered Sequential Monte Carlo for (possibly multimodal) posteriors.</span>
+
+<span class="sd">    Walks particles along ``p(theta) * q(x_o | theta)^beta`` for beta from 0</span>
+<span class="sd">    to 1, choosing the beta ladder adaptively to maintain ``target_ess``.  The</span>
+<span class="sd">    inner rejuvenation kernel is adjusted MCLMC by default; NUTS is available</span>
+<span class="sd">    as a fallback.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_particles : int, optional</span>
+<span class="sd">        Number of SMC particles.  Default is 1000.</span>
+<span class="sd">    target_ess : float, optional</span>
+<span class="sd">        Target effective sample size ratio in ``(0, 1)``, used to adapt the</span>
+<span class="sd">        temperature increments.  Default is 0.5.</span>
+<span class="sd">    num_mcmc_steps : int, optional</span>
+<span class="sd">        Number of inner MCMC rejuvenation steps per temperature.  Default is 10.</span>
+<span class="sd">    inner_kernel : str, optional</span>
+<span class="sd">        Inner MCMC kernel: ``&quot;mclmc&quot;`` (adjusted MCLMC, default) or</span>
+<span class="sd">        ``&quot;nuts&quot;``.</span>
+<span class="sd">    inner_step_size : float, optional</span>
+<span class="sd">        Step size for the inner MCMC kernel.  Default is 0.1.</span>
+<span class="sd">    inner_num_integration_steps : int, optional</span>
+<span class="sd">        Number of integration steps for the inner MCLMC kernel.  Default is 5.</span>
+<span class="sd">    inner_inverse_mass_matrix : Array or None, optional</span>
+<span class="sd">        Inverse mass matrix for the inner kernel.  If ``None``, defaults to a</span>
+<span class="sd">        vector of ones of length ``target.dim``.  Default is ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">target_ess</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">num_mcmc_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                 <span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;mclmc&quot;</span><span class="p">,</span> <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">inner_num_integration_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">inner_inverse_mass_matrix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="TemperedSMC.num_particles">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.num_particles">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_particles</span> <span class="o">=</span> <span class="n">num_particles</span></div>
+
+<div class="viewcode-block" id="TemperedSMC.target_ess">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.target_ess">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_ess</span> <span class="o">=</span> <span class="n">target_ess</span></div>
+
+<div class="viewcode-block" id="TemperedSMC.num_mcmc_steps">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.num_mcmc_steps">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_mcmc_steps</span> <span class="o">=</span> <span class="n">num_mcmc_steps</span></div>
+
+<div class="viewcode-block" id="TemperedSMC.inner_kernel">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.inner_kernel">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">=</span> <span class="n">inner_kernel</span></div>
+
+<div class="viewcode-block" id="TemperedSMC.inner_step_size">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.inner_step_size">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span> <span class="o">=</span> <span class="n">inner_step_size</span></div>
+
+<div class="viewcode-block" id="TemperedSMC.inner_num_integration_steps">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.inner_num_integration_steps">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inner_num_integration_steps</span> <span class="o">=</span> <span class="n">inner_num_integration_steps</span></div>
+
+<div class="viewcode-block" id="TemperedSMC.inner_inverse_mass_matrix">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.inner_inverse_mass_matrix">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inner_inverse_mass_matrix</span> <span class="o">=</span> <span class="n">inner_inverse_mass_matrix</span></div>
+
+
+<div class="viewcode-block" id="TemperedSMC._inner">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC._inner">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_inner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return (mcmc_step_fn, mcmc_init_fn, mcmc_parameters) for the inner kernel.&quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+        <span class="n">imm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_inverse_mass_matrix</span>
+        <span class="k">if</span> <span class="n">imm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">imm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;nuts&quot;</span><span class="p">:</span>
+            <span class="n">step_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nuts</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">()</span>
+            <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nuts</span><span class="o">.</span><span class="n">init</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;mclmc&quot;</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">step_fn</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span>
+                        <span class="n">num_integration_steps</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="p">):</span>
+                <span class="c1"># Build the adjusted-MCLMC kernel bound to the *tempered* logdensity</span>
+                <span class="c1"># SMC injects at each temperature.</span>
+                <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+                    <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">,</span>
+                    <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+                              <span class="n">num_integration_steps</span><span class="o">=</span><span class="n">num_integration_steps</span><span class="p">)</span>
+
+            <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">init</span>   <span class="c1"># (position, logdensity_fn) -&gt; HMCState</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span>
+                          <span class="n">num_integration_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_num_integration_steps</span><span class="p">,</span>
+                          <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown inner_kernel </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TemperedSMC.run">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples using adaptive tempered SMC.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        target : PosteriorTarget</span>
+<span class="sd">            Posterior target produced by</span>
+<span class="sd">            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : Array</span>
+<span class="sd">            Posterior samples of shape ``(num_particles, dim)``.</span>
+<span class="sd">        info : SmcInfo</span>
+<span class="sd">            SMC diagnostics including log evidence and tempering statistics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+
+        <span class="n">init_key</span><span class="p">,</span> <span class="n">smc_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="n">smc</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">adaptive_tempered_smc</span><span class="p">(</span>
+            <span class="n">logprior_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_prior</span><span class="p">,</span> <span class="n">loglikelihood_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_likelihood</span><span class="p">,</span>
+            <span class="n">mcmc_step_fn</span><span class="o">=</span><span class="n">step_fn</span><span class="p">,</span> <span class="n">mcmc_init_fn</span><span class="o">=</span><span class="n">init_fn</span><span class="p">,</span>
+            <span class="n">mcmc_parameters</span><span class="o">=</span><span class="n">blackjax</span><span class="o">.</span><span class="n">smc</span><span class="o">.</span><span class="n">extend_params</span><span class="p">(</span><span class="n">params</span><span class="p">),</span>
+            <span class="n">resampling_fn</span><span class="o">=</span><span class="n">blackjax</span><span class="o">.</span><span class="n">smc</span><span class="o">.</span><span class="n">resampling</span><span class="o">.</span><span class="n">systematic</span><span class="p">,</span>
+            <span class="n">target_ess</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_ess</span><span class="p">,</span> <span class="n">num_mcmc_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_mcmc_steps</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">init_particles</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">init_key</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_particles</span><span class="p">,))</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">smc</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">init_particles</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">cond</span><span class="p">(</span><span class="n">carry</span><span class="p">):</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">carry</span>
+            <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">tempering_param</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">carry</span><span class="p">):</span>
+            <span class="n">k</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">logZ</span> <span class="o">=</span> <span class="n">carry</span>
+            <span class="n">k</span><span class="p">,</span> <span class="n">sub</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">st</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">smc</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">sub</span><span class="p">,</span> <span class="n">st</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">k</span><span class="p">,</span> <span class="n">st</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logZ</span> <span class="o">+</span> <span class="n">info</span><span class="o">.</span><span class="n">log_likelihood_increment</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">final</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">,</span> <span class="n">logZ</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">while_loop</span><span class="p">(</span>
+            <span class="n">cond</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="p">(</span><span class="n">smc_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">SmcInfo</span><span class="p">(</span><span class="n">log_evidence</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">logZ</span><span class="p">),</span> <span class="n">num_temperature_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">nsteps</span><span class="p">),</span>
+                       <span class="n">final_tempering_param</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">final</span><span class="o">.</span><span class="n">tempering_param</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">final</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">info</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -7,5 +7,6 @@ This section covers advanced usage patterns and customization options for GenSBI
 
 samplers
 custom_models
+normalizing_flows
 methods_and_samplers
 ```

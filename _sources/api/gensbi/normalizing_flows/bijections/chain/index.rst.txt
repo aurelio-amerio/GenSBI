@@ -1,0 +1,123 @@
+gensbi.normalizing_flows.bijections.chain
+=========================================
+
+.. py:module:: gensbi.normalizing_flows.bijections.chain
+
+.. autoapi-nested-parse::
+
+   Compose bijections. Stored in noise->data (forward) order.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.normalizing_flows.bijections.chain.Chain
+
+
+Module Contents
+---------------
+
+.. py:class:: Chain(bijections)
+
+   Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
+
+
+   
+   Sequential composition of bijections.
+
+   Applies bijections in the order given for :meth:`forward` (noise→data)
+   and in reversed order for :meth:`inverse` (data→noise).  Log-absolute
+   determinants accumulate by summation.  ``bijections[-1]`` is closest to
+   data space; it is the last bijection applied in :meth:`forward` and the
+   first applied in :meth:`inverse`.
+
+   :param bijections: Ordered list of bijections stored in noise→data (forward) order.
+   :type bijections: list of Bijection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: forward(u, cond = None)
+
+      
+      Map noise to data by composing all bijections in order.
+
+      :param u: Noise-space input.
+      :type u: Array
+      :param cond: Conditioning input passed to every bijection, or ``None``.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Data-space output.
+                * **logabsdet** (*Array*) -- Accumulated log absolute determinant of the composed forward map.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inverse(x, cond = None)
+
+      
+      Map data to noise by composing all bijections in reversed order.
+
+      :param x: Data-space input.
+      :type x: Array
+      :param cond: Conditioning input passed to every bijection, or ``None``.
+      :type cond: Array or None, optional
+
+      :returns: * **u** (*Array*) -- Noise-space output.
+                * **logabsdet** (*Array*) -- Accumulated log absolute determinant of the composed inverse map.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: bijections
+
+
