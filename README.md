@@ -10,7 +10,7 @@
 
 ## Overview
 
-**GenSBI** is a JAX-based library for Simulation-Based Inference (SBI) using state-of-the-art generative methods, currently revolving around Optimal Transport Flow Matching and Diffusion Models.
+**GenSBI** is a JAX-based library for Simulation-Based Inference (SBI) using state-of-the-art generative methods, currently revolving around Optimal Transport Flow Matching, Diffusion Models, and Normalizing Flows.
 
 It is designed for researchers and practitioners who need a flexible, high-performance toolkit to solve complex inference problems where the likelihood function is intractable.
 
@@ -18,7 +18,7 @@ The companion paper with a review of methodologies and functionalities is availa
 
 ## Key Features
 
-- **Modern SBI Algorithms**: Implements cutting-edge techniques like **Optimal Transport Conditional Flow Matching** and **Diffusion Models** for robust and flexible posterior inference.
+- **Modern SBI Algorithms**: Implements cutting-edge techniques like **Optimal Transport Conditional Flow Matching**, **Diffusion Models**, and **Normalizing Flows** for robust and flexible posterior inference.
 - **Built on JAX and Flax NNX**: Leverages the power of JAX for automatic differentiation, vectorization, and seamless execution on CPUs, GPUs, and TPUs.
 - **High-Level Recipes API**: A simplified interface for common workflows, allowing you to train models and run inference with just a few lines of code.
 - **Powerful Transformer Models**: Includes implementations of recent, high-performing models like **Flux1**, **Flux1Join**, and **Simformer** for handling complex, high-dimensional data.
