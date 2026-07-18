@@ -1,0 +1,959 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Nested Sampling for NLE Posterior Inference — Implementation Plan &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/plans/2026-07-11-nested-sampling';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Nested Sampling for NLE Posterior Inference — Implementation Plan</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="nested-sampling-for-nle-posterior-inference-implementation-plan">
+<h1>Nested Sampling for NLE Posterior Inference — Implementation Plan<a class="headerlink" href="#nested-sampling-for-nle-posterior-inference-implementation-plan" title="Link to this heading">#</a></h1>
+<blockquote>
+<div><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">[</span> <span class="pre">]</span></code>) syntax for tracking.</p>
+</div></blockquote>
+<p><strong>Goal:</strong> Add <code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> (blackjax ≥ 1.6 nested slice sampling) as an opt-in <code class="docutils literal notranslate"><span class="pre">Sampler</span></code> for <code class="docutils literal notranslate"><span class="pre">NLEPosterior</span></code>, returning equal-weight posterior samples plus log-evidence diagnostics.</p>
+<p><strong>Architecture:</strong> One new <code class="docutils literal notranslate"><span class="pre">Sampler</span></code> subclass + one frozen info dataclass in <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code>, exported from <code class="docutils literal notranslate"><span class="pre">gensbi.inference</span></code>. <code class="docutils literal notranslate"><span class="pre">run(key,</span> <span class="pre">target)</span></code> follows the blackjax-canonical pattern: init live points from the prior, jitted <code class="docutils literal notranslate"><span class="pre">step</span></code> in a Python <code class="docutils literal notranslate"><span class="pre">while</span></code> loop until <code class="docutils literal notranslate"><span class="pre">logZ_live</span> <span class="pre">−</span> <span class="pre">logZ</span> <span class="pre">&lt;</span> <span class="pre">dlogz</span></code>, then <code class="docutils literal notranslate"><span class="pre">finalise</span></code> → evidence/ESS → resample equal-weight draws. <code class="docutils literal notranslate"><span class="pre">posterior.py</span></code> is untouched — <code class="docutils literal notranslate"><span class="pre">PosteriorTarget.log_prior</span></code>/<code class="docutils literal notranslate"><span class="pre">log_likelihood</span></code> map 1:1 onto the <code class="docutils literal notranslate"><span class="pre">blackjax.nss</span></code> API.</p>
+<p><strong>Tech Stack:</strong> JAX, blackjax ≥ 1.6 (<code class="docutils literal notranslate"><span class="pre">blackjax.nss</span></code>, <code class="docutils literal notranslate"><span class="pre">blackjax.ns.utils</span></code>), pytest. Spec: <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-11-nested-sampling-design.md</span></code>.</p>
+<section id="global-constraints">
+<h2>Global Constraints<a class="headerlink" href="#global-constraints" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Tests run on CPU: every test file starts with <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">os;</span> <span class="pre">os.environ[&quot;JAX_PLATFORMS&quot;]</span> <span class="pre">=</span> <span class="pre">&quot;cpu&quot;</span></code> <strong>before</strong> importing jax (pattern from <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code>).</p></li>
+<li><p>Test command runs inside the mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env (NOT <code class="docutils literal notranslate"><span class="pre">.venv</span></code>): <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_nested.py</span> <span class="pre">-v</span></code>.</p></li>
+<li><p>blackjax is imported <strong>lazily inside <code class="docutils literal notranslate"><span class="pre">run()</span></code></strong> (module convention in <code class="docutils literal notranslate"><span class="pre">samplers.py</span></code>; keeps top-level import light).</p></li>
+<li><p>NumPy-style docstrings, matching the existing classes in <code class="docutils literal notranslate"><span class="pre">samplers.py</span></code>.</p></li>
+<li><p>API facts (verified against installed blackjax 1.6 by smoke run):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">blackjax.nss(logprior_fn,</span> <span class="pre">loglikelihood_fn,</span> <span class="pre">num_inner_steps,</span> <span class="pre">num_delete)</span></code> → <code class="docutils literal notranslate"><span class="pre">SamplingAlgorithm</span></code>; both fns take a single particle <code class="docutils literal notranslate"><span class="pre">(dim,)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">algo.init(particles)</span></code> accepts <code class="docutils literal notranslate"><span class="pre">(num_live,</span> <span class="pre">dim)</span></code> positions directly.</p></li>
+<li><p>Termination reads <code class="docutils literal notranslate"><span class="pre">state.integrator.logZ_live</span> <span class="pre">-</span> <span class="pre">state.integrator.logZ</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">finalise(state,</span> <span class="pre">dead)</span></code> → <code class="docutils literal notranslate"><span class="pre">NSInfo</span></code>; total points = <code class="docutils literal notranslate"><span class="pre">ns_run.particles.loglikelihood.shape[0]</span></code> (dead + final live).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">log_weights(key,</span> <span class="pre">ns_run,</span> <span class="pre">shape=100)</span></code> → <code class="docutils literal notranslate"><span class="pre">(num_points,</span> <span class="pre">100)</span></code>; logZ draws = <code class="docutils literal notranslate"><span class="pre">logsumexp</span></code> over axis 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">blackjax.ns.utils.sample(key,</span> <span class="pre">ns_run,</span> <span class="pre">n)</span></code> → resampled <code class="docutils literal notranslate"><span class="pre">StateWithLogLikelihood</span></code>; positions at <code class="docutils literal notranslate"><span class="pre">.position</span></code>, shape <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">dim)</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> — append <code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo</span></code> + <code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> after <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> (all samplers live in this one file by convention).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/__init__.py</span></code> — export both names.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code> — new test file; mocks copied from <code class="docutils literal notranslate"><span class="pre">test_smc.py</span></code> (that file keeps its mocks private, so we copy rather than import).</p></li>
+</ul>
+<hr class="docutils" />
+<section id="task-1-nestedsamplerinfo-dataclass-nestedsampler-constructor-validation-exports">
+<h3>Task 1: <code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo</span></code> dataclass + <code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> constructor, validation, exports<a class="headerlink" href="#task-1-nestedsamplerinfo-dataclass-nestedsampler-constructor-validation-exports" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> (append at end of file)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/__init__.py</span></code></p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code> (create)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">Sampler</span></code> ABC (already in <code class="docutils literal notranslate"><span class="pre">samplers.py</span></code>).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">NestedSampler(*,</span> <span class="pre">num_live=500,</span> <span class="pre">num_delete=None,</span> <span class="pre">num_inner_steps=None,</span> <span class="pre">num_samples=1000,</span> <span class="pre">dlogz=-3.0,</span> <span class="pre">max_iterations=100_000)</span></code> with attributes of the same names (<code class="docutils literal notranslate"><span class="pre">num_delete</span></code> resolved to <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">num_live</span> <span class="pre">//</span> <span class="pre">10)</span></code> when <code class="docutils literal notranslate"><span class="pre">None</span></code>), method <code class="docutils literal notranslate"><span class="pre">_resolve_num_inner_steps(dim)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code>, and frozen dataclass <code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo(log_evidence,</span> <span class="pre">log_evidence_err,</span> <span class="pre">ess,</span> <span class="pre">num_dead,</span> <span class="pre">dead)</span></code>. Both importable from <code class="docutils literal notranslate"><span class="pre">gensbi.inference</span></code>.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Create <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/inference/test_nested.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_gaussian_prior</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.inference</span><span class="w"> </span><span class="kn">import</span> <span class="n">NLEPosterior</span><span class="p">,</span> <span class="n">NestedSampler</span><span class="p">,</span> <span class="n">NestedSamplerInfo</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GaussianMock</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cond</span><span class="p">):</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">cond</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># flatten all non-batch dims</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">diff</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># (B,)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BimodalMock</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;log q(x | theta) = mixture of N(theta; +mu, 0.5 I) and N(theta; -mu, 0.5 I).</span>
+
+<span class="sd">    Independent of the observation x; posterior under a broad prior is bimodal at +/-mu.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cond</span><span class="p">):</span>
+        <span class="n">cf</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cond</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>           <span class="c1"># flatten all non-batch dims</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(((</span><span class="n">cf</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(((</span><span class="n">cf</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_constructor_defaults</span><span class="p">():</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">NestedSampler</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">num_live</span> <span class="o">==</span> <span class="mi">500</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">num_delete</span> <span class="o">==</span> <span class="mi">50</span>                    <span class="c1"># num_live // 10</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">num_inner_steps</span> <span class="ow">is</span> <span class="kc">None</span>             <span class="c1"># resolved per-target at run time</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1000</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">dlogz</span> <span class="o">==</span> <span class="o">-</span><span class="mf">3.0</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">max_iterations</span> <span class="o">==</span> <span class="mi">100_000</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_num_inner_steps_auto_resolution</span><span class="p">():</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">NestedSampler</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">_resolve_num_inner_steps</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span>    <span class="c1"># max(5, 2*2)</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">_resolve_num_inner_steps</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">==</span> <span class="mi">20</span>  <span class="c1"># max(5, 2*10)</span>
+    <span class="k">assert</span> <span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_inner_steps</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">_resolve_num_inner_steps</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">==</span> <span class="mi">7</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_num_delete_floor_is_one</span><span class="p">():</span>
+    <span class="k">assert</span> <span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_live</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">num_delete</span> <span class="o">==</span> <span class="mi">1</span>   <span class="c1"># max(1, 5 // 10)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_constructor_validation</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_live</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_live</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">num_delete</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>      <span class="c1"># must be &lt; num_live</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_live</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">num_delete</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_info_dataclass_is_frozen</span><span class="p">():</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="n">NestedSamplerInfo</span><span class="p">(</span><span class="n">log_evidence</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">log_evidence_err</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                             <span class="n">ess</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">num_dead</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">dead</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>   <span class="c1"># dataclasses.FrozenInstanceError</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">log_evidence</span> <span class="o">=</span> <span class="mf">1.0</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_nested.py</span> <span class="pre">-v</span></code>
+Expected: FAIL at collection with <code class="docutils literal notranslate"><span class="pre">ImportError:</span> <span class="pre">cannot</span> <span class="pre">import</span> <span class="pre">name</span> <span class="pre">'NestedSampler'</span> <span class="pre">from</span> <span class="pre">'gensbi.inference'</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Write minimal implementation</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> (after <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NestedSamplerInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagnostics from a nested sampling run.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    log_evidence : float</span>
+<span class="sd">        Log marginal likelihood estimate (mean over stochastic</span>
+<span class="sd">        prior-volume draws).</span>
+<span class="sd">    log_evidence_err : float</span>
+<span class="sd">        Standard deviation of the log-evidence estimate over the</span>
+<span class="sd">        stochastic prior-volume draws.</span>
+<span class="sd">    ess : float</span>
+<span class="sd">        Effective sample size of the weighted dead-point set.</span>
+<span class="sd">    num_dead : int</span>
+<span class="sd">        Total number of points in the finalised run (dead points plus</span>
+<span class="sd">        the final live set).</span>
+<span class="sd">    dead : object</span>
+<span class="sd">        Raw finalised ``blackjax.ns.base.NSInfo`` carrying the full</span>
+<span class="sd">        point history (positions, log-likelihoods, birth contours).</span>
+<span class="sd">        Kept for downstream re-weighting or anesthetic-style analysis.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">log_evidence</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">log_evidence_err</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">ess</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">num_dead</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">dead</span><span class="p">:</span> <span class="nb">object</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">NestedSampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nested slice sampling (blackjax ``nss``) posterior sampler.</span>
+
+<span class="sd">    Runs blackjax&#39;s Nested Slice Sampling from prior-drawn live points,</span>
+<span class="sd">    accumulating dead points until the live set&#39;s evidence share is</span>
+<span class="sd">    negligible, then resamples the dead-point history into equal-weight</span>
+<span class="sd">    posterior draws.  Unlike the MCMC samplers this also estimates the</span>
+<span class="sd">    log evidence, and handles multimodal posteriors without tempering.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_live : int, optional</span>
+<span class="sd">        Number of live points.  Default is 500.</span>
+<span class="sd">    num_delete : int or None, optional</span>
+<span class="sd">        Number of lowest-likelihood points replaced per step (device</span>
+<span class="sd">        batching).  If ``None``, defaults to ``max(1, num_live // 10)``.</span>
+<span class="sd">    num_inner_steps : int or None, optional</span>
+<span class="sd">        Constrained slice moves per replacement.  If ``None``, resolved</span>
+<span class="sd">        at run time to ``max(5, 2 * target.dim)`` (blackjax&#39;s rule of</span>
+<span class="sd">        thumb for reliable mixing).  Default is ``None``.</span>
+<span class="sd">    num_samples : int, optional</span>
+<span class="sd">        Number of equal-weight posterior draws returned.  Default is 1000.</span>
+<span class="sd">    dlogz : float, optional</span>
+<span class="sd">        Termination threshold (blackjax convention): stop once</span>
+<span class="sd">        ``logZ_live - logZ &lt; dlogz``.  Default is -3.0; use e.g. -10.0</span>
+<span class="sd">        near phase transitions.</span>
+<span class="sd">    max_iterations : int, optional</span>
+<span class="sd">        Safety cap on the number of outer NS steps.  Default is 100_000.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_live</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_delete</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">num_inner_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">dlogz</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">100_000</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">num_live</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;num_live must be positive, got </span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_delete</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">num_delete</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_live</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">num_delete</span> <span class="o">&lt;</span> <span class="n">num_live</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;num_delete must be in [1, num_live), got num_delete=&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_delete</span><span class="si">}</span><span class="s2"> with num_live=</span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_live</span> <span class="o">=</span> <span class="n">num_live</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_delete</span> <span class="o">=</span> <span class="n">num_delete</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span> <span class="o">=</span> <span class="n">num_inner_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span> <span class="o">=</span> <span class="n">num_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span> <span class="o">=</span> <span class="n">dlogz</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span> <span class="o">=</span> <span class="n">max_iterations</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_num_inner_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;``num_inner_steps`` if set, else blackjax&#39;s ``max(5, 2 * dim)``.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dim</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;implemented in Task 2&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>(<code class="docutils literal notranslate"><span class="pre">Sampler.run</span></code> is an <code class="docutils literal notranslate"><span class="pre">&#64;abstractmethod</span></code>, so <code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> needs this
+temporary stub to be instantiable for Task 1’s tests; Task 2 replaces it.)</p>
+<p>Update <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/__init__.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Inference wrappers: NLE posterior sampling over trained density flows.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.inference.posterior</span><span class="w"> </span><span class="kn">import</span> <span class="n">NLEPosterior</span><span class="p">,</span> <span class="n">PosteriorTarget</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.inference.samplers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">Sampler</span><span class="p">,</span> <span class="n">MCLMC</span><span class="p">,</span> <span class="n">MclmcInfo</span><span class="p">,</span> <span class="n">TemperedSMC</span><span class="p">,</span>
+                                       <span class="n">SmcInfo</span><span class="p">,</span> <span class="n">NestedSampler</span><span class="p">,</span> <span class="n">NestedSamplerInfo</span><span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;NLEPosterior&quot;</span><span class="p">,</span> <span class="s2">&quot;PosteriorTarget&quot;</span><span class="p">,</span> <span class="s2">&quot;Sampler&quot;</span><span class="p">,</span>
+           <span class="s2">&quot;MCLMC&quot;</span><span class="p">,</span> <span class="s2">&quot;MclmcInfo&quot;</span><span class="p">,</span> <span class="s2">&quot;TemperedSMC&quot;</span><span class="p">,</span> <span class="s2">&quot;SmcInfo&quot;</span><span class="p">,</span>
+           <span class="s2">&quot;NestedSampler&quot;</span><span class="p">,</span> <span class="s2">&quot;NestedSamplerInfo&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_nested.py</span> <span class="pre">-v</span></code>
+Expected: 5 PASS (<code class="docutils literal notranslate"><span class="pre">test_constructor_defaults</span></code>, <code class="docutils literal notranslate"><span class="pre">test_num_inner_steps_auto_resolution</span></code>, <code class="docutils literal notranslate"><span class="pre">test_num_delete_floor_is_one</span></code>, <code class="docutils literal notranslate"><span class="pre">test_constructor_validation</span></code>, <code class="docutils literal notranslate"><span class="pre">test_info_dataclass_is_frozen</span></code>)</p>
+<p>Also run the existing suite to catch export regressions:
+Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/</span> <span class="pre">-v</span></code>
+Expected: all PASS</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py<span class="w"> </span>src/gensbi/inference/__init__.py<span class="w"> </span>tests/inference/test_nested.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(inference): NestedSampler scaffold — constructor, validation, info dataclass&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-2-nestedsampler-run-ns-loop-evidence-resampling">
+<h3>Task 2: <code class="docutils literal notranslate"><span class="pre">NestedSampler.run()</span></code> — NS loop, evidence, resampling<a class="headerlink" href="#task-2-nestedsampler-run-ns-loop-evidence-resampling" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> (add <code class="docutils literal notranslate"><span class="pre">run</span></code> to <code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> from Task 1)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code> (append)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">PosteriorTarget</span></code> fields <code class="docutils literal notranslate"><span class="pre">log_prior(theta)-&gt;float</span></code>, <code class="docutils literal notranslate"><span class="pre">log_likelihood(theta)-&gt;float</span></code>, <code class="docutils literal notranslate"><span class="pre">prior.sample(key,</span> <span class="pre">(n,))-&gt;(n,</span> <span class="pre">dim)</span></code>, <code class="docutils literal notranslate"><span class="pre">dim:</span> <span class="pre">int</span></code>; Task 1’s <code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo</span></code> and <code class="docutils literal notranslate"><span class="pre">_resolve_num_inner_steps(dim)</span></code>.</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">run(key,</span> <span class="pre">target)</span> <span class="pre">-&gt;</span> <span class="pre">(samples,</span> <span class="pre">info)</span></code> with <code class="docutils literal notranslate"><span class="pre">samples</span></code> shape <code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">dim)</span></code> and <code class="docutils literal notranslate"><span class="pre">info:</span> <span class="pre">NestedSamplerInfo</span></code>. This satisfies the <code class="docutils literal notranslate"><span class="pre">Sampler</span></code> contract consumed by <code class="docutils literal notranslate"><span class="pre">NLEPosterior.sample</span></code>.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code>. A module-scoped fixture runs NS once and shares the result across the three assertions (an NS run takes seconds on CPU; don’t repeat it per test):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;module&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">gaussian_ns_run</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One shared NS run on the analytic 2D Gaussian target.&quot;&quot;&quot;</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">])</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">GaussianMock</span><span class="p">(),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,)))</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">build_target</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
+    <span class="n">samples</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">NestedSampler</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dim</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">info</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_gaussian_recovery_and_shape</span><span class="p">(</span><span class="n">gaussian_ns_run</span><span class="p">):</span>
+    <span class="n">dim</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">gaussian_ns_run</span>
+    <span class="k">assert</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>          <span class="c1"># num_samples default</span>
+    <span class="c1"># prior N(0, I), likelihood N(x_o; theta, I) -&gt; posterior mean x_o / 2</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_evidence_matches_analytic</span><span class="p">(</span><span class="n">gaussian_ns_run</span><span class="p">):</span>
+    <span class="n">dim</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">gaussian_ns_run</span>
+    <span class="c1"># GaussianMock omits the Gaussian normalisation constant, so</span>
+    <span class="c1"># log Z = -||x_o||^2 / 4 - (dim / 2) * log 2   (see spec, Testing #3)</span>
+    <span class="n">logZ_true</span> <span class="o">=</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x_o</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">-</span> <span class="n">dim</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">tol</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">info</span><span class="o">.</span><span class="n">log_evidence_err</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)</span>  <span class="c1"># floor guards tiny stochastic-volume err</span>
+    <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">log_evidence</span> <span class="o">-</span> <span class="n">logZ_true</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_info_contract</span><span class="p">(</span><span class="n">gaussian_ns_run</span><span class="p">):</span>
+    <span class="n">dim</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">gaussian_ns_run</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">NestedSamplerInfo</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">log_evidence</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">info</span><span class="o">.</span><span class="n">log_evidence_err</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="n">info</span><span class="o">.</span><span class="n">ess</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="n">info</span><span class="o">.</span><span class="n">num_dead</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="n">info</span><span class="o">.</span><span class="n">dead</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>                 <span class="c1"># raw finalised NSInfo retained</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_nested.py</span> <span class="pre">-v</span></code>
+Expected: the 3 new tests FAIL with <code class="docutils literal notranslate"><span class="pre">NotImplementedError:</span> <span class="pre">implemented</span> <span class="pre">in</span> <span class="pre">Task</span> <span class="pre">2</span></code> (raised by Task 1’s stub inside the <code class="docutils literal notranslate"><span class="pre">gaussian_ns_run</span></code> fixture); Task 1’s 5 tests still PASS.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Write the implementation</strong></p></li>
+</ul>
+<p>Replace Task 1’s stub <code class="docutils literal notranslate"><span class="pre">run</span></code> in <code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples using nested slice sampling.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        target : PosteriorTarget</span>
+<span class="sd">            Posterior target produced by</span>
+<span class="sd">            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : Array</span>
+<span class="sd">            Equal-weight posterior samples of shape ``(num_samples, dim)``.</span>
+<span class="sd">        info : NestedSamplerInfo</span>
+<span class="sd">            Evidence estimate, ESS and the raw finalised run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ess</span><span class="p">,</span> <span class="n">finalise</span><span class="p">,</span> <span class="n">log_weights</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">sample</span> <span class="k">as</span> <span class="n">ns_sample</span>
+
+        <span class="n">init_key</span><span class="p">,</span> <span class="n">run_key</span><span class="p">,</span> <span class="n">weights_key</span><span class="p">,</span> <span class="n">ess_key</span><span class="p">,</span> <span class="n">resample_key</span> <span class="o">=</span> \
+            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">init_key</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_live</span><span class="p">,))</span>
+        <span class="n">algo</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nss</span><span class="p">(</span>
+            <span class="n">logprior_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_prior</span><span class="p">,</span>
+            <span class="n">loglikelihood_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_likelihood</span><span class="p">,</span>
+            <span class="n">num_inner_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_num_inner_steps</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span>
+            <span class="n">num_delete</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_delete</span><span class="p">)</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">algo</span><span class="o">.</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="c1"># blackjax-canonical loop: dead points accumulate with variable</span>
+        <span class="c1"># length, so this stays a Python loop over a jitted step.</span>
+        <span class="n">dead</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span> <span class="o">-</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="p">:</span>
+            <span class="n">run_key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">run_key</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">step_info</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">subkey</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+            <span class="n">dead</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_info</span><span class="p">)</span>
+
+        <span class="n">ns_run</span> <span class="o">=</span> <span class="n">finalise</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">dead</span><span class="p">)</span>
+        <span class="n">logw</span> <span class="o">=</span> <span class="n">log_weights</span><span class="p">(</span><span class="n">weights_key</span><span class="p">,</span> <span class="n">ns_run</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>   <span class="c1"># (num_points, 100)</span>
+        <span class="n">logz_draws</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">logw</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">ns_sample</span><span class="p">(</span><span class="n">resample_key</span><span class="p">,</span> <span class="n">ns_run</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">)</span><span class="o">.</span><span class="n">position</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">NestedSamplerInfo</span><span class="p">(</span>
+            <span class="n">log_evidence</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">logz_draws</span><span class="p">)),</span>
+            <span class="n">log_evidence_err</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">logz_draws</span><span class="p">)),</span>
+            <span class="n">ess</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">ess</span><span class="p">(</span><span class="n">ess_key</span><span class="p">,</span> <span class="n">ns_run</span><span class="p">)),</span>
+            <span class="n">num_dead</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">ns_run</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">loglikelihood</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">dead</span><span class="o">=</span><span class="n">ns_run</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">info</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_nested.py</span> <span class="pre">-v</span></code>
+Expected: 8 PASS. (Reference values from the pre-plan smoke run of the identical loop: logZ ≈ −1.23 ± 0.03 vs analytic −1.193; posterior mean ≈ (0.50, −0.55); ESS ≈ 1600.)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py<span class="w"> </span>tests/inference/test_nested.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(inference): NestedSampler.run — blackjax nss loop, evidence, equal-weight resampling&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-3-max-iterations-guard-bimodal-recovery-pipeline-wiring">
+<h3>Task 3: <code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> guard, bimodal recovery, pipeline wiring<a class="headerlink" href="#task-3-max-iterations-guard-bimodal-recovery-pipeline-wiring" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> (guard inside <code class="docutils literal notranslate"><span class="pre">NestedSampler.run</span></code>)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code> (append)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: Task 2’s <code class="docutils literal notranslate"><span class="pre">run</span></code> loop; <code class="docutils literal notranslate"><span class="pre">NLEPosterior.sample(key,</span> <span class="pre">x_o,</span> <span class="pre">sampler=...,</span> <span class="pre">return_info=...)</span></code> (existing, <code class="docutils literal notranslate"><span class="pre">posterior.py:107</span></code>).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> on loop overrun; no new public API.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_max_iterations_guard_raises</span><span class="p">():</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">GaussianMock</span><span class="p">(),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,)))</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">build_target</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">]))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;max_iterations&quot;</span><span class="p">):</span>
+        <span class="n">NestedSampler</span><span class="p">(</span><span class="n">max_iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_bimodal_recovers_both_modes</span><span class="p">():</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">BimodalMock</span><span class="p">(</span><span class="n">mu</span><span class="o">=</span><span class="mf">3.0</span><span class="p">),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,),</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">5.0</span><span class="p">))</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span>
+                    <span class="n">sampler</span><span class="o">=</span><span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_samples</span><span class="o">=</span><span class="mi">2000</span><span class="p">))[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">frac_pos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">s</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">frac_neg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">s</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+    <span class="c1"># both modes populated (a single MCMC chain would capture only one)</span>
+    <span class="k">assert</span> <span class="n">frac_pos</span> <span class="o">&gt;</span> <span class="mf">0.3</span> <span class="ow">and</span> <span class="n">frac_neg</span> <span class="o">&gt;</span> <span class="mf">0.3</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_pipeline_wiring_shapes_and_info</span><span class="p">():</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">GaussianMock</span><span class="p">(),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,)))</span>
+    <span class="n">samples</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">]),</span>
+                                <span class="n">sampler</span><span class="o">=</span><span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_samples</span><span class="o">=</span><span class="mi">200</span><span class="p">),</span>
+                                <span class="n">return_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>        <span class="c1"># NLEPosterior expands (n, dim) -&gt; (n, dim, 1)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">NestedSamplerInfo</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_nested.py</span> <span class="pre">-v</span> <span class="pre">-k</span> <span class="pre">&quot;max_iterations</span> <span class="pre">or</span> <span class="pre">bimodal</span> <span class="pre">or</span> <span class="pre">wiring&quot;</span></code>
+Expected: <code class="docutils literal notranslate"><span class="pre">test_max_iterations_guard_raises</span></code> FAILS (no <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> raised — with <code class="docutils literal notranslate"><span class="pre">max_iterations=2</span></code> the loop simply keeps running until natural termination, so the test fails on <code class="docutils literal notranslate"><span class="pre">DID</span> <span class="pre">NOT</span> <span class="pre">RAISE</span></code>). The other two should PASS already (they exercise Task 2 code through the pipeline); if they fail, that is a real bug in Task 2 — stop and fix it before proceeding.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement the guard</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">NestedSampler.run</span></code>, replace the loop from Task 2 with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="n">dead</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span> <span class="o">-</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dead</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;nested sampling did not terminate within max_iterations=&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="si">}</span><span class="s2"> steps (logZ_live - logZ = &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span><span class="p">)</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; &gt;= dlogz = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="si">}</span><span class="s2">). Consider a looser dlogz, more &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;num_live points, or more num_inner_steps.&quot;</span><span class="p">)</span>
+            <span class="n">run_key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">run_key</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">step_info</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">subkey</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+            <span class="n">dead</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_info</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run the full suite</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/</span> <span class="pre">-v</span></code>
+Expected: all PASS (11 in <code class="docutils literal notranslate"><span class="pre">test_nested.py</span></code> + existing <code class="docutils literal notranslate"><span class="pre">test_mclmc.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test_smc.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test_target.py</span></code>).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py<span class="w"> </span>tests/inference/test_nested.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(inference): NestedSampler max_iterations guard + bimodal/pipeline tests&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-constraints">Global Constraints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-structure">File Structure</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-nestedsamplerinfo-dataclass-nestedsampler-constructor-validation-exports">Task 1: <code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo</span></code> dataclass + <code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> constructor, validation, exports</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-2-nestedsampler-run-ns-loop-evidence-resampling">Task 2: <code class="docutils literal notranslate"><span class="pre">NestedSampler.run()</span></code> — NS loop, evidence, resampling</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-3-max-iterations-guard-bimodal-recovery-pipeline-wiring">Task 3: <code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> guard, bimodal recovery, pipeline wiring</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

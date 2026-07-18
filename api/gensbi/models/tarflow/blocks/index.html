@@ -520,6 +520,7 @@
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">gensbi.models.tarflow.blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../conditioners/index.html">gensbi.models.tarflow.conditioners</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../model/index.html">gensbi.models.tarflow.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../pe/index.html">gensbi.models.tarflow.pe</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -686,21 +687,81 @@ neurons in its hidden layer.</p></li>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.AttentionBlock.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#AttentionBlock.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.AttentionBlock.__call__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs_cis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_kv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#AttentionBlock.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.AttentionBlock.__call__" title="Link to this definition">#</a></dt>
 <dd><p>Apply pre-norm residual self-attention followed by a residual MLP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> (<em>Array</em>) – Token sequence of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">T,</span> <span class="pre">C)</span></code>.</p></li>
-<li><p><strong>mask</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Attention mask of shape broadcastable to <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">1,</span> <span class="pre">T,</span> <span class="pre">T)</span></code>, e.g. a
-prefix-causal mask. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, a standard causal mask is used.</p></li>
+<li><p><strong>mask</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Attention mask broadcastable to <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">1,</span> <span class="pre">T,</span> <span class="pre">T)</span></code>; <code class="docutils literal notranslate"><span class="pre">None</span></code> means
+standard causal.</p></li>
+<li><p><strong>freqs_cis</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Rotary angles <code class="docutils literal notranslate"><span class="pre">(T,</span> <span class="pre">head_dim)</span></code> applied to q/k before attention.</p></li>
+<li><p><strong>return_kv</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also return the <strong>unrotated</strong> <code class="docutils literal notranslate"><span class="pre">(k,</span> <span class="pre">v)</span></code> — the KV
+cache stores unrotated keys (the cached path re-rotates the full
+cache each step, as the reference does). Default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Output token sequence of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">T,</span> <span class="pre">C)</span></code>.</p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">out</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">T,</span> <span class="pre">C)</span></code>, or <code class="docutils literal notranslate"><span class="pre">(out,</span> <span class="pre">k,</span> <span class="pre">v)</span></code> when
+<code class="docutils literal notranslate"><span class="pre">return_kv=True</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Array</p>
+<dd class="field-odd"><p>Array or tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.AttentionBlock._finish">
+<span class="sig-name descname"><span class="pre">_finish</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#AttentionBlock._finish"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.AttentionBlock._finish" title="Link to this definition">#</a></dt>
+<dd><p>Residual attention output + residual MLP (shared tail).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>jax.Array</em>)</p></li>
+<li><p><strong>attn</strong> (<em>jax.Array</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.AttentionBlock._qkv">
+<span class="sig-name descname"><span class="pre">_qkv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#AttentionBlock._qkv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.AttentionBlock._qkv" title="Link to this definition">#</a></dt>
+<dd><p>Project to unrotated (q, k, v), each of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">S,</span> <span class="pre">nh,</span> <span class="pre">hd)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>jax.Array</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.AttentionBlock.decode">
+<span class="sig-name descname"><span class="pre">decode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_new</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_cache</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_cache</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs_cis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#AttentionBlock.decode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.AttentionBlock.decode" title="Link to this definition">#</a></dt>
+<dd><p>Single-token decode step against a preallocated KV cache.</p>
+<p>The cache stores <strong>unrotated</strong> k (reference behavior: rope is applied
+after the cache read, re-rotating the whole prefix each step). Slots
+beyond <code class="docutils literal notranslate"><span class="pre">index</span></code> are zero-filled and masked out of the attention.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_new</strong> (<em>Array</em>) – New token, shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">1,</span> <span class="pre">C)</span></code>.</p></li>
+<li><p><strong>k_cache</strong> (<em>Array</em>) – Caches of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">S,</span> <span class="pre">nh,</span> <span class="pre">hd)</span></code> with <code class="docutils literal notranslate"><span class="pre">S</span></code> total slots.</p></li>
+<li><p><strong>v_cache</strong> (<em>Array</em>) – Caches of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">S,</span> <span class="pre">nh,</span> <span class="pre">hd)</span></code> with <code class="docutils literal notranslate"><span class="pre">S</span></code> total slots.</p></li>
+<li><p><strong>index</strong> (<em>int</em><em> or </em><em>traced scalar</em>) – Slot to write; attention sees slots <code class="docutils literal notranslate"><span class="pre">&lt;=</span> <span class="pre">index</span></code>.</p></li>
+<li><p><strong>freqs_cis</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Rotary angles <code class="docutils literal notranslate"><span class="pre">(S,</span> <span class="pre">head_dim)</span></code> for <strong>all</strong> slots; the new
+token’s q uses row <code class="docutils literal notranslate"><span class="pre">index</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(out,</span> <span class="pre">k_cache,</span> <span class="pre">v_cache)</span></code> with <code class="docutils literal notranslate"><span class="pre">out</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">1,</span> <span class="pre">C)</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
 </dd>
 </dl>
 </dd></dl>
@@ -749,7 +810,7 @@ prefix-causal mask. If <code class="docutils literal notranslate"><span class="p
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.MetaBlock">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.tarflow.blocks.</span></span><span class="sig-name descname"><span class="pre">MetaBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conditioner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expansion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_softplus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">soft_clip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#MetaBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.MetaBlock" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.tarflow.blocks.</span></span><span class="sig-name descname"><span class="pre">MetaBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">perm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conditioner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expansion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_softplus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">soft_clip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#MetaBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.MetaBlock" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
 <p>One exact autoregressive bijection over a token sequence.</p>
 <p>Implements the <a class="reference internal" href="../../../normalizing_flows/bijections/base/index.html#gensbi.normalizing_flows.bijections.base.Bijection" title="gensbi.normalizing_flows.bijections.base.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a>
@@ -781,6 +842,14 @@ to zero so the block starts as the identity map.</p></li>
 <li><p><strong>soft_clip</strong> (<em>float</em><em>, </em><em>optional</em>) – Soft-clip magnitude applied via <code class="docutils literal notranslate"><span class="pre">tanh</span></code> to raw network outputs
 before splitting into <code class="docutils literal notranslate"><span class="pre">(a,</span> <span class="pre">b)</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">4.0</span></code>. Set to <code class="docutils literal notranslate"><span class="pre">0</span></code>
 to disable clipping.</p></li>
+<li><p><strong>rope</strong> (<a class="reference internal" href="../pe/index.html#gensbi.models.tarflow.pe.VisionRotaryEmbedding" title="gensbi.models.tarflow.pe.VisionRotaryEmbedding"><em>VisionRotaryEmbedding</em></a><em> or </em><em>None</em><em>, </em><em>optional</em>) – If given, 2D rotary position embeddings replace the learned
+<code class="docutils literal notranslate"><span class="pre">pos_embed</span></code> (which is then set to <code class="docutils literal notranslate"><span class="pre">None</span></code>). Positions are laid
+out with the <code class="docutils literal notranslate"><span class="pre">M</span></code> prefix (conditioning) slots at the identity
+rotation (zero angles) followed by the <code class="docutils literal notranslate"><span class="pre">T</span></code> image slots on the
+normalized <code class="docutils literal notranslate"><span class="pre">grid</span></code> (raster order, not permuted by <code class="docutils literal notranslate"><span class="pre">perm</span></code>).
+Default is <code class="docutils literal notranslate"><span class="pre">None</span></code> (learned <code class="docutils literal notranslate"><span class="pre">pos_embed</span></code>, unchanged behavior).</p></li>
+<li><p><strong>grid</strong> (<em>tuple</em><em> of </em><em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(h,</span> <span class="pre">w)</span></code> patch-grid shape used to build rope positions when
+<code class="docutils literal notranslate"><span class="pre">rope</span></code> is given; required in that case. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -810,6 +879,37 @@ token step.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>cond</strong> (<em>jax.Array</em><em> | </em><em>None</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.MetaBlock._forward_reference">
+<span class="sig-name descname"><span class="pre">_forward_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#MetaBlock._forward_reference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.MetaBlock._forward_reference" title="Link to this definition">#</a></dt>
+<dd><p>Map noise to data via full recompute (reference path for the KV cache).</p>
+<p><code class="docutils literal notranslate"><span class="pre">forward</span></code> is the production path (KV-cached); this method is its
+correctness oracle, retained for the equivalence test suite — do not
+delete it.</p>
+<p>Sequentially scans over token positions via <code class="docutils literal notranslate"><span class="pre">jax.lax.scan</span></code>,
+re-running the causal attention pass at each step so that token
+<code class="docutils literal notranslate"><span class="pre">i</span></code>’s parameters are conditioned on already-generated tokens
+<code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">…,</span> <span class="pre">i-1</span></code> (mirrors <code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.forward</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Array</em>) – Noise-space token sequence of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">T,</span> <span class="pre">F)</span></code> or a flat array
+that will be reshaped to <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">T,</span> <span class="pre">F)</span></code>.</p></li>
+<li><p><strong>cond</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Conditioning input, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for an unconditional transform.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>Array</em>) – Data-space output of shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">T,</span> <span class="pre">F)</span></code>.</p></li>
+<li><p><strong>logabsdet</strong> (<em>Array</em>) – Log absolute determinant of the Jacobian of the forward map,
+shape <code class="docutils literal notranslate"><span class="pre">(B,)</span></code>. Equal to <code class="docutils literal notranslate"><span class="pre">+Σ</span> <span class="pre">log_scale</span></code> over token and feature
+dimensions.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -863,11 +963,12 @@ modeled (cond→x blocked).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.MetaBlock.forward">
 <span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#MetaBlock.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.MetaBlock.forward" title="Link to this definition">#</a></dt>
-<dd><p>Map noise to data (the sampling direction).</p>
-<p>Sequentially scans over token positions via <code class="docutils literal notranslate"><span class="pre">jax.lax.scan</span></code>,
-re-running the causal attention pass at each step so that token
-<code class="docutils literal notranslate"><span class="pre">i</span></code>’s parameters are conditioned on already-generated tokens
-<code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">…,</span> <span class="pre">i-1</span></code> (mirrors <code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.forward</span></code>).</p>
+<dd><p>Map noise to data (the sampling direction), KV-cached.</p>
+<p>Prefills the per-layer caches with the condition prefix (one parallel
+pass under the bidirectional prefix mask, matching the training-path
+mask rows), then scans over token positions decoding a single token
+per step against the caches. Verified equivalent to
+<a class="reference internal" href="#gensbi.models.tarflow.blocks.MetaBlock._forward_reference" title="gensbi.models.tarflow.blocks.MetaBlock._forward_reference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">_forward_reference()</span></code></a> (full recompute) by the test suite.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -945,11 +1046,6 @@ dimensions.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.MetaBlock.perm">
 <span class="sig-name descname"><span class="pre">perm</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#MetaBlock.perm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.MetaBlock.perm" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gensbi.models.tarflow.blocks.MetaBlock.pos_embed">
-<span class="sig-name descname"><span class="pre">pos_embed</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/tarflow/blocks.html#MetaBlock.pos_embed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.tarflow.blocks.MetaBlock.pos_embed" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1039,6 +1135,9 @@ dimensions.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock"><code class="docutils literal notranslate"><span class="pre">AttentionBlock</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock.__call__"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.__call__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock._finish"><code class="docutils literal notranslate"><span class="pre">AttentionBlock._finish()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock._qkv"><code class="docutils literal notranslate"><span class="pre">AttentionBlock._qkv()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock.decode"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.decode()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock.head_dim"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.head_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock.mlp_in"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.mlp_in</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.AttentionBlock.mlp_out"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.mlp_out</span></code></a></li>
@@ -1052,6 +1151,7 @@ dimensions.</p></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock"><code class="docutils literal notranslate"><span class="pre">MetaBlock</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock._affine"><code class="docutils literal notranslate"><span class="pre">MetaBlock._affine()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock._embed_cond"><code class="docutils literal notranslate"><span class="pre">MetaBlock._embed_cond()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock._forward_reference"><code class="docutils literal notranslate"><span class="pre">MetaBlock._forward_reference()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock._params"><code class="docutils literal notranslate"><span class="pre">MetaBlock._params()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock._params_core"><code class="docutils literal notranslate"><span class="pre">MetaBlock._params_core()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock._prefix_mask"><code class="docutils literal notranslate"><span class="pre">MetaBlock._prefix_mask()</span></code></a></li>
@@ -1063,7 +1163,6 @@ dimensions.</p></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock.conditioner"><code class="docutils literal notranslate"><span class="pre">MetaBlock.conditioner</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock.inv_perm"><code class="docutils literal notranslate"><span class="pre">MetaBlock.inv_perm</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock.perm"><code class="docutils literal notranslate"><span class="pre">MetaBlock.perm</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock.pos_embed"><code class="docutils literal notranslate"><span class="pre">MetaBlock.pos_embed</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock.proj_in"><code class="docutils literal notranslate"><span class="pre">MetaBlock.proj_in</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock.proj_out"><code class="docutils literal notranslate"><span class="pre">MetaBlock.proj_out</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.blocks.MetaBlock.soft_clip"><code class="docutils literal notranslate"><span class="pre">MetaBlock.soft_clip</span></code></a></li>

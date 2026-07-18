@@ -376,7 +376,7 @@
     "sampler_cfg = config[\"sampler\"]\n",
     "sampler = TemperedSMC(\n",
     "    num_particles=int(sampler_cfg.get(\"num_particles\", 20000)),\n",
-    "    target_ess=float(sampler_cfg.get(\"target_ess\", 0.5)),\n",
+    "    target_ess=float(sampler_cfg.get(\"target_ess\", 0.9)),\n",
     "    num_mcmc_steps=int(sampler_cfg.get(\"num_mcmc_steps\", 10)),\n",
     "    inner_kernel=str(sampler_cfg.get(\"inner_kernel\", \"mclmc\")),  # mclmc | nuts\n",
     "    inner_step_size=float(sampler_cfg.get(\"inner_step_size\", 0.1)),\n",
@@ -419,7 +419,7 @@
    "source": [
     "Example of the sampled posterior (the multimodal, sign-symmetric SLCP structure is clearly recovered):\n",
     "\n",
-    "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/tarflow_NLE/imgs/posterior_marginals_obs1.png\" width=800>\n",
+    "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/tarflow_NLE/imgs/posterior_marginals_obs1_MCMC.png\" width=800>\n",
     "\n",
     "The exact configuration used to train this checkpoint is in [`config/config_tarflow_nle.yaml`](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/tarflow_NLE/config/config_tarflow_nle.yaml)."
    ]
@@ -447,7 +447,29 @@
    "id": "fb41417a",
    "metadata": {},
    "source": [
-    "**Average C2ST accuracy (EMA): 0.5268 ± 0.0189**"
+    "Average C2ST accuracy (SMC): 0.5180 +- 0.0130"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6cd15e62",
+   "metadata": {},
+   "source": [
+    "### Excercise: Try a different sampler"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fc84e308",
+   "metadata": {},
+   "source": [
+    "As an excercise, you can also check how to sample from the posterior using a different sampler. \n",
+    "In this example, we used a tempered SMC sampler, since the posterior is expected to be multimodal. What changes if we use an HMC sampler instead? \n",
+    "Furthermore, you can try implementing a nested sampler, which is an entirely different technique particularly suited for multimodal distributions.\n",
+    "Check [this script](https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/tarflow_NLE/train_tarflow_nle.py) for an example on how to use nested sampling for this task. Sampling with NS is in generally slower, but it can be more robust than HMC for multimodal distributions.\n",
+    "In this case, we achieve a similar c2st:\n",
+    "\n",
+    "Average C2ST accuracy (NS) : 0.5192 +- 0.0140"
    ]
   }
  ],

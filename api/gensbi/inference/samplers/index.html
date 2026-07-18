@@ -520,6 +520,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../models/tarflow/blocks/index.html">gensbi.models.tarflow.blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../models/tarflow/conditioners/index.html">gensbi.models.tarflow.conditioners</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../models/tarflow/model/index.html">gensbi.models.tarflow.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../models/tarflow/pe/index.html">gensbi.models.tarflow.pe</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../models/wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -642,6 +643,12 @@
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.inference.samplers.MclmcInfo" title="gensbi.inference.samplers.MclmcInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MclmcInfo</span></code></a></p></td>
 <td><p>Tuning parameters and diagnostics from an MCLMC run.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.inference.samplers.NestedSampler" title="gensbi.inference.samplers.NestedSampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NestedSampler</span></code></a></p></td>
+<td><p>Nested slice sampling (blackjax <code class="docutils literal notranslate"><span class="pre">nss</span></code>) posterior sampler.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.inference.samplers.NestedSamplerInfo" title="gensbi.inference.samplers.NestedSamplerInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NestedSamplerInfo</span></code></a></p></td>
+<td><p>Diagnostics from a nested sampling run.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.inference.samplers.Sampler" title="gensbi.inference.samplers.Sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sampler</span></code></a></p></td>
 <td><p>Abstract base class for posterior samplers.</p></td>
@@ -811,6 +818,163 @@ Default is <code class="docutils literal notranslate"><span class="pre">True</sp
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.inference.samplers.</span></span><span class="sig-name descname"><span class="pre">NestedSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_live</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_delete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_inner_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dlogz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_rejuvenation_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gensbi.inference.samplers.Sampler" title="gensbi.inference.samplers.Sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sampler</span></code></a></p>
+<p>Nested slice sampling (blackjax <code class="docutils literal notranslate"><span class="pre">nss</span></code>) posterior sampler.</p>
+<p>Runs blackjax’s Nested Slice Sampling from prior-drawn live points,
+accumulating dead points until the live set’s evidence share is
+negligible, then resamples the dead-point history into equal-weight
+posterior draws.  Unlike the MCMC samplers this also estimates the
+log evidence, and handles multimodal posteriors without tempering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_live</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of live points.  Default is 500.</p></li>
+<li><p><strong>num_delete</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Number of lowest-likelihood points replaced per step (device
+batching).  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, defaults to <code class="docutils literal notranslate"><span class="pre">max(1,</span> <span class="pre">num_live</span> <span class="pre">//</span> <span class="pre">10)</span></code>.</p></li>
+<li><p><strong>num_inner_steps</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Constrained slice moves per replacement.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, resolved
+at run time to <code class="docutils literal notranslate"><span class="pre">max(5,</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">target.dim)</span></code> (blackjax’s rule of
+thumb for reliable mixing).  Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>num_samples</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of equal-weight posterior draws returned.  Default is 1000.</p></li>
+<li><p><strong>dlogz</strong> (<em>float</em><em>, </em><em>optional</em>) – Termination threshold (blackjax convention): stop once
+<code class="docutils literal notranslate"><span class="pre">logZ_live</span> <span class="pre">-</span> <span class="pre">logZ</span> <span class="pre">&lt;</span> <span class="pre">dlogz</span></code>.  Default is -3.0; use e.g. -10.0
+near phase transitions.</p></li>
+<li><p><strong>max_iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Safety cap on the number of outer NS steps.  Default is 100_000.</p></li>
+<li><p><strong>num_rejuvenation_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Posterior-invariant hit-and-run slice moves applied to each
+equal-weight draw after resampling.  The with-replacement resampling
+duplicates draws whenever <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> is comparable to the run’s
+ESS; a few slice moves break the duplicated atoms without changing
+the sampled distribution.  Default is 0 (no rejuvenation).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler._rejuvenate">
+<span class="sig-name descname"><span class="pre">_rejuvenate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler._rejuvenate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler._rejuvenate" title="Link to this definition">#</a></dt>
+<dd><p>Break duplicated equal-weight draws with posterior-invariant moves.</p>
+<p>Runs <code class="docutils literal notranslate"><span class="pre">num_rejuvenation_steps</span></code> hit-and-run slice moves on every
+resampled draw (one vmapped chain per draw), targeting the
+unconstrained log-posterior.  Directions are shaped by the empirical
+covariance of the resampled cloud and scaled to Mahalanobis norm 2,
+the same proposal the NS run’s inner kernel uses – so the moves are
+local decorrelation only; mode coverage and weights stay as the NS
+run left them.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler._resolve_num_inner_steps">
+<span class="sig-name descname"><span class="pre">_resolve_num_inner_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler._resolve_num_inner_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler._resolve_num_inner_steps" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">num_inner_steps</span></code> if set, else blackjax’s <code class="docutils literal notranslate"><span class="pre">max(5,</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">dim)</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.run" title="Link to this definition">#</a></dt>
+<dd><p>Draw posterior samples using nested slice sampling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>jax.random.PRNGKey</em>) – Random key.</p></li>
+<li><p><strong>target</strong> (<a class="reference internal" href="../index.html#gensbi.inference.PosteriorTarget" title="gensbi.inference.PosteriorTarget"><em>PosteriorTarget</em></a>) – Posterior target produced by
+<a class="reference internal" href="../posterior/index.html#gensbi.inference.posterior.NLEPosterior.build_target" title="gensbi.inference.posterior.NLEPosterior.build_target"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_target()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>samples</strong> (<em>Array</em>) – Equal-weight posterior samples of shape <code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">dim)</span></code>.</p></li>
+<li><p><strong>info</strong> (<em>NestedSamplerInfo</em>) – Evidence estimate, ESS and the raw finalised run.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.dlogz">
+<span class="sig-name descname"><span class="pre">dlogz</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-3.0</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.dlogz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.dlogz" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.max_iterations">
+<span class="sig-name descname"><span class="pre">max_iterations</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100000</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.max_iterations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.max_iterations" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.num_delete">
+<span class="sig-name descname"><span class="pre">num_delete</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.num_delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.num_delete" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.num_inner_steps">
+<span class="sig-name descname"><span class="pre">num_inner_steps</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.num_inner_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.num_inner_steps" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.num_live">
+<span class="sig-name descname"><span class="pre">num_live</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">500</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.num_live"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.num_live" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.num_rejuvenation_steps">
+<span class="sig-name descname"><span class="pre">num_rejuvenation_steps</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.num_rejuvenation_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.num_rejuvenation_steps" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSampler.num_samples">
+<span class="sig-name descname"><span class="pre">num_samples</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1000</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSampler.num_samples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSampler.num_samples" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSamplerInfo">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.inference.samplers.</span></span><span class="sig-name descname"><span class="pre">NestedSamplerInfo</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSamplerInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSamplerInfo" title="Link to this definition">#</a></dt>
+<dd><p>Diagnostics from a nested sampling run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>log_evidence</strong> (<em>float</em>) – Log marginal likelihood estimate (mean over stochastic
+prior-volume draws).</p></li>
+<li><p><strong>log_evidence_err</strong> (<em>float</em>) – Standard deviation of the log-evidence estimate over the
+stochastic prior-volume draws.</p></li>
+<li><p><strong>ess</strong> (<em>float</em>) – Effective sample size of the weighted dead-point set.</p></li>
+<li><p><strong>num_dead</strong> (<em>int</em>) – Total number of points in the finalised run (dead points plus
+the final live set).</p></li>
+<li><p><strong>dead</strong> (<em>object</em>) – Raw finalised <code class="docutils literal notranslate"><span class="pre">blackjax.ns.base.NSInfo</span></code> carrying the full
+point history (positions, log-likelihoods, birth contours).
+Kept for downstream re-weighting or anesthetic-style analysis.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSamplerInfo.dead">
+<span class="sig-name descname"><span class="pre">dead</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">object</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSamplerInfo.dead"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSamplerInfo.dead" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSamplerInfo.ess">
+<span class="sig-name descname"><span class="pre">ess</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSamplerInfo.ess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSamplerInfo.ess" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSamplerInfo.log_evidence">
+<span class="sig-name descname"><span class="pre">log_evidence</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSamplerInfo.log_evidence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSamplerInfo.log_evidence" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSamplerInfo.log_evidence_err">
+<span class="sig-name descname"><span class="pre">log_evidence_err</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSamplerInfo.log_evidence_err"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSamplerInfo.log_evidence_err" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.inference.samplers.NestedSamplerInfo.num_dead">
+<span class="sig-name descname"><span class="pre">num_dead</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#NestedSamplerInfo.num_dead"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.NestedSamplerInfo.num_dead" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="gensbi.inference.samplers.Sampler">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.inference.samplers.</span></span><span class="sig-name descname"><span class="pre">Sampler</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#Sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.Sampler" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
@@ -877,24 +1041,35 @@ info object.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.inference.samplers.TemperedSMC">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.inference.samplers.</span></span><span class="sig-name descname"><span class="pre">TemperedSMC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_particles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_ess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_mcmc_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mclmc'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_num_integration_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_inverse_mass_matrix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#TemperedSMC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.TemperedSMC" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.inference.samplers.</span></span><span class="sig-name descname"><span class="pre">TemperedSMC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_particles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_ess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_mcmc_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mclmc'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_num_integration_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner_inverse_mass_matrix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#TemperedSMC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.TemperedSMC" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#gensbi.inference.samplers.Sampler" title="gensbi.inference.samplers.Sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sampler</span></code></a></p>
 <p>Adaptive tempered Sequential Monte Carlo for (possibly multimodal) posteriors.</p>
 <p>Walks particles along <code class="docutils literal notranslate"><span class="pre">p(theta)</span> <span class="pre">*</span> <span class="pre">q(x_o</span> <span class="pre">|</span> <span class="pre">theta)^beta</span></code> for beta from 0
 to 1, choosing the beta ladder adaptively to maintain <code class="docutils literal notranslate"><span class="pre">target_ess</span></code>.  The
-inner rejuvenation kernel is adjusted MCLMC by default; NUTS is available
-as a fallback.</p>
+inner rejuvenation kernel is adjusted MCLMC by default; fixed-trajectory
+HMC is available as an alternative. (NUTS is deliberately not offered: its
+data-dependent trajectory length does not vectorize cleanly across SMC
+particles, and rejuvenation does not need NUTS’s full-mixing guarantee.)</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_ess</span></code> and <code class="docutils literal notranslate"><span class="pre">num_mcmc_steps</span></code> default to values calibrated for
+blackjax &gt;= 1.6, whose adaptive-tempering ESS solver was corrected
+(upstream #914 fixed a sign bug in the bisection target). The fix
+changes how many temperature steps are needed to anneal from beta=0 to
+1: with the pre-1.6-era <code class="docutils literal notranslate"><span class="pre">target_ess=0.5</span></code> default, the corrected
+solver can collapse the schedule to a single step, leaving too few
+temperature increments for rejuvenation to move particles onto the
+posterior.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>num_particles</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of SMC particles.  Default is 1000.</p></li>
 <li><p><strong>target_ess</strong> (<em>float</em><em>, </em><em>optional</em>) – Target effective sample size ratio in <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1)</span></code>, used to adapt the
-temperature increments.  Default is 0.5.</p></li>
+temperature increments.  Default is 0.9.</p></li>
 <li><p><strong>num_mcmc_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of inner MCMC rejuvenation steps per temperature.  Default is 10.</p></li>
 <li><p><strong>inner_kernel</strong> (<em>str</em><em>, </em><em>optional</em>) – Inner MCMC kernel: <code class="docutils literal notranslate"><span class="pre">&quot;mclmc&quot;</span></code> (adjusted MCLMC, default) or
-<code class="docutils literal notranslate"><span class="pre">&quot;nuts&quot;</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">&quot;hmc&quot;</span></code> (fixed-trajectory HMC).</p></li>
 <li><p><strong>inner_step_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Step size for the inner MCMC kernel.  Default is 0.1.</p></li>
-<li><p><strong>inner_num_integration_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of integration steps for the inner MCLMC kernel.  Default is 5.</p></li>
+<li><p><strong>inner_num_integration_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of integration steps for the inner MCLMC or HMC kernel.
+Default is 5.</p></li>
 <li><p><strong>inner_inverse_mass_matrix</strong> (<em>Array</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Inverse mass matrix for the inner kernel.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, defaults to a
 vector of ones of length <code class="docutils literal notranslate"><span class="pre">target.dim</span></code>.  Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 </ul>
@@ -960,7 +1135,7 @@ vector of ones of length <code class="docutils literal notranslate"><span class=
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.inference.samplers.TemperedSMC.target_ess">
-<span class="sig-name descname"><span class="pre">target_ess</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.5</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#TemperedSMC.target_ess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.TemperedSMC.target_ess" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">target_ess</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.9</span></span><a class="reference internal" href="../../../../_modules/gensbi/inference/samplers.html#TemperedSMC.target_ess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.inference.samplers.TemperedSMC.target_ess" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1065,6 +1240,27 @@ host-side guard applied to the tuned value.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.MclmcInfo.num_chains"><code class="docutils literal notranslate"><span class="pre">MclmcInfo.num_chains</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.MclmcInfo.num_samples"><code class="docutils literal notranslate"><span class="pre">MclmcInfo.num_samples</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.MclmcInfo.step_size"><code class="docutils literal notranslate"><span class="pre">MclmcInfo.step_size</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler"><code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler._rejuvenate"><code class="docutils literal notranslate"><span class="pre">NestedSampler._rejuvenate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler._resolve_num_inner_steps"><code class="docutils literal notranslate"><span class="pre">NestedSampler._resolve_num_inner_steps()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.run"><code class="docutils literal notranslate"><span class="pre">NestedSampler.run()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.dlogz"><code class="docutils literal notranslate"><span class="pre">NestedSampler.dlogz</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.max_iterations"><code class="docutils literal notranslate"><span class="pre">NestedSampler.max_iterations</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.num_delete"><code class="docutils literal notranslate"><span class="pre">NestedSampler.num_delete</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.num_inner_steps"><code class="docutils literal notranslate"><span class="pre">NestedSampler.num_inner_steps</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.num_live"><code class="docutils literal notranslate"><span class="pre">NestedSampler.num_live</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.num_rejuvenation_steps"><code class="docutils literal notranslate"><span class="pre">NestedSampler.num_rejuvenation_steps</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSampler.num_samples"><code class="docutils literal notranslate"><span class="pre">NestedSampler.num_samples</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSamplerInfo"><code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSamplerInfo.dead"><code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo.dead</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSamplerInfo.ess"><code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo.ess</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSamplerInfo.log_evidence"><code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo.log_evidence</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSamplerInfo.log_evidence_err"><code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo.log_evidence_err</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.NestedSamplerInfo.num_dead"><code class="docutils literal notranslate"><span class="pre">NestedSamplerInfo.num_dead</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.inference.samplers.Sampler"><code class="docutils literal notranslate"><span class="pre">Sampler</span></code></a><ul class="nav section-nav flex-column">

@@ -376,6 +376,7 @@
 <li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux.html">Two Moons Flux1 Flow Matching Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="two_moons_flow_flux1joint.html">Two Moons Flux1Joint Flow Matching Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="two_moons_flow_simformer.html">Two Moons Simformer Flow Matching Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="two_moons_maf_nle.html">Two Moons MAF NLE Example</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="bernoulli_glm_flow_flux.html">Bernoulli GLM Flux1 Flow Example</a></li>
@@ -765,7 +766,7 @@
 <span class="n">sampler_cfg</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;sampler&quot;</span><span class="p">]</span>
 <span class="n">sampler</span> <span class="o">=</span> <span class="n">TemperedSMC</span><span class="p">(</span>
     <span class="n">num_particles</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">sampler_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_particles&quot;</span><span class="p">,</span> <span class="mi">20000</span><span class="p">)),</span>
-    <span class="n">target_ess</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sampler_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target_ess&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)),</span>
+    <span class="n">target_ess</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sampler_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target_ess&quot;</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">)),</span>
     <span class="n">num_mcmc_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">sampler_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_mcmc_steps&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)),</span>
     <span class="n">inner_kernel</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sampler_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;inner_kernel&quot;</span><span class="p">,</span> <span class="s2">&quot;mclmc&quot;</span><span class="p">)),</span>  <span class="c1"># mclmc | nuts</span>
     <span class="n">inner_step_size</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sampler_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;inner_step_size&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)),</span>
@@ -798,14 +799,23 @@
 </div>
 </div>
 <p>Example of the sampled posterior (the multimodal, sign-symmetric SLCP structure is clearly recovered):</p>
-<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/tarflow_NLE/imgs/posterior_marginals_obs1.png" width=800>
+<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/slcp/tarflow_NLE/imgs/posterior_marginals_obs1_MCMC.png" width=800>
 <p>The exact configuration used to train this checkpoint is in <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/tarflow_NLE/config/config_tarflow_nle.yaml"><code class="docutils literal notranslate"><span class="pre">config/config_tarflow_nle.yaml</span></code></a>.</p>
 </section>
 <section id="performance-c2st">
 <h2>6. Performance (C2ST)<a class="headerlink" href="#performance-c2st" title="Link to this heading">#</a></h2>
 <p>We summarize performance with the <strong>Classifier 2-Sample Test (C2ST)</strong>: a classifier is trained to tell the sampled posterior from the reference posterior, and its accuracy is reported. <strong>0.5 is ideal</strong> (the two are indistinguishable); <strong>1.0 means</strong> they are trivially separable. The number below is the mean ± std over the task’s 10 reference observations, using the EMA likelihood flow.</p>
 <p>This notebook intentionally <strong>omits the full posterior calibration suite</strong> (marginal coverage, TARP, SBC, L-C2ST). For a worked example of those checks, see the Two Moons notebooks.</p>
-<p><strong>Average C2ST accuracy (EMA): 0.5268 ± 0.0189</strong></p>
+<p>Average C2ST accuracy (SMC): 0.5180 +- 0.0130</p>
+<section id="excercise-try-a-different-sampler">
+<h3>Excercise: Try a different sampler<a class="headerlink" href="#excercise-try-a-different-sampler" title="Link to this heading">#</a></h3>
+<p>As an excercise, you can also check how to sample from the posterior using a different sampler.
+In this example, we used a tempered SMC sampler, since the posterior is expected to be multimodal. What changes if we use an HMC sampler instead?
+Furthermore, you can try implementing a nested sampler, which is an entirely different technique particularly suited for multimodal distributions.
+Check <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/slcp/tarflow_NLE/train_tarflow_nle.py">this script</a> for an example on how to use nested sampling for this task. Sampling with NS is in generally slower, but it can be more robust than HMC for multimodal distributions.
+In this case, we achieve a similar c2st:</p>
+<p>Average C2ST accuracy (NS) : 0.5192 +- 0.0140</p>
+</section>
 </section>
 </section>
 
@@ -862,7 +872,10 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-configuration-definition">3. Model Configuration &amp; Definition</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training">4. Training</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nle-posterior-sampling">5. NLE Posterior Sampling</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-c2st">6. Performance (C2ST)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-c2st">6. Performance (C2ST)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#excercise-try-a-different-sampler">Excercise: Try a different sampler</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

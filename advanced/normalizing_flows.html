@@ -520,6 +520,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/tarflow/blocks/index.html">gensbi.models.tarflow.blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/tarflow/conditioners/index.html">gensbi.models.tarflow.conditioners</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/tarflow/model/index.html">gensbi.models.tarflow.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/gensbi/models/tarflow/pe/index.html">gensbi.models.tarflow.pe</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../api/gensbi/models/wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -707,7 +708,7 @@ likelihood) — i.e. swap the roles from the training example above:
 <code class="docutils literal notranslate"><span class="pre">dim_obs=dim_x</span></code>, <code class="docutils literal notranslate"><span class="pre">dim_cond=dim_theta</span></code>. Then wrap the trained flow in
 <a class="reference internal" href="../api/gensbi/inference/index.html#gensbi.inference.NLEPosterior" title="gensbi.inference.NLEPosterior"><code class="xref py py-class docutils literal notranslate"><span class="pre">NLEPosterior</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_gaussian_prior</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.inference</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCLMC</span><span class="p">,</span> <span class="n">NLEPosterior</span><span class="p">,</span> <span class="n">TemperedSMC</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.inference</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCLMC</span><span class="p">,</span> <span class="n">NestedSampler</span><span class="p">,</span> <span class="n">NLEPosterior</span><span class="p">,</span> <span class="n">TemperedSMC</span>
 
 <span class="c1"># nle_pipeline: a ConditionalFlowPipeline trained with dim_obs=dim_x, dim_cond=dim_theta</span>
 <span class="n">posterior</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">nle_pipeline</span><span class="o">.</span><span class="n">ema_model</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim_theta</span><span class="p">,)))</span>
@@ -721,6 +722,25 @@ likelihood) — i.e. swap the roles from the training example above:
 posteriors. These are convenience samplers — for full control build a
 <code class="docutils literal notranslate"><span class="pre">PosteriorTarget</span></code> via <code class="docutils literal notranslate"><span class="pre">posterior.build_target(x_o)</span></code> and run your own
 blackjax loop.</p>
+<p>For multimodal posteriors where you also want the <strong>model evidence</strong>,
+<a class="reference internal" href="../api/gensbi/inference/index.html#gensbi.inference.NestedSampler" title="gensbi.inference.NestedSampler"><code class="xref py py-class docutils literal notranslate"><span class="pre">NestedSampler</span></code></a> runs blackjax nested slice
+sampling from prior-drawn live points. Unlike the MCMC samplers it needs
+no tempering to cross modes and returns the log evidence in its info
+object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">posterior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span>
+                                 <span class="n">sampler</span><span class="o">=</span><span class="n">NestedSampler</span><span class="p">(</span><span class="n">num_samples</span><span class="o">=</span><span class="mi">2000</span><span class="p">),</span>
+                                 <span class="n">return_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">log_evidence</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">log_evidence_err</span><span class="p">)</span>   <span class="c1"># for model comparison</span>
+</pre></div>
+</div>
+<p>The returned <a class="reference internal" href="../api/gensbi/inference/index.html#gensbi.inference.NestedSamplerInfo" title="gensbi.inference.NestedSamplerInfo"><code class="xref py py-class docutils literal notranslate"><span class="pre">NestedSamplerInfo</span></code></a> also reports the
+effective sample size and dead-point count. With-replacement resampling
+can duplicate draws when <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> approaches the run’s ESS; pass
+<code class="docutils literal notranslate"><span class="pre">num_rejuvenation_steps</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> to break the duplicated atoms with
+posterior-invariant slice moves.</p>
+<p>The <a class="reference internal" href="../notebooks/two_moons_maf_nle.html"><span class="doc std std-doc">Two Moons MAF NLE notebook</span></a> works
+through nested sampling end to end on a bimodal posterior, including the
+log-evidence cross-check against tempered SMC.</p>
 </section>
 <section id="saving-and-loading">
 <h2>Saving and loading<a class="headerlink" href="#saving-and-loading" title="Link to this heading">#</a></h2>
@@ -738,7 +758,10 @@ helpers:</p>
 <h2>End-to-end example<a class="headerlink" href="#end-to-end-example" title="Link to this heading">#</a></h2>
 <p>See the <a class="reference internal" href="../notebooks/slcp_tarflow_nle.html"><span class="doc std std-doc">SLCP TarFlow NLE notebook</span></a> for a
 complete workflow: simulate, train a TarFlow likelihood, sample the
-posterior with MCLMC, and check calibration.</p>
+posterior with MCLMC, and check calibration. The
+<a class="reference internal" href="../notebooks/two_moons_maf_nle.html"><span class="doc std std-doc">Two Moons MAF NLE notebook</span></a> covers the same
+arc with a MAF likelihood and contrasts two multimodal samplers — tempered
+SMC and nested sampling — on a bimodal posterior.</p>
 </section>
 </section>
 

@@ -1,0 +1,840 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Blackjax 1.6 Port (MCLMC + TemperedSMC) Implementation Plan &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/plans/2026-07-11-blackjax-16-port';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Blackjax 1.6 Port (MCLMC + TemperedSMC) Implementation Plan</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="blackjax-1-6-port-mclmc-temperedsmc-implementation-plan">
+<h1>Blackjax 1.6 Port (MCLMC + TemperedSMC) Implementation Plan<a class="headerlink" href="#blackjax-1-6-port-mclmc-temperedsmc-implementation-plan" title="Link to this heading">#</a></h1>
+<blockquote>
+<div><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">[</span> <span class="pre">]</span></code>) syntax for tracking.</p>
+</div></blockquote>
+<p><strong>Goal:</strong> Make <code class="docutils literal notranslate"><span class="pre">MCLMC</span></code> (unadjusted + adjusted) and <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> work correctly under blackjax 1.6, fixing all 10 failing tests in <code class="docutils literal notranslate"><span class="pre">tests/inference/</span></code> with zero public-API changes.</p>
+<p><strong>Architecture:</strong> Three mechanical call-site ports in <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> (blackjax 1.6 moved <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code>/<code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code> out of <code class="docutils literal notranslate"><span class="pre">build_kernel</span></code> into per-call kernel arguments and explicit tuner kwargs), followed by a diagnose-and-retune pass for the one upstream <em>behavior</em> change (the #914 adaptive-tempering ESS sign fix). Spec: <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-11-blackjax-16-port-design.md</span></code>.</p>
+<p><strong>Tech Stack:</strong> JAX, blackjax 1.6 (mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env), pytest. The repo <code class="docutils literal notranslate"><span class="pre">.venv</span></code> still holds blackjax 1.5 — used ONLY for behavioral comparison in Task 4, never as a test gate.</p>
+<section id="global-constraints">
+<h2>Global Constraints<a class="headerlink" href="#global-constraints" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Work directly on branch <code class="docutils literal notranslate"><span class="pre">nested-sampling</span></code> (user decision; this port is the branch’s merge blocker).</p></li>
+<li><p>Test command: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">&lt;paths&gt;</span> <span class="pre">-v</span></code> from the repo root. The mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env has blackjax 1.6; <code class="docutils literal notranslate"><span class="pre">.venv</span></code> has 1.5 and would false-pass — never use it for the gate. The <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span></code> shell prefix is required (node GPUs busy).</p></li>
+<li><p>Zero public API changes: constructor signatures, knob names, the <code class="docutils literal notranslate"><span class="pre">Sampler</span></code> contract (<code class="docutils literal notranslate"><span class="pre">run(key,</span> <span class="pre">target)</span> <span class="pre">-&gt;</span> <span class="pre">(samples,</span> <span class="pre">info)</span></code>), and <code class="docutils literal notranslate"><span class="pre">MclmcInfo</span></code>/<code class="docutils literal notranslate"><span class="pre">SmcInfo</span></code> fields are all unchanged. Do NOT expose new blackjax 1.6 knobs (e.g. <code class="docutils literal notranslate"><span class="pre">target_num_integration_steps</span></code> — accept upstream’s 2.0).</p></li>
+<li><p>The existing test files are the spec. Do NOT edit <code class="docutils literal notranslate"><span class="pre">tests/inference/test_mclmc.py</span></code> or <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code> unless a task step explicitly authorizes it; if a test seems to need changing, STOP and escalate instead.</p></li>
+<li><p>Any class default changed by Task 4 gets its docstring updated in the same commit.</p></li>
+<li><p>API facts (verified against installed blackjax 1.6 by smoke run on 2026-07-11 — trust these, do not re-derive):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">blackjax.mcmc.mclmc.build_kernel(integrator=...)</span></code> → kernel; <code class="docutils literal notranslate"><span class="pre">blackjax.mclmc_find_L_and_step_size(mclmc_kernel=kernel,</span> <span class="pre">logdensity_fn=...,</span> <span class="pre">num_steps=...,</span> <span class="pre">state=...,</span> <span class="pre">rng_key=...,</span> <span class="pre">diagonal_preconditioning=...)</span></code> works and returns <code class="docutils literal notranslate"><span class="pre">(state,</span> <span class="pre">params,</span> <span class="pre">...)</span></code> with <code class="docutils literal notranslate"><span class="pre">params.L/.step_size/.inverse_mass_matrix</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">blackjax.mcmc.adjusted_mclmc_dynamic.build_kernel(integration_steps_fn=lambda</span> <span class="pre">k,</span> <span class="pre">avg:</span> <span class="pre">...,</span> <span class="pre">integrator=...)</span></code> → kernel; <code class="docutils literal notranslate"><span class="pre">blackjax.adjusted_mclmc_find_L_and_step_size(mclmc_kernel=kernel,</span> <span class="pre">logdensity_fn=...,</span> <span class="pre">num_steps=...,</span> <span class="pre">state=...,</span> <span class="pre">rng_key=...,</span> <span class="pre">target=...,</span> <span class="pre">diagonal_preconditioning=...)</span></code> works. The tuner passes the running average via <code class="docutils literal notranslate"><span class="pre">integration_steps_params=(avg,)</span></code>, which arrives as <code class="docutils literal notranslate"><span class="pre">integration_steps_fn</span></code>’s second positional argument. Tuned <code class="docutils literal notranslate"><span class="pre">params.L</span> <span class="pre">/</span> <span class="pre">params.step_size</span></code> anchors at exactly <strong>2.0</strong> (new upstream <code class="docutils literal notranslate"><span class="pre">target_num_integration_steps</span></code> default) — passes <code class="docutils literal notranslate"><span class="pre">_check_rescale_domain</span></code> (≥ 1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">blackjax.mcmc.adjusted_mclmc.build_kernel(integrator=...)</span></code> → kernel callable as <code class="docutils literal notranslate"><span class="pre">kernel(rng_key,</span> <span class="pre">state,</span> <span class="pre">logdensity_fn,</span> <span class="pre">step_size,</span> <span class="pre">integration_steps_params=(n,),</span> <span class="pre">inverse_mass_matrix=imm)</span></code>.</p></li>
+<li><p>The top-level factories <code class="docutils literal notranslate"><span class="pre">blackjax.mclmc(...)</span></code> and <code class="docutils literal notranslate"><span class="pre">blackjax.adjusted_mclmc_dynamic(...)</span></code> (single-arg <code class="docutils literal notranslate"><span class="pre">integration_steps_fn</span></code>) are unchanged from 1.5.</p></li>
+<li><p>The default <code class="docutils literal notranslate"><span class="pre">integrator</span></code> of both <code class="docutils literal notranslate"><span class="pre">adjusted_mclmc_dynamic.build_kernel</span></code> and <code class="docutils literal notranslate"><span class="pre">adjusted_mclmc.build_kernel</span></code> IS <code class="docutils literal notranslate"><span class="pre">isokinetic_mclachlan</span></code> (verified by identity check) — passing it explicitly is behavior-preserving self-documentation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">blackjax.nuts.build_kernel()</span></code>/<code class="docutils literal notranslate"><span class="pre">.init</span></code>, <code class="docutils literal notranslate"><span class="pre">blackjax.adaptive_tempered_smc</span></code>, <code class="docutils literal notranslate"><span class="pre">blackjax.smc.extend_params</span></code>, <code class="docutils literal notranslate"><span class="pre">smc.init/step</span></code>: signatures unchanged — no code changes at those call sites.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> — the ONLY source file modified (three methods: <code class="docutils literal notranslate"><span class="pre">MCLMC._run_unadjusted</span></code>, <code class="docutils literal notranslate"><span class="pre">MCLMC._run_adjusted</span></code>, <code class="docutils literal notranslate"><span class="pre">TemperedSMC._inner</span></code>; Task 4 may additionally touch <code class="docutils literal notranslate"><span class="pre">TemperedSMC.__init__</span></code> defaults + class docstring).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/inference/test_mclmc.py</span></code>, <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code> — existing tests, NOT modified; they are the acceptance gates.</p></li>
+<li><p>Scratch diagnostics (Task 4) live in the session scratchpad, never committed.</p></li>
+</ul>
+<hr class="docutils" />
+<section id="task-1-port-mclmc-run-unadjusted-root-cause-a-5-tests">
+<h3>Task 1: Port <code class="docutils literal notranslate"><span class="pre">MCLMC._run_unadjusted</span></code> (root cause A — 5 tests)<a class="headerlink" href="#task-1-port-mclmc-run-unadjusted-root-cause-a-5-tests" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py:190-210</span></code> (<code class="docutils literal notranslate"><span class="pre">_run_unadjusted</span></code> method)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">PosteriorTarget.log_posterior</span></code>, <code class="docutils literal notranslate"><span class="pre">target.prior.sample</span></code>, module helpers <code class="docutils literal notranslate"><span class="pre">_inference_loop</span></code>, <code class="docutils literal notranslate"><span class="pre">MclmcInfo</span></code> (all unchanged).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">_run_unadjusted(key,</span> <span class="pre">target)</span> <span class="pre">-&gt;</span> <span class="pre">(positions,</span> <span class="pre">MclmcInfo)</span></code> — same contract as before, now 1.6-compatible. No other task depends on its internals.</p></li>
+<li><p>[ ] <strong>Step 1: Run the failing tests (RED evidence)</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_mclmc.py</span> <span class="pre">-v</span> <span class="pre">-k</span> <span class="pre">&quot;unadjusted</span> <span class="pre">or</span> <span class="pre">return_info&quot;</span></code>
+Expected: 5 FAIL (<code class="docutils literal notranslate"><span class="pre">test_unadjusted_prior_recovery_real_flow</span></code>, <code class="docutils literal notranslate"><span class="pre">test_unadjusted_shape_and_finite</span></code>, <code class="docutils literal notranslate"><span class="pre">test_unadjusted_analytic_gaussian_recovery</span></code>, <code class="docutils literal notranslate"><span class="pre">test_unadjusted_multichain_shape</span></code>, <code class="docutils literal notranslate"><span class="pre">test_return_info</span></code>), each with
+<code class="docutils literal notranslate"><span class="pre">ValueError:</span> <span class="pre">logdensity_fn</span> <span class="pre">is</span> <span class="pre">required.</span> <span class="pre">Pass</span> <span class="pre">the</span> <span class="pre">log-density</span> <span class="pre">function</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">target</span> <span class="pre">distribution.</span></code> raised from <code class="docutils literal notranslate"><span class="pre">blackjax/adaptation/mclmc_adaptation.py</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Replace the method body</strong></p></li>
+</ul>
+<p>Replace the whole <code class="docutils literal notranslate"><span class="pre">_run_unadjusted</span></code> method (currently <code class="docutils literal notranslate"><span class="pre">samplers.py:190-210</span></code>) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">_run_unadjusted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
+
+        <span class="n">pos_key</span><span class="p">,</span> <span class="n">mom_key</span><span class="p">,</span> <span class="n">tune_key</span><span class="p">,</span> <span class="n">run_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">pos_key</span><span class="p">,</span> <span class="p">())</span>
+        <span class="n">init_state</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">rng_key</span><span class="o">=</span><span class="n">mom_key</span><span class="p">)</span>
+        <span class="c1"># blackjax &gt;= 1.6: build_kernel no longer binds logdensity_fn /</span>
+        <span class="c1"># inverse_mass_matrix; the tuner threads them through per call.</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span><span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mclmc_find_L_and_step_size</span><span class="p">(</span>
+            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+            <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+            <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
+        <span class="n">alg</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mclmc</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">,</span>
+                             <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+        <span class="n">states</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_inference_loop</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">alg</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">MclmcInfo</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span><span class="p">),</span> <span class="n">step_size</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">),</span>
+                         <span class="n">acceptance_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span>
+                         <span class="n">num_chains</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">states</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">info</span>
+</pre></div>
+</div>
+<p>(The only changes vs the old body: <code class="docutils literal notranslate"><span class="pre">build_kernel(integrator=...)</span></code> built once — the <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">inverse_mass_matrix:</span></code> closure is deleted — and <code class="docutils literal notranslate"><span class="pre">logdensity_fn=target.log_posterior</span></code> added to <code class="docutils literal notranslate"><span class="pre">mclmc_find_L_and_step_size</span></code>. Everything else byte-identical.)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Run the tests to verify they pass</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_mclmc.py</span> <span class="pre">-v</span></code>
+Expected: <strong>12 passed, 2 failed</strong> — the 5 unadjusted tests now PASS alongside the 7 already-passing ones (<code class="docutils literal notranslate"><span class="pre">test_rescale_gives_exact_mean_step_count</span></code> ×4 params, <code class="docutils literal notranslate"><span class="pre">test_rescale_matches_blackjax_reference_at_15</span></code>, <code class="docutils literal notranslate"><span class="pre">test_check_rescale_domain_guard</span></code>, <code class="docutils literal notranslate"><span class="pre">test_adjusted_is_the_default</span></code>); <code class="docutils literal notranslate"><span class="pre">test_adjusted_analytic_gaussian_recovery</span></code> and <code class="docutils literal notranslate"><span class="pre">test_adjusted_reports_acceptance_rate</span></code> still FAIL with <code class="docutils literal notranslate"><span class="pre">TypeError:</span> <span class="pre">adjusted_mclmc_find_L_and_step_size()</span> <span class="pre">missing</span> <span class="pre">1</span> <span class="pre">required</span> <span class="pre">positional</span> <span class="pre">argument:</span> <span class="pre">'logdensity_fn'</span></code> (that is Task 2’s target — do not touch it here).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix(inference): port unadjusted MCLMC to blackjax 1.6 API&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-2-port-mclmc-run-adjusted-root-cause-b-2-tests">
+<h3>Task 2: Port <code class="docutils literal notranslate"><span class="pre">MCLMC._run_adjusted</span></code> (root cause B — 2 tests)<a class="headerlink" href="#task-2-port-mclmc-run-adjusted-root-cause-b-2-tests" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py:212-245</span></code> (<code class="docutils literal notranslate"><span class="pre">_run_adjusted</span></code> method)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: module helpers <code class="docutils literal notranslate"><span class="pre">_rescale(mu)</span></code>, <code class="docutils literal notranslate"><span class="pre">_check_rescale_domain(mu)</span></code>, <code class="docutils literal notranslate"><span class="pre">_inference_loop</span></code>, <code class="docutils literal notranslate"><span class="pre">MclmcInfo</span></code> (all unchanged).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">_run_adjusted(key,</span> <span class="pre">target)</span> <span class="pre">-&gt;</span> <span class="pre">(positions,</span> <span class="pre">MclmcInfo)</span></code> — same contract, 1.6-compatible. No other task depends on its internals.</p></li>
+<li><p>[ ] <strong>Step 1: Run the failing tests (RED evidence)</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_mclmc.py</span> <span class="pre">-v</span> <span class="pre">-k</span> <span class="pre">&quot;test_adjusted</span> <span class="pre">and</span> <span class="pre">not</span> <span class="pre">default&quot;</span></code>
+(Note: plain <code class="docutils literal notranslate"><span class="pre">-k</span> <span class="pre">&quot;adjusted&quot;</span></code> would also match the <code class="docutils literal notranslate"><span class="pre">test_unadjusted_*</span></code> names by substring — keep the <code class="docutils literal notranslate"><span class="pre">test_adjusted</span></code> prefix.)
+Expected: 2 FAIL (<code class="docutils literal notranslate"><span class="pre">test_adjusted_analytic_gaussian_recovery</span></code>, <code class="docutils literal notranslate"><span class="pre">test_adjusted_reports_acceptance_rate</span></code>) with <code class="docutils literal notranslate"><span class="pre">TypeError:</span> <span class="pre">adjusted_mclmc_find_L_and_step_size()</span> <span class="pre">missing</span> <span class="pre">1</span> <span class="pre">required</span> <span class="pre">positional</span> <span class="pre">argument:</span> <span class="pre">'logdensity_fn'</span></code> at <code class="docutils literal notranslate"><span class="pre">samplers.py:229</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Replace the method body</strong></p></li>
+</ul>
+<p>Replace the whole <code class="docutils literal notranslate"><span class="pre">_run_adjusted</span></code> method (currently <code class="docutils literal notranslate"><span class="pre">samplers.py:212-245</span></code>) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">_run_adjusted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
+
+        <span class="n">pos_key</span><span class="p">,</span> <span class="n">init_key</span><span class="p">,</span> <span class="n">tune_key</span><span class="p">,</span> <span class="n">run_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">pos_key</span><span class="p">,</span> <span class="p">())</span>
+        <span class="n">init_state</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+            <span class="n">random_generator_arg</span><span class="o">=</span><span class="n">init_key</span><span class="p">)</span>
+
+        <span class="c1"># blackjax &gt;= 1.6: the tuner drives the kernel as</span>
+        <span class="c1"># kernel(rng_key=..., state=..., logdensity_fn=..., step_size=...,</span>
+        <span class="c1"># inverse_mass_matrix=..., integration_steps_params=(avg,)); the</span>
+        <span class="c1"># running average number of integration steps arrives as</span>
+        <span class="c1"># integration_steps_fn&#39;s second positional argument.</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+            <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">avg</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">avg</span><span class="p">)),</span>
+            <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">adjusted_mclmc_find_L_and_step_size</span><span class="p">(</span>
+            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+            <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+            <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_acceptance</span><span class="p">,</span>
+            <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
+        <span class="n">_check_rescale_domain</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">)</span>
+
+        <span class="n">alg</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="p">(</span>
+            <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">,</span>
+            <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">)),</span>
+            <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+
+        <span class="n">states</span><span class="p">,</span> <span class="n">infos</span> <span class="o">=</span> <span class="n">_inference_loop</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">alg</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">MclmcInfo</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span><span class="p">),</span> <span class="n">step_size</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">),</span>
+                         <span class="n">acceptance_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">infos</span><span class="o">.</span><span class="n">acceptance_rate</span><span class="p">)),</span>
+                         <span class="n">num_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">num_chains</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_chains</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">states</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">info</span>
+</pre></div>
+</div>
+<p>(Changes vs the old body: the per-call <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">kernel(...)</span></code> closure that re-built <code class="docutils literal notranslate"><span class="pre">build_kernel</span></code> on every tuner step is replaced by one <code class="docutils literal notranslate"><span class="pre">build_kernel</span></code> call with a two-argument <code class="docutils literal notranslate"><span class="pre">integration_steps_fn</span></code>; <code class="docutils literal notranslate"><span class="pre">logdensity_fn=</span></code> added to the tuner call; explicit <code class="docutils literal notranslate"><span class="pre">integrator=isokinetic_mclachlan</span></code> — identical to the 1.6 default, kept for self-documentation. The post-tuning factory call, <code class="docutils literal notranslate"><span class="pre">_check_rescale_domain</span></code>, and info assembly are byte-identical to before.)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Run the full MCLMC test file</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_mclmc.py</span> <span class="pre">-v</span></code>
+Expected: <strong>14/14 PASS</strong>. Notes:</p>
+<ul class="simple">
+<li><p>Under the rewritten 1.6 tuner, <code class="docutils literal notranslate"><span class="pre">params.L</span> <span class="pre">/</span> <span class="pre">params.step_size</span></code> anchors at ≈ 2.0 (verified by smoke run), so <code class="docutils literal notranslate"><span class="pre">_check_rescale_domain</span></code> passes and <code class="docutils literal notranslate"><span class="pre">_rescale</span></code> gets mu ≈ 2 instead of 1.5-era larger values. The analytic recovery test (mean/var of an exact MH chain) and the acceptance-rate bounds test are expected to pass unchanged.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">test_adjusted_analytic_gaussian_recovery</span></code> fails numerically after a faithful port, that signals a porting bug (e.g. <code class="docutils literal notranslate"><span class="pre">integration_steps_fn</span></code> arity mismatch silently mis-stepping) — STOP and report with the numbers; do NOT loosen tolerances.</p></li>
+<li><p>[ ] <strong>Step 4: Check docstrings for stale 1.5 tuner references</strong></p></li>
+</ul>
+<p>Read the docstrings of <code class="docutils literal notranslate"><span class="pre">MCLMC</span></code> (class), <code class="docutils literal notranslate"><span class="pre">_rescale</span></code>, and <code class="docutils literal notranslate"><span class="pre">_check_rescale_domain</span></code> in <code class="docutils literal notranslate"><span class="pre">samplers.py</span></code>. The <code class="docutils literal notranslate"><span class="pre">_rescale</span></code> formula and its blackjax reference are version-independent (the formula did not change in 1.6) — expected outcome: no edits needed. If a docstring asserts 1.5-specific tuner <em>behavior</em> (e.g. claims about typical tuned <code class="docutils literal notranslate"><span class="pre">L/step_size</span></code> magnitudes), update that sentence to say the 1.6 tuner anchors <code class="docutils literal notranslate"><span class="pre">L/step_size</span></code> near 2.0; otherwise leave everything untouched.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix(inference): port adjusted MCLMC to blackjax 1.6 API&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-3-port-temperedsmc-inner-mclmc-branch-root-cause-c-unblocks-2-tests">
+<h3>Task 3: Port <code class="docutils literal notranslate"><span class="pre">TemperedSMC._inner</span></code> mclmc branch (root cause C — unblocks 2 tests)<a class="headerlink" href="#task-3-port-temperedsmc-inner-mclmc-branch-root-cause-c-unblocks-2-tests" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py:318-335</span></code> (the <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">self.inner_kernel</span> <span class="pre">==</span> <span class="pre">&quot;mclmc&quot;:</span></code> branch of <code class="docutils literal notranslate"><span class="pre">_inner</span></code>)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: nothing new; <code class="docutils literal notranslate"><span class="pre">_inner</span></code> is called only by <code class="docutils literal notranslate"><span class="pre">TemperedSMC.run</span></code> (unchanged).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">step_fn(rng_key,</span> <span class="pre">state,</span> <span class="pre">logdensity_fn,</span> <span class="pre">step_size,</span> <span class="pre">num_integration_steps,</span> <span class="pre">inverse_mass_matrix)</span></code> with the SAME signature and <code class="docutils literal notranslate"><span class="pre">params</span></code> dict keys as before — <code class="docutils literal notranslate"><span class="pre">TemperedSMC.run</span></code>’s <code class="docutils literal notranslate"><span class="pre">extend_params(params)</span></code> threading depends on those key names (<code class="docutils literal notranslate"><span class="pre">step_size</span></code>, <code class="docutils literal notranslate"><span class="pre">num_integration_steps</span></code>, <code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code>). Do not rename them.</p></li>
+<li><p>[ ] <strong>Step 1: Run the failing tests (RED evidence)</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_smc.py</span> <span class="pre">-v</span> <span class="pre">-k</span> <span class="pre">&quot;mclmc&quot;</span></code>
+Expected: <code class="docutils literal notranslate"><span class="pre">test_smc_mclmc_is_the_default_inner_kernel</span></code> PASS; <code class="docutils literal notranslate"><span class="pre">test_smc_mclmc_recovers_both_modes</span></code> and <code class="docutils literal notranslate"><span class="pre">test_smc_mclmc_analytic_gaussian_recovery</span></code> FAIL with <code class="docutils literal notranslate"><span class="pre">TypeError:</span> <span class="pre">build_kernel()</span> <span class="pre">got</span> <span class="pre">an</span> <span class="pre">unexpected</span> <span class="pre">keyword</span> <span class="pre">argument</span> <span class="pre">'logdensity_fn'</span></code> at <code class="docutils literal notranslate"><span class="pre">samplers.py:325</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Replace the mclmc branch</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">_inner</span></code>, replace the <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">self.inner_kernel</span> <span class="pre">==</span> <span class="pre">&quot;mclmc&quot;:</span></code> block (currently <code class="docutils literal notranslate"><span class="pre">samplers.py:318-335</span></code>) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;mclmc&quot;</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
+
+            <span class="c1"># blackjax &gt;= 1.6: build_kernel is a pure factory (no logdensity_fn /</span>
+            <span class="c1"># inverse_mass_matrix binding), so build it once; SMC injects the</span>
+            <span class="c1"># tempered logdensity per call.</span>
+            <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+                <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">step_fn</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span>
+                        <span class="n">num_integration_steps</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span>
+                              <span class="n">integration_steps_params</span><span class="o">=</span><span class="p">(</span><span class="n">num_integration_steps</span><span class="p">,),</span>
+                              <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+
+            <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">init</span>   <span class="c1"># (position, logdensity_fn) -&gt; HMCState</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span>
+                          <span class="n">num_integration_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_num_integration_steps</span><span class="p">,</span>
+                          <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
+</pre></div>
+</div>
+<p>(Changes vs the old block: <code class="docutils literal notranslate"><span class="pre">build_kernel(integrator=...)</span></code> hoisted outside <code class="docutils literal notranslate"><span class="pre">step_fn</span></code> — no more per-SMC-step rebuild — and the kernel call passes <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code> positionally plus <code class="docutils literal notranslate"><span class="pre">integration_steps_params=(num_integration_steps,)</span></code> instead of the removed <code class="docutils literal notranslate"><span class="pre">num_integration_steps=</span></code> kwarg. <code class="docutils literal notranslate"><span class="pre">step_fn</span></code>’s own signature and the <code class="docutils literal notranslate"><span class="pre">params</span></code> dict are byte-identical to before.)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Run the SMC test file and RECORD outcomes</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_smc.py</span> <span class="pre">-v</span></code>
+Expected with certainty: no <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> anywhere; <code class="docutils literal notranslate"><span class="pre">test_smc_mclmc_is_the_default_inner_kernel</span></code> and <code class="docutils literal notranslate"><span class="pre">test_smc_unknown_kernel_raises</span></code> PASS; <code class="docutils literal notranslate"><span class="pre">test_smc_nuts_analytic_gaussian_recovery</span></code> still FAILS on its mean-recovery assert (root cause D — Task 4’s target, pre-existing, NOT caused by this task).
+Uncertain (record, don’t fix): the three other recovery tests (<code class="docutils literal notranslate"><span class="pre">test_smc_mclmc_recovers_both_modes</span></code>, <code class="docutils literal notranslate"><span class="pre">test_smc_mclmc_analytic_gaussian_recovery</span></code>, <code class="docutils literal notranslate"><span class="pre">test_smc_nuts_recovers_both_modes</span></code>) and <code class="docutils literal notranslate"><span class="pre">test_smc_info_has_log_evidence</span></code> use the same 1.6 adaptive-tempering machinery whose numerics changed upstream — they may pass or fail numerically. Record each test’s pass/fail and, for failures, the observed vs expected numbers in your report. Numeric failures here are Task 4’s scope; do NOT retune or edit anything in this task.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Commit</strong></p></li>
+</ul>
+<p>Gate for committing: zero <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>s and the two certainty tests green (Step 3). Known-numeric failures are tracked plan scope (Task 4) and do not block this commit.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix(inference): port TemperedSMC inner MCLMC kernel to blackjax 1.6 API&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-4-diagnose-retune-adaptive-tempering-root-cause-d-remaining-smc-failures">
+<h3>Task 4: Diagnose + retune adaptive tempering (root cause D — remaining SMC failures)<a class="headerlink" href="#task-4-diagnose-retune-adaptive-tempering-root-cause-d-remaining-smc-failures" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> (ONLY <code class="docutils literal notranslate"><span class="pre">TemperedSMC.__init__</span></code> default values and the class docstring, IF diagnosis says defaults must change; no other code)</p></li>
+<li><p>Scratch (not committed): diagnostic scripts in the session scratchpad</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: Task 3’s ported <code class="docutils literal notranslate"><span class="pre">_inner</span></code>; <code class="docutils literal notranslate"><span class="pre">SmcInfo.num_temperature_steps</span></code> (already exposed — the key diagnostic).</p></li>
+<li><p>Produces: all 7 tests in <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code> passing with genuine posterior recovery; updated <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> defaults + docstrings if retuned.</p></li>
+</ul>
+<p>Context: blackjax 1.6 fixed a sign bug in the adaptive-tempering ESS bisection target (<code class="docutils literal notranslate"><span class="pre">smc/ess.py</span></code>, upstream #914: <code class="docutils literal notranslate"><span class="pre">-delta</span> <span class="pre">*</span> <span class="pre">logdensity</span></code> → <code class="docutils literal notranslate"><span class="pre">delta</span> <span class="pre">*</span> <span class="pre">logdensity</span></code>). Under 1.6, <code class="docutils literal notranslate"><span class="pre">test_smc_nuts_analytic_gaussian_recovery</span></code> (same code + seed that passes under 1.5) returns posterior mean ≈ (0.03, 0.02) instead of (0.5, −0.5) — prior-like samples. Working hypothesis: the corrected solver anneals λ 0→1 in very few temperature steps, so <code class="docutils literal notranslate"><span class="pre">num_mcmc_steps=10</span></code> of rejuvenation cannot move particles to the posterior. The acceptance bar is REAL recovery, not loosened tolerances.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Diagnose — λ schedule under 1.5 vs 1.6</strong></p></li>
+</ul>
+<p>Write the scratchpad script <code class="docutils literal notranslate"><span class="pre">smc_diag.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_gaussian_prior</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.inference</span><span class="w"> </span><span class="kn">import</span> <span class="n">NLEPosterior</span><span class="p">,</span> <span class="n">TemperedSMC</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GaussianMock</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cond</span><span class="p">):</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">cond</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">diff</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">])</span>
+<span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">GaussianMock</span><span class="p">(),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,)))</span>
+<span class="n">s</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span>
+                      <span class="n">sampler</span><span class="o">=</span><span class="n">TemperedSMC</span><span class="p">(</span><span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;nuts&quot;</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+                                          <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+                      <span class="n">return_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;n_temp_steps=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">num_temperature_steps</span><span class="si">}</span><span class="s2">  logZ=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">log_evidence</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  &quot;</span>
+      <span class="sa">f</span><span class="s2">&quot;final_beta=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">final_tempering_param</span><span class="si">}</span><span class="s2">  mean=</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">  target=</span><span class="si">{</span><span class="n">x_o</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Run it in BOTH installs (same script, same seed):</p>
+<ul class="simple">
+<li><p>1.6: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">&lt;scratchpad&gt;/smc_diag.py</span></code></p></li>
+<li><p>1.5 (comparison only): <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">.venv/bin/python</span> <span class="pre">&lt;scratchpad&gt;/smc_diag.py</span></code> from the repo root</p></li>
+</ul>
+<p>Expected: the 1.5 run recovers mean ≈ (0.5, −0.5); compare <code class="docutils literal notranslate"><span class="pre">n_temp_steps</span></code> between the two. If 1.6’s <code class="docutils literal notranslate"><span class="pre">n_temp_steps</span></code> is much smaller (e.g. 1–3 vs 1.5’s many), the anneals-too-fast hypothesis is CONFIRMED. If <code class="docutils literal notranslate"><span class="pre">n_temp_steps</span></code> is similar but recovery still fails, the hypothesis is wrong — proceed to Step 2’s audit before touching any knob, and report what you find.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Audit blackjax 1.6 SMC-side default changes</strong></p></li>
+</ul>
+<p>Diff the SMC machinery between the two installed trees (read-only):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">V15</span><span class="o">=</span>.venv/lib/python3.12/site-packages/blackjax
+<span class="nv">V16</span><span class="o">=</span>/lhome/ific/a/aamerio/miniforge3/envs/gensbi/lib/python3.12/site-packages/blackjax
+diff<span class="w"> </span>-u<span class="w"> </span><span class="nv">$V15</span>/smc/adaptive_tempered.py<span class="w"> </span><span class="nv">$V16</span>/smc/adaptive_tempered.py
+diff<span class="w"> </span>-u<span class="w"> </span><span class="nv">$V15</span>/smc/ess.py<span class="w"> </span><span class="nv">$V16</span>/smc/ess.py
+diff<span class="w"> </span>-u<span class="w"> </span><span class="nv">$V15</span>/smc/solver.py<span class="w"> </span><span class="nv">$V16</span>/smc/solver.py
+</pre></div>
+</div>
+<p>Record in your report: any changed defaults (solver iteration caps, <code class="docutils literal notranslate"><span class="pre">target_ess</span></code> conventions, resampling thresholds) beyond the known #914 sign fix, and whether any of them implies a specific retune (e.g. if <code class="docutils literal notranslate"><span class="pre">target_ess</span></code> semantics inverted, that IS the fix — adjust GenSBI’s passthrough interpretation accordingly and say so).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Retune grid on the failing NUTS analytic case</strong></p></li>
+</ul>
+<p>Extend <code class="docutils literal notranslate"><span class="pre">smc_diag.py</span></code> with a small grid over GenSBI’s own knobs (run under 1.6 only):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">target_ess</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">num_mcmc_steps</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">50</span><span class="p">):</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span>
+                              <span class="n">sampler</span><span class="o">=</span><span class="n">TemperedSMC</span><span class="p">(</span><span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;nuts&quot;</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+                                                  <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                                                  <span class="n">target_ess</span><span class="o">=</span><span class="n">target_ess</span><span class="p">,</span>
+                                                  <span class="n">num_mcmc_steps</span><span class="o">=</span><span class="n">num_mcmc_steps</span><span class="p">),</span>
+                              <span class="n">return_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="n">x_o</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;target_ess=</span><span class="si">{</span><span class="n">target_ess</span><span class="si">}</span><span class="s2"> num_mcmc_steps=</span><span class="si">{</span><span class="n">num_mcmc_steps</span><span class="si">}</span><span class="s2">: &quot;</span>
+              <span class="sa">f</span><span class="s2">&quot;steps=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">num_temperature_steps</span><span class="si">}</span><span class="s2"> err=</span><span class="si">{</span><span class="n">err</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Decision rule: pick the SMALLEST deviation from the current defaults (<code class="docutils literal notranslate"><span class="pre">target_ess=0.5</span></code>, <code class="docutils literal notranslate"><span class="pre">num_mcmc_steps=10</span></code>) whose <code class="docutils literal notranslate"><span class="pre">err</span></code> ≤ 0.1 (comfortable margin inside the test’s 0.2 tolerance). Preference order: bump <code class="docutils literal notranslate"><span class="pre">num_mcmc_steps</span></code> first (pure rejuvenation cost, no schedule change), raise <code class="docutils literal notranslate"><span class="pre">target_ess</span></code> second (finer λ ladder). Then re-run the chosen combination with a DIFFERENT seed (<code class="docutils literal notranslate"><span class="pre">PRNGKey(42)</span></code>) to confirm it isn’t seed luck (require <code class="docutils literal notranslate"><span class="pre">err</span></code> ≤ 0.15 there too).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Apply the retuned defaults</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">TemperedSMC.__init__</span></code> (currently <code class="docutils literal notranslate"><span class="pre">samplers.py:296-305</span></code>), change ONLY the default value(s) selected in Step 3, and update the matching <code class="docutils literal notranslate"><span class="pre">Parameters</span></code> lines in the class docstring (currently <code class="docutils literal notranslate"><span class="pre">samplers.py:277-293</span></code>) — e.g. if <code class="docutils literal notranslate"><span class="pre">num_mcmc_steps</span></code> default becomes 30, both the signature and the docstring’s “Default is 10.” line change. Add one sentence to the class docstring noting the defaults are calibrated for blackjax ≥ 1.6’s corrected adaptive tempering (upstream #914).</p>
+<p>If Step 3 finds NO grid point that recovers (all <code class="docutils literal notranslate"><span class="pre">err</span></code> &gt; 0.1): STOP and report BLOCKED with the full grid table — do not edit test files, do not loosen tolerances, do not invent new knobs.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Run the full SMC test file</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/test_smc.py</span> <span class="pre">-v</span></code>
+Expected: <strong>7/7 PASS</strong> — including any tests Task 3 recorded as numerically failing (the retuned defaults govern them too; they pass explicit <code class="docutils literal notranslate"><span class="pre">inner_step_size</span></code>/<code class="docutils literal notranslate"><span class="pre">inner_num_integration_steps</span></code> but inherit <code class="docutils literal notranslate"><span class="pre">target_ess</span></code>/<code class="docutils literal notranslate"><span class="pre">num_mcmc_steps</span></code> defaults). If an mclmc-inner recovery test still fails, extend the Step 3 grid to that exact failing configuration (same knobs the test passes, varying only the retune levers) and iterate once; if it still fails, STOP and report BLOCKED with numbers.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 6: Run the complete inference suite (plan gate)</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/</span> <span class="pre">-v</span></code>
+Expected: <strong>36 passed, 0 failed</strong> (14 test_mclmc.py + 7 test_smc.py + 11 test_nested.py + 4 test_target.py).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 7: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix(inference): retune TemperedSMC defaults for blackjax 1.6 adaptive tempering&quot;</span>
+</pre></div>
+</div>
+<p>(If Steps 1–3 concluded no default change is needed — e.g. the audit found a passthrough fix instead — adapt the commit message to what actually changed; there must still be a commit closing root cause D, and the report must document the diagnosis evidence either way.)</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-constraints">Global Constraints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-structure">File Structure</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-port-mclmc-run-unadjusted-root-cause-a-5-tests">Task 1: Port <code class="docutils literal notranslate"><span class="pre">MCLMC._run_unadjusted</span></code> (root cause A — 5 tests)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-2-port-mclmc-run-adjusted-root-cause-b-2-tests">Task 2: Port <code class="docutils literal notranslate"><span class="pre">MCLMC._run_adjusted</span></code> (root cause B — 2 tests)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-3-port-temperedsmc-inner-mclmc-branch-root-cause-c-unblocks-2-tests">Task 3: Port <code class="docutils literal notranslate"><span class="pre">TemperedSMC._inner</span></code> mclmc branch (root cause C — unblocks 2 tests)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-4-diagnose-retune-adaptive-tempering-root-cause-d-remaining-smc-failures">Task 4: Diagnose + retune adaptive tempering (root cause D — remaining SMC failures)</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

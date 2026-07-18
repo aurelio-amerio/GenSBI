@@ -73,19 +73,116 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: __call__(x, mask = None)
+   .. py:method:: __call__(x, mask = None, freqs_cis = None, return_kv = False)
 
       
       Apply pre-norm residual self-attention followed by a residual MLP.
 
       :param x: Token sequence of shape ``(B, T, C)``.
       :type x: Array
-      :param mask: Attention mask of shape broadcastable to ``(1, 1, T, T)``, e.g. a
-                   prefix-causal mask. If ``None``, a standard causal mask is used.
+      :param mask: Attention mask broadcastable to ``(1, 1, T, T)``; ``None`` means
+                   standard causal.
       :type mask: Array or None, optional
+      :param freqs_cis: Rotary angles ``(T, head_dim)`` applied to q/k before attention.
+      :type freqs_cis: Array or None, optional
+      :param return_kv: If ``True``, also return the **unrotated** ``(k, v)`` — the KV
+                        cache stores unrotated keys (the cached path re-rotates the full
+                        cache each step, as the reference does). Default ``False``.
+      :type return_kv: bool, optional
 
-      :returns: Output token sequence of shape ``(B, T, C)``.
-      :rtype: Array
+      :returns: ``out`` of shape ``(B, T, C)``, or ``(out, k, v)`` when
+                ``return_kv=True``.
+      :rtype: Array or tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _finish(x, attn)
+
+      
+      Residual attention output + residual MLP (shared tail).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _qkv(x)
+
+      
+      Project to unrotated (q, k, v), each of shape ``(B, S, nh, hd)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: decode(x_new, k_cache, v_cache, index, freqs_cis = None)
+
+      
+      Single-token decode step against a preallocated KV cache.
+
+      The cache stores **unrotated** k (reference behavior: rope is applied
+      after the cache read, re-rotating the whole prefix each step). Slots
+      beyond ``index`` are zero-filled and masked out of the attention.
+
+      :param x_new: New token, shape ``(B, 1, C)``.
+      :type x_new: Array
+      :param k_cache: Caches of shape ``(B, S, nh, hd)`` with ``S`` total slots.
+      :type k_cache: Array
+      :param v_cache: Caches of shape ``(B, S, nh, hd)`` with ``S`` total slots.
+      :type v_cache: Array
+      :param index: Slot to write; attention sees slots ``<= index``.
+      :type index: int or traced scalar
+      :param freqs_cis: Rotary angles ``(S, head_dim)`` for **all** slots; the new
+                        token's q uses row ``index``.
+      :type freqs_cis: Array or None, optional
+
+      :returns: ``(out, k_cache, v_cache)`` with ``out`` of shape ``(B, 1, C)``.
+      :rtype: tuple
 
 
 
@@ -129,7 +226,7 @@ Module Contents
    .. py:attribute:: qkv
 
 
-.. py:class:: MetaBlock(F, channels, T, perm, conditioner, num_layers, num_heads, expansion, rngs, zero_init=True, use_softplus=True, soft_clip=4.0)
+.. py:class:: MetaBlock(F, channels, T, perm, conditioner, num_layers, num_heads, expansion, rngs, zero_init=True, use_softplus=True, soft_clip=4.0, rope=None, grid=None)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -177,6 +274,16 @@ Module Contents
                      before splitting into ``(a, b)``. Default is ``4.0``. Set to ``0``
                      to disable clipping.
    :type soft_clip: float, optional
+   :param rope: If given, 2D rotary position embeddings replace the learned
+                ``pos_embed`` (which is then set to ``None``). Positions are laid
+                out with the ``M`` prefix (conditioning) slots at the identity
+                rotation (zero angles) followed by the ``T`` image slots on the
+                normalized ``grid`` (raster order, not permuted by ``perm``).
+                Default is ``None`` (learned ``pos_embed``, unchanged behavior).
+   :type rope: VisionRotaryEmbedding or None, optional
+   :param grid: ``(h, w)`` patch-grid shape used to build rope positions when
+                ``rope`` is given; required in that case. Default is ``None``.
+   :type grid: tuple of int or None, optional
 
 
 
@@ -232,6 +339,49 @@ Module Contents
       scan computes them once instead of re-running the (potentially expensive,
       e.g. image-patchify) conditioner and rebuilding the prefix mask at every
       token step.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _forward_reference(z, cond = None)
+
+      
+      Map noise to data via full recompute (reference path for the KV cache).
+
+      ``forward`` is the production path (KV-cached); this method is its
+      correctness oracle, retained for the equivalence test suite — do not
+      delete it.
+
+      Sequentially scans over token positions via ``jax.lax.scan``,
+      re-running the causal attention pass at each step so that token
+      ``i``'s parameters are conditioned on already-generated tokens
+      ``0, …, i-1`` (mirrors ``MaskedAutoregressive.forward``).
+
+      :param z: Noise-space token sequence of shape ``(B, T, F)`` or a flat array
+                that will be reshaped to ``(B, T, F)``.
+      :type z: Array
+      :param cond: Conditioning input, or ``None`` for an unconditional transform.
+      :type cond: Array or None, optional
+
+      :returns: * **x** (*Array*) -- Data-space output of shape ``(B, T, F)``.
+                * **logabsdet** (*Array*) -- Log absolute determinant of the Jacobian of the forward map,
+                  shape ``(B,)``. Equal to ``+Σ log_scale`` over token and feature
+                  dimensions.
 
 
 
@@ -330,12 +480,13 @@ Module Contents
    .. py:method:: forward(z, cond = None)
 
       
-      Map noise to data (the sampling direction).
+      Map noise to data (the sampling direction), KV-cached.
 
-      Sequentially scans over token positions via ``jax.lax.scan``,
-      re-running the causal attention pass at each step so that token
-      ``i``'s parameters are conditioned on already-generated tokens
-      ``0, …, i-1`` (mirrors ``MaskedAutoregressive.forward``).
+      Prefills the per-layer caches with the condition prefix (one parallel
+      pass under the bidirectional prefix mask, matching the training-path
+      mask rows), then scans over token positions decoding a single token
+      per step against the caches. Verified equivalent to
+      :meth:`_forward_reference` (full recompute) by the test suite.
 
       :param z: Noise-space token sequence of shape ``(B, T, F)`` or a flat array
                 that will be reshaped to ``(B, T, F)``.
@@ -422,9 +573,6 @@ Module Contents
 
 
    .. py:attribute:: perm
-
-
-   .. py:attribute:: pos_embed
 
 
    .. py:attribute:: proj_in

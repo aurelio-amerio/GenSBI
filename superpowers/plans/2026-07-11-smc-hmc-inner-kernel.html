@@ -1,0 +1,693 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SMC Inner Kernel: Swap NUTS → HMC Implementation Plan &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/plans/2026-07-11-smc-hmc-inner-kernel';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">SMC Inner Kernel: Swap NUTS → HMC Implementation Plan</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="smc-inner-kernel-swap-nuts-hmc-implementation-plan">
+<h1>SMC Inner Kernel: Swap NUTS → HMC Implementation Plan<a class="headerlink" href="#smc-inner-kernel-swap-nuts-hmc-implementation-plan" title="Link to this heading">#</a></h1>
+<blockquote>
+<div><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">[</span> <span class="pre">]</span></code>) syntax for tracking.</p>
+</div></blockquote>
+<p><strong>Goal:</strong> Replace the <code class="docutils literal notranslate"><span class="pre">&quot;nuts&quot;</span></code> inner rejuvenation kernel option in <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> with <code class="docutils literal notranslate"><span class="pre">&quot;hmc&quot;</span></code>, since a fixed-trajectory kernel is the correct computational shape for SMC particle rejuvenation (static per-particle cost, vectorizes cleanly across particles) whereas NUTS’s dynamic trajectory length is a liability under particle batching.</p>
+<p><strong>Architecture:</strong> <code class="docutils literal notranslate"><span class="pre">TemperedSMC._inner()</span></code> is a small factory returning <code class="docutils literal notranslate"><span class="pre">(mcmc_step_fn,</span> <span class="pre">mcmc_init_fn,</span> <span class="pre">mcmc_parameters)</span></code> for blackjax’s <code class="docutils literal notranslate"><span class="pre">adaptive_tempered_smc</span></code>. The change is confined to that method plus two docstrings. HMC is a drop-in for NUTS: <code class="docutils literal notranslate"><span class="pre">blackjax.hmc.build_kernel()</span></code> returns a kernel whose signature is <code class="docutils literal notranslate"><span class="pre">(rng_key,</span> <span class="pre">state,</span> <span class="pre">logdensity_fn,</span> <span class="pre">step_size,</span> <span class="pre">inverse_mass_matrix,</span> <span class="pre">num_integration_steps)</span></code>, so the SMC framework can call it directly with <code class="docutils literal notranslate"><span class="pre">mcmc_parameters</span></code> extended by the extra <code class="docutils literal notranslate"><span class="pre">num_integration_steps</span></code> key — no wrapper closure needed (unlike the MCLMC branch). <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> already carries <code class="docutils literal notranslate"><span class="pre">inner_num_integration_steps</span></code> (default 5), so no new constructor parameter is required.</p>
+<p><strong>Tech Stack:</strong> Python 3.12, JAX, blackjax 1.6, pytest.</p>
+<section id="global-constraints">
+<h2>Global Constraints<a class="headerlink" href="#global-constraints" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>blackjax version floor: <strong>1.6</strong> (kernel factories are pure; <code class="docutils literal notranslate"><span class="pre">build_kernel()</span></code> takes no <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code>/<code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code> binding).</p></li>
+<li><p>Tests run CPU-only: the test module sets <code class="docutils literal notranslate"><span class="pre">os.environ[&quot;JAX_PLATFORMS&quot;]</span> <span class="pre">=</span> <span class="pre">&quot;cpu&quot;</span></code> at import (top of <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code>). On this GPU box the GPUs are frequently busy, so any manual repro must prefix <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span></code> and use the <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> mamba/conda env (not <code class="docutils literal notranslate"><span class="pre">.venv</span></code>).</p></li>
+<li><p>Valid <code class="docutils literal notranslate"><span class="pre">inner_kernel</span></code> values after this change: exactly <code class="docutils literal notranslate"><span class="pre">&quot;mclmc&quot;</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">&quot;hmc&quot;</span></code>. <code class="docutils literal notranslate"><span class="pre">&quot;nuts&quot;</span></code> must raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> via the existing unknown-kernel branch.</p></li>
+<li><p>This is un-merged experimental work on branch <code class="docutils literal notranslate"><span class="pre">nested-sampling</span></code>; no deprecation shim for <code class="docutils literal notranslate"><span class="pre">&quot;nuts&quot;</span></code> is required — a hard <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> is acceptable (no external users).</p></li>
+</ul>
+<hr class="docutils" />
+<section id="task-1-swap-the-nuts-inner-kernel-for-hmc">
+<h3>Task 1: Swap the NUTS inner kernel for HMC<a class="headerlink" href="#task-1-swap-the-nuts-inner-kernel-for-hmc" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> — <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> class docstring (approx. lines 277–309), <code class="docutils literal notranslate"><span class="pre">_inner</span></code> method (approx. lines 322–353), <code class="docutils literal notranslate"><span class="pre">inner_num_integration_steps</span></code> param docstring (approx. line 304–305).</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code> — migrate the three <code class="docutils literal notranslate"><span class="pre">inner_kernel=&quot;nuts&quot;</span></code> tests (approx. lines 34–66) to <code class="docutils literal notranslate"><span class="pre">&quot;hmc&quot;</span></code>.</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">TemperedSMC.inner_step_size</span></code> (float, default 0.1), <code class="docutils literal notranslate"><span class="pre">TemperedSMC.inner_num_integration_steps</span></code> (int, default 5), <code class="docutils literal notranslate"><span class="pre">TemperedSMC.inner_inverse_mass_matrix</span></code> (Array | None), <code class="docutils literal notranslate"><span class="pre">target.dim</span></code> (int) — all already present, unchanged.</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">TemperedSMC(inner_kernel=&quot;hmc&quot;)</span></code> yields a working sampler; <code class="docutils literal notranslate"><span class="pre">_inner</span></code> returns <code class="docutils literal notranslate"><span class="pre">(step_fn,</span> <span class="pre">init_fn,</span> <span class="pre">params)</span></code> where for HMC <code class="docutils literal notranslate"><span class="pre">params</span> <span class="pre">=</span> <span class="pre">dict(step_size,</span> <span class="pre">num_integration_steps,</span> <span class="pre">inverse_mass_matrix)</span></code>. <code class="docutils literal notranslate"><span class="pre">inner_kernel=&quot;nuts&quot;</span></code> now raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>. Public constructor signature is unchanged.</p></li>
+<li><p>[ ] <strong>Step 1: Migrate the three NUTS tests to HMC (write the failing tests)</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code>, replace the three NUTS-based tests. Rename the two recovery tests, switch <code class="docutils literal notranslate"><span class="pre">inner_kernel=&quot;nuts&quot;</span></code> → <code class="docutils literal notranslate"><span class="pre">inner_kernel=&quot;hmc&quot;</span></code>, and give the recovery tests <code class="docutils literal notranslate"><span class="pre">inner_num_integration_steps=10</span></code> (mirroring the MCLMC recovery tests, so a fixed 10-step trajectory does enough work per temperature). The bimodal-recovery assertion stays the same — SMC’s population, not the inner kernel, is what captures both modes.</p>
+<p>Replace lines 34–66 (the <code class="docutils literal notranslate"><span class="pre">test_smc_nuts_analytic_gaussian_recovery</span></code>, <code class="docutils literal notranslate"><span class="pre">test_smc_nuts_recovers_both_modes</span></code>, and <code class="docutils literal notranslate"><span class="pre">test_smc_info_has_log_evidence</span></code> functions) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_smc_hmc_analytic_gaussian_recovery</span><span class="p">():</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">GaussianMock</span><span class="p">(),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,)))</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">])</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span>
+                    <span class="n">sampler</span><span class="o">=</span><span class="n">TemperedSMC</span><span class="p">(</span><span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;hmc&quot;</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+                                        <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                                        <span class="n">inner_num_integration_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">))[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_smc_hmc_recovers_both_modes</span><span class="p">():</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">BimodalMock</span><span class="p">(</span><span class="n">mu</span><span class="o">=</span><span class="mf">3.0</span><span class="p">),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,),</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">5.0</span><span class="p">))</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span>
+                    <span class="n">sampler</span><span class="o">=</span><span class="n">TemperedSMC</span><span class="p">(</span><span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;hmc&quot;</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+                                        <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                                        <span class="n">inner_num_integration_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">))[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">frac_pos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">s</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">frac_neg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">s</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+    <span class="c1"># both modes populated (a single MCMC chain would capture only one)</span>
+    <span class="k">assert</span> <span class="n">frac_pos</span> <span class="o">&gt;</span> <span class="mf">0.3</span> <span class="ow">and</span> <span class="n">frac_neg</span> <span class="o">&gt;</span> <span class="mf">0.3</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_smc_info_has_log_evidence</span><span class="p">():</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">GaussianMock</span><span class="p">(),</span> <span class="n">make_gaussian_prior</span><span class="p">((</span><span class="n">dim</span><span class="p">,)))</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">]),</span>
+                          <span class="n">sampler</span><span class="o">=</span><span class="n">TemperedSMC</span><span class="p">(</span><span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;hmc&quot;</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                                              <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                                              <span class="n">inner_num_integration_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+                          <span class="n">return_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">log_evidence</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">info</span><span class="o">.</span><span class="n">num_temperature_steps</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">final_tempering_param</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Leave <code class="docutils literal notranslate"><span class="pre">test_smc_unknown_kernel_raises</span></code> (still uses <code class="docutils literal notranslate"><span class="pre">inner_kernel=&quot;foo&quot;</span></code>), <code class="docutils literal notranslate"><span class="pre">test_smc_mclmc_is_the_default_inner_kernel</span></code>, and the two <code class="docutils literal notranslate"><span class="pre">mclmc</span></code> tests unchanged.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run the HMC tests to verify they fail</strong></p></li>
+</ul>
+<p>Run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/inference/test_smc.py::test_smc_hmc_analytic_gaussian_recovery<span class="w"> </span>tests/inference/test_smc.py::test_smc_hmc_recovers_both_modes<span class="w"> </span>tests/inference/test_smc.py::test_smc_info_has_log_evidence<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">_inner</span></code> has no <code class="docutils literal notranslate"><span class="pre">&quot;hmc&quot;</span></code> branch, so it falls through to <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">ValueError(f&quot;unknown</span> <span class="pre">inner_kernel</span> <span class="pre">{self.inner_kernel!r}&quot;)</span></code>. Each test should error with a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> mentioning <code class="docutils literal notranslate"><span class="pre">'hmc'</span></code>, not an assertion failure. (If instead they pass, the <code class="docutils literal notranslate"><span class="pre">&quot;hmc&quot;</span></code> branch already exists — stop and reconcile.)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Add the HMC branch to <code class="docutils literal notranslate"><span class="pre">_inner</span></code> and remove the NUTS branch</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code>, in <code class="docutils literal notranslate"><span class="pre">TemperedSMC._inner</span></code>, replace the NUTS branch:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;nuts&quot;</span><span class="p">:</span>
+            <span class="n">step_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nuts</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">()</span>
+            <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nuts</span><span class="o">.</span><span class="n">init</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
+</pre></div>
+</div>
+<p>with the HMC branch:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;hmc&quot;</span><span class="p">:</span>
+            <span class="c1"># blackjax &gt;= 1.6: build_kernel() is a pure factory; the returned</span>
+            <span class="c1"># kernel&#39;s signature is (rng_key, state, logdensity_fn, step_size,</span>
+            <span class="c1"># inverse_mass_matrix, num_integration_steps), so SMC can call it</span>
+            <span class="c1"># directly with these params as kwargs -- no wrapper needed. HMC&#39;s</span>
+            <span class="c1"># fixed num_integration_steps gives static per-particle cost that</span>
+            <span class="c1"># vectorizes cleanly across the particle population (unlike NUTS&#39;s</span>
+            <span class="c1"># data-dependent trajectory length).</span>
+            <span class="n">step_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">hmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">()</span>
+            <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">hmc</span><span class="o">.</span><span class="n">init</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span>
+                          <span class="n">num_integration_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_num_integration_steps</span><span class="p">,</span>
+                          <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
+</pre></div>
+</div>
+<p>Leave the <code class="docutils literal notranslate"><span class="pre">&quot;mclmc&quot;</span></code> branch and the trailing <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">ValueError(f&quot;unknown</span> <span class="pre">inner_kernel</span> <span class="pre">{self.inner_kernel!r}&quot;)</span></code> untouched.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Update the class and parameter docstrings</strong></p></li>
+</ul>
+<p>In the <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> class docstring, change the kernel-summary sentence:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">The</span> <span class="n">inner</span> <span class="n">rejuvenation</span> <span class="n">kernel</span> <span class="ow">is</span> <span class="n">adjusted</span> <span class="n">MCLMC</span> <span class="n">by</span> <span class="n">default</span><span class="p">;</span> <span class="n">NUTS</span> <span class="ow">is</span> <span class="n">available</span>
+    <span class="k">as</span> <span class="n">a</span> <span class="n">fallback</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">The</span> <span class="n">inner</span> <span class="n">rejuvenation</span> <span class="n">kernel</span> <span class="ow">is</span> <span class="n">adjusted</span> <span class="n">MCLMC</span> <span class="n">by</span> <span class="n">default</span><span class="p">;</span> <span class="n">fixed</span><span class="o">-</span><span class="n">trajectory</span>
+    <span class="n">HMC</span> <span class="ow">is</span> <span class="n">available</span> <span class="k">as</span> <span class="n">an</span> <span class="n">alternative</span><span class="o">.</span> <span class="p">(</span><span class="n">NUTS</span> <span class="ow">is</span> <span class="n">deliberately</span> <span class="ow">not</span> <span class="n">offered</span><span class="p">:</span> <span class="n">its</span>
+    <span class="n">data</span><span class="o">-</span><span class="n">dependent</span> <span class="n">trajectory</span> <span class="n">length</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">vectorize</span> <span class="n">cleanly</span> <span class="n">across</span> <span class="n">SMC</span>
+    <span class="n">particles</span><span class="p">,</span> <span class="ow">and</span> <span class="n">rejuvenation</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">need</span> <span class="n">NUTS</span><span class="s1">&#39;s full-mixing guarantee.)</span>
+</pre></div>
+</div>
+<p>Change the <code class="docutils literal notranslate"><span class="pre">inner_kernel</span></code> parameter doc:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    inner_kernel : str, optional
+        Inner MCMC kernel: ``&quot;mclmc&quot;`` (adjusted MCLMC, default) or
+        ``&quot;nuts&quot;``.
+</pre></div>
+</div>
+<p>to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    inner_kernel : str, optional
+        Inner MCMC kernel: ``&quot;mclmc&quot;`` (adjusted MCLMC, default) or
+        ``&quot;hmc&quot;`` (fixed-trajectory HMC).
+</pre></div>
+</div>
+<p>Change the <code class="docutils literal notranslate"><span class="pre">inner_num_integration_steps</span></code> parameter doc:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">inner_num_integration_steps</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">optional</span>
+        <span class="n">Number</span> <span class="n">of</span> <span class="n">integration</span> <span class="n">steps</span> <span class="k">for</span> <span class="n">the</span> <span class="n">inner</span> <span class="n">MCLMC</span> <span class="n">kernel</span><span class="o">.</span>  <span class="n">Default</span> <span class="ow">is</span> <span class="mf">5.</span>
+</pre></div>
+</div>
+<p>to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">inner_num_integration_steps</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">optional</span>
+        <span class="n">Number</span> <span class="n">of</span> <span class="n">integration</span> <span class="n">steps</span> <span class="k">for</span> <span class="n">the</span> <span class="n">inner</span> <span class="n">MCLMC</span> <span class="ow">or</span> <span class="n">HMC</span> <span class="n">kernel</span><span class="o">.</span>
+        <span class="n">Default</span> <span class="ow">is</span> <span class="mf">5.</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Run the full SMC test module to verify green</strong></p></li>
+</ul>
+<p>Run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/inference/test_smc.py<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: PASS — all tests green, including the three migrated <code class="docutils literal notranslate"><span class="pre">hmc</span></code> tests, <code class="docutils literal notranslate"><span class="pre">test_smc_unknown_kernel_raises</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;foo&quot;</span></code> still raises), and the untouched <code class="docutils literal notranslate"><span class="pre">mclmc</span></code> tests. Output pristine (no errors/warnings beyond routine JAX platform notices).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 6: Grep to confirm no stray <code class="docutils literal notranslate"><span class="pre">nuts</span></code> references remain in the sampler surface</strong></p></li>
+</ul>
+<p>Run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>grep<span class="w"> </span>-rn<span class="w"> </span><span class="s2">&quot;nuts&quot;</span><span class="w"> </span>-i<span class="w"> </span>src/gensbi/inference/samplers.py<span class="w"> </span>tests/inference/test_smc.py
+</pre></div>
+</div>
+<p>Expected: no matches. (The unrelated diffusion/flow-matching notebooks that mention “nuts” are out of scope and untouched.)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 7: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/inference/samplers.py<span class="w"> </span>tests/inference/test_smc.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat(inference): swap TemperedSMC inner NUTS kernel for fixed-trajectory HMC</span>
+
+<span class="s2">NUTS&#39;s data-dependent trajectory length does not vectorize cleanly across</span>
+<span class="s2">SMC particles and rejuvenation does not need its full-mixing guarantee; a</span>
+<span class="s2">fixed-trajectory kernel (static per-particle cost) is the correct shape for</span>
+<span class="s2">SMC. HMC drops in via blackjax.hmc.build_kernel() reusing the existing</span>
+<span class="s2">inner_num_integration_steps. inner_kernel now accepts &#39;mclmc&#39; (default) or</span>
+<span class="s2">&#39;hmc&#39;; &#39;nuts&#39; raises ValueError.</span>
+
+<span class="s2">Co-Authored-By: Claude Opus 4.8 &lt;noreply@anthropic.com&gt;&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="self-review">
+<h2>Self-Review<a class="headerlink" href="#self-review" title="Link to this heading">#</a></h2>
+<p><strong>Spec coverage:</strong></p>
+<ul class="simple">
+<li><p>Remove NUTS → Step 3 deletes the branch; Step 6 verifies no residue. ✓</p></li>
+<li><p>Add HMC → Step 3 adds the branch using the verified blackjax 1.6 signature; Steps 1–2 cover it with failing-first tests. ✓</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;nuts&quot;</span></code> now errors → covered by the unchanged trailing <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">ValueError</span></code> and <code class="docutils literal notranslate"><span class="pre">test_smc_unknown_kernel_raises</span></code> (Step 5). ✓</p></li>
+<li><p>Docstrings reflect the new surface → Step 4. ✓</p></li>
+</ul>
+<p><strong>Placeholder scan:</strong> No TBD/TODO/”handle edge cases”/”similar to” — every code step shows the exact code. ✓</p>
+<p><strong>Type consistency:</strong> HMC <code class="docutils literal notranslate"><span class="pre">params</span></code> keys (<code class="docutils literal notranslate"><span class="pre">step_size</span></code>, <code class="docutils literal notranslate"><span class="pre">num_integration_steps</span></code>, <code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code>) match <code class="docutils literal notranslate"><span class="pre">blackjax.hmc.build_kernel()</span></code>’s kwargs verified via <code class="docutils literal notranslate"><span class="pre">inspect.signature</span></code>. <code class="docutils literal notranslate"><span class="pre">inner_num_integration_steps</span></code> and <code class="docutils literal notranslate"><span class="pre">inner_step_size</span></code> are existing <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> attributes. Test function names are unique and don’t collide with retained tests. ✓</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-constraints">Global Constraints</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-swap-the-nuts-inner-kernel-for-hmc">Task 1: Swap the NUTS inner kernel for HMC</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#self-review">Self-Review</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

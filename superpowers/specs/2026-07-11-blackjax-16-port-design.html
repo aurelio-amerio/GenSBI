@@ -1,0 +1,691 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Design: Port MCLMC + TemperedSMC to the blackjax 1.6 API &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/specs/2026-07-11-blackjax-16-port-design';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Design: Port MCLMC + TemperedSMC to the blackjax 1.6 API</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="design-port-mclmc-temperedsmc-to-the-blackjax-1-6-api">
+<h1>Design: Port MCLMC + TemperedSMC to the blackjax 1.6 API<a class="headerlink" href="#design-port-mclmc-temperedsmc-to-the-blackjax-1-6-api" title="Link to this heading">#</a></h1>
+<p><strong>Date:</strong> 2026-07-11
+<strong>Branch:</strong> <code class="docutils literal notranslate"><span class="pre">nested-sampling</span></code> (continues on the same branch; this port is the merge blocker
+for landing the branch on <code class="docutils literal notranslate"><span class="pre">main</span></code>)
+<strong>Status:</strong> Approved</p>
+<section id="problem">
+<h2>Problem<a class="headerlink" href="#problem" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">nested-sampling</span></code> branch bumped the dependency floor to <code class="docutils literal notranslate"><span class="pre">blackjax&gt;=1.6</span></code> (required by
+<code class="docutils literal notranslate"><span class="pre">blackjax.nss</span></code>), and the mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env now runs blackjax 1.6. Under 1.6, the
+pre-existing samplers in <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> break: <strong>10 test failures</strong>
+(7 in <code class="docutils literal notranslate"><span class="pre">tests/inference/test_mclmc.py</span></code>, 3 in <code class="docutils literal notranslate"><span class="pre">tests/inference/test_smc.py</span></code>). The branch
+must not merge while its own declared floor breaks its two default samplers.</p>
+<p>Root causes (from a source-level diff of the installed 1.5 vs 1.6 trees; the repo <code class="docutils literal notranslate"><span class="pre">.venv</span></code>
+still holds 1.5, the mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env holds 1.6):</p>
+<ul class="simple">
+<li><p><strong>A (5 tests, unadjusted MCLMC):</strong> <code class="docutils literal notranslate"><span class="pre">blackjax.mclmc_find_L_and_step_size</span></code> now requires an
+explicit <code class="docutils literal notranslate"><span class="pre">logdensity_fn=</span></code> kwarg (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> otherwise), and
+<code class="docutils literal notranslate"><span class="pre">blackjax.mcmc.mclmc.build_kernel</span></code> no longer accepts <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code>/<code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code>
+(they moved to per-call kernel arguments).</p></li>
+<li><p><strong>B (2 tests, adjusted MCLMC):</strong> <code class="docutils literal notranslate"><span class="pre">blackjax.adjusted_mclmc_find_L_and_step_size</span></code> gained a
+required positional <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code>, and the kernel closure it drives has a new call
+signature — integration-step tunables arrive via an <code class="docutils literal notranslate"><span class="pre">integration_steps_params</span></code> tuple, not
+a baked-in scalar; <code class="docutils literal notranslate"><span class="pre">build_kernel</span></code> no longer takes <code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code>.</p></li>
+<li><p><strong>C (2 tests, TemperedSMC mclmc inner kernel):</strong> <code class="docutils literal notranslate"><span class="pre">blackjax.mcmc.adjusted_mclmc.build_kernel</span></code>
+no longer accepts <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code>/<code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code>; the static kernel’s
+<code class="docutils literal notranslate"><span class="pre">num_integration_steps:</span> <span class="pre">int</span></code> became <code class="docutils literal notranslate"><span class="pre">integration_steps_params:</span> <span class="pre">tuple</span></code>.</p></li>
+<li><p><strong>D (1 test, TemperedSMC NUTS inner kernel):</strong> <em>not</em> an API break. blackjax 1.6 fixed a
+sign bug in the adaptive-tempering ESS bisection target (<code class="docutils literal notranslate"><span class="pre">smc/ess.py</span></code>, upstream issue
+#914: <code class="docutils literal notranslate"><span class="pre">-delta</span> <span class="pre">*</span> <span class="pre">logdensity</span></code> → <code class="docutils literal notranslate"><span class="pre">delta</span> <span class="pre">*</span> <span class="pre">logdensity</span></code>). Same test + seed passes under 1.5
+and fails under 1.6 with posterior mean ≈ (0.03, 0.02) instead of (0.5, −0.5) — the
+samples look prior-like, suggesting the corrected solver anneals λ 0→1 too fast for the
+fixed inner-kernel settings to rejuvenate.</p></li>
+</ul>
+<p>The 1.6 theme behind A–C: blackjax’s kernels no longer statically bind
+<code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code>/<code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code> in <code class="docutils literal notranslate"><span class="pre">build_kernel</span></code>; those are per-call kernel
+arguments now, and the <code class="docutils literal notranslate"><span class="pre">*_find_L_and_step_size</span></code> tuners take <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code> explicitly.</p>
+<p>The entire blackjax surface to port lives in <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code> — nothing
+else under <code class="docutils literal notranslate"><span class="pre">src/</span></code> calls blackjax, there is no <code class="docutils literal notranslate"><span class="pre">scripts/</span></code> directory in this repo, and the
+<code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code>/<code class="docutils literal notranslate"><span class="pre">nss</span></code> code is 1.6-native and out of scope.</p>
+</section>
+<section id="decision">
+<h2>Decision<a class="headerlink" href="#decision" title="Link to this heading">#</a></h2>
+<p><strong>Minimal mechanical port, no public API changes, plus a dedicated quality pass for the two
+upstream behavior changes.</strong> Alternatives rejected:</p>
+<ul class="simple">
+<li><p><em>Version-compat shim (support 1.5 and 1.6):</em> the floor is already <code class="docutils literal notranslate"><span class="pre">&gt;=1.6</span></code>; dual-path code
+is pure liability.</p></li>
+<li><p><em>Broader refactor onto blackjax’s new <code class="docutils literal notranslate"><span class="pre">build_sampling_algorithm</span></code> conventions:</em> the tuners
+still require kernel closures, so there is little to gain beyond what the minimal port
+already simplifies.</p></li>
+</ul>
+<p>Constructor signatures, knob names, defaults-as-API, and the <code class="docutils literal notranslate"><span class="pre">Sampler</span></code> contract
+(<code class="docutils literal notranslate"><span class="pre">run(key,</span> <span class="pre">target)</span> <span class="pre">-&gt;</span> <span class="pre">(samples,</span> <span class="pre">info)</span></code>) are unchanged. Per the module’s design philosophy
+(“simple sampler that reasonably works out of the box”), we do <strong>not</strong> expose new blackjax
+1.6 knobs (e.g. <code class="docutils literal notranslate"><span class="pre">target_num_integration_steps</span></code>) — we accept upstream defaults.</p>
+</section>
+<section id="code-changes-all-in-src-gensbi-inference-samplers-py-40-lines-3-functions">
+<h2>Code changes (all in <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code>, ~40 lines, 3 functions)<a class="headerlink" href="#code-changes-all-in-src-gensbi-inference-samplers-py-40-lines-3-functions" title="Link to this heading">#</a></h2>
+<section id="mclmc-run-unadjusted-currently-lines-191210-root-cause-a">
+<h3>1. <code class="docutils literal notranslate"><span class="pre">MCLMC._run_unadjusted</span></code> (currently lines ~191–210) — root cause A<a class="headerlink" href="#mclmc-run-unadjusted-currently-lines-191210-root-cause-a" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span><span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">)</span>
+<span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mclmc_find_L_and_step_size</span><span class="p">(</span>
+    <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+    <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+    <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Build the kernel <strong>once</strong> — delete the <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">inverse_mass_matrix:</span> <span class="pre">build_kernel(...)</span></code>
+closure; the 1.6 tuner threads <code class="docutils literal notranslate"><span class="pre">logdensity_fn</span></code>/<code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code>/<code class="docutils literal notranslate"><span class="pre">L</span></code>/<code class="docutils literal notranslate"><span class="pre">step_size</span></code>
+through per-call itself.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">blackjax.mcmc.mclmc.init(...)</span></code> and the top-level <code class="docutils literal notranslate"><span class="pre">blackjax.mclmc(...)</span></code> factory are
+unchanged — keep as-is.</p></li>
+<li><p>Risk: low; 1.6 kernel math is unchanged (renames only).</p></li>
+</ul>
+</section>
+<section id="mclmc-run-adjusted-currently-lines-212248-root-cause-b">
+<h3>2. <code class="docutils literal notranslate"><span class="pre">MCLMC._run_adjusted</span></code> (currently lines ~212–248) — root cause B<a class="headerlink" href="#mclmc-run-adjusted-currently-lines-212248-root-cause-b" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+    <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">avg</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+        <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">avg</span><span class="p">)),</span>
+    <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">adjusted_mclmc_find_L_and_step_size</span><span class="p">(</span>
+    <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+    <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+    <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_acceptance</span><span class="p">,</span>
+    <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">build_kernel</span></code> loses <code class="docutils literal notranslate"><span class="pre">inverse_mass_matrix</span></code>; the kernel is built <strong>once</strong> (no per-tuner-step
+closure rebuild). <code class="docutils literal notranslate"><span class="pre">integration_steps_fn</span></code> becomes <code class="docutils literal notranslate"><span class="pre">(rng_arg,</span> <span class="pre">avg)</span> <span class="pre">-&gt;</span> <span class="pre">steps</span></code>: the tuner
+passes the running average positionally via <code class="docutils literal notranslate"><span class="pre">integration_steps_params=(avg,)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">adjusted_mclmc_dynamic.init(...)</span></code> and the top-level <code class="docutils literal notranslate"><span class="pre">blackjax.adjusted_mclmc_dynamic(...)</span></code>
+factory (with the single-arg <code class="docutils literal notranslate"><span class="pre">integration_steps_fn</span></code> closed over the final
+<code class="docutils literal notranslate"><span class="pre">params.L</span> <span class="pre">/</span> <span class="pre">params.step_size</span></code>) are unchanged — keep as-is.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_rescale</span></code> is untouched. <code class="docutils literal notranslate"><span class="pre">_check_rescale_domain</span></code>’s <code class="docutils literal notranslate"><span class="pre">mu</span> <span class="pre">&gt;=</span> <span class="pre">1</span></code> guard stays: 1.6’s tuner
+anchors <code class="docutils literal notranslate"><span class="pre">L</span> <span class="pre">/</span> <span class="pre">step_size</span></code> near <code class="docutils literal notranslate"><span class="pre">target_num_integration_steps</span> <span class="pre">=</span> <span class="pre">2.0</span></code>, which satisfies it.</p></li>
+<li><p><strong>Upstream behavior change to absorb (not just signatures):</strong> 1.6 rewrote the adjusted
+tuner (avg-preserving calibration; removed the 1.5 √dim <code class="docutils literal notranslate"><span class="pre">L</span></code>-reset that collapsed
+<code class="docutils literal notranslate"><span class="pre">L/step_size</span></code> before pass-2 dual averaging). Tuned <code class="docutils literal notranslate"><span class="pre">L</span></code>/<code class="docutils literal notranslate"><span class="pre">step_size</span></code> — and therefore
+acceptance behavior — shift systematically. See Quality pass.</p></li>
+</ul>
+</section>
+<section id="temperedsmc-inner-mclmc-branch-currently-lines-319333-root-cause-c">
+<h3>3. <code class="docutils literal notranslate"><span class="pre">TemperedSMC._inner</span></code>, mclmc branch (currently lines ~319–333) — root cause C<a class="headerlink" href="#temperedsmc-inner-mclmc-branch-currently-lines-319333-root-cause-c" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span><span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">step_fn</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span>
+            <span class="n">num_integration_steps</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span>
+                  <span class="n">integration_steps_params</span><span class="o">=</span><span class="p">(</span><span class="n">num_integration_steps</span><span class="p">,),</span>
+                  <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Kernel built <strong>once outside</strong> <code class="docutils literal notranslate"><span class="pre">step_fn</span></code> (also removes the current per-SMC-step
+<code class="docutils literal notranslate"><span class="pre">build_kernel</span></code> rebuild wart, matching the nuts branch’s existing style).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mcmc_parameters</span></code> dict keys stay exactly as SMC expects to thread them into <code class="docutils literal notranslate"><span class="pre">step_fn</span></code>.</p></li>
+<li><p>The 1.6 static <code class="docutils literal notranslate"><span class="pre">adjusted_mclmc</span></code> kernel body is unchanged beyond the parameter-passing
+refactor — low risk.</p></li>
+<li><p>NUTS branch (<code class="docutils literal notranslate"><span class="pre">blackjax.nuts.build_kernel()</span></code> / <code class="docutils literal notranslate"><span class="pre">.init</span></code>): signatures unchanged, <strong>no code
+change</strong>. <code class="docutils literal notranslate"><span class="pre">TemperedSMC.run</span></code> call sites (<code class="docutils literal notranslate"><span class="pre">adaptive_tempered_smc</span></code>, <code class="docutils literal notranslate"><span class="pre">extend_params</span></code>,
+<code class="docutils literal notranslate"><span class="pre">smc.init/step</span></code>): signatures unchanged, <strong>no code change</strong>.</p></li>
+</ul>
+</section>
+</section>
+<section id="quality-pass-the-non-mechanical-part">
+<h2>Quality pass (the non-mechanical part)<a class="headerlink" href="#quality-pass-the-non-mechanical-part" title="Link to this heading">#</a></h2>
+<section id="smc-adaptive-tempering-root-cause-d-owner-call-diagnose-retune-not-test-side-patching">
+<h3>SMC adaptive tempering — root cause D (owner call: diagnose + retune, not test-side patching)<a class="headerlink" href="#smc-adaptive-tempering-root-cause-d-owner-call-diagnose-retune-not-test-side-patching" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Diagnose first:</strong> instrument the λ schedule under 1.6 (number of tempering steps and
+the λ trajectory for the failing analytic NUTS recovery case) to confirm or refute the
+“anneals too fast to rejuvenate” hypothesis.</p></li>
+<li><p><strong>Audit blackjax 1.6 SMC-side defaults</strong> for changes alongside the #914 fix — diff
+<code class="docutils literal notranslate"><span class="pre">smc/adaptive_tempered.py</span></code>, <code class="docutils literal notranslate"><span class="pre">smc/ess.py</span></code>, <code class="docutils literal notranslate"><span class="pre">smc/solver.py</span></code> (root solver, <code class="docutils literal notranslate"><span class="pre">target_ess</span></code>
+conventions, solver iteration caps) between the installed 1.5 (<code class="docutils literal notranslate"><span class="pre">.venv</span></code>) and 1.6
+(<code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env) trees.</p></li>
+<li><p><strong>Retune GenSBI’s <code class="docutils literal notranslate"><span class="pre">TemperedSMC</span></code> defaults</strong> (<code class="docutils literal notranslate"><span class="pre">num_mcmc_steps</span></code>, <code class="docutils literal notranslate"><span class="pre">target_ess</span></code>, inner-kernel
+step params) until <code class="docutils literal notranslate"><span class="pre">test_smc_nuts_analytic_gaussian_recovery</span></code> <strong>genuinely</strong> passes —
+the acceptance bar is real posterior recovery (mean ≈ x_o/2 within existing tolerance),
+NOT a loosened tolerance around prior-like samples. If defaults change, their docstrings
+change in the same commit.</p></li>
+<li><p>The two SMC-MCLMC recovery tests (blocked behind root cause C today) use the same
+adaptive-tempering machinery and get the same scrutiny once they compile.</p></li>
+</ol>
+</section>
+<section id="adjusted-mclmc-numerics">
+<h3>Adjusted-MCLMC numerics<a class="headerlink" href="#adjusted-mclmc-numerics" title="Link to this heading">#</a></h3>
+<p>Re-validate <code class="docutils literal notranslate"><span class="pre">test_adjusted_analytic_gaussian_recovery</span></code> and
+<code class="docutils literal notranslate"><span class="pre">test_adjusted_reports_acceptance_rate</span></code> under the rewritten 1.6 tuner. Expectation changes
+must be justified by the upstream tuner change (documented in the commit), not used to mask
+a porting bug. Update any <code class="docutils literal notranslate"><span class="pre">samplers.py</span></code> docstring that describes 1.5 tuner behavior
+(e.g. <code class="docutils literal notranslate"><span class="pre">_rescale</span></code> / mu heuristics tied to old <code class="docutils literal notranslate"><span class="pre">L/step_size</span></code> trajectories).</p>
+</section>
+</section>
+<section id="testing-success-criteria">
+<h2>Testing &amp; success criteria<a class="headerlink" href="#testing-success-criteria" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Existing suites are the spec: <strong>all 21 tests in <code class="docutils literal notranslate"><span class="pre">test_mclmc.py</span></code> + <code class="docutils literal notranslate"><span class="pre">test_smc.py</span></code> pass</strong>,
+and the full <code class="docutils literal notranslate"><span class="pre">tests/inference/</span></code> suite is green (those 21 + 11 nested + 4 target = 36).</p></li>
+<li><p>No new test files. New assertions only if the diagnosis step warrants pinning schedule
+behavior; otherwise the recovery tests already encode the acceptance bar.</p></li>
+<li><p>Test command (CPU-only; node GPUs busy):
+<code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/inference/</span> <span class="pre">-v</span></code>
+in the mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env (NOT <code class="docutils literal notranslate"><span class="pre">.venv</span></code> — it still holds blackjax 1.5 and would
+false-pass).</p></li>
+</ul>
+</section>
+<section id="out-of-scope">
+<h2>Out of scope<a class="headerlink" href="#out-of-scope" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">NestedSampler</span></code> / <code class="docutils literal notranslate"><span class="pre">blackjax.nss</span></code> code (1.6-native, shipped, review-confirmed).</p></li>
+<li><p>Any public API change, new knob, or version-compat shim.</p></li>
+<li><p>Non-<code class="docutils literal notranslate"><span class="pre">samplers.py</span></code> code (nothing else touches blackjax).</p></li>
+<li><p>Merging <code class="docutils literal notranslate"><span class="pre">nested-sampling</span></code> to <code class="docutils literal notranslate"><span class="pre">main</span></code> (user owns that gate; this port unblocks it).</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem">Problem</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#decision">Decision</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#code-changes-all-in-src-gensbi-inference-samplers-py-40-lines-3-functions">Code changes (all in <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code>, ~40 lines, 3 functions)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#mclmc-run-unadjusted-currently-lines-191210-root-cause-a">1. <code class="docutils literal notranslate"><span class="pre">MCLMC._run_unadjusted</span></code> (currently lines ~191–210) — root cause A</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#mclmc-run-adjusted-currently-lines-212248-root-cause-b">2. <code class="docutils literal notranslate"><span class="pre">MCLMC._run_adjusted</span></code> (currently lines ~212–248) — root cause B</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#temperedsmc-inner-mclmc-branch-currently-lines-319333-root-cause-c">3. <code class="docutils literal notranslate"><span class="pre">TemperedSMC._inner</span></code>, mclmc branch (currently lines ~319–333) — root cause C</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-pass-the-non-mechanical-part">Quality pass (the non-mechanical part)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smc-adaptive-tempering-root-cause-d-owner-call-diagnose-retune-not-test-side-patching">SMC adaptive tempering — root cause D (owner call: diagnose + retune, not test-side patching)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#adjusted-mclmc-numerics">Adjusted-MCLMC numerics</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-success-criteria">Testing &amp; success criteria</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#out-of-scope">Out of scope</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -45,6 +45,8 @@ Classes
    gensbi.inference.MCLMC
    gensbi.inference.MclmcInfo
    gensbi.inference.NLEPosterior
+   gensbi.inference.NestedSampler
+   gensbi.inference.NestedSamplerInfo
    gensbi.inference.PosteriorTarget
    gensbi.inference.Sampler
    gensbi.inference.SmcInfo
@@ -305,8 +307,9 @@ Package Contents
       :returns: * **samples** (*Array*) -- Posterior samples of shape ``(n, dim, 1)``.  When
                   ``return_info=False`` (the default), this is the only return value.
                 * **info** (*object*) -- Sampler-specific info object
-                  (:class:`~gensbi.inference.samplers.MclmcInfo` or
-                  :class:`~gensbi.inference.samplers.SmcInfo`).  Only present when
+                  (:class:`~gensbi.inference.samplers.MclmcInfo`,
+                  :class:`~gensbi.inference.samplers.SmcInfo`, or
+                  :class:`~gensbi.inference.samplers.NestedSamplerInfo`).  Only present when
                   ``return_info=True``.
 
 
@@ -336,6 +339,241 @@ Package Contents
    .. py:attribute:: structured_obs
       :value: False
 
+
+
+.. py:class:: NestedSampler(*, num_live=500, num_delete=None, num_inner_steps=None, num_samples=1000, dlogz=-3.0, max_iterations=100000, num_rejuvenation_steps=0)
+
+   Bases: :py:obj:`Sampler`
+
+
+   
+   Nested slice sampling (blackjax ``nss``) posterior sampler.
+
+   Runs blackjax's Nested Slice Sampling from prior-drawn live points,
+   accumulating dead points until the live set's evidence share is
+   negligible, then resamples the dead-point history into equal-weight
+   posterior draws.  Unlike the MCMC samplers this also estimates the
+   log evidence, and handles multimodal posteriors without tempering.
+
+   :param num_live: Number of live points.  Default is 500.
+   :type num_live: int, optional
+   :param num_delete: Number of lowest-likelihood points replaced per step (device
+                      batching).  If ``None``, defaults to ``max(1, num_live // 10)``.
+   :type num_delete: int or None, optional
+   :param num_inner_steps: Constrained slice moves per replacement.  If ``None``, resolved
+                           at run time to ``max(5, 2 * target.dim)`` (blackjax's rule of
+                           thumb for reliable mixing).  Default is ``None``.
+   :type num_inner_steps: int or None, optional
+   :param num_samples: Number of equal-weight posterior draws returned.  Default is 1000.
+   :type num_samples: int, optional
+   :param dlogz: Termination threshold (blackjax convention): stop once
+                 ``logZ_live - logZ < dlogz``.  Default is -3.0; use e.g. -10.0
+                 near phase transitions.
+   :type dlogz: float, optional
+   :param max_iterations: Safety cap on the number of outer NS steps.  Default is 100_000.
+   :type max_iterations: int, optional
+   :param num_rejuvenation_steps: Posterior-invariant hit-and-run slice moves applied to each
+                                  equal-weight draw after resampling.  The with-replacement resampling
+                                  duplicates draws whenever ``num_samples`` is comparable to the run's
+                                  ESS; a few slice moves break the duplicated atoms without changing
+                                  the sampled distribution.  Default is 0 (no rejuvenation).
+   :type num_rejuvenation_steps: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _rejuvenate(key, positions, target)
+
+      
+      Break duplicated equal-weight draws with posterior-invariant moves.
+
+      Runs ``num_rejuvenation_steps`` hit-and-run slice moves on every
+      resampled draw (one vmapped chain per draw), targeting the
+      unconstrained log-posterior.  Directions are shaped by the empirical
+      covariance of the resampled cloud and scaled to Mahalanobis norm 2,
+      the same proposal the NS run's inner kernel uses -- so the moves are
+      local decorrelation only; mode coverage and weights stay as the NS
+      run left them.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _resolve_num_inner_steps(dim)
+
+      
+      ``num_inner_steps`` if set, else blackjax's ``max(5, 2 * dim)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: run(key, target)
+
+      
+      Draw posterior samples using nested slice sampling.
+
+      :param key: Random key.
+      :type key: jax.random.PRNGKey
+      :param target: Posterior target produced by
+                     :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.
+      :type target: PosteriorTarget
+
+      :returns: * **samples** (*Array*) -- Equal-weight posterior samples of shape ``(num_samples, dim)``.
+                * **info** (*NestedSamplerInfo*) -- Evidence estimate, ESS and the raw finalised run.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: dlogz
+      :value: -3.0
+
+
+
+   .. py:attribute:: max_iterations
+      :value: 100000
+
+
+
+   .. py:attribute:: num_delete
+      :value: None
+
+
+
+   .. py:attribute:: num_inner_steps
+      :value: None
+
+
+
+   .. py:attribute:: num_live
+      :value: 500
+
+
+
+   .. py:attribute:: num_rejuvenation_steps
+      :value: 0
+
+
+
+   .. py:attribute:: num_samples
+      :value: 1000
+
+
+
+.. py:class:: NestedSamplerInfo
+
+   
+   Diagnostics from a nested sampling run.
+
+   :param log_evidence: Log marginal likelihood estimate (mean over stochastic
+                        prior-volume draws).
+   :type log_evidence: float
+   :param log_evidence_err: Standard deviation of the log-evidence estimate over the
+                            stochastic prior-volume draws.
+   :type log_evidence_err: float
+   :param ess: Effective sample size of the weighted dead-point set.
+   :type ess: float
+   :param num_dead: Total number of points in the finalised run (dead points plus
+                    the final live set).
+   :type num_dead: int
+   :param dead: Raw finalised ``blackjax.ns.base.NSInfo`` carrying the full
+                point history (positions, log-likelihoods, birth contours).
+                Kept for downstream re-weighting or anesthetic-style analysis.
+   :type dead: object
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:attribute:: dead
+      :type:  object
+
+
+   .. py:attribute:: ess
+      :type:  float
+
+
+   .. py:attribute:: log_evidence
+      :type:  float
+
+
+   .. py:attribute:: log_evidence_err
+      :type:  float
+
+
+   .. py:attribute:: num_dead
+      :type:  int
 
 
 .. py:class:: PosteriorTarget
@@ -503,7 +741,7 @@ Package Contents
       :type:  int
 
 
-.. py:class:: TemperedSMC(*, num_particles=1000, target_ess=0.5, num_mcmc_steps=10, inner_kernel='mclmc', inner_step_size=0.1, inner_num_integration_steps=5, inner_inverse_mass_matrix=None)
+.. py:class:: TemperedSMC(*, num_particles=1000, target_ess=0.9, num_mcmc_steps=10, inner_kernel='mclmc', inner_step_size=0.1, inner_num_integration_steps=5, inner_inverse_mass_matrix=None)
 
    Bases: :py:obj:`Sampler`
 
@@ -513,22 +751,34 @@ Package Contents
 
    Walks particles along ``p(theta) * q(x_o | theta)^beta`` for beta from 0
    to 1, choosing the beta ladder adaptively to maintain ``target_ess``.  The
-   inner rejuvenation kernel is adjusted MCLMC by default; NUTS is available
-   as a fallback.
+   inner rejuvenation kernel is adjusted MCLMC by default; fixed-trajectory
+   HMC is available as an alternative. (NUTS is deliberately not offered: its
+   data-dependent trajectory length does not vectorize cleanly across SMC
+   particles, and rejuvenation does not need NUTS's full-mixing guarantee.)
+
+   ``target_ess`` and ``num_mcmc_steps`` default to values calibrated for
+   blackjax >= 1.6, whose adaptive-tempering ESS solver was corrected
+   (upstream #914 fixed a sign bug in the bisection target). The fix
+   changes how many temperature steps are needed to anneal from beta=0 to
+   1: with the pre-1.6-era ``target_ess=0.5`` default, the corrected
+   solver can collapse the schedule to a single step, leaving too few
+   temperature increments for rejuvenation to move particles onto the
+   posterior.
 
    :param num_particles: Number of SMC particles.  Default is 1000.
    :type num_particles: int, optional
    :param target_ess: Target effective sample size ratio in ``(0, 1)``, used to adapt the
-                      temperature increments.  Default is 0.5.
+                      temperature increments.  Default is 0.9.
    :type target_ess: float, optional
    :param num_mcmc_steps: Number of inner MCMC rejuvenation steps per temperature.  Default is 10.
    :type num_mcmc_steps: int, optional
    :param inner_kernel: Inner MCMC kernel: ``"mclmc"`` (adjusted MCLMC, default) or
-                        ``"nuts"``.
+                        ``"hmc"`` (fixed-trajectory HMC).
    :type inner_kernel: str, optional
    :param inner_step_size: Step size for the inner MCMC kernel.  Default is 0.1.
    :type inner_step_size: float, optional
-   :param inner_num_integration_steps: Number of integration steps for the inner MCLMC kernel.  Default is 5.
+   :param inner_num_integration_steps: Number of integration steps for the inner MCLMC or HMC kernel.
+                                       Default is 5.
    :type inner_num_integration_steps: int, optional
    :param inner_inverse_mass_matrix: Inverse mass matrix for the inner kernel.  If ``None``, defaults to a
                                      vector of ones of length ``target.dim``.  Default is ``None``.
@@ -638,7 +888,7 @@ Package Contents
 
 
    .. py:attribute:: target_ess
-      :value: 0.5
+      :value: 0.9
 
 
 

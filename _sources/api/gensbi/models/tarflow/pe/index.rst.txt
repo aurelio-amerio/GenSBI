@@ -1,0 +1,218 @@
+gensbi.models.tarflow.pe
+========================
+
+.. py:module:: gensbi.models.tarflow.pe
+
+.. autoapi-nested-parse::
+
+   Rotary positional embedding for the transformer flow.
+
+   Adapted from apple/ml-starflow (STARFlow); see
+   models/tarflow/LICENSE.starflow. Faithful JAX port of the reference
+   ``misc/pe.py``, restricted to the paths GenSBI uses.
+   Deliberately omitted relative to the reference: the ``is_1d`` branch (used
+   only for the pretrained-LM top block), ``freqs_for='pixel'/'constant'`` and
+   ``custom_freqs``, the ``latent_len`` head-dim split (STARFlow's text-prefix
+   "3D" axis — GenSBI positions prefix tokens at the identity rotation
+   instead; see docs/superpowers/specs/2026-07-11-tarflow-rope-kvcache-design.md),
+   video ``duplicate`` handling, and the deprecated checkpoint-compat buffers.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.models.tarflow.pe.VisionRotaryEmbedding
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.models.tarflow.pe.apply_rope
+   gensbi.models.tarflow.pe.get_positions
+   gensbi.models.tarflow.pe.rotate_half
+
+
+Module Contents
+---------------
+
+.. py:class:: VisionRotaryEmbedding(dim, pt_seq_len = 16, theta = 10000)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   
+   2D vision RoPE with the ``'lang'`` frequency schedule.
+
+   Port of the reference ``VisionRotaryEmbeddingFast`` without the
+   ``latent_len`` split: each of the two position axes is rotated with the
+   same ``1 / theta**(2i/dim)`` frequency table, and the concatenated
+   per-axis angles are repeated pairwise to cover ``2*dim`` channels
+   (= the full head dimension when ``dim = head_dim // 2``).
+
+   :param dim: Half the attention head dimension. Must be even.
+   :type dim: int
+   :param pt_seq_len: Pre-training sequence length recorded for position building.
+                      Default is 16.
+   :type pt_seq_len: int, optional
+   :param theta: Frequency base. Default is 10000.
+   :type theta: int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(pos)
+
+      
+      Build rotation angles for 2D positions.
+
+      :param pos: Positions of shape ``(..., 2)``.
+      :type pos: Array
+
+      :returns: Angles of shape ``(..., 2*dim)``.
+      :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: freqs
+
+
+   .. py:attribute:: pt_seq_len
+      :value: 16
+
+
+
+.. py:function:: apply_rope(t, freqs)
+
+   
+   Apply a rotary embedding: ``t*cos(freqs) + rotate_half(t)*sin(freqs)``.
+
+   :param t: Tensor to rotate; last dimension even.
+   :type t: Array
+   :param freqs: Rotation angles, broadcastable to ``t``'s shape.
+   :type freqs: Array
+
+   :returns: Rotated tensor, same shape as ``t``.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: get_positions(h, w, pt_seq_len = None)
+
+   
+   2D patch positions in raster order (reference ``'2d'`` mode).
+
+   Coordinates are normalized by ``sqrt(h*w)`` and rescaled to
+   ``pt_seq_len`` (the reference's resolution-transfer schedule). For a
+   square grid with ``pt_seq_len == h == w`` this reduces to plain integer
+   coordinates.
+
+   :param h: Patch-grid height and width.
+   :type h: int
+   :param w: Patch-grid height and width.
+   :type w: int
+   :param pt_seq_len: Pre-training sequence length; defaults to ``sqrt(h*w)``.
+   :type pt_seq_len: int or None, optional
+
+   :returns: Positions of shape ``(h*w, 2)``.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rotate_half(x)
+
+   
+   Rotate adjacent channel pairs: ``(x1, x2) -> (-x2, x1)``.
+
+   Port of the reference ``rotate_half`` (einops ``(d r)`` with ``r=2``
+   means adjacent pairs).
+
+   :param x: Input whose last dimension is even.
+   :type x: Array
+
+   :returns: Same shape as ``x``.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

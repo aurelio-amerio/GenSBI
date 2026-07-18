@@ -940,6 +940,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.tarflow.conditioners</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AdditiveBiasConditioner</span><span class="p">,</span> <span class="n">VectorConditioner</span><span class="p">,</span> <span class="n">ImageConditioner</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.tarflow.pe</span><span class="w"> </span><span class="kn">import</span> <span class="n">VisionRotaryEmbedding</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.normalizing_flows.bijections.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mask</span>
 
 <div class="viewcode-block" id="_LOG2PI">
@@ -1027,6 +1028,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    soft_clip : float, optional</span>
 <span class="sd">        Soft-clip magnitude applied via ``tanh`` to raw network outputs before</span>
 <span class="sd">        splitting into ``(a, b)``. Default is ``4.0``.</span>
+<span class="sd">    use_rope : bool, optional</span>
+<span class="sd">        If ``True``, replace the learned per-token ``pos_embed`` for the</span>
+<span class="sd">        modeled image tokens with 2D rotary position embeddings</span>
+<span class="sd">        (:class:`~gensbi.models.tarflow.pe.VisionRotaryEmbedding`). Prefix</span>
+<span class="sd">        (condition) tokens keep their learned embeddings and sit at the</span>
+<span class="sd">        identity rotation (zero angles). Requires ``modeled=&quot;image&quot;`` and</span>
+<span class="sd">        ``head_dim`` divisible by ``4``. ``head_dim &gt;= 32`` is recommended</span>
+<span class="sd">        for image data (more rotary frequencies per axis) but not enforced.</span>
+<span class="sd">        Default is ``False``.</span>
+<span class="sd">    rope_theta : int, optional</span>
+<span class="sd">        Frequency base for the rotary embedding. Only used when</span>
+<span class="sd">        ``use_rope=True``. Default is ``10000``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TarFlowParams.rngs">
@@ -1117,6 +1130,14 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.soft_clip">[docs]</a>
     <span class="n">soft_clip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">4.0</span></div>
 
+<div class="viewcode-block" id="TarFlowParams.use_rope">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.use_rope">[docs]</a>
+    <span class="n">use_rope</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="TarFlowParams.rope_theta">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.rope_theta">[docs]</a>
+    <span class="n">rope_theta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span></div>
+
 
 <div class="viewcode-block" id="TarFlowParams.__post_init__">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.__post_init__">[docs]</a>
@@ -1133,6 +1154,13 @@ window.runMermaid = runMermaid;</script>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cond=&#39;image&#39; requires cond_img_size and cond_patch_size&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;flip&quot;</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown permutation </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_rope</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeled</span> <span class="o">!=</span> <span class="s2">&quot;image&quot;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;use_rope=True requires modeled=&#39;image&#39;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;use_rope requires head_dim divisible by 4 (two position &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;axes x adjacent-pair rotation), got head_dim=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span></div>
 </div>
 
@@ -1166,6 +1194,16 @@ window.runMermaid = runMermaid;</script>
                                        <span class="n">params</span><span class="o">.</span><span class="n">img_channels</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">patch_size</span><span class="p">)</span>
         <span class="n">T</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">F</span>
 
+        <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">use_rope</span><span class="p">:</span>
+            <span class="c1"># tokenizer.grid[0] assumes a square grid; always true today since</span>
+            <span class="c1"># ImageTokenizer is built with img_size x img_size (see above).</span>
+            <span class="n">rope</span> <span class="o">=</span> <span class="n">VisionRotaryEmbedding</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+                                         <span class="n">pt_seq_len</span><span class="o">=</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                         <span class="n">theta</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rope_theta</span><span class="p">)</span>
+            <span class="n">grid</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">grid</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rope</span><span class="p">,</span> <span class="n">grid</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
         <span class="k">def</span><span class="w"> </span><span class="nf">make_cond</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">cond</span> <span class="o">==</span> <span class="s2">&quot;bias&quot;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">AdditiveBiasConditioner</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
@@ -1189,7 +1227,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">conditioner</span><span class="o">=</span><span class="n">make_cond</span><span class="p">(),</span> <span class="n">num_layers</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">layers_per_block</span><span class="p">,</span>
                 <span class="n">num_heads</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">expansion</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">zero_init</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">zero_init</span><span class="p">,</span> <span class="n">use_softplus</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">use_softplus</span><span class="p">,</span>
-                <span class="n">soft_clip</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">soft_clip</span><span class="p">))</span>
+                <span class="n">soft_clip</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">soft_clip</span><span class="p">,</span> <span class="n">rope</span><span class="o">=</span><span class="n">rope</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">))</span>
 
 <div class="viewcode-block" id="TarFlow.blocks">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlow.blocks">[docs]</a>

@@ -1,0 +1,631 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Nested Sampling for NLE Posterior Inference — Design &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/specs/2026-07-11-nested-sampling-design';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Nested Sampling for NLE Posterior Inference — Design</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="nested-sampling-for-nle-posterior-inference-design">
+<h1>Nested Sampling for NLE Posterior Inference — Design<a class="headerlink" href="#nested-sampling-for-nle-posterior-inference-design" title="Link to this heading">#</a></h1>
+<p><strong>Date:</strong> 2026-07-11
+<strong>Branch:</strong> <code class="docutils literal notranslate"><span class="pre">nested-sampling</span></code>
+<strong>Status:</strong> Approved</p>
+<section id="goal">
+<h2>Goal<a class="headerlink" href="#goal" title="Link to this heading">#</a></h2>
+<p>Add nested sampling (blackjax ≥ 1.6 <code class="docutils literal notranslate"><span class="pre">nss</span></code>, Nested Slice Sampling) as an
+opt-in alternative to MCMC-based sampling in <code class="docutils literal notranslate"><span class="pre">gensbi.inference</span></code>, wired into
+the existing NLE pipeline for normalizing flows. Motivation is twofold and
+equal: robust posterior samples for multimodal/degenerate targets, and
+log-evidence estimates for Bayesian model comparison between NLE models.</p>
+</section>
+<section id="decisions-from-brainstorming">
+<h2>Decisions (from brainstorming)<a class="headerlink" href="#decisions-from-brainstorming" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Opt-in</strong>: adjusted MCLMC remains the default in <code class="docutils literal notranslate"><span class="pre">NLEPosterior.sample()</span></code>;
+nested sampling is selected via <code class="docutils literal notranslate"><span class="pre">sampler=NestedSampler(...)</span></code>.</p></li>
+<li><p><strong>Raw run retained</strong>: the info object carries the finalised blackjax
+dead-point object so anesthetic support can be added later without re-runs.
+Anesthetic integration itself is <strong>out of scope</strong> now.</p></li>
+<li><p><strong>Scope</strong>: sampler + unit tests only. No recovery-script wiring, no docs
+page in this iteration.</p></li>
+<li><p><strong>Loop style</strong>: blackjax-canonical Python <code class="docutils literal notranslate"><span class="pre">while</span></code> loop over a jitted
+<code class="docutils literal notranslate"><span class="pre">step</span></code> (dead points accumulate with variable length). A fully-jitted
+<code class="docutils literal notranslate"><span class="pre">lax.while_loop</span></code> with a preallocated buffer was rejected as needless
+complexity at SBI dimensionalities.</p></li>
+</ul>
+</section>
+<section id="api-surface">
+<h2>API surface<a class="headerlink" href="#api-surface" title="Link to this heading">#</a></h2>
+<p>Two additions to <code class="docutils literal notranslate"><span class="pre">src/gensbi/inference/samplers.py</span></code>, exported from
+<code class="docutils literal notranslate"><span class="pre">gensbi.inference.__init__</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">NestedSampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_live</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_delete</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">num_inner_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">dlogz</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">100_000</span><span class="p">):</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">num_live</span></code> — number of live points (default 500).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_delete</span></code> — particles deleted/replaced per step; <code class="docutils literal notranslate"><span class="pre">None</span></code> →
+<code class="docutils literal notranslate"><span class="pre">num_live</span> <span class="pre">//</span> <span class="pre">10</span></code> (device batching amortizes the Python-loop overhead).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_inner_steps</span></code> — constrained slice moves per replacement; <code class="docutils literal notranslate"><span class="pre">None</span></code> →
+<code class="docutils literal notranslate"><span class="pre">max(5,</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">target.dim)</span></code> resolved inside <code class="docutils literal notranslate"><span class="pre">run()</span></code> (blackjax’s rule of
+thumb; <code class="docutils literal notranslate"><span class="pre">dim</span></code> comes from the target so users never pass it).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_samples</span></code> — equal-weight posterior draws returned (default 1000,
+matching <code class="docutils literal notranslate"><span class="pre">MCLMC</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dlogz</span></code> — termination threshold, blackjax convention: stop when
+<code class="docutils literal notranslate"><span class="pre">logZ_live</span> <span class="pre">−</span> <span class="pre">logZ</span> <span class="pre">&lt;</span> <span class="pre">dlogz</span></code> (default −3.0; use −10 near phase transitions).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> — safety cap on the outer loop (default 100 000).</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NestedSamplerInfo</span><span class="p">:</span>
+    <span class="n">log_evidence</span><span class="p">:</span> <span class="nb">float</span>        <span class="c1"># mean over stochastic logZ draws</span>
+    <span class="n">log_evidence_err</span><span class="p">:</span> <span class="nb">float</span>    <span class="c1"># std over those draws</span>
+    <span class="n">ess</span><span class="p">:</span> <span class="nb">float</span>                 <span class="c1"># effective sample size of the weighted run</span>
+    <span class="n">num_dead</span><span class="p">:</span> <span class="nb">int</span>              <span class="c1"># total dead points accumulated</span>
+    <span class="n">dead</span><span class="p">:</span> <span class="nb">object</span>               <span class="c1"># raw finalised blackjax NSInfo (future anesthetic use)</span>
+</pre></div>
+</div>
+<p>Usage (unchanged pipeline pattern):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">post</span> <span class="o">=</span> <span class="n">NLEPosterior</span><span class="p">(</span><span class="n">flow</span><span class="p">,</span> <span class="n">prior</span><span class="p">)</span>
+<span class="n">samples</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">post</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">sampler</span><span class="o">=</span><span class="n">NestedSampler</span><span class="p">(),</span> <span class="n">return_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="data-flow-in-run-key-target">
+<h2>Data flow in <code class="docutils literal notranslate"><span class="pre">run(key,</span> <span class="pre">target)</span></code><a class="headerlink" href="#data-flow-in-run-key-target" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p>Split <code class="docutils literal notranslate"><span class="pre">key</span></code> into init / run / weights / resample keys.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">particles</span> <span class="pre">=</span> <span class="pre">target.prior.sample(init_key,</span> <span class="pre">(num_live,))</span></code> — live points
+start from the prior, as NS requires.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">algo</span> <span class="pre">=</span> <span class="pre">blackjax.nss(logprior_fn=target.log_prior,</span> <span class="pre">loglikelihood_fn=target.log_likelihood,</span> <span class="pre">num_inner_steps=...,</span> <span class="pre">num_delete=...)</span></code>. The <code class="docutils literal notranslate"><span class="pre">PosteriorTarget</span></code> prior/likelihood split maps 1:1
+onto the NS API — <strong>no changes to <code class="docutils literal notranslate"><span class="pre">posterior.py</span></code></strong>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state</span> <span class="pre">=</span> <span class="pre">algo.init(particles)</span></code>; run <code class="docutils literal notranslate"><span class="pre">jax.jit(algo.step)</span></code> in a Python
+<code class="docutils literal notranslate"><span class="pre">while</span></code> loop, appending each step’s dead-point info; stop when
+<code class="docutils literal notranslate"><span class="pre">state.integrator.logZ_live</span> <span class="pre">-</span> <span class="pre">state.integrator.logZ</span> <span class="pre">&lt;</span> <span class="pre">dlogz</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ns_run</span> <span class="pre">=</span> <span class="pre">blackjax.ns.utils.finalise(state,</span> <span class="pre">dead)</span></code>.
+Evidence: <code class="docutils literal notranslate"><span class="pre">log_weights(weights_key,</span> <span class="pre">ns_run,</span> <span class="pre">shape=100)</span></code> →
+<code class="docutils literal notranslate"><span class="pre">logsumexp</span></code> over the dead axis → mean/std across the 100 stochastic
+volume draws. ESS via <code class="docutils literal notranslate"><span class="pre">blackjax.ns.utils.ess</span></code>.</p></li>
+<li><p>Equal-weight draws via <code class="docutils literal notranslate"><span class="pre">blackjax.ns.utils.sample(resample_key,</span> <span class="pre">ns_run,</span> <span class="pre">num_samples)</span></code>; return <code class="docutils literal notranslate"><span class="pre">(samples,</span> <span class="pre">info)</span></code> with samples shaped
+<code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">dim)</span></code>. <code class="docutils literal notranslate"><span class="pre">NLEPosterior.sample</span></code> expands to
+<code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">dim,</span> <span class="pre">1)</span></code> exactly as for the other samplers.</p></li>
+</ol>
+</section>
+<section id="error-handling">
+<h2>Error handling<a class="headerlink" href="#error-handling" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Outer loop hitting <code class="docutils literal notranslate"><span class="pre">max_iterations</span></code> → <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> naming the likely
+fixes (looser <code class="docutils literal notranslate"><span class="pre">dlogz</span></code>, larger <code class="docutils literal notranslate"><span class="pre">num_live</span></code>), not a silent hang.</p></li>
+<li><p>Constructor validation: <code class="docutils literal notranslate"><span class="pre">num_live</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>; resolved <code class="docutils literal notranslate"><span class="pre">num_delete</span></code> in
+<code class="docutils literal notranslate"><span class="pre">[1,</span> <span class="pre">num_live)</span></code>.</p></li>
+<li><p>blackjax imported lazily inside <code class="docutils literal notranslate"><span class="pre">run()</span></code>, matching the module convention.</p></li>
+</ul>
+</section>
+<section id="testing-tests-inference-test-nested-py">
+<h2>Testing — <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code><a class="headerlink" href="#testing-tests-inference-test-nested-py" title="Link to this heading">#</a></h2>
+<p>CPU (<code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span></code>), mock flows mirroring <code class="docutils literal notranslate"><span class="pre">test_smc.py</span></code>
+(<code class="docutils literal notranslate"><span class="pre">GaussianMock</span></code>, <code class="docutils literal notranslate"><span class="pre">BimodalMock</span></code>):</p>
+<ol class="arabic simple">
+<li><p><strong>Gaussian analytic recovery</strong> — posterior mean ≈ <code class="docutils literal notranslate"><span class="pre">x_o</span> <span class="pre">/</span> <span class="pre">2</span></code>; shape
+<code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">dim)</span></code> via the <code class="docutils literal notranslate"><span class="pre">Sampler</span></code> contract and <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">dim,</span> <span class="pre">1)</span></code> via
+<code class="docutils literal notranslate"><span class="pre">NLEPosterior.sample</span></code>.</p></li>
+<li><p><strong>Bimodal recovery</strong> — both modes populated (fractions &gt; 0.3 each).</p></li>
+<li><p><strong>Evidence correctness</strong> — the Gaussian mock has closed-form
+log-evidence: the prior (<code class="docutils literal notranslate"><span class="pre">make_gaussian_prior</span></code>, numpyro) is normalized
+but <code class="docutils literal notranslate"><span class="pre">GaussianMock.log_prob</span> <span class="pre">=</span> <span class="pre">−½‖x−θ‖²</span></code> omits the Gaussian constant, so
+<code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">Z</span> <span class="pre">=</span> <span class="pre">−‖x_o‖²/4</span> <span class="pre">−</span> <span class="pre">(dim/2)·log</span> <span class="pre">2</span></code>. Assert <code class="docutils literal notranslate"><span class="pre">log_evidence</span></code> within
+~3·<code class="docutils literal notranslate"><span class="pre">log_evidence_err</span></code>. This is the capability the other samplers
+don’t have.</p></li>
+<li><p><strong>Info contract</strong> — all fields present and finite; <code class="docutils literal notranslate"><span class="pre">dead</span></code> non-None;
+<code class="docutils literal notranslate"><span class="pre">ess</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>; <code class="docutils literal notranslate"><span class="pre">num_dead</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>.</p></li>
+<li><p><strong>Defaults</strong> — <code class="docutils literal notranslate"><span class="pre">num_inner_steps=None</span></code> resolves to <code class="docutils literal notranslate"><span class="pre">max(5,</span> <span class="pre">2·dim)</span></code>;
+<code class="docutils literal notranslate"><span class="pre">num_delete=None</span></code> resolves to <code class="docutils literal notranslate"><span class="pre">num_live</span> <span class="pre">//</span> <span class="pre">10</span></code>.</p></li>
+<li><p><strong>Validation</strong> — bad <code class="docutils literal notranslate"><span class="pre">num_live</span></code> / <code class="docutils literal notranslate"><span class="pre">num_delete</span></code> raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
+<li><p><strong>Pipeline wiring</strong> — <code class="docutils literal notranslate"><span class="pre">return_info=True</span></code> returns
+<code class="docutils literal notranslate"><span class="pre">(samples,</span> <span class="pre">NestedSamplerInfo)</span></code> through <code class="docutils literal notranslate"><span class="pre">NLEPosterior.sample</span></code>.</p></li>
+</ol>
+</section>
+<section id="out-of-scope">
+<h2>Out of scope<a class="headerlink" href="#out-of-scope" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Anesthetic plots/integration (enabled later by the retained <code class="docutils literal notranslate"><span class="pre">dead</span></code> field).</p></li>
+<li><p>Recovery-script (<code class="docutils literal notranslate"><span class="pre">scripts/*_nle_recovery.py</span></code>) wiring.</p></li>
+<li><p>Docs page updates.</p></li>
+<li><p>Making NS the default sampler.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">Goal</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#decisions-from-brainstorming">Decisions (from brainstorming)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api-surface">API surface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-flow-in-run-key-target">Data flow in <code class="docutils literal notranslate"><span class="pre">run(key,</span> <span class="pre">target)</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#error-handling">Error handling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-tests-inference-test-nested-py">Testing — <code class="docutils literal notranslate"><span class="pre">tests/inference/test_nested.py</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#out-of-scope">Out of scope</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

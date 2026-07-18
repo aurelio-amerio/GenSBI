@@ -305,6 +305,18 @@ Module Contents
    :param soft_clip: Soft-clip magnitude applied via ``tanh`` to raw network outputs before
                      splitting into ``(a, b)``. Default is ``4.0``.
    :type soft_clip: float, optional
+   :param use_rope: If ``True``, replace the learned per-token ``pos_embed`` for the
+                    modeled image tokens with 2D rotary position embeddings
+                    (:class:`~gensbi.models.tarflow.pe.VisionRotaryEmbedding`). Prefix
+                    (condition) tokens keep their learned embeddings and sit at the
+                    identity rotation (zero angles). Requires ``modeled="image"`` and
+                    ``head_dim`` divisible by ``4``. ``head_dim >= 32`` is recommended
+                    for image data (more rotary frequencies per axis) but not enforced.
+                    Default is ``False``.
+   :type use_rope: bool, optional
+   :param rope_theta: Frequency base for the rotary embedding. Only used when
+                      ``use_rope=True``. Default is ``10000``.
+   :type rope_theta: int, optional
 
 
 
@@ -426,6 +438,12 @@ Module Contents
       :type:  flax.nnx.Rngs
 
 
+   .. py:attribute:: rope_theta
+      :type:  int
+      :value: 10000
+
+
+
    .. py:attribute:: soft_clip
       :type:  float
       :value: 4.0
@@ -435,6 +453,12 @@ Module Contents
    .. py:attribute:: standardize
       :type:  bool
       :value: True
+
+
+
+   .. py:attribute:: use_rope
+      :type:  bool
+      :value: False
 
 
 

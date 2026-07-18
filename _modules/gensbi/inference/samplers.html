@@ -1174,11 +1174,12 @@ window.runMermaid = runMermaid;</script>
         <span class="n">position</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">pos_key</span><span class="p">,</span> <span class="p">())</span>
         <span class="n">init_state</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
             <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">rng_key</span><span class="o">=</span><span class="n">mom_key</span><span class="p">)</span>
-        <span class="n">kernel</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">inverse_mass_matrix</span><span class="p">:</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
-            <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">,</span>
-            <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
+        <span class="c1"># blackjax &gt;= 1.6: build_kernel no longer binds logdensity_fn /</span>
+        <span class="c1"># inverse_mass_matrix; the tuner threads them through per call.</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span><span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">)</span>
         <span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mclmc_find_L_and_step_size</span><span class="p">(</span>
-            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+            <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
             <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
         <span class="n">alg</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mclmc</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">,</span>
                              <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
@@ -1193,6 +1194,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC._run_adjusted">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_run_adjusted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
 
         <span class="n">pos_key</span><span class="p">,</span> <span class="n">init_key</span><span class="p">,</span> <span class="n">tune_key</span><span class="p">,</span> <span class="n">run_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
         <span class="n">position</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">pos_key</span><span class="p">,</span> <span class="p">())</span>
@@ -1200,16 +1202,20 @@ window.runMermaid = runMermaid;</script>
             <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
             <span class="n">random_generator_arg</span><span class="o">=</span><span class="n">init_key</span><span class="p">)</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">avg_num_integration_steps</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
-                <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
-                    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">avg_num_integration_steps</span><span class="p">)),</span>
-                <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">,</span>
-            <span class="p">)(</span><span class="n">rng_key</span><span class="o">=</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
-              <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">)</span>
+        <span class="c1"># blackjax &gt;= 1.6: the tuner drives the kernel as</span>
+        <span class="c1"># kernel(rng_key=..., state=..., logdensity_fn=..., step_size=...,</span>
+        <span class="c1"># inverse_mass_matrix=..., integration_steps_params=(avg,)); the</span>
+        <span class="c1"># running average number of integration steps arrives as</span>
+        <span class="c1"># integration_steps_fn&#39;s second positional argument.</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+            <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">avg</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">avg</span><span class="p">)),</span>
+            <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="n">state</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">adjusted_mclmc_find_L_and_step_size</span><span class="p">(</span>
-            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
+            <span class="n">mclmc_kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span>
+            <span class="n">num_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tuning_steps</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">init_state</span><span class="p">,</span>
             <span class="n">rng_key</span><span class="o">=</span><span class="n">tune_key</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_acceptance</span><span class="p">,</span>
             <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">diagonal_preconditioning</span><span class="p">)</span>
         <span class="n">_check_rescale_domain</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="n">params</span><span class="o">.</span><span class="n">step_size</span><span class="p">)</span>
@@ -1267,8 +1273,19 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Walks particles along ``p(theta) * q(x_o | theta)^beta`` for beta from 0</span>
 <span class="sd">    to 1, choosing the beta ladder adaptively to maintain ``target_ess``.  The</span>
-<span class="sd">    inner rejuvenation kernel is adjusted MCLMC by default; NUTS is available</span>
-<span class="sd">    as a fallback.</span>
+<span class="sd">    inner rejuvenation kernel is adjusted MCLMC by default; fixed-trajectory</span>
+<span class="sd">    HMC is available as an alternative. (NUTS is deliberately not offered: its</span>
+<span class="sd">    data-dependent trajectory length does not vectorize cleanly across SMC</span>
+<span class="sd">    particles, and rejuvenation does not need NUTS&#39;s full-mixing guarantee.)</span>
+
+<span class="sd">    ``target_ess`` and ``num_mcmc_steps`` default to values calibrated for</span>
+<span class="sd">    blackjax &gt;= 1.6, whose adaptive-tempering ESS solver was corrected</span>
+<span class="sd">    (upstream #914 fixed a sign bug in the bisection target). The fix</span>
+<span class="sd">    changes how many temperature steps are needed to anneal from beta=0 to</span>
+<span class="sd">    1: with the pre-1.6-era ``target_ess=0.5`` default, the corrected</span>
+<span class="sd">    solver can collapse the schedule to a single step, leaving too few</span>
+<span class="sd">    temperature increments for rejuvenation to move particles onto the</span>
+<span class="sd">    posterior.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1276,22 +1293,23 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Number of SMC particles.  Default is 1000.</span>
 <span class="sd">    target_ess : float, optional</span>
 <span class="sd">        Target effective sample size ratio in ``(0, 1)``, used to adapt the</span>
-<span class="sd">        temperature increments.  Default is 0.5.</span>
+<span class="sd">        temperature increments.  Default is 0.9.</span>
 <span class="sd">    num_mcmc_steps : int, optional</span>
 <span class="sd">        Number of inner MCMC rejuvenation steps per temperature.  Default is 10.</span>
 <span class="sd">    inner_kernel : str, optional</span>
 <span class="sd">        Inner MCMC kernel: ``&quot;mclmc&quot;`` (adjusted MCLMC, default) or</span>
-<span class="sd">        ``&quot;nuts&quot;``.</span>
+<span class="sd">        ``&quot;hmc&quot;`` (fixed-trajectory HMC).</span>
 <span class="sd">    inner_step_size : float, optional</span>
 <span class="sd">        Step size for the inner MCMC kernel.  Default is 0.1.</span>
 <span class="sd">    inner_num_integration_steps : int, optional</span>
-<span class="sd">        Number of integration steps for the inner MCLMC kernel.  Default is 5.</span>
+<span class="sd">        Number of integration steps for the inner MCLMC or HMC kernel.</span>
+<span class="sd">        Default is 5.</span>
 <span class="sd">    inner_inverse_mass_matrix : Array or None, optional</span>
 <span class="sd">        Inverse mass matrix for the inner kernel.  If ``None``, defaults to a</span>
 <span class="sd">        vector of ones of length ``target.dim``.  Default is ``None``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">target_ess</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">num_mcmc_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">target_ess</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">num_mcmc_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
                  <span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;mclmc&quot;</span><span class="p">,</span> <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
                  <span class="n">inner_num_integration_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">inner_inverse_mass_matrix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <div class="viewcode-block" id="TemperedSMC.num_particles">
@@ -1331,23 +1349,34 @@ window.runMermaid = runMermaid;</script>
         <span class="n">imm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_inverse_mass_matrix</span>
         <span class="k">if</span> <span class="n">imm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">imm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;nuts&quot;</span><span class="p">:</span>
-            <span class="n">step_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nuts</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">()</span>
-            <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nuts</span><span class="o">.</span><span class="n">init</span>
-            <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;hmc&quot;</span><span class="p">:</span>
+            <span class="c1"># blackjax &gt;= 1.6: build_kernel() is a pure factory; the returned</span>
+            <span class="c1"># kernel&#39;s signature is (rng_key, state, logdensity_fn, step_size,</span>
+            <span class="c1"># inverse_mass_matrix, num_integration_steps), so SMC can call it</span>
+            <span class="c1"># directly with these params as kwargs -- no wrapper needed. HMC&#39;s</span>
+            <span class="c1"># fixed num_integration_steps gives static per-particle cost that</span>
+            <span class="c1"># vectorizes cleanly across the particle population (unlike NUTS&#39;s</span>
+            <span class="c1"># data-dependent trajectory length).</span>
+            <span class="n">step_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">hmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">()</span>
+            <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">hmc</span><span class="o">.</span><span class="n">init</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span>
+                          <span class="n">num_integration_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_num_integration_steps</span><span class="p">,</span>
+                          <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;mclmc&quot;</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
 
+            <span class="c1"># blackjax &gt;= 1.6: build_kernel is a pure factory (no logdensity_fn /</span>
+            <span class="c1"># inverse_mass_matrix binding), so build it once; SMC injects the</span>
+            <span class="c1"># tempered logdensity per call.</span>
+            <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
+                <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">)</span>
+
             <span class="k">def</span><span class="w"> </span><span class="nf">step_fn</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span>
                         <span class="n">num_integration_steps</span><span class="p">,</span> <span class="n">inverse_mass_matrix</span><span class="p">):</span>
-                <span class="c1"># Build the adjusted-MCLMC kernel bound to the *tempered* logdensity</span>
-                <span class="c1"># SMC injects at each temperature.</span>
-                <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
-                    <span class="n">logdensity_fn</span><span class="o">=</span><span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">integrator</span><span class="o">=</span><span class="n">isokinetic_mclachlan</span><span class="p">,</span>
-                    <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
-                <span class="k">return</span> <span class="n">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
-                              <span class="n">num_integration_steps</span><span class="o">=</span><span class="n">num_integration_steps</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">kernel</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span>
+                              <span class="n">integration_steps_params</span><span class="o">=</span><span class="p">(</span><span class="n">num_integration_steps</span><span class="p">,),</span>
+                              <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">inverse_mass_matrix</span><span class="p">)</span>
 
             <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc</span><span class="o">.</span><span class="n">init</span>   <span class="c1"># (position, logdensity_fn) -&gt; HMCState</span>
             <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">step_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_step_size</span><span class="p">,</span>
@@ -1406,6 +1435,258 @@ window.runMermaid = runMermaid;</script>
         <span class="n">info</span> <span class="o">=</span> <span class="n">SmcInfo</span><span class="p">(</span><span class="n">log_evidence</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">logZ</span><span class="p">),</span> <span class="n">num_temperature_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">nsteps</span><span class="p">),</span>
                        <span class="n">final_tempering_param</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">final</span><span class="o">.</span><span class="n">tempering_param</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">final</span><span class="o">.</span><span class="n">particles</span><span class="p">,</span> <span class="n">info</span></div>
+</div>
+
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="NestedSamplerInfo">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NestedSamplerInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagnostics from a nested sampling run.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    log_evidence : float</span>
+<span class="sd">        Log marginal likelihood estimate (mean over stochastic</span>
+<span class="sd">        prior-volume draws).</span>
+<span class="sd">    log_evidence_err : float</span>
+<span class="sd">        Standard deviation of the log-evidence estimate over the</span>
+<span class="sd">        stochastic prior-volume draws.</span>
+<span class="sd">    ess : float</span>
+<span class="sd">        Effective sample size of the weighted dead-point set.</span>
+<span class="sd">    num_dead : int</span>
+<span class="sd">        Total number of points in the finalised run (dead points plus</span>
+<span class="sd">        the final live set).</span>
+<span class="sd">    dead : object</span>
+<span class="sd">        Raw finalised ``blackjax.ns.base.NSInfo`` carrying the full</span>
+<span class="sd">        point history (positions, log-likelihoods, birth contours).</span>
+<span class="sd">        Kept for downstream re-weighting or anesthetic-style analysis.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NestedSamplerInfo.log_evidence">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo.log_evidence">[docs]</a>
+    <span class="n">log_evidence</span><span class="p">:</span> <span class="nb">float</span></div>
+
+<div class="viewcode-block" id="NestedSamplerInfo.log_evidence_err">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo.log_evidence_err">[docs]</a>
+    <span class="n">log_evidence_err</span><span class="p">:</span> <span class="nb">float</span></div>
+
+<div class="viewcode-block" id="NestedSamplerInfo.ess">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo.ess">[docs]</a>
+    <span class="n">ess</span><span class="p">:</span> <span class="nb">float</span></div>
+
+<div class="viewcode-block" id="NestedSamplerInfo.num_dead">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo.num_dead">[docs]</a>
+    <span class="n">num_dead</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="NestedSamplerInfo.dead">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo.dead">[docs]</a>
+    <span class="n">dead</span><span class="p">:</span> <span class="nb">object</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NestedSampler">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NestedSampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nested slice sampling (blackjax ``nss``) posterior sampler.</span>
+
+<span class="sd">    Runs blackjax&#39;s Nested Slice Sampling from prior-drawn live points,</span>
+<span class="sd">    accumulating dead points until the live set&#39;s evidence share is</span>
+<span class="sd">    negligible, then resamples the dead-point history into equal-weight</span>
+<span class="sd">    posterior draws.  Unlike the MCMC samplers this also estimates the</span>
+<span class="sd">    log evidence, and handles multimodal posteriors without tempering.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_live : int, optional</span>
+<span class="sd">        Number of live points.  Default is 500.</span>
+<span class="sd">    num_delete : int or None, optional</span>
+<span class="sd">        Number of lowest-likelihood points replaced per step (device</span>
+<span class="sd">        batching).  If ``None``, defaults to ``max(1, num_live // 10)``.</span>
+<span class="sd">    num_inner_steps : int or None, optional</span>
+<span class="sd">        Constrained slice moves per replacement.  If ``None``, resolved</span>
+<span class="sd">        at run time to ``max(5, 2 * target.dim)`` (blackjax&#39;s rule of</span>
+<span class="sd">        thumb for reliable mixing).  Default is ``None``.</span>
+<span class="sd">    num_samples : int, optional</span>
+<span class="sd">        Number of equal-weight posterior draws returned.  Default is 1000.</span>
+<span class="sd">    dlogz : float, optional</span>
+<span class="sd">        Termination threshold (blackjax convention): stop once</span>
+<span class="sd">        ``logZ_live - logZ &lt; dlogz``.  Default is -3.0; use e.g. -10.0</span>
+<span class="sd">        near phase transitions.</span>
+<span class="sd">    max_iterations : int, optional</span>
+<span class="sd">        Safety cap on the number of outer NS steps.  Default is 100_000.</span>
+<span class="sd">    num_rejuvenation_steps : int, optional</span>
+<span class="sd">        Posterior-invariant hit-and-run slice moves applied to each</span>
+<span class="sd">        equal-weight draw after resampling.  The with-replacement resampling</span>
+<span class="sd">        duplicates draws whenever ``num_samples`` is comparable to the run&#39;s</span>
+<span class="sd">        ESS; a few slice moves break the duplicated atoms without changing</span>
+<span class="sd">        the sampled distribution.  Default is 0 (no rejuvenation).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_live</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_delete</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">num_inner_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">dlogz</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span>
+                 <span class="n">num_rejuvenation_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">num_live</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;num_live must be positive, got </span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_delete</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">num_delete</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_live</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">num_delete</span> <span class="o">&lt;</span> <span class="n">num_live</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;num_delete must be in [1, num_live), got num_delete=&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_delete</span><span class="si">}</span><span class="s2"> with num_live=</span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_inner_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">num_inner_steps</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;num_inner_steps must be positive or None, got </span><span class="si">{</span><span class="n">num_inner_steps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_rejuvenation_steps</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;num_rejuvenation_steps must be non-negative, got &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_rejuvenation_steps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="NestedSampler.num_live">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.num_live">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_live</span> <span class="o">=</span> <span class="n">num_live</span></div>
+
+<div class="viewcode-block" id="NestedSampler.num_delete">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.num_delete">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_delete</span> <span class="o">=</span> <span class="n">num_delete</span></div>
+
+<div class="viewcode-block" id="NestedSampler.num_inner_steps">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.num_inner_steps">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span> <span class="o">=</span> <span class="n">num_inner_steps</span></div>
+
+<div class="viewcode-block" id="NestedSampler.num_samples">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.num_samples">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span> <span class="o">=</span> <span class="n">num_samples</span></div>
+
+<div class="viewcode-block" id="NestedSampler.dlogz">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.dlogz">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span> <span class="o">=</span> <span class="n">dlogz</span></div>
+
+<div class="viewcode-block" id="NestedSampler.max_iterations">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.max_iterations">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span> <span class="o">=</span> <span class="n">max_iterations</span></div>
+
+<div class="viewcode-block" id="NestedSampler.num_rejuvenation_steps">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.num_rejuvenation_steps">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_rejuvenation_steps</span> <span class="o">=</span> <span class="n">num_rejuvenation_steps</span></div>
+
+
+<div class="viewcode-block" id="NestedSampler._resolve_num_inner_steps">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler._resolve_num_inner_steps">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_num_inner_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;``num_inner_steps`` if set, else blackjax&#39;s ``max(5, 2 * dim)``.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dim</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NestedSampler.run">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples using nested slice sampling.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        target : PosteriorTarget</span>
+<span class="sd">            Posterior target produced by</span>
+<span class="sd">            :meth:`~gensbi.inference.posterior.NLEPosterior.build_target`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : Array</span>
+<span class="sd">            Equal-weight posterior samples of shape ``(num_samples, dim)``.</span>
+<span class="sd">        info : NestedSamplerInfo</span>
+<span class="sd">            Evidence estimate, ESS and the raw finalised run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ess</span><span class="p">,</span> <span class="n">finalise</span><span class="p">,</span> <span class="n">log_weights</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">sample</span> <span class="k">as</span> <span class="n">ns_sample</span>
+
+        <span class="n">init_key</span><span class="p">,</span> <span class="n">run_key</span><span class="p">,</span> <span class="n">weights_key</span><span class="p">,</span> <span class="n">ess_key</span><span class="p">,</span> <span class="n">resample_key</span><span class="p">,</span> <span class="n">rejuv_key</span> <span class="o">=</span> \
+            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">init_key</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_live</span><span class="p">,))</span>
+        <span class="n">algo</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">nss</span><span class="p">(</span>
+            <span class="n">logprior_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_prior</span><span class="p">,</span>
+            <span class="n">loglikelihood_fn</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">log_likelihood</span><span class="p">,</span>
+            <span class="n">num_inner_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_num_inner_steps</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span>
+            <span class="n">num_delete</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_delete</span><span class="p">)</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">particles</span><span class="p">)</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">algo</span><span class="o">.</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="n">dead</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span> <span class="o">-</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dead</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;nested sampling did not terminate within max_iterations=&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="si">}</span><span class="s2"> steps (logZ_live - logZ = &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span><span class="p">)</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; &gt;= dlogz = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="si">}</span><span class="s2">). Consider a looser dlogz, more &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;num_live points, or more num_inner_steps.&quot;</span><span class="p">)</span>
+            <span class="n">run_key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">run_key</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">step_info</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">subkey</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+            <span class="n">dead</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_info</span><span class="p">)</span>
+
+        <span class="n">ns_run</span> <span class="o">=</span> <span class="n">finalise</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">dead</span><span class="p">)</span>
+        <span class="n">logw</span> <span class="o">=</span> <span class="n">log_weights</span><span class="p">(</span><span class="n">weights_key</span><span class="p">,</span> <span class="n">ns_run</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>   <span class="c1"># (num_points, 100)</span>
+        <span class="n">logz_draws</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">logw</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">ns_sample</span><span class="p">(</span><span class="n">resample_key</span><span class="p">,</span> <span class="n">ns_run</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">)</span><span class="o">.</span><span class="n">position</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rejuvenation_steps</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rejuvenate</span><span class="p">(</span><span class="n">rejuv_key</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">NestedSamplerInfo</span><span class="p">(</span>
+            <span class="n">log_evidence</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">logz_draws</span><span class="p">)),</span>
+            <span class="n">log_evidence_err</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">logz_draws</span><span class="p">)),</span>
+            <span class="n">ess</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">ess</span><span class="p">(</span><span class="n">ess_key</span><span class="p">,</span> <span class="n">ns_run</span><span class="p">)),</span>
+            <span class="n">num_dead</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">ns_run</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">loglikelihood</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">dead</span><span class="o">=</span><span class="n">ns_run</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="NestedSampler._rejuvenate">
+<a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler._rejuvenate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rejuvenate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Break duplicated equal-weight draws with posterior-invariant moves.</span>
+
+<span class="sd">        Runs ``num_rejuvenation_steps`` hit-and-run slice moves on every</span>
+<span class="sd">        resampled draw (one vmapped chain per draw), targeting the</span>
+<span class="sd">        unconstrained log-posterior.  Directions are shaped by the empirical</span>
+<span class="sd">        covariance of the resampled cloud and scaled to Mahalanobis norm 2,</span>
+<span class="sd">        the same proposal the NS run&#39;s inner kernel uses -- so the moves are</span>
+<span class="sd">        local decorrelation only; mode coverage and weights stay as the NS</span>
+<span class="sd">        run left them.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc</span><span class="w"> </span><span class="kn">import</span> <span class="nb">slice</span> <span class="k">as</span> <span class="n">slice_mcmc</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.nss</span><span class="w"> </span><span class="kn">import</span> <span class="n">sample_direction_from_covariance</span>
+
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">rowvar</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">proposal_generator</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">):</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">sample_direction_from_covariance</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">cov</span><span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">slice_fn</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="n">p</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="n">d</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">slice_mcmc</span><span class="o">.</span><span class="n">SliceState</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">logdensity_fn</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="kc">True</span>
+
+            <span class="k">return</span> <span class="n">slice_fn</span>
+
+        <span class="n">algo</span> <span class="o">=</span> <span class="n">slice_mcmc</span><span class="o">.</span><span class="n">as_top_level_api</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">.</span><span class="n">log_posterior</span><span class="p">,</span> <span class="n">proposal_generator</span><span class="o">=</span><span class="n">proposal_generator</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">chain</span><span class="p">(</span><span class="n">chain_key</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">step_key</span><span class="p">):</span>
+                <span class="n">state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">step_key</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="kc">None</span>
+
+            <span class="n">state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+                <span class="n">body</span><span class="p">,</span> <span class="n">algo</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">position</span><span class="p">),</span>
+                <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">chain_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_rejuvenation_steps</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">position</span>
+
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">chain</span><span class="p">))(</span><span class="n">keys</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span></div>
 </div>
 
 </pre></div>

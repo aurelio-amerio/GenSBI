@@ -928,6 +928,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.tarflow.pe</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_rope</span><span class="p">,</span> <span class="n">get_positions</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.normalizing_flows.bijections.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mask</span>
 
 <div class="viewcode-block" id="INV_SOFTPLUS_1">
@@ -995,9 +996,30 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">mlp_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span> <span class="o">*</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="AttentionBlock._qkv">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock._qkv">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_qkv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Project to unrotated (q, k, v), each of shape ``(B, S, nh, hd)``.&quot;&quot;&quot;</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">qkv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">qkv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">qkv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">qkv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="AttentionBlock._finish">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock._finish">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">attn</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Residual attention output + residual MLP (shared tail).&quot;&quot;&quot;</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">attn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">C</span><span class="p">))</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp_out</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">gelu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mlp_in</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">))))</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">h</span></div>
+
+
 <div class="viewcode-block" id="AttentionBlock.__call__">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.__call__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">freqs_cis</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">return_kv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply pre-norm residual self-attention followed by a residual MLP.</span>
 
 <span class="sd">        Parameters</span>
@@ -1005,25 +1027,75 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        x : Array</span>
 <span class="sd">            Token sequence of shape ``(B, T, C)``.</span>
 <span class="sd">        mask : Array or None, optional</span>
-<span class="sd">            Attention mask of shape broadcastable to ``(1, 1, T, T)``, e.g. a</span>
-<span class="sd">            prefix-causal mask. If ``None``, a standard causal mask is used.</span>
+<span class="sd">            Attention mask broadcastable to ``(1, 1, T, T)``; ``None`` means</span>
+<span class="sd">            standard causal.</span>
+<span class="sd">        freqs_cis : Array or None, optional</span>
+<span class="sd">            Rotary angles ``(T, head_dim)`` applied to q/k before attention.</span>
+<span class="sd">        return_kv : bool, optional</span>
+<span class="sd">            If ``True``, also return the **unrotated** ``(k, v)`` — the KV</span>
+<span class="sd">            cache stores unrotated keys (the cached path re-rotates the full</span>
+<span class="sd">            cache each step, as the reference does). Default ``False``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        Array</span>
-<span class="sd">            Output token sequence of shape ``(B, T, C)``.</span>
+<span class="sd">        Array or tuple</span>
+<span class="sd">            ``out`` of shape ``(B, T, C)``, or ``(out, k, v)`` when</span>
+<span class="sd">            ``return_kv=True``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="n">qkv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span>
-        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">qkv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">qkv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">qkv</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">]</span>   <span class="c1"># (B, T, nh, hd)</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qkv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">k_raw</span><span class="p">,</span> <span class="n">v_raw</span> <span class="o">=</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span>
+        <span class="k">if</span> <span class="n">freqs_cis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">apply_rope</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">apply_rope</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
         <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">attn</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dot_product_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">is_causal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">attn</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dot_product_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">attn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">))</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp_out</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">gelu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mlp_in</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">))))</span>
-        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">h</span></div>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">attn</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_kv</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">k_raw</span><span class="p">,</span> <span class="n">v_raw</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="AttentionBlock.decode">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.decode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_new</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">k_cache</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">v_cache</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+               <span class="n">index</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Single-token decode step against a preallocated KV cache.</span>
+
+<span class="sd">        The cache stores **unrotated** k (reference behavior: rope is applied</span>
+<span class="sd">        after the cache read, re-rotating the whole prefix each step). Slots</span>
+<span class="sd">        beyond ``index`` are zero-filled and masked out of the attention.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x_new : Array</span>
+<span class="sd">            New token, shape ``(B, 1, C)``.</span>
+<span class="sd">        k_cache, v_cache : Array</span>
+<span class="sd">            Caches of shape ``(B, S, nh, hd)`` with ``S`` total slots.</span>
+<span class="sd">        index : int or traced scalar</span>
+<span class="sd">            Slot to write; attention sees slots ``&lt;= index``.</span>
+<span class="sd">        freqs_cis : Array or None, optional</span>
+<span class="sd">            Rotary angles ``(S, head_dim)`` for **all** slots; the new</span>
+<span class="sd">            token&#39;s q uses row ``index``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            ``(out, k_cache, v_cache)`` with ``out`` of shape ``(B, 1, C)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qkv</span><span class="p">(</span><span class="n">x_new</span><span class="p">)</span>                     <span class="c1"># (B, 1, nh, hd)</span>
+        <span class="n">k_cache</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_update_slice_in_dim</span><span class="p">(</span><span class="n">k_cache</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">v_cache</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_update_slice_in_dim</span><span class="p">(</span><span class="n">v_cache</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">k_all</span> <span class="o">=</span> <span class="n">k_cache</span>
+        <span class="k">if</span> <span class="n">freqs_cis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fq</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_slice_in_dim</span><span class="p">(</span><span class="n">freqs_cis</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">apply_rope</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">fq</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="n">k_all</span> <span class="o">=</span> <span class="n">apply_rope</span><span class="p">(</span><span class="n">k_cache</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">k_cache</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">index</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>   <span class="c1"># (1,1,1,S)</span>
+        <span class="n">attn</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dot_product_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k_all</span><span class="p">,</span> <span class="n">v_cache</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">(</span><span class="n">x_new</span><span class="p">,</span> <span class="n">attn</span><span class="p">),</span> <span class="n">k_cache</span><span class="p">,</span> <span class="n">v_cache</span></div>
 </div>
 
 
@@ -1075,11 +1147,21 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Soft-clip magnitude applied via ``tanh`` to raw network outputs</span>
 <span class="sd">        before splitting into ``(a, b)``. Default is ``4.0``. Set to ``0``</span>
 <span class="sd">        to disable clipping.</span>
+<span class="sd">    rope : VisionRotaryEmbedding or None, optional</span>
+<span class="sd">        If given, 2D rotary position embeddings replace the learned</span>
+<span class="sd">        ``pos_embed`` (which is then set to ``None``). Positions are laid</span>
+<span class="sd">        out with the ``M`` prefix (conditioning) slots at the identity</span>
+<span class="sd">        rotation (zero angles) followed by the ``T`` image slots on the</span>
+<span class="sd">        normalized ``grid`` (raster order, not permuted by ``perm``).</span>
+<span class="sd">        Default is ``None`` (learned ``pos_embed``, unchanged behavior).</span>
+<span class="sd">    grid : tuple of int or None, optional</span>
+<span class="sd">        ``(h, w)`` patch-grid shape used to build rope positions when</span>
+<span class="sd">        ``rope`` is given; required in that case. Default is ``None``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">perm</span><span class="p">,</span> <span class="n">conditioner</span><span class="p">,</span>
                  <span class="n">num_layers</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span> <span class="n">zero_init</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                 <span class="n">use_softplus</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">soft_clip</span><span class="o">=</span><span class="mf">4.0</span><span class="p">):</span>
+                 <span class="n">use_softplus</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">soft_clip</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">rope</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <div class="viewcode-block" id="MetaBlock.F">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.F">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">F</span></div>
@@ -1118,11 +1200,26 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
             <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">F</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="MetaBlock.pos_embed">
-<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.pos_embed">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span></div>
-
+        <span class="k">if</span> <span class="n">rope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;rope requires grid=(h, w)&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">T</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;grid=</span><span class="si">{</span><span class="n">grid</span><span class="si">}</span><span class="s2"> does not match T=</span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(grid[0] * grid[1] must equal the token count T)&quot;</span><span class="p">)</span>
+            <span class="c1"># Positions in raster sequence-slot order, NOT permuted with the</span>
+            <span class="c1"># token flip (faithful to the reference); prefix slots at the</span>
+            <span class="c1"># identity rotation (zeros), image slots on the normalized 2D grid.</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">conditioner</span><span class="p">,</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">pos_img</span> <span class="o">=</span> <span class="n">get_positions</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">rope</span><span class="o">.</span><span class="n">pt_seq_len</span><span class="p">)</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pos_img</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">pos_img</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span> <span class="o">=</span> <span class="n">Mask</span><span class="p">(</span><span class="n">rope</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span>            <span class="c1"># (M+T, head_dim)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+                <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span>
 <div class="viewcode-block" id="MetaBlock.attn_blocks">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.attn_blocks">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">List</span><span class="p">(</span>
@@ -1194,18 +1291,21 @@ window.runMermaid = runMermaid;</script>
         <span class="n">B</span> <span class="o">=</span> <span class="n">x_perm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">sos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">))</span>
         <span class="n">x_in</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">sos</span><span class="p">,</span> <span class="n">x_perm</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># (B, T, F)</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_in</span><span class="p">(</span><span class="n">x_in</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">][</span><span class="kc">None</span><span class="p">]</span>      <span class="c1"># (B, T, C)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_in</span><span class="p">(</span><span class="n">x_in</span><span class="p">)</span>                                  <span class="c1"># (B, T, C)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">][</span><span class="kc">None</span><span class="p">]</span>
+        <span class="n">freqs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="n">bias</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
         <span class="k">if</span> <span class="n">prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">M</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">h</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">prefix</span><span class="p">,</span> <span class="n">h</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>            <span class="c1"># (B, M+T, C)</span>
             <span class="k">for</span> <span class="n">blk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span><span class="p">:</span>
-                <span class="n">h</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
             <span class="n">h</span> <span class="o">=</span> <span class="n">h</span><span class="p">[:,</span> <span class="n">M</span><span class="p">:]</span>                                        <span class="c1"># (B, T, C) strip</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">blk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span><span class="p">:</span>
-                <span class="n">h</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>                                  <span class="c1"># (B, T, 2F)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">soft_clip</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">soft_clip</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">soft_clip</span><span class="p">)</span>
@@ -1259,10 +1359,14 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">z</span><span class="p">,</span> <span class="n">logdet</span></div>
 
 
-<div class="viewcode-block" id="MetaBlock.forward">
-<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.forward">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map noise to data (the sampling direction).</span>
+<div class="viewcode-block" id="MetaBlock._forward_reference">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._forward_reference">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forward_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map noise to data via full recompute (reference path for the KV cache).</span>
+
+<span class="sd">        ``forward`` is the production path (KV-cached); this method is its</span>
+<span class="sd">        correctness oracle, retained for the equivalence test suite — do not</span>
+<span class="sd">        delete it.</span>
 
 <span class="sd">        Sequentially scans over token positions via ``jax.lax.scan``,</span>
 <span class="sd">        re-running the causal attention pass at each step so that token</span>
@@ -1302,6 +1406,103 @@ window.runMermaid = runMermaid;</script>
         <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span>
         <span class="n">x</span><span class="p">,</span> <span class="n">log_scale_steps</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>  <span class="c1"># (T, B, F)</span>
         <span class="n">logdet</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">log_scale_steps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>         <span class="c1"># (B,), +Σ log_scale</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_perm</span><span class="p">[</span><span class="o">...</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">logdet</span></div>
+
+
+<div class="viewcode-block" id="MetaBlock.forward">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map noise to data (the sampling direction), KV-cached.</span>
+
+<span class="sd">        Prefills the per-layer caches with the condition prefix (one parallel</span>
+<span class="sd">        pass under the bidirectional prefix mask, matching the training-path</span>
+<span class="sd">        mask rows), then scans over token positions decoding a single token</span>
+<span class="sd">        per step against the caches. Verified equivalent to</span>
+<span class="sd">        :meth:`_forward_reference` (full recompute) by the test suite.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        z : Array</span>
+<span class="sd">            Noise-space token sequence of shape ``(B, T, F)`` or a flat array</span>
+<span class="sd">            that will be reshaped to ``(B, T, F)``.</span>
+<span class="sd">        cond : Array or None, optional</span>
+<span class="sd">            Conditioning input, or ``None`` for an unconditional transform.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        x : Array</span>
+<span class="sd">            Data-space output of shape ``(B, T, F)``.</span>
+<span class="sd">        logabsdet : Array</span>
+<span class="sd">            Log absolute determinant of the Jacobian of the forward map,</span>
+<span class="sd">            shape ``(B,)``. Equal to ``+Σ log_scale`` over token and feature</span>
+<span class="sd">            dimensions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+        <span class="n">zp</span> <span class="o">=</span> <span class="n">z</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">perm</span><span class="p">[</span><span class="o">...</span><span class="p">]]</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Unlike _params/_forward_reference, the cached path builds its own</span>
+        <span class="c1"># bidirectional prefix mask for the prefill below, so it embeds the</span>
+        <span class="c1"># condition directly instead of via _embed_cond (which would also</span>
+        <span class="c1"># build the (M+T)^2 prefix-LM mask, only to discard it here).</span>
+        <span class="n">bias</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditioner</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">M</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">nh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">num_heads</span>
+        <span class="n">hd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">head_dim</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span><span class="p">)</span>
+        <span class="n">freqs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">k_caches</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">L</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">nh</span><span class="p">,</span> <span class="n">hd</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">zp</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">v_caches</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">k_caches</span><span class="p">)</span>
+
+        <span class="c1"># Prefill: prefix rows attend bidirectionally among themselves,</span>
+        <span class="c1"># exactly as in the training prefix-LM mask (rows &lt; M).</span>
+        <span class="k">if</span> <span class="n">prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">prefix</span>
+            <span class="n">prefix_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">M</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="n">pf</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[:</span><span class="n">M</span><span class="p">]</span> <span class="k">if</span> <span class="n">freqs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">layer</span><span class="p">,</span> <span class="n">blk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span><span class="p">):</span>
+                <span class="n">h</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">blk</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">prefix_mask</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="n">return_kv</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">k_caches</span> <span class="o">=</span> <span class="n">k_caches</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">layer</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">M</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="n">v_caches</span> <span class="o">=</span> <span class="n">v_caches</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">layer</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">M</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="n">sos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">))</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">k_caches</span><span class="p">,</span> <span class="n">v_caches</span> <span class="o">=</span> <span class="n">carry</span>
+            <span class="n">prev</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_slice_in_dim</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span>
+                                                <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">x_in</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">t</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sos</span><span class="p">,</span> <span class="n">prev</span><span class="p">)</span>                <span class="c1"># (B, 1, F)</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_in</span><span class="p">(</span><span class="n">x_in</span><span class="p">)</span>                             <span class="c1"># (B, 1, C)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pe</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_slice_in_dim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">t</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                                                  <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="n">pe</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="n">bias</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">slot</span> <span class="o">=</span> <span class="n">M</span> <span class="o">+</span> <span class="n">t</span>
+            <span class="k">for</span> <span class="n">layer</span><span class="p">,</span> <span class="n">blk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span><span class="p">):</span>
+                <span class="n">h</span><span class="p">,</span> <span class="n">k_l</span><span class="p">,</span> <span class="n">v_l</span> <span class="o">=</span> <span class="n">blk</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">k_caches</span><span class="p">[</span><span class="n">layer</span><span class="p">],</span> <span class="n">v_caches</span><span class="p">[</span><span class="n">layer</span><span class="p">],</span>
+                                         <span class="n">slot</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
+                <span class="n">k_caches</span> <span class="o">=</span> <span class="n">k_caches</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">k_l</span><span class="p">)</span>
+                <span class="n">v_caches</span> <span class="o">=</span> <span class="n">v_caches</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">v_l</span><span class="p">)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>                             <span class="c1"># (B, 1, 2F)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">soft_clip</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">soft_clip</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">soft_clip</span><span class="p">)</span>
+            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>                  <span class="c1"># (B, 1, F)</span>
+            <span class="n">scale</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">log_scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_affine</span><span class="p">(</span><span class="n">a</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>        <span class="c1"># (B, F) fp32</span>
+            <span class="n">z_t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_slice_in_dim</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">x_t</span> <span class="o">=</span> <span class="n">z_t</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">*</span> <span class="n">scale</span> \
+                <span class="o">+</span> <span class="n">b</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_update_slice_in_dim</span><span class="p">(</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">x_t</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">t</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">k_caches</span><span class="p">,</span> <span class="n">v_caches</span><span class="p">),</span> <span class="n">log_scale</span>          <span class="c1"># (B, F)</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">zp</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">log_scale_steps</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+            <span class="n">body</span><span class="p">,</span> <span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">k_caches</span><span class="p">,</span> <span class="n">v_caches</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+        <span class="n">logdet</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">log_scale_steps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>         <span class="c1"># (B,)</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inv_perm</span><span class="p">[</span><span class="o">...</span><span class="p">]]</span>
         <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">logdet</span></div>
 </div>

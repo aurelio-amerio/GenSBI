@@ -520,6 +520,7 @@
 <li class="toctree-l4"><a class="reference internal" href="tarflow/blocks/index.html">gensbi.models.tarflow.blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="tarflow/conditioners/index.html">gensbi.models.tarflow.conditioners</a></li>
 <li class="toctree-l4"><a class="reference internal" href="tarflow/model/index.html">gensbi.models.tarflow.model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tarflow/pe/index.html">gensbi.models.tarflow.pe</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="wrappers/index.html">gensbi.models.wrappers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1962,6 +1963,16 @@ identity map.</p></li>
 stable, bounded tail). If <code class="docutils literal notranslate"><span class="pre">False</span></code>, use <code class="docutils literal notranslate"><span class="pre">exp</span></code> (legacy behavior).</p></li>
 <li><p><strong>soft_clip</strong> (<em>float</em><em>, </em><em>optional</em>) – Soft-clip magnitude applied via <code class="docutils literal notranslate"><span class="pre">tanh</span></code> to raw network outputs before
 splitting into <code class="docutils literal notranslate"><span class="pre">(a,</span> <span class="pre">b)</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">4.0</span></code>.</p></li>
+<li><p><strong>use_rope</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, replace the learned per-token <code class="docutils literal notranslate"><span class="pre">pos_embed</span></code> for the
+modeled image tokens with 2D rotary position embeddings
+(<a class="reference internal" href="tarflow/pe/index.html#gensbi.models.tarflow.pe.VisionRotaryEmbedding" title="gensbi.models.tarflow.pe.VisionRotaryEmbedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">VisionRotaryEmbedding</span></code></a>). Prefix
+(condition) tokens keep their learned embeddings and sit at the
+identity rotation (zero angles). Requires <code class="docutils literal notranslate"><span class="pre">modeled=&quot;image&quot;</span></code> and
+<code class="docutils literal notranslate"><span class="pre">head_dim</span></code> divisible by <code class="docutils literal notranslate"><span class="pre">4</span></code>. <code class="docutils literal notranslate"><span class="pre">head_dim</span> <span class="pre">&gt;=</span> <span class="pre">32</span></code> is recommended
+for image data (more rotary frequencies per axis) but not enforced.
+Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>rope_theta</strong> (<em>int</em><em>, </em><em>optional</em>) – Frequency base for the rotary embedding. Only used when
+<code class="docutils literal notranslate"><span class="pre">use_rope=True</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">10000</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2056,6 +2067,11 @@ splitting into <code class="docutils literal notranslate"><span class="pre">(a,<
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.TarFlowParams.rope_theta">
+<span class="sig-name descname"><span class="pre">rope_theta</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10000</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.rope_theta" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.TarFlowParams.soft_clip">
 <span class="sig-name descname"><span class="pre">soft_clip</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4.0</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.soft_clip" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -2063,6 +2079,11 @@ splitting into <code class="docutils literal notranslate"><span class="pre">(a,<
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.TarFlowParams.standardize">
 <span class="sig-name descname"><span class="pre">standardize</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.standardize" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.TarFlowParams.use_rope">
+<span class="sig-name descname"><span class="pre">use_rope</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.use_rope" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2352,8 +2373,10 @@ splitting into <code class="docutils literal notranslate"><span class="pre">(a,<
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.patch_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.patch_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.permutation"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.permutation</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.rngs"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.rngs</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.rope_theta"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.rope_theta</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.soft_clip"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.soft_clip</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.standardize"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.standardize</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.use_rope"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.use_rope</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.use_softplus"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.use_softplus</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.vec_channels"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.vec_channels</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.zero_init"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.zero_init</span></code></a></li>
