@@ -93,6 +93,8 @@ download:
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_flux1joint/two_moons_flow_flux1joint.ipynb
 	curl -L -o notebooks/two_moons_flow_simformer.ipynb \
 		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/two_moons_flow_simformer.ipynb
+	curl -L -o notebooks/two_moons_maf_nle.ipynb \
+		https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/maf_NLE/two_moons_maf_nle.ipynb
 	
 	
 	@echo "Special notebooks"

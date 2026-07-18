@@ -127,8 +127,9 @@ class NLEPosterior:
             ``return_info=False`` (the default), this is the only return value.
         info : object
             Sampler-specific info object
-            (:class:`~gensbi.inference.samplers.MclmcInfo` or
-            :class:`~gensbi.inference.samplers.SmcInfo`).  Only present when
+            (:class:`~gensbi.inference.samplers.MclmcInfo`,
+            :class:`~gensbi.inference.samplers.SmcInfo`, or
+            :class:`~gensbi.inference.samplers.NestedSamplerInfo`).  Only present when
             ``return_info=True``.
         """
         from gensbi.inference.samplers import MCLMC

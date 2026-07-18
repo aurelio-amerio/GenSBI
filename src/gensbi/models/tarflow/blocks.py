@@ -10,6 +10,7 @@ import jax.numpy as jnp
 from flax import nnx
 from jax import Array
 
+from gensbi.models.tarflow.pe import apply_rope, get_positions
 from gensbi.normalizing_flows.bijections.base import Mask
 
 INV_SOFTPLUS_1 = 0.541324854612918  # softplus(INV_SOFTPLUS_1) == 1.0 -> identity at zero-init
@@ -48,7 +49,22 @@ class AttentionBlock(nnx.Module):
         self.mlp_in = nnx.Linear(channels, channels * expansion, rngs=rngs)
         self.mlp_out = nnx.Linear(channels * expansion, channels, rngs=rngs)
 
-    def __call__(self, x: Array, mask: Array | None = None) -> Array:
+    def _qkv(self, x: Array):
+        """Project to unrotated (q, k, v), each of shape ``(B, S, nh, hd)``."""
+        B, S, C = x.shape
+        h = self.norm1(x)
+        qkv = self.qkv(h).reshape(B, S, 3, self.num_heads, self.head_dim)
+        return qkv[:, :, 0], qkv[:, :, 1], qkv[:, :, 2]
+
+    def _finish(self, x: Array, attn: Array) -> Array:
+        """Residual attention output + residual MLP (shared tail)."""
+        B, S, C = x.shape
+        x = x + self.proj(attn.reshape(B, S, C))
+        h = self.mlp_out(jax.nn.gelu(self.mlp_in(self.norm2(x))))
+        return x + h
+
+    def __call__(self, x: Array, mask: Array | None = None,
+                 freqs_cis: Array | None = None, return_kv: bool = False):
         """Apply pre-norm residual self-attention followed by a residual MLP.
 
         Parameters
@@ -56,25 +72,72 @@ class AttentionBlock(nnx.Module):
         x : Array
             Token sequence of shape ``(B, T, C)``.
         mask : Array or None, optional
-            Attention mask of shape broadcastable to ``(1, 1, T, T)``, e.g. a
-            prefix-causal mask. If ``None``, a standard causal mask is used.
+            Attention mask broadcastable to ``(1, 1, T, T)``; ``None`` means
+            standard causal.
+        freqs_cis : Array or None, optional
+            Rotary angles ``(T, head_dim)`` applied to q/k before attention.
+        return_kv : bool, optional
+            If ``True``, also return the **unrotated** ``(k, v)`` — the KV
+            cache stores unrotated keys (the cached path re-rotates the full
+            cache each step, as the reference does). Default ``False``.
 
         Returns
         -------
-        Array
-            Output token sequence of shape ``(B, T, C)``.
+        Array or tuple
+            ``out`` of shape ``(B, T, C)``, or ``(out, k, v)`` when
+            ``return_kv=True``.
         """
-        B, T, C = x.shape
-        h = self.norm1(x)
-        qkv = self.qkv(h).reshape(B, T, 3, self.num_heads, self.head_dim)
-        q, k, v = qkv[:, :, 0], qkv[:, :, 1], qkv[:, :, 2]   # (B, T, nh, hd)
+        q, k, v = self._qkv(x)
+        k_raw, v_raw = k, v
+        if freqs_cis is not None:
+            q = apply_rope(q, freqs_cis[None, :, None, :])
+            k = apply_rope(k, freqs_cis[None, :, None, :])
         if mask is None:
             attn = jax.nn.dot_product_attention(q, k, v, is_causal=True)
         else:
             attn = jax.nn.dot_product_attention(q, k, v, mask=mask[None, None])
-        x = x + self.proj(attn.reshape(B, T, C))
-        h = self.mlp_out(jax.nn.gelu(self.mlp_in(self.norm2(x))))
-        return x + h
+        out = self._finish(x, attn)
+        if return_kv:
+            return out, k_raw, v_raw
+        return out
+
+    def decode(self, x_new: Array, k_cache: Array, v_cache: Array,
+               index, freqs_cis: Array | None = None):
+        """Single-token decode step against a preallocated KV cache.
+
+        The cache stores **unrotated** k (reference behavior: rope is applied
+        after the cache read, re-rotating the whole prefix each step). Slots
+        beyond ``index`` are zero-filled and masked out of the attention.
+
+        Parameters
+        ----------
+        x_new : Array
+            New token, shape ``(B, 1, C)``.
+        k_cache, v_cache : Array
+            Caches of shape ``(B, S, nh, hd)`` with ``S`` total slots.
+        index : int or traced scalar
+            Slot to write; attention sees slots ``<= index``.
+        freqs_cis : Array or None, optional
+            Rotary angles ``(S, head_dim)`` for **all** slots; the new
+            token's q uses row ``index``.
+
+        Returns
+        -------
+        tuple
+            ``(out, k_cache, v_cache)`` with ``out`` of shape ``(B, 1, C)``.
+        """
+        q, k, v = self._qkv(x_new)                     # (B, 1, nh, hd)
+        k_cache = jax.lax.dynamic_update_slice_in_dim(k_cache, k, index, axis=1)
+        v_cache = jax.lax.dynamic_update_slice_in_dim(v_cache, v, index, axis=1)
+        k_all = k_cache
+        if freqs_cis is not None:
+            fq = jax.lax.dynamic_slice_in_dim(freqs_cis, index, 1, axis=0)
+            q = apply_rope(q, fq[None, :, None, :])
+            k_all = apply_rope(k_cache, freqs_cis[None, :, None, :])
+        S = k_cache.shape[1]
+        mask = (jnp.arange(S) <= index)[None, None, None, :]   # (1,1,1,S)
+        attn = jax.nn.dot_product_attention(q, k_all, v_cache, mask=mask)
+        return self._finish(x_new, attn), k_cache, v_cache
 
 
 class MetaBlock(nnx.Module):
@@ -122,11 +185,21 @@ class MetaBlock(nnx.Module):
         Soft-clip magnitude applied via ``tanh`` to raw network outputs
         before splitting into ``(a, b)``. Default is ``4.0``. Set to ``0``
         to disable clipping.
+    rope : VisionRotaryEmbedding or None, optional
+        If given, 2D rotary position embeddings replace the learned
+        ``pos_embed`` (which is then set to ``None``). Positions are laid
+        out with the ``M`` prefix (conditioning) slots at the identity
+        rotation (zero angles) followed by the ``T`` image slots on the
+        normalized ``grid`` (raster order, not permuted by ``perm``).
+        Default is ``None`` (learned ``pos_embed``, unchanged behavior).
+    grid : tuple of int or None, optional
+        ``(h, w)`` patch-grid shape used to build rope positions when
+        ``rope`` is given; required in that case. Default is ``None``.
     """
 
     def __init__(self, F, channels, T, perm, conditioner,
                  num_layers, num_heads, expansion, rngs, zero_init=True,
-                 use_softplus=True, soft_clip=4.0):
+                 use_softplus=True, soft_clip=4.0, rope=None, grid=None):
         self.F = F
         self.use_softplus = use_softplus
         self.soft_clip = soft_clip
@@ -138,8 +211,26 @@ class MetaBlock(nnx.Module):
         self.proj_in = nnx.Linear(F, channels, rngs=rngs)
         self.sos_embed = nnx.Param(
             jax.random.normal(rngs.params(), (1, 1, F)) * 1e-2)
-        self.pos_embed = nnx.Param(
-            jax.random.normal(rngs.params(), (T, channels)) * 1e-2)
+        if rope is not None:
+            if grid is None:
+                raise ValueError("rope requires grid=(h, w)")
+            if grid[0] * grid[1] != T:
+                raise ValueError(
+                    f"grid={grid} does not match T={T} "
+                    f"(grid[0] * grid[1] must equal the token count T)")
+            # Positions in raster sequence-slot order, NOT permuted with the
+            # token flip (faithful to the reference); prefix slots at the
+            # identity rotation (zeros), image slots on the normalized 2D grid.
+            M = getattr(conditioner, "M", 0)
+            pos_img = get_positions(grid[0], grid[1], rope.pt_seq_len)
+            pos = jnp.concatenate(
+                [jnp.zeros((M, 2), dtype=pos_img.dtype), pos_img], axis=0)
+            self.freqs_cis = Mask(rope(pos))            # (M+T, head_dim)
+            self.pos_embed = None
+        else:
+            self.freqs_cis = None
+            self.pos_embed = nnx.Param(
+                jax.random.normal(rngs.params(), (T, channels)) * 1e-2)
         self.attn_blocks = nnx.List(
             [AttentionBlock(channels, num_heads, expansion, rngs)
              for _ in range(num_layers)])
@@ -194,18 +285,21 @@ class MetaBlock(nnx.Module):
         B = x_perm.shape[0]
         sos = jnp.broadcast_to(self.sos_embed[...], (B, 1, self.F))
         x_in = jnp.concatenate([sos, x_perm[:, :-1]], axis=1)   # (B, T, F)
-        h = self.proj_in(x_in) + self.pos_embed[...][None]      # (B, T, C)
+        h = self.proj_in(x_in)                                  # (B, T, C)
+        if self.pos_embed is not None:
+            h = h + self.pos_embed[...][None]
+        freqs = self.freqs_cis[...] if self.freqs_cis is not None else None
         if bias is not None:
             h = h + bias[:, None, :]
         if prefix is not None:
             M = prefix.shape[1]
             h = jnp.concatenate([prefix, h], axis=1)            # (B, M+T, C)
             for blk in self.attn_blocks:
-                h = blk(h, mask)
+                h = blk(h, mask, freqs)
             h = h[:, M:]                                        # (B, T, C) strip
         else:
             for blk in self.attn_blocks:
-                h = blk(h)
+                h = blk(h, None, freqs)
         out = self.proj_out(h)                                  # (B, T, 2F)
         if self.soft_clip > 0:
             out = self.soft_clip * jnp.tanh(out / self.soft_clip)
@@ -252,8 +346,12 @@ class MetaBlock(nnx.Module):
         z = z[:, self.inv_perm[...]].astype(xp.dtype)
         return z, logdet
 
-    def forward(self, z: Array, cond: Array | None = None):
-        """Map noise to data (the sampling direction).
+    def _forward_reference(self, z: Array, cond: Array | None = None):
+        """Map noise to data via full recompute (reference path for the KV cache).
+
+        ``forward`` is the production path (KV-cached); this method is its
+        correctness oracle, retained for the equivalence test suite — do not
+        delete it.
 
         Sequentially scans over token positions via ``jax.lax.scan``,
         re-running the causal attention pass at each step so that token
@@ -293,5 +391,99 @@ class MetaBlock(nnx.Module):
         x = jnp.zeros_like(zp)
         x, log_scale_steps = jax.lax.scan(body, x, jnp.arange(self.T))  # (T, B, F)
         logdet = jnp.sum(log_scale_steps, axis=(0, 2))         # (B,), +Σ log_scale
+        x = x[:, self.inv_perm[...]]
+        return x, logdet
+
+    def forward(self, z: Array, cond: Array | None = None):
+        """Map noise to data (the sampling direction), KV-cached.
+
+        Prefills the per-layer caches with the condition prefix (one parallel
+        pass under the bidirectional prefix mask, matching the training-path
+        mask rows), then scans over token positions decoding a single token
+        per step against the caches. Verified equivalent to
+        :meth:`_forward_reference` (full recompute) by the test suite.
+
+        Parameters
+        ----------
+        z : Array
+            Noise-space token sequence of shape ``(B, T, F)`` or a flat array
+            that will be reshaped to ``(B, T, F)``.
+        cond : Array or None, optional
+            Conditioning input, or ``None`` for an unconditional transform.
+
+        Returns
+        -------
+        x : Array
+            Data-space output of shape ``(B, T, F)``.
+        logabsdet : Array
+            Log absolute determinant of the Jacobian of the forward map,
+            shape ``(B,)``. Equal to ``+Σ log_scale`` over token and feature
+            dimensions.
+        """
+        z = z.reshape(z.shape[0], self.T, self.F)
+        zp = z[:, self.perm[...]]
+        B = zp.shape[0]
+        # Unlike _params/_forward_reference, the cached path builds its own
+        # bidirectional prefix mask for the prefill below, so it embeds the
+        # condition directly instead of via _embed_cond (which would also
+        # build the (M+T)^2 prefix-LM mask, only to discard it here).
+        bias, prefix = self.conditioner.embed(cond)
+        M = prefix.shape[1] if prefix is not None else 0
+        S = M + self.T
+        nh = self.attn_blocks[0].num_heads
+        hd = self.attn_blocks[0].head_dim
+        L = len(self.attn_blocks)
+        freqs = self.freqs_cis[...] if self.freqs_cis is not None else None
+
+        k_caches = jnp.zeros((L, B, S, nh, hd), dtype=zp.dtype)
+        v_caches = jnp.zeros_like(k_caches)
+
+        # Prefill: prefix rows attend bidirectionally among themselves,
+        # exactly as in the training prefix-LM mask (rows < M).
+        if prefix is not None:
+            h = prefix
+            prefix_mask = jnp.ones((M, M), dtype=bool)
+            pf = freqs[:M] if freqs is not None else None
+            for layer, blk in enumerate(self.attn_blocks):
+                h, k, v = blk(h, prefix_mask, pf, return_kv=True)
+                k_caches = k_caches.at[layer, :, :M].set(k)
+                v_caches = v_caches.at[layer, :, :M].set(v)
+
+        sos = jnp.broadcast_to(self.sos_embed[...], (B, 1, self.F))
+
+        def body(carry, t):
+            x, k_caches, v_caches = carry
+            prev = jax.lax.dynamic_slice_in_dim(x, jnp.maximum(t - 1, 0), 1,
+                                                axis=1)
+            x_in = jnp.where(t == 0, sos, prev)                # (B, 1, F)
+            h = self.proj_in(x_in)                             # (B, 1, C)
+            if self.pos_embed is not None:
+                pe = jax.lax.dynamic_slice_in_dim(self.pos_embed[...], t, 1,
+                                                  axis=0)
+                h = h + pe[None]
+            if bias is not None:
+                h = h + bias[:, None, :]
+            slot = M + t
+            for layer, blk in enumerate(self.attn_blocks):
+                h, k_l, v_l = blk.decode(h, k_caches[layer], v_caches[layer],
+                                         slot, freqs)
+                k_caches = k_caches.at[layer].set(k_l)
+                v_caches = v_caches.at[layer].set(v_l)
+            out = self.proj_out(h)                             # (B, 1, 2F)
+            if self.soft_clip > 0:
+                out = self.soft_clip * jnp.tanh(out / self.soft_clip)
+            a, b = jnp.split(out, 2, axis=-1)                  # (B, 1, F)
+            scale, _, log_scale = self._affine(a[:, 0])        # (B, F) fp32
+            z_t = jax.lax.dynamic_slice_in_dim(zp, t, 1, axis=1)[:, 0]
+            x_t = z_t.astype(jnp.float32) * scale \
+                + b[:, 0].astype(jnp.float32)
+            x = jax.lax.dynamic_update_slice_in_dim(
+                x, x_t.astype(x.dtype)[:, None], t, axis=1)
+            return (x, k_caches, v_caches), log_scale          # (B, F)
+
+        x0 = jnp.zeros_like(zp)
+        (x, _, _), log_scale_steps = jax.lax.scan(
+            body, (x0, k_caches, v_caches), jnp.arange(self.T))
+        logdet = jnp.sum(log_scale_steps, axis=(0, 2))         # (B,)
         x = x[:, self.inv_perm[...]]
         return x, logdet

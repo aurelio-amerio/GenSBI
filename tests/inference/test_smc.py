@@ -31,23 +31,25 @@ class BimodalMock:
         return jax.scipy.special.logsumexp(jnp.stack([a, b], axis=-1), axis=-1)
 
 
-def test_smc_nuts_analytic_gaussian_recovery():
+def test_smc_hmc_analytic_gaussian_recovery():
     dim = 2
     post = NLEPosterior(GaussianMock(), make_gaussian_prior((dim,)))
     x_o = jnp.array([1.0, -1.0])
     s = post.sample(jax.random.PRNGKey(0), x_o,
-                    sampler=TemperedSMC(inner_kernel="nuts", num_particles=2000,
-                                        inner_step_size=0.5))[..., 0]
+                    sampler=TemperedSMC(inner_kernel="hmc", num_particles=2000,
+                                        inner_step_size=0.5,
+                                        inner_num_integration_steps=10))[..., 0]
     assert s.shape == (2000, dim)
     assert jnp.allclose(jnp.mean(s, axis=0), x_o / 2, atol=0.2)
 
 
-def test_smc_nuts_recovers_both_modes():
+def test_smc_hmc_recovers_both_modes():
     dim = 2
     post = NLEPosterior(BimodalMock(mu=3.0), make_gaussian_prior((dim,), sigma=5.0))
     s = post.sample(jax.random.PRNGKey(1), jnp.zeros(dim),
-                    sampler=TemperedSMC(inner_kernel="nuts", num_particles=2000,
-                                        inner_step_size=0.5))[..., 0]
+                    sampler=TemperedSMC(inner_kernel="hmc", num_particles=2000,
+                                        inner_step_size=0.5,
+                                        inner_num_integration_steps=10))[..., 0]
     frac_pos = jnp.mean(jnp.all(s > 0, axis=1).astype(float))
     frac_neg = jnp.mean(jnp.all(s < 0, axis=1).astype(float))
     # both modes populated (a single MCMC chain would capture only one)
@@ -58,8 +60,9 @@ def test_smc_info_has_log_evidence():
     dim = 2
     post = NLEPosterior(GaussianMock(), make_gaussian_prior((dim,)))
     _, info = post.sample(jax.random.PRNGKey(2), jnp.array([1.0, -1.0]),
-                          sampler=TemperedSMC(inner_kernel="nuts", num_particles=1000,
-                                              inner_step_size=0.5),
+                          sampler=TemperedSMC(inner_kernel="hmc", num_particles=1000,
+                                              inner_step_size=0.5,
+                                              inner_num_integration_steps=10),
                           return_info=True)
     assert jnp.isfinite(info.log_evidence)
     assert info.num_temperature_steps > 0

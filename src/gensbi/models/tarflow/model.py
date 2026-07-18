@@ -22,6 +22,7 @@ from gensbi.models.tarflow.blocks import MetaBlock
 from gensbi.models.tarflow.conditioners import (
     AdditiveBiasConditioner, VectorConditioner, ImageConditioner,
 )
+from gensbi.models.tarflow.pe import VisionRotaryEmbedding
 from gensbi.normalizing_flows.bijections.base import Mask
 
 _LOG2PI = jnp.log(2.0 * jnp.pi)
@@ -104,6 +105,18 @@ class TarFlowParams:
     soft_clip : float, optional
         Soft-clip magnitude applied via ``tanh`` to raw network outputs before
         splitting into ``(a, b)``. Default is ``4.0``.
+    use_rope : bool, optional
+        If ``True``, replace the learned per-token ``pos_embed`` for the
+        modeled image tokens with 2D rotary position embeddings
+        (:class:`~gensbi.models.tarflow.pe.VisionRotaryEmbedding`). Prefix
+        (condition) tokens keep their learned embeddings and sit at the
+        identity rotation (zero angles). Requires ``modeled="image"`` and
+        ``head_dim`` divisible by ``4``. ``head_dim >= 32`` is recommended
+        for image data (more rotary frequencies per axis) but not enforced.
+        Default is ``False``.
+    rope_theta : int, optional
+        Frequency base for the rotary embedding. Only used when
+        ``use_rope=True``. Default is ``10000``.
     """
 
     rngs: nnx.Rngs
@@ -128,6 +141,8 @@ class TarFlowParams:
     zero_init: bool = True
     use_softplus: bool = True
     soft_clip: float = 4.0
+    use_rope: bool = False
+    rope_theta: int = 10000
 
     def __post_init__(self):
         if self.modeled not in ("vector", "image"):
@@ -142,6 +157,13 @@ class TarFlowParams:
             raise ValueError("cond='image' requires cond_img_size and cond_patch_size")
         if self.permutation not in ("flip", "random"):
             raise ValueError(f"unknown permutation {self.permutation!r}")
+        if self.use_rope:
+            if self.modeled != "image":
+                raise ValueError("use_rope=True requires modeled='image'")
+            if self.head_dim % 4 != 0:
+                raise ValueError(
+                    f"use_rope requires head_dim divisible by 4 (two position "
+                    f"axes x adjacent-pair rotation), got head_dim={self.head_dim}")
         self.channels = self.head_dim * self.num_heads
 
 
@@ -171,6 +193,16 @@ class TarFlow(nnx.Module):
                                        params.img_channels, params.patch_size)
         T, F = tokenizer.T, tokenizer.F
 
+        if params.use_rope:
+            # tokenizer.grid[0] assumes a square grid; always true today since
+            # ImageTokenizer is built with img_size x img_size (see above).
+            rope = VisionRotaryEmbedding(dim=params.head_dim // 2,
+                                         pt_seq_len=tokenizer.grid[0],
+                                         theta=params.rope_theta)
+            grid = tokenizer.grid
+        else:
+            rope, grid = None, None
+
         def make_cond():
             if params.cond == "bias":
                 return AdditiveBiasConditioner(params.cond_dim, channels, rngs=rngs,
@@ -194,7 +226,7 @@ class TarFlow(nnx.Module):
                 conditioner=make_cond(), num_layers=params.layers_per_block,
                 num_heads=params.num_heads, expansion=4, rngs=rngs,
                 zero_init=params.zero_init, use_softplus=params.use_softplus,
-                soft_clip=params.soft_clip))
+                soft_clip=params.soft_clip, rope=rope, grid=grid))
 
         self.blocks = nnx.List(blocks)
         self.tokenizer = tokenizer

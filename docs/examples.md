@@ -57,6 +57,8 @@ The **two moons** problem is a classic 2D benchmark with a bimodal posterior. It
 - Using the Simformer model on simple problems
 - Using the Flux1 model on simple problems
 - Visualizing bimodal posterior distributions
+- Neural Likelihood Estimation (NLE) with a Masked Autoregressive Flows (MAF), and sampling the bimodal
+  posterior with tempered SMC and nested sampling
 
 ```{toctree}
 :maxdepth: 1
@@ -67,6 +69,7 @@ notebooks/two_moons_diffusion_simformer
 notebooks/two_moons_flow_flux
 notebooks/two_moons_flow_flux1joint
 notebooks/two_moons_flow_simformer
+notebooks/two_moons_maf_nle
 ```
 
 ### Bernoulli Generalized Linear Model
@@ -131,7 +134,7 @@ For this task, we train all three main models (**Flux1**, **Flux1Joint**, and **
 - Capturing complex, symmetric multimodal posteriors
 - Comparing Flux1, Flux1Joint, and Simformer performance
 - Understanding when joint distribution learning is beneficial over direct posterior estimation
-- Neural likelihood estimation with the experimental TarFlow normalizing flow + MCLMC posterior sampling
+- Neural likelihood estimation with the experimental TarFlow normalizing flow + tempered SMC posterior sampling
 
 ```{toctree}
 :maxdepth: 1

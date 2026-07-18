@@ -188,3 +188,86 @@ def test_image_set_standardization_shape():
     flow.set_standardization(mean, std)
     assert flow.mean[...].shape == (8, 8, 1)
     assert jnp.allclose(flow.std[...], std)
+
+
+def _rope_params(cond="bias", **kw):
+    """4x4 single-channel image, patch 2 -> T=4 tokens, head_dim=8."""
+    base = dict(rngs=nnx.Rngs(0), modeled="image", img_size=4, patch_size=2,
+                img_channels=1, head_dim=8, num_heads=2, num_blocks=2,
+                layers_per_block=1, use_rope=True, cond=cond)
+    if cond == "bias":
+        base["cond_dim"] = 3
+    elif cond == "vector":
+        base["cond_dim"] = 3
+    else:                                   # cond == "image"
+        base.update(cond_img_size=4, cond_patch_size=2)
+    base.update(kw)
+    return TarFlowParams(**base)
+
+
+def test_use_rope_requires_image_modeled():
+    with pytest.raises(ValueError, match="use_rope"):
+        TarFlowParams(rngs=nnx.Rngs(0), dim=4, use_rope=True)
+
+
+def test_use_rope_requires_head_dim_multiple_of_4():
+    with pytest.raises(ValueError, match="head_dim"):
+        _rope_params(head_dim=6)
+
+
+def test_rope_model_drops_pos_embed():
+    model = TarFlow(_rope_params())
+    assert all(blk.pos_embed is None for blk in model.blocks)
+    assert all(blk.freqs_cis is not None for blk in model.blocks)
+
+
+def test_rope_log_prob_and_sample_bias_cond():
+    model = TarFlow(_rope_params(cond="bias"))
+    x = jax.random.normal(jax.random.PRNGKey(1), (2, 4, 4, 1))
+    cond = jax.random.normal(jax.random.PRNGKey(2), (2, 3))
+    lp = model.log_prob(x, cond)
+    assert lp.shape == (2,) and jnp.all(jnp.isfinite(lp))
+    s = model.sample(jax.random.PRNGKey(3), cond=cond)
+    assert s.shape == (2, 4, 4, 1) and jnp.all(jnp.isfinite(s))
+
+
+def test_rope_log_prob_and_sample_vector_cond():
+    model = TarFlow(_rope_params(cond="vector"))
+    x = jax.random.normal(jax.random.PRNGKey(4), (2, 4, 4, 1))
+    cond = jax.random.normal(jax.random.PRNGKey(5), (2, 3, 1))
+    lp = model.log_prob(x, cond)
+    assert lp.shape == (2,) and jnp.all(jnp.isfinite(lp))
+    s = model.sample(jax.random.PRNGKey(6), cond=cond)
+    assert s.shape == (2, 4, 4, 1) and jnp.all(jnp.isfinite(s))
+
+
+def test_rope_log_prob_and_sample_image_cond():
+    model = TarFlow(_rope_params(cond="image"))
+    x = jax.random.normal(jax.random.PRNGKey(7), (2, 4, 4, 1))
+    cond = jax.random.normal(jax.random.PRNGKey(8), (2, 4, 4, 1))
+    lp = model.log_prob(x, cond)
+    assert lp.shape == (2,) and jnp.all(jnp.isfinite(lp))
+    s = model.sample(jax.random.PRNGKey(9), cond=cond)
+    assert s.shape == (2, 4, 4, 1) and jnp.all(jnp.isfinite(s))
+
+
+def test_rope_training_smoke():
+    """A few gradient steps must reduce the NLL on a tiny fixed batch."""
+    import optax
+
+    model = TarFlow(_rope_params(cond="bias"))
+    x = jax.random.normal(jax.random.PRNGKey(10), (16, 4, 4, 1))
+    cond = jax.random.normal(jax.random.PRNGKey(11), (16, 3))
+    opt = nnx.Optimizer(model, optax.adam(1e-3), wrt=nnx.Param)
+
+    @nnx.jit
+    def step(model, opt):
+        def loss_fn(m):
+            return -jnp.mean(m.log_prob(x, cond))
+        loss, grads = nnx.value_and_grad(loss_fn)(model)
+        opt.update(model, grads)
+        return loss
+
+    losses = [float(step(model, opt)) for _ in range(30)]
+    assert all(jnp.isfinite(jnp.asarray(losses)))
+    assert losses[-1] < losses[0]
