@@ -34,7 +34,4 @@ __all__ = [
 
     "IdStrategy",
     "HealpixRope",
-
-    "VAE1DPipeline",
-    "VAE2DPipeline",
 ]
