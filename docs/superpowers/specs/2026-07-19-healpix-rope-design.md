@@ -39,16 +39,16 @@ unit vector n_i = pix2vec(nside, p, nest=True) ∈ S² ⊂ ℝ³.
 
 **Patched tokens (HEAL-SWIN patch_size).** HEAL-SWIN's `PatchEmbed` groups
 contiguous NEST pixels [j·P, (j+1)·P) and `PatchMerging` merges exact NEST
-child quadruples (verified in code). Token j ↔ a single HEALPix pixel at a
-coarser nside iff P is a power of 4; heal_swin_nnx however permits any
-`patch_size % 4 == 0` (e.g. 8, 12 — tokens then straddle or split parent
-pixels and correspond to no pixel at any nside). Uniform convention: a token's
-direction is the normalized mean of its member fine-pixel unit vectors (chord
-centroid of its contiguous NEST range). `init_ids_healpix` takes
-`pixels_per_token` (= patch_size · 4^n_mergings); pixel-unit scale uses
-nside_eff = nside/sqrt(pixels_per_token). For power-of-4 groupings this
-agrees with pix2vec at the bottleneck nside to O(pixel²) (pinned by a test);
-elsewhere it is the only well-defined choice.
+child quadruples (verified in code). Assumption (by design decision): total
+pixels-per-token is a power of 4 — patch_size ∈ {1, 4, 16, 64, ...} — so the
+token grid is itself a HEALPix grid at the bottleneck nside (power of 2) and
+token i ↔ NEST pixel i. `init_ids_healpix(nside, ...)` therefore takes the
+token-level nside directly (always known after the encoder; 2 in the example)
+and needs no knowledge of patching. Note: heal_swin_nnx validates only
+`patch_size % 4 == 0`, so P = 8, 12, ... are legal there but yield tokens
+that are no HEALPix pixel at any nside (nside/sqrt(P) non-integer); such
+grids are out of scope — a user needing them supplies their own ids (recipe:
+normalized mean of member fine-pixel unit vectors).
 
 **Pixel-unit scaling.** ids_i = r(nside) · n_i with r(nside) ≈ 1/pixel_size
 (pixel angular size ≈ 1.023/nside rad), so adjacent bottleneck tokens differ by
