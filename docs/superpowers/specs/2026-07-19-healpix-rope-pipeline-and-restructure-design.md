@@ -157,15 +157,37 @@ Repo: `/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx` (currently checked out o
 ### Phase 4 — GenSBI-examples: the spherical_grf example
 
 - New directory `examples/sbi-benchmarks/spherical_grf/` (underscore, matching
-  `gravitational_waves` etc.) containing the ported script and its `sub/` files
-  (submit file + runner script), source = HEAL-SWIN-nnx main history (`0748eda`).
-- Two rewrites inside the script:
+  `gravitational_waves` etc.) containing `train-spherical-grf.py`, a `config/`
+  directory, and the ported `sub/` files (submit file + runner script), source =
+  HEAL-SWIN-nnx main history (`0748eda`).
+- **Config extraction (lensing convention):** the run configuration moves out of
+  module-level constants into YAML, following
+  `lensing/config/config_1a.yaml` + `train-lensing.py`: sections `task_name`,
+  `strategy`, `optimizer` and `training` (parsed with the existing
+  `parse_training_config`), `model` (Flux1 hyperparameters), plus an
+  example-specific `encoder` section (HealSwin: `embed_dim`, `depths`,
+  `num_heads`, `window_size`) parsed by hand into `HealSwinParams`, and an
+  `evaluation` section (observations, posterior/TARP sample counts, step size).
+  The `COND_ID_KIND` A/B switch becomes **two config files** instead of an
+  in-script constant:
+  - `config/config_healpix.yaml` — `id_embedding_strategy: ["absolute", "rope"]`,
+    `axes_dim: [22, 22, 20]`, `theta: null` (script derives it from
+    `HealpixRope(nside_bottleneck).theta`), distinct `experiment_id`;
+  - `config/config_pos1d.yaml` — `id_embedding_strategy: ["absolute", "pos1d"]`,
+    `axes_dim: [64]`, `theta: null` (falls back to the model default 510),
+    distinct `experiment_id`.
+  The script selects the config via a CLI argument defaulting to
+  `config/config_healpix.yaml`; the condor submit path passes it, so the GPU A/B
+  is two submits differing only in config file. `nside_bottleneck` and the cond
+  token count are derived from the `encoder` section, not written twice. The
+  `SMOKE=1`/`QUICK=1` env debug modes are kept (they override a handful of
+  values at runtime, as today).
+- Two rewrites inside the script logic:
   1. `from gensbi.models import HealSwinEncoder, HealSwinParams` (dogfoods the
      Phase-3 mirror).
-  2. `make_pipeline` uses `HealpixRope(nside=NSIDE_BOTTLENECK)`; the
+  2. `make_pipeline` uses `HealpixRope(nside=nside_bottleneck)`; the
      fake-strategy-then-overwrite workaround and the module-level token-count assert
-     are deleted; Flux1's `theta` comes from `strategy.theta`. The `COND_ID_KIND`
-     healpix-vs-pos1d A/B switch is **kept** — the GPU A/B gate runs from here.
+     are deleted. The GPU A/B gate runs from here.
 - GenSBI-examples `pyproject.toml`, in passing: add `gensbi` as an explicit dependency
   (absent today); require `sbibm-jax[loader]>=0.1.3` (the version with the
   `spherical_grf` task and `TaskDataset`); update the stale `jax>=0.9,<0.10` pin to
@@ -190,7 +212,8 @@ Repo: `/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx` (currently checked out o
 - **Phase 3 (GenSBI):** mirror smoke test (imports + tiny CPU forward).
 - **Phase 4 (GenSBI-examples):** `SMOKE=1 JAX_PLATFORMS=cpu` and
   `QUICK=1 JAX_PLATFORMS=cpu` runs of the moved example succeed against PyPI
-  `sbibm-jax>=0.1.3`.
+  `sbibm-jax>=0.1.3` — QUICK for **both** config files (healpix and pos1d), since
+  the A/B comparison depends on both paths working.
 
 ## Error handling
 
@@ -216,5 +239,6 @@ Repo: `/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx` (currently checked out o
   FIXME (both documented, deferred).
 - `obs_ids=`/`cond_ids=` passthrough kwargs (subsumed by custom `IdStrategy` objects).
 - Joint/unconditional pipeline id-strategy changes.
-- Converting the example to the `train-*.py` + notebook + YAML-config layout used by
-  sibling benchmarks (the script keeps its headless single-file form).
+- A companion notebook for the example (sibling benchmarks have one; the ported
+  example stays headless-script-only — the YAML-config layout itself IS adopted,
+  see Phase 4).
