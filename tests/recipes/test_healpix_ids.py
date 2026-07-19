@@ -150,3 +150,15 @@ def test_flux1_forward_with_healpix_rope():
     out = model(t=t, obs=obs, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids)
     assert out.shape == (batch, dim_theta, 1)
     assert bool(jnp.isfinite(out).all())
+
+
+def test_init_ids_healpix_rejects_empty_base_pixels():
+    # Previously leaked a raw numpy "need at least one array to concatenate".
+    with pytest.raises(ValueError, match="non-empty"):
+        init_ids_healpix(2, base_pixels=[])
+
+
+def test_init_ids_healpix_rejects_non_integer_base_pixels():
+    # Previously slipped validation and reached hp.pix2vec.
+    with pytest.raises(ValueError, match="integer"):
+        init_ids_healpix(2, base_pixels=[1.5])

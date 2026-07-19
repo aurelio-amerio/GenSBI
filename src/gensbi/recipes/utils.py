@@ -66,6 +66,24 @@ def healpix_rope_theta(nside: int) -> int:
     return 10 * 12 * nside**2
 
 
+def _validate_base_pixels(base_pixels):
+    """Validate a base-pixel subset spec; return it as a list of ints."""
+    base_pixels = list(base_pixels)
+    if not base_pixels:
+        raise ValueError(
+            "base_pixels must be non-empty; omit it (or pass None) for full sky"
+        )
+    if any(not isinstance(b, (int, np.integer)) for b in base_pixels):
+        raise ValueError(f"base_pixels entries must be integers, got {base_pixels}")
+    if any(b < 0 or b > 11 for b in base_pixels) or len(set(base_pixels)) != len(
+        base_pixels
+    ):
+        raise ValueError(
+            f"base_pixels must be unique integers in [0, 11], got {base_pixels}"
+        )
+    return base_pixels
+
+
 def init_ids_healpix(nside: int, base_pixels=None):
     """Build spherical RoPE ids for tokens on a HEALPix grid, returning
     ``(ids, num_tokens)``.
@@ -116,19 +134,13 @@ def init_ids_healpix(nside: int, base_pixels=None):
     num_tokens : int
         ``len(base_pixels) * nside**2``.
     """
-    import healpy as hp  # lazy: healpy pulls matplotlib, keep import light
-
     if nside < 1 or (nside & (nside - 1)) != 0:
         raise ValueError(f"nside must be a power of 2, got {nside}")
     if base_pixels is None:
         base_pixels = range(12)
-    base_pixels = list(base_pixels)
-    if any(b < 0 or b > 11 for b in base_pixels) or len(set(base_pixels)) != len(
-        base_pixels
-    ):
-        raise ValueError(
-            f"base_pixels must be unique integers in [0, 11], got {base_pixels}"
-        )
+    base_pixels = _validate_base_pixels(base_pixels)
+
+    import healpy as hp  # lazy: healpy pulls matplotlib, keep import light
 
     face_len = nside**2
     pix = np.concatenate(
