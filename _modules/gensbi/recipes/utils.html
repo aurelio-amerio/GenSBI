@@ -832,6 +832,27 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="_validate_base_pixels">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils._validate_base_pixels">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_base_pixels</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a base-pixel subset spec; return it as a list of ints.&quot;&quot;&quot;</span>
+    <span class="n">base_pixels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">base_pixels</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;base_pixels must be non-empty; omit it (or pass None) for full sky&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">base_pixels</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;base_pixels entries must be integers, got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="mi">11</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">base_pixels</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span>
+        <span class="n">base_pixels</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;base_pixels must be unique integers in [0, 11], got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">base_pixels</span></div>
+
+
+
 <div class="viewcode-block" id="init_ids_healpix">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/utils/index.html#gensbi.recipes.utils.init_ids_healpix">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">init_ids_healpix</span><span class="p">(</span><span class="n">nside</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -884,19 +905,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    num_tokens : int</span>
 <span class="sd">        ``len(base_pixels) * nside**2``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>  <span class="c1"># lazy: healpy pulls matplotlib, keep import light</span>
-
     <span class="k">if</span> <span class="n">nside</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="p">(</span><span class="n">nside</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">nside</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;nside must be a power of 2, got </span><span class="si">{</span><span class="n">nside</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">base_pixels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">base_pixels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
-    <span class="n">base_pixels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="mi">11</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">base_pixels</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span>
-        <span class="n">base_pixels</span>
-    <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;base_pixels must be unique integers in [0, 11], got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
+    <span class="n">base_pixels</span> <span class="o">=</span> <span class="n">_validate_base_pixels</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">)</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>  <span class="c1"># lazy: healpy pulls matplotlib, keep import light</span>
 
     <span class="n">face_len</span> <span class="o">=</span> <span class="n">nside</span><span class="o">**</span><span class="mi">2</span>
     <span class="n">pix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
@@ -1063,9 +1078,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ----------</span>
 <span class="sd">    dim : int or tuple of int</span>
 <span class="sd">        Dimension specification (number of tokens, or (H, W) for 2D images).</span>
-<span class="sd">    strategy : str</span>
+<span class="sd">    strategy : str or IdStrategy</span>
 <span class="sd">        Embedding strategy name (e.g., &quot;absolute&quot;, &quot;pos1d&quot;, &quot;rope1d&quot;,</span>
-<span class="sd">        &quot;pos2d&quot;, &quot;rope2d&quot;).</span>
+<span class="sd">        &quot;pos2d&quot;, &quot;rope2d&quot;) or a strategy object with ``build(dim)`` (e.g.</span>
+<span class="sd">        :class:`gensbi.recipes.HealpixRope`). NOTE these pipeline-side</span>
+<span class="sd">        builder names are a different vocabulary from the model-side</span>
+<span class="sd">        ``id_embedding_strategy`` strings (where &quot;rope&quot; means &quot;apply RoPE</span>
+<span class="sd">        to the ids the pipeline provides&quot;) — see</span>
+<span class="sd">        :mod:`gensbi.recipes.id_strategies`.</span>
 <span class="sd">    semantic_id : int</span>
 <span class="sd">        Semantic identifier for the token group (0=obs, 1=cond).</span>
 <span class="sd">    size : int, optional</span>
@@ -1084,12 +1104,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ValueError</span>
 <span class="sd">        If ``strategy`` is not recognized.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="s2">&quot;build&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">strategy</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">_EMBEDDINGS_1D</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="n">semantic_id</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">_EMBEDDINGS_2D</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">init_ids_2d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="n">semantic_id</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown id embedding strategy: </span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unknown id embedding strategy: </span><span class="si">{</span><span class="n">strategy</span><span class="si">!r}</span><span class="s2">. Expected one of &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_EMBEDDINGS_1D</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">_EMBEDDINGS_2D</span><span class="p">)</span><span class="si">}</span><span class="s2"> or an IdStrategy object &quot;</span>
+            <span class="s2">&quot;with a build(dim) method (e.g. gensbi.recipes.HealpixRope).&quot;</span>
+        <span class="p">)</span></div>
 
 
 

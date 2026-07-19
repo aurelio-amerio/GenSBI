@@ -37,6 +37,7 @@ Submodules
    /api/gensbi/recipes/flow_pipeline/index
    /api/gensbi/recipes/flux1/index
    /api/gensbi/recipes/flux1joint/index
+   /api/gensbi/recipes/id_strategies/index
    /api/gensbi/recipes/joint_pipeline/index
    /api/gensbi/recipes/pipeline/index
    /api/gensbi/recipes/simformer/index
@@ -57,6 +58,8 @@ Classes
    gensbi.recipes.Flux1JointFlowPipeline
    gensbi.recipes.Flux1JointSMPipeline
    gensbi.recipes.Flux1SMPipeline
+   gensbi.recipes.HealpixRope
+   gensbi.recipes.IdStrategy
    gensbi.recipes.JointPipeline
    gensbi.recipes.SimformerDiffusionPipeline
    gensbi.recipes.SimformerFlowPipeline
@@ -622,9 +625,16 @@ Package Contents
    :type ch_obs: int, optional
    :param ch_cond: Number of channels per conditioning token. Default is 1.
    :type ch_cond: int, optional
-   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
-                                 Default is ``("absolute", "absolute")``.
-   :type id_embedding_strategy: tuple of str, optional
+   :param id_embedding_strategy: Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+                                 1D/2D grid builder; an :class:`~gensbi.recipes.IdStrategy` object
+                                 (e.g. :class:`~gensbi.recipes.HealpixRope`) builds ids from its own
+                                 geometry. Default is ``("absolute", "absolute")``. NOTE this
+                                 pipeline-side vocabulary is distinct from the model-side
+                                 ``id_embedding_strategy`` (e.g. ``Flux1Params``), where "rope"
+                                 means "apply RoPE to the provided ids"; a ``HealpixRope`` pipeline
+                                 strategy pairs with model-side ``("absolute", "rope")`` and a
+                                 3-entry ``axes_dim``.
+   :type id_embedding_strategy: tuple of (str or IdStrategy), optional
    :param size: Patch edge length for 2D ID-embedding strategies. Default is ``2``.
                 A single ``int`` is broadcast to both obs and cond (``8 -> (8, 8)``).
                 A length-2 tuple ``(obs_size, cond_size)`` lets the two inputs differ.
@@ -970,9 +980,16 @@ Package Contents
    :type ch_obs: int, optional
    :param ch_cond: Number of channels per conditioning token. Default is 1.
    :type ch_cond: int, optional
-   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
-                                 Default is ``("absolute", "absolute")``.
-   :type id_embedding_strategy: tuple of str, optional
+   :param id_embedding_strategy: Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+                                 1D/2D grid builder; an :class:`~gensbi.recipes.IdStrategy` object
+                                 (e.g. :class:`~gensbi.recipes.HealpixRope`) builds ids from its own
+                                 geometry. Default is ``("absolute", "absolute")``. NOTE this
+                                 pipeline-side vocabulary is distinct from the model-side
+                                 ``id_embedding_strategy`` (e.g. ``Flux1Params``), where "rope"
+                                 means "apply RoPE to the provided ids"; a ``HealpixRope`` pipeline
+                                 strategy pairs with model-side ``("absolute", "rope")`` and a
+                                 3-entry ``axes_dim``.
+   :type id_embedding_strategy: tuple of (str or IdStrategy), optional
    :param size: Patch edge length for 2D ID-embedding strategies. Default is ``2``.
                 A single ``int`` is broadcast to both obs and cond (``8 -> (8, 8)``).
                 A length-2 tuple ``(obs_size, cond_size)`` lets the two inputs differ.
@@ -1124,9 +1141,16 @@ Package Contents
    :type ch_obs: int, optional
    :param ch_cond: Number of channels per conditioning token. Default is 1.
    :type ch_cond: int, optional
-   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
-                                 Default is ``("absolute", "absolute")``.
-   :type id_embedding_strategy: tuple of str, optional
+   :param id_embedding_strategy: Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+                                 1D/2D grid builder; an :class:`~gensbi.recipes.IdStrategy` object
+                                 (e.g. :class:`~gensbi.recipes.HealpixRope`) builds ids from its own
+                                 geometry. Default is ``("absolute", "absolute")``. NOTE this
+                                 pipeline-side vocabulary is distinct from the model-side
+                                 ``id_embedding_strategy`` (e.g. ``Flux1Params``), where "rope"
+                                 means "apply RoPE to the provided ids"; a ``HealpixRope`` pipeline
+                                 strategy pairs with model-side ``("absolute", "rope")`` and a
+                                 3-entry ``axes_dim``.
+   :type id_embedding_strategy: tuple of (str or IdStrategy), optional
    :param size: Patch edge length for 2D ID-embedding strategies. Default is ``2``.
                 A single ``int`` is broadcast to both obs and cond (``8 -> (8, 8)``).
                 A length-2 tuple ``(obs_size, cond_size)`` lets the two inputs differ.
@@ -1741,9 +1765,16 @@ Package Contents
    :type ch_obs: int, optional
    :param ch_cond: Number of channels per conditioning token. Default is 1.
    :type ch_cond: int, optional
-   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
-                                 Default is ``("absolute", "absolute")``.
-   :type id_embedding_strategy: tuple of str, optional
+   :param id_embedding_strategy: Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+                                 1D/2D grid builder; an :class:`~gensbi.recipes.IdStrategy` object
+                                 (e.g. :class:`~gensbi.recipes.HealpixRope`) builds ids from its own
+                                 geometry. Default is ``("absolute", "absolute")``. NOTE this
+                                 pipeline-side vocabulary is distinct from the model-side
+                                 ``id_embedding_strategy`` (e.g. ``Flux1Params``), where "rope"
+                                 means "apply RoPE to the provided ids"; a ``HealpixRope`` pipeline
+                                 strategy pairs with model-side ``("absolute", "rope")`` and a
+                                 3-entry ``axes_dim``.
+   :type id_embedding_strategy: tuple of (str or IdStrategy), optional
    :param size: Patch edge length for 2D ID-embedding strategies. Default is ``2``.
                 A single ``int`` is broadcast to both obs and cond (``8 -> (8, 8)``).
                 A length-2 tuple ``(obs_size, cond_size)`` lets the two inputs differ.
@@ -1865,6 +1896,194 @@ Package Contents
 
 
    .. py:attribute:: ema_model
+
+
+.. py:class:: HealpixRope
+
+   
+   Spherical RoPE ids for tokens on a HEALPix grid (name: "healpix-rope").
+
+   Wraps :func:`gensbi.recipes.utils.init_ids_healpix` (see there for the
+   method and its rationale) with the geometry needed to build the ids —
+   which the string-enum API cannot carry, since the pipeline only passes a
+   token count.
+
+   :param nside: HEALPix resolution of the *token* grid (power of 2).
+   :type nside: int
+   :param base_pixels: Base pixels (0..11) covered by the grid; ``None`` = full sky.
+   :type base_pixels: sequence of int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: build(dim)
+
+      
+      Return ``(ids, num_tokens)``; ``dim`` must match the grid.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: base_pixels
+      :type:  Optional[Union[Tuple[int, Ellipsis], Sequence[int]]]
+      :value: None
+
+
+
+   .. py:attribute:: name
+      :type:  ClassVar[str]
+      :value: 'healpix-rope'
+
+
+
+   .. py:attribute:: nside
+      :type:  int
+
+
+   .. py:property:: num_tokens
+      :type: int
+
+
+      
+      ``n_faces * nside**2``.
+
+      :type: Token count of the grid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: theta
+      :type: int
+
+
+      
+      :func:`healpix_rope_theta`.
+
+      :type: Suggested model-side RoPE theta
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: IdStrategy
+
+   Bases: :py:obj:`Protocol`
+
+
+   
+   Structural interface for pipeline id-builder strategy objects.
+
+   Any object with a ``name`` and a ``build(dim) -> (ids, resolved_dim)``
+   method can be passed in an ``id_embedding_strategy`` tuple slot; the
+   pipeline calls ``build`` with the corresponding ``dim_obs``/``dim_cond``.
+   Strategies own their full geometry — unlike the string strategies they
+   receive no ``semantic_id``/``size``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build(dim)
+
+      
+      Return ``(ids, resolved_dim)`` for a stream of ``dim`` tokens.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: name
+      :type:  str
 
 
 .. py:class:: JointPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, condition_mask_kind='structured', params=None, training_config=None)

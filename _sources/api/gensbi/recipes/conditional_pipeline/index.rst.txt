@@ -51,9 +51,16 @@ Module Contents
    :type ch_obs: int, optional
    :param ch_cond: Number of channels per conditioning token. Default is 1.
    :type ch_cond: int, optional
-   :param id_embedding_strategy: Embedding strategy for observation and conditioning IDs.
-                                 Default is ``("absolute", "absolute")``.
-   :type id_embedding_strategy: tuple of str, optional
+   :param id_embedding_strategy: Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+                                 1D/2D grid builder; an :class:`~gensbi.recipes.IdStrategy` object
+                                 (e.g. :class:`~gensbi.recipes.HealpixRope`) builds ids from its own
+                                 geometry. Default is ``("absolute", "absolute")``. NOTE this
+                                 pipeline-side vocabulary is distinct from the model-side
+                                 ``id_embedding_strategy`` (e.g. ``Flux1Params``), where "rope"
+                                 means "apply RoPE to the provided ids"; a ``HealpixRope`` pipeline
+                                 strategy pairs with model-side ``("absolute", "rope")`` and a
+                                 3-entry ``axes_dim``.
+   :type id_embedding_strategy: tuple of (str or IdStrategy), optional
    :param size: Patch edge length for 2D ID-embedding strategies. Default is ``2``.
                 A single ``int`` is broadcast to both obs and cond (``8 -> (8, 8)``).
                 A length-2 tuple ``(obs_size, cond_size)`` lets the two inputs differ.

@@ -24,6 +24,7 @@ Functions
    gensbi.recipes.utils._require_channel
    gensbi.recipes.utils._resolve_embedding_ids
    gensbi.recipes.utils._single_obs
+   gensbi.recipes.utils._validate_base_pixels
    gensbi.recipes.utils.build_edm_path
    gensbi.recipes.utils.build_sm_path
    gensbi.recipes.utils.healpix_rope_theta
@@ -102,8 +103,13 @@ Module Contents
    :param dim: Dimension specification (number of tokens, or (H, W) for 2D images).
    :type dim: int or tuple of int
    :param strategy: Embedding strategy name (e.g., "absolute", "pos1d", "rope1d",
-                    "pos2d", "rope2d").
-   :type strategy: str
+                    "pos2d", "rope2d") or a strategy object with ``build(dim)`` (e.g.
+                    :class:`gensbi.recipes.HealpixRope`). NOTE these pipeline-side
+                    builder names are a different vocabulary from the model-side
+                    ``id_embedding_strategy`` strings (where "rope" means "apply RoPE
+                    to the ids the pipeline provides") — see
+                    :mod:`gensbi.recipes.id_strategies`.
+   :type strategy: str or IdStrategy
    :param semantic_id: Semantic identifier for the token group (0=obs, 1=cond).
    :type semantic_id: int
    :param size: Patch edge length for 2D strategies (default 2). Ignored for 1D
@@ -151,6 +157,29 @@ Module Contents
    A leading batch axis > 1 then raises ``ValueError``: single-observation
    methods never silently discard observations — use ``sample_batched``.
    Returns the canonicalized array with its size-1 batch axis kept.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _validate_base_pixels(base_pixels)
+
+   
+   Validate a base-pixel subset spec; return it as a list of ints.
+
 
 
 

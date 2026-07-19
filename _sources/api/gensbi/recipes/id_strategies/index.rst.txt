@@ -1,0 +1,226 @@
+gensbi.recipes.id_strategies
+============================
+
+.. py:module:: gensbi.recipes.id_strategies
+
+.. autoapi-nested-parse::
+
+   Structured id-builder strategies for the recipe pipelines.
+
+   Two DIFFERENT vocabularies share the word "rope" — they collided once
+   (2026-07-19 handoff) and are deliberately kept distinct:
+
+   - **Model-side** strategy strings (e.g. ``Flux1Params.id_embedding_strategy``):
+     ``"rope"`` means *apply RoPE to whatever ids arrive at the forward pass*.
+   - **Pipeline-side** builder strategies (``ConditionalPipeline``'s
+     ``id_embedding_strategy``): strings like ``"rope1d"``/``"rope2d"`` — and the
+     objects in this module — *build* the id arrays themselves.
+
+   A :class:`HealpixRope` pipeline strategy pairs with model-side
+   ``("absolute", "rope")`` plus a 3-entry even ``axes_dim`` summing to the
+   per-head dim (e.g. ``(22, 22, 20)`` for 64).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   gensbi.recipes.id_strategies.HealpixRope
+   gensbi.recipes.id_strategies.IdStrategy
+
+
+Module Contents
+---------------
+
+.. py:class:: HealpixRope
+
+   
+   Spherical RoPE ids for tokens on a HEALPix grid (name: "healpix-rope").
+
+   Wraps :func:`gensbi.recipes.utils.init_ids_healpix` (see there for the
+   method and its rationale) with the geometry needed to build the ids —
+   which the string-enum API cannot carry, since the pipeline only passes a
+   token count.
+
+   :param nside: HEALPix resolution of the *token* grid (power of 2).
+   :type nside: int
+   :param base_pixels: Base pixels (0..11) covered by the grid; ``None`` = full sky.
+   :type base_pixels: sequence of int, optional
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: build(dim)
+
+      
+      Return ``(ids, num_tokens)``; ``dim`` must match the grid.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: base_pixels
+      :type:  Optional[Union[Tuple[int, Ellipsis], Sequence[int]]]
+      :value: None
+
+
+
+   .. py:attribute:: name
+      :type:  ClassVar[str]
+      :value: 'healpix-rope'
+
+
+
+   .. py:attribute:: nside
+      :type:  int
+
+
+   .. py:property:: num_tokens
+      :type: int
+
+
+      
+      ``n_faces * nside**2``.
+
+      :type: Token count of the grid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: theta
+      :type: int
+
+
+      
+      :func:`healpix_rope_theta`.
+
+      :type: Suggested model-side RoPE theta
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: IdStrategy
+
+   Bases: :py:obj:`Protocol`
+
+
+   
+   Structural interface for pipeline id-builder strategy objects.
+
+   Any object with a ``name`` and a ``build(dim) -> (ids, resolved_dim)``
+   method can be passed in an ``id_embedding_strategy`` tuple slot; the
+   pipeline calls ``build`` with the corresponding ``dim_obs``/``dim_cond``.
+   Strategies own their full geometry — unlike the string strategies they
+   receive no ``semantic_id``/``size``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build(dim)
+
+      
+      Return ``(ids, resolved_dim)`` for a stream of ``dim`` tokens.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:attribute:: name
+      :type:  str
+
+

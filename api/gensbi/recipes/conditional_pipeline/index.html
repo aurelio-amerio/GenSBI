@@ -547,6 +547,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../flow_pipeline/index.html">gensbi.recipes.flow_pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../flux1/index.html">gensbi.recipes.flux1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../id_strategies/index.html">gensbi.recipes.id_strategies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../pipeline/index.html">gensbi.recipes.pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../simformer/index.html">gensbi.recipes.simformer</a></li>
@@ -667,8 +668,15 @@ conforms to the <code class="docutils literal notranslate"><span class="pre">Con
 <code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod()</span></code>, <code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod()</span></code>).</p></li>
 <li><p><strong>ch_obs</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per observation token. Default is 1.</p></li>
 <li><p><strong>ch_cond</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per conditioning token. Default is 1.</p></li>
-<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Embedding strategy for observation and conditioning IDs.
-Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>.</p></li>
+<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>(</em><em>str</em><em> or </em><a class="reference internal" href="../id_strategies/index.html#gensbi.recipes.id_strategies.IdStrategy" title="gensbi.recipes.id_strategies.IdStrategy"><em>IdStrategy</em></a><em>)</em><em>, </em><em>optional</em>) – Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+1D/2D grid builder; an <a class="reference internal" href="../index.html#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IdStrategy</span></code></a> object
+(e.g. <a class="reference internal" href="../index.html#gensbi.recipes.HealpixRope" title="gensbi.recipes.HealpixRope"><code class="xref py py-class docutils literal notranslate"><span class="pre">HealpixRope</span></code></a>) builds ids from its own
+geometry. Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>. NOTE this
+pipeline-side vocabulary is distinct from the model-side
+<code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code>), where “rope”
+means “apply RoPE to the provided ids”; a <code class="docutils literal notranslate"><span class="pre">HealpixRope</span></code> pipeline
+strategy pairs with model-side <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> and a
+3-entry <code class="docutils literal notranslate"><span class="pre">axes_dim</span></code>.</p></li>
 <li><p><strong>size</strong> (<em>int</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Patch edge length for 2D ID-embedding strategies. Default is <code class="docutils literal notranslate"><span class="pre">2</span></code>.
 A single <code class="docutils literal notranslate"><span class="pre">int</span></code> is broadcast to both obs and cond (<code class="docutils literal notranslate"><span class="pre">8</span> <span class="pre">-&gt;</span> <span class="pre">(8,</span> <span class="pre">8)</span></code>).
 A length-2 tuple <code class="docutils literal notranslate"><span class="pre">(obs_size,</span> <span class="pre">cond_size)</span></code> lets the two inputs differ.

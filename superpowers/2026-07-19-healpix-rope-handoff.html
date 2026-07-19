@@ -1,0 +1,646 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Handoff: HEALPix RoPE landed — and the ConditionalPipeline ids gap it exposed &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/2026-07-19-healpix-rope-handoff';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Handoff: HEALPix RoPE landed — and the ConditionalPipeline ids gap it exposed</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="handoff-healpix-rope-landed-and-the-conditionalpipeline-ids-gap-it-exposed">
+<h1>Handoff: HEALPix RoPE landed — and the ConditionalPipeline ids gap it exposed<a class="headerlink" href="#handoff-healpix-rope-landed-and-the-conditionalpipeline-ids-gap-it-exposed" title="Link to this heading">#</a></h1>
+<p><strong>Date:</strong> 2026-07-19. <strong>Purpose:</strong> self-contained context for a new brainstorming session
+on how GenSBI’s recipe pipelines should support non-1D/2D (e.g. spherical) positional ids
+properly, replacing the example-level workaround described below.</p>
+<section id="what-was-done-merged-to-gensbi-main">
+<h2>1. What was done (merged to GenSBI main)<a class="headerlink" href="#what-was-done-merged-to-gensbi-main" title="Link to this heading">#</a></h2>
+<p>Spherical rotary position embedding for HEALPix-grid tokens feeding Flux1’s conditioning
+stream: standard N-d RoPE applied to the 3D Cartesian coordinates of HEALPix pixel
+centers, per the approved spec <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-19-healpix-rope-design.md</span></code>
+and plan <code class="docutils literal notranslate"><span class="pre">docs/superpowers/plans/2026-07-19-healpix-rope.md</span></code>.</p>
+<ul class="simple">
+<li><p><strong>GenSBI</strong> (merged, fast-forward <code class="docutils literal notranslate"><span class="pre">25b1d4a..dabd6c5</span></code>, branch deleted; main not yet
+pushed to origin at time of writing):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">healpix_rope_theta(nside)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code> — <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py:56</span></code>. Project
+convention <code class="docutils literal notranslate"><span class="pre">theta</span> <span class="pre">=</span> <span class="pre">10</span> <span class="pre">*</span> <span class="pre">token</span> <span class="pre">count</span></code> = <code class="docutils literal notranslate"><span class="pre">10</span> <span class="pre">*</span> <span class="pre">12</span> <span class="pre">*</span> <span class="pre">nside**2</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">init_ids_healpix(nside,</span> <span class="pre">base_pixels=None)</span> <span class="pre">-&gt;</span> <span class="pre">(ids,</span> <span class="pre">num_tokens)</span></code> —
+<code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py:69</span></code>. Returns float32 <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">N,</span> <span class="pre">3)</span></code> NEST-order
+pixel-center unit vectors scaled to pixel units (radius <code class="docutils literal notranslate"><span class="pre">nside*sqrt(3/pi)</span></code>, so
+adjacent tokens differ by ~1 — keeps theta semantics identical to 2D-image usage).
+Lazy <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">healpy</span></code> inside the function. Optional <code class="docutils literal notranslate"><span class="pre">base_pixels</span></code> subset for
+partial-sky grids.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code> — 9 tests: theta convention; shape/dtype/scale;
+healpy <code class="docutils literal notranslate"><span class="pre">vec2pix</span></code> NEST round-trip oracle; nside/base_pixels validation; subset ids ==
+corresponding full-sky rows; face-seam-freedom property test (neighbor chord-distance
+max/min ratio measured 2.0 vs 4.0 bound — the StereoRoPE-documented index-RoPE
+failure mode does not occur); EmbedND consumption; full Flux1 forward.</p></li>
+<li><p><strong>Zero changes to <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/flux1/</span></code></strong> — the existing model consumes 3-axis
+float ids unmodified via <code class="docutils literal notranslate"><span class="pre">id_embedding_strategy=(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> + 3-entry
+<code class="docutils literal notranslate"><span class="pre">axes_dim</span></code> (each even, summing to per-head dim, e.g. <code class="docutils literal notranslate"><span class="pre">(22,</span> <span class="pre">22,</span> <span class="pre">20)</span></code> for 64). Obs
+tokens get dummy zero rope ids (<a class="reference external" href="http://model.py">model.py</a> ~427) = identity rotation = isotropic
+positional readout. Verified: int32 obs dummies × float32 cond ids concat promotes
+to float32 under JAX’s lattice; zeros stay exact.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>: <code class="docutils literal notranslate"><span class="pre">healpy&gt;=1.19.0</span></code> added as a regular dependency.</p></li>
+</ul>
+</li>
+<li><p><strong>HEAL-SWIN-nnx</strong> (<code class="docutils literal notranslate"><span class="pre">/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx</span></code>, branch
+<code class="docutils literal notranslate"><span class="pre">healpix-rope</span></code> KEPT un-merged, single commit <code class="docutils literal notranslate"><span class="pre">0748eda</span></code>): first consumer.
+<code class="docutils literal notranslate"><span class="pre">examples/spherical_grf_flowmatch.py</span></code> gains a <code class="docutils literal notranslate"><span class="pre">COND_ID_KIND</span></code> switch (line 96):
+<code class="docutils literal notranslate"><span class="pre">&quot;healpix&quot;</span></code> (spherical RoPE, <code class="docutils literal notranslate"><span class="pre">ID_EMBEDDING=(&quot;absolute&quot;,&quot;rope&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">FLUX_AXES_DIM=(22,22,20)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">theta=healpix_rope_theta(NSIDE_BOTTLENECK)</span></code>) vs <code class="docutils literal notranslate"><span class="pre">&quot;pos1d&quot;</span></code> baseline (old config
+byte-identical, <code class="docutils literal notranslate"><span class="pre">theta=None</span></code> → old default 510) for the A/B. <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>
+temporarily sources gensbi from the local GenSBI working tree via <code class="docutils literal notranslate"><span class="pre">[tool.uv.sources]</span></code>.</p></li>
+</ul>
+<p>Both QUICK CPU smokes green (healpix train 4.3665/val 5.2307; pos1d 4.3664/5.2230 —
+losses differ, so the forward path really switches). All per-task reviews + final
+whole-branch review clean, zero Critical/Important findings.</p>
+<p><strong>Pending gates:</strong> (1) user’s full GPU A/B — <code class="docutils literal notranslate"><span class="pre">COND_ID_KIND=&quot;healpix&quot;</span></code> vs <code class="docutils literal notranslate"><span class="pre">&quot;pos1d&quot;</span></code>, TARP
+calibration + posterior marginals — gates promotion beyond the example; (2) re-sync the
+HEAL-SWIN-nnx venv with CUDA extras first (the <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> for the local gensbi source
+uninstalled the CUDA jaxlib packages); (3) revert the temporary uv source once a gensbi
+release ships the builder.</p>
+</section>
+<section id="the-conditionalpipeline-problem-that-emerged">
+<h2>2. The ConditionalPipeline problem that emerged<a class="headerlink" href="#the-conditionalpipeline-problem-that-emerged" title="Link to this heading">#</a></h2>
+<p><strong>The plan had a blind spot.</strong> Its example edits covered only the <code class="docutils literal notranslate"><span class="pre">SMOKE=1</span></code>-guarded
+manual block (direct <code class="docutils literal notranslate"><span class="pre">Flux1</span></code> call with explicitly-built ids — the path Task 4’s tests
+also exercise). But the actual <code class="docutils literal notranslate"><span class="pre">QUICK=1</span></code>/full training path constructs a
+<code class="docutils literal notranslate"><span class="pre">ConditionalPipeline</span></code>, and the pipeline <strong>builds its own default ids internally</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ConditionalPipeline.__init__</span></code> calls <code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code> for obs and cond
+(<code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/conditional_pipeline.py:148-152</span></code>), passing the per-stream
+strategy string plus only <code class="docutils literal notranslate"><span class="pre">dim</span></code> and <code class="docutils literal notranslate"><span class="pre">size</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code> (<code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py:267</span></code>) dispatches on two closed
+string sets: <code class="docutils literal notranslate"><span class="pre">_EMBEDDINGS_1D</span> <span class="pre">=</span> <span class="pre">{&quot;absolute&quot;,</span> <span class="pre">&quot;pos1d&quot;,</span> <span class="pre">&quot;rope1d&quot;}</span></code> and
+<code class="docutils literal notranslate"><span class="pre">_EMBEDDINGS_2D</span> <span class="pre">=</span> <span class="pre">{&quot;pos2d&quot;,</span> <span class="pre">&quot;rope2d&quot;}</span></code> (utils.py:263-264). Anything else raises
+<code class="docutils literal notranslate"><span class="pre">ValueError:</span> <span class="pre">Unknown</span> <span class="pre">id</span> <span class="pre">embedding</span> <span class="pre">strategy</span></code>.</p></li>
+</ul>
+<p>So passing the example’s <code class="docutils literal notranslate"><span class="pre">ID_EMBEDDING</span> <span class="pre">=</span> <span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> — which is what the
+<strong>model</strong> (Flux1Params) wants — crashed pipeline construction: the model’s strategy
+namespace (“rope” = “apply RoPE to whatever ids you’re given”) and the pipeline’s
+id-builder namespace (“rope1d”/”rope2d” = “build 1D/2D grid ids”) are different
+vocabularies that happen to share words. Structurally, <code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code> cannot
+build spherical ids even if taught the word: it receives only <code class="docutils literal notranslate"><span class="pre">dim_cond</span></code> (token count),
+while HEALPix ids need <code class="docutils literal notranslate"><span class="pre">nside</span></code> (and optionally <code class="docutils literal notranslate"><span class="pre">base_pixels</span></code>) — the geometry, not just
+the count. First smoke run failed with the ValueError from <a class="reference external" href="http://utils.py:300">utils.py:300</a>.</p>
+</section>
+<section id="the-fix-example-level-workaround-reviewed-sound">
+<h2>3. The fix (example-level workaround, reviewed sound)<a class="headerlink" href="#the-fix-example-level-workaround-reviewed-sound" title="Link to this heading">#</a></h2>
+<p>In <code class="docutils literal notranslate"><span class="pre">examples/spherical_grf_flowmatch.py::make_pipeline</span></code> (lines 216-238): seed the
+pipeline with a throwaway <em>valid</em> cond strategy so <code class="docutils literal notranslate"><span class="pre">__init__</span></code> doesn’t raise, then
+overwrite the ids attribute with the real spherical ids:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="n">ID_EMBEDDING</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                           <span class="s2">&quot;absolute&quot;</span> <span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;healpix&quot;</span> <span class="k">else</span> <span class="n">ID_EMBEDDING</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+    <span class="o">...</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;healpix&quot;</span><span class="p">:</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="n">NSIDE_BOTTLENECK</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ID_EMBEDDING</span></code> as passed to <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code> (which actually controls the model’s RoPE
+dispatch) is untouched. Why this is safe — verified by two independent reviewers against
+source:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> is consumed <strong>only</strong> inside <code class="docutils literal notranslate"><span class="pre">ConditionalPipeline.__init__</span></code>
+for the two <code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code> calls; never read afterwards.</p></li>
+<li><p>Every downstream consumer reads <code class="docutils literal notranslate"><span class="pre">self.cond_ids</span></code> lazily, after the override:
+<code class="docutils literal notranslate"><span class="pre">get_loss_fn</span></code> (conditional_pipeline.py:187), <code class="docutils literal notranslate"><span class="pre">get_sampler</span></code> (:227),
+<code class="docutils literal notranslate"><span class="pre">get_log_prob_fn</span></code> (:303). Training, sampling, and log-prob all see spherical ids.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dim_cond</span></code> consistency is guarded by the example’s module-level
+<code class="docutils literal notranslate"><span class="pre">assert</span> <span class="pre">COND_TOKENS</span> <span class="pre">==</span> <span class="pre">12</span> <span class="pre">*</span> <span class="pre">NSIDE_BOTTLENECK**2</span></code>.</p></li>
+</ul>
+<p>It works, but it’s the least elegant part of the branch: a consumer must know to seed a
+fake strategy and reach into a pipeline attribute post-construction.</p>
+</section>
+<section id="the-brainstorming-question-for-the-new-session">
+<h2>4. The brainstorming question for the new session<a class="headerlink" href="#the-brainstorming-question-for-the-new-session" title="Link to this heading">#</a></h2>
+<p><strong>How should GenSBI’s recipe layer properly support positional ids it can’t derive from
+<code class="docutils literal notranslate"><span class="pre">dim</span></code> alone?</strong> The final reviewer flagged this as the designed follow-up. Constraints
+and observations to seed the discussion:</p>
+<ul class="simple">
+<li><p>The string-enum API has no channel for geometry (<code class="docutils literal notranslate"><span class="pre">nside</span></code>, <code class="docutils literal notranslate"><span class="pre">base_pixels</span></code>, or any future
+grid spec). Growing the enum with <code class="docutils literal notranslate"><span class="pre">&quot;rope3d&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;healpix&quot;</span></code> alone cannot work without
+also plumbing geometry parameters through <code class="docutils literal notranslate"><span class="pre">ConditionalPipeline.__init__</span></code>.</p></li>
+<li><p>Candidate directions (not yet evaluated): (a) accept prebuilt ids directly
+(<code class="docutils literal notranslate"><span class="pre">obs_ids=</span></code>/<code class="docutils literal notranslate"><span class="pre">cond_ids=</span></code> constructor params that bypass <code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code>);
+(b) accept a builder callable <code class="docutils literal notranslate"><span class="pre">(dim)</span> <span class="pre">-&gt;</span> <span class="pre">(ids,</span> <span class="pre">dim)</span></code>; (c) a structured strategy object
+replacing/augmenting the string enum; (d) keep strings but add a parallel
+<code class="docutils literal notranslate"><span class="pre">id_geometry</span></code> config. Option (a) is the minimal change that would have made the
+example trivial.</p></li>
+<li><p>Whatever the design: the model-strategy vs pipeline-builder namespace collision
+(“rope” vs “rope1d”/”rope2d”) is worth resolving or at least documenting — it is what
+actually bit here.</p></li>
+<li><p>Two sibling pipelines exist (<code class="docutils literal notranslate"><span class="pre">ConditionalPipeline</span></code> is the one used here); check
+whether joint/unconditional pipelines share <code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code> and need the same
+treatment.</p></li>
+<li><p>Prior art in-tree: <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code>’s FIXME (<a class="reference external" href="http://utils.py">utils.py</a>, axis-order footgun vs
+<code class="docutils literal notranslate"><span class="pre">init_ids_2d</span></code>) already documents that the ids/axes conventions need unification —
+a redesign could fold that in.</p></li>
+<li><p>Backward compatibility: <code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code> is private but the
+<code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> kwarg is public API used across examples/tests.</p></li>
+</ul>
+</section>
+<section id="minor-loose-ends-non-blocking-from-final-review">
+<h2>5. Minor loose ends (non-blocking, from final review)<a class="headerlink" href="#minor-loose-ends-non-blocking-from-final-review" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">init_ids_healpix(nside,</span> <span class="pre">base_pixels=[])</span></code> raises a raw
+<code class="docutils literal notranslate"><span class="pre">ValueError:</span> <span class="pre">need</span> <span class="pre">at</span> <span class="pre">least</span> <span class="pre">one</span> <span class="pre">array</span> <span class="pre">to</span> <span class="pre">concatenate</span></code> from <code class="docutils literal notranslate"><span class="pre">np.concatenate</span></code> — loud but
+unhelpful; a guard with a proper message would be nicer.</p></li>
+<li><p>Non-integer <code class="docutils literal notranslate"><span class="pre">base_pixels</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">[1.5]</span></code>) slip validation and reach <code class="docutils literal notranslate"><span class="pre">hp.pix2vec</span></code>.</p></li>
+<li><p>HEAL-SWIN-nnx pyproject comment says the gensbi source points at the “healpix-rope
+branch” — now stale (the work is on main); the path itself still resolves fine.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-was-done-merged-to-gensbi-main">1. What was done (merged to GenSBI main)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-conditionalpipeline-problem-that-emerged">2. The ConditionalPipeline problem that emerged</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-fix-example-level-workaround-reviewed-sound">3. The fix (example-level workaround, reviewed sound)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-brainstorming-question-for-the-new-session">4. The brainstorming question for the new session</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minor-loose-ends-non-blocking-from-final-review">5. Minor loose ends (non-blocking, from final review)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

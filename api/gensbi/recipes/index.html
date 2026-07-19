@@ -547,6 +547,7 @@
 <li class="toctree-l3"><a class="reference internal" href="flow_pipeline/index.html">gensbi.recipes.flow_pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="flux1/index.html">gensbi.recipes.flux1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="id_strategies/index.html">gensbi.recipes.id_strategies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pipeline/index.html">gensbi.recipes.pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="simformer/index.html">gensbi.recipes.simformer</a></li>
@@ -639,6 +640,7 @@
 <li class="toctree-l1"><a class="reference internal" href="flow_pipeline/index.html">gensbi.recipes.flow_pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flux1/index.html">gensbi.recipes.flux1</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flux1joint/index.html">gensbi.recipes.flux1joint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="id_strategies/index.html">gensbi.recipes.id_strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="joint_pipeline/index.html">gensbi.recipes.joint_pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline/index.html">gensbi.recipes.pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="simformer/index.html">gensbi.recipes.simformer</a></li>
@@ -674,6 +676,12 @@
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.Flux1SMPipeline" title="gensbi.recipes.Flux1SMPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Flux1SMPipeline</span></code></a></p></td>
 <td><p>Model-agnostic conditional pipeline parameterized by a <code class="docutils literal notranslate"><span class="pre">GenerativeMethod</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.HealpixRope" title="gensbi.recipes.HealpixRope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HealpixRope</span></code></a></p></td>
+<td><p>Spherical RoPE ids for tokens on a HEALPix grid (name: &quot;healpix-rope&quot;).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IdStrategy</span></code></a></p></td>
+<td><p>Structural interface for pipeline id-builder strategy objects.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.JointPipeline" title="gensbi.recipes.JointPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JointPipeline</span></code></a></p></td>
 <td><p>Model-agnostic joint pipeline parameterized by a <code class="docutils literal notranslate"><span class="pre">GenerativeMethod</span></code>.</p></td>
@@ -1054,8 +1062,15 @@ conforms to the <code class="docutils literal notranslate"><span class="pre">Con
 <code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod()</span></code>, <code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod()</span></code>).</p></li>
 <li><p><strong>ch_obs</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per observation token. Default is 1.</p></li>
 <li><p><strong>ch_cond</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per conditioning token. Default is 1.</p></li>
-<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Embedding strategy for observation and conditioning IDs.
-Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>.</p></li>
+<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>(</em><em>str</em><em> or </em><a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><em>IdStrategy</em></a><em>)</em><em>, </em><em>optional</em>) – Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+1D/2D grid builder; an <a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IdStrategy</span></code></a> object
+(e.g. <a class="reference internal" href="#gensbi.recipes.HealpixRope" title="gensbi.recipes.HealpixRope"><code class="xref py py-class docutils literal notranslate"><span class="pre">HealpixRope</span></code></a>) builds ids from its own
+geometry. Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>. NOTE this
+pipeline-side vocabulary is distinct from the model-side
+<code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code>), where “rope”
+means “apply RoPE to the provided ids”; a <code class="docutils literal notranslate"><span class="pre">HealpixRope</span></code> pipeline
+strategy pairs with model-side <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> and a
+3-entry <code class="docutils literal notranslate"><span class="pre">axes_dim</span></code>.</p></li>
 <li><p><strong>size</strong> (<em>int</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Patch edge length for 2D ID-embedding strategies. Default is <code class="docutils literal notranslate"><span class="pre">2</span></code>.
 A single <code class="docutils literal notranslate"><span class="pre">int</span></code> is broadcast to both obs and cond (<code class="docutils literal notranslate"><span class="pre">8</span> <span class="pre">-&gt;</span> <span class="pre">(8,</span> <span class="pre">8)</span></code>).
 A length-2 tuple <code class="docutils literal notranslate"><span class="pre">(obs_size,</span> <span class="pre">cond_size)</span></code> lets the two inputs differ.
@@ -1263,8 +1278,15 @@ conforms to the <code class="docutils literal notranslate"><span class="pre">Con
 <code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod()</span></code>, <code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod()</span></code>).</p></li>
 <li><p><strong>ch_obs</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per observation token. Default is 1.</p></li>
 <li><p><strong>ch_cond</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per conditioning token. Default is 1.</p></li>
-<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Embedding strategy for observation and conditioning IDs.
-Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>.</p></li>
+<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>(</em><em>str</em><em> or </em><a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><em>IdStrategy</em></a><em>)</em><em>, </em><em>optional</em>) – Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+1D/2D grid builder; an <a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IdStrategy</span></code></a> object
+(e.g. <a class="reference internal" href="#gensbi.recipes.HealpixRope" title="gensbi.recipes.HealpixRope"><code class="xref py py-class docutils literal notranslate"><span class="pre">HealpixRope</span></code></a>) builds ids from its own
+geometry. Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>. NOTE this
+pipeline-side vocabulary is distinct from the model-side
+<code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code>), where “rope”
+means “apply RoPE to the provided ids”; a <code class="docutils literal notranslate"><span class="pre">HealpixRope</span></code> pipeline
+strategy pairs with model-side <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> and a
+3-entry <code class="docutils literal notranslate"><span class="pre">axes_dim</span></code>.</p></li>
 <li><p><strong>size</strong> (<em>int</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Patch edge length for 2D ID-embedding strategies. Default is <code class="docutils literal notranslate"><span class="pre">2</span></code>.
 A single <code class="docutils literal notranslate"><span class="pre">int</span></code> is broadcast to both obs and cond (<code class="docutils literal notranslate"><span class="pre">8</span> <span class="pre">-&gt;</span> <span class="pre">(8,</span> <span class="pre">8)</span></code>).
 A length-2 tuple <code class="docutils literal notranslate"><span class="pre">(obs_size,</span> <span class="pre">cond_size)</span></code> lets the two inputs differ.
@@ -1343,8 +1365,15 @@ conforms to the <code class="docutils literal notranslate"><span class="pre">Con
 <code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod()</span></code>, <code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod()</span></code>).</p></li>
 <li><p><strong>ch_obs</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per observation token. Default is 1.</p></li>
 <li><p><strong>ch_cond</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per conditioning token. Default is 1.</p></li>
-<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Embedding strategy for observation and conditioning IDs.
-Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>.</p></li>
+<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>(</em><em>str</em><em> or </em><a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><em>IdStrategy</em></a><em>)</em><em>, </em><em>optional</em>) – Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+1D/2D grid builder; an <a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IdStrategy</span></code></a> object
+(e.g. <a class="reference internal" href="#gensbi.recipes.HealpixRope" title="gensbi.recipes.HealpixRope"><code class="xref py py-class docutils literal notranslate"><span class="pre">HealpixRope</span></code></a>) builds ids from its own
+geometry. Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>. NOTE this
+pipeline-side vocabulary is distinct from the model-side
+<code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code>), where “rope”
+means “apply RoPE to the provided ids”; a <code class="docutils literal notranslate"><span class="pre">HealpixRope</span></code> pipeline
+strategy pairs with model-side <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> and a
+3-entry <code class="docutils literal notranslate"><span class="pre">axes_dim</span></code>.</p></li>
 <li><p><strong>size</strong> (<em>int</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Patch edge length for 2D ID-embedding strategies. Default is <code class="docutils literal notranslate"><span class="pre">2</span></code>.
 A single <code class="docutils literal notranslate"><span class="pre">int</span></code> is broadcast to both obs and cond (<code class="docutils literal notranslate"><span class="pre">8</span> <span class="pre">-&gt;</span> <span class="pre">(8,</span> <span class="pre">8)</span></code>).
 A length-2 tuple <code class="docutils literal notranslate"><span class="pre">(obs_size,</span> <span class="pre">cond_size)</span></code> lets the two inputs differ.
@@ -1677,8 +1706,15 @@ conforms to the <code class="docutils literal notranslate"><span class="pre">Con
 <code class="docutils literal notranslate"><span class="pre">DiffusionEDMMethod()</span></code>, <code class="docutils literal notranslate"><span class="pre">ScoreMatchingMethod()</span></code>).</p></li>
 <li><p><strong>ch_obs</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per observation token. Default is 1.</p></li>
 <li><p><strong>ch_cond</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels per conditioning token. Default is 1.</p></li>
-<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Embedding strategy for observation and conditioning IDs.
-Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>.</p></li>
+<li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em> of </em><em>(</em><em>str</em><em> or </em><a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><em>IdStrategy</em></a><em>)</em><em>, </em><em>optional</em>) – Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+1D/2D grid builder; an <a class="reference internal" href="#gensbi.recipes.IdStrategy" title="gensbi.recipes.IdStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IdStrategy</span></code></a> object
+(e.g. <a class="reference internal" href="#gensbi.recipes.HealpixRope" title="gensbi.recipes.HealpixRope"><code class="xref py py-class docutils literal notranslate"><span class="pre">HealpixRope</span></code></a>) builds ids from its own
+geometry. Default is <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;absolute&quot;)</span></code>. NOTE this
+pipeline-side vocabulary is distinct from the model-side
+<code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code>), where “rope”
+means “apply RoPE to the provided ids”; a <code class="docutils literal notranslate"><span class="pre">HealpixRope</span></code> pipeline
+strategy pairs with model-side <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> and a
+3-entry <code class="docutils literal notranslate"><span class="pre">axes_dim</span></code>.</p></li>
 <li><p><strong>size</strong> (<em>int</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Patch edge length for 2D ID-embedding strategies. Default is <code class="docutils literal notranslate"><span class="pre">2</span></code>.
 A single <code class="docutils literal notranslate"><span class="pre">int</span></code> is broadcast to both obs and cond (<code class="docutils literal notranslate"><span class="pre">8</span> <span class="pre">-&gt;</span> <span class="pre">(8,</span> <span class="pre">8)</span></code>).
 A length-2 tuple <code class="docutils literal notranslate"><span class="pre">(obs_size,</span> <span class="pre">cond_size)</span></code> lets the two inputs differ.
@@ -1735,6 +1771,101 @@ by <code class="docutils literal notranslate"><span class="pre">method.get_extra
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.recipes.Flux1SMPipeline.ema_model">
 <span class="sig-name descname"><span class="pre">ema_model</span></span><a class="headerlink" href="#gensbi.recipes.Flux1SMPipeline.ema_model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.recipes.</span></span><span class="sig-name descname"><span class="pre">HealpixRope</span></span><a class="reference internal" href="../../../_modules/gensbi/recipes/id_strategies.html#HealpixRope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.HealpixRope" title="Link to this definition">#</a></dt>
+<dd><p>Spherical RoPE ids for tokens on a HEALPix grid (name: “healpix-rope”).</p>
+<p>Wraps <a class="reference internal" href="utils/index.html#gensbi.recipes.utils.init_ids_healpix" title="gensbi.recipes.utils.init_ids_healpix"><code class="xref py py-func docutils literal notranslate"><span class="pre">gensbi.recipes.utils.init_ids_healpix()</span></code></a> (see there for the
+method and its rationale) with the geometry needed to build the ids —
+which the string-enum API cannot carry, since the pipeline only passes a
+token count.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nside</strong> (<em>int</em>) – HEALPix resolution of the <em>token</em> grid (power of 2).</p></li>
+<li><p><strong>base_pixels</strong> (<em>sequence</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Base pixels (0..11) covered by the grid; <code class="docutils literal notranslate"><span class="pre">None</span></code> = full sky.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope.__post_init__">
+<span class="sig-name descname"><span class="pre">__post_init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/recipes/id_strategies.html#HealpixRope.__post_init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.HealpixRope.__post_init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/recipes/id_strategies.html#HealpixRope.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.HealpixRope.build" title="Link to this definition">#</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">(ids,</span> <span class="pre">num_tokens)</span></code>; <code class="docutils literal notranslate"><span class="pre">dim</span></code> must match the grid.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope.base_pixels">
+<span class="sig-name descname"><span class="pre">base_pixels</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Ellipsis</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#gensbi.recipes.HealpixRope.base_pixels" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'healpix-rope'</span></span><a class="headerlink" href="#gensbi.recipes.HealpixRope.name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope.nside">
+<span class="sig-name descname"><span class="pre">nside</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gensbi.recipes.HealpixRope.nside" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope.num_tokens">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">num_tokens</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gensbi.recipes.HealpixRope.num_tokens" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">n_faces</span> <span class="pre">*</span> <span class="pre">nside**2</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Token count of the grid</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gensbi.recipes.HealpixRope.theta">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">theta</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gensbi.recipes.HealpixRope.theta" title="Link to this definition">#</a></dt>
+<dd><p><code class="xref py py-func docutils literal notranslate"><span class="pre">healpix_rope_theta()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Suggested model-side RoPE theta</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gensbi.recipes.IdStrategy">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.recipes.</span></span><span class="sig-name descname"><span class="pre">IdStrategy</span></span><a class="reference internal" href="../../../_modules/gensbi/recipes/id_strategies.html#IdStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.IdStrategy" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>Structural interface for pipeline id-builder strategy objects.</p>
+<p>Any object with a <code class="docutils literal notranslate"><span class="pre">name</span></code> and a <code class="docutils literal notranslate"><span class="pre">build(dim)</span> <span class="pre">-&gt;</span> <span class="pre">(ids,</span> <span class="pre">resolved_dim)</span></code>
+method can be passed in an <code class="docutils literal notranslate"><span class="pre">id_embedding_strategy</span></code> tuple slot; the
+pipeline calls <code class="docutils literal notranslate"><span class="pre">build</span></code> with the corresponding <code class="docutils literal notranslate"><span class="pre">dim_obs</span></code>/<code class="docutils literal notranslate"><span class="pre">dim_cond</span></code>.
+Strategies own their full geometry — unlike the string strategies they
+receive no <code class="docutils literal notranslate"><span class="pre">semantic_id</span></code>/<code class="docutils literal notranslate"><span class="pre">size</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.IdStrategy.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/recipes/id_strategies.html#IdStrategy.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.IdStrategy.build" title="Link to this definition">#</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">(ids,</span> <span class="pre">resolved_dim)</span></code> for a stream of <code class="docutils literal notranslate"><span class="pre">dim</span></code> tokens.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.recipes.IdStrategy.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#gensbi.recipes.IdStrategy.name" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -2651,6 +2782,21 @@ model that conforms to the <code class="docutils literal notranslate"><span clas
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.Flux1SMPipeline.get_default_params"><code class="docutils literal notranslate"><span class="pre">Flux1SMPipeline.get_default_params()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.Flux1SMPipeline.init_pipeline_from_config"><code class="docutils literal notranslate"><span class="pre">Flux1SMPipeline.init_pipeline_from_config()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.Flux1SMPipeline.ema_model"><code class="docutils literal notranslate"><span class="pre">Flux1SMPipeline.ema_model</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope"><code class="docutils literal notranslate"><span class="pre">HealpixRope</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope.__post_init__"><code class="docutils literal notranslate"><span class="pre">HealpixRope.__post_init__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope.build"><code class="docutils literal notranslate"><span class="pre">HealpixRope.build()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope.base_pixels"><code class="docutils literal notranslate"><span class="pre">HealpixRope.base_pixels</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope.name"><code class="docutils literal notranslate"><span class="pre">HealpixRope.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope.nside"><code class="docutils literal notranslate"><span class="pre">HealpixRope.nside</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope.num_tokens"><code class="docutils literal notranslate"><span class="pre">HealpixRope.num_tokens</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.HealpixRope.theta"><code class="docutils literal notranslate"><span class="pre">HealpixRope.theta</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.IdStrategy"><code class="docutils literal notranslate"><span class="pre">IdStrategy</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.IdStrategy.build"><code class="docutils literal notranslate"><span class="pre">IdStrategy.build()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.IdStrategy.name"><code class="docutils literal notranslate"><span class="pre">IdStrategy.name</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.JointPipeline"><code class="docutils literal notranslate"><span class="pre">JointPipeline</span></code></a><ul class="nav section-nav flex-column">
