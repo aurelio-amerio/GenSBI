@@ -89,6 +89,13 @@ reuse of a pretrained ERP-grid FLUX; trained from scratch, none apply. The
   RoPE on HEALPix (discontinuities across polar faces) that motivates this
   design.
 - RoFormer, arXiv:2104.09864 — the underlying rotary mechanism.
+- Spherical Position Encoding (Unlu), arXiv:2310.04454 — alternative
+  construction: 3x3 SO(3) feature-rotation blocks from lat/lon Euler angles
+  (l=1 Wigner-D slice, fixed gauge). Not adopted: Euler gauge is singular at
+  the poles (coordinate artifact), distance claim is gauge-contaminated, no
+  multi-scale frequency stack (scaling deferred by the authors), requires
+  d % 3 == 0 and custom 3x3 attention plumbing. Its partial (z-axis) rotation
+  invariance is subsumed by the zonal/Wigner-D future-work route.
 
 ## Components
 
