@@ -37,6 +37,19 @@ current `init_ids_1d` sinusoidal ids.
 `local_to_global(base_pixels, nside, i)` semantics for subsets) ↦ pixel-center
 unit vector n_i = pix2vec(nside, p, nest=True) ∈ S² ⊂ ℝ³.
 
+**Patched tokens (HEAL-SWIN patch_size).** HEAL-SWIN's `PatchEmbed` groups
+contiguous NEST pixels [j·P, (j+1)·P) and `PatchMerging` merges exact NEST
+child quadruples (verified in code). Token j ↔ a single HEALPix pixel at a
+coarser nside iff P is a power of 4; heal_swin_nnx however permits any
+`patch_size % 4 == 0` (e.g. 8, 12 — tokens then straddle or split parent
+pixels and correspond to no pixel at any nside). Uniform convention: a token's
+direction is the normalized mean of its member fine-pixel unit vectors (chord
+centroid of its contiguous NEST range). `init_ids_healpix` takes
+`pixels_per_token` (= patch_size · 4^n_mergings); pixel-unit scale uses
+nside_eff = nside/sqrt(pixels_per_token). For power-of-4 groupings this
+agrees with pix2vec at the bottleneck nside to O(pixel²) (pinned by a test);
+elsewhere it is the only well-defined choice.
+
 **Pixel-unit scaling.** ids_i = r(nside) · n_i with r(nside) ≈ 1/pixel_size
 (pixel angular size ≈ 1.023/nside rad), so adjacent bottleneck tokens differ by
 ~1 in coordinate — the same convention standard RoPE assumes for integer token
@@ -70,7 +83,19 @@ phase-spectrum check.
 - Obs/θ-stream tokens use ids (0, 0, 0): the origin gives the identity
   rotation — a well-defined neutral position (replaces the 1D offset
   convention for spherical models; the "absolute" learned strategy remains
-  available).
+  available). Consequence worth documenting: all θ→cond phases vanish, so the
+  parameter tokens read the sphere with zero positional modulation — an
+  exactly isotropic global aggregator (relevant for monopole/dipole/global
+  quantities).
+- No locality prior is imposed: RoPE modulates scores with oscillatory
+  functions of separation at the stack's scales; per-head learned content
+  selects the scale (near-DC bands ≈ position-free global attention).
+  Contingency if large-scale kernels ever prove underweighted: reserve
+  explicit ω=0 channel pairs in the axes_dim allocation (pure content
+  channels) — a local change, not needed for v1.
+- Metric caveat: phases are linear in chord, and d(chord)/dγ = cos(γ/2) → 0
+  at antipodes, so resolution among very large separations (γ near π) is
+  mildly compressed. Benign for near/far attention; belongs in the docstring.
 
 ## Relation to prior work (docstring requirement)
 
