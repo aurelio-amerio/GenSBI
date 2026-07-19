@@ -66,6 +66,80 @@ def healpix_rope_theta(nside: int) -> int:
     return 10 * 12 * nside**2
 
 
+def init_ids_healpix(nside: int, base_pixels=None):
+    """Build spherical RoPE ids for tokens on a HEALPix grid, returning
+    ``(ids, num_tokens)``.
+
+    Method: standard N-dimensional RoPE (RoFormer, arXiv:2104.09864 — the
+    mechanism implemented by Flux1's ``EmbedND``) applied uniformly, on all
+    three axes and all frequency bands, to the 3D Cartesian coordinates of
+    HEALPix pixel centers on the unit sphere. Each token maps to its
+    pixel-center unit vector (``healpy.pix2vec``, NEST ordering), scaled to
+    pixel units so adjacent tokens differ by ~1 in coordinate (radius
+    ``nside * sqrt(3/pi)`` = 1/pixel angular size), which keeps ``theta``'s
+    semantics identical to 2D-image usage (see :func:`healpix_rope_theta`).
+
+    Attention scores then depend on positions only through the chord vector
+    ``n_q - n_k``, whose norm ``2 sin(gamma/2)`` is strictly monotone in
+    great-circle distance ``gamma`` — geodesic geometry with no projection
+    step, hence no face-seam or polar artifacts, and any ``base_pixels``
+    subset works by construction. Caveat: ``d(chord)/d(gamma) -> 0`` at
+    antipodes, so resolution among near-antipodal separations is mildly
+    compressed (benign for near/far attention). This is NOT an adaptation of
+    SpheRoPE (arXiv:2606.32033 — closest prior work; ERP grid, pretrained
+    constraints); see also StereoRoPE (arXiv:2606.31248, documents the
+    failure of index-based RoPE on HEALPix) and Unlu (arXiv:2310.04454, an
+    SO(3) feature-rotation alternative not adopted). Full rationale:
+    ``docs/superpowers/specs/2026-07-19-healpix-rope-design.md``.
+
+    Use with Flux1 via ``id_embedding_strategy=("absolute", "rope")`` and a
+    3-entry ``axes_dim`` (each even, summing to the per-head dim, e.g.
+    ``(22, 22, 20)`` for 64). Obs/theta-stream tokens automatically get
+    origin (0, 0, 0) rope ids — the identity rotation, i.e. an exactly
+    isotropic positional readout of the conditioning tokens.
+
+    Parameters
+    ----------
+    nside : int
+        HEALPix resolution of the *token* grid (power of 2). With HEAL-SWIN
+        style encoders this is the bottleneck nside; tokens must correspond
+        to single HEALPix pixels (power-of-4 pixels-per-token upstream).
+    base_pixels : sequence of int, optional
+        Base pixels (0..11) covered by the token grid, for partial-sky
+        models. ``None`` (default) means full sky. Tokens are ordered by
+        base pixel as given, NEST within each.
+
+    Returns
+    -------
+    ids : jax.Array
+        ``(1, num_tokens, 3)`` float32 scaled pixel-center coordinates.
+    num_tokens : int
+        ``len(base_pixels) * nside**2``.
+    """
+    import healpy as hp  # lazy: healpy pulls matplotlib, keep import light
+
+    if nside < 1 or (nside & (nside - 1)) != 0:
+        raise ValueError(f"nside must be a power of 2, got {nside}")
+    if base_pixels is None:
+        base_pixels = range(12)
+    base_pixels = list(base_pixels)
+    if any(b < 0 or b > 11 for b in base_pixels) or len(set(base_pixels)) != len(
+        base_pixels
+    ):
+        raise ValueError(
+            f"base_pixels must be unique integers in [0, 11], got {base_pixels}"
+        )
+
+    face_len = nside**2
+    pix = np.concatenate(
+        [b * face_len + np.arange(face_len) for b in base_pixels]
+    )
+    x, y, z = hp.pix2vec(nside, pix, nest=True)  # float64 host-side
+    radius = nside * np.sqrt(3.0 / np.pi)  # 1 / pixel angular size
+    ids = radius * np.stack([x, y, z], axis=-1)[None, ...]
+    return jnp.asarray(ids, dtype=jnp.float32), ids.shape[1]
+
+
 def _normalize_patch_size(size):
     """Normalize a patch-size spec into an ``(obs, cond)`` tuple.
 
