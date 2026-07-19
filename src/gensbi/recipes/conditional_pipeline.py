@@ -80,9 +80,16 @@ class ConditionalPipeline(AbstractPipeline):
         Number of channels per observation token. Default is 1.
     ch_cond : int, optional
         Number of channels per conditioning token. Default is 1.
-    id_embedding_strategy : tuple of str, optional
-        Embedding strategy for observation and conditioning IDs.
-        Default is ``("absolute", "absolute")``.
+    id_embedding_strategy : tuple of (str or IdStrategy), optional
+        Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
+        1D/2D grid builder; an :class:`~gensbi.recipes.IdStrategy` object
+        (e.g. :class:`~gensbi.recipes.HealpixRope`) builds ids from its own
+        geometry. Default is ``("absolute", "absolute")``. NOTE this
+        pipeline-side vocabulary is distinct from the model-side
+        ``id_embedding_strategy`` (e.g. ``Flux1Params``), where "rope"
+        means "apply RoPE to the provided ids"; a ``HealpixRope`` pipeline
+        strategy pairs with model-side ``("absolute", "rope")`` and a
+        3-entry ``axes_dim``.
     size : int or tuple of int, optional
         Patch edge length for 2D ID-embedding strategies. Default is ``2``.
         A single ``int`` is broadcast to both obs and cond (``8 -> (8, 8)``).

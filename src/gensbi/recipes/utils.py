@@ -283,9 +283,14 @@ def _resolve_embedding_ids(dim, strategy: str, semantic_id: int, size: int = 2):
     ----------
     dim : int or tuple of int
         Dimension specification (number of tokens, or (H, W) for 2D images).
-    strategy : str
+    strategy : str or IdStrategy
         Embedding strategy name (e.g., "absolute", "pos1d", "rope1d",
-        "pos2d", "rope2d").
+        "pos2d", "rope2d") or a strategy object with ``build(dim)`` (e.g.
+        :class:`gensbi.recipes.HealpixRope`). NOTE these pipeline-side
+        builder names are a different vocabulary from the model-side
+        ``id_embedding_strategy`` strings (where "rope" means "apply RoPE
+        to the ids the pipeline provides") — see
+        :mod:`gensbi.recipes.id_strategies`.
     semantic_id : int
         Semantic identifier for the token group (0=obs, 1=cond).
     size : int, optional
@@ -304,12 +309,18 @@ def _resolve_embedding_ids(dim, strategy: str, semantic_id: int, size: int = 2):
     ValueError
         If ``strategy`` is not recognized.
     """
+    if hasattr(strategy, "build"):
+        return strategy.build(dim)
     if strategy in _EMBEDDINGS_1D:
         return init_ids_1d(dim, semantic_id=semantic_id)
     elif strategy in _EMBEDDINGS_2D:
         return init_ids_2d(dim, semantic_id=semantic_id, size=size)
     else:
-        raise ValueError(f"Unknown id embedding strategy: {strategy}")
+        raise ValueError(
+            f"Unknown id embedding strategy: {strategy!r}. Expected one of "
+            f"{sorted(_EMBEDDINGS_1D | _EMBEDDINGS_2D)} or an IdStrategy object "
+            "with a build(dim) method (e.g. gensbi.recipes.HealpixRope)."
+        )
 
 
 def build_edm_path(sde: str, config: dict) -> EDMPath:
