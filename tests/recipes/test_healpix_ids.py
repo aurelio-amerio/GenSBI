@@ -50,3 +50,52 @@ def test_init_ids_healpix_validates_nside():
         init_ids_healpix(3)
     with pytest.raises(ValueError, match="power of 2"):
         init_ids_healpix(0)
+
+
+def test_init_ids_healpix_base_pixel_subset_matches_full_sky():
+    # Subset ids must be exactly the corresponding rows of the full-sky ids:
+    # the encoding depends only on token directions, never on token count.
+    nside = 2
+    full, _ = init_ids_healpix(nside)
+    subset, n_sub = init_ids_healpix(nside, base_pixels=[3, 7])
+    assert n_sub == 2 * nside**2
+    face_len = nside**2
+    expected = jnp.concatenate(
+        [
+            full[:, 3 * face_len : 4 * face_len],
+            full[:, 7 * face_len : 8 * face_len],
+        ],
+        axis=1,
+    )
+    np.testing.assert_array_equal(np.asarray(subset), np.asarray(expected))
+
+
+def test_init_ids_healpix_rejects_bad_base_pixels():
+    with pytest.raises(ValueError, match="base_pixels"):
+        init_ids_healpix(2, base_pixels=[0, 12])
+    with pytest.raises(ValueError, match="base_pixels"):
+        init_ids_healpix(2, base_pixels=[1, 1])
+
+
+def test_no_face_seam_discontinuity():
+    # The failure documented for index-based RoPE on HEALPix (StereoRoPE,
+    # arXiv:2606.31248) is a discontinuity across base-face boundaries. In
+    # chord coordinates, grid-neighbor distances must be uniform across the
+    # whole sphere — face boundaries and poles included. An index-seam bug
+    # would make some neighbor pairs ~nside times farther than others.
+    import healpy as hp
+
+    nside = 4
+    ids, n = init_ids_healpix(nside)
+    coords = np.asarray(ids[0])
+    neigh = hp.get_all_neighbours(nside, np.arange(n), nest=True)  # (8, n)
+    dists = []
+    for p in range(n):
+        for q in neigh[:, p]:
+            if q >= 0:
+                dists.append(np.linalg.norm(coords[p] - coords[q]))
+    dists = np.asarray(dists)
+    # pixel units: neighbor spacing ~1 (sides) to ~sqrt(2) (diagonals), with
+    # HEALPix shape distortion on top; no seam outliers anywhere.
+    assert dists.max() / dists.min() < 4.0
+    assert 0.5 < dists.mean() < 2.0
