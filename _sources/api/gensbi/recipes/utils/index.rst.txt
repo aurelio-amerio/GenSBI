@@ -26,8 +26,10 @@ Functions
    gensbi.recipes.utils._single_obs
    gensbi.recipes.utils.build_edm_path
    gensbi.recipes.utils.build_sm_path
+   gensbi.recipes.utils.healpix_rope_theta
    gensbi.recipes.utils.init_ids_1d
    gensbi.recipes.utils.init_ids_2d
+   gensbi.recipes.utils.init_ids_healpix
    gensbi.recipes.utils.init_ids_joint
    gensbi.recipes.utils.parse_training_config
    gensbi.recipes.utils.scale_lr
@@ -233,6 +235,35 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
+.. py:function:: healpix_rope_theta(nside)
+
+   
+   Suggested RoPE ``theta`` for a full-sky HEALPix token grid at ``nside``.
+
+   Follows the project convention ``theta = 10 * token count`` (the same rule
+   :class:`~gensbi.models.flux1.model.Flux1Params` applies by default via
+   ``10 * (dim_obs + dim_cond)``): a full-sky grid has ``12 * nside**2``
+   tokens. Exposed so spherical models can derive theta from the intuitive
+   knob (``nside``, always known after the encoder) instead of setting it by
+   hand.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:function:: init_ids_1d(dim, semantic_id = None)
 
    
@@ -278,6 +309,69 @@ Module Contents
    The grid has one entry per patch, i.e. ``(dim[0] // size, dim[1] // size)``,
    matching ``patchify_2d(x, size=size)``. ``size`` is the patch edge length;
    use ``size=1`` for no patchification (one token per pixel).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: init_ids_healpix(nside, base_pixels=None)
+
+   
+   Build spherical RoPE ids for tokens on a HEALPix grid, returning
+   ``(ids, num_tokens)``.
+
+   Method: standard N-dimensional RoPE (RoFormer, arXiv:2104.09864 — the
+   mechanism implemented by Flux1's ``EmbedND``) applied uniformly, on all
+   three axes and all frequency bands, to the 3D Cartesian coordinates of
+   HEALPix pixel centers on the unit sphere. Each token maps to its
+   pixel-center unit vector (``healpy.pix2vec``, NEST ordering), scaled to
+   pixel units so adjacent tokens differ by ~1 in coordinate (radius
+   ``nside * sqrt(3/pi)`` = 1/pixel angular size), which keeps ``theta``'s
+   semantics identical to 2D-image usage (see :func:`healpix_rope_theta`).
+
+   Attention scores then depend on positions only through the chord vector
+   ``n_q - n_k``, whose norm ``2 sin(gamma/2)`` is strictly monotone in
+   great-circle distance ``gamma`` — geodesic geometry with no projection
+   step, hence no face-seam or polar artifacts, and any ``base_pixels``
+   subset works by construction. Caveat: ``d(chord)/d(gamma) -> 0`` at
+   antipodes, so resolution among near-antipodal separations is mildly
+   compressed (benign for near/far attention). This is NOT an adaptation of
+   SpheRoPE (arXiv:2606.32033 — closest prior work; ERP grid, pretrained
+   constraints); see also StereoRoPE (arXiv:2606.31248, documents the
+   failure of index-based RoPE on HEALPix) and Unlu (arXiv:2310.04454, an
+   SO(3) feature-rotation alternative not adopted). Full rationale:
+   ``docs/superpowers/specs/2026-07-19-healpix-rope-design.md``.
+
+   Use with Flux1 via ``id_embedding_strategy=("absolute", "rope")`` and a
+   3-entry ``axes_dim`` (each even, summing to the per-head dim, e.g.
+   ``(22, 22, 20)`` for 64). Obs/theta-stream tokens automatically get
+   origin (0, 0, 0) rope ids — the identity rotation, i.e. an exactly
+   isotropic positional readout of the conditioning tokens.
+
+   :param nside: HEALPix resolution of the *token* grid (power of 2). With HEAL-SWIN
+                 style encoders this is the bottleneck nside; tokens must correspond
+                 to single HEALPix pixels (power-of-4 pixels-per-token upstream).
+   :type nside: int
+   :param base_pixels: Base pixels (0..11) covered by the token grid, for partial-sky
+                       models. ``None`` (default) means full sky. Tokens are ordered by
+                       base pixel as given, NEST within each.
+   :type base_pixels: sequence of int, optional
+
+   :returns: * **ids** (*jax.Array*) -- ``(1, num_tokens, 3)`` float32 scaled pixel-center coordinates.
+             * **num_tokens** (*int*) -- ``len(base_pixels) * nside**2``.
 
 
 

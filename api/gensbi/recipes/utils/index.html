@@ -675,11 +675,17 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.build_sm_path" title="gensbi.recipes.utils.build_sm_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_sm_path</span></code></a>(sde_type, config)</p></td>
 <td><p>Build a score-matching path from an SDE type string and config.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_1d" title="gensbi.recipes.utils.init_ids_1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_1d</span></code></a>(dim[, semantic_id])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.healpix_rope_theta" title="gensbi.recipes.utils.healpix_rope_theta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code></a>(nside)</p></td>
+<td><p>Suggested RoPE <code class="docutils literal notranslate"><span class="pre">theta</span></code> for a full-sky HEALPix token grid at <code class="docutils literal notranslate"><span class="pre">nside</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_1d" title="gensbi.recipes.utils.init_ids_1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_1d</span></code></a>(dim[, semantic_id])</p></td>
 <td><p>Build 1D positional IDs, returning <code class="docutils literal notranslate"><span class="pre">(ids,</span> <span class="pre">dim)</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_2d" title="gensbi.recipes.utils.init_ids_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_2d</span></code></a>(dim[, semantic_id, size])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_2d" title="gensbi.recipes.utils.init_ids_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_2d</span></code></a>(dim[, semantic_id, size])</p></td>
 <td><p>Build 2D positional IDs for a patchified image grid.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_healpix" title="gensbi.recipes.utils.init_ids_healpix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_healpix</span></code></a>(nside[, base_pixels])</p></td>
+<td><p>Build spherical RoPE ids for tokens on a HEALPix grid, returning</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.utils.init_ids_joint" title="gensbi.recipes.utils.init_ids_joint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_ids_joint</span></code></a>(dim_obs, dim_cond)</p></td>
 <td><p></p></td>
@@ -824,6 +830,26 @@ here with sensible defaults.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.recipes.utils.healpix_rope_theta">
+<span class="sig-prename descclassname"><span class="pre">gensbi.recipes.utils.</span></span><span class="sig-name descname"><span class="pre">healpix_rope_theta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nside</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/utils.html#healpix_rope_theta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.utils.healpix_rope_theta" title="Link to this definition">#</a></dt>
+<dd><p>Suggested RoPE <code class="docutils literal notranslate"><span class="pre">theta</span></code> for a full-sky HEALPix token grid at <code class="docutils literal notranslate"><span class="pre">nside</span></code>.</p>
+<p>Follows the project convention <code class="docutils literal notranslate"><span class="pre">theta</span> <span class="pre">=</span> <span class="pre">10</span> <span class="pre">*</span> <span class="pre">token</span> <span class="pre">count</span></code> (the same rule
+<a class="reference internal" href="../../models/flux1/model/index.html#gensbi.models.flux1.model.Flux1Params" title="gensbi.models.flux1.model.Flux1Params"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flux1Params</span></code></a> applies by default via
+<code class="docutils literal notranslate"><span class="pre">10</span> <span class="pre">*</span> <span class="pre">(dim_obs</span> <span class="pre">+</span> <span class="pre">dim_cond)</span></code>): a full-sky grid has <code class="docutils literal notranslate"><span class="pre">12</span> <span class="pre">*</span> <span class="pre">nside**2</span></code>
+tokens. Exposed so spherical models can derive theta from the intuitive
+knob (<code class="docutils literal notranslate"><span class="pre">nside</span></code>, always known after the encoder) instead of setting it by
+hand.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>nside</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.recipes.utils.init_ids_1d">
 <span class="sig-prename descclassname"><span class="pre">gensbi.recipes.utils.</span></span><span class="sig-name descname"><span class="pre">init_ids_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semantic_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/utils.html#init_ids_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.utils.init_ids_1d" title="Link to this definition">#</a></dt>
 <dd><p>Build 1D positional IDs, returning <code class="docutils literal notranslate"><span class="pre">(ids,</span> <span class="pre">dim)</span></code>.</p>
@@ -864,6 +890,57 @@ use <code class="docutils literal notranslate"><span class="pre">size=1</span></
 <li><p><strong>semantic_id</strong> (<em>int</em>)</p></li>
 <li><p><strong>size</strong> (<em>int</em>)</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.recipes.utils.init_ids_healpix">
+<span class="sig-prename descclassname"><span class="pre">gensbi.recipes.utils.</span></span><span class="sig-name descname"><span class="pre">init_ids_healpix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nside</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_pixels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/utils.html#init_ids_healpix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.utils.init_ids_healpix" title="Link to this definition">#</a></dt>
+<dd><p>Build spherical RoPE ids for tokens on a HEALPix grid, returning
+<code class="docutils literal notranslate"><span class="pre">(ids,</span> <span class="pre">num_tokens)</span></code>.</p>
+<p>Method: standard N-dimensional RoPE (RoFormer, arXiv:2104.09864 — the
+mechanism implemented by Flux1’s <code class="docutils literal notranslate"><span class="pre">EmbedND</span></code>) applied uniformly, on all
+three axes and all frequency bands, to the 3D Cartesian coordinates of
+HEALPix pixel centers on the unit sphere. Each token maps to its
+pixel-center unit vector (<code class="docutils literal notranslate"><span class="pre">healpy.pix2vec</span></code>, NEST ordering), scaled to
+pixel units so adjacent tokens differ by ~1 in coordinate (radius
+<code class="docutils literal notranslate"><span class="pre">nside</span> <span class="pre">*</span> <span class="pre">sqrt(3/pi)</span></code> = 1/pixel angular size), which keeps <code class="docutils literal notranslate"><span class="pre">theta</span></code>’s
+semantics identical to 2D-image usage (see <a class="reference internal" href="#gensbi.recipes.utils.healpix_rope_theta" title="gensbi.recipes.utils.healpix_rope_theta"><code class="xref py py-func docutils literal notranslate"><span class="pre">healpix_rope_theta()</span></code></a>).</p>
+<p>Attention scores then depend on positions only through the chord vector
+<code class="docutils literal notranslate"><span class="pre">n_q</span> <span class="pre">-</span> <span class="pre">n_k</span></code>, whose norm <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">sin(gamma/2)</span></code> is strictly monotone in
+great-circle distance <code class="docutils literal notranslate"><span class="pre">gamma</span></code> — geodesic geometry with no projection
+step, hence no face-seam or polar artifacts, and any <code class="docutils literal notranslate"><span class="pre">base_pixels</span></code>
+subset works by construction. Caveat: <code class="docutils literal notranslate"><span class="pre">d(chord)/d(gamma)</span> <span class="pre">-&gt;</span> <span class="pre">0</span></code> at
+antipodes, so resolution among near-antipodal separations is mildly
+compressed (benign for near/far attention). This is NOT an adaptation of
+SpheRoPE (arXiv:2606.32033 — closest prior work; ERP grid, pretrained
+constraints); see also StereoRoPE (arXiv:2606.31248, documents the
+failure of index-based RoPE on HEALPix) and Unlu (arXiv:2310.04454, an
+SO(3) feature-rotation alternative not adopted). Full rationale:
+<code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-19-healpix-rope-design.md</span></code>.</p>
+<p>Use with Flux1 via <code class="docutils literal notranslate"><span class="pre">id_embedding_strategy=(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> and a
+3-entry <code class="docutils literal notranslate"><span class="pre">axes_dim</span></code> (each even, summing to the per-head dim, e.g.
+<code class="docutils literal notranslate"><span class="pre">(22,</span> <span class="pre">22,</span> <span class="pre">20)</span></code> for 64). Obs/theta-stream tokens automatically get
+origin (0, 0, 0) rope ids — the identity rotation, i.e. an exactly
+isotropic positional readout of the conditioning tokens.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nside</strong> (<em>int</em>) – HEALPix resolution of the <em>token</em> grid (power of 2). With HEAL-SWIN
+style encoders this is the bottleneck nside; tokens must correspond
+to single HEALPix pixels (power-of-4 pixels-per-token upstream).</p></li>
+<li><p><strong>base_pixels</strong> (<em>sequence</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Base pixels (0..11) covered by the token grid, for partial-sky
+models. <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) means full sky. Tokens are ordered by
+base pixel as given, NEST within each.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>ids</strong> (<em>jax.Array</em>) – <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">num_tokens,</span> <span class="pre">3)</span></code> float32 scaled pixel-center coordinates.</p></li>
+<li><p><strong>num_tokens</strong> (<em>int</em>) – <code class="docutils literal notranslate"><span class="pre">len(base_pixels)</span> <span class="pre">*</span> <span class="pre">nside**2</span></code>.</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -996,8 +1073,10 @@ returns a flat dictionary consumed by <code class="xref py py-class docutils lit
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils._single_obs"><code class="docutils literal notranslate"><span class="pre">_single_obs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.build_edm_path"><code class="docutils literal notranslate"><span class="pre">build_edm_path()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.build_sm_path"><code class="docutils literal notranslate"><span class="pre">build_sm_path()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.healpix_rope_theta"><code class="docutils literal notranslate"><span class="pre">healpix_rope_theta()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.init_ids_1d"><code class="docutils literal notranslate"><span class="pre">init_ids_1d()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.init_ids_2d"><code class="docutils literal notranslate"><span class="pre">init_ids_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.init_ids_healpix"><code class="docutils literal notranslate"><span class="pre">init_ids_healpix()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.init_ids_joint"><code class="docutils literal notranslate"><span class="pre">init_ids_joint()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.parse_training_config"><code class="docutils literal notranslate"><span class="pre">parse_training_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.utils.scale_lr"><code class="docutils literal notranslate"><span class="pre">scale_lr()</span></code></a></li>

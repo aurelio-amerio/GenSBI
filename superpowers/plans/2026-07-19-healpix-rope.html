@@ -1,0 +1,1045 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>HEALPix RoPE for Flux1 Implementation Plan &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/plans/2026-07-19-healpix-rope';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">HEALPix RoPE for Flux1 Implementation Plan</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="healpix-rope-for-flux1-implementation-plan">
+<h1>HEALPix RoPE for Flux1 Implementation Plan<a class="headerlink" href="#healpix-rope-for-flux1-implementation-plan" title="Link to this heading">#</a></h1>
+<blockquote>
+<div><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">[</span> <span class="pre">]</span></code>) syntax for tracking.</p>
+</div></blockquote>
+<p><strong>Goal:</strong> Spherical rotary position embedding for HEALPix-grid tokens feeding Flux1’s conditioning stream: standard N-d RoPE applied to 3D Cartesian pixel-center coordinates, per the approved spec <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-19-healpix-rope-design.md</span></code>.</p>
+<p><strong>Architecture:</strong> A new ids-builder <code class="docutils literal notranslate"><span class="pre">init_ids_healpix</span></code> + theta helper <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code> in <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py</span></code> (siblings of <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code>). Zero changes to Flux1: <code class="docutils literal notranslate"><span class="pre">rope()</span></code> already accepts float positions, <code class="docutils literal notranslate"><span class="pre">EmbedND</span></code> handles N axes, and the mixed <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> strategy already gives obs tokens dummy zero (= origin) rope ids (<code class="docutils literal notranslate"><span class="pre">model.py:427</span></code>). First consumer: the HEAL-SWIN-nnx GRF example switches its cond ids from <code class="docutils literal notranslate"><span class="pre">pos1d</span></code> to spherical.</p>
+<p><strong>Tech Stack:</strong> JAX/flax-nnx, healpy (host-side precompute only, lazy import), pytest.</p>
+<section id="global-constraints">
+<h2>Global Constraints<a class="headerlink" href="#global-constraints" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Run GenSBI tests with uv from the repo root: <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">...</span></code> — this also validates that <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> works (user decision 2026-07-19; the uv venv is already synced with healpy).</p></li>
+<li><p>Test files set <code class="docutils literal notranslate"><span class="pre">os.environ[&quot;JAX_PLATFORMS&quot;]</span> <span class="pre">=</span> <span class="pre">&quot;cpu&quot;</span></code> before importing jax (convention: <code class="docutils literal notranslate"><span class="pre">tests/models/flux1/test_model_flux.py:4</span></code>).</p></li>
+<li><p>Do NOT modify <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/flux1/</span></code> (<a class="reference external" href="http://model.py">model.py</a>, <a class="reference external" href="http://math.py">math.py</a>, <a class="reference external" href="http://layers.py">layers.py</a>) — the design requires zero attention/model changes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">healpy&gt;=1.19.0</span></code> is already a regular dependency in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (line 30, user-added and synced); import it lazily <em>inside</em> <code class="docutils literal notranslate"><span class="pre">init_ids_healpix</span></code> (healpy pulls matplotlib; keep <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">gensbi</span></code> light).</p></li>
+<li><p>ids are float32, shape <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">N,</span> <span class="pre">3)</span></code>. Assumption (spec): token grid = full HEALPix grid at a power-of-2 <code class="docutils literal notranslate"><span class="pre">nside</span></code> (power-of-4 pixels-per-token upstream); non-conforming patchings are out of scope.</p></li>
+<li><p>GenSBI commits go on branch <code class="docutils literal notranslate"><span class="pre">healpix-rope</span></code> (already checked out). HEAL-SWIN-nnx commits (Task 5) go on a new branch <code class="docutils literal notranslate"><span class="pre">healpix-rope</span></code> in that repo.</p></li>
+<li><p>End commit messages with: <code class="docutils literal notranslate"><span class="pre">Co-Authored-By:</span> <span class="pre">Claude</span> <span class="pre">Fable</span> <span class="pre">5</span> <span class="pre">&lt;noreply&#64;anthropic.com&gt;</span></code>.</p></li>
+</ul>
+<hr class="docutils" />
+<section id="task-1-healpix-rope-theta-verify-healpy-dependency">
+<h3>Task 1: <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code> (+ verify healpy dependency)<a class="headerlink" href="#task-1-healpix-rope-theta-verify-healpy-dependency" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py</span></code> (add function after <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code>, which ends at line 53)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code> (create)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta(nside:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code> in <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.utils</span></code> — returns <code class="docutils literal notranslate"><span class="pre">10</span> <span class="pre">*</span> <span class="pre">12</span> <span class="pre">*</span> <span class="pre">nside**2</span></code>. Tasks 4 and 5 import it.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing test</strong></p></li>
+</ul>
+<p>Create <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">healpix_rope_theta</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_healpix_rope_theta_follows_project_convention</span><span class="p">():</span>
+    <span class="c1"># Project convention: theta = 10 * token count (Flux1Params defaults to</span>
+    <span class="c1"># 10 * (dim_obs + dim_cond) at model.py:184). Full sky has 12*nside^2 tokens.</span>
+    <span class="k">assert</span> <span class="n">healpix_rope_theta</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">480</span>
+    <span class="k">assert</span> <span class="n">healpix_rope_theta</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1920</span>
+    <span class="k">assert</span> <span class="n">healpix_rope_theta</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">healpix_rope_theta</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">healpix_rope_theta</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run test to verify it fails</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_healpix_ids.py</span> <span class="pre">-v</span></code>
+Expected: FAIL with <code class="docutils literal notranslate"><span class="pre">ImportError:</span> <span class="pre">cannot</span> <span class="pre">import</span> <span class="pre">name</span> <span class="pre">'healpix_rope_theta'</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement helper and verify the healpy dependency</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py</span></code>, insert after the <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code> function (after line 53):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">healpix_rope_theta</span><span class="p">(</span><span class="n">nside</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Suggested RoPE ``theta`` for a full-sky HEALPix token grid at ``nside``.</span>
+
+<span class="sd">    Follows the project convention ``theta = 10 * token count`` (the same rule</span>
+<span class="sd">    :class:`~gensbi.models.flux1.model.Flux1Params` applies by default via</span>
+<span class="sd">    ``10 * (dim_obs + dim_cond)``): a full-sky grid has ``12 * nside**2``</span>
+<span class="sd">    tokens. Exposed so spherical models can derive theta from the intuitive</span>
+<span class="sd">    knob (``nside``, always known after the encoder) instead of setting it by</span>
+<span class="sd">    hand.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">12</span> <span class="o">*</span> <span class="n">nside</span><span class="o">**</span><span class="mi">2</span>
+</pre></div>
+</div>
+<p>The dependency is already declared and synced (user did this): <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>
+line 30 has <code class="docutils literal notranslate"><span class="pre">&quot;healpy&gt;=1.19.0&quot;,</span></code>. Verify only:</p>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">healpy;</span> <span class="pre">print(healpy.__version__)&quot;</span></code>
+Expected: <code class="docutils literal notranslate"><span class="pre">1.19.0</span></code> (or newer). If missing, run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> — do not edit pyproject.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run test to verify it passes</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_healpix_ids.py</span> <span class="pre">-v</span></code>
+Expected: PASS (1 test)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lustre/ific.uv.es/ml/ific088/github/GenSBI
+git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/utils.py<span class="w"> </span>tests/recipes/test_healpix_ids.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add healpix_rope_theta helper</span>
+
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-2-init-ids-healpix-core-builder">
+<h3>Task 2: <code class="docutils literal notranslate"><span class="pre">init_ids_healpix</span></code> — core builder<a class="headerlink" href="#task-2-init-ids-healpix-core-builder" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py</span></code> (add function after <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code> from Task 1)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code> (extend)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: nothing from other tasks (healpy from Task 1’s dependency).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">init_ids_healpix(nside:</span> <span class="pre">int,</span> <span class="pre">base_pixels:</span> <span class="pre">&quot;Sequence[int]</span> <span class="pre">|</span> <span class="pre">None&quot;</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">tuple[jax.Array,</span> <span class="pre">int]</span></code> in <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.utils</span></code>. Returns <code class="docutils literal notranslate"><span class="pre">(ids,</span> <span class="pre">num_tokens)</span></code> mirroring <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code>’s <code class="docutils literal notranslate"><span class="pre">(ids,</span> <span class="pre">dim)</span></code> convention; <code class="docutils literal notranslate"><span class="pre">ids</span></code> is float32 <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">num_tokens,</span> <span class="pre">3)</span></code> in NEST order, scaled to pixel units. Tasks 3–5 use it.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_ids_healpix</span>
+
+<span class="c1"># 1 / (pixel angular size) = nside * sqrt(3/pi); adjacent tokens ~1 apart.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_pixel_unit_radius</span><span class="p">(</span><span class="n">nside</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">nside</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_init_ids_healpix_shape_dtype_scale</span><span class="p">():</span>
+    <span class="n">ids</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">48</span>  <span class="c1"># 12 * nside^2</span>
+    <span class="k">assert</span> <span class="n">ids</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">ids</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="c1"># every token direction lies on the sphere of radius r(nside)</span>
+    <span class="n">norms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">norms</span><span class="p">,</span> <span class="n">_pixel_unit_radius</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_init_ids_healpix_nest_order_roundtrip</span><span class="p">():</span>
+    <span class="c1"># Token i must be the center of NEST pixel i: healpy round-trip catches</span>
+    <span class="c1"># any ordering or indexing bug in the builder.</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
+
+    <span class="n">nside</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">ids</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="n">nside</span><span class="p">)</span>
+    <span class="n">vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">_pixel_unit_radius</span><span class="p">(</span><span class="n">nside</span><span class="p">)</span>
+    <span class="n">pix</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">vec2pix</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">vecs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">vecs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">vecs</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">nest</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">pix</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_init_ids_healpix_validates_nside</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;power of 2&quot;</span><span class="p">):</span>
+        <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;power of 2&quot;</span><span class="p">):</span>
+        <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_healpix_ids.py</span> <span class="pre">-v</span></code>
+Expected: 1 PASS (theta test), 3 FAIL with <code class="docutils literal notranslate"><span class="pre">ImportError:</span> <span class="pre">cannot</span> <span class="pre">import</span> <span class="pre">name</span> <span class="pre">'init_ids_healpix'</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement the builder</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py</span></code>, insert after <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">init_ids_healpix</span><span class="p">(</span><span class="n">nside</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build spherical RoPE ids for tokens on a HEALPix grid, returning</span>
+<span class="sd">    ``(ids, num_tokens)``.</span>
+
+<span class="sd">    Method: standard N-dimensional RoPE (RoFormer, arXiv:2104.09864 — the</span>
+<span class="sd">    mechanism implemented by Flux1&#39;s ``EmbedND``) applied uniformly, on all</span>
+<span class="sd">    three axes and all frequency bands, to the 3D Cartesian coordinates of</span>
+<span class="sd">    HEALPix pixel centers on the unit sphere. Each token maps to its</span>
+<span class="sd">    pixel-center unit vector (``healpy.pix2vec``, NEST ordering), scaled to</span>
+<span class="sd">    pixel units so adjacent tokens differ by ~1 in coordinate (radius</span>
+<span class="sd">    ``nside * sqrt(3/pi)`` = 1/pixel angular size), which keeps ``theta``&#39;s</span>
+<span class="sd">    semantics identical to 2D-image usage (see :func:`healpix_rope_theta`).</span>
+
+<span class="sd">    Attention scores then depend on positions only through the chord vector</span>
+<span class="sd">    ``n_q - n_k``, whose norm ``2 sin(gamma/2)`` is strictly monotone in</span>
+<span class="sd">    great-circle distance ``gamma`` — geodesic geometry with no projection</span>
+<span class="sd">    step, hence no face-seam or polar artifacts, and any ``base_pixels``</span>
+<span class="sd">    subset works by construction. Caveat: ``d(chord)/d(gamma) -&gt; 0`` at</span>
+<span class="sd">    antipodes, so resolution among near-antipodal separations is mildly</span>
+<span class="sd">    compressed (benign for near/far attention). This is NOT an adaptation of</span>
+<span class="sd">    SpheRoPE (arXiv:2606.32033 — closest prior work; ERP grid, pretrained</span>
+<span class="sd">    constraints); see also StereoRoPE (arXiv:2606.31248, documents the</span>
+<span class="sd">    failure of index-based RoPE on HEALPix) and Unlu (arXiv:2310.04454, an</span>
+<span class="sd">    SO(3) feature-rotation alternative not adopted). Full rationale:</span>
+<span class="sd">    ``docs/superpowers/specs/2026-07-19-healpix-rope-design.md``.</span>
+
+<span class="sd">    Use with Flux1 via ``id_embedding_strategy=(&quot;absolute&quot;, &quot;rope&quot;)`` and a</span>
+<span class="sd">    3-entry ``axes_dim`` (each even, summing to the per-head dim, e.g.</span>
+<span class="sd">    ``(22, 22, 20)`` for 64). Obs/theta-stream tokens automatically get</span>
+<span class="sd">    origin (0, 0, 0) rope ids — the identity rotation, i.e. an exactly</span>
+<span class="sd">    isotropic positional readout of the conditioning tokens.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    nside : int</span>
+<span class="sd">        HEALPix resolution of the *token* grid (power of 2). With HEAL-SWIN</span>
+<span class="sd">        style encoders this is the bottleneck nside; tokens must correspond</span>
+<span class="sd">        to single HEALPix pixels (power-of-4 pixels-per-token upstream).</span>
+<span class="sd">    base_pixels : sequence of int, optional</span>
+<span class="sd">        Base pixels (0..11) covered by the token grid, for partial-sky</span>
+<span class="sd">        models. ``None`` (default) means full sky. Tokens are ordered by</span>
+<span class="sd">        base pixel as given, NEST within each.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ids : jax.Array</span>
+<span class="sd">        ``(1, num_tokens, 3)`` float32 scaled pixel-center coordinates.</span>
+<span class="sd">    num_tokens : int</span>
+<span class="sd">        ``len(base_pixels) * nside**2``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>  <span class="c1"># lazy: healpy pulls matplotlib, keep import light</span>
+
+    <span class="k">if</span> <span class="n">nside</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="p">(</span><span class="n">nside</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">nside</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;nside must be a power of 2, got </span><span class="si">{</span><span class="n">nside</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">base_pixels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">base_pixels</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+    <span class="n">base_pixels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="mi">11</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">base_pixels</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span>
+        <span class="n">base_pixels</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;base_pixels must be unique integers in [0, 11], got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">face_len</span> <span class="o">=</span> <span class="n">nside</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">pix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">b</span> <span class="o">*</span> <span class="n">face_len</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">face_len</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">base_pixels</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">pix2vec</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">pix</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># float64 host-side</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="n">nside</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>  <span class="c1"># 1 / pixel angular size</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_healpix_ids.py</span> <span class="pre">-v</span></code>
+Expected: PASS (4 tests)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lustre/ific.uv.es/ml/ific088/github/GenSBI
+git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/utils.py<span class="w"> </span>tests/recipes/test_healpix_ids.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add init_ids_healpix spherical RoPE ids builder</span>
+
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-3-subset-semantics-seam-freedom-property-tests">
+<h3>Task 3: subset semantics + seam-freedom property tests<a class="headerlink" href="#task-3-subset-semantics-seam-freedom-property-tests" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code> (extend; implementation changes only if a test exposes a bug)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">init_ids_healpix(nside,</span> <span class="pre">base_pixels=None)</span> <span class="pre">-&gt;</span> <span class="pre">(ids,</span> <span class="pre">num_tokens)</span></code> from Task 2.</p></li>
+<li><p>Produces: nothing new — locks in behavior later tasks rely on.</p></li>
+<li><p>[ ] <strong>Step 1: Write the tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_init_ids_healpix_base_pixel_subset_matches_full_sky</span><span class="p">():</span>
+    <span class="c1"># Subset ids must be exactly the corresponding rows of the full-sky ids:</span>
+    <span class="c1"># the encoding depends only on token directions, never on token count.</span>
+    <span class="n">nside</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">full</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="n">nside</span><span class="p">)</span>
+    <span class="n">subset</span><span class="p">,</span> <span class="n">n_sub</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">n_sub</span> <span class="o">==</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nside</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">face_len</span> <span class="o">=</span> <span class="n">nside</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">full</span><span class="p">[:,</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">face_len</span> <span class="p">:</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">face_len</span><span class="p">],</span>
+            <span class="n">full</span><span class="p">[:,</span> <span class="mi">7</span> <span class="o">*</span> <span class="n">face_len</span> <span class="p">:</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">face_len</span><span class="p">],</span>
+        <span class="p">],</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">subset</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">expected</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_init_ids_healpix_rejects_bad_base_pixels</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;base_pixels&quot;</span><span class="p">):</span>
+        <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;base_pixels&quot;</span><span class="p">):</span>
+        <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_no_face_seam_discontinuity</span><span class="p">():</span>
+    <span class="c1"># The failure documented for index-based RoPE on HEALPix (StereoRoPE,</span>
+    <span class="c1"># arXiv:2606.31248) is a discontinuity across base-face boundaries. In</span>
+    <span class="c1"># chord coordinates, grid-neighbor distances must be uniform across the</span>
+    <span class="c1"># whole sphere — face boundaries and poles included. An index-seam bug</span>
+    <span class="c1"># would make some neighbor pairs ~nside times farther than others.</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
+
+    <span class="n">nside</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">ids</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="n">nside</span><span class="p">)</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">neigh</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">get_all_neighbours</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">nest</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># (8, n)</span>
+    <span class="n">dists</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">neigh</span><span class="p">[:,</span> <span class="n">p</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">q</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="n">q</span><span class="p">]))</span>
+    <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dists</span><span class="p">)</span>
+    <span class="c1"># pixel units: neighbor spacing ~1 (sides) to ~sqrt(2) (diagonals), with</span>
+    <span class="c1"># HEALPix shape distortion on top; no seam outliers anywhere.</span>
+    <span class="k">assert</span> <span class="n">dists</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="n">dists</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">4.0</span>
+    <span class="k">assert</span> <span class="mf">0.5</span> <span class="o">&lt;</span> <span class="n">dists</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">2.0</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_healpix_ids.py</span> <span class="pre">-v</span></code>
+Expected: PASS (7 tests). If <code class="docutils literal notranslate"><span class="pre">test_no_face_seam_discontinuity</span></code> fails on the ratio bound, that indicates a real builder bug (e.g. RING/NEST mix-up) — debug the builder, do not loosen the bound past 4.0.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lustre/ific.uv.es/ml/ific088/github/GenSBI
+git<span class="w"> </span>add<span class="w"> </span>tests/recipes/test_healpix_ids.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;test: subset semantics and face-seam-freedom for healpix ids</span>
+
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-4-flux1-end-to-end-integration-smoke">
+<h3>Task 4: Flux1 end-to-end integration smoke<a class="headerlink" href="#task-4-flux1-end-to-end-integration-smoke" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code> (extend; NO source changes expected — if Flux1 rejects float 3-axis ids, stop and report, do not patch the model)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">init_ids_healpix</span></code> (Task 2), <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code> (Task 1), existing <code class="docutils literal notranslate"><span class="pre">Flux1</span></code>/<code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code> and <code class="docutils literal notranslate"><span class="pre">init_ids_1d</span></code>.</p></li>
+<li><p>Produces: proof that the <code class="docutils literal notranslate"><span class="pre">(&quot;absolute&quot;,</span> <span class="pre">&quot;rope&quot;)</span></code> + 3-axis float ids path works unmodified; Task 5 relies on it.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing test</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_embednd_consumes_healpix_ids</span><span class="p">():</span>
+    <span class="c1"># 3-axis float ids through the existing EmbedND: correct freqs_cis shape,</span>
+    <span class="c1"># all finite. (That scores depend only on the per-axis coordinate</span>
+    <span class="c1"># differences is guaranteed by rope()&#39;s construction; no test needed.)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.flux1.layers</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmbedND</span>
+
+    <span class="n">ids</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">emb</span> <span class="o">=</span> <span class="n">EmbedND</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">healpix_rope_theta</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+    <span class="n">pe</span> <span class="o">=</span> <span class="n">emb</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+    <span class="c1"># rope() -&gt; (1, N, d/2, 2, 2) per axis, concat on axis -3, expand_dims(1)</span>
+    <span class="k">assert</span> <span class="n">pe</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">bool</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pe</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_flux1_forward_with_healpix_rope</span><span class="p">():</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.flux1.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1</span><span class="p">,</span> <span class="n">Flux1Params</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_ids_1d</span>
+
+    <span class="n">nside</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">cond_ids</span><span class="p">,</span> <span class="n">n_cond</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="n">nside</span><span class="p">)</span>  <span class="c1"># (1, 48, 3) float32</span>
+    <span class="n">dim_theta</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
+        <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+        <span class="n">mlp_ratio</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+        <span class="n">num_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_theta</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="o">=</span><span class="n">n_cond</span><span class="p">,</span>
+        <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>  <span class="c1"># 3 axes for (x, y, z); sum = per-head dim 12</span>
+        <span class="n">theta</span><span class="o">=</span><span class="n">healpix_rope_theta</span><span class="p">(</span><span class="n">nside</span><span class="p">),</span>
+        <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;rope&quot;</span><span class="p">),</span>
+        <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">batch</span><span class="p">,</span> <span class="n">dim_theta</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">batch</span><span class="p">,</span> <span class="n">n_cond</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="n">obs_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">dim_theta</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">])</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_ids</span><span class="o">=</span><span class="n">obs_ids</span><span class="p">,</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">,</span> <span class="n">cond_ids</span><span class="o">=</span><span class="n">cond_ids</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">dim_theta</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">bool</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">())</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run test to verify current status</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_healpix_ids.py::test_flux1_forward_with_healpix_rope</span> <span class="pre">-v</span></code>
+Expected: PASS on first run — the model path already exists (obs gets dummy origin rope ids at <code class="docutils literal notranslate"><span class="pre">model.py:427</span></code>; <code class="docutils literal notranslate"><span class="pre">rope()</span></code> accepts float positions). If it FAILS, the failure is a genuine integration finding: report it (with traceback) rather than modifying <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/flux1/</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Run the full flux1 + recipes suites to check for regressions</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/lustre/ific.uv.es/ml/ific088/github/GenSBI</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_healpix_ids.py</span> <span class="pre">tests/models/flux1/</span> <span class="pre">-v</span></code>
+Expected: all PASS</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lustre/ific.uv.es/ml/ific088/github/GenSBI
+git<span class="w"> </span>add<span class="w"> </span>tests/recipes/test_healpix_ids.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;test: Flux1 e2e smoke with spherical healpix RoPE cond ids</span>
+
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-5-switch-the-heal-swin-nnx-grf-example-to-spherical-rope">
+<h3>Task 5: switch the HEAL-SWIN-nnx GRF example to spherical RoPE<a class="headerlink" href="#task-5-switch-the-heal-swin-nnx-grf-example-to-spherical-rope" title="Link to this heading">#</a></h3>
+<p><strong>Files (separate repo + venv: <code class="docutils literal notranslate"><span class="pre">/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx</span></code> — a registered additional working directory for this session; all Task 5 commands run from that root, its own git history and uv venv):</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (<code class="docutils literal notranslate"><span class="pre">[tool.uv.sources]</span></code>, line 57–58)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">examples/spherical_grf_flowmatch.py</span></code> (config block lines 88–93; ids at lines 334–335; header comment line 5)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">init_ids_healpix</span></code>, <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code> from <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.utils</span></code> (Tasks 1–2); the verified Flux1 path (Task 4).</p></li>
+<li><p>Produces: the runnable first consumer; <code class="docutils literal notranslate"><span class="pre">COND_ID_KIND</span></code> switch for the spherical-vs-pos1d A/B.</p></li>
+<li><p>[ ] <strong>Step 1: Create a branch and point the gensbi dependency at the local repo</strong></p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> extra currently resolves from PyPI (0.4.x), which lacks the new
+builder. Temporarily redirect it to the local working tree via a uv source —
+the same pattern the repo already uses for <code class="docutils literal notranslate"><span class="pre">sbibm-jax</span></code> (user decision; proper
+vendoring of heal-swin is a later, separate question).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx
+git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>healpix-rope
+</pre></div>
+</div>
+<p>In <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, extend <code class="docutils literal notranslate"><span class="pre">[tool.uv.sources]</span></code> (lines 57–58):</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[tool.uv.sources]</span>
+<span class="n">sbibm-jax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/lhome/ific/a/aamerio/data/github/sbibm-jax&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">editable</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+<span class="c1"># temporary: local gensbi working tree (healpix-rope branch) instead of PyPI</span>
+<span class="n">gensbi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/lustre/ific.uv.es/ml/ific088/github/GenSBI&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">editable</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Then sync and verify the new builder is visible:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>gensbi<span class="w"> </span>--extra<span class="w"> </span>examples
+uv<span class="w"> </span>run<span class="w"> </span>--no-sync<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from gensbi.recipes.utils import init_ids_healpix; print(init_ids_healpix(2)[0].shape)&quot;</span>
+</pre></div>
+</div>
+<p>Expected final line: <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">48,</span> <span class="pre">3)</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Edit the config block</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">examples/spherical_grf_flowmatch.py</span></code>, replace lines 88–93:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Flux1 posterior model</span>
+<span class="n">FLUX_DEPTH</span> <span class="o">=</span> <span class="mi">4</span>                       <span class="c1"># double-stream blocks</span>
+<span class="n">FLUX_DEPTH_SINGLE</span> <span class="o">=</span> <span class="mi">4</span>                <span class="c1"># single-stream blocks</span>
+<span class="n">FLUX_NUM_HEADS</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">FLUX_AXES_DIM</span> <span class="o">=</span> <span class="p">(</span><span class="mi">64</span><span class="p">,)</span>                <span class="c1"># hidden_size = sum(axes_dim) * heads = 384</span>
+<span class="n">ID_EMBEDDING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;pos1d&quot;</span><span class="p">)</span> <span class="c1"># learned theta-token ids, sinusoidal cond ids</span>
+</pre></div>
+</div>
+<p>with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Flux1 posterior model</span>
+<span class="n">FLUX_DEPTH</span> <span class="o">=</span> <span class="mi">4</span>                       <span class="c1"># double-stream blocks</span>
+<span class="n">FLUX_DEPTH_SINGLE</span> <span class="o">=</span> <span class="mi">4</span>                <span class="c1"># single-stream blocks</span>
+<span class="n">FLUX_NUM_HEADS</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="c1"># Cond-stream positional ids: &quot;healpix&quot; = spherical RoPE on pixel-center</span>
+<span class="c1"># 3D coordinates (see gensbi init_ids_healpix); &quot;pos1d&quot; = 1D sinusoidal</span>
+<span class="c1"># ids over NEST order (baseline for A/B comparison).</span>
+<span class="n">COND_ID_KIND</span> <span class="o">=</span> <span class="s2">&quot;healpix&quot;</span>
+<span class="n">NSIDE_BOTTLENECK</span> <span class="o">=</span> <span class="n">NSIDE</span> <span class="o">//</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">DEPTHS</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>  <span class="c1"># patch /2, 4 mergings</span>
+<span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;healpix&quot;</span><span class="p">:</span>
+    <span class="n">ID_EMBEDDING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;rope&quot;</span><span class="p">)</span>   <span class="c1"># learned theta ids, spherical cond RoPE</span>
+    <span class="n">FLUX_AXES_DIM</span> <span class="o">=</span> <span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>          <span class="c1"># (x, y, z); sum = 64 = hidden/heads</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">ID_EMBEDDING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;pos1d&quot;</span><span class="p">)</span>  <span class="c1"># learned theta ids, sinusoidal cond ids</span>
+    <span class="n">FLUX_AXES_DIM</span> <span class="o">=</span> <span class="p">(</span><span class="mi">64</span><span class="p">,)</span>                 <span class="c1"># hidden_size = sum(axes_dim) * heads = 384</span>
+<span class="k">assert</span> <span class="n">COND_TOKENS</span> <span class="o">==</span> <span class="mi">12</span> <span class="o">*</span> <span class="n">NSIDE_BOTTLENECK</span><span class="o">**</span><span class="mi">2</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Pass theta and update ids construction</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">make_flux_params</span></code> (currently lines 131–147), add one argument to <code class="docutils literal notranslate"><span class="pre">Flux1Params(...)</span></code> after <code class="docutils literal notranslate"><span class="pre">axes_dim=list(FLUX_AXES_DIM),</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="n">theta</span><span class="o">=</span><span class="p">(</span><span class="n">healpix_rope_theta</span><span class="p">(</span><span class="n">NSIDE_BOTTLENECK</span><span class="p">)</span>
+               <span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;healpix&quot;</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span>
+</pre></div>
+</div>
+<p>Replace the ids lines (currently 334–335):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">obs_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">DIM_THETA</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># (1, 3, 2) — broadcast over batch</span>
+    <span class="n">cond_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">COND_TOKENS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># (1, 48, 2)</span>
+</pre></div>
+</div>
+<p>with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">obs_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">DIM_THETA</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># (1, 3, 2) — broadcast over batch</span>
+    <span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;healpix&quot;</span><span class="p">:</span>
+        <span class="n">cond_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="n">NSIDE_BOTTLENECK</span><span class="p">)</span>  <span class="c1"># (1, 48, 3) float32</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cond_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">COND_TOKENS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># (1, 48, 2)</span>
+</pre></div>
+</div>
+<p>Update the import (currently line 60):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_ids_1d</span><span class="p">,</span> <span class="n">init_ids_healpix</span><span class="p">,</span> <span class="n">healpix_rope_theta</span>
+</pre></div>
+</div>
+<p>Update the header description (line 5) from <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">condition</span> <span class="pre">a</span> <span class="pre">gensbi</span> <span class="pre">Flux1</span></code> context to mention spherical RoPE, e.g. change the line containing <code class="docutils literal notranslate"><span class="pre">bottleneck</span> <span class="pre">tokens</span> <span class="pre">(nside</span> <span class="pre">2,</span> <span class="pre">512</span> <span class="pre">features),</span> <span class="pre">which</span> <span class="pre">condition</span> <span class="pre">a</span> <span class="pre">gensbi</span> <span class="pre">Flux1</span></code> to:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bottleneck</span> <span class="n">tokens</span> <span class="p">(</span><span class="n">nside</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">512</span> <span class="n">features</span><span class="p">),</span> <span class="n">which</span> <span class="n">condition</span> <span class="n">a</span> <span class="n">gensbi</span> <span class="n">Flux1</span>
+<span class="n">posterior</span> <span class="n">model</span> <span class="n">via</span> <span class="n">spherical</span> <span class="n">HEALPix</span> <span class="n">RoPE</span> <span class="n">ids</span> <span class="p">(</span><span class="n">see</span> <span class="n">COND_ID_KIND</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>(Keep surrounding docstring lines intact; only extend that sentence.)</p>
+<p>Also update the run log line (currently line 299) <code class="docutils literal notranslate"><span class="pre">f&quot;heads={FLUX_NUM_HEADS}</span> <span class="pre">ids={ID_EMBEDDING}&quot;)</span></code> to include the kind:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="sa">f</span><span class="s2">&quot;heads=</span><span class="si">{</span><span class="n">FLUX_NUM_HEADS</span><span class="si">}</span><span class="s2"> ids=</span><span class="si">{</span><span class="n">ID_EMBEDDING</span><span class="si">}</span><span class="s2"> cond_ids=</span><span class="si">{</span><span class="n">COND_ID_KIND</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: QUICK smoke run, both id kinds</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx
+<span class="nv">QUICK</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>--no-sync<span class="w"> </span>python<span class="w"> </span>examples/spherical_grf_flowmatch.py
+</pre></div>
+</div>
+<p>(<code class="docutils literal notranslate"><span class="pre">--no-sync</span></code> keeps the extras-synced venv from Step 1; a plain <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span></code> would
+re-sync without the <code class="docutils literal notranslate"><span class="pre">gensbi</span></code>/<code class="docutils literal notranslate"><span class="pre">examples</span></code> extras.)</p>
+<p>Expected: runs to completion (5 steps, tiny batches), finite losses printed, no shape errors. Then temporarily set <code class="docutils literal notranslate"><span class="pre">COND_ID_KIND</span> <span class="pre">=</span> <span class="pre">&quot;pos1d&quot;</span></code>, rerun the same command, expect the baseline still works, and set it back to <code class="docutils literal notranslate"><span class="pre">&quot;healpix&quot;</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit (HEAL-SWIN-nnx repo)</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx
+git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>uv.lock<span class="w"> </span>examples/spherical_grf_flowmatch.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: spherical HEALPix RoPE cond ids in GRF flow-matching example</span>
+
+<span class="s2">Temporarily source gensbi from the local working tree (healpix-rope branch).</span>
+
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+</pre></div>
+</div>
+<p>Note: do NOT commit <code class="docutils literal notranslate"><span class="pre">examples/checkpoints/</span></code> or <code class="docutils literal notranslate"><span class="pre">examples/imgs/*.png</span></code> (pre-existing untracked artifacts).</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="acceptance-post-plan-user-run">
+<h2>Acceptance (post-plan, user-run)<a class="headerlink" href="#acceptance-post-plan-user-run" title="Link to this heading">#</a></h2>
+<p>Full (non-QUICK) GRF example training on GPU, A/B <code class="docutils literal notranslate"><span class="pre">COND_ID_KIND</span> <span class="pre">=</span> <span class="pre">&quot;healpix&quot;</span></code> vs <code class="docutils literal notranslate"><span class="pre">&quot;pos1d&quot;</span></code>, comparing TARP calibration and posterior marginals — per the spec, this is the user’s run and gates promotion beyond the example.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-constraints">Global Constraints</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-healpix-rope-theta-verify-healpy-dependency">Task 1: <code class="docutils literal notranslate"><span class="pre">healpix_rope_theta</span></code> (+ verify healpy dependency)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-2-init-ids-healpix-core-builder">Task 2: <code class="docutils literal notranslate"><span class="pre">init_ids_healpix</span></code> — core builder</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-3-subset-semantics-seam-freedom-property-tests">Task 3: subset semantics + seam-freedom property tests</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-4-flux1-end-to-end-integration-smoke">Task 4: Flux1 end-to-end integration smoke</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-5-switch-the-heal-swin-nnx-grf-example-to-spherical-rope">Task 5: switch the HEAL-SWIN-nnx GRF example to spherical RoPE</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#acceptance-post-plan-user-run">Acceptance (post-plan, user-run)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
