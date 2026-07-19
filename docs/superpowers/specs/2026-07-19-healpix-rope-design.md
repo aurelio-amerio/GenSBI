@@ -72,6 +72,24 @@ phase-spectrum check.
   convention for spherical models; the "absolute" learned strategy remains
   available).
 
+## Relation to prior work (docstring requirement)
+
+This is NOT an adaptation of SpheRoPE. It is standard N-dimensional RoPE (the
+RoFormer mechanism, as implemented by Flux1's `EmbedND`) applied uniformly —
+all axes, all frequency bands — to 3D Cartesian coordinates of HEALPix pixel
+centers. SpheRoPE's low/high frequency partition, harmonic quantization, and
+horizontal-only Cartesian re-parameterization are compromises for zero-shot
+reuse of a pretrained ERP-grid FLUX; trained from scratch, none apply. The
+`init_ids_healpix` docstring must state the method in these terms and link:
+
+- SpheRoPE, arXiv:2606.32033 — closest prior work: validates Cartesian
+  coordinates as RoPE inputs for spherical topology (ERP grid, pretrained
+  constraints; we drop those compromises).
+- STRATA/StereoRoPE, arXiv:2606.31248 — documents the failure of index-based
+  RoPE on HEALPix (discontinuities across polar faces) that motivates this
+  design.
+- RoFormer, arXiv:2104.09864 — the underlying rotary mechanism.
+
 ## Components
 
 **`src/gensbi/recipes/utils.py`** (next to `init_ids_1d`):
