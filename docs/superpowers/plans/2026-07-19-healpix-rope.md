@@ -10,20 +10,19 @@
 
 ## Global Constraints
 
-- Run GenSBI tests with the mamba env: `mamba run -n gensbi python -m pytest ...` (NOT `.venv` — per project memory it hides real failures).
+- Run GenSBI tests with uv from the repo root: `uv run python -m pytest ...` — this also validates that `pyproject.toml` works (user decision 2026-07-19; the uv venv is already synced with healpy).
 - Test files set `os.environ["JAX_PLATFORMS"] = "cpu"` before importing jax (convention: `tests/models/flux1/test_model_flux.py:4`).
 - Do NOT modify `src/gensbi/models/flux1/` (model.py, math.py, layers.py) — the design requires zero attention/model changes.
-- `healpy>=1.19.0` becomes a regular dependency in `pyproject.toml`, but is imported lazily *inside* `init_ids_healpix` (healpy pulls matplotlib; keep `import gensbi` light).
+- `healpy>=1.19.0` is already a regular dependency in `pyproject.toml` (line 30, user-added and synced); import it lazily *inside* `init_ids_healpix` (healpy pulls matplotlib; keep `import gensbi` light).
 - ids are float32, shape `(1, N, 3)`. Assumption (spec): token grid = full HEALPix grid at a power-of-2 `nside` (power-of-4 pixels-per-token upstream); non-conforming patchings are out of scope.
 - GenSBI commits go on branch `healpix-rope` (already checked out). HEAL-SWIN-nnx commits (Task 5) go on a new branch `healpix-rope` in that repo.
 - End commit messages with: `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 
 ---
 
-### Task 1: `healpix_rope_theta` + healpy dependency
+### Task 1: `healpix_rope_theta` (+ verify healpy dependency)
 
 **Files:**
-- Modify: `pyproject.toml` (dependencies list, after `"scipy>=1.18.0",` at line 25)
 - Modify: `src/gensbi/recipes/utils.py` (add function after `init_ids_1d`, which ends at line 53)
 - Test: `tests/recipes/test_healpix_ids.py` (create)
 
@@ -57,10 +56,10 @@ def test_healpix_rope_theta_follows_project_convention():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && mamba run -n gensbi python -m pytest tests/recipes/test_healpix_ids.py -v`
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -m pytest tests/recipes/test_healpix_ids.py -v`
 Expected: FAIL with `ImportError: cannot import name 'healpix_rope_theta'`
 
-- [ ] **Step 3: Implement helper and add dependency**
+- [ ] **Step 3: Implement helper and verify the healpy dependency**
 
 In `src/gensbi/recipes/utils.py`, insert after the `init_ids_1d` function (after line 53):
 
@@ -78,28 +77,23 @@ def healpix_rope_theta(nside: int) -> int:
     return 10 * 12 * nside**2
 ```
 
-In `pyproject.toml`, after `    "scipy>=1.18.0",` (line 25) add:
+The dependency is already declared and synced (user did this): `pyproject.toml`
+line 30 has `"healpy>=1.19.0",`. Verify only:
 
-```toml
-    "healpy>=1.19.0",
-```
-
-Install into the test env:
-
-Run: `mamba run -n gensbi pip install "healpy>=1.19.0"`
-Expected: `Successfully installed healpy-...` (or already satisfied)
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -c "import healpy; print(healpy.__version__)"`
+Expected: `1.19.0` (or newer). If missing, run `uv sync` — do not edit pyproject.
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && mamba run -n gensbi python -m pytest tests/recipes/test_healpix_ids.py -v`
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -m pytest tests/recipes/test_healpix_ids.py -v`
 Expected: PASS (1 test)
 
 - [ ] **Step 5: Commit**
 
 ```bash
 cd /lustre/ific.uv.es/ml/ific088/github/GenSBI
-git add pyproject.toml src/gensbi/recipes/utils.py tests/recipes/test_healpix_ids.py
-git commit -m "feat: add healpix_rope_theta helper and healpy dependency
+git add src/gensbi/recipes/utils.py tests/recipes/test_healpix_ids.py
+git commit -m "feat: add healpix_rope_theta helper
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
@@ -159,7 +153,7 @@ def test_init_ids_healpix_validates_nside():
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && mamba run -n gensbi python -m pytest tests/recipes/test_healpix_ids.py -v`
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -m pytest tests/recipes/test_healpix_ids.py -v`
 Expected: 1 PASS (theta test), 3 FAIL with `ImportError: cannot import name 'init_ids_healpix'`
 
 - [ ] **Step 3: Implement the builder**
@@ -243,7 +237,7 @@ def init_ids_healpix(nside: int, base_pixels=None):
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && mamba run -n gensbi python -m pytest tests/recipes/test_healpix_ids.py -v`
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -m pytest tests/recipes/test_healpix_ids.py -v`
 Expected: PASS (4 tests)
 
 - [ ] **Step 5: Commit**
@@ -323,7 +317,7 @@ def test_no_face_seam_discontinuity():
 
 - [ ] **Step 2: Run tests**
 
-Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && mamba run -n gensbi python -m pytest tests/recipes/test_healpix_ids.py -v`
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -m pytest tests/recipes/test_healpix_ids.py -v`
 Expected: PASS (7 tests). If `test_no_face_seam_discontinuity` fails on the ratio bound, that indicates a real builder bug (e.g. RING/NEST mix-up) — debug the builder, do not loosen the bound past 4.0.
 
 - [ ] **Step 3: Commit**
@@ -405,12 +399,12 @@ def test_flux1_forward_with_healpix_rope():
 
 - [ ] **Step 2: Run test to verify current status**
 
-Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && mamba run -n gensbi python -m pytest tests/recipes/test_healpix_ids.py::test_flux1_forward_with_healpix_rope -v`
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -m pytest tests/recipes/test_healpix_ids.py::test_flux1_forward_with_healpix_rope -v`
 Expected: PASS on first run — the model path already exists (obs gets dummy origin rope ids at `model.py:427`; `rope()` accepts float positions). If it FAILS, the failure is a genuine integration finding: report it (with traceback) rather than modifying `src/gensbi/models/flux1/`.
 
 - [ ] **Step 3: Run the full flux1 + recipes suites to check for regressions**
 
-Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && mamba run -n gensbi python -m pytest tests/recipes/test_healpix_ids.py tests/models/flux1/ -v`
+Run: `cd /lustre/ific.uv.es/ml/ific088/github/GenSBI && uv run python -m pytest tests/recipes/test_healpix_ids.py tests/models/flux1/ -v`
 Expected: all PASS
 
 - [ ] **Step 4: Commit**
@@ -427,22 +421,40 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 ### Task 5: switch the HEAL-SWIN-nnx GRF example to spherical RoPE
 
-**Files (separate repo: `/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx`):**
+**Files (separate repo + venv: `/lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx` — a registered additional working directory for this session; all Task 5 commands run from that root, its own git history and uv venv):**
+- Modify: `pyproject.toml` (`[tool.uv.sources]`, line 57–58)
 - Modify: `examples/spherical_grf_flowmatch.py` (config block lines 88–93; ids at lines 334–335; header comment line 5)
 
 **Interfaces:**
 - Consumes: `init_ids_healpix`, `healpix_rope_theta` from `gensbi.recipes.utils` (Tasks 1–2); the verified Flux1 path (Task 4).
 - Produces: the runnable first consumer; `COND_ID_KIND` switch for the spherical-vs-pos1d A/B.
 
-- [ ] **Step 1: Create a branch and install the updated gensbi into the example venv**
+- [ ] **Step 1: Create a branch and point the gensbi dependency at the local repo**
 
-The venv has a non-editable `gensbi 0.4.0`; replace with an editable install of the working tree so example runs see the new builder:
+The `gensbi` extra currently resolves from PyPI (0.4.x), which lacks the new
+builder. Temporarily redirect it to the local working tree via a uv source —
+the same pattern the repo already uses for `sbibm-jax` (user decision; proper
+vendoring of heal-swin is a later, separate question).
 
 ```bash
 cd /lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx
 git checkout -b healpix-rope
-.venv/bin/pip install --no-deps -e /lustre/ific.uv.es/ml/ific088/github/GenSBI
-.venv/bin/python -c "from gensbi.recipes.utils import init_ids_healpix; print(init_ids_healpix(2)[0].shape)"
+```
+
+In `pyproject.toml`, extend `[tool.uv.sources]` (lines 57–58):
+
+```toml
+[tool.uv.sources]
+sbibm-jax = { path = "/lhome/ific/a/aamerio/data/github/sbibm-jax", editable = true }
+# temporary: local gensbi working tree (healpix-rope branch) instead of PyPI
+gensbi = { path = "/lustre/ific.uv.es/ml/ific088/github/GenSBI", editable = true }
+```
+
+Then sync and verify the new builder is visible:
+
+```bash
+uv sync --extra gensbi --extra examples
+uv run --no-sync python -c "from gensbi.recipes.utils import init_ids_healpix; print(init_ids_healpix(2)[0].shape)"
 ```
 
 Expected final line: `(1, 48, 3)`
@@ -532,8 +544,11 @@ Also update the run log line (currently line 299) `f"heads={FLUX_NUM_HEADS} ids=
 
 ```bash
 cd /lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx
-QUICK=1 JAX_PLATFORMS=cpu .venv/bin/python examples/spherical_grf_flowmatch.py
+QUICK=1 JAX_PLATFORMS=cpu uv run --no-sync python examples/spherical_grf_flowmatch.py
 ```
+
+(`--no-sync` keeps the extras-synced venv from Step 1; a plain `uv run` would
+re-sync without the `gensbi`/`examples` extras.)
 
 Expected: runs to completion (5 steps, tiny batches), finite losses printed, no shape errors. Then temporarily set `COND_ID_KIND = "pos1d"`, rerun the same command, expect the baseline still works, and set it back to `"healpix"`.
 
@@ -541,8 +556,10 @@ Expected: runs to completion (5 steps, tiny batches), finite losses printed, no 
 
 ```bash
 cd /lhome/ific/a/aamerio/data/github/HEAL-SWIN-nnx
-git add examples/spherical_grf_flowmatch.py
+git add pyproject.toml uv.lock examples/spherical_grf_flowmatch.py
 git commit -m "feat: spherical HEALPix RoPE cond ids in GRF flow-matching example
+
+Temporarily source gensbi from the local working tree (healpix-rope branch).
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
