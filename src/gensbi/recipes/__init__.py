@@ -12,6 +12,9 @@ from .joint_pipeline import JointPipeline
 from .unconditional_pipeline import UnconditionalPipeline
 from .flow_pipeline import ConditionalFlowPipeline
 
+# ID-builder strategies
+from .id_strategies import IdStrategy, HealpixRope
+
 
 __all__ = [
     "SimformerFlowPipeline",
@@ -28,6 +31,9 @@ __all__ = [
     "JointPipeline",
     "UnconditionalPipeline",
     "ConditionalFlowPipeline",
+
+    "IdStrategy",
+    "HealpixRope",
 
     "VAE1DPipeline",
     "VAE2DPipeline",
