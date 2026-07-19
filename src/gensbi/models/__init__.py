@@ -24,6 +24,8 @@ from .maf import MAFlowParams, MAFlow
 
 from .tarflow import TarFlowParams, TarFlow
 
+from .healswin import HealSwinEncoder, HealSwinParams
+
 __all__ = [
     "Flux1",
     "Flux1Params",
@@ -38,4 +40,6 @@ __all__ = [
     "MAFlow",
     "TarFlowParams",
     "TarFlow",
+    "HealSwinEncoder",
+    "HealSwinParams",
 ]
