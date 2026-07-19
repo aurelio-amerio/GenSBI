@@ -99,3 +99,54 @@ def test_no_face_seam_discontinuity():
     # HEALPix shape distortion on top; no seam outliers anywhere.
     assert dists.max() / dists.min() < 4.0
     assert 0.5 < dists.mean() < 2.0
+
+
+def test_embednd_consumes_healpix_ids():
+    # 3-axis float ids through the existing EmbedND: correct freqs_cis shape,
+    # all finite. (That scores depend only on the per-axis coordinate
+    # differences is guaranteed by rope()'s construction; no test needed.)
+    from gensbi.models.flux1.layers import EmbedND
+
+    ids, n = init_ids_healpix(2)
+    emb = EmbedND(dim=12, theta=healpix_rope_theta(2), axes_dim=[4, 4, 4])
+    pe = emb(ids)
+    # rope() -> (1, N, d/2, 2, 2) per axis, concat on axis -3, expand_dims(1)
+    assert pe.shape == (1, 1, n, 6, 2, 2)
+    assert bool(jnp.isfinite(pe).all())
+
+
+def test_flux1_forward_with_healpix_rope():
+    from flax import nnx
+
+    from gensbi.models.flux1.model import Flux1, Flux1Params
+    from gensbi.recipes.utils import init_ids_1d
+
+    nside = 2
+    cond_ids, n_cond = init_ids_healpix(nside)  # (1, 48, 3) float32
+    dim_theta = 3
+    params = Flux1Params(
+        in_channels=1,
+        vec_in_dim=None,
+        context_in_dim=8,
+        mlp_ratio=2.0,
+        num_heads=4,
+        depth=1,
+        depth_single_blocks=1,
+        qkv_bias=True,
+        dim_obs=dim_theta,
+        dim_cond=n_cond,
+        axes_dim=[4, 4, 4],  # 3 axes for (x, y, z); sum = per-head dim 12
+        theta=healpix_rope_theta(nside),
+        id_embedding_strategy=("absolute", "rope"),
+        rngs=nnx.Rngs(0),
+        param_dtype=jnp.float32,
+    )
+    model = Flux1(params)
+    batch = 2
+    obs = jnp.zeros((batch, dim_theta, 1))
+    cond = jnp.ones((batch, n_cond, 8))
+    obs_ids, _ = init_ids_1d(dim_theta, 0)
+    t = jnp.array([0.3, 0.7])
+    out = model(t=t, obs=obs, obs_ids=obs_ids, cond=cond, cond_ids=cond_ids)
+    assert out.shape == (batch, dim_theta, 1)
+    assert bool(jnp.isfinite(out).all())
