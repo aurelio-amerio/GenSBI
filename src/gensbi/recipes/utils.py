@@ -53,6 +53,19 @@ def init_ids_1d(dim: int, semantic_id: Union[int, None] = None):
     return jnp.array(ids, dtype=jnp.int32), dim
 
 
+def healpix_rope_theta(nside: int) -> int:
+    """Suggested RoPE ``theta`` for a full-sky HEALPix token grid at ``nside``.
+
+    Follows the project convention ``theta = 10 * token count`` (the same rule
+    :class:`~gensbi.models.flux1.model.Flux1Params` applies by default via
+    ``10 * (dim_obs + dim_cond)``): a full-sky grid has ``12 * nside**2``
+    tokens. Exposed so spherical models can derive theta from the intuitive
+    knob (``nside``, always known after the encoder) instead of setting it by
+    hand.
+    """
+    return 10 * 12 * nside**2
+
+
 def _normalize_patch_size(size):
     """Normalize a patch-size spec into an ``(obs, cond)`` tuple.
 
