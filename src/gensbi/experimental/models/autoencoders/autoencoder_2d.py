@@ -26,14 +26,18 @@ class AttnBlock2D(nnx.Module):
         rngs : nnx.Rngs
             Random number generators for parameter initialization.
         param_dtype : DTypeLike
-            Data type for parameters (default: jnp.bfloat16).
+            Data type for master-weight storage (default: jnp.float32).
+        dtype : DTypeLike
+            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms
+            are a fixed fp32 island regardless of this setting.
     """
 
     def __init__(
         self,
         in_channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
+        dtype: DTypeLike = jnp.bfloat16,
     ) -> None:
         self.in_channels = in_channels
 
@@ -42,6 +46,7 @@ class AttnBlock2D(nnx.Module):
             num_features=in_channels,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
 
@@ -50,6 +55,7 @@ class AttnBlock2D(nnx.Module):
             out_features=in_channels,
             kernel_size=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.k = nnx.Conv(
@@ -57,6 +63,7 @@ class AttnBlock2D(nnx.Module):
             out_features=in_channels,
             kernel_size=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.v = nnx.Conv(
@@ -64,6 +71,7 @@ class AttnBlock2D(nnx.Module):
             out_features=in_channels,
             kernel_size=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.proj_out = nnx.Conv(
@@ -71,6 +79,7 @@ class AttnBlock2D(nnx.Module):
             out_features=in_channels,
             kernel_size=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -133,7 +142,10 @@ class ResnetBlock2D(nnx.Module):
         rngs : nnx.Rngs
             Random number generators for parameter initialization.
         param_dtype : DTypeLike
-            Data type for parameters (default: jnp.bfloat16).
+            Data type for master-weight storage (default: jnp.float32).
+        dtype : DTypeLike
+            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms
+            are a fixed fp32 island regardless of this setting.
     """
 
     def __init__(
@@ -141,7 +153,8 @@ class ResnetBlock2D(nnx.Module):
         in_channels: int,
         out_channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
+        dtype: DTypeLike = jnp.bfloat16,
     ) -> None:
         self.in_channels = in_channels
         self.out_channels = in_channels if out_channels is None else out_channels
@@ -151,6 +164,7 @@ class ResnetBlock2D(nnx.Module):
             num_features=in_channels,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.conv1 = nnx.Conv(
@@ -160,6 +174,7 @@ class ResnetBlock2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.norm2 = nnx.GroupNorm(
@@ -167,6 +182,7 @@ class ResnetBlock2D(nnx.Module):
             num_features=out_channels,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.conv2 = nnx.Conv(
@@ -176,6 +192,7 @@ class ResnetBlock2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         if self.in_channels != self.out_channels:
@@ -186,6 +203,7 @@ class ResnetBlock2D(nnx.Module):
                 strides=(1, 1),
                 padding=(0, 0),
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             )
 
@@ -229,14 +247,18 @@ class Downsample2D(nnx.Module):
         rngs : nnx.Rngs
             Random number generators for parameter initialization.
         param_dtype : DTypeLike
-            Data type for parameters (default: jnp.bfloat16).
+            Data type for master-weight storage (default: jnp.float32).
+        dtype : DTypeLike
+            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms
+            are a fixed fp32 island regardless of this setting.
     """
 
     def __init__(
         self,
         in_channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
+        dtype: DTypeLike = jnp.bfloat16,
     ):
         self.conv = nnx.Conv(
             in_features=in_channels,
@@ -245,6 +267,7 @@ class Downsample2D(nnx.Module):
             strides=(2, 2),
             padding=(0, 0),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -280,14 +303,18 @@ class Upsample2D(nnx.Module):
         rngs : nnx.Rngs
             Random number generators for parameter initialization.
         param_dtype : DTypeLike
-            Data type for parameters (default: jnp.bfloat16).
+            Data type for master-weight storage (default: jnp.float32).
+        dtype : DTypeLike
+            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms
+            are a fixed fp32 island regardless of this setting.
     """
 
     def __init__(
         self,
         in_channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
+        dtype: DTypeLike = jnp.bfloat16,
     ):
         self.conv = nnx.Conv(
             in_features=in_channels,
@@ -296,6 +323,7 @@ class Upsample2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -347,7 +375,10 @@ class Encoder2D(nnx.Module):
         rngs : nnx.Rngs
             Random number generators for parameter initialization.
         param_dtype : DTypeLike
-            Data type for parameters (default: jnp.bfloat16).
+            Data type for master-weight storage (default: jnp.float32).
+        dtype : DTypeLike
+            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms
+            are a fixed fp32 island regardless of this setting.
     """
 
     def __init__(
@@ -359,7 +390,8 @@ class Encoder2D(nnx.Module):
         num_res_blocks: int,
         z_channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
+        dtype: DTypeLike = jnp.bfloat16,
     ) -> None:
         self.ch = ch
         self.num_resolutions = len(ch_mult)
@@ -375,6 +407,7 @@ class Encoder2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -394,6 +427,7 @@ class Encoder2D(nnx.Module):
                         in_channels=block_in,
                         out_channels=block_out,
                         rngs=rngs,
+                        dtype=dtype,
                         param_dtype=param_dtype,
                     )
                 )
@@ -405,6 +439,7 @@ class Encoder2D(nnx.Module):
                 down.Downsample2D = Downsample2D(
                     in_channels=block_in,
                     rngs=rngs,
+                    dtype=dtype,
                     param_dtype=param_dtype,
                 )
                 curr_res = curr_res // 2
@@ -416,17 +451,20 @@ class Encoder2D(nnx.Module):
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.mid.attn_1 = AttnBlock2D(
             in_channels=block_in,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.mid.block_2 = ResnetBlock2D(
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -436,6 +474,7 @@ class Encoder2D(nnx.Module):
             num_features=block_in,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.conv_out = nnx.Conv(
@@ -445,6 +484,7 @@ class Encoder2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -508,7 +548,10 @@ class Decoder2D(nnx.Module):
         rngs : nnx.Rngs
             Random number generators for parameter initialization.
         param_dtype : DTypeLike
-            Data type for parameters (default: jnp.bfloat16).
+            Data type for master-weight storage (default: jnp.float32).
+        dtype : DTypeLike
+            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms
+            are a fixed fp32 island regardless of this setting.
     """
 
     def __init__(
@@ -521,7 +564,8 @@ class Decoder2D(nnx.Module):
         resolution: int,
         z_channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
+        dtype: DTypeLike = jnp.bfloat16,
     ):
         self.ch = ch
         self.num_resolutions = len(ch_mult)
@@ -548,6 +592,7 @@ class Decoder2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -557,17 +602,20 @@ class Decoder2D(nnx.Module):
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.mid.attn_1 = AttnBlock2D(
             in_channels=block_in,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.mid.block_2 = ResnetBlock2D(
             in_channels=block_in,
             out_channels=block_in,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -583,6 +631,7 @@ class Decoder2D(nnx.Module):
                         in_channels=block_in,
                         out_channels=block_out,
                         rngs=rngs,
+                        dtype=dtype,
                         param_dtype=param_dtype,
                     )
                 )
@@ -594,6 +643,7 @@ class Decoder2D(nnx.Module):
                 up.Upsample2D = Upsample2D(
                     in_channels=block_in,
                     rngs=rngs,
+                    dtype=dtype,
                     param_dtype=param_dtype,
                 )
                 curr_res = curr_res * 2
@@ -605,8 +655,12 @@ class Decoder2D(nnx.Module):
             num_features=block_in,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
+        # models-emit-fp32 contract: the final decoder Conv is constructed
+        # with dtype=jnp.float32 (never a post-hoc .astype), regardless of
+        # the compute-dtype knob, so the whole model's output is fp32.
         self.conv_out = nnx.Conv(
             in_features=block_in,
             out_features=out_ch,
@@ -614,6 +668,7 @@ class Decoder2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
 
@@ -670,6 +725,7 @@ class AutoEncoder2D(nnx.Module):
         params: AutoEncoderParams,
     ):
         self.rngs = params.rngs
+        self.dtype = params.dtype
         self.Encoder2D = Encoder2D(
             resolution=params.resolution,
             in_channels=params.in_channels,
@@ -678,6 +734,7 @@ class AutoEncoder2D(nnx.Module):
             num_res_blocks=params.num_res_blocks,
             z_channels=params.z_channels,
             rngs=self.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.Decoder2D = Decoder2D(
@@ -689,12 +746,22 @@ class AutoEncoder2D(nnx.Module):
             num_res_blocks=params.num_res_blocks,
             z_channels=params.z_channels,
             rngs=self.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.reg = DiagonalGaussian()
 
-        self.scale_factor = nnx.Param(jnp.array(params.scale_factor))
-        self.shift_factor = nnx.Param(jnp.array(params.shift_factor))
+        # Master-weight storage stays param_dtype (fp32); cast to compute
+        # dtype at the use site in encode()/decode() below, otherwise these
+        # plain nnx.Params (not a Linear/Conv with promote_dtype) would
+        # silently re-promote the whole latent stream back to fp32 via JAX's
+        # bf16+fp32 promotion rule.
+        self.scale_factor = nnx.Param(
+            jnp.array(params.scale_factor, dtype=params.param_dtype)
+        )
+        self.shift_factor = nnx.Param(
+            jnp.array(params.shift_factor, dtype=params.param_dtype)
+        )
 
         latent_dim = params.resolution // (2 ** (len(params.ch_mult) - 1))
         self.latent_shape = (1, latent_dim, latent_dim, params.z_channels)
@@ -718,7 +785,9 @@ class AutoEncoder2D(nnx.Module):
         if key is None:
             key = self.rngs.encode()
         z = self.reg(self.Encoder2D(x), key)
-        z = self.scale_factor * (z - self.shift_factor)
+        scale = jnp.asarray(self.scale_factor, dtype=self.dtype)
+        shift = jnp.asarray(self.shift_factor, dtype=self.dtype)
+        z = scale * (z - shift)
 
         return z
 
@@ -737,7 +806,9 @@ class AutoEncoder2D(nnx.Module):
                 Reconstructed output.
         """
 
-        z = z / self.scale_factor + self.shift_factor
+        scale = jnp.asarray(self.scale_factor, dtype=self.dtype)
+        shift = jnp.asarray(self.shift_factor, dtype=self.dtype)
+        z = z / scale + shift
         z = self.Decoder2D(z)
 
         return z

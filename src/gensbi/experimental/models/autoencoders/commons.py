@@ -43,7 +43,12 @@ class AutoEncoderParams:
         rngs (nnx.Rngs):
             Random number generators for parameter initialization and stochastic layers.
         param_dtype (DTypeLike):
-            Data type for model parameters (e.g., jnp.float32, jnp.bfloat16).
+            Data type for master-weight storage (parameters). Defaults to jnp.float32.
+        dtype (DTypeLike):
+            Compute dtype used by the encoder/decoder's Conv layers. GroupNorms
+            and the decoder's final output Conv are fp32 islands regardless of
+            this setting (see `Encoder2D`/`Decoder2D`/`DiagonalGaussian`).
+            Defaults to jnp.bfloat16.
     """
 
     resolution: int
@@ -56,7 +61,8 @@ class AutoEncoderParams:
     scale_factor: float
     shift_factor: float
     rngs: nnx.Rngs
-    param_dtype: DTypeLike
+    param_dtype: DTypeLike = jnp.float32
+    dtype: DTypeLike = jnp.bfloat16
 
 
 class Loss(nnx.Variable):
@@ -115,6 +121,14 @@ class DiagonalGaussian(nnx.Module):
             Array
                 Sampled latent or mean, depending on self.sample.
         """
+        # fp32 island: the exp/log math for the variance and the Gaussian
+        # sample are numerically sensitive, so they always run in fp32
+        # regardless of the compute dtype knob. The result is downcast back
+        # to the incoming dtype below so this island self-heals instead of
+        # leaking fp32 into the caller's scale/shift arithmetic, which (unlike
+        # a Linear/Conv's `promote_dtype`) won't downcast on its own.
+        orig_dtype = z.dtype
+        z = jnp.asarray(z, dtype=jnp.float32)
         mean, logvar = jnp.split(z, 2, axis=self.chunk_dim)
         std = jnp.exp(0.5 * logvar)
 
@@ -126,11 +140,13 @@ class DiagonalGaussian(nnx.Module):
             )
 
         if self.sample:
-            return mean + std * jax.random.normal(
-                key=key, shape=mean.shape, dtype=z.dtype
+            out = mean + std * jax.random.normal(
+                key=key, shape=mean.shape, dtype=jnp.float32
             )
         else:
-            return mean
+            out = mean
+
+        return jnp.asarray(out, dtype=orig_dtype)
 
 
 def vae_loss_fn(
@@ -153,6 +169,13 @@ def vae_loss_fn(
     logits = model(x, key)
     losses = nnx.state(model, Loss)
     kl_loss = sum(jax.tree_util.tree_leaves(losses), 0.0)
-    reconstruction_loss = jnp.mean(optax.sigmoid_binary_cross_entropy(logits, x))
+
+    # Loss is always computed in fp32 regardless of the model's compute
+    # dtype (defense-in-depth on top of the models-emit-fp32 contract).
+    logits = jnp.asarray(logits, jnp.float32)
+    target = jnp.asarray(x, jnp.float32)
+    kl_loss = jnp.asarray(kl_loss, jnp.float32)
+
+    reconstruction_loss = jnp.mean(optax.sigmoid_binary_cross_entropy(logits, target))
     loss = reconstruction_loss + kl_weight * kl_loss
     return loss
