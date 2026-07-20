@@ -210,13 +210,20 @@ class GaussianFourierEmbedding(nnx.Module):
         if t.ndim == 1:
             t = jnp.expand_dims(t, axis=1)
 
-        B = jnp.asarray(self.B, dtype=self.dtype)
-        t = jnp.asarray(t, dtype=self.dtype)
+        # Compute the Fourier basis in fp32: B ~ N(0, 1) and t spans the
+        # model's time/noise scale, so 2*pi*t@B.T can reach magnitudes
+        # where bf16's ~7 mantissa bits would introduce large phase
+        # errors into cos/sin. Only the final output is cast to the
+        # requested compute dtype (mirrors the SinusoidalPosEmbed
+        # fp32-island treatment).
+        B = jnp.asarray(self.B, dtype=jnp.float32)
+        t = jnp.asarray(t, dtype=jnp.float32)
 
         arg = 2 * jnp.pi * jnp.dot(t, B.T)
         term1 = jnp.cos(arg)
         term2 = jnp.sin(arg)
         out = jnp.concatenate([term1, term2], axis=-1)
+        out = jnp.asarray(out, dtype=self.dtype)
         return out[..., : self.output_dim]
 
 
