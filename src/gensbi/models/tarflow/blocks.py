@@ -9,6 +9,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 from jax import Array
+from jax.typing import DTypeLike
 
 from gensbi.models.tarflow.pe import apply_rope, get_positions
 from gensbi.normalizing_flows.bijections.base import Mask
@@ -33,21 +34,35 @@ class AttentionBlock(nnx.Module):
         neurons in its hidden layer.
     rngs : nnx.Rngs
         Flax RNG container used to initialize all sub-layers.
+    param_dtype : DTypeLike, optional
+        Dtype for all stored (master) kernel/bias/scale parameters. Default
+        is ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype forwarded to each ``Linear``/``LayerNorm``. Default is
+        ``float32``, matching ``param_dtype``, so with default arguments this
+        is a bit-identical no-op cast.
     """
 
     def __init__(self, channels: int, num_heads: int, expansion: int,
-                 rngs: nnx.Rngs):
+                 rngs: nnx.Rngs, param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32):
         if channels % num_heads != 0:
             raise ValueError(
                 f"channels ({channels}) must be a multiple of num_heads ({num_heads})")
         self.num_heads = num_heads
         self.head_dim = channels // num_heads
-        self.norm1 = nnx.LayerNorm(channels, rngs=rngs)
-        self.qkv = nnx.Linear(channels, 3 * channels, rngs=rngs)
-        self.proj = nnx.Linear(channels, channels, rngs=rngs)
-        self.norm2 = nnx.LayerNorm(channels, rngs=rngs)
-        self.mlp_in = nnx.Linear(channels, channels * expansion, rngs=rngs)
-        self.mlp_out = nnx.Linear(channels * expansion, channels, rngs=rngs)
+        self.norm1 = nnx.LayerNorm(channels, rngs=rngs, param_dtype=param_dtype,
+                                    dtype=dtype)
+        self.qkv = nnx.Linear(channels, 3 * channels, rngs=rngs,
+                              param_dtype=param_dtype, dtype=dtype)
+        self.proj = nnx.Linear(channels, channels, rngs=rngs,
+                               param_dtype=param_dtype, dtype=dtype)
+        self.norm2 = nnx.LayerNorm(channels, rngs=rngs, param_dtype=param_dtype,
+                                    dtype=dtype)
+        self.mlp_in = nnx.Linear(channels, channels * expansion, rngs=rngs,
+                                 param_dtype=param_dtype, dtype=dtype)
+        self.mlp_out = nnx.Linear(channels * expansion, channels, rngs=rngs,
+                                  param_dtype=param_dtype, dtype=dtype)
 
     def _qkv(self, x: Array):
         """Project to unrotated (q, k, v), each of shape ``(B, S, nh, hd)``."""
@@ -195,22 +210,35 @@ class MetaBlock(nnx.Module):
     grid : tuple of int or None, optional
         ``(h, w)`` patch-grid shape used to build rope positions when
         ``rope`` is given; required in that case. Default is ``None``.
+    param_dtype : DTypeLike, optional
+        Dtype for all stored (master) kernel/bias/embedding parameters.
+        Default is ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype forwarded to ``proj_in``/``proj_out``/``AttentionBlock``
+        layers. Default is ``float32``, matching ``param_dtype``, so with
+        default arguments this is a bit-identical no-op cast. The
+        softplus/soft_clip affine-scale computation in :meth:`_affine` stays
+        unconditionally fp32 regardless of this knob.
     """
 
     def __init__(self, F, channels, T, perm, conditioner,
                  num_layers, num_heads, expansion, rngs, zero_init=True,
-                 use_softplus=True, soft_clip=4.0, rope=None, grid=None):
+                 use_softplus=True, soft_clip=4.0, rope=None, grid=None,
+                 param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32):
         self.F = F
         self.use_softplus = use_softplus
         self.soft_clip = soft_clip
         self.T = T
+        self.dtype = dtype
         perm = jnp.asarray(perm, dtype=jnp.int32)
         self.perm = Mask(perm)
         self.inv_perm = Mask(jnp.argsort(perm))
         self.conditioner = conditioner
-        self.proj_in = nnx.Linear(F, channels, rngs=rngs)
+        self.proj_in = nnx.Linear(F, channels, rngs=rngs,
+                                  param_dtype=param_dtype, dtype=dtype)
         self.sos_embed = nnx.Param(
-            jax.random.normal(rngs.params(), (1, 1, F)) * 1e-2)
+            (jax.random.normal(rngs.params(), (1, 1, F)) * 1e-2).astype(param_dtype))
         if rope is not None:
             if grid is None:
                 raise ValueError("rope requires grid=(h, w)")
@@ -230,11 +258,13 @@ class MetaBlock(nnx.Module):
         else:
             self.freqs_cis = None
             self.pos_embed = nnx.Param(
-                jax.random.normal(rngs.params(), (T, channels)) * 1e-2)
+                (jax.random.normal(rngs.params(), (T, channels)) * 1e-2).astype(param_dtype))
         self.attn_blocks = nnx.List(
-            [AttentionBlock(channels, num_heads, expansion, rngs)
+            [AttentionBlock(channels, num_heads, expansion, rngs,
+                            param_dtype=param_dtype, dtype=dtype)
              for _ in range(num_layers)])
-        self.proj_out = nnx.Linear(channels, 2 * F, rngs=rngs)
+        self.proj_out = nnx.Linear(channels, 2 * F, rngs=rngs,
+                                   param_dtype=param_dtype, dtype=dtype)
         if zero_init:
             self.proj_out.kernel[...] = jnp.zeros_like(self.proj_out.kernel[...])
             self.proj_out.bias[...] = jnp.zeros_like(self.proj_out.bias[...])
@@ -283,11 +313,12 @@ class MetaBlock(nnx.Module):
         condition). ``bias``/``prefix``/``mask`` come from :meth:`_embed_cond`.
         """
         B = x_perm.shape[0]
-        sos = jnp.broadcast_to(self.sos_embed[...], (B, 1, self.F))
+        sos = jnp.broadcast_to(
+            self.sos_embed[...].astype(x_perm.dtype), (B, 1, self.F))
         x_in = jnp.concatenate([sos, x_perm[:, :-1]], axis=1)   # (B, T, F)
         h = self.proj_in(x_in)                                  # (B, T, C)
         if self.pos_embed is not None:
-            h = h + self.pos_embed[...][None]
+            h = h + self.pos_embed[...].astype(h.dtype)[None]
         freqs = self.freqs_cis[...] if self.freqs_cis is not None else None
         if bias is not None:
             h = h + bias[:, None, :]
@@ -449,7 +480,7 @@ class MetaBlock(nnx.Module):
                 k_caches = k_caches.at[layer, :, :M].set(k)
                 v_caches = v_caches.at[layer, :, :M].set(v)
 
-        sos = jnp.broadcast_to(self.sos_embed[...], (B, 1, self.F))
+        sos = jnp.broadcast_to(self.sos_embed[...].astype(zp.dtype), (B, 1, self.F))
 
         def body(carry, t):
             x, k_caches, v_caches = carry
@@ -460,7 +491,7 @@ class MetaBlock(nnx.Module):
             if self.pos_embed is not None:
                 pe = jax.lax.dynamic_slice_in_dim(self.pos_embed[...], t, 1,
                                                   axis=0)
-                h = h + pe[None]
+                h = h + pe.astype(h.dtype)[None]
             if bias is not None:
                 h = h + bias[:, None, :]
             slot = M + t

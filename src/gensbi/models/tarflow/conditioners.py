@@ -15,6 +15,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 from jax import Array
+from jax.typing import DTypeLike
 
 from gensbi.models.core.patching import patchify_2d
 
@@ -40,15 +41,25 @@ class AdditiveBiasConditioner(nnx.Module):
         Default is ``1``.  The input linear layer is widened to accept
         ``cond_dim * cond_channels`` features, folding the channel axis before
         the MLP (same flattening performed in :meth:`embed`).
+    param_dtype : DTypeLike, optional
+        Dtype for the stored (master) kernel/bias parameters. Default is
+        ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype forwarded to the MLP layers. Default is ``float32``,
+        matching ``param_dtype``, so with default arguments this is a
+        bit-identical no-op cast.
     """
 
     def __init__(self, cond_dim: int, channels: int, rngs: nnx.Rngs,
-                 cond_channels: int = 1):
+                 cond_channels: int = 1, param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32):
         self.cond_dim = cond_dim
         self.cond_channels = cond_channels
         if cond_dim > 0:
-            self.l1 = nnx.Linear(cond_dim * cond_channels, channels, rngs=rngs)
-            self.l2 = nnx.Linear(channels, channels, rngs=rngs)
+            self.l1 = nnx.Linear(cond_dim * cond_channels, channels, rngs=rngs,
+                                 param_dtype=param_dtype, dtype=dtype)
+            self.l2 = nnx.Linear(channels, channels, rngs=rngs,
+                                 param_dtype=param_dtype, dtype=dtype)
 
     def embed(self, cond: Array | None):
         """Embed the condition into a per-token additive bias.
@@ -103,17 +114,27 @@ class VectorConditioner(nnx.Module):
     rngs : nnx.Rngs
         Flax RNG container for linear layer and positional embedding
         initialization.
+    param_dtype : DTypeLike, optional
+        Dtype for the stored (master) kernel/bias/positional parameters.
+        Default is ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype forwarded to ``proj``. Default is ``float32``,
+        matching ``param_dtype``, so with default arguments this is a
+        bit-identical no-op cast.
     """
 
     def __init__(self, cond_dim: int, cond_channels: int, channels: int,
-                 rngs: nnx.Rngs):
+                 rngs: nnx.Rngs, param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32):
         self.cond_dim = cond_dim
         self.cond_channels = cond_channels
         self.channels = channels
         self.M = cond_dim
-        self.proj = nnx.Linear(cond_channels, channels, rngs=rngs)
+        self.proj = nnx.Linear(cond_channels, channels, rngs=rngs,
+                               param_dtype=param_dtype, dtype=dtype)
         self.pos = nnx.Param(
-            jax.random.normal(rngs.params(), (cond_dim, channels)) * 1e-2)
+            (jax.random.normal(rngs.params(), (cond_dim, channels)) * 1e-2
+             ).astype(param_dtype))
 
     def embed(self, cond: Array | None):
         """Embed the condition into per-coordinate prefix tokens.
@@ -140,7 +161,8 @@ class VectorConditioner(nnx.Module):
         if cond is None:
             raise ValueError("cond is required for VectorConditioner")
         cond = jnp.asarray(cond)                       # (B, cond_dim, C_cond)
-        return (None, self.proj(cond) + self.pos[...][None])
+        proj = self.proj(cond)
+        return (None, proj + self.pos[...].astype(proj.dtype)[None])
 
 
 class ImageConditioner(nnx.Module):
@@ -165,17 +187,28 @@ class ImageConditioner(nnx.Module):
     rngs : nnx.Rngs
         Flax RNG container for projection layer and positional embedding
         initialization.
+    param_dtype : DTypeLike, optional
+        Dtype for the stored (master) kernel/bias/positional parameters.
+        Default is ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype forwarded to ``proj``. Default is ``float32``,
+        matching ``param_dtype``, so with default arguments this is a
+        bit-identical no-op cast.
     """
 
     def __init__(self, cond_channels: int, patch_size: int, channels: int,
-                 num_tokens: int, rngs: nnx.Rngs):
+                 num_tokens: int, rngs: nnx.Rngs,
+                 param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32):
         self.patch_size = patch_size
         self.channels = channels
         self.M = num_tokens
         in_f = cond_channels * patch_size * patch_size
-        self.proj = nnx.Linear(in_f, channels, rngs=rngs)
+        self.proj = nnx.Linear(in_f, channels, rngs=rngs,
+                               param_dtype=param_dtype, dtype=dtype)
         self.pos = nnx.Param(
-            jax.random.normal(rngs.params(), (num_tokens, channels)) * 1e-2)
+            (jax.random.normal(rngs.params(), (num_tokens, channels)) * 1e-2
+             ).astype(param_dtype))
 
     def embed(self, cond: Array | None):
         """Patchify an image condition and embed it as prefix tokens.
@@ -202,4 +235,5 @@ class ImageConditioner(nnx.Module):
         if cond is None:
             raise ValueError("cond is required for ImageConditioner")
         patches = patchify_2d(cond, size=self.patch_size)      # (B, M, in_f)
-        return (None, self.proj(patches) + self.pos[...][None])
+        proj = self.proj(patches)
+        return (None, proj + self.pos[...].astype(proj.dtype)[None])

@@ -15,6 +15,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 from jax import Array
+from jax.typing import DTypeLike
 
 from gensbi.models.core.stats import fit_stat
 from gensbi.models.core.tokenizers import VectorTokenizer, ImageTokenizer
@@ -117,6 +118,20 @@ class TarFlowParams:
     rope_theta : int, optional
         Frequency base for the rotary embedding. Only used when
         ``use_rope=True``. Default is ``10000``.
+    param_dtype : DTypeLike, optional
+        Dtype for all stored (master) kernel/bias/embedding parameters
+        across the tokenizer, conditioner, and transformer blocks. Default
+        is ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype knob threaded through the conditioners and
+        :class:`~gensbi.models.tarflow.blocks.MetaBlock`/
+        :class:`~gensbi.models.tarflow.blocks.AttentionBlock` layers.
+        Default is ``float32``, matching ``param_dtype``, so with default
+        arguments this is a bit-identical no-op cast. Hard-fp32 regardless
+        of this knob: the softplus/soft_clip affine-scale path in
+        ``MetaBlock._affine``, log-det accumulation, the ``mean``/``std``
+        standardization buffers, and the KV-cache buffers used during
+        sampling.
     """
 
     rngs: nnx.Rngs
@@ -143,6 +158,8 @@ class TarFlowParams:
     soft_clip: float = 4.0
     use_rope: bool = False
     rope_theta: int = 10000
+    param_dtype: DTypeLike = jnp.float32
+    dtype: DTypeLike = jnp.float32
 
     def __post_init__(self):
         if self.modeled not in ("vector", "image"):
@@ -206,14 +223,19 @@ class TarFlow(nnx.Module):
         def make_cond():
             if params.cond == "bias":
                 return AdditiveBiasConditioner(params.cond_dim, channels, rngs=rngs,
-                                               cond_channels=params.cond_channels)
+                                               cond_channels=params.cond_channels,
+                                               param_dtype=params.param_dtype,
+                                               dtype=params.dtype)
             if params.cond == "vector":
                 return VectorConditioner(params.cond_dim, params.cond_channels,
-                                         channels, rngs=rngs)
+                                         channels, rngs=rngs,
+                                         param_dtype=params.param_dtype,
+                                         dtype=params.dtype)
             m = (params.cond_img_size // params.cond_patch_size) ** 2
             return ImageConditioner(params.cond_channels,
                                     params.cond_patch_size, channels, m,
-                                    rngs=rngs)
+                                    rngs=rngs, param_dtype=params.param_dtype,
+                                    dtype=params.dtype)
 
         blocks = []
         for i in range(params.num_blocks):
@@ -226,7 +248,8 @@ class TarFlow(nnx.Module):
                 conditioner=make_cond(), num_layers=params.layers_per_block,
                 num_heads=params.num_heads, expansion=4, rngs=rngs,
                 zero_init=params.zero_init, use_softplus=params.use_softplus,
-                soft_clip=params.soft_clip, rope=rope, grid=grid))
+                soft_clip=params.soft_clip, rope=rope, grid=grid,
+                param_dtype=params.param_dtype, dtype=params.dtype))
 
         self.blocks = nnx.List(blocks)
         self.tokenizer = tokenizer
