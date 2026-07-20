@@ -254,7 +254,15 @@ class Flux1Joint(nnx.Module):
         if node_ids.shape[0] == 1:
             node_ids = jnp.repeat(node_ids, repeats=batch_size, axis=0)
 
-        condition_embedding = self.condition_embedding * condition_mask
+        # cast the fp32-stored master weight to the compute dtype before mixing it
+        # into the (already compute-dtype) obs/ids_embedding streams, mirroring the
+        # p_skip pattern in embedding.py's MLPEmbedder. Without this, JAX's bf16+fp32
+        # promotion silently upgrades the merged stream (and every downstream
+        # SingleStreamBlock residual) back to fp32, defeating the compute dtype knob.
+        condition_embedding = (
+            jnp.asarray(self.condition_embedding, dtype=self.params.dtype)
+            * condition_mask
+        )
         ids_embedding = self.ids_embedder(node_ids)
 
         if self.params.id_merge_mode == "sum":
