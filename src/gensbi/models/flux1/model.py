@@ -110,7 +110,9 @@ class Flux1Params:
         guidance_embed : bool
             Whether to use guidance embedding.
         param_dtype : DTypeLike
-            Data type for model parameters.
+            Data type for master-weight storage (parameters). Defaults to jnp.float32.
+        dtype : DTypeLike
+            Compute/matmul dtype used by the compute layers. Defaults to jnp.bfloat16.
 
     """
 
@@ -135,7 +137,8 @@ class Flux1Params:
         "absolute",
     )  # "absolute", "pos1d", "pos2d" or "rope" - for obs and cond respectively
     guidance_embed: bool = False
-    param_dtype: DTypeLike = jnp.bfloat16
+    param_dtype: DTypeLike = jnp.float32
+    dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
         available_embeddings = [
@@ -240,6 +243,7 @@ class Flux1(nnx.Module):
                     else params.id_token_dim
                 ),
                 kind=params.id_embedding_strategy[0],
+                dtype=params.dtype,
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
@@ -257,6 +261,7 @@ class Flux1(nnx.Module):
                     else params.id_token_dim
                 ),
                 kind=params.id_embedding_strategy[1],
+                dtype=params.dtype,
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
@@ -270,12 +275,14 @@ class Flux1(nnx.Module):
             ),
             use_bias=True,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.time_in = MLPEmbedder(
             in_dim=256,
             hidden_dim=self.hidden_size,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.vector_in = (
@@ -283,6 +290,7 @@ class Flux1(nnx.Module):
                 params.vec_in_dim,
                 self.hidden_size,
                 rngs=params.rngs,
+                dtype=params.dtype,
                 param_dtype=params.param_dtype,
             )
             if params.guidance_embed
@@ -298,6 +306,7 @@ class Flux1(nnx.Module):
             ),
             use_bias=True,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
 
@@ -321,6 +330,7 @@ class Flux1(nnx.Module):
                     qkv_features=self.qkv_features,
                     qkv_bias=params.qkv_bias,
                     rngs=params.rngs,
+                    dtype=params.dtype,
                     param_dtype=params.param_dtype,
                 )
                 for _ in range(params.depth)
@@ -335,6 +345,7 @@ class Flux1(nnx.Module):
                     mlp_ratio=params.mlp_ratio,
                     qkv_features=self.qkv_features,
                     rngs=params.rngs,
+                    dtype=params.dtype,
                     param_dtype=params.param_dtype,
                 )
                 for _ in range(params.depth_single_blocks)
@@ -346,6 +357,7 @@ class Flux1(nnx.Module):
             1,
             self.out_channels,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
 
@@ -363,9 +375,9 @@ class Flux1(nnx.Module):
         # assumes obs, cond, obs_ids, cond_ids have shape (B, F, C)
         # assumes t has shape (B,) or (B, 1)
 
-        obs = jnp.asarray(obs, dtype=self.params.param_dtype)
-        cond = jnp.asarray(cond, dtype=self.params.param_dtype)
-        t = jnp.asarray(t, dtype=self.params.param_dtype)
+        obs = jnp.asarray(obs, dtype=jnp.float32)
+        cond = jnp.asarray(cond, dtype=jnp.float32)
+        t = jnp.asarray(t, dtype=jnp.float32)
 
         # obs = _expand_dims(obs)
         # cond = _expand_dims(cond)

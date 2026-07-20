@@ -81,13 +81,15 @@ class MLPEmbedder(nnx.Module):
         in_dim: int,
         hidden_dim: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.in_layer = nnx.Linear(
             in_features=in_dim,
             out_features=hidden_dim,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.silu = nnx.silu
@@ -96,6 +98,7 @@ class MLPEmbedder(nnx.Module):
             out_features=hidden_dim,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -108,14 +111,21 @@ class QKNorm(nnx.Module):
         self,
         dim: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
-        self.query_norm = nnx.RMSNorm(dim, rngs=rngs, param_dtype=param_dtype)
-        self.key_norm = nnx.RMSNorm(dim, rngs=rngs, param_dtype=param_dtype)
+        # fp32 island: normalization stats are always computed/stored in fp32,
+        # regardless of the model's compute dtype knob.
+        self.query_norm = nnx.RMSNorm(
+            dim, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+        )
+        self.key_norm = nnx.RMSNorm(
+            dim, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+        )
 
     def __call__(self, q: Array, k: Array, v: Array) -> tuple[Array, Array]:
-        q = self.query_norm(q)
-        k = self.key_norm(k)
+        q = self.query_norm(q).astype(v.dtype)
+        k = self.key_norm(k).astype(v.dtype)
         return q, k
 
 
@@ -125,7 +135,8 @@ class SelfAttention(nnx.Module):
         dim: int,
         rngs: nnx.Rngs,
         qkv_features: int | None = None,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
         num_heads: int = 8,
         qkv_bias: bool = False,
     ):
@@ -140,14 +151,16 @@ class SelfAttention(nnx.Module):
             out_features=qkv_features * 3,
             use_bias=qkv_bias,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
-        self.norm = QKNorm(dim=head_dim, rngs=rngs, param_dtype=param_dtype)
+        self.norm = QKNorm(dim=head_dim, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
         self.proj = nnx.Linear(
             in_features=qkv_features,
             out_features=dim,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -174,7 +187,8 @@ class Modulation(nnx.Module):
         dim: int,
         double: bool,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.is_double = double
         self.multiplier = 6 if double else 3
@@ -183,6 +197,7 @@ class Modulation(nnx.Module):
             out_features=self.multiplier * dim,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
             kernel_init=jax.nn.initializers.zeros,  # this ensures that the initial modulation is neutral
             bias_init=jax.nn.initializers.zeros,  # this ensures that the initial modulation is neutral
@@ -205,7 +220,8 @@ class DoubleStreamBlock(nnx.Module):
         mlp_ratio: float,
         rngs: nnx.Rngs,
         qkv_features: int | None = None,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
         qkv_bias: bool = False,
     ):
         mlp_hidden_dim = int(hidden_size * mlp_ratio)
@@ -213,7 +229,7 @@ class DoubleStreamBlock(nnx.Module):
         self.hidden_size = hidden_size
         self.qkv_features = qkv_features if qkv_features is not None else hidden_size
         self.obs_mod = Modulation(
-            dim=hidden_size, double=True, rngs=rngs, param_dtype=param_dtype
+            dim=hidden_size, double=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype
         )
         self.obs_norm1 = nnx.LayerNorm(
             num_features=hidden_size,
@@ -221,6 +237,7 @@ class DoubleStreamBlock(nnx.Module):
             use_bias=False,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.obs_attn = SelfAttention(
@@ -229,6 +246,7 @@ class DoubleStreamBlock(nnx.Module):
             qkv_features=self.qkv_features,
             qkv_bias=qkv_bias,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -238,6 +256,7 @@ class DoubleStreamBlock(nnx.Module):
             use_bias=False,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.obs_mlp = nnx.Sequential(
@@ -246,6 +265,7 @@ class DoubleStreamBlock(nnx.Module):
                 out_features=mlp_hidden_dim,
                 use_bias=True,
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             ),
             nnx.gelu,
@@ -254,12 +274,13 @@ class DoubleStreamBlock(nnx.Module):
                 out_features=hidden_size,
                 use_bias=True,
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             ),
         )
 
         self.cond_mod = Modulation(
-            dim=hidden_size, double=True, rngs=rngs, param_dtype=param_dtype
+            dim=hidden_size, double=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype
         )
         self.cond_norm1 = nnx.LayerNorm(
             num_features=hidden_size,
@@ -267,6 +288,7 @@ class DoubleStreamBlock(nnx.Module):
             use_bias=False,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.cond_attn = SelfAttention(
@@ -275,6 +297,7 @@ class DoubleStreamBlock(nnx.Module):
             qkv_features=self.qkv_features,
             qkv_bias=qkv_bias,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -284,6 +307,7 @@ class DoubleStreamBlock(nnx.Module):
             use_bias=False,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.cond_mlp = nnx.Sequential(
@@ -292,6 +316,7 @@ class DoubleStreamBlock(nnx.Module):
                 out_features=mlp_hidden_dim,
                 use_bias=True,
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             ),
             nnx.gelu,
@@ -300,6 +325,7 @@ class DoubleStreamBlock(nnx.Module):
                 out_features=hidden_size,
                 use_bias=True,
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             ),
         )
@@ -367,7 +393,8 @@ class SingleStreamBlock(nnx.Module):
         num_heads: int,
         rngs: nnx.Rngs,
         qkv_features: int | None = None,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
         mlp_ratio: float = 4.0,
         qk_scale: float | None = None,
     ):
@@ -386,6 +413,7 @@ class SingleStreamBlock(nnx.Module):
             in_features=hidden_size,
             out_features=self.qkv_features * 3 + self.mlp_hidden_dim,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         # proj and mlp_out
@@ -393,10 +421,11 @@ class SingleStreamBlock(nnx.Module):
             in_features=self.qkv_features + self.mlp_hidden_dim,
             out_features=hidden_size,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
-        self.norm = QKNorm(dim=head_dim, rngs=rngs, param_dtype=param_dtype)
+        self.norm = QKNorm(dim=head_dim, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
         self.hidden_size = hidden_size
         self.pre_norm = nnx.LayerNorm(
@@ -405,12 +434,13 @@ class SingleStreamBlock(nnx.Module):
             use_bias=False,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
 
         self.mlp_act = nnx.gelu
         self.modulation = Modulation(
-            hidden_size, double=False, rngs=rngs, param_dtype=param_dtype
+            hidden_size, double=False, rngs=rngs, dtype=dtype, param_dtype=param_dtype
         )
 
     def __call__(
@@ -437,7 +467,8 @@ class LastLayer(nnx.Module):
         patch_size: int,
         out_channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.norm_final = nnx.LayerNorm(
             num_features=hidden_size,
@@ -445,13 +476,18 @@ class LastLayer(nnx.Module):
             use_bias=False,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
+        # models-emit-fp32 contract: the final projection is constructed with
+        # dtype=jnp.float32 (never a post-hoc .astype), regardless of the
+        # compute-dtype knob.
         self.linear = nnx.Linear(
             in_features=hidden_size,
             out_features=patch_size * patch_size * out_channels,
             use_bias=True,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.adaLN_modulation = nnx.Sequential(
@@ -461,6 +497,7 @@ class LastLayer(nnx.Module):
                 out_features=2 * hidden_size,
                 use_bias=True,
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             ),
         )
