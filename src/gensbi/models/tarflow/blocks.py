@@ -38,9 +38,12 @@ class AttentionBlock(nnx.Module):
         Dtype for all stored (master) kernel/bias/scale parameters. Default
         is ``float32``.
     dtype : DTypeLike, optional
-        Compute dtype forwarded to each ``Linear``/``LayerNorm``. Default is
-        ``float32``, matching ``param_dtype``, so with default arguments this
-        is a bit-identical no-op cast.
+        Compute dtype forwarded to each ``Linear``. Default is ``float32``,
+        matching ``param_dtype``, so with default arguments this is a
+        bit-identical no-op cast. ``norm1``/``norm2`` are fp32 islands and
+        always run at ``float32`` regardless of this knob; their output
+        self-heals when it feeds the following compute-dtype ``Linear``
+        (``promote_dtype`` downcasts it there).
     """
 
     def __init__(self, channels: int, num_heads: int, expansion: int,
@@ -51,14 +54,16 @@ class AttentionBlock(nnx.Module):
                 f"channels ({channels}) must be a multiple of num_heads ({num_heads})")
         self.num_heads = num_heads
         self.head_dim = channels // num_heads
+        # fp32 islands: norms stay at float32 regardless of the dtype knob;
+        # their output self-heals via promote_dtype when feeding qkv/mlp_in.
         self.norm1 = nnx.LayerNorm(channels, rngs=rngs, param_dtype=param_dtype,
-                                    dtype=dtype)
+                                    dtype=jnp.float32)
         self.qkv = nnx.Linear(channels, 3 * channels, rngs=rngs,
                               param_dtype=param_dtype, dtype=dtype)
         self.proj = nnx.Linear(channels, channels, rngs=rngs,
                                param_dtype=param_dtype, dtype=dtype)
         self.norm2 = nnx.LayerNorm(channels, rngs=rngs, param_dtype=param_dtype,
-                                    dtype=dtype)
+                                    dtype=jnp.float32)
         self.mlp_in = nnx.Linear(channels, channels * expansion, rngs=rngs,
                                  param_dtype=param_dtype, dtype=dtype)
         self.mlp_out = nnx.Linear(channels * expansion, channels, rngs=rngs,

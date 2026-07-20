@@ -176,8 +176,10 @@ class GaussianFourierEmbedding(nnx.Module):
         rngs : nnx.Rngs
             Random number generators for initialization.
         dtype : DTypeLike, optional
-            Compute dtype used when applying the (fp32-stored) Fourier
-            basis. Defaults to jnp.float32.
+            Output cast dtype only. The Fourier basis/trig (``t @ B.T``,
+            ``cos``/``sin``) always runs in fp32 as an accuracy island
+            regardless of this knob; only the final concatenated output is
+            cast to ``dtype``. Defaults to jnp.float32.
         param_dtype : DTypeLike, optional
             Data type for parameters. Defaults to jnp.float32.
         """

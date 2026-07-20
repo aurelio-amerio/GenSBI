@@ -414,22 +414,28 @@ class Flux1(nnx.Module):
             vec = vec + self.vector_in(guidance)
 
         # if not using rope for a dimension, perform id embedding and add it to the input
+        # NOTE: the id embedders may be fp32 islands (pos1d/pos2d precomputed
+        # sinusoidal tables ignore the dtype knob, see FeatureEmbedder), so their
+        # output is explicitly cast to the stream's dtype at the merge point to
+        # avoid silently promoting the whole token stream (and every downstream
+        # block residual) back to fp32.
         if self.obs_ids_embedder is not None:
             if self.id_merge_mode == "sum":
-                obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(obs_ids)
+                obs = obs * jnp.sqrt(self.hidden_size) + self.obs_ids_embedder(
+                    obs_ids
+                ).astype(obs.dtype)
             else:
-                obs_ids_embed = self.obs_ids_embedder(obs_ids)
+                obs_ids_embed = self.obs_ids_embedder(obs_ids).astype(obs.dtype)
                 obs = jnp.concatenate((obs, obs_ids_embed), axis=-1)
 
         if self.cond_ids_embedder is not None:
             if self.id_merge_mode == "sum":
                 cond = cond * jnp.sqrt(self.hidden_size) + self.cond_ids_embedder(
                     cond_ids
-                )
+                ).astype(cond.dtype)
             else:
-                cond = jnp.concatenate(
-                    (cond, self.cond_ids_embedder(cond_ids)), axis=-1
-                )
+                cond_ids_embed = self.cond_ids_embedder(cond_ids).astype(cond.dtype)
+                cond = jnp.concatenate((cond, cond_ids_embed), axis=-1)
 
         # Prepare rope embeddings if needed
         pe = None

@@ -56,6 +56,7 @@ def parse_flux1joint_params(config_path: str):
         ),
         guidance_embed=model_params.get("guidance_embed", False),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
+        dtype=getattr(jnp, model_params.get("dtype", "bfloat16")),
     )
 
     return params_dict

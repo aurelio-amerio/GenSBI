@@ -155,6 +155,7 @@ def parse_autoencoder_params(config_path: str):
         scale_factor=model_params.get("scale_factor", 1.0),
         shift_factor=model_params.get("shift_factor", 0.0),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
+        dtype=getattr(jnp, model_params.get("dtype", "bfloat16")),
     )
 
     return params_dict

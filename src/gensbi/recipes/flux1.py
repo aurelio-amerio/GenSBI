@@ -56,6 +56,7 @@ def parse_flux1_params(config_path: str):
             model_params.get("id_embedding_strategy", ("absolute", "absolute"))
         ),
         param_dtype=getattr(jnp, model_params.get("param_dtype", "float32")),
+        dtype=getattr(jnp, model_params.get("dtype", "bfloat16")),
     )
 
     return params_dict
