@@ -21,7 +21,10 @@ from gensbi.experimental.models.fielddit.blocks import (
 class Downsample2D(nnx.Module):
     """Stride-2 conv that also changes channel count (asymmetric pad, AE-style)."""
 
-    def __init__(self, in_channels: int, out_channels: int, rngs: nnx.Rngs, param_dtype: DTypeLike = jnp.bfloat16):
+    def __init__(
+        self, in_channels: int, out_channels: int, rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.bfloat16, param_dtype: DTypeLike = jnp.float32,
+    ):
         self.conv = nnx.Conv(
             in_features=in_channels,
             out_features=out_channels,
@@ -29,6 +32,7 @@ class Downsample2D(nnx.Module):
             strides=(2, 2),
             padding=(0, 0),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -40,7 +44,10 @@ class Downsample2D(nnx.Module):
 class Upsample2D(nnx.Module):
     """Nearest-neighbour 2x upsample + conv that also changes channel count."""
 
-    def __init__(self, in_channels: int, out_channels: int, rngs: nnx.Rngs, param_dtype: DTypeLike = jnp.bfloat16):
+    def __init__(
+        self, in_channels: int, out_channels: int, rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.bfloat16, param_dtype: DTypeLike = jnp.float32,
+    ):
         self.conv = nnx.Conv(
             in_features=in_channels,
             out_features=out_channels,
@@ -48,6 +55,7 @@ class Upsample2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -75,7 +83,8 @@ class ObsEncoder(nnx.Module):
         vec_dim: int,
         norm_groups: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.widths = tuple(widths)
         self.depth = len(self.widths) - 1
@@ -86,6 +95,7 @@ class ObsEncoder(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.down = nnx.Sequential()
@@ -95,13 +105,14 @@ class ObsEncoder(nnx.Module):
                 *[
                     ModulatedResBlock2D(
                         self.widths[j], self.widths[j], vec_dim, norm_groups,
-                        rngs=rngs, param_dtype=param_dtype,
+                        rngs=rngs, dtype=dtype, param_dtype=param_dtype,
                     )
                     for _ in range(res_blocks)
                 ]
             )
             stage.downsample = Downsample2D(
-                self.widths[j], self.widths[j + 1], rngs=rngs, param_dtype=param_dtype
+                self.widths[j], self.widths[j + 1], rngs=rngs,
+                dtype=dtype, param_dtype=param_dtype,
             )
             self.down.layers.append(stage)
 
@@ -139,7 +150,8 @@ class ObsDecoder(nnx.Module):
         vec_dim: int,
         norm_groups: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.widths = tuple(widths)
         self.depth = len(self.widths) - 1
@@ -147,26 +159,34 @@ class ObsDecoder(nnx.Module):
         for j in reversed(range(self.depth)):
             stage = nnx.Module()
             stage.upsample = Upsample2D(
-                self.widths[j + 1], self.widths[j], rngs=rngs, param_dtype=param_dtype
+                self.widths[j + 1], self.widths[j], rngs=rngs,
+                dtype=dtype, param_dtype=param_dtype,
             )
             stage.block = nnx.Sequential(
                 *[
                     ModulatedResBlock2D(
                         self.widths[j], self.widths[j], vec_dim, norm_groups,
-                        rngs=rngs, param_dtype=param_dtype,
+                        rngs=rngs, dtype=dtype, param_dtype=param_dtype,
                     )
                     for _ in range(res_blocks)
                 ]
             )
             self.up.layers.append(stage)
 
+        # fp32 island: feeds directly into conv_out below (also fp32), so no
+        # explicit downcast is needed -- there is no further compute-dtype
+        # step between norm_out and the final output.
         self.norm_out = nnx.GroupNorm(
             num_groups=_safe_groups(self.widths[0], norm_groups),
             num_features=self.widths[0],
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
+        # models-emit-fp32 contract: the final zero-init projection is
+        # constructed with dtype=jnp.float32 (never a post-hoc .astype),
+        # regardless of the compute-dtype knob -- mirrors flux1's LastLayer.
         self.conv_out = nnx.Conv(
             in_features=self.widths[0],
             out_features=out_channels,
@@ -174,6 +194,7 @@ class ObsDecoder(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
             kernel_init=jax.nn.initializers.zeros,
             bias_init=jax.nn.initializers.zeros,
@@ -196,13 +217,17 @@ class ObsDecoder(nnx.Module):
 class Tokenizer(nnx.Module):
     """Patchify a conv feature map and project to ``hidden_size`` tokens."""
 
-    def __init__(self, in_channels: int, patch_size: int, hidden_size: int, rngs: nnx.Rngs, param_dtype: DTypeLike = jnp.bfloat16):
+    def __init__(
+        self, in_channels: int, patch_size: int, hidden_size: int, rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.bfloat16, param_dtype: DTypeLike = jnp.float32,
+    ):
         self.patch_size = patch_size
         self.proj = nnx.Linear(
             in_features=in_channels * patch_size * patch_size,
             out_features=hidden_size,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -218,15 +243,22 @@ class Untokenizer(nnx.Module):
     passed to the (now grid-aware) ``depatchify_2d``.
     """
 
-    def __init__(self, out_channels: int, patch_size: int, hidden_size: int, rngs: nnx.Rngs, param_dtype: DTypeLike = jnp.bfloat16):
+    def __init__(
+        self, out_channels: int, patch_size: int, hidden_size: int, rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.bfloat16, param_dtype: DTypeLike = jnp.float32,
+    ):
         self.patch_size = patch_size
         self.out_channels = out_channels
         # bound the transformer residual stream before re-entering conv space
-        # (Flux1 exits through LastLayer's norm for the same reason)
+        # (Flux1 exits through LastLayer's norm for the same reason). fp32
+        # island: its raw output feeds directly into ``self.proj`` (a
+        # compute-dtype Linear) below, which self-heals the downcast via its
+        # own promote_dtype -- no explicit ``.astype`` needed here.
         self.norm = nnx.LayerNorm(
             num_features=hidden_size,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.proj = nnx.Linear(
@@ -234,6 +266,7 @@ class Untokenizer(nnx.Module):
             out_features=out_channels * patch_size * patch_size,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 

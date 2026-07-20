@@ -19,15 +19,18 @@ class ScalarCondEmbedder(nnx.Module):
     summary is a projection of the mean-pooled tokens.
     """
 
-    def __init__(self, in_channels: int, hidden_size: int, rngs: nnx.Rngs, param_dtype: DTypeLike = jnp.bfloat16):
+    def __init__(
+        self, in_channels: int, hidden_size: int, rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.bfloat16, param_dtype: DTypeLike = jnp.float32,
+    ):
         self.in_channels = in_channels
         self.token_proj = nnx.Linear(
             in_features=in_channels, out_features=hidden_size, use_bias=True,
-            rngs=rngs, param_dtype=param_dtype,
+            rngs=rngs, dtype=dtype, param_dtype=param_dtype,
         )
         self.summary_proj = nnx.Linear(
             in_features=hidden_size, out_features=hidden_size, use_bias=True,
-            rngs=rngs, param_dtype=param_dtype,
+            rngs=rngs, dtype=dtype, param_dtype=param_dtype,
         )
 
     def __call__(self, cond):

@@ -131,16 +131,18 @@ def test_fielddit_param_dtype_propagates():
 
 
 def test_fielddit_bfloat16_forward_runs():
-    """Smoke-test the full assembly in the bfloat16 default config; the conv
-    codec path (GroupNorm/conv + depatchify->decoder) is not otherwise
-    forward-tested in bf16."""
-    model = FieldDiT(_params(rngs=nnx.Rngs(0), param_dtype=jnp.bfloat16))
+    """Smoke-test the full assembly in the bfloat16 default compute config;
+    the conv codec path (GroupNorm/conv + depatchify->decoder) is not
+    otherwise forward-tested in bf16. models-emit-fp32 contract: the output
+    is always fp32 regardless of the compute-dtype knob (zero-init conv_out
+    is constructed with dtype=jnp.float32)."""
+    model = FieldDiT(_params(rngs=nnx.Rngs(0), dtype=jnp.bfloat16))
     obs = jax.random.normal(jax.random.PRNGKey(1), (2, 32, 32, 1))
     cond = jax.random.normal(jax.random.PRNGKey(2), (2, 3, 1))
     t = jnp.ones((2,))
     v = model(t, obs, cond)
     assert v.shape == obs.shape
-    assert v.dtype == jnp.bfloat16
+    assert v.dtype == jnp.float32
     assert jnp.all(jnp.isfinite(v))
 
 
@@ -239,12 +241,12 @@ def test_timestep_embedding_receives_f32(monkeypatch):
 
     monkeypatch.setattr(fielddit_model, "timestep_embedding", spy)
 
-    model = FieldDiT(_params(rngs=nnx.Rngs(0), param_dtype=jnp.bfloat16))
+    model = FieldDiT(_params(rngs=nnx.Rngs(0), dtype=jnp.bfloat16))
     obs = jax.random.normal(jax.random.PRNGKey(1), (2, 32, 32, 1))
     cond = jax.random.normal(jax.random.PRNGKey(2), (2, 3, 1))
     v = model(jnp.ones((2,)), obs, cond)
     assert seen["dtype"] == jnp.float32
-    assert v.dtype == jnp.bfloat16  # model dtype unchanged downstream
+    assert v.dtype == jnp.float32  # models-emit-fp32 contract: output always fp32
 
 
 def test_theta_default_derives_from_token_count():

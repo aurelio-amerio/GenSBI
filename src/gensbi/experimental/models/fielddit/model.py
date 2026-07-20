@@ -69,7 +69,8 @@ class FieldDiTParams:
     norm_groups: int = 8
     guidance_embed: bool = False
     vec_in_dim: Optional[int] = None  # input dim for guidance MLP (required iff guidance_embed=True)
-    param_dtype: DTypeLike = jnp.bfloat16
+    dtype: DTypeLike = jnp.bfloat16
+    param_dtype: DTypeLike = jnp.float32
 
     def __post_init__(self):
         if self.axes_dim is None:
@@ -127,34 +128,40 @@ class FieldDiT(nnx.Module):
 
         self.encoder = ObsEncoder(
             p.in_channels, p.encoder_widths, p.res_blocks_down,
-            vec_dim=hid, norm_groups=p.norm_groups, rngs=p.rngs, param_dtype=p.param_dtype,
+            vec_dim=hid, norm_groups=p.norm_groups, rngs=p.rngs,
+            dtype=p.dtype, param_dtype=p.param_dtype,
         )
         c_bottleneck = p.encoder_widths[-1]
         self.tokenizer = Tokenizer(
-            c_bottleneck, p.patch_size, hid, rngs=p.rngs, param_dtype=p.param_dtype
+            c_bottleneck, p.patch_size, hid, rngs=p.rngs,
+            dtype=p.dtype, param_dtype=p.param_dtype,
         )
         self.cond_embedder = ScalarCondEmbedder(
-            p.cond_in_channels, hid, rngs=p.rngs, param_dtype=p.param_dtype
+            p.cond_in_channels, hid, rngs=p.rngs,
+            dtype=p.dtype, param_dtype=p.param_dtype,
         )
         self.core = MMDiTCore(
             hid, p.num_heads, p.mlp_ratio, p.depth, p.depth_single_blocks,
             axes_dim=p.axes_dim, theta=p.theta, n_cond_tokens=p.cond_dim,
-            qkv_bias=p.qkv_bias, rngs=p.rngs, param_dtype=p.param_dtype,
+            qkv_bias=p.qkv_bias, rngs=p.rngs, dtype=p.dtype, param_dtype=p.param_dtype,
         )
         self.untokenizer = Untokenizer(
-            c_bottleneck, p.patch_size, hid, rngs=p.rngs, param_dtype=p.param_dtype
+            c_bottleneck, p.patch_size, hid, rngs=p.rngs,
+            dtype=p.dtype, param_dtype=p.param_dtype,
         )
         self.decoder = ObsDecoder(
             p.in_channels, p.encoder_widths, p.res_blocks_up,
-            vec_dim=hid, norm_groups=p.norm_groups, rngs=p.rngs, param_dtype=p.param_dtype,
+            vec_dim=hid, norm_groups=p.norm_groups, rngs=p.rngs,
+            dtype=p.dtype, param_dtype=p.param_dtype,
         )
         self.time_in = MLPEmbedder(
-            in_dim=256, hidden_dim=hid, rngs=p.rngs, param_dtype=p.param_dtype
+            in_dim=256, hidden_dim=hid, rngs=p.rngs,
+            dtype=p.dtype, param_dtype=p.param_dtype,
         )
         if p.guidance_embed:
             assert p.vec_in_dim is not None, "vec_in_dim required when guidance_embed=True"
             self.guidance_in = MLPEmbedder(
-                p.vec_in_dim, hid, rngs=p.rngs, param_dtype=p.param_dtype
+                p.vec_in_dim, hid, rngs=p.rngs, dtype=p.dtype, param_dtype=p.param_dtype
             )
         else:
             self.guidance_in = Identity()
@@ -167,6 +174,7 @@ class FieldDiT(nnx.Module):
         self.use_cond_summary_in_vec = p.use_cond_summary_in_vec
         self.cond_modulates_encoder = p.cond_modulates_encoder
         self.guidance_embed = p.guidance_embed
+        self.dtype = p.dtype
         self.param_dtype = p.param_dtype
         self.token_grid = tuple(p.token_grid)
 
@@ -192,8 +200,11 @@ class FieldDiT(nnx.Module):
                 f"is deferred work); got conditioned={conditioned!r}"
             )
 
-        obs = jnp.asarray(obs, dtype=self.param_dtype)
-        cond = jnp.asarray(cond, dtype=self.param_dtype)
+        # models-emit-fp32 contract: inputs are cast to fp32 at the model
+        # door; each embedder's own compute-dtype Linear/Conv downcasts
+        # internally via promote_dtype.
+        obs = jnp.asarray(obs, dtype=jnp.float32)
+        cond = jnp.asarray(cond, dtype=jnp.float32)
 
         if obs.ndim != 4:
             raise ValueError(
@@ -213,7 +224,7 @@ class FieldDiT(nnx.Module):
         # cast only the finished embedding to the model dtype
         t = jnp.asarray(t, dtype=jnp.float32)
         time_vec = self.time_in(
-            timestep_embedding(t, 256).astype(self.param_dtype)
+            timestep_embedding(t, 256).astype(self.dtype)
         )  # (B, hidden)
 
         cond_tokens, summary = self.cond_embedder(cond)  # (B, k, hidden), (B, hidden)

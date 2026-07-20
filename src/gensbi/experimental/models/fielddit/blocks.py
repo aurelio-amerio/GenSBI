@@ -37,7 +37,8 @@ class ConvModulation(nnx.Module):
         vec_dim: int,
         channels: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.channels = channels
         self.lin = nnx.Linear(
@@ -45,6 +46,7 @@ class ConvModulation(nnx.Module):
             out_features=3 * channels,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
             kernel_init=jax.nn.initializers.zeros,
             bias_init=jax.nn.initializers.zeros,
@@ -74,16 +76,23 @@ class ModulatedResBlock2D(nnx.Module):
         vec_dim: int,
         norm_groups: int,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
+        # fp32 island: GroupNorm stats always computed/stored in fp32,
+        # regardless of the model's compute-dtype knob. Its output feeds
+        # directly into conv1/conv2 (compute-dtype Linears) below, which
+        # self-heal the downcast via their own promote_dtype -- no explicit
+        # ``.astype`` needed here.
         self.norm1 = nnx.GroupNorm(
             num_groups=_safe_groups(in_channels, norm_groups),
             num_features=in_channels,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.conv1 = nnx.Conv(
@@ -93,6 +102,7 @@ class ModulatedResBlock2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         # affine off: ConvModulation provides the sole scale/shift
@@ -103,6 +113,7 @@ class ModulatedResBlock2D(nnx.Module):
             use_scale=False,
             use_bias=False,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.conv2 = nnx.Conv(
@@ -112,10 +123,12 @@ class ModulatedResBlock2D(nnx.Module):
             strides=(1, 1),
             padding=(1, 1),
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.mod = ConvModulation(
-            vec_dim=vec_dim, channels=out_channels, rngs=rngs, param_dtype=param_dtype
+            vec_dim=vec_dim, channels=out_channels, rngs=rngs,
+            dtype=dtype, param_dtype=param_dtype,
         )
         if in_channels != out_channels:
             self.nin_shortcut = nnx.Conv(
@@ -125,6 +138,7 @@ class ModulatedResBlock2D(nnx.Module):
                 strides=(1, 1),
                 padding=(0, 0),
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             )
         else:

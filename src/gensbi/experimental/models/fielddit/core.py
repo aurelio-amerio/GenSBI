@@ -34,7 +34,8 @@ class MMDiTCore(nnx.Module):
         n_cond_tokens: int,
         qkv_bias: bool,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.hidden_size = hidden_size
         self.num_heads = num_heads
@@ -43,11 +44,16 @@ class MMDiTCore(nnx.Module):
             f"sum(axes_dim)={sum(axes_dim)} must equal head_dim={head_dim}"
         )
         self.pe_embedder = EmbedND(dim=head_dim, theta=theta, axes_dim=tuple(axes_dim))
-        # absolute (order-free) id embedding for the few cond tokens
+        # absolute (order-free) id embedding for the few cond tokens. This is
+        # added directly to ``cond_tokens`` below (not fed into a further
+        # compute-dtype Linear first), so it does NOT self-heal: it must be
+        # given the compute dtype explicitly, or its fp32-default output
+        # leaks into (and re-promotes) the whole cond+obs joint stream.
         self.cond_ids_embedder = FeatureEmbedder(
             num_embeddings=n_cond_tokens,
             hidden_size=hidden_size,
             kind="absolute",
+            dtype=dtype,
             param_dtype=param_dtype,
             rngs=rngs,
         )
@@ -56,7 +62,7 @@ class MMDiTCore(nnx.Module):
                 DoubleStreamBlock(
                     hidden_size, num_heads, mlp_ratio=mlp_ratio,
                     qkv_features=hidden_size, qkv_bias=qkv_bias,
-                    rngs=rngs, param_dtype=param_dtype,
+                    rngs=rngs, dtype=dtype, param_dtype=param_dtype,
                 )
                 for _ in range(depth)
             ]
@@ -65,7 +71,8 @@ class MMDiTCore(nnx.Module):
             *[
                 SingleStreamBlock(
                     hidden_size, num_heads, mlp_ratio=mlp_ratio,
-                    qkv_features=hidden_size, rngs=rngs, param_dtype=param_dtype,
+                    qkv_features=hidden_size, rngs=rngs,
+                    dtype=dtype, param_dtype=param_dtype,
                 )
                 for _ in range(depth_single_blocks)
             ]
