@@ -19,12 +19,23 @@ class AttentionBlock(nnx.Module):
     whatever ``dtype`` it is given -- there is no internal fp32 upcast for
     the attention logits/softmax the way some other implementations provide.
     Rather than bolt on a custom ``attention_fn`` just to force fp32 softmax,
-    this block keeps *all* of its compute (LayerNorm + MultiHeadAttention) at
-    ``dtype=jnp.float32``, ignoring the ``dtype`` compute-precision knob
-    entirely for this block. This is a deliberately larger fp32 island than
-    a single softmax op, but the bulk of the model's FLOPs live in the
-    ``DenseBlock`` MLP stack (``widening_factor`` x wider), which does honor
-    the bf16 ``dtype`` knob, so this island has a small cost in practice.
+    this block keeps *all* of its internal math (LayerNorm + MultiHeadAttention)
+    at ``dtype=jnp.float32``, ignoring the ``dtype`` compute-precision knob for
+    those internals. This is a deliberately larger fp32 island than a single
+    softmax op, but the bulk of the model's FLOPs live in the ``DenseBlock``
+    MLP stack (``widening_factor`` x wider), which does honor the bf16
+    ``dtype`` knob, so this island has a small cost in practice.
+
+    The island is for the *math* only: the block's output (after the
+    optional skip connection) is downcast to the requested ``dtype`` before
+    being returned, mirroring the codebase's established fp32-island idiom
+    (e.g. ``QKNorm.__call__``'s ``.astype(v.dtype)`` in ``flux1/layers.py``).
+    Without this downcast, the fp32 residual (``x_in``, captured post
+    fp32-LayerNorm) would silently re-promote every downstream block's
+    output back to fp32 via JAX's bf16+fp32 promotion rule on the skip-add,
+    defeating the bf16 knob's memory/bandwidth benefit for the whole
+    inter-block residual stream.
+
     ``param_dtype`` (master-weight storage) is unaffected and still threads
     through normally.
     """
@@ -40,6 +51,9 @@ class AttentionBlock(nnx.Module):
         param_dtype: DTypeLike = jnp.float32,
     ):
         self.skip_connection = skip_connection
+        # Only used to downcast the block's output back to compute dtype
+        # after the fp32-island math below (see class docstring).
+        self.dtype = dtype
 
         # fp32 island: dtype is intentionally fixed to float32 regardless of
         # the dtype knob above (see class docstring).
@@ -63,10 +77,24 @@ class AttentionBlock(nnx.Module):
 
         if self.skip_connection:
             x = x + x_in
-        return x
+        return jnp.asarray(x, dtype=self.dtype)
 
 
 class DenseBlock(nnx.Module):
+    """MLP block (the FLOPs-dominant part of the transformer) with an fp32
+    LayerNorm island.
+
+    The LayerNorm math runs in fp32 (mirrors ``AttentionBlock``'s
+    normalization treatment); the wide hidden-layer matmuls run in the
+    requested compute ``dtype``. The block's output (after the context-merge
+    and optional skip connection) is downcast to ``dtype`` before being
+    returned -- otherwise the fp32 residual (``x_in``, captured post
+    fp32-LayerNorm) would silently re-promote the output back to fp32 via
+    JAX's bf16+fp32 promotion rule on the skip-add, defeating the bf16
+    knob's memory/bandwidth benefit for the whole inter-block residual
+    stream (see ``AttentionBlock`` docstring for the same pattern).
+    """
+
     def __init__(
         self,
         din,
@@ -80,6 +108,9 @@ class DenseBlock(nnx.Module):
         param_dtype: DTypeLike = jnp.float32,
     ):
         self.skip_connection = skip_connection
+        # Only used to downcast the block's output back to compute dtype
+        # after the fp32-island LayerNorm math (see class docstring).
+        self.dtype = dtype
         n_features = din
         # fp32 island: LayerNorm stays fp32 regardless of the compute dtype
         # knob (mirrors AttentionBlock's normalization treatment).
@@ -143,7 +174,7 @@ class DenseBlock(nnx.Module):
         if self.skip_connection:
             x = x + x_in
 
-        return x
+        return jnp.asarray(x, dtype=self.dtype)
 
 
 class Transformer(nnx.Module):
@@ -197,6 +228,7 @@ class Transformer(nnx.Module):
                     features=features,
                     skip_connection=skip_connection_attn,
                     rngs=rngs,
+                    dtype=dtype,
                     param_dtype=param_dtype,
                 )
             )
