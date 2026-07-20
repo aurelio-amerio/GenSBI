@@ -225,13 +225,16 @@ def test_pixel_token_embedder_pos_orientation_nonsquare():
     from gensbi.experimental.models.pixeldit.modules import get_2d_sincos_pos_embed
 
     H, W, C, p, D_pix = 4, 6, 1, 2, 32
+    # dtype=jnp.float32 pins full-precision compute: this test verifies pos-
+    # embedding orientation math against an exact fp32 reference table, not
+    # mixed-precision behavior (bf16 compute would round entries visibly).
     m = PixelTokenEmbedder(
         C, D_pix, field_shape=(H, W), patch_size=p,
-        use_abs_pos=True, rngs=make_rngs(), param_dtype=jnp.float32,
+        use_abs_pos=True, rngs=make_rngs(), dtype=jnp.float32, param_dtype=jnp.float32,
     )
     m_no = PixelTokenEmbedder(
         C, D_pix, field_shape=(H, W), patch_size=p,
-        use_abs_pos=False, rngs=make_rngs(), param_dtype=jnp.float32,
+        use_abs_pos=False, rngs=make_rngs(), dtype=jnp.float32, param_dtype=jnp.float32,
     )
     # Share projection weights so we can isolate the pos contribution.
     m_no.proj = m.proj

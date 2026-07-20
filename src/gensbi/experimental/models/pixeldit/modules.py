@@ -49,14 +49,15 @@ class SwiGLU(nnx.Module):
         mlp_ratio: float = 4.0,
         *,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         # int(2 * (dim * mlp_ratio) / 3) is identical to ref's int(2 * int(dim*mlp_ratio) / 3)
         # for integer dim*mlp_ratio; single-int form avoids the redundant inner int().
         hidden = int(2 * (dim * mlp_ratio) / 3)
-        self.w1 = nnx.Linear(dim, hidden, use_bias=False, rngs=rngs, param_dtype=param_dtype)
-        self.w3 = nnx.Linear(dim, hidden, use_bias=False, rngs=rngs, param_dtype=param_dtype)
-        self.w2 = nnx.Linear(hidden, dim, use_bias=False, rngs=rngs, param_dtype=param_dtype)
+        self.w1 = nnx.Linear(dim, hidden, use_bias=False, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+        self.w3 = nnx.Linear(dim, hidden, use_bias=False, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+        self.w2 = nnx.Linear(hidden, dim, use_bias=False, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
     def __call__(self, x):
         return self.w2(nnx.silu(self.w1(x)) * self.w3(x))
@@ -80,11 +81,12 @@ class PixelMLP(nnx.Module):
         mlp_ratio: float = 4.0,
         *,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         hidden = int(dim * mlp_ratio)
-        self.fc1 = nnx.Linear(dim, hidden, use_bias=True, rngs=rngs, param_dtype=param_dtype)
-        self.fc2 = nnx.Linear(hidden, dim, use_bias=True, rngs=rngs, param_dtype=param_dtype)
+        self.fc1 = nnx.Linear(dim, hidden, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+        self.fc2 = nnx.Linear(hidden, dim, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
     def __call__(self, x):
         x = self.fc1(x)
@@ -127,8 +129,9 @@ def _timestep_embedding(t, dim: int, max_period: float = 10.0):
 class TimestepConditioner(nnx.Module):
     """Embed a scalar timestep into ``hidden_size`` (ref modules.py:63-91).
 
-    The sinusoid is always computed in float32; the result is cast to
-    ``param_dtype`` only before the MLP projection.
+    The sinusoid is always computed in float32; ``mlp_in`` (a compute-dtype
+    Linear) downcasts it to the compute dtype via its own ``promote_dtype``,
+    so no manual cast is needed at the call site.
     MLP weights are initialised with ``normal(std=0.02)`` (ref
     ``initialize_weights``).
     """
@@ -139,7 +142,8 @@ class TimestepConditioner(nnx.Module):
         freq_dim: int = 256,
         *,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.freq_dim = freq_dim
         init = jax.nn.initializers.normal(stddev=0.02)
@@ -148,6 +152,7 @@ class TimestepConditioner(nnx.Module):
             hidden_size,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
             kernel_init=init,
         )
@@ -156,15 +161,15 @@ class TimestepConditioner(nnx.Module):
             hidden_size,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
             kernel_init=init,
         )
 
     def __call__(self, t):
-        # Sinusoid in float32, then cast to param_dtype before the MLP.
+        # Sinusoid always computed in float32 (fp32 island); mlp_in's own
+        # promote_dtype downcasts it to the compute dtype for the matmul.
         t_freq = _timestep_embedding(t, self.freq_dim)  # float32
-        param_dtype = self.mlp_in.kernel.get_value().dtype
-        t_freq = t_freq.astype(param_dtype)
         t_emb = nnx.silu(self.mlp_in(t_freq))
         t_emb = self.mlp_out(t_emb)
         return t_emb
@@ -180,6 +185,11 @@ class FinalLayer(nnx.Module):
 
     The linear's kernel and bias are both zero-initialized, so the layer is
     exactly the zero map at initialisation (safe residual scaling).
+
+    models-emit-fp32 contract: both the norm and the linear are constructed
+    with ``dtype=jnp.float32`` (never a post-hoc ``.astype``), regardless of
+    the compute-dtype knob used elsewhere in the model -- this is the
+    designated emit-fp32 endpoint, so it has no separate ``dtype`` parameter.
     """
 
     def __init__(
@@ -188,12 +198,13 @@ class FinalLayer(nnx.Module):
         out_channels: int,
         *,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.norm = nnx.RMSNorm(
             hidden_size,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
         self.linear = nnx.Linear(
@@ -201,6 +212,7 @@ class FinalLayer(nnx.Module):
             out_channels,
             use_bias=True,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
             kernel_init=jax.nn.initializers.zeros,
             bias_init=jax.nn.initializers.zeros,

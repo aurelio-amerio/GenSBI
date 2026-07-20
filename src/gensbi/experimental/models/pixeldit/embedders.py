@@ -88,13 +88,15 @@ class PatchTokenEmbedder(nnx.Module):
         hidden_size: int,
         *,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.proj = nnx.Linear(
             in_features,
             hidden_size,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
             kernel_init=jax.nn.initializers.glorot_uniform(),
             bias_init=jax.nn.initializers.zeros,
@@ -139,7 +141,8 @@ class PixelTokenEmbedder(nnx.Module):
         *,
         use_abs_pos: bool = True,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.pixel_hidden_size = pixel_hidden_size
         self.patch_size = patch_size
@@ -151,6 +154,7 @@ class PixelTokenEmbedder(nnx.Module):
             pixel_hidden_size,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -227,7 +231,8 @@ class CondTokenEmbedder(nnx.Module):
         *,
         id_embedding: str = "absolute",
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         self.cond_in_channels = cond_in_channels
 
@@ -236,12 +241,21 @@ class CondTokenEmbedder(nnx.Module):
             hidden_size,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
+        # fp32 island: the norm's own output is fp32 regardless of the
+        # compute-dtype knob. Unlike a norm that feeds straight into another
+        # compute-dtype Linear (whose promote_dtype would downcast it for
+        # free), this norm's output is returned/added directly further down
+        # -- so __call__ below downcasts it back explicitly to avoid leaking
+        # fp32 into the cond-token stream (same failure mode as the
+        # flux1joint condition_embedding bug).
         self.norm = nnx.RMSNorm(
             hidden_size,
             epsilon=1e-6,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
 
@@ -259,6 +273,7 @@ class CondTokenEmbedder(nnx.Module):
                 num_embeddings=n_tokens,
                 hidden_size=hidden_size,
                 kind=id_embedding,
+                dtype=dtype,
                 param_dtype=param_dtype,
                 rngs=rngs,
                 **extra,
@@ -287,8 +302,11 @@ class CondTokenEmbedder(nnx.Module):
                 )
             cond = cond[..., None]
 
-        x = self.proj(cond)   # (B, K, D)
-        x = self.norm(x)
+        x = self.proj(cond)   # (B, K, D), compute dtype
+        # norm is an fp32 island; downcast its raw output back to the
+        # compute dtype so it doesn't leak fp32 into the cond-token stream
+        # (see the fp32-island note on ``self.norm`` in __init__).
+        x = self.norm(x).astype(x.dtype)
 
         if self.id_embedding_kind != "none":
             # absolute: nnx.Embed requires (..., 1) index; pos1d: requires (...,) index.

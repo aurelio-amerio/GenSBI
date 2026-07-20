@@ -50,7 +50,8 @@ class MMDiTBlock(nnx.Module):
         *,
         zero_init: bool = True,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         assert hidden_size % num_heads == 0, "hidden_size must be divisible by num_heads"
         self.hidden_size = hidden_size
@@ -59,27 +60,28 @@ class MMDiTBlock(nnx.Module):
 
         D = hidden_size
 
-        # --- per-stream norms ---
-        self.norm_x1 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, param_dtype=param_dtype)
-        self.norm_y1 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, param_dtype=param_dtype)
-        self.norm_x2 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, param_dtype=param_dtype)
-        self.norm_y2 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, param_dtype=param_dtype)
+        # --- per-stream norms (fp32 island; each feeds a compute Linear next,
+        # whose own promote_dtype performs the downcast) ---
+        self.norm_x1 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype)
+        self.norm_y1 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype)
+        self.norm_x2 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype)
+        self.norm_y2 = nnx.RMSNorm(D, epsilon=1e-6, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype)
 
         # --- per-stream qkv (no bias) ---
-        self.qkv_x = nnx.Linear(D, 3 * D, use_bias=False, rngs=rngs, param_dtype=param_dtype)
-        self.qkv_y = nnx.Linear(D, 3 * D, use_bias=False, rngs=rngs, param_dtype=param_dtype)
+        self.qkv_x = nnx.Linear(D, 3 * D, use_bias=False, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+        self.qkv_y = nnx.Linear(D, 3 * D, use_bias=False, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
         # --- per-stream per-head q/k RMSNorm (over head_dim) ---
-        self.qk_norm_x = QKNorm(self.head_dim, rngs=rngs, param_dtype=param_dtype)
-        self.qk_norm_y = QKNorm(self.head_dim, rngs=rngs, param_dtype=param_dtype)
+        self.qk_norm_x = QKNorm(self.head_dim, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+        self.qk_norm_y = QKNorm(self.head_dim, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
         # --- per-stream output projection (with bias) ---
-        self.proj_x = nnx.Linear(D, D, use_bias=True, rngs=rngs, param_dtype=param_dtype)
-        self.proj_y = nnx.Linear(D, D, use_bias=True, rngs=rngs, param_dtype=param_dtype)
+        self.proj_x = nnx.Linear(D, D, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+        self.proj_y = nnx.Linear(D, D, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
         # --- per-stream SwiGLU MLPs ---
-        self.mlp_x = SwiGLU(D, mlp_ratio, rngs=rngs, param_dtype=param_dtype)
-        self.mlp_y = SwiGLU(D, mlp_ratio, rngs=rngs, param_dtype=param_dtype)
+        self.mlp_x = SwiGLU(D, mlp_ratio, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+        self.mlp_y = SwiGLU(D, mlp_ratio, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
         # --- per-stream adaLN: plain Linear D -> 6D, NO internal silu ---
         # c arrives pre-activated; do NOT reuse flux1.Modulation (silu inside).
@@ -91,10 +93,10 @@ class MMDiTBlock(nnx.Module):
         else:
             adaln_kwargs = {}
         self.adaLN_x = nnx.Linear(
-            D, 6 * D, use_bias=True, rngs=rngs, param_dtype=param_dtype, **adaln_kwargs
+            D, 6 * D, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype, **adaln_kwargs
         )
         self.adaLN_y = nnx.Linear(
-            D, 6 * D, use_bias=True, rngs=rngs, param_dtype=param_dtype, **adaln_kwargs
+            D, 6 * D, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype, **adaln_kwargs
         )
 
     def _qkv(self, qkv_lin, qk_norm, h, pe):
@@ -184,7 +186,8 @@ class PiTBlock(nnx.Module):
         *,
         zero_init: bool = True,
         rngs: nnx.Rngs,
-        param_dtype: DTypeLike = jnp.bfloat16,
+        dtype: DTypeLike = jnp.bfloat16,
+        param_dtype: DTypeLike = jnp.float32,
     ):
         assert attn_dim % num_heads == 0, "attn_dim must be divisible by num_heads"
         self.pixel_dim = pixel_dim
@@ -194,14 +197,16 @@ class PiTBlock(nnx.Module):
         self.n_mod = 4 if post_modulation else 6
         p2 = patch_size * patch_size
 
-        self.norm1 = nnx.RMSNorm(pixel_dim, epsilon=1e-6, rngs=rngs, param_dtype=param_dtype)
-        self.norm2 = nnx.RMSNorm(pixel_dim, epsilon=1e-6, rngs=rngs, param_dtype=param_dtype)
+        # fp32 island; each feeds a compute Linear next (compress/mlp.fc1),
+        # whose own promote_dtype performs the downcast.
+        self.norm1 = nnx.RMSNorm(pixel_dim, epsilon=1e-6, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype)
+        self.norm2 = nnx.RMSNorm(pixel_dim, epsilon=1e-6, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype)
 
         self.compress = nnx.Linear(
-            p2 * pixel_dim, attn_dim, use_bias=True, rngs=rngs, param_dtype=param_dtype
+            p2 * pixel_dim, attn_dim, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype
         )
         self.expand = nnx.Linear(
-            attn_dim, p2 * pixel_dim, use_bias=True, rngs=rngs, param_dtype=param_dtype
+            attn_dim, p2 * pixel_dim, use_bias=True, rngs=rngs, dtype=dtype, param_dtype=param_dtype
         )
 
         self.attn = SelfAttention(
@@ -210,10 +215,11 @@ class PiTBlock(nnx.Module):
             qkv_features=attn_dim,
             qkv_bias=False,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
-        self.mlp = PixelMLP(pixel_dim, mlp_ratio, rngs=rngs, param_dtype=param_dtype)
+        self.mlp = PixelMLP(pixel_dim, mlp_ratio, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
 
         # Plain linear, no internal silu (c arrives pre-activated; see MMDiTBlock note).
         if zero_init:
@@ -228,6 +234,7 @@ class PiTBlock(nnx.Module):
             self.n_mod * pixel_dim * p2,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
             **adaln_kwargs,
         )

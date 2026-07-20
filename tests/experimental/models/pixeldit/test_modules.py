@@ -111,7 +111,10 @@ def test_pixelmlp_uses_erf_gelu():
     where erf-GELU and tanh-GELU differ by >1e-4.
     """
     dim = 8
-    m = PixelMLP(dim, mlp_ratio=4.0, rngs=make_rngs(), param_dtype=jnp.float32)
+    # dtype=jnp.float32 pins full-precision compute: this test distinguishes
+    # erf-GELU from tanh-GELU at a tolerance (1e-5) far tighter than bf16's
+    # ~0.4% relative precision, so it isn't testing mixed-precision behavior.
+    m = PixelMLP(dim, mlp_ratio=4.0, rngs=make_rngs(), dtype=jnp.float32, param_dtype=jnp.float32)
     hidden = int(dim * 4.0)  # 32
 
     # Set fc1: (dim → hidden) kernel.  Top dim×dim block = I, rest = 0; bias = 0.

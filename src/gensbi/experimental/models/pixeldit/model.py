@@ -68,7 +68,8 @@ class PixelDiTParams:
     zero_init_blocks: bool = True                   # c2i recipe; False = t2i recipe (final layer still zero)
     rope_scale: float = 16.0
     theta: float = 10_000.0
-    param_dtype: DTypeLike = jnp.bfloat16
+    dtype: DTypeLike = jnp.bfloat16
+    param_dtype: DTypeLike = jnp.float32
 
     def __post_init__(self):
         H, W = self.field_shape
@@ -129,6 +130,7 @@ class PixelDiT(nnx.Module):
             p.in_channels * ps * ps,
             D,
             rngs=p.rngs,
+            dtype=p.dtype,
             param_dtype=p.param_dtype,
         )
         self.pixel_embedder = PixelTokenEmbedder(
@@ -138,6 +140,7 @@ class PixelDiT(nnx.Module):
             ps,
             use_abs_pos=p.use_pixel_abs_pos,
             rngs=p.rngs,
+            dtype=p.dtype,
             param_dtype=p.param_dtype,
         )
         self.cond_embedder = CondTokenEmbedder(
@@ -146,10 +149,11 @@ class PixelDiT(nnx.Module):
             p.cond_dim,
             id_embedding=p.cond_id_embedding,
             rngs=p.rngs,
+            dtype=p.dtype,
             param_dtype=p.param_dtype,
         )
         self.t_conditioner = TimestepConditioner(
-            D, rngs=p.rngs, param_dtype=p.param_dtype
+            D, rngs=p.rngs, dtype=p.dtype, param_dtype=p.param_dtype
         )
         self.patch_blocks = nnx.List([
             MMDiTBlock(
@@ -158,6 +162,7 @@ class PixelDiT(nnx.Module):
                 p.mlp_ratio,
                 zero_init=p.zero_init_blocks,
                 rngs=p.rngs,
+                dtype=p.dtype,
                 param_dtype=p.param_dtype,
             )
             for _ in range(p.patch_depth)
@@ -173,6 +178,7 @@ class PixelDiT(nnx.Module):
                 post_modulation=p.pit_post_modulation,
                 zero_init=p.zero_init_blocks,
                 rngs=p.rngs,
+                dtype=p.dtype,
                 param_dtype=p.param_dtype,
             )
             for _ in range(p.pixel_depth)
@@ -205,6 +211,7 @@ class PixelDiT(nnx.Module):
         self.cond_in_channels = p.cond_in_channels
         self.patch_size = ps
         self.token_grid = tuple(p.token_grid)
+        self.dtype = p.dtype
         self.param_dtype = p.param_dtype
 
     def __call__(
@@ -228,8 +235,10 @@ class PixelDiT(nnx.Module):
                 f"guidance={guidance!r}"
             )
 
-        obs = jnp.asarray(obs, dtype=self.param_dtype)
-        cond = jnp.asarray(cond, dtype=self.param_dtype)
+        # models-emit-fp32 contract: inputs are cast to fp32 at the model
+        # door; each embedder's own compute-dtype Linear downcasts internally.
+        obs = jnp.asarray(obs, dtype=jnp.float32)
+        cond = jnp.asarray(cond, dtype=jnp.float32)
 
         if obs.ndim != 4:
             raise ValueError(
