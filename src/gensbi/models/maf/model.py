@@ -11,6 +11,7 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 from jax import Array
+from jax.typing import DTypeLike
 
 from gensbi.core.prior import make_gaussian_prior
 from gensbi.models.core.stats import fit_stat
@@ -61,6 +62,15 @@ class MAFlowParams:
     zero_init : bool, optional
         If ``True`` (default), zero-initialise the output layer of each MADE
         network so the flow starts as an identity transform.
+    param_dtype : DTypeLike, optional
+        Dtype for all stored (master) MADE kernel/bias parameters. Default is
+        ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype knob threaded through the MADE conditioners. Default is
+        ``float32`` (unlike the bf16-default DiT-family models, MAF keeps
+        fp32 compute by default pending dedicated stability testing — see
+        the mixed-precision design spec). Log-det accumulation is
+        unconditionally fp32 regardless of this knob.
     """
 
     rngs: nnx.Rngs
@@ -75,6 +85,8 @@ class MAFlowParams:
     zero_init: bool = True
     channels: int = 1
     cond_channels: int = 1
+    param_dtype: DTypeLike = jnp.float32
+    dtype: DTypeLike = jnp.float32
 
     def __post_init__(self):
         if self.transformer is None:
@@ -114,7 +126,9 @@ class MAFlow(nnx.Module):
             bijections.append(
                 MaskedAutoregressive(flat_dim, flat_cond_dim, params.transformer,
                                      params.nn_width, params.nn_depth, rngs,
-                                     zero_init=params.zero_init))
+                                     zero_init=params.zero_init,
+                                     param_dtype=params.param_dtype,
+                                     dtype=params.dtype))
             if i < params.n_layers - 1:
                 if params.permutation == "reverse":
                     bijections.append(Permutation.reverse(flat_dim))

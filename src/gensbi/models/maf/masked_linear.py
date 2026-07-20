@@ -19,14 +19,21 @@ class MaskedLinear(nnx.Module):
         :class:`Mask` buffer so it is excluded from ``nnx.Param``.
     rngs : nnx.Rngs
     param_dtype : DTypeLike, optional
-        Defaults to float32 (exact-likelihood model needs the precision).
+        Dtype for the stored (master) kernel/bias parameters. Defaults to
+        float32 (exact-likelihood model needs the precision).
+    dtype : DTypeLike, optional
+        Compute dtype: the kernel/bias/activations are cast to this dtype
+        before the matmul. Defaults to float32, matching ``param_dtype``, so
+        with default arguments this is a no-op cast (bit-identical).
     """
 
     def __init__(self, in_features, out_features, mask, rngs,
-                 param_dtype: DTypeLike = jnp.float32):
+                 param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32):
+        self.dtype = dtype
         self.linear = nnx.Linear(
             in_features, out_features, use_bias=True,
-            rngs=rngs, param_dtype=param_dtype,
+            rngs=rngs, param_dtype=param_dtype, dtype=dtype,
         )
         self.mask = Mask(jnp.asarray(mask, dtype=param_dtype))
 
@@ -43,5 +50,7 @@ class MaskedLinear(nnx.Module):
         Array
             Output of shape ``(out_features,)``.
         """
-        masked_kernel = self.linear.kernel[...] * self.mask[...]
-        return x @ masked_kernel + self.linear.bias[...]
+        masked_kernel = (self.linear.kernel[...] * self.mask[...]).astype(self.dtype)
+        x = x.astype(self.dtype)
+        bias = self.linear.bias[...].astype(self.dtype)
+        return x @ masked_kernel + bias

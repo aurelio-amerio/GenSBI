@@ -70,6 +70,11 @@ class MADE(nnx.Module):
         transform parameters start at 0 (Affine becomes the identity).
     param_dtype : DTypeLike, optional
         Dtype for all kernel and bias parameters.  Default is ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype forwarded to each :class:`MaskedLinear`.  Default is
+        ``float32``, matching ``param_dtype``, so with default arguments this
+        is a bit-identical no-op cast.  Log-det accumulation in
+        :class:`MaskedAutoregressive` is unaffected by this knob.
     activation : Callable, optional
         Element-wise activation applied after each hidden layer.
         Default is :func:`jax.nn.silu`.
@@ -77,6 +82,7 @@ class MADE(nnx.Module):
 
     def __init__(self, dim, cond_dim, num_params, nn_width, nn_depth, rngs,
                  zero_init: bool = True, param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32,
                  activation=jax.nn.silu):
         self.dim = dim
         self.cond_dim = cond_dim
@@ -90,14 +96,16 @@ class MADE(nnx.Module):
         out_mask = make_mask(hidden_ranks, out_ranks, strict=True)
 
         self.input_layer = MaskedLinear(dim + cond_dim, nn_width, in_mask,
-                                        rngs=rngs, param_dtype=param_dtype)
+                                        rngs=rngs, param_dtype=param_dtype,
+                                        dtype=dtype)
         self.hidden_layers = nnx.List([
             MaskedLinear(nn_width, nn_width, hidden_mask, rngs=rngs,
-                         param_dtype=param_dtype)
+                         param_dtype=param_dtype, dtype=dtype)
             for _ in range(nn_depth)
         ])
         self.output_layer = MaskedLinear(nn_width, dim * num_params, out_mask,
-                                         rngs=rngs, param_dtype=param_dtype)
+                                         rngs=rngs, param_dtype=param_dtype,
+                                         dtype=dtype)
         if zero_init:
             # Identity warm-start: zero output params -> affine is identity.
             self.output_layer.linear.kernel[...] = jnp.zeros_like(
@@ -167,16 +175,25 @@ class MaskedAutoregressive(Bijection):
     zero_init : bool, optional
         If ``True`` (default), zero-initialise the MADE output layer so that
         the flow starts as an identity transform.
+    param_dtype : DTypeLike, optional
+        Dtype for the MADE conditioner's stored parameters. Default is
+        ``float32``.
+    dtype : DTypeLike, optional
+        Compute dtype forwarded to the MADE conditioner. Default is
+        ``float32``. Log-det accumulation below stays unconditionally fp32
+        regardless of this knob.
     """
 
     def __init__(self, dim, cond_dim, transformer, nn_width, nn_depth, rngs,
-                 zero_init: bool = True):
+                 zero_init: bool = True, param_dtype: DTypeLike = jnp.float32,
+                 dtype: DTypeLike = jnp.float32):
         self.dim = dim
         self.transformer = transformer
         self.made = MADE(dim=dim, cond_dim=cond_dim,
                          num_params=transformer.num_params,
                          nn_width=nn_width, nn_depth=nn_depth,
-                         zero_init=zero_init, rngs=rngs)
+                         zero_init=zero_init, rngs=rngs,
+                         param_dtype=param_dtype, dtype=dtype)
 
     def inverse(self, x: Array, cond: Array | None = None):
         """Map data to noise (the density-evaluation direction).
