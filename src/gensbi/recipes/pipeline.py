@@ -30,10 +30,57 @@ import orbax.checkpoint as ocp
 from tqdm import tqdm
 
 import os
+import warnings
+import flax.traverse_util as tu
 
 
 from gensbi.utils.misc import get_colored_value
 from gensbi.utils.serialization import save_safetensors, load_safetensors
+
+
+def _warn_if_not_fp32_master_weights(model):
+    """Warn when trainable params are not fp32 master weights.
+
+    Mixed precision in GenSBI stores master weights in fp32 and selects the
+    compute dtype via each model's ``dtype`` knob; bf16 master weights break
+    AdamW moment accumulation and make optax.ema unable to integrate
+    (1 - decay)-scale updates.
+    """
+    flat = tu.flatten_dict(nnx.to_pure_dict(nnx.state(model, nnx.Param)))
+    bad = {
+        ".".join(str(p) for p in k): str(v.dtype)
+        for k, v in flat.items()
+        if jnp.issubdtype(v.dtype, jnp.floating) and v.dtype != jnp.float32
+    }
+    if bad:
+        warnings.warn(
+            "model has non-fp32 master weights (training will be numerically "
+            f"degraded; set param_dtype=jnp.float32 and use the dtype knob "
+            f"for compute instead): {bad}",
+            UserWarning,
+            stacklevel=3,
+        )
+
+
+def _cast_state_to_target_dtypes(state: nnx.State, target_state: nnx.State) -> nnx.State:
+    """Cast ``state``'s leaves to match ``target_state``'s dtypes, in place.
+
+    Old checkpoints (e.g. bf16 master weights from a pre-mixed-precision run)
+    must still be restorable into a model whose current dtype is fp32;
+    mirrors the ``arr.astype(want.dtype)`` loop already used by
+    :func:`gensbi.utils.serialization.load_safetensors`.
+    """
+    flat = tu.flatten_dict(nnx.to_pure_dict(state))
+    target_flat = tu.flatten_dict(nnx.to_pure_dict(target_state))
+    new = {}
+    for k, arr in flat.items():
+        want = target_flat.get(k)
+        if want is not None and hasattr(arr, "dtype") and hasattr(want, "dtype"):
+            new[k] = arr.astype(want.dtype)
+        else:
+            new[k] = arr
+    nnx.replace_by_pure_dict(state, tu.unflatten_dict(new))
+    return state
 
 
 class ModelEMA(nnx.Optimizer):
@@ -229,6 +276,8 @@ class AbstractPipeline(abc.ABC):
         os.makedirs(self.training_config["checkpoint_dir"], exist_ok=True)
 
         self.model = model
+        if model is not None:
+            _warn_if_not_fp32_master_weights(model)
         self.model_wrapped = None  # to be set in subclass
 
         if model is None:
@@ -538,6 +587,7 @@ class AbstractPipeline(abc.ABC):
                     state=ocp.args.StandardRestore(item=model_state)
                 ),
             )
+        _cast_state_to_target_dtypes(restored["state"], model_state)
         self.model = nnx.merge(graphdef, restored["state"])
 
         # restore the ema model
@@ -553,6 +603,7 @@ class AbstractPipeline(abc.ABC):
                     state=ocp.args.StandardRestore(item=model_state_ema)
                 ),
             )
+        _cast_state_to_target_dtypes(restored_ema["state"], model_state_ema)
         self.ema_model = nnx.merge(graphdef, restored_ema["state"])
 
         self.model.eval()

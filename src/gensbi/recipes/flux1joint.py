@@ -79,7 +79,7 @@ def get_default_flux1joint_params(dim_joint: int, in_channels: int = 1):
         dim_joint=dim_joint,
         id_merge_mode="concat",
         guidance_embed=False,
-        param_dtype=jnp.bfloat16,
+        param_dtype=jnp.float32,
     )
 
 
