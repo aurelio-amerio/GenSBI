@@ -793,7 +793,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">n_cond_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">qkv_bias</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="MMDiTCore.hidden_size">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/core/index.html#gensbi.experimental.models.fielddit.core.MMDiTCore.hidden_size">[docs]</a>
@@ -811,13 +812,18 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/core/index.html#gensbi.experimental.models.fielddit.core.MMDiTCore.pe_embedder">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">pe_embedder</span> <span class="o">=</span> <span class="n">EmbedND</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">axes_dim</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">axes_dim</span><span class="p">))</span></div>
 
-        <span class="c1"># absolute (order-free) id embedding for the few cond tokens</span>
+        <span class="c1"># absolute (order-free) id embedding for the few cond tokens. This is</span>
+        <span class="c1"># added directly to ``cond_tokens`` below (not fed into a further</span>
+        <span class="c1"># compute-dtype Linear first), so it does NOT self-heal: it must be</span>
+        <span class="c1"># given the compute dtype explicitly, or its fp32-default output</span>
+        <span class="c1"># leaks into (and re-promotes) the whole cond+obs joint stream.</span>
 <div class="viewcode-block" id="MMDiTCore.cond_ids_embedder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/core/index.html#gensbi.experimental.models.fielddit.core.MMDiTCore.cond_ids_embedder">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span>
             <span class="n">num_embeddings</span><span class="o">=</span><span class="n">n_cond_tokens</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
         <span class="p">)</span></div>
@@ -829,7 +835,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">DoubleStreamBlock</span><span class="p">(</span>
                     <span class="n">hidden_size</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">mlp_ratio</span><span class="o">=</span><span class="n">mlp_ratio</span><span class="p">,</span>
                     <span class="n">qkv_features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">qkv_bias</span><span class="o">=</span><span class="n">qkv_bias</span><span class="p">,</span>
-                    <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                    <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
             <span class="p">]</span>
@@ -841,7 +847,8 @@ window.runMermaid = runMermaid;</script>
             <span class="o">*</span><span class="p">[</span>
                 <span class="n">SingleStreamBlock</span><span class="p">(</span>
                     <span class="n">hidden_size</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">mlp_ratio</span><span class="o">=</span><span class="n">mlp_ratio</span><span class="p">,</span>
-                    <span class="n">qkv_features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                    <span class="n">qkv_features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">depth_single_blocks</span><span class="p">)</span>
             <span class="p">]</span>

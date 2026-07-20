@@ -777,6 +777,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Hidden dimension, must be a multiple of in_dim.</span>
 <span class="sd">    rngs : nnx.Rngs</span>
 <span class="sd">        Random number generators for initialization.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype for the internal linear layers. Defaults to jnp.float32.</span>
 <span class="sd">    param_dtype : DTypeLike, optional</span>
 <span class="sd">        Data type for parameters. Defaults to jnp.float32.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -786,6 +788,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">in_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
         <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">assert</span> <span class="p">(</span>
@@ -796,6 +799,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MLPEmbedder.repeats">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.MLPEmbedder.repeats">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">repeats</span> <span class="o">=</span> <span class="n">hidden_dim</span> <span class="o">//</span> <span class="n">in_dim</span></div>
+
+<div class="viewcode-block" id="MLPEmbedder.dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.MLPEmbedder.dtype">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span></div>
 
 <div class="viewcode-block" id="MLPEmbedder.p_skip">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.MLPEmbedder.p_skip">[docs]</a>
@@ -808,6 +815,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">hidden_dim</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -822,6 +830,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">hidden_dim</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -844,8 +853,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_layer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
-        <span class="n">x_repeated</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">repeats</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">x_repeated</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_skip</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_skip</span><span class="p">)</span> <span class="o">*</span> <span class="n">out</span>
+        <span class="n">x_repeated</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">repeats</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">p_skip</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_skip</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">x_repeated</span> <span class="o">*</span> <span class="n">p_skip</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p_skip</span><span class="p">)</span> <span class="o">*</span> <span class="n">out</span>
         <span class="k">return</span> <span class="n">out</span></div>
 </div>
 
@@ -950,6 +960,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">learnable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
         <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gaussian Fourier embedding module. Mostly used to embed time.</span>
@@ -962,12 +973,21 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Whether parameters are learnable. Defaults to False.</span>
 <span class="sd">        rngs : nnx.Rngs</span>
 <span class="sd">            Random number generators for initialization.</span>
+<span class="sd">        dtype : DTypeLike, optional</span>
+<span class="sd">            Output cast dtype only. The Fourier basis/trig (``t @ B.T``,</span>
+<span class="sd">            ``cos``/``sin``) always runs in fp32 as an accuracy island</span>
+<span class="sd">            regardless of this knob; only the final concatenated output is</span>
+<span class="sd">            cast to ``dtype``. Defaults to jnp.float32.</span>
 <span class="sd">        param_dtype : DTypeLike, optional</span>
 <span class="sd">            Data type for parameters. Defaults to jnp.float32.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="GaussianFourierEmbedding.output_dim">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.GaussianFourierEmbedding.output_dim">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span></div>
+
+<div class="viewcode-block" id="GaussianFourierEmbedding.dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.GaussianFourierEmbedding.dtype">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span></div>
 
         <span class="n">half_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
 <div class="viewcode-block" id="GaussianFourierEmbedding.B">
@@ -1001,12 +1021,20 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">B</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span>
+        <span class="c1"># Compute the Fourier basis in fp32: B ~ N(0, 1) and t spans the</span>
+        <span class="c1"># model&#39;s time/noise scale, so 2*pi*t@B.T can reach magnitudes</span>
+        <span class="c1"># where bf16&#39;s ~7 mantissa bits would introduce large phase</span>
+        <span class="c1"># errors into cos/sin. Only the final output is cast to the</span>
+        <span class="c1"># requested compute dtype (mirrors the SinusoidalPosEmbed</span>
+        <span class="c1"># fp32-island treatment).</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
         <span class="n">arg</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
         <span class="n">term1</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
         <span class="n">term2</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">term1</span><span class="p">,</span> <span class="n">term2</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">]</span></div>
 </div>
 
@@ -1259,6 +1287,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Hidden size/embedding dimension.</span>
 <span class="sd">    kind : str, optional</span>
 <span class="sd">        Type of embedding: &#39;absolute&#39;, &#39;pos1d&#39;, or &#39;pos2d&#39;. Defaults to &#39;absolute&#39;.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype, forwarded to the internal ``nnx.Embed`` for the</span>
+<span class="sd">        &#39;absolute&#39; kind. Ignored for &#39;pos1d&#39;/&#39;pos2d&#39;: their precomputed</span>
+<span class="sd">        sinusoidal tables are an fp32 island and stay at ``param_dtype``.</span>
+<span class="sd">        Defaults to jnp.float32.</span>
 <span class="sd">    param_dtype : DTypeLike, optional</span>
 <span class="sd">        Data type for parameters. Defaults to jnp.float32.</span>
 <span class="sd">    rngs : nnx.Rngs, optional</span>
@@ -1273,6 +1306,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
         <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -1282,6 +1316,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">num_embeddings</span><span class="o">=</span><span class="n">num_embeddings</span><span class="p">,</span>
                 <span class="n">features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>

@@ -933,7 +933,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">obs</span><span class="p">,</span> <span class="n">cond</span> <span class="o">=</span> <span class="n">batch</span>
             <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prep_obs</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
             <span class="n">cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prep_cond</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
-            <span class="k">return</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">cond</span><span class="p">))</span>
+            <span class="c1"># Loss is always computed in fp32 regardless of the model&#39;s</span>
+            <span class="c1"># compute dtype (defense-in-depth on top of the models-emit-fp32</span>
+            <span class="c1"># contract).</span>
+            <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">cond</span><span class="p">)),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">loss_fn</span></div>
 

@@ -318,8 +318,10 @@ Package Contents
    :type id_embedding_strategy: str
    :param guidance_embed: Whether to use guidance embedding.
    :type guidance_embed: bool
-   :param param_dtype: Data type for model parameters.
+   :param param_dtype: Data type for master-weight storage (parameters). Defaults to jnp.float32.
    :type param_dtype: DTypeLike
+   :param dtype: Compute/matmul dtype used by the compute layers. Defaults to jnp.bfloat16.
+   :type dtype: DTypeLike
 
 
 
@@ -351,6 +353,10 @@ Package Contents
 
    .. py:attribute:: dim_joint
       :type:  int
+
+
+   .. py:attribute:: dtype
+      :type:  jax.typing.DTypeLike
 
 
    .. py:attribute:: guidance_embed
@@ -493,8 +499,10 @@ Package Contents
    :type id_embedding_strategy: tuple[str, str]
    :param guidance_embed: Whether to use guidance embedding.
    :type guidance_embed: bool
-   :param param_dtype: Data type for model parameters.
+   :param param_dtype: Data type for master-weight storage (parameters). Defaults to jnp.float32.
    :type param_dtype: DTypeLike
+   :param dtype: Compute/matmul dtype used by the compute layers. Defaults to jnp.bfloat16.
+   :type dtype: DTypeLike
 
 
 
@@ -540,6 +548,10 @@ Package Contents
 
    .. py:attribute:: dim_obs
       :type:  int
+
+
+   .. py:attribute:: dtype
+      :type:  jax.typing.DTypeLike
 
 
    .. py:attribute:: guidance_embed
@@ -951,6 +963,15 @@ Package Contents
    :param zero_init: If ``True`` (default), zero-initialise the output layer of each MADE
                      network so the flow starts as an identity transform.
    :type zero_init: bool, optional
+   :param param_dtype: Dtype for all stored (master) MADE kernel/bias parameters. Default is
+                       ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype knob threaded through the MADE conditioners. Default is
+                 ``float32`` (unlike the bf16-default DiT-family models, MAF keeps
+                 fp32 compute by default pending dedicated stability testing — see
+                 the mixed-precision design spec). Log-det accumulation is
+                 unconditionally fp32 regardless of this knob.
+   :type dtype: DTypeLike, optional
 
 
 
@@ -994,6 +1015,10 @@ Package Contents
       :type:  int
 
 
+   .. py:attribute:: dtype
+      :type:  jax.typing.DTypeLike
+
+
    .. py:attribute:: n_layers
       :type:  int
       :value: 5
@@ -1010,6 +1035,10 @@ Package Contents
       :type:  int
       :value: 64
 
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
 
 
    .. py:attribute:: permutation
@@ -1179,8 +1208,13 @@ Package Contents
    :type qkv_features: int
    :param num_hidden_layers: Number of hidden layers in the transformer.
    :type num_hidden_layers: int
-   :param param_dtype: Data type for model parameters.
+   :param param_dtype: Data type for master-weight storage (parameters). Defaults to jnp.float32.
    :type param_dtype: DTypeLike
+   :param dtype: Compute/matmul dtype used by the MLP compute layers. The
+                 attention blocks always compute in fp32 regardless of this
+                 setting (see `transformer.AttentionBlock`). Defaults to
+                 jnp.bfloat16.
+   :type dtype: DTypeLike
 
 
 
@@ -1212,6 +1246,10 @@ Package Contents
 
    .. py:attribute:: dim_joint
       :type:  int
+
+
+   .. py:attribute:: dtype
+      :type:  jax.typing.DTypeLike
 
 
    .. py:attribute:: fourier_features
@@ -1540,6 +1578,20 @@ Package Contents
    :param rope_theta: Frequency base for the rotary embedding. Only used when
                       ``use_rope=True``. Default is ``10000``.
    :type rope_theta: int, optional
+   :param param_dtype: Dtype for all stored (master) kernel/bias/embedding parameters
+                       across the tokenizer, conditioner, and transformer blocks. Default
+                       is ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype knob threaded through the conditioners and
+                 :class:`~gensbi.models.tarflow.blocks.MetaBlock`/
+                 :class:`~gensbi.models.tarflow.blocks.AttentionBlock` layers.
+                 Default is ``float32``, matching ``param_dtype``, so with default
+                 arguments this is a bit-identical no-op cast. Hard-fp32 regardless
+                 of this knob: the softplus/soft_clip affine-scale path in
+                 ``MetaBlock._affine``, log-det accumulation, the ``mean``/``std``
+                 standardization buffers, and the KV-cache buffers used during
+                 sampling.
+   :type dtype: DTypeLike, optional
 
 
 
@@ -1603,6 +1655,10 @@ Package Contents
 
 
 
+   .. py:attribute:: dtype
+      :type:  jax.typing.DTypeLike
+
+
    .. py:attribute:: head_dim
       :type:  int
       :value: 16
@@ -1643,6 +1699,10 @@ Package Contents
       :type:  int
       :value: 4
 
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
 
 
    .. py:attribute:: patch_size

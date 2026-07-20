@@ -32,7 +32,9 @@ Functions
 
 .. autoapisummary::
 
+   gensbi.recipes.pipeline._cast_state_to_target_dtypes
    gensbi.recipes.pipeline._get_batch_sampler
+   gensbi.recipes.pipeline._warn_if_not_fp32_master_weights
    gensbi.recipes.pipeline.ema_step
 
 
@@ -884,6 +886,33 @@ Module Contents
           !! processed by numpydoc !!
 
 
+.. py:function:: _cast_state_to_target_dtypes(state, target_state)
+
+   
+   Cast ``state``'s leaves to match ``target_state``'s dtypes, in place.
+
+   Old checkpoints (e.g. bf16 master weights from a pre-mixed-precision run)
+   must still be restorable into a model whose current dtype is fp32;
+   mirrors the ``arr.astype(want.dtype)`` loop already used by
+   :func:`gensbi.utils.serialization.load_safetensors`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:function:: _get_batch_sampler(sampler_fn, ncond, chunk_size, show_progress_bars = True)
 
    
@@ -900,6 +929,33 @@ Module Contents
 
    :returns: Batch sampler function.
    :rtype: Callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _warn_if_not_fp32_master_weights(model)
+
+   
+   Warn when trainable params are not fp32 master weights.
+
+   Mixed precision in GenSBI stores master weights in fp32 and selects the
+   compute dtype via each model's ``dtype`` knob; bf16 master weights break
+   AdamW moment accumulation and make optax.ema unable to integrate
+   (1 - decay)-scale updates.
 
 
 

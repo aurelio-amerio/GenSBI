@@ -934,6 +934,12 @@ window.runMermaid = runMermaid;</script>
             <span class="c1"># Model predicts score</span>
             <span class="n">score_pred</span> <span class="o">=</span> <span class="n">F</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">x_t</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
 
+            <span class="c1"># Loss is always computed in fp32 regardless of the model&#39;s</span>
+            <span class="c1"># compute dtype (defense-in-depth on top of the models-emit-fp32</span>
+            <span class="c1"># contract).</span>
+            <span class="n">score_pred</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">score_pred</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="n">score_target</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">score_target</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>

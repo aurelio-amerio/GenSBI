@@ -869,7 +869,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        guidance_embed : bool</span>
 <span class="sd">            Whether to use guidance embedding.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for model parameters.</span>
+<span class="sd">            Data type for master-weight storage (parameters). Defaults to jnp.float32.</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute/matmul dtype used by the compute layers. Defaults to jnp.bfloat16.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -950,7 +952,11 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="Flux1Params.param_dtype">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.param_dtype">[docs]</a>
-    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
+
+<div class="viewcode-block" id="Flux1Params.dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/flux1/model/index.html#gensbi.models.flux1.Flux1Params.dtype">[docs]</a>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
 
 
 <div class="viewcode-block" id="Flux1Params.__post_init__">
@@ -1083,6 +1089,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="k">else</span> <span class="n">params</span><span class="o">.</span><span class="n">id_token_dim</span>
                 <span class="p">),</span>
                 <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1100,6 +1107,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="k">else</span> <span class="n">params</span><span class="o">.</span><span class="n">id_token_dim</span>
                 <span class="p">),</span>
                 <span class="n">kind</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1115,6 +1123,7 @@ window.runMermaid = runMermaid;</script>
             <span class="p">),</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1124,6 +1133,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">in_dim</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
             <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1134,6 +1144,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">params</span><span class="o">.</span><span class="n">vec_in_dim</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">guidance_embed</span>
@@ -1152,6 +1163,7 @@ window.runMermaid = runMermaid;</script>
             <span class="p">),</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1178,6 +1190,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">qkv_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span><span class="p">,</span>
                     <span class="n">qkv_bias</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">qkv_bias</span><span class="p">,</span>
                     <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                     <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span>
@@ -1195,6 +1208,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">mlp_ratio</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">mlp_ratio</span><span class="p">,</span>
                     <span class="n">qkv_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span><span class="p">,</span>
                     <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                     <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">depth_single_blocks</span><span class="p">)</span>
@@ -1209,6 +1223,7 @@ window.runMermaid = runMermaid;</script>
             <span class="mi">1</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1229,9 +1244,9 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># assumes obs, cond, obs_ids, cond_ids have shape (B, F, C)</span>
         <span class="c1"># assumes t has shape (B,) or (B, 1)</span>
 
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
-        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
-        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
         <span class="c1"># obs = _expand_dims(obs)</span>
         <span class="c1"># cond = _expand_dims(cond)</span>
@@ -1268,22 +1283,28 @@ window.runMermaid = runMermaid;</script>
             <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vector_in</span><span class="p">(</span><span class="n">guidance</span><span class="p">)</span>
 
         <span class="c1"># if not using rope for a dimension, perform id embedding and add it to the input</span>
+        <span class="c1"># NOTE: the id embedders may be fp32 islands (pos1d/pos2d precomputed</span>
+        <span class="c1"># sinusoidal tables ignore the dtype knob, see FeatureEmbedder), so their</span>
+        <span class="c1"># output is explicitly cast to the stream&#39;s dtype at the merge point to</span>
+        <span class="c1"># avoid silently promoting the whole token stream (and every downstream</span>
+        <span class="c1"># block residual) back to fp32.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span><span class="p">:</span>
-                <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
+                <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span>
+                    <span class="n">obs_ids</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">obs_ids_embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
+                <span class="n">obs_ids_embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids_embedder</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
                 <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_ids_embed</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span><span class="p">:</span>
                 <span class="n">cond</span> <span class="o">=</span> <span class="n">cond</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span>
                     <span class="n">cond_ids</span>
-                <span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">cond</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-                    <span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span>
-                <span class="p">)</span>
+                <span class="n">cond_ids_embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span><span class="p">(</span><span class="n">cond_ids</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">cond</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">cond</span><span class="p">,</span> <span class="n">cond_ids_embed</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Prepare rope embeddings if needed</span>
         <span class="n">pe</span> <span class="o">=</span> <span class="kc">None</span>

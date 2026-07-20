@@ -787,10 +787,63 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">flax.traverse_util</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tu</span>
 
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_colored_value</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.serialization</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_safetensors</span><span class="p">,</span> <span class="n">load_safetensors</span>
+
+
+<div class="viewcode-block" id="_warn_if_not_fp32_master_weights">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._warn_if_not_fp32_master_weights">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_warn_if_not_fp32_master_weights</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Warn when trainable params are not fp32 master weights.</span>
+
+<span class="sd">    Mixed precision in GenSBI stores master weights in fp32 and selects the</span>
+<span class="sd">    compute dtype via each model&#39;s ``dtype`` knob; bf16 master weights break</span>
+<span class="sd">    AdamW moment accumulation and make optax.ema unable to integrate</span>
+<span class="sd">    (1 - decay)-scale updates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="n">tu</span><span class="o">.</span><span class="n">flatten_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)))</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">k</span><span class="p">):</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">flat</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">jnp</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;model has non-fp32 master weights (training will be numerically &quot;</span>
+            <span class="s2">&quot;degraded; set param_dtype=jnp.float32 and use the dtype knob &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;for compute instead): </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="ne">UserWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="_cast_state_to_target_dtypes">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._cast_state_to_target_dtypes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_cast_state_to_target_dtypes</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">State</span><span class="p">,</span> <span class="n">target_state</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nnx</span><span class="o">.</span><span class="n">State</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cast ``state``&#39;s leaves to match ``target_state``&#39;s dtypes, in place.</span>
+
+<span class="sd">    Old checkpoints (e.g. bf16 master weights from a pre-mixed-precision run)</span>
+<span class="sd">    must still be restorable into a model whose current dtype is fp32;</span>
+<span class="sd">    mirrors the ``arr.astype(want.dtype)`` loop already used by</span>
+<span class="sd">    :func:`gensbi.utils.serialization.load_safetensors`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="n">tu</span><span class="o">.</span><span class="n">flatten_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">state</span><span class="p">))</span>
+    <span class="n">target_flat</span> <span class="o">=</span> <span class="n">tu</span><span class="o">.</span><span class="n">flatten_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">target_state</span><span class="p">))</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">flat</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">want</span> <span class="o">=</span> <span class="n">target_flat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">want</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">want</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">):</span>
+            <span class="n">new</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">want</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">replace_by_pure_dict</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">tu</span><span class="o">.</span><span class="n">unflatten_dict</span><span class="p">(</span><span class="n">new</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">state</span></div>
+
 
 
 <div class="viewcode-block" id="ModelEMA">
@@ -1033,6 +1086,8 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.model">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span></div>
 
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_warn_if_not_fp32_master_weights</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <div class="viewcode-block" id="AbstractPipeline.model_wrapped">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.model_wrapped">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># to be set in subclass</span></div>
@@ -1392,6 +1447,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">state</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">StandardRestore</span><span class="p">(</span><span class="n">item</span><span class="o">=</span><span class="n">model_state</span><span class="p">)</span>
                 <span class="p">),</span>
             <span class="p">)</span>
+        <span class="n">_cast_state_to_target_dtypes</span><span class="p">(</span><span class="n">restored</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">],</span> <span class="n">model_state</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graphdef</span><span class="p">,</span> <span class="n">restored</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">])</span>
 
         <span class="c1"># restore the ema model</span>
@@ -1407,6 +1463,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">state</span><span class="o">=</span><span class="n">ocp</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">StandardRestore</span><span class="p">(</span><span class="n">item</span><span class="o">=</span><span class="n">model_state_ema</span><span class="p">)</span>
                 <span class="p">),</span>
             <span class="p">)</span>
+        <span class="n">_cast_state_to_target_dtypes</span><span class="p">(</span><span class="n">restored_ema</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">],</span> <span class="n">model_state_ema</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graphdef</span><span class="p">,</span> <span class="n">restored_ema</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">])</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>

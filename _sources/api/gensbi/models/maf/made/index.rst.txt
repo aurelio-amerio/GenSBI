@@ -43,7 +43,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: MADE(dim, cond_dim, num_params, nn_width, nn_depth, rngs, zero_init = True, param_dtype = jnp.float32, activation=jax.nn.silu)
+.. py:class:: MADE(dim, cond_dim, num_params, nn_width, nn_depth, rngs, zero_init = True, param_dtype = jnp.float32, dtype = jnp.float32, activation=jax.nn.silu)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -71,6 +71,11 @@ Module Contents
    :type zero_init: bool, optional
    :param param_dtype: Dtype for all kernel and bias parameters.  Default is ``float32``.
    :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype forwarded to each :class:`MaskedLinear`.  Default is
+                 ``float32``, matching ``param_dtype``, so with default arguments this
+                 is a bit-identical no-op cast.  Log-det accumulation in
+                 :class:`MaskedAutoregressive` is unaffected by this knob.
+   :type dtype: DTypeLike, optional
    :param activation: Element-wise activation applied after each hidden layer.
                       Default is :func:`jax.nn.silu`.
    :type activation: Callable, optional
@@ -147,7 +152,7 @@ Module Contents
    .. py:attribute:: output_layer
 
 
-.. py:class:: MaskedAutoregressive(dim, cond_dim, transformer, nn_width, nn_depth, rngs, zero_init = True)
+.. py:class:: MaskedAutoregressive(dim, cond_dim, transformer, nn_width, nn_depth, rngs, zero_init = True, param_dtype = jnp.float32, dtype = jnp.float32)
 
    Bases: :py:obj:`gensbi.normalizing_flows.bijections.base.Bijection`
 
@@ -177,6 +182,13 @@ Module Contents
    :param zero_init: If ``True`` (default), zero-initialise the MADE output layer so that
                      the flow starts as an identity transform.
    :type zero_init: bool, optional
+   :param param_dtype: Dtype for the MADE conditioner's stored parameters. Default is
+                       ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype forwarded to the MADE conditioner. Default is
+                 ``float32``. Log-det accumulation below stays unconditionally fp32
+                 regardless of this knob.
+   :type dtype: DTypeLike, optional
 
 
 

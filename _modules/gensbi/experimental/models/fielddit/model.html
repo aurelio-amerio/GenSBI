@@ -894,9 +894,13 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.vec_in_dim">[docs]</a>
     <span class="n">vec_in_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># input dim for guidance MLP (required iff guidance_embed=True)</span></div>
 
+<div class="viewcode-block" id="FieldDiTParams.dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.dtype">[docs]</a>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
+
 <div class="viewcode-block" id="FieldDiTParams.param_dtype">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiTParams.param_dtype">[docs]</a>
-    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
 
 
 <div class="viewcode-block" id="FieldDiTParams.__post_init__">
@@ -963,20 +967,23 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.encoder">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">ObsEncoder</span><span class="p">(</span>
             <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">encoder_widths</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">res_blocks_down</span><span class="p">,</span>
-            <span class="n">vec_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">norm_groups</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">norm_groups</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">vec_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">norm_groups</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">norm_groups</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
         <span class="n">c_bottleneck</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">encoder_widths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 <div class="viewcode-block" id="FieldDiT.tokenizer">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.tokenizer">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">Tokenizer</span><span class="p">(</span>
-            <span class="n">c_bottleneck</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+            <span class="n">c_bottleneck</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="FieldDiT.cond_embedder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.cond_embedder">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_embedder</span> <span class="o">=</span> <span class="n">ScalarCondEmbedder</span><span class="p">(</span>
-            <span class="n">p</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="FieldDiT.core">
@@ -984,32 +991,35 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">core</span> <span class="o">=</span> <span class="n">MMDiTCore</span><span class="p">(</span>
             <span class="n">hid</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">mlp_ratio</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">depth_single_blocks</span><span class="p">,</span>
             <span class="n">axes_dim</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">axes_dim</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">n_cond_tokens</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span>
-            <span class="n">qkv_bias</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">qkv_bias</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">qkv_bias</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">qkv_bias</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="FieldDiT.untokenizer">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.untokenizer">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">untokenizer</span> <span class="o">=</span> <span class="n">Untokenizer</span><span class="p">(</span>
-            <span class="n">c_bottleneck</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+            <span class="n">c_bottleneck</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">patch_size</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="FieldDiT.decoder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.decoder">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">ObsDecoder</span><span class="p">(</span>
             <span class="n">p</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">encoder_widths</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">res_blocks_up</span><span class="p">,</span>
-            <span class="n">vec_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">norm_groups</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">norm_groups</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">vec_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">norm_groups</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">norm_groups</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="FieldDiT.time_in">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.time_in">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">time_in</span> <span class="o">=</span> <span class="n">MLPEmbedder</span><span class="p">(</span>
-            <span class="n">in_dim</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+            <span class="n">in_dim</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
         <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">guidance_embed</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">p</span><span class="o">.</span><span class="n">vec_in_dim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;vec_in_dim required when guidance_embed=True&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">guidance_in</span> <span class="o">=</span> <span class="n">MLPEmbedder</span><span class="p">(</span>
-                <span class="n">p</span><span class="o">.</span><span class="n">vec_in_dim</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">vec_in_dim</span><span class="p">,</span> <span class="n">hid</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">param_dtype</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">guidance_in</span> <span class="o">=</span> <span class="n">Identity</span><span class="p">()</span>
@@ -1039,6 +1049,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="FieldDiT.guidance_embed">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.guidance_embed">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">guidance_embed</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">guidance_embed</span></div>
+
+<div class="viewcode-block" id="FieldDiT.dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.dtype">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">dtype</span></div>
 
 <div class="viewcode-block" id="FieldDiT.param_dtype">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/model/index.html#gensbi.experimental.models.fielddit.FieldDiT.param_dtype">[docs]</a>
@@ -1079,8 +1093,11 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">&quot;is deferred work); got conditioned=</span><span class="si">{</span><span class="n">conditioned</span><span class="si">!r}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
-        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="c1"># models-emit-fp32 contract: inputs are cast to fp32 at the model</span>
+        <span class="c1"># door; each embedder&#39;s own compute-dtype Linear/Conv downcasts</span>
+        <span class="c1"># internally via promote_dtype.</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -1100,7 +1117,7 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># cast only the finished embedding to the model dtype</span>
         <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="n">time_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_in</span><span class="p">(</span>
-            <span class="n">timestep_embedding</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+            <span class="n">timestep_embedding</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
         <span class="p">)</span>  <span class="c1"># (B, hidden)</span>
 
         <span class="n">cond_tokens</span><span class="p">,</span> <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_embedder</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>  <span class="c1"># (B, k, hidden), (B, hidden)</span>

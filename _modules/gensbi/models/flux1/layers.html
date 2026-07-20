@@ -864,7 +864,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">in_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="MLPEmbedder.in_layer">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.MLPEmbedder.in_layer">[docs]</a>
@@ -873,6 +874,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">hidden_dim</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -887,6 +889,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">hidden_dim</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -906,22 +909,29 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
+        <span class="c1"># fp32 island: normalization stats are always computed/stored in fp32,</span>
+        <span class="c1"># regardless of the model&#39;s compute dtype knob.</span>
 <div class="viewcode-block" id="QKNorm.query_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.QKNorm.query_norm">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">query_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">RMSNorm</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">RMSNorm</span><span class="p">(</span>
+            <span class="n">dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="QKNorm.key_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.QKNorm.key_norm">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">key_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">RMSNorm</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">RMSNorm</span><span class="p">(</span>
+            <span class="n">dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="QKNorm.__call__">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.QKNorm.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
-        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_norm</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_norm</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_norm</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_norm</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span></div>
 </div>
 
@@ -935,7 +945,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
         <span class="n">qkv_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
         <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
         <span class="n">qkv_bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
@@ -955,12 +966,13 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">qkv_features</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="n">qkv_bias</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="SelfAttention.norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SelfAttention.norm">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">QKNorm</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">QKNorm</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SelfAttention.proj">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SelfAttention.proj">[docs]</a>
@@ -969,6 +981,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1014,7 +1027,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">double</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="Modulation.is_double">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.Modulation.is_double">[docs]</a>
@@ -1031,6 +1045,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">multiplier</span> <span class="o">*</span> <span class="n">dim</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="n">kernel_init</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span>  <span class="c1"># this ensures that the initial modulation is neutral</span>
             <span class="n">bias_init</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span>  <span class="c1"># this ensures that the initial modulation is neutral</span>
@@ -1060,7 +1075,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">mlp_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
         <span class="n">qkv_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
         <span class="n">qkv_bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="n">mlp_hidden_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="n">mlp_ratio</span><span class="p">)</span>
@@ -1079,7 +1095,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="DoubleStreamBlock.obs_mod">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.obs_mod">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">obs_mod</span> <span class="o">=</span> <span class="n">Modulation</span><span class="p">(</span>
-            <span class="n">dim</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">dim</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="DoubleStreamBlock.obs_norm1">
@@ -1090,6 +1106,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1101,6 +1118,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">qkv_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span><span class="p">,</span>
             <span class="n">qkv_bias</span><span class="o">=</span><span class="n">qkv_bias</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1113,6 +1131,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1124,6 +1143,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">out_features</span><span class="o">=</span><span class="n">mlp_hidden_dim</span><span class="p">,</span>
                 <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">nnx</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
@@ -1132,6 +1152,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">out_features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
                 <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
@@ -1140,7 +1161,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="DoubleStreamBlock.cond_mod">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.DoubleStreamBlock.cond_mod">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_mod</span> <span class="o">=</span> <span class="n">Modulation</span><span class="p">(</span>
-            <span class="n">dim</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">dim</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="DoubleStreamBlock.cond_norm1">
@@ -1151,6 +1172,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1162,6 +1184,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">qkv_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span><span class="p">,</span>
             <span class="n">qkv_bias</span><span class="o">=</span><span class="n">qkv_bias</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1174,6 +1197,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1185,6 +1209,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">out_features</span><span class="o">=</span><span class="n">mlp_hidden_dim</span><span class="p">,</span>
                 <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">nnx</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
@@ -1193,6 +1218,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">out_features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
                 <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
@@ -1267,7 +1293,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
         <span class="n">qkv_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
         <span class="n">mlp_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">,</span>
         <span class="n">qk_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
@@ -1300,6 +1327,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">in_features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">out_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp_hidden_dim</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1310,13 +1338,14 @@ window.runMermaid = runMermaid;</script>
             <span class="n">in_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qkv_features</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp_hidden_dim</span><span class="p">,</span>
             <span class="n">out_features</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SingleStreamBlock.norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SingleStreamBlock.norm">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">QKNorm</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">QKNorm</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SingleStreamBlock.hidden_size">
@@ -1331,6 +1360,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1342,7 +1372,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SingleStreamBlock.modulation">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.SingleStreamBlock.modulation">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">modulation</span> <span class="o">=</span> <span class="n">Modulation</span><span class="p">(</span>
-            <span class="n">hidden_size</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">hidden_size</span><span class="p">,</span> <span class="n">double</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
         <span class="p">)</span></div>
 
 
@@ -1376,7 +1406,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">patch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="LastLayer.norm_final">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.LastLayer.norm_final">[docs]</a>
@@ -1386,9 +1417,13 @@ window.runMermaid = runMermaid;</script>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
+        <span class="c1"># models-emit-fp32 contract: the final projection is constructed with</span>
+        <span class="c1"># dtype=jnp.float32 (never a post-hoc .astype), regardless of the</span>
+        <span class="c1"># compute-dtype knob.</span>
 <div class="viewcode-block" id="LastLayer.linear">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.LastLayer.linear">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
@@ -1396,6 +1431,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">patch_size</span> <span class="o">*</span> <span class="n">patch_size</span> <span class="o">*</span> <span class="n">out_channels</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1408,6 +1444,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">out_features</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">hidden_size</span><span class="p">,</span>
                 <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span></div>

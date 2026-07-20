@@ -34,7 +34,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: AdditiveBiasConditioner(cond_dim, channels, rngs, cond_channels = 1)
+.. py:class:: AdditiveBiasConditioner(cond_dim, channels, rngs, cond_channels = 1, param_dtype = jnp.float32, dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -58,6 +58,13 @@ Module Contents
                          ``cond_dim * cond_channels`` features, folding the channel axis before
                          the MLP (same flattening performed in :meth:`embed`).
    :type cond_channels: int, optional
+   :param param_dtype: Dtype for the stored (master) kernel/bias parameters. Default is
+                       ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype forwarded to the MLP layers. Default is ``float32``,
+                 matching ``param_dtype``, so with default arguments this is a
+                 bit-identical no-op cast.
+   :type dtype: DTypeLike, optional
 
 
 
@@ -118,7 +125,7 @@ Module Contents
    .. py:attribute:: cond_dim
 
 
-.. py:class:: ImageConditioner(cond_channels, patch_size, channels, num_tokens, rngs)
+.. py:class:: ImageConditioner(cond_channels, patch_size, channels, num_tokens, rngs, param_dtype = jnp.float32, dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -143,6 +150,13 @@ Module Contents
    :param rngs: Flax RNG container for projection layer and positional embedding
                 initialization.
    :type rngs: nnx.Rngs
+   :param param_dtype: Dtype for the stored (master) kernel/bias/positional parameters.
+                       Default is ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype forwarded to ``proj``. Default is ``float32``,
+                 matching ``param_dtype``, so with default arguments this is a
+                 bit-identical no-op cast.
+   :type dtype: DTypeLike, optional
 
 
 
@@ -209,7 +223,7 @@ Module Contents
    .. py:attribute:: proj
 
 
-.. py:class:: VectorConditioner(cond_dim, cond_channels, channels, rngs)
+.. py:class:: VectorConditioner(cond_dim, cond_channels, channels, rngs, param_dtype = jnp.float32, dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -232,6 +246,13 @@ Module Contents
    :param rngs: Flax RNG container for linear layer and positional embedding
                 initialization.
    :type rngs: nnx.Rngs
+   :param param_dtype: Dtype for the stored (master) kernel/bias/positional parameters.
+                       Default is ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype forwarded to ``proj``. Default is ``float32``,
+                 matching ``param_dtype``, so with default arguments this is a
+                 bit-identical no-op cast.
+   :type dtype: DTypeLike, optional
 
 
 

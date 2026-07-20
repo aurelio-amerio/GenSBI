@@ -832,6 +832,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        transform parameters start at 0 (Affine becomes the identity).</span>
 <span class="sd">    param_dtype : DTypeLike, optional</span>
 <span class="sd">        Dtype for all kernel and bias parameters.  Default is ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype forwarded to each :class:`MaskedLinear`.  Default is</span>
+<span class="sd">        ``float32``, matching ``param_dtype``, so with default arguments this</span>
+<span class="sd">        is a bit-identical no-op cast.  Log-det accumulation in</span>
+<span class="sd">        :class:`MaskedAutoregressive` is unaffected by this knob.</span>
 <span class="sd">    activation : Callable, optional</span>
 <span class="sd">        Element-wise activation applied after each hidden layer.</span>
 <span class="sd">        Default is :func:`jax.nn.silu`.</span>
@@ -839,6 +844,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">cond_dim</span><span class="p">,</span> <span class="n">num_params</span><span class="p">,</span> <span class="n">nn_width</span><span class="p">,</span> <span class="n">nn_depth</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span>
                  <span class="n">zero_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
                  <span class="n">activation</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">silu</span><span class="p">):</span>
 <div class="viewcode-block" id="MADE.dim">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.dim">[docs]</a>
@@ -866,20 +872,22 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MADE.input_layer">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.input_layer">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_layer</span> <span class="o">=</span> <span class="n">MaskedLinear</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="n">cond_dim</span><span class="p">,</span> <span class="n">nn_width</span><span class="p">,</span> <span class="n">in_mask</span><span class="p">,</span>
-                                        <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
+                                        <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                                        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MADE.hidden_layers">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.hidden_layers">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_layers</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">List</span><span class="p">([</span>
             <span class="n">MaskedLinear</span><span class="p">(</span><span class="n">nn_width</span><span class="p">,</span> <span class="n">nn_width</span><span class="p">,</span> <span class="n">hidden_mask</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
-                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span>
+                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nn_depth</span><span class="p">)</span>
         <span class="p">])</span></div>
 
 <div class="viewcode-block" id="MADE.output_layer">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.output_layer">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">MaskedLinear</span><span class="p">(</span><span class="n">nn_width</span><span class="p">,</span> <span class="n">dim</span> <span class="o">*</span> <span class="n">num_params</span><span class="p">,</span> <span class="n">out_mask</span><span class="p">,</span>
-                                         <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span></div>
+                                         <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                                         <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
         <span class="k">if</span> <span class="n">zero_init</span><span class="p">:</span>
             <span class="c1"># Identity warm-start: zero output params -&gt; affine is identity.</span>
@@ -956,10 +964,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    zero_init : bool, optional</span>
 <span class="sd">        If ``True`` (default), zero-initialise the MADE output layer so that</span>
 <span class="sd">        the flow starts as an identity transform.</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for the MADE conditioner&#39;s stored parameters. Default is</span>
+<span class="sd">        ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype forwarded to the MADE conditioner. Default is</span>
+<span class="sd">        ``float32``. Log-det accumulation below stays unconditionally fp32</span>
+<span class="sd">        regardless of this knob.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">cond_dim</span><span class="p">,</span> <span class="n">transformer</span><span class="p">,</span> <span class="n">nn_width</span><span class="p">,</span> <span class="n">nn_depth</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span>
-                 <span class="n">zero_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+                 <span class="n">zero_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
 <div class="viewcode-block" id="MaskedAutoregressive.dim">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MaskedAutoregressive.dim">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span></div>
@@ -973,7 +989,8 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">made</span> <span class="o">=</span> <span class="n">MADE</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">cond_dim</span><span class="o">=</span><span class="n">cond_dim</span><span class="p">,</span>
                          <span class="n">num_params</span><span class="o">=</span><span class="n">transformer</span><span class="o">.</span><span class="n">num_params</span><span class="p">,</span>
                          <span class="n">nn_width</span><span class="o">=</span><span class="n">nn_width</span><span class="p">,</span> <span class="n">nn_depth</span><span class="o">=</span><span class="n">nn_depth</span><span class="p">,</span>
-                         <span class="n">zero_init</span><span class="o">=</span><span class="n">zero_init</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+                         <span class="n">zero_init</span><span class="o">=</span><span class="n">zero_init</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="MaskedAutoregressive.inverse">

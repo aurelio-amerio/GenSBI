@@ -22,7 +22,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: MaskedLinear(in_features, out_features, mask, rngs, param_dtype = jnp.float32)
+.. py:class:: MaskedLinear(in_features, out_features, mask, rngs, param_dtype = jnp.float32, dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -39,8 +39,13 @@ Module Contents
    :type mask: Array
    :param rngs:
    :type rngs: nnx.Rngs
-   :param param_dtype: Defaults to float32 (exact-likelihood model needs the precision).
+   :param param_dtype: Dtype for the stored (master) kernel/bias parameters. Defaults to
+                       float32 (exact-likelihood model needs the precision).
    :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype: the kernel/bias/activations are cast to this dtype
+                 before the matmul. Defaults to float32, matching ``param_dtype``, so
+                 with default arguments this is a no-op cast (bit-identical).
+   :type dtype: DTypeLike, optional
 
 
 
@@ -86,6 +91,9 @@ Module Contents
 
       ..
           !! processed by numpydoc !!
+
+
+   .. py:attribute:: dtype
 
 
    .. py:attribute:: linear

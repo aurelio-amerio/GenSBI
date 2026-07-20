@@ -317,6 +317,20 @@ Module Contents
    :param rope_theta: Frequency base for the rotary embedding. Only used when
                       ``use_rope=True``. Default is ``10000``.
    :type rope_theta: int, optional
+   :param param_dtype: Dtype for all stored (master) kernel/bias/embedding parameters
+                       across the tokenizer, conditioner, and transformer blocks. Default
+                       is ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype knob threaded through the conditioners and
+                 :class:`~gensbi.models.tarflow.blocks.MetaBlock`/
+                 :class:`~gensbi.models.tarflow.blocks.AttentionBlock` layers.
+                 Default is ``float32``, matching ``param_dtype``, so with default
+                 arguments this is a bit-identical no-op cast. Hard-fp32 regardless
+                 of this knob: the softplus/soft_clip affine-scale path in
+                 ``MetaBlock._affine``, log-det accumulation, the ``mean``/``std``
+                 standardization buffers, and the KV-cache buffers used during
+                 sampling.
+   :type dtype: DTypeLike, optional
 
 
 
@@ -380,6 +394,10 @@ Module Contents
 
 
 
+   .. py:attribute:: dtype
+      :type:  jax.typing.DTypeLike
+
+
    .. py:attribute:: head_dim
       :type:  int
       :value: 16
@@ -420,6 +438,10 @@ Module Contents
       :type:  int
       :value: 4
 
+
+
+   .. py:attribute:: param_dtype
+      :type:  jax.typing.DTypeLike
 
 
    .. py:attribute:: patch_size

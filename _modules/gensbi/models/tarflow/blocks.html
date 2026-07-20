@@ -766,6 +766,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.tarflow.pe</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_rope</span><span class="p">,</span> <span class="n">get_positions</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.normalizing_flows.bijections.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mask</span>
@@ -795,10 +796,21 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        neurons in its hidden layer.</span>
 <span class="sd">    rngs : nnx.Rngs</span>
 <span class="sd">        Flax RNG container used to initialize all sub-layers.</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for all stored (master) kernel/bias/scale parameters. Default</span>
+<span class="sd">        is ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype forwarded to each ``Linear``. Default is ``float32``,</span>
+<span class="sd">        matching ``param_dtype``, so with default arguments this is a</span>
+<span class="sd">        bit-identical no-op cast. ``norm1``/``norm2`` are fp32 islands and</span>
+<span class="sd">        always run at ``float32`` regardless of this knob; their output</span>
+<span class="sd">        self-heals when it feeds the following compute-dtype ``Linear``</span>
+<span class="sd">        (``promote_dtype`` downcasts it there).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">expansion</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
+                 <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">channels</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;channels (</span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2">) must be a multiple of num_heads (</span><span class="si">{</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
@@ -810,29 +822,37 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.head_dim">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">=</span> <span class="n">channels</span> <span class="o">//</span> <span class="n">num_heads</span></div>
 
+        <span class="c1"># fp32 islands: norms stay at float32 regardless of the dtype knob;</span>
+        <span class="c1"># their output self-heals via promote_dtype when feeding qkv/mlp_in.</span>
 <div class="viewcode-block" id="AttentionBlock.norm1">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.norm1">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AttentionBlock.qkv">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.qkv">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                              <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AttentionBlock.proj">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.proj">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AttentionBlock.norm2">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.norm2">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AttentionBlock.mlp_in">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.mlp_in">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">channels</span> <span class="o">*</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">channels</span> <span class="o">*</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AttentionBlock.mlp_out">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.mlp_out">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span> <span class="o">*</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mlp_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span> <span class="o">*</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                                  <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AttentionBlock._qkv">
@@ -996,11 +1016,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    grid : tuple of int or None, optional</span>
 <span class="sd">        ``(h, w)`` patch-grid shape used to build rope positions when</span>
 <span class="sd">        ``rope`` is given; required in that case. Default is ``None``.</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for all stored (master) kernel/bias/embedding parameters.</span>
+<span class="sd">        Default is ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype forwarded to ``proj_in``/``proj_out``/``AttentionBlock``</span>
+<span class="sd">        layers. Default is ``float32``, matching ``param_dtype``, so with</span>
+<span class="sd">        default arguments this is a bit-identical no-op cast. The</span>
+<span class="sd">        softplus/soft_clip affine-scale computation in :meth:`_affine` stays</span>
+<span class="sd">        unconditionally fp32 regardless of this knob.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">perm</span><span class="p">,</span> <span class="n">conditioner</span><span class="p">,</span>
                  <span class="n">num_layers</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span> <span class="n">zero_init</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                 <span class="n">use_softplus</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">soft_clip</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">rope</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                 <span class="n">use_softplus</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">soft_clip</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">rope</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
 <div class="viewcode-block" id="MetaBlock.F">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.F">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">F</span></div>
@@ -1017,6 +1048,10 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.T">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">T</span></div>
 
+<div class="viewcode-block" id="MetaBlock.dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.dtype">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span></div>
+
         <span class="n">perm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">perm</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
 <div class="viewcode-block" id="MetaBlock.perm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.perm">[docs]</a>
@@ -1032,12 +1067,13 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="MetaBlock.proj_in">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.proj_in">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proj_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_in</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                                  <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MetaBlock.sos_embed">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.sos_embed">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">F</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span></div>
+            <span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">F</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">))</span></div>
 
         <span class="k">if</span> <span class="n">rope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1058,16 +1094,18 @@ window.runMermaid = runMermaid;</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-                <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span>
+                <span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">))</span>
 <div class="viewcode-block" id="MetaBlock.attn_blocks">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.attn_blocks">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">attn_blocks</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">List</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">AttentionBlock</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">rngs</span><span class="p">)</span>
+            <span class="p">[</span><span class="n">AttentionBlock</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span>
+                            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
              <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span><span class="p">)])</span></div>
 
 <div class="viewcode-block" id="MetaBlock.proj_out">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.proj_out">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">F</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">F</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                                   <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
         <span class="k">if</span> <span class="n">zero_init</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span><span class="o">.</span><span class="n">kernel</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_out</span><span class="o">.</span><span class="n">kernel</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
@@ -1128,11 +1166,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        condition). ``bias``/``prefix``/``mask`` come from :meth:`_embed_cond`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">B</span> <span class="o">=</span> <span class="n">x_perm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">sos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">))</span>
+        <span class="n">sos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">x_perm</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">))</span>
         <span class="n">x_in</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">sos</span><span class="p">,</span> <span class="n">x_perm</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># (B, T, F)</span>
         <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_in</span><span class="p">(</span><span class="n">x_in</span><span class="p">)</span>                                  <span class="c1"># (B, T, C)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">][</span><span class="kc">None</span><span class="p">]</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">dtype</span><span class="p">)[</span><span class="kc">None</span><span class="p">]</span>
         <span class="n">freqs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="n">bias</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
@@ -1306,7 +1345,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">k_caches</span> <span class="o">=</span> <span class="n">k_caches</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">layer</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">M</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
                 <span class="n">v_caches</span> <span class="o">=</span> <span class="n">v_caches</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">layer</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">M</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
 
-        <span class="n">sos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">))</span>
+        <span class="n">sos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">zp</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">))</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
             <span class="n">x</span><span class="p">,</span> <span class="n">k_caches</span><span class="p">,</span> <span class="n">v_caches</span> <span class="o">=</span> <span class="n">carry</span>
@@ -1317,7 +1356,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">pe</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_slice_in_dim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">t</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
                                                   <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-                <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="n">pe</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="n">pe</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">dtype</span><span class="p">)[</span><span class="kc">None</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">h</span> <span class="o">=</span> <span class="n">h</span> <span class="o">+</span> <span class="n">bias</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
             <span class="n">slot</span> <span class="o">=</span> <span class="n">M</span> <span class="o">+</span> <span class="n">t</span>

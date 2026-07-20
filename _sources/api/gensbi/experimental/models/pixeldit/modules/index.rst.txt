@@ -72,7 +72,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:class:: FinalLayer(hidden_size, out_channels, *, rngs, param_dtype = jnp.bfloat16)
+.. py:class:: FinalLayer(hidden_size, out_channels, *, rngs, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -82,6 +82,11 @@ Module Contents
 
    The linear's kernel and bias are both zero-initialized, so the layer is
    exactly the zero map at initialisation (safe residual scaling).
+
+   models-emit-fp32 contract: both the norm and the linear are constructed
+   with ``dtype=jnp.float32`` (never a post-hoc ``.astype``), regardless of
+   the compute-dtype knob used elsewhere in the model -- this is the
+   designated emit-fp32 endpoint, so it has no separate ``dtype`` parameter.
 
 
 
@@ -109,7 +114,7 @@ Module Contents
    .. py:attribute:: norm
 
 
-.. py:class:: PixelMLP(dim, mlp_ratio = 4.0, *, rngs, param_dtype = jnp.bfloat16)
+.. py:class:: PixelMLP(dim, mlp_ratio = 4.0, *, rngs, dtype = jnp.bfloat16, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -146,7 +151,7 @@ Module Contents
    .. py:attribute:: fc2
 
 
-.. py:class:: SwiGLU(dim, mlp_ratio = 4.0, *, rngs, param_dtype = jnp.bfloat16)
+.. py:class:: SwiGLU(dim, mlp_ratio = 4.0, *, rngs, dtype = jnp.bfloat16, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -186,7 +191,7 @@ Module Contents
    .. py:attribute:: w3
 
 
-.. py:class:: TimestepConditioner(hidden_size, freq_dim = 256, *, rngs, param_dtype = jnp.bfloat16)
+.. py:class:: TimestepConditioner(hidden_size, freq_dim = 256, *, rngs, dtype = jnp.bfloat16, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -194,8 +199,9 @@ Module Contents
    
    Embed a scalar timestep into ``hidden_size`` (ref modules.py:63-91).
 
-   The sinusoid is always computed in float32; the result is cast to
-   ``param_dtype`` only before the MLP projection.
+   The sinusoid is always computed in float32; ``mlp_in`` (a compute-dtype
+   Linear) downcasts it to the compute dtype via its own ``promote_dtype``,
+   so no manual cast is needed at the call site.
    MLP weights are initialised with ``normal(std=0.02)`` (ref
    ``initialize_weights``).
 

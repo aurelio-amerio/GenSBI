@@ -35,7 +35,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: AttentionBlock(channels, num_heads, expansion, rngs)
+.. py:class:: AttentionBlock(channels, num_heads, expansion, rngs, param_dtype = jnp.float32, dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -55,6 +55,16 @@ Module Contents
    :type expansion: int
    :param rngs: Flax RNG container used to initialize all sub-layers.
    :type rngs: nnx.Rngs
+   :param param_dtype: Dtype for all stored (master) kernel/bias/scale parameters. Default
+                       is ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype forwarded to each ``Linear``. Default is ``float32``,
+                 matching ``param_dtype``, so with default arguments this is a
+                 bit-identical no-op cast. ``norm1``/``norm2`` are fp32 islands and
+                 always run at ``float32`` regardless of this knob; their output
+                 self-heals when it feeds the following compute-dtype ``Linear``
+                 (``promote_dtype`` downcasts it there).
+   :type dtype: DTypeLike, optional
 
 
 
@@ -226,7 +236,7 @@ Module Contents
    .. py:attribute:: qkv
 
 
-.. py:class:: MetaBlock(F, channels, T, perm, conditioner, num_layers, num_heads, expansion, rngs, zero_init=True, use_softplus=True, soft_clip=4.0, rope=None, grid=None)
+.. py:class:: MetaBlock(F, channels, T, perm, conditioner, num_layers, num_heads, expansion, rngs, zero_init=True, use_softplus=True, soft_clip=4.0, rope=None, grid=None, param_dtype = jnp.float32, dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -284,6 +294,15 @@ Module Contents
    :param grid: ``(h, w)`` patch-grid shape used to build rope positions when
                 ``rope`` is given; required in that case. Default is ``None``.
    :type grid: tuple of int or None, optional
+   :param param_dtype: Dtype for all stored (master) kernel/bias/embedding parameters.
+                       Default is ``float32``.
+   :type param_dtype: DTypeLike, optional
+   :param dtype: Compute dtype forwarded to ``proj_in``/``proj_out``/``AttentionBlock``
+                 layers. Default is ``float32``, matching ``param_dtype``, so with
+                 default arguments this is a bit-identical no-op cast. The
+                 softplus/soft_clip affine-scale computation in :meth:`_affine` stays
+                 unconditionally fp32 regardless of this knob.
+   :type dtype: DTypeLike, optional
 
 
 
@@ -567,6 +586,9 @@ Module Contents
 
 
    .. py:attribute:: conditioner
+
+
+   .. py:attribute:: dtype
 
 
    .. py:attribute:: inv_perm

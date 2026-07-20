@@ -802,7 +802,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        rngs (nnx.Rngs):</span>
 <span class="sd">            Random number generators for parameter initialization and stochastic layers.</span>
 <span class="sd">        param_dtype (DTypeLike):</span>
-<span class="sd">            Data type for model parameters (e.g., jnp.float32, jnp.bfloat16).</span>
+<span class="sd">            Data type for master-weight storage (parameters). Defaults to jnp.float32.</span>
+<span class="sd">        dtype (DTypeLike):</span>
+<span class="sd">            Compute dtype used by the encoder/decoder&#39;s Conv layers. GroupNorms</span>
+<span class="sd">            and the decoder&#39;s final output Conv are fp32 islands regardless of</span>
+<span class="sd">            this setting (see `Encoder2D`/`Decoder2D`/`DiagonalGaussian`).</span>
+<span class="sd">            Defaults to jnp.bfloat16.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="AutoEncoderParams.resolution">
@@ -847,7 +852,11 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="AutoEncoderParams.param_dtype">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.AutoEncoderParams.param_dtype">[docs]</a>
-    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span></div>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
+
+<div class="viewcode-block" id="AutoEncoderParams.dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/commons/index.html#gensbi.experimental.models.autoencoders.commons.AutoEncoderParams.dtype">[docs]</a>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
 </div>
 
 
@@ -927,6 +936,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Array</span>
 <span class="sd">                Sampled latent or mean, depending on self.sample.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># fp32 island: the exp/log math for the variance and the Gaussian</span>
+        <span class="c1"># sample are numerically sensitive, so they always run in fp32</span>
+        <span class="c1"># regardless of the compute dtype knob. The result is downcast back</span>
+        <span class="c1"># to the incoming dtype below so this island self-heals instead of</span>
+        <span class="c1"># leaking fp32 into the caller&#39;s scale/shift arithmetic, which (unlike</span>
+        <span class="c1"># a Linear/Conv&#39;s `promote_dtype`) won&#39;t downcast on its own.</span>
+        <span class="n">orig_dtype</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="n">mean</span><span class="p">,</span> <span class="n">logvar</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_dim</span><span class="p">)</span>
         <span class="n">std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">logvar</span><span class="p">)</span>
 
@@ -938,11 +955,13 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">mean</span> <span class="o">+</span> <span class="n">std</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
-                <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">z</span><span class="o">.</span><span class="n">dtype</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">mean</span> <span class="o">+</span> <span class="n">std</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">mean</span></div>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">mean</span>
+
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">orig_dtype</span><span class="p">)</span></div>
 </div>
 
 
@@ -969,7 +988,14 @@ window.runMermaid = runMermaid;</script>
     <span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
     <span class="n">losses</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Loss</span><span class="p">)</span>
     <span class="n">kl_loss</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">losses</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
-    <span class="n">reconstruction_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optax</span><span class="o">.</span><span class="n">sigmoid_binary_cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+
+    <span class="c1"># Loss is always computed in fp32 regardless of the model&#39;s compute</span>
+    <span class="c1"># dtype (defense-in-depth on top of the models-emit-fp32 contract).</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">kl_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">kl_loss</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="n">reconstruction_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optax</span><span class="o">.</span><span class="n">sigmoid_binary_cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">target</span><span class="p">))</span>
     <span class="n">loss</span> <span class="o">=</span> <span class="n">reconstruction_loss</span> <span class="o">+</span> <span class="n">kl_weight</span> <span class="o">*</span> <span class="n">kl_loss</span>
     <span class="k">return</span> <span class="n">loss</span></div>
 

@@ -654,7 +654,7 @@
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.maf.masked_linear.MaskedLinear">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.maf.masked_linear.</span></span><span class="sig-name descname"><span class="pre">MaskedLinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/maf/masked_linear.html#MaskedLinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.maf.masked_linear.MaskedLinear" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.maf.masked_linear.</span></span><span class="sig-name descname"><span class="pre">MaskedLinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/maf/masked_linear.html#MaskedLinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.maf.masked_linear.MaskedLinear" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">(kernel</span> <span class="pre">*</span> <span class="pre">mask).T</span> <span class="pre">&#64;</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">bias</span></code> with a non-trainable mask.</p>
 <dl class="field-list simple">
@@ -665,7 +665,11 @@
 <li><p><strong>mask</strong> (<em>Array</em>) – Boolean array of shape <code class="docutils literal notranslate"><span class="pre">(in_features,</span> <span class="pre">out_features)</span></code>; stored as a
 <code class="xref py py-class docutils literal notranslate"><span class="pre">Mask</span></code> buffer so it is excluded from <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code>.</p></li>
 <li><p><strong>rngs</strong> (<em>nnx.Rngs</em>)</p></li>
-<li><p><strong>param_dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Defaults to float32 (exact-likelihood model needs the precision).</p></li>
+<li><p><strong>param_dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Dtype for the stored (master) kernel/bias parameters. Defaults to
+float32 (exact-likelihood model needs the precision).</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Compute dtype: the kernel/bias/activations are cast to this dtype
+before the matmul. Defaults to float32, matching <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>, so
+with default arguments this is a no-op cast (bit-identical).</p></li>
 </ul>
 </dd>
 </dl>
@@ -685,6 +689,11 @@
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.maf.masked_linear.MaskedLinear.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/maf/masked_linear.html#MaskedLinear.dtype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.maf.masked_linear.MaskedLinear.dtype" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.maf.masked_linear.MaskedLinear.linear">
@@ -752,6 +761,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.maf.masked_linear.MaskedLinear"><code class="docutils literal notranslate"><span class="pre">MaskedLinear</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.maf.masked_linear.MaskedLinear.__call__"><code class="docutils literal notranslate"><span class="pre">MaskedLinear.__call__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.maf.masked_linear.MaskedLinear.dtype"><code class="docutils literal notranslate"><span class="pre">MaskedLinear.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.maf.masked_linear.MaskedLinear.linear"><code class="docutils literal notranslate"><span class="pre">MaskedLinear.linear</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.maf.masked_linear.MaskedLinear.mask"><code class="docutils literal notranslate"><span class="pre">MaskedLinear.mask</span></code></a></li>
 </ul>

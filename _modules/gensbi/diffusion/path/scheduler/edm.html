@@ -1292,15 +1292,19 @@ window.runMermaid = runMermaid;</script>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">weights</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x_1</span><span class="p">)</span>
 
+            <span class="c1"># Loss is always computed in fp32 regardless of the model&#39;s</span>
+            <span class="c1"># compute dtype (defense-in-depth on top of the models-emit-fp32</span>
+            <span class="c1"># contract).</span>
+            <span class="n">model_output</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                <span class="n">F</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">c_in_eff</span> <span class="o">*</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">c_noise</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+            <span class="p">)</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">c_out</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_1</span> <span class="o">-</span> <span class="n">c_skip</span> <span class="o">*</span> <span class="n">x_t</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
             <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">weights</span>
                 <span class="o">*</span> <span class="n">lam</span>
                 <span class="o">*</span> <span class="n">c_out</span><span class="o">**</span><span class="mi">2</span>
-                <span class="o">*</span> <span class="p">(</span>
-                    <span class="n">F</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">c_in_eff</span> <span class="o">*</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">c_noise</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
-                    <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c_out</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_1</span> <span class="o">-</span> <span class="n">c_skip</span> <span class="o">*</span> <span class="n">x_t</span><span class="p">)</span>
-                <span class="p">)</span>
-                <span class="o">**</span> <span class="mi">2</span>
+                <span class="o">*</span> <span class="p">(</span><span class="n">model_output</span> <span class="o">-</span> <span class="n">target</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">condition_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition_mask</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>

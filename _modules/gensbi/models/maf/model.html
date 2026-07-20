@@ -768,6 +768,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core.prior</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_gaussian_prior</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.core.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">fit_stat</span>
@@ -820,6 +821,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    zero_init : bool, optional</span>
 <span class="sd">        If ``True`` (default), zero-initialise the output layer of each MADE</span>
 <span class="sd">        network so the flow starts as an identity transform.</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for all stored (master) MADE kernel/bias parameters. Default is</span>
+<span class="sd">        ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype knob threaded through the MADE conditioners. Default is</span>
+<span class="sd">        ``float32`` (unlike the bf16-default DiT-family models, MAF keeps</span>
+<span class="sd">        fp32 compute by default pending dedicated stability testing — see</span>
+<span class="sd">        the mixed-precision design spec). Log-det accumulation is</span>
+<span class="sd">        unconditionally fp32 regardless of this knob.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="MAFlowParams.rngs">
@@ -869,6 +879,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MAFlowParams.cond_channels">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/model/index.html#gensbi.models.MAFlowParams.cond_channels">[docs]</a>
     <span class="n">cond_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="MAFlowParams.param_dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/maf/model/index.html#gensbi.models.MAFlowParams.param_dtype">[docs]</a>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
+
+<div class="viewcode-block" id="MAFlowParams.dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/maf/model/index.html#gensbi.models.MAFlowParams.dtype">[docs]</a>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
 
 
 <div class="viewcode-block" id="MAFlowParams.__post_init__">
@@ -921,7 +939,9 @@ window.runMermaid = runMermaid;</script>
             <span class="n">bijections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="n">MaskedAutoregressive</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">,</span> <span class="n">flat_cond_dim</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">transformer</span><span class="p">,</span>
                                      <span class="n">params</span><span class="o">.</span><span class="n">nn_width</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">nn_depth</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span>
-                                     <span class="n">zero_init</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">zero_init</span><span class="p">))</span>
+                                     <span class="n">zero_init</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">zero_init</span><span class="p">,</span>
+                                     <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+                                     <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">params</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">permutation</span> <span class="o">==</span> <span class="s2">&quot;reverse&quot;</span><span class="p">:</span>
                     <span class="n">bijections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Permutation</span><span class="o">.</span><span class="n">reverse</span><span class="p">(</span><span class="n">flat_dim</span><span class="p">))</span>

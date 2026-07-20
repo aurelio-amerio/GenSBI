@@ -1,0 +1,1262 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Mixed-Precision Training Implementation Plan &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/plans/2026-07-20-mixed-precision';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Mixed-Precision Training Implementation Plan</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="mixed-precision-training-implementation-plan">
+<h1>Mixed-Precision Training Implementation Plan<a class="headerlink" href="#mixed-precision-training-implementation-plan" title="Link to this heading">#</a></h1>
+<blockquote>
+<div><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">[</span> <span class="pre">]</span></code>) syntax for tracking.</p>
+</div></blockquote>
+<p><strong>Goal:</strong> fp32 master weights + per-model bf16 compute knob across all GenSBI models, with fp32 islands (norms, softmax, time embeddings, final projection, loss), fixing the bf16 EMA-accumulation bug.</p>
+<p><strong>Architecture:</strong> Every <code class="docutils literal notranslate"><span class="pre">*Params</span></code> dataclass gains a <code class="docutils literal notranslate"><span class="pre">dtype</span></code> (compute) field and flips <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> to fp32. Both are threaded into every <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code>/norm/conv. Norm layers and final projections are pinned to <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> (fp32 islands); models therefore <strong>emit fp32</strong>. Losses defensively upcast to fp32. Gradients/AdamW/EMA become fp32 automatically because JAX gives gradients the params’ dtype.</p>
+<p><strong>Tech Stack:</strong> JAX 0.10.2, flax nnx 0.12.7, optax, pytest (spec: <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-20-mixed-precision-design.md</span></code>)</p>
+<section id="global-constraints">
+<h2>Global Constraints<a class="headerlink" href="#global-constraints" title="Link to this heading">#</a></h2>
+<ul>
+<li><p><strong>Test command prefix (GPU-less nodes):</strong> <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span></code> — use the mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> env, NOT <code class="docutils literal notranslate"><span class="pre">.venv</span></code>. pyproject forces xdist <code class="docutils literal notranslate"><span class="pre">-n</span> <span class="pre">2</span></code>; add <code class="docutils literal notranslate"><span class="pre">-n</span> <span class="pre">0</span></code> if you need <code class="docutils literal notranslate"><span class="pre">-s</span></code> prints.</p></li>
+<li><p><strong>Contract: models emit fp32</strong> — implemented as the final projection layer constructed with <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>, never as a post-hoc <code class="docutils literal notranslate"><span class="pre">.astype</span></code>.</p></li>
+<li><p><strong>fp32 islands (always, regardless of the knob):</strong> norm layers (<code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>), attention softmax (<code class="docutils literal notranslate"><span class="pre">jax.nn.dot_product_attention</span></code> already does this internally — verified in jax 0.10.2: logits einsum uses <code class="docutils literal notranslate"><span class="pre">preferred_element_type=float32</span></code> and softmax runs on fp32; <code class="docutils literal notranslate"><span class="pre">flax</span> <span class="pre">nnx.MultiHeadAttention</span></code> does NOT, see Task 6), timestep/sinusoidal embeddings, RoPE (already fp32), final projection, loss.</p></li>
+<li><p><strong>Defaults:</strong> <code class="docutils literal notranslate"><span class="pre">param_dtype=jnp.float32</span></code> everywhere. <code class="docutils literal notranslate"><span class="pre">dtype=jnp.bfloat16</span></code> for Flux1, Flux1Joint, Simformer, PixelDiT, FieldDiT, autoencoders; <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> for MAF and TarFlow.</p></li>
+<li><p><strong>MAF/TarFlow are a pure refactor:</strong> with the knob at its fp32 default, outputs must be bit-identical to current code.</p></li>
+<li><p><strong>Inputs stay fp32:</strong> replace every <code class="docutils literal notranslate"><span class="pre">jnp.asarray(x,</span> <span class="pre">dtype=self.params.param_dtype)</span></code> input cast with <code class="docutils literal notranslate"><span class="pre">jnp.asarray(x,</span> <span class="pre">dtype=jnp.float32)</span></code>.</p></li>
+<li><p><strong>No loss scaling</strong> (bf16 shares fp32’s exponent range).</p></li>
+<li><p><strong>Canonical threading pattern</strong> (repeat everywhere):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># compute layer:</span>
+<span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="c1"># fp32 island (norms, final projection):</span>
+<span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Commit after every task; prefixes <code class="docutils literal notranslate"><span class="pre">feat:</span></code>/<code class="docutils literal notranslate"><span class="pre">fix:</span></code>/<code class="docutils literal notranslate"><span class="pre">test:</span></code> as appropriate.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gensbi.models.healswin</span></code> is explicitly OUT OF SCOPE (external <code class="docutils literal notranslate"><span class="pre">heal-swin-nnx</span></code> package).</p></li>
+</ul>
+<hr class="docutils" />
+<section id="task-1-precision-test-helpers">
+<h3>Task 1: Precision test helpers<a class="headerlink" href="#task-1-precision-test-helpers" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">tests/precision_utils.py</span></code></p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/test_precision_utils.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">assert_tree_dtype(tree,</span> <span class="pre">dtype)</span></code> — asserts every floating-point leaf of a pytree (e.g. <code class="docutils literal notranslate"><span class="pre">nnx.to_pure_dict(nnx.state(model,</span> <span class="pre">nnx.Param))</span></code>) has exactly <code class="docutils literal notranslate"><span class="pre">dtype</span></code>; raises <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> listing offending paths. <code class="docutils literal notranslate"><span class="pre">float_leaves(tree)</span></code> — returns <code class="docutils literal notranslate"><span class="pre">{joined_path:</span> <span class="pre">dtype}</span></code> for floating leaves. All later model tasks import these.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing test</strong></p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/test_precision_utils.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tests.precision_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_tree_dtype</span><span class="p">,</span> <span class="n">float_leaves</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_assert_tree_dtype_passes_on_uniform_tree</span><span class="p">():</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)}}</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_assert_tree_dtype_ignores_non_float_leaves</span><span class="p">():</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ids&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)}</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_assert_tree_dtype_fails_and_names_offender</span><span class="p">():</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;good&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="s2">&quot;bad&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)}</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">AssertionError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;bad&quot;</span><span class="p">):</span>
+        <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_float_leaves_reports_dtypes</span><span class="p">():</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)}</span>
+    <span class="k">assert</span> <span class="n">float_leaves</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_works_on_nnx_param_state</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">))</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run test to verify it fails</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/test_precision_utils.py</span> <span class="pre">-v</span></code>
+Expected: FAIL with <code class="docutils literal notranslate"><span class="pre">ModuleNotFoundError:</span> <span class="pre">No</span> <span class="pre">module</span> <span class="pre">named</span> <span class="pre">'tests.precision_utils'</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Write the implementation</strong></p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/precision_utils.py</span>
+<span class="sd">&quot;&quot;&quot;Shared dtype-assertion helpers for mixed-precision tests.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">flax.traverse_util</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tu</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">float_leaves</span><span class="p">(</span><span class="n">tree</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return {&#39;.&#39;-joined path: dtype} for every floating-point leaf.&quot;&quot;&quot;</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="n">tu</span><span class="o">.</span><span class="n">flatten_dict</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">path</span><span class="p">):</span> <span class="n">leaf</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="k">for</span> <span class="n">path</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">flat</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">jnp</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">leaf</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">assert_tree_dtype</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assert every floating leaf of ``tree`` has exactly ``dtype``.&quot;&quot;&quot;</span>
+    <span class="n">offenders</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">d</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">float_leaves</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">!=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)}</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">offenders</span><span class="p">,</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;expected all floating leaves to be </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="si">}</span><span class="s2">, got: </span><span class="si">{</span><span class="n">offenders</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run test to verify it passes</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/test_precision_utils.py</span> <span class="pre">-v</span></code>
+Expected: 5 PASS</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>tests/precision_utils.py<span class="w"> </span>tests/test_precision_utils.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;test: add shared dtype-assertion helpers for mixed-precision work&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-2-loss-functions-upcast-to-fp32">
+<h3>Task 2: Loss functions upcast to fp32<a class="headerlink" href="#task-2-loss-functions-upcast-to-fp32" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/flow_matching/loss/fm_loss.py</span></code> (FMLoss.<strong>call</strong>, line ~66)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/diffusion/loss/edm_loss.py</span></code>, <code class="docutils literal notranslate"><span class="pre">src/gensbi/diffusion/loss/sm_loss.py</span></code> (same pattern: cast model output and target to fp32 before weighting/reduction)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/flow_pipeline.py</span></code> (the NF <code class="docutils literal notranslate"><span class="pre">loss_fn</span></code> returning <code class="docutils literal notranslate"><span class="pre">-log_prob</span></code>: wrap final scalar in <code class="docutils literal notranslate"><span class="pre">jnp.asarray(...,</span> <span class="pre">jnp.float32)</span></code> — locate via <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">-n</span> <span class="pre">log_prob</span> <span class="pre">src/gensbi/recipes/flow_pipeline.py</span></code>)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/models/losses/test_loss_fp32.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: every loss callable returns an fp32 scalar even when the model emits bf16. No signature changes.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing test</strong></p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/models/losses/test_loss_fp32.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">FMLoss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">CondOTProbPath</span>  <span class="c1"># adjust import to the</span>
+<span class="c1"># AffineProbPath subclass used in existing tests under tests/flow_matching/</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_Bf16Model</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fake velocity model that emits bf16, violating the emit-fp32 contract.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_fmloss_returns_fp32_for_bf16_model</span><span class="p">():</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">CondOTProbPath</span><span class="p">()</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">FMLoss</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="mi">4</span><span class="p">,),</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">loss</span><span class="p">(</span><span class="n">_Bf16Model</span><span class="p">(),</span> <span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Add one analogous test per diffusion loss (<code class="docutils literal notranslate"><span class="pre">EDMLoss</span></code>, score-matching loss), mirroring how those losses are constructed in the existing tests under <code class="docutils literal notranslate"><span class="pre">tests/diffusion/</span></code> (reuse their fixtures/constructor arguments; only the assertion <code class="docutils literal notranslate"><span class="pre">out.dtype</span> <span class="pre">==</span> <span class="pre">jnp.float32</span></code> with a bf16-emitting fake model is new).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run test to verify it fails</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/losses/test_loss_fp32.py</span> <span class="pre">-v</span></code>
+Expected: FAIL with <code class="docutils literal notranslate"><span class="pre">assert</span> <span class="pre">dtype(bfloat16)</span> <span class="pre">==</span> <span class="pre">float32</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement the upcast in FMLoss</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">fm_loss.py</span></code>, after the model call (line ~66):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="n">model_output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">obs</span><span class="o">=</span><span class="n">x_t</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">path_sample</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">model_extras</span><span class="p">)</span>
+
+        <span class="c1"># Loss is always computed in fp32 regardless of the model&#39;s compute</span>
+        <span class="c1"># dtype (defense-in-depth on top of the models-emit-fp32 contract).</span>
+        <span class="n">model_output</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">dx_t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">path_sample</span><span class="o">.</span><span class="n">dx_t</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>and use <code class="docutils literal notranslate"><span class="pre">dx_t</span></code> in the squared error (<code class="docutils literal notranslate"><span class="pre">jnp.square(model_output</span> <span class="pre">-</span> <span class="pre">dx_t)</span></code>). Apply the same two-line cast (output + target) in <code class="docutils literal notranslate"><span class="pre">edm_loss.py</span></code> and <code class="docutils literal notranslate"><span class="pre">sm_loss.py</span></code> before their weighting/reduction, and cast the NF pipeline loss scalar to fp32.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass, plus existing loss tests</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/losses/</span> <span class="pre">tests/flow_matching/</span> <span class="pre">tests/diffusion/</span> <span class="pre">-v</span></code>
+Expected: all PASS</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>-A<span class="w"> </span>src/gensbi/flow_matching/loss<span class="w"> </span>src/gensbi/diffusion/loss<span class="w"> </span>src/gensbi/recipes/flow_pipeline.py<span class="w"> </span>tests/models/losses/
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: compute all losses in fp32 regardless of model compute dtype&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-3-shared-embedding-modules-accept-a-compute-dtype">
+<h3>Task 3: Shared embedding modules accept a compute dtype<a class="headerlink" href="#task-3-shared-embedding-modules-accept-a-compute-dtype" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/embedding/embedding.py</span></code> (MLPEmbedder, GaussianFourierEmbedding, FeatureEmbedder, Embed)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/models/embedding/test_embedding_dtype.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">MLPEmbedder(...,</span> <span class="pre">dtype=jnp.float32,</span> <span class="pre">param_dtype=jnp.float32)</span></code>, <code class="docutils literal notranslate"><span class="pre">FeatureEmbedder(...,</span> <span class="pre">dtype=jnp.float32,</span> <span class="pre">param_dtype=jnp.float32)</span></code> — new keyword <code class="docutils literal notranslate"><span class="pre">dtype</span></code> with fp32 default (neutral: existing callers unchanged), forwarded to internal <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code>/<code class="docutils literal notranslate"><span class="pre">nnx.Embed</span></code>. Sinusoidal PE matrices stay fp32 (they are fp32 islands; downstream layers downcast).</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing test</strong></p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/models/embedding/test_embedding_dtype.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.embedding</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureEmbedder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.embedding.embedding</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPEmbedder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tests.precision_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_tree_dtype</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_mlpembedder_bf16_compute_fp32_params</span><span class="p">():</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">MLPEmbedder</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+                    <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">m</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_featureembedder_absolute_bf16</span><span class="p">():</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span><span class="n">num_embeddings</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">hidden_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
+                        <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                        <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">m</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_default_dtype_is_neutral_fp32</span><span class="p">():</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">MLPEmbedder</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">m</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run to verify failure</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/embedding/test_embedding_dtype.py</span> <span class="pre">-v</span></code>
+Expected: FAIL with <code class="docutils literal notranslate"><span class="pre">TypeError:</span> <span class="pre">...</span> <span class="pre">unexpected</span> <span class="pre">keyword</span> <span class="pre">argument</span> <span class="pre">'dtype'</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement</strong></p></li>
+</ul>
+<p>Add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code> keyword to <code class="docutils literal notranslate"><span class="pre">MLPEmbedder.__init__</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianFourierEmbedding.__init__</span></code>, <code class="docutils literal notranslate"><span class="pre">FeatureEmbedder.__init__</span></code> (and pass through <code class="docutils literal notranslate"><span class="pre">Embed</span></code> → <code class="docutils literal notranslate"><span class="pre">nnx.Embed</span></code>), forwarding <code class="docutils literal notranslate"><span class="pre">dtype=dtype</span></code> into every <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code>/<code class="docutils literal notranslate"><span class="pre">nnx.Embed</span></code> construction. Do NOT pass it to <code class="docutils literal notranslate"><span class="pre">SinusoidalPosEmbed1D/2D</span></code> (their precomputed <code class="docutils literal notranslate"><span class="pre">PEMatrix</span></code> tables stay at <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>, fp32 by default — sinusoidal tables are an fp32 island; <code class="docutils literal notranslate"><span class="pre">FeatureEmbedder</span></code> simply ignores <code class="docutils literal notranslate"><span class="pre">dtype</span></code> for those kinds). <code class="docutils literal notranslate"><span class="pre">MLPEmbedder.p_skip</span></code> stays at <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests + existing embedding tests</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/embedding/</span> <span class="pre">-v</span></code>
+Expected: all PASS</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/models/embedding/embedding.py<span class="w"> </span>tests/models/embedding/test_embedding_dtype.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: thread compute dtype through shared embedding modules&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-4-flux1-params-layers-model">
+<h3>Task 4: Flux1 — params, layers, model<a class="headerlink" href="#task-4-flux1-params-layers-model" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/flux1/model.py</span></code> (Flux1Params line ~138; Flux1.<strong>init</strong> constructors; input casts lines 366-368)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/flux1/layers.py</span></code> (MLPEmbedder, QKNorm, SelfAttention, Modulation, DoubleStreamBlock, SingleStreamBlock, LastLayer)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/models/flux1/test_flux1_precision.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">tests.precision_utils.assert_tree_dtype</span></code> (Task 1).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">Flux1Params(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.bfloat16)</span></code> defaults; every layer class in <code class="docutils literal notranslate"><span class="pre">flux1/layers.py</span></code> accepts <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16,</span> <span class="pre">param_dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code> (defaults flipped from today’s bf16 param_dtype); <code class="docutils literal notranslate"><span class="pre">Flux1.__call__</span></code> output dtype is fp32. Task 5 (flux1joint) reuses these layer signatures verbatim.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Reuse the smallest model construction already used in <code class="docutils literal notranslate"><span class="pre">tests/models/flux1/</span></code> (check its conftest/fixtures first and copy the smallest <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code> instantiation; the one below is a fallback):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/models/flux1/test_flux1_precision.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1</span><span class="p">,</span> <span class="n">Flux1Params</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tests.precision_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_tree_dtype</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">):</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">Flux1Params</span><span class="p">(</span>
+        <span class="n">in_channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">vec_in_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">context_in_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mlp_ratio</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+        <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">depth_single_blocks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">qkv_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">dim_obs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">dim_cond</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">axes_dim</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Flux1</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_inputs</span><span class="p">():</span>
+    <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">obs_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">cond_ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="mi">2</span><span class="p">,),</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_ids</span><span class="o">=</span><span class="n">obs_ids</span><span class="p">,</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">,</span> <span class="n">cond_ids</span><span class="o">=</span><span class="n">cond_ids</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_master_weights_fp32_with_bf16_compute</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">_make</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_output_is_fp32</span><span class="p">():</span>
+    <span class="k">assert</span> <span class="n">_make</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)(</span><span class="o">**</span><span class="n">_inputs</span><span class="p">())</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_grads_are_fp32</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">_make</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">m</span><span class="p">(</span><span class="o">**</span><span class="n">_inputs</span><span class="p">())))</span>
+    <span class="n">grads</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">grads</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_bf16_close_to_fp32</span><span class="p">():</span>
+    <span class="n">m32</span><span class="p">,</span> <span class="n">m16</span> <span class="o">=</span> <span class="n">_make</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">_make</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+    <span class="c1"># same rngs seed -&gt; identical fp32 master weights</span>
+    <span class="n">o32</span><span class="p">,</span> <span class="n">o16</span> <span class="o">=</span> <span class="n">m32</span><span class="p">(</span><span class="o">**</span><span class="n">_inputs</span><span class="p">()),</span> <span class="n">m16</span><span class="p">(</span><span class="o">**</span><span class="n">_inputs</span><span class="p">())</span>
+    <span class="k">assert</span> <span class="n">o16</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">err</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">o32</span> <span class="o">-</span> <span class="n">o16</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">o32</span><span class="p">))</span> <span class="o">+</span> <span class="mf">1e-6</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">err</span> <span class="o">&lt;</span> <span class="mf">2e-2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;bf16 compute deviates </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2"> from fp32&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run to verify failure</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/flux1/test_flux1_precision.py</span> <span class="pre">-v</span></code>
+Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code> has no field <code class="docutils literal notranslate"><span class="pre">dtype</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span>
+</pre></div>
+</div>
+<p>(docstring: <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> = master-weight storage, <code class="docutils literal notranslate"><span class="pre">dtype</span></code> = compute/matmul dtype).</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">flux1/layers.py</span></code>, change every class signature default from <code class="docutils literal notranslate"><span class="pre">param_dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16</span></code> to <code class="docutils literal notranslate"><span class="pre">param_dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code> and add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16</span></code>. Then:</p>
+<ul>
+<li><p><strong>Compute layers</strong> (all <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code> in MLPEmbedder, SelfAttention.qkv/proj, Modulation.lin, DoubleStreamBlock mlps, SingleStreamBlock.linear1/linear2, LastLayer.adaLN_modulation): add <code class="docutils literal notranslate"><span class="pre">dtype=dtype</span></code>.</p></li>
+<li><p><strong>fp32 islands:</strong> every <code class="docutils literal notranslate"><span class="pre">nnx.LayerNorm</span></code> and <code class="docutils literal notranslate"><span class="pre">nnx.RMSNorm</span></code> (QKNorm, obs/cond_norm1/2, pre_norm, norm_final) gets <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> (NOT the knob). In <code class="docutils literal notranslate"><span class="pre">QKNorm.__call__</span></code>, cast the fp32-normalized q/k back to the compute dtype so <code class="docutils literal notranslate"><span class="pre">jax.nn.dot_product_attention</span></code> sees uniform dtypes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_norm</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_norm</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>LastLayer.linear</strong> (the final projection): <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> — this is the models-emit-fp32 contract. <code class="docutils literal notranslate"><span class="pre">norm_final</span></code> fp32 as above; <code class="docutils literal notranslate"><span class="pre">adaLN_modulation</span></code> stays at compute dtype.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timestep_embedding</span></code> needs no change (frequencies already fp32; with fp32 <code class="docutils literal notranslate"><span class="pre">t</span></code> the output stays fp32).</p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">Flux1.__init__</span></code>: pass <code class="docutils literal notranslate"><span class="pre">dtype=params.dtype</span></code> alongside <code class="docutils literal notranslate"><span class="pre">param_dtype=params.param_dtype</span></code> into every constructed layer (obs_in, cond_in, time_in, vector_in, FeatureEmbedders, double/single blocks, final_layer). In <code class="docutils literal notranslate"><span class="pre">Flux1.__call__</span></code> replace the three input casts (lines 366-368) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Attention (<code class="docutils literal notranslate"><span class="pre">math.py</span></code>) needs no change: rope/apply_rope already fp32, and <code class="docutils literal notranslate"><span class="pre">jax.nn.dot_product_attention</span></code> upcasts logits+softmax to fp32 internally (verified for jax 0.10.2).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run new + existing flux1 tests</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/flux1/</span> <span class="pre">-v</span></code>
+Expected: all PASS (existing tests may need their expected dtypes updated from bf16 → fp32 — that change is part of this task).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/models/flux1/<span class="w"> </span>tests/models/flux1/
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: mixed-precision Flux1 (fp32 master weights, bf16 compute knob, fp32 islands)&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-5-flux1joint">
+<h3>Task 5: Flux1Joint<a class="headerlink" href="#task-5-flux1joint" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/flux1joint/model.py</span></code> (Flux1JointParams line ~95: <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> → fp32, add <code class="docutils literal notranslate"><span class="pre">dtype=jnp.bfloat16</span></code>; thread <code class="docutils literal notranslate"><span class="pre">dtype=params.dtype</span></code> into every constructor; learned tokens at lines ~187/193 stay at <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>; input casts at lines ~231-232 → <code class="docutils literal notranslate"><span class="pre">jnp.float32</span></code>)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/models/flux1joint/test_flux1joint_precision.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: Task 4’s updated <code class="docutils literal notranslate"><span class="pre">flux1/layers.py</span></code> signatures (<code class="docutils literal notranslate"><span class="pre">dtype=...,</span> <span class="pre">param_dtype=...</span></code>) — flux1joint imports its blocks from there.</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">Flux1JointParams(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.bfloat16)</span></code>; <code class="docutils literal notranslate"><span class="pre">Flux1Joint</span></code> output fp32.</p></li>
+<li><p>[ ] <strong>Step 1: Write failing tests</strong> — copy <code class="docutils literal notranslate"><span class="pre">tests/models/flux1joint/</span></code>’s existing smallest model fixture and add the same four tests as Task 4 (<code class="docutils literal notranslate"><span class="pre">test_master_weights_fp32_with_bf16_compute</span></code>, <code class="docutils literal notranslate"><span class="pre">test_output_is_fp32</span></code>, <code class="docutils literal notranslate"><span class="pre">test_grads_are_fp32</span></code>, <code class="docutils literal notranslate"><span class="pre">test_bf16_close_to_fp32</span></code> with rel-tolerance 2e-2), adapted to <code class="docutils literal notranslate"><span class="pre">Flux1Joint</span></code>’s call signature (it takes <code class="docutils literal notranslate"><span class="pre">obs</span></code>, <code class="docutils literal notranslate"><span class="pre">t</span></code>, <code class="docutils literal notranslate"><span class="pre">condition_mask</span></code> — mirror the existing tests’ invocation exactly).</p></li>
+<li><p>[ ] <strong>Step 2: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/flux1joint/test_flux1joint_precision.py</span> <span class="pre">-v</span></code> — Expected: FAIL, no field <code class="docutils literal notranslate"><span class="pre">dtype</span></code>.</p></li>
+<li><p>[ ] <strong>Step 3: Implement</strong> — same pattern as Task 4: params fields, thread <code class="docutils literal notranslate"><span class="pre">dtype</span></code>/<code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> into every layer constructor, <code class="docutils literal notranslate"><span class="pre">LastLayer</span></code> already emits fp32 via Task 4, input casts → fp32. Learned <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code> tokens keep <code class="docutils literal notranslate"><span class="pre">dtype=params.param_dtype</span></code> (they are master weights).</p></li>
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/flux1joint/</span> <span class="pre">-v</span></code> — Expected: all PASS (update stale dtype expectations in existing tests if any).</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/models/flux1joint/</span> <span class="pre">tests/models/flux1joint/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">mixed-precision</span> <span class="pre">Flux1Joint&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-6-simformer">
+<h3>Task 6: Simformer<a class="headerlink" href="#task-6-simformer" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/simformer/model.py</span></code> (SimformerParams line ~77: add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16</span></code>; thread; input casts lines ~190-191 → fp32; output projection pinned fp32)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/simformer/transformer.py</span></code> (AttentionBlock, DenseBlock, Transformer)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/models/simformer/test_simformer_precision.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">SimformerParams(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.bfloat16)</span></code>; Simformer output fp32.</p></li>
+</ul>
+<p><strong>Design note (fp32 softmax island):</strong> <code class="docutils literal notranslate"><span class="pre">flax</span> <span class="pre">nnx.MultiHeadAttention</span></code> computes softmax in its <code class="docutils literal notranslate"><span class="pre">dtype</span></code> (no fp32 forcing in flax 0.12.7). Rather than a custom <code class="docutils literal notranslate"><span class="pre">attention_fn</span></code>, keep the whole <code class="docutils literal notranslate"><span class="pre">AttentionBlock</span></code> at <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> — a slightly larger island. The FLOPs are dominated by the <code class="docutils literal notranslate"><span class="pre">DenseBlock</span></code> MLP stack (widening_factor 4), which does get bf16. Record this in the AttentionBlock docstring.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Write failing tests</strong> — same four tests as Task 4, using the smallest <code class="docutils literal notranslate"><span class="pre">SimformerParams</span></code> construction found in <code class="docutils literal notranslate"><span class="pre">tests/models/simformer/</span></code> (copy its fixture; add <code class="docutils literal notranslate"><span class="pre">dtype=...</span></code> argument). Assert output fp32, params fp32, grads fp32, bf16-vs-fp32 rel-err &lt; 2e-2.</p></li>
+<li><p>[ ] <strong>Step 2: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/simformer/test_simformer_precision.py</span> <span class="pre">-v</span></code> — Expected: FAIL, no field <code class="docutils literal notranslate"><span class="pre">dtype</span></code>.</p></li>
+<li><p>[ ] <strong>Step 3: Implement</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">SimformerParams</span></code>: add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16</span></code> (param_dtype already fp32).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transformer.py</span></code>: add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code> keyword to AttentionBlock/DenseBlock/Transformer. AttentionBlock: <code class="docutils literal notranslate"><span class="pre">nnx.MultiHeadAttention(...,</span> <span class="pre">dtype=jnp.float32,</span> <span class="pre">...)</span></code> and its LayerNorm <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> (fp32 island — ignore the passed knob for the attention itself, but accept and store it for future use is NOT needed; simply construct MHA fp32). DenseBlock: LayerNorm <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>; all <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code> including <code class="docutils literal notranslate"><span class="pre">context_block</span></code> get <code class="docutils literal notranslate"><span class="pre">dtype=dtype</span></code>. Transformer: forward <code class="docutils literal notranslate"><span class="pre">dtype</span></code> to blocks; final <code class="docutils literal notranslate"><span class="pre">self.layer_norm</span></code> gets <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model.py</span></code>: thread <code class="docutils literal notranslate"><span class="pre">dtype=params.dtype</span></code> into the Transformer, token/value embedders and any <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code>; the LAST Linear producing the output gets <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> (emit-fp32 contract); input casts → <code class="docutils literal notranslate"><span class="pre">jnp.float32</span></code>. The learned <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code> at line ~130 stays at <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>.</p></li>
+</ul>
+</li>
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/simformer/</span> <span class="pre">-v</span></code> — Expected: all PASS.</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/models/simformer/</span> <span class="pre">tests/models/simformer/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">mixed-precision</span> <span class="pre">Simformer</span> <span class="pre">(bf16</span> <span class="pre">MLP</span> <span class="pre">compute,</span> <span class="pre">fp32</span> <span class="pre">attention</span> <span class="pre">island)&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-7-maf-dtype-knob-fp32-default-bit-identical">
+<h3>Task 7: MAF — dtype knob, fp32 default, bit-identical<a class="headerlink" href="#task-7-maf-dtype-knob-fp32-default-bit-identical" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/maf/model.py</span></code> (MAFlowParams: add <code class="docutils literal notranslate"><span class="pre">param_dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code> and <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code> fields; thread into MADE construction)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/maf/made.py</span></code>, <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/maf/masked_linear.py</span></code> (add <code class="docutils literal notranslate"><span class="pre">dtype</span></code> kwarg, default <code class="docutils literal notranslate"><span class="pre">jnp.float32</span></code>, forwarded to <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code>-equivalents)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/models/maf/test_maf_precision.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">MAFlowParams(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.float32)</span></code> — knob present, fp32 default. Log-det accumulation paths remain unconditionally fp32 (no <code class="docutils literal notranslate"><span class="pre">dtype</span></code> applied to log-det sums).</p></li>
+<li><p>[ ] <strong>Step 1: Capture the bit-identical baseline BEFORE any edit</strong> — write the test against CURRENT code and check it passes, so the refactor is provably a no-op:</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/models/maf/test_maf_precision.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">MAFlow</span><span class="p">,</span> <span class="n">MAFlowParams</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tests.precision_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_tree_dtype</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">MAFlow</span><span class="p">(</span><span class="n">MAFlowParams</span><span class="p">(</span><span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">cond_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_params_fp32</span><span class="p">():</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">_make</span><span class="p">()</span>
+    <span class="n">assert_tree_dtype</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_log_prob_fp32_and_finite</span><span class="p">():</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">_make</span><span class="p">()</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">lp</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cond</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">lp</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">lp</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_refactor_is_bit_identical</span><span class="p">():</span>
+    <span class="c1"># Golden values computed from the pre-refactor code at the start of this</span>
+    <span class="c1"># task; regenerate with the command in the plan and paste here.</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">_make</span><span class="p">()</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">lp</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cond</span><span class="p">)</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">GOLDEN_LOG_PROBS</span><span class="p">)</span>  <span class="c1"># paste from Step 1 output</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">lp</span><span class="p">,</span> <span class="n">expected</span><span class="p">),</span> <span class="s2">&quot;MAF refactor must be a bit-exact no-op&quot;</span>
+</pre></div>
+</div>
+<p>Generate <code class="docutils literal notranslate"><span class="pre">GOLDEN_LOG_PROBS</span></code> on unmodified code with:
+<code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">.../python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">jax,</span> <span class="pre">jax.numpy</span> <span class="pre">as</span> <span class="pre">jnp;</span> <span class="pre">from</span> <span class="pre">flax</span> <span class="pre">import</span> <span class="pre">nnx;</span> <span class="pre">from</span> <span class="pre">gensbi.models</span> <span class="pre">import</span> <span class="pre">MAFlow,</span> <span class="pre">MAFlowParams;</span> <span class="pre">m=MAFlow(MAFlowParams(rngs=nnx.Rngs(0),</span> <span class="pre">dim=3,</span> <span class="pre">cond_dim=2));</span> <span class="pre">x=jax.random.normal(jax.random.PRNGKey(1),(5,3));</span> <span class="pre">print(repr(m.log_prob(x,</span> <span class="pre">jnp.ones((5,2)))))&quot;</span></code>
+and paste the printed list into the test file as <code class="docutils literal notranslate"><span class="pre">GOLDEN_LOG_PROBS</span> <span class="pre">=</span> <span class="pre">[...]</span></code>. Adjust <code class="docutils literal notranslate"><span class="pre">log_prob</span></code>’s exact call signature to match <code class="docutils literal notranslate"><span class="pre">MAFlow</span></code>’s API (check <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/maf/model.py</span></code>).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run on unmodified code</strong> — all three tests must PASS before the refactor (this task’s “failing test” is the <code class="docutils literal notranslate"><span class="pre">dtype=</span></code> kwarg not existing yet; verify: constructing <code class="docutils literal notranslate"><span class="pre">MAFlowParams(...,</span> <span class="pre">dtype=jnp.float32)</span></code> raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>).</p></li>
+<li><p>[ ] <strong>Step 3: Implement</strong> — add the two fields to <code class="docutils literal notranslate"><span class="pre">MAFlowParams</span></code>; add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code> kwargs to MADE/MaskedLinear, forwarded to their linear layers; thread <code class="docutils literal notranslate"><span class="pre">params.dtype</span></code>/<code class="docutils literal notranslate"><span class="pre">params.param_dtype</span></code> from <code class="docutils literal notranslate"><span class="pre">MAFlow.__init__</span></code>. Do NOT touch log-det arithmetic.</p></li>
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/maf/</span> <span class="pre">tests/normalizing_flows/</span> <span class="pre">-v</span></code> — Expected: all PASS including the bit-identical golden test.</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/models/maf/</span> <span class="pre">tests/models/maf/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">dtype</span> <span class="pre">knob</span> <span class="pre">for</span> <span class="pre">MAF</span> <span class="pre">(fp32</span> <span class="pre">default,</span> <span class="pre">bit-identical</span> <span class="pre">refactor)&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-8-tarflow-dtype-knob-fp32-default-bit-identical">
+<h3>Task 8: TarFlow — dtype knob, fp32 default, bit-identical<a class="headerlink" href="#task-8-tarflow-dtype-knob-fp32-default-bit-identical" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/tarflow/model.py</span></code> (TarFlowParams: add <code class="docutils literal notranslate"><span class="pre">param_dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code>, <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code>; thread)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/tarflow/blocks.py</span></code> (AttentionBlock/MetaBlock and any Linear: accept + forward <code class="docutils literal notranslate"><span class="pre">dtype</span></code>, <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/tarflow/conditioners.py</span></code>, <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/core/tokenizers.py</span></code> (or wherever the tokenizer Linears live — locate with <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">-rn</span> <span class="pre">&quot;nnx.Linear&quot;</span> <span class="pre">src/gensbi/models/tarflow</span> <span class="pre">src/gensbi/models/core</span></code>): same threading</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/models/tarflow/test_tarflow_precision.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">TarFlowParams(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.float32)</span></code>. Hard-fp32 regardless of knob: the softplus/soft_clip affine-scale path in MetaBlock (already fp32 — keep), log-det sums, <code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">std</span></code> standardization buffers.</p></li>
+<li><p>[ ] <strong>Step 1: Golden baseline + tests</strong> — same structure as Task 7: <code class="docutils literal notranslate"><span class="pre">test_params_fp32</span></code>, <code class="docutils literal notranslate"><span class="pre">test_log_prob_fp32_and_finite</span></code>, <code class="docutils literal notranslate"><span class="pre">test_refactor_is_bit_identical</span></code> with <code class="docutils literal notranslate"><span class="pre">GOLDEN_LOG_PROBS</span></code> generated from unmodified code using the smallest <code class="docutils literal notranslate"><span class="pre">TarFlowParams(rngs=nnx.Rngs(0),</span> <span class="pre">dim=3,</span> <span class="pre">cond_dim=2,</span> <span class="pre">num_blocks=2,</span> <span class="pre">layers_per_block=1)</span></code> vector-mode model (mirror the fixtures in <code class="docutils literal notranslate"><span class="pre">tests/models/tarflow/</span></code>). Also verify <code class="docutils literal notranslate"><span class="pre">TarFlowParams(...,</span> <span class="pre">dtype=jnp.float32)</span></code> currently raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.</p></li>
+<li><p>[ ] <strong>Step 2: Run on unmodified code</strong> — golden tests PASS; kwarg test FAILS as expected.</p></li>
+<li><p>[ ] <strong>Step 3: Implement</strong> — add fields; thread through blocks/conditioners/tokenizers. The KV-cache buffers in sampling (<code class="docutils literal notranslate"><span class="pre">blocks.py</span></code> line ~438) and the softplus/soft_clip scale computation keep their current dtype behavior untouched.</p></li>
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/models/tarflow/</span> <span class="pre">-v</span></code> — Expected: all PASS including bit-identical golden and the 18-test cached≡reference sampling gate.</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/models/tarflow/</span> <span class="pre">src/gensbi/models/core/</span> <span class="pre">tests/models/tarflow/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">dtype</span> <span class="pre">knob</span> <span class="pre">for</span> <span class="pre">TarFlow</span> <span class="pre">(fp32</span> <span class="pre">default,</span> <span class="pre">bit-identical</span> <span class="pre">refactor)&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-9-pixeldit">
+<h3>Task 9: PixelDiT<a class="headerlink" href="#task-9-pixeldit" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/pixeldit/model.py</span></code> (PixelDiTParams line ~71: <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> bf16 → fp32, add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16</span></code>; thread; input casts → fp32)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/pixeldit/embedders.py</span></code>, <code class="docutils literal notranslate"><span class="pre">modules.py</span></code>, <code class="docutils literal notranslate"><span class="pre">blocks.py</span></code> (signature defaults <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> bf16 → fp32; add <code class="docutils literal notranslate"><span class="pre">dtype=jnp.bfloat16</span></code>; thread — compute Linears/convs get <code class="docutils literal notranslate"><span class="pre">dtype</span></code>, all norm layers get <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>, the final output projection gets <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>; <code class="docutils literal notranslate"><span class="pre">rope.py</span></code> is already fp32 math, leave it)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/experimental/pixeldit/test_pixeldit_precision.py</span></code> (place beside the existing pixeldit tests — locate with <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">tests/experimental/</span></code>)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">PixelDiTParams(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.bfloat16)</span></code>; PixelDiT output fp32.</p></li>
+<li><p>[ ] <strong>Step 1: Write failing tests</strong> — the same four tests as Task 4 (params-fp32, output-fp32, grads-fp32, bf16-close-to-fp32 rel &lt; 2e-2), built on the smallest PixelDiT fixture from the existing experimental tests.</p></li>
+<li><p>[ ] <strong>Step 2: Run</strong> — Expected: FAIL, no field <code class="docutils literal notranslate"><span class="pre">dtype</span></code>.</p></li>
+<li><p>[ ] <strong>Step 3: Implement</strong> — canonical pattern; timestep embedding path pinned fp32 (cast <code class="docutils literal notranslate"><span class="pre">t</span></code> to fp32 at the model door, embed in fp32, let the first Linear downcast); zero-init output projection = fp32 island.</p></li>
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/experimental/</span> <span class="pre">-k</span> <span class="pre">pixeldit</span> <span class="pre">-v</span></code> — Expected: all PASS (update stale bf16 dtype expectations in existing tests as needed).</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/experimental/models/pixeldit/</span> <span class="pre">tests/experimental/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">mixed-precision</span> <span class="pre">PixelDiT</span> <span class="pre">(fp32</span> <span class="pre">master</span> <span class="pre">weights,</span> <span class="pre">bf16</span> <span class="pre">compute)&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-10-fielddit">
+<h3>Task 10: FieldDiT<a class="headerlink" href="#task-10-fielddit" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/fielddit/model.py</span></code> (FieldDiTParams line ~72: <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> bf16 → fp32, add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16</span></code>; input casts lines ~195-196 → fp32; timestep embedding line ~216: <code class="docutils literal notranslate"><span class="pre">.astype(self.param_dtype)</span></code> → <code class="docutils literal notranslate"><span class="pre">.astype(self.dtype)</span></code>)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/fielddit/blocks.py</span></code>, <code class="docutils literal notranslate"><span class="pre">codec.py</span></code>, <code class="docutils literal notranslate"><span class="pre">cond.py</span></code>, <code class="docutils literal notranslate"><span class="pre">core.py</span></code> (thread <code class="docutils literal notranslate"><span class="pre">dtype</span></code>; GroupNorms and LayerNorms <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>; zero-init <code class="docutils literal notranslate"><span class="pre">conv_out</span></code> final projection <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/experimental/fielddit/test_fielddit_precision.py</span></code> (beside existing fielddit tests)</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">FieldDiTParams(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.bfloat16)</span></code>; FieldDiT output fp32.</p></li>
+<li><p>[ ] <strong>Step 1: Write failing tests</strong> — same four tests as Task 4 on the smallest FieldDiT fixture from the existing fielddit tests (small H=W, hidden size — copy the existing conftest fixture).</p></li>
+<li><p>[ ] <strong>Step 2: Run</strong> — Expected: FAIL, no field <code class="docutils literal notranslate"><span class="pre">dtype</span></code>.</p></li>
+<li><p>[ ] <strong>Step 3: Implement</strong> — canonical pattern across the four module files; MMDiT core blocks come from <code class="docutils literal notranslate"><span class="pre">flux1.layers</span></code> (already threaded in Task 4 — pass <code class="docutils literal notranslate"><span class="pre">dtype=p.dtype</span></code> where those are constructed).</p></li>
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/experimental/</span> <span class="pre">-k</span> <span class="pre">fielddit</span> <span class="pre">-v</span></code> — Expected: all PASS.</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/experimental/models/fielddit/</span> <span class="pre">tests/experimental/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">mixed-precision</span> <span class="pre">FieldDiT&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-11-autoencoders">
+<h3>Task 11: Autoencoders<a class="headerlink" href="#task-11-autoencoders" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/autoencoders/commons.py</span></code> (AutoEncoderParams: <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> bf16 → fp32, add <code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16</span></code>)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/models/autoencoders/autoencoder_1d.py</span></code>, <code class="docutils literal notranslate"><span class="pre">autoencoder_2d.py</span></code> (signature defaults flipped; thread <code class="docutils literal notranslate"><span class="pre">dtype</span></code>; GroupNorms <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>; final decoder conv <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/experimental/recipes/vae_pipeline.py</span></code> (only if it constructs layers with explicit dtypes — check with <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">-n</span> <span class="pre">dtype</span></code>; its loss reduction gets the fp32 cast pattern from Task 2)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/experimental/autoencoders/test_autoencoder_precision.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">AutoEncoderParams(param_dtype=jnp.float32,</span> <span class="pre">dtype=jnp.bfloat16)</span></code>; encoder/decoder outputs fp32.</p></li>
+<li><p>[ ] <strong>Step 1: Write failing tests</strong> — params-fp32 + output-fp32 + grads-fp32 for the 2D autoencoder’s smallest existing fixture (closeness test optional here; include if a same-seed fp32/bf16 pair is easy with the existing fixture).</p></li>
+<li><p>[ ] <strong>Step 2: Run</strong> — Expected: FAIL, no field <code class="docutils literal notranslate"><span class="pre">dtype</span></code>.</p></li>
+<li><p>[ ] <strong>Step 3: Implement</strong> — canonical pattern; <code class="docutils literal notranslate"><span class="pre">DiagonalGaussian</span></code> sampling stays fp32.</p></li>
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/experimental/</span> <span class="pre">-k</span> <span class="pre">autoencoder</span> <span class="pre">-v</span></code> — Expected: all PASS.</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/experimental/models/autoencoders/</span> <span class="pre">src/gensbi/experimental/recipes/</span> <span class="pre">tests/experimental/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">mixed-precision</span> <span class="pre">autoencoders&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-12-pipeline-guard-ema-regression-test-orbax-safetensors-restore">
+<h3>Task 12: Pipeline guard, EMA regression test, orbax/safetensors restore<a class="headerlink" href="#task-12-pipeline-guard-ema-regression-test-orbax-safetensors-restore" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/pipeline.py</span></code> (add <code class="docutils literal notranslate"><span class="pre">_warn_if_not_fp32_master_weights(model)</span></code> called from <code class="docutils literal notranslate"><span class="pre">Pipeline.__init__</span></code> after <code class="docutils literal notranslate"><span class="pre">self.model</span> <span class="pre">=</span> <span class="pre">model</span></code>; and in <code class="docutils literal notranslate"><span class="pre">restore_model</span></code> (line ~517) cast restored leaves to the target model’s dtypes before <code class="docutils literal notranslate"><span class="pre">nnx.merge</span></code> — mirror the <code class="docutils literal notranslate"><span class="pre">arr.astype(want.dtype)</span></code> approach already used in <code class="docutils literal notranslate"><span class="pre">load_safetensors</span></code>)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_precision_pipeline.py</span></code>, <code class="docutils literal notranslate"><span class="pre">tests/utils/test_serialization_dtype.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: fp32-defaulted models from Tasks 4-11.</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.pipeline._warn_if_not_fp32_master_weights(model)</span></code> — emits <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code> naming offending leaves when any floating <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code> is not fp32; no-op otherwise.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/recipes/test_precision_pipeline.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">_warn_if_not_fp32_master_weights</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_warns_on_bf16_master_weights</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">warns</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;fp32&quot;</span><span class="p">):</span>
+        <span class="n">_warn_if_not_fp32_master_weights</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_silent_on_fp32_master_weights</span><span class="p">(</span><span class="n">recwarn</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">_warn_if_not_fp32_master_weights</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">recwarn</span> <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="ne">UserWarning</span><span class="p">)]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_ema_integrates_small_updates_in_fp32</span><span class="p">():</span>
+    <span class="c1"># The bug-shaped test: decay=0.999 EMA must integrate 0.1%-scale updates.</span>
+    <span class="n">decay</span> <span class="o">=</span> <span class="mf">0.999</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">ema</span><span class="p">(</span><span class="n">decay</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">64</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">w</span> <span class="o">*</span> <span class="mf">1.001</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+    <span class="c1"># fp32 reference computed in float64</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="n">w64</span><span class="p">,</span> <span class="n">ema64</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
+        <span class="n">w64</span> <span class="o">=</span> <span class="n">w64</span> <span class="o">*</span> <span class="mf">1.001</span>
+        <span class="n">ema64</span> <span class="o">=</span> <span class="n">decay</span> <span class="o">*</span> <span class="n">ema64</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay</span><span class="p">)</span> <span class="o">*</span> <span class="n">w64</span>
+    <span class="c1"># optax debiases; compare the raw accumulator</span>
+    <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">ema</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">ema64</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">&lt;</span> <span class="mf">1e-3</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_adamw_moments_are_fp32_for_fp32_params</span><span class="p">():</span>
+    <span class="c1"># Spec 5(d): optimizer state must be fp32 once master weights are fp32.</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">tests.precision_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_tree_dtype</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                       <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+    <span class="n">opt</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">),</span> <span class="n">wrt</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="n">opt</span><span class="o">.</span><span class="n">opt_state</span><span class="p">)</span>  <span class="c1"># traverse whole opt state</span>
+    <span class="n">leaves</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">leaves</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+              <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">jnp</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">floating</span><span class="p">)]</span>
+    <span class="k">assert</span> <span class="n">leaves</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">leaves</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_ema_bf16_demonstrates_the_old_bug</span><span class="p">():</span>
+    <span class="c1"># Documents WHY master weights must be fp32: the same accumulation in</span>
+    <span class="c1"># bf16 diverges badly (increment below mantissa resolution + rounded decay).</span>
+    <span class="n">decay</span> <span class="o">=</span> <span class="mf">0.999</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">ema</span><span class="p">(</span><span class="n">decay</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">64</span><span class="p">,),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.001</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="n">w64</span><span class="p">,</span> <span class="n">ema64</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
+        <span class="n">w64</span> <span class="o">=</span> <span class="n">w64</span> <span class="o">*</span> <span class="mf">1.001</span>
+        <span class="n">ema64</span> <span class="o">=</span> <span class="n">decay</span> <span class="o">*</span> <span class="n">ema64</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay</span><span class="p">)</span> <span class="o">*</span> <span class="n">w64</span>
+    <span class="n">err</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">ema</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">ema64</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">assert</span> <span class="n">err</span> <span class="o">&gt;</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="s2">&quot;bf16 EMA unexpectedly accurate — did optax change?&quot;</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># tests/utils/test_serialization_dtype.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.serialization</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_safetensors</span><span class="p">,</span> <span class="n">load_safetensors</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_bf16_checkpoint_loads_into_fp32_model</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+    <span class="c1"># Old checkpoints (bf16 master weights) must load into new fp32 models.</span>
+    <span class="n">old</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;old.safetensors&quot;</span>
+    <span class="n">save_safetensors</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">load_safetensors</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">new</span><span class="o">.</span><span class="n">kernel</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">kernel</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">old</span><span class="o">.</span><span class="n">kernel</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run to verify failure</strong> — the guard tests fail with <code class="docutils literal notranslate"><span class="pre">ImportError</span></code> (<code class="docutils literal notranslate"><span class="pre">_warn_if_not_fp32_master_weights</span></code> doesn’t exist); the serialization test may already PASS (<code class="docutils literal notranslate"><span class="pre">load_safetensors</span></code> already casts via <code class="docutils literal notranslate"><span class="pre">arr.astype(want.dtype)</span></code>) — keep it as a regression lock either way; EMA tests should PASS immediately (they test optax behavior, documenting the fix rationale).</p></li>
+<li><p>[ ] <strong>Step 3: Implement the guard + orbax cast</strong></p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># in src/gensbi/recipes/pipeline.py (module level, near ModelEMA)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">flax.traverse_util</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tu</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_warn_if_not_fp32_master_weights</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Warn when trainable params are not fp32 master weights.</span>
+
+<span class="sd">    Mixed precision in GenSBI stores master weights in fp32 and selects the</span>
+<span class="sd">    compute dtype via each model&#39;s ``dtype`` knob; bf16 master weights break</span>
+<span class="sd">    AdamW moment accumulation and make optax.ema unable to integrate</span>
+<span class="sd">    (1 - decay)-scale updates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="n">tu</span><span class="o">.</span><span class="n">flatten_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">to_pure_dict</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)))</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">k</span><span class="p">):</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">flat</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">jnp</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">floating</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;model has non-fp32 master weights (training will be numerically &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;degraded; set param_dtype=jnp.float32 and use the dtype knob &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;for compute instead): </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="ne">UserWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>Call it in <code class="docutils literal notranslate"><span class="pre">Pipeline.__init__</span></code> right after the model is stored. In <code class="docutils literal notranslate"><span class="pre">restore_model</span></code> (line ~517-556), after <code class="docutils literal notranslate"><span class="pre">read_mgr.restore(...)</span></code> and before <code class="docutils literal notranslate"><span class="pre">nnx.merge</span></code>, map the restored state leaves through <code class="docutils literal notranslate"><span class="pre">.astype</span></code> of the corresponding target-model leaf dtype (same loop shape as <code class="docutils literal notranslate"><span class="pre">load_safetensors</span></code>); apply to both the model and EMA restore paths.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run</strong> <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/recipes/test_precision_pipeline.py</span> <span class="pre">tests/utils/test_serialization_dtype.py</span> <span class="pre">tests/recipes/</span> <span class="pre">-v</span></code> — Expected: all PASS.</p></li>
+<li><p>[ ] <strong>Step 5: Commit</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">src/gensbi/recipes/pipeline.py</span> <span class="pre">tests/recipes/</span> <span class="pre">tests/utils/</span> <span class="pre">&amp;&amp;</span> <span class="pre">git</span> <span class="pre">commit</span> <span class="pre">-m</span> <span class="pre">&quot;feat:</span> <span class="pre">fp32</span> <span class="pre">master-weight</span> <span class="pre">guard,</span> <span class="pre">EMA</span> <span class="pre">regression</span> <span class="pre">tests,</span> <span class="pre">dtype-safe</span> <span class="pre">checkpoint</span> <span class="pre">restore&quot;</span></code></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-13-full-suite-regression-and-wrap-up">
+<h3>Task 13: Full-suite regression and wrap-up<a class="headerlink" href="#task-13-full-suite-regression-and-wrap-up" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: none expected (fixes only if the sweep finds stragglers)</p></li>
+<li><p>[ ] <strong>Step 1: Sweep for leftover bf16 param defaults</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">-rn</span> <span class="pre">&quot;param_dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.bfloat16\|param_dtype=jnp.bfloat16&quot;</span> <span class="pre">src/gensbi/</span></code>
+Expected: no hits (any hit is a missed constructor — fix it with the canonical pattern and add it to the owning task’s test).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run the entire test suite</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">tests/</span> <span class="pre">-q</span></code>
+Expected: all PASS, no new skips.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Smoke the recovery scripts (CPU, smoke mode)</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span> <span class="pre">/lhome/ific/a/aamerio/miniforge3/envs/gensbi/bin/python</span> <span class="pre">scripts/maf_nle_recovery.py</span> <span class="pre">--smoke</span></code> (and the tarflow twin; check <code class="docutils literal notranslate"><span class="pre">scripts/</span></code> for exact names/flags)
+Expected: completes without NaN/dtype errors.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Commit any straggler fixes</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>-A<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix: mixed-precision stragglers from full-suite sweep&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Hand off the GPU validation gate to the user</strong></p></li>
+</ul>
+<p>Not automatable here — report to the user that the branch is ready for:</p>
+<ol class="arabic simple">
+<li><p>PixelDiT GRF probe rerun with <code class="docutils literal notranslate"><span class="pre">use_ema=True</span></code> (expect structure, not white noise).</p></li>
+<li><p>Flux1 two-moons sanity run (mixed-precision convergence ≥ current).</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-constraints">Global Constraints</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-precision-test-helpers">Task 1: Precision test helpers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-2-loss-functions-upcast-to-fp32">Task 2: Loss functions upcast to fp32</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-3-shared-embedding-modules-accept-a-compute-dtype">Task 3: Shared embedding modules accept a compute dtype</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-4-flux1-params-layers-model">Task 4: Flux1 — params, layers, model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-5-flux1joint">Task 5: Flux1Joint</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-6-simformer">Task 6: Simformer</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-7-maf-dtype-knob-fp32-default-bit-identical">Task 7: MAF — dtype knob, fp32 default, bit-identical</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-8-tarflow-dtype-knob-fp32-default-bit-identical">Task 8: TarFlow — dtype knob, fp32 default, bit-identical</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-9-pixeldit">Task 9: PixelDiT</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-10-fielddit">Task 10: FieldDiT</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-11-autoencoders">Task 11: Autoencoders</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-12-pipeline-guard-ema-regression-test-orbax-safetensors-restore">Task 12: Pipeline guard, EMA regression test, orbax/safetensors restore</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-13-full-suite-regression-and-wrap-up">Task 13: Full-suite regression and wrap-up</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -155,8 +155,13 @@ Module Contents
    :type qkv_features: int
    :param num_hidden_layers: Number of hidden layers in the transformer.
    :type num_hidden_layers: int
-   :param param_dtype: Data type for model parameters.
+   :param param_dtype: Data type for master-weight storage (parameters). Defaults to jnp.float32.
    :type param_dtype: DTypeLike
+   :param dtype: Compute/matmul dtype used by the MLP compute layers. The
+                 attention blocks always compute in fp32 regardless of this
+                 setting (see `transformer.AttentionBlock`). Defaults to
+                 jnp.bfloat16.
+   :type dtype: DTypeLike
 
 
 
@@ -188,6 +193,10 @@ Module Contents
 
    .. py:attribute:: dim_joint
       :type:  int
+
+
+   .. py:attribute:: dtype
+      :type:  jax.typing.DTypeLike
 
 
    .. py:attribute:: fourier_features

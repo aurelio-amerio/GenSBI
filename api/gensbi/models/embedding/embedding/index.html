@@ -714,7 +714,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.embedding.embedding.FeatureEmbedder">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.embedding.embedding.</span></span><span class="sig-name descname"><span class="pre">FeatureEmbedder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_embeddings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_size</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'absolute'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#FeatureEmbedder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.FeatureEmbedder" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.embedding.embedding.</span></span><span class="sig-name descname"><span class="pre">FeatureEmbedder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_embeddings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_size</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'absolute'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#FeatureEmbedder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.FeatureEmbedder" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
 <p>General Feature Embedder supporting learned, 1D sinusoidal, and 2D sinusoidal embeddings.
 1D sinusoidal embeddings are suitable for sequences, while 2D sinusoidal embeddings are ideal for grid-like data (e.g., images).</p>
@@ -724,6 +724,10 @@
 <li><p><strong>num_embeddings</strong> (<em>int</em>) – Number of embeddings.</p></li>
 <li><p><strong>hidden_size</strong> (<em>int</em>) – Hidden size/embedding dimension.</p></li>
 <li><p><strong>kind</strong> (<em>str</em><em>, </em><em>optional</em>) – Type of embedding: ‘absolute’, ‘pos1d’, or ‘pos2d’. Defaults to ‘absolute’.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Compute dtype, forwarded to the internal <code class="docutils literal notranslate"><span class="pre">nnx.Embed</span></code> for the
+‘absolute’ kind. Ignored for ‘pos1d’/’pos2d’: their precomputed
+sinusoidal tables are an fp32 island and stay at <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>.
+Defaults to jnp.float32.</p></li>
 <li><p><strong>param_dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Data type for parameters. Defaults to jnp.float32.</p></li>
 <li><p><strong>rngs</strong> (<em>nnx.Rngs</em><em>, </em><em>optional</em>) – Random number generators for initialization.</p></li>
 <li><p><strong>**kwargs</strong> – Additional keyword arguments specific to the embedding type.</p></li>
@@ -751,7 +755,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.embedding.embedding.GaussianFourierEmbedding">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.embedding.embedding.</span></span><span class="sig-name descname"><span class="pre">GaussianFourierEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#GaussianFourierEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.embedding.embedding.</span></span><span class="sig-name descname"><span class="pre">GaussianFourierEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">128</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#GaussianFourierEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
 <p>Base class for all neural network modules.</p>
 <p>Layers and models should subclass this class.</p>
@@ -785,6 +789,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li><p><strong>output_dim</strong> (<em>int</em>)</p></li>
 <li><p><strong>learnable</strong> (<em>bool</em>)</p></li>
 <li><p><strong>rngs</strong> (<em>flax.nnx.Rngs</em>)</p></li>
+<li><p><strong>dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 <li><p><strong>param_dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 </ul>
 </dd>
@@ -812,6 +817,11 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.embedding.embedding.GaussianFourierEmbedding.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#GaussianFourierEmbedding.dtype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding.dtype" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.embedding.embedding.GaussianFourierEmbedding.output_dim">
 <span class="sig-name descname"><span class="pre">output_dim</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">128</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#GaussianFourierEmbedding.output_dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding.output_dim" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -820,7 +830,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.embedding.embedding.MLPEmbedder">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.embedding.embedding.</span></span><span class="sig-name descname"><span class="pre">MLPEmbedder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#MLPEmbedder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.MLPEmbedder" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.embedding.embedding.</span></span><span class="sig-name descname"><span class="pre">MLPEmbedder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#MLPEmbedder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.MLPEmbedder" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
 <p>MLP-based embedder with skip connections.</p>
 <dl class="field-list simple">
@@ -829,6 +839,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li><p><strong>in_dim</strong> (<em>int</em>) – Input dimension.</p></li>
 <li><p><strong>hidden_dim</strong> (<em>int</em>) – Hidden dimension, must be a multiple of in_dim.</p></li>
 <li><p><strong>rngs</strong> (<em>nnx.Rngs</em>) – Random number generators for initialization.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Compute dtype for the internal linear layers. Defaults to jnp.float32.</p></li>
 <li><p><strong>param_dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Data type for parameters. Defaults to jnp.float32.</p></li>
 </ul>
 </dd>
@@ -849,6 +860,11 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.embedding.embedding.MLPEmbedder.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/embedding/embedding.html#MLPEmbedder.dtype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.embedding.embedding.MLPEmbedder.dtype" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.embedding.embedding.MLPEmbedder.in_layer">
@@ -1184,11 +1200,13 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding"><code class="docutils literal notranslate"><span class="pre">GaussianFourierEmbedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding.__call__"><code class="docutils literal notranslate"><span class="pre">GaussianFourierEmbedding.__call__()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding.B"><code class="docutils literal notranslate"><span class="pre">GaussianFourierEmbedding.B</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding.dtype"><code class="docutils literal notranslate"><span class="pre">GaussianFourierEmbedding.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.GaussianFourierEmbedding.output_dim"><code class="docutils literal notranslate"><span class="pre">GaussianFourierEmbedding.output_dim</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.MLPEmbedder"><code class="docutils literal notranslate"><span class="pre">MLPEmbedder</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.MLPEmbedder.__call__"><code class="docutils literal notranslate"><span class="pre">MLPEmbedder.__call__()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.MLPEmbedder.dtype"><code class="docutils literal notranslate"><span class="pre">MLPEmbedder.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.MLPEmbedder.in_layer"><code class="docutils literal notranslate"><span class="pre">MLPEmbedder.in_layer</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.MLPEmbedder.out_layer"><code class="docutils literal notranslate"><span class="pre">MLPEmbedder.out_layer</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.embedding.embedding.MLPEmbedder.p_skip"><code class="docutils literal notranslate"><span class="pre">MLPEmbedder.p_skip</span></code></a></li>

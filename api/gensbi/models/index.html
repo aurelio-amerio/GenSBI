@@ -958,7 +958,8 @@ but for some datasets a token may carry multiple features.</p>
 <li><p><strong>id_merge_mode</strong> (<em>str</em>) – Strategy for combining embeddings (“sum” or “concat”).</p></li>
 <li><p><strong>id_embedding_strategy</strong> (<em>str</em>) – Kind of ID embedding. Currently only “absolute” is supported for Flux1Joint.</p></li>
 <li><p><strong>guidance_embed</strong> (<em>bool</em>) – Whether to use guidance embedding.</p></li>
-<li><p><strong>param_dtype</strong> (<em>DTypeLike</em>) – Data type for model parameters.</p></li>
+<li><p><strong>param_dtype</strong> (<em>DTypeLike</em>) – Data type for master-weight storage (parameters). Defaults to jnp.float32.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em>) – Compute/matmul dtype used by the compute layers. Defaults to jnp.bfloat16.</p></li>
 </ul>
 </dd>
 </dl>
@@ -980,6 +981,11 @@ but for some datasets a token may carry multiple features.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.Flux1JointParams.dim_joint">
 <span class="sig-name descname"><span class="pre">dim_joint</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gensbi.models.Flux1JointParams.dim_joint" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.Flux1JointParams.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.Flux1JointParams.dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1128,7 +1134,8 @@ Use <cite>gensbi.models.core.patching.patchify_2d</cite> for this purpose.</p></
 <li><p><strong>theta</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – Scaling factor for positional encoding.</p></li>
 <li><p><strong>id_embedding_strategy</strong> (<em>tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – Kind of ID embedding for obs and cond respectively. Options are “absolute”, “pos1d”, “pos2d”, “rope1d”, “rope2d”.</p></li>
 <li><p><strong>guidance_embed</strong> (<em>bool</em>) – Whether to use guidance embedding.</p></li>
-<li><p><strong>param_dtype</strong> (<em>DTypeLike</em>) – Data type for model parameters.</p></li>
+<li><p><strong>param_dtype</strong> (<em>DTypeLike</em>) – Data type for master-weight storage (parameters). Defaults to jnp.float32.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em>) – Compute/matmul dtype used by the compute layers. Defaults to jnp.bfloat16.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1165,6 +1172,11 @@ Use <cite>gensbi.models.core.patching.patchify_2d</cite> for this purpose.</p></
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.Flux1Params.dim_obs">
 <span class="sig-name descname"><span class="pre">dim_obs</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gensbi.models.Flux1Params.dim_obs" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.Flux1Params.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.Flux1Params.dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1470,6 +1482,13 @@ random shuffle sampled at construction time.</p></li>
 bijection at the data end of the chain.</p></li>
 <li><p><strong>zero_init</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), zero-initialise the output layer of each MADE
 network so the flow starts as an identity transform.</p></li>
+<li><p><strong>param_dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Dtype for all stored (master) MADE kernel/bias parameters. Default is
+<code class="docutils literal notranslate"><span class="pre">float32</span></code>.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Compute dtype knob threaded through the MADE conditioners. Default is
+<code class="docutils literal notranslate"><span class="pre">float32</span></code> (unlike the bf16-default DiT-family models, MAF keeps
+fp32 compute by default pending dedicated stability testing — see
+the mixed-precision design spec). Log-det accumulation is
+unconditionally fp32 regardless of this knob.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1499,6 +1518,11 @@ network so the flow starts as an identity transform.</p></li>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.MAFlowParams.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.MAFlowParams.dtype" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.MAFlowParams.n_layers">
 <span class="sig-name descname"><span class="pre">n_layers</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></span><a class="headerlink" href="#gensbi.models.MAFlowParams.n_layers" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -1511,6 +1535,11 @@ network so the flow starts as an identity transform.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.MAFlowParams.nn_width">
 <span class="sig-name descname"><span class="pre">nn_width</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">64</span></span><a class="headerlink" href="#gensbi.models.MAFlowParams.nn_width" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.MAFlowParams.param_dtype">
+<span class="sig-name descname"><span class="pre">param_dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.MAFlowParams.param_dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1661,7 +1690,11 @@ not channels): tokens with mask=1 are treated as conditioned.</p>
 <li><p><strong>mlp_ratio</strong> (<em>int</em>) – Widening factor for the transformer parameters (MLP ratio).</p></li>
 <li><p><strong>qkv_features</strong> (<em>int</em>) – Number of features for QKV layers.</p></li>
 <li><p><strong>num_hidden_layers</strong> (<em>int</em>) – Number of hidden layers in the transformer.</p></li>
-<li><p><strong>param_dtype</strong> (<em>DTypeLike</em>) – Data type for model parameters.</p></li>
+<li><p><strong>param_dtype</strong> (<em>DTypeLike</em>) – Data type for master-weight storage (parameters). Defaults to jnp.float32.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em>) – Compute/matmul dtype used by the MLP compute layers. The
+attention blocks always compute in fp32 regardless of this
+setting (see <cite>transformer.AttentionBlock</cite>). Defaults to
+jnp.bfloat16.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1683,6 +1716,11 @@ not channels): tokens with mask=1 are treated as conditioned.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.SimformerParams.dim_joint">
 <span class="sig-name descname"><span class="pre">dim_joint</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#gensbi.models.SimformerParams.dim_joint" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.SimformerParams.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.SimformerParams.dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1976,6 +2014,18 @@ for image data (more rotary frequencies per axis) but not enforced.
 Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>rope_theta</strong> (<em>int</em><em>, </em><em>optional</em>) – Frequency base for the rotary embedding. Only used when
 <code class="docutils literal notranslate"><span class="pre">use_rope=True</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">10000</span></code>.</p></li>
+<li><p><strong>param_dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Dtype for all stored (master) kernel/bias/embedding parameters
+across the tokenizer, conditioner, and transformer blocks. Default
+is <code class="docutils literal notranslate"><span class="pre">float32</span></code>.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Compute dtype knob threaded through the conditioners and
+<a class="reference internal" href="tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock" title="gensbi.models.tarflow.blocks.MetaBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetaBlock</span></code></a>/
+<a class="reference internal" href="tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock" title="gensbi.models.tarflow.blocks.AttentionBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">AttentionBlock</span></code></a> layers.
+Default is <code class="docutils literal notranslate"><span class="pre">float32</span></code>, matching <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>, so with default
+arguments this is a bit-identical no-op cast. Hard-fp32 regardless
+of this knob: the softplus/soft_clip affine-scale path in
+<code class="docutils literal notranslate"><span class="pre">MetaBlock._affine</span></code>, log-det accumulation, the <code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">std</span></code>
+standardization buffers, and the KV-cache buffers used during
+sampling.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2020,6 +2070,11 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.TarFlowParams.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.dtype" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.TarFlowParams.head_dim">
 <span class="sig-name descname"><span class="pre">head_dim</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.head_dim" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -2052,6 +2107,11 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.TarFlowParams.num_heads">
 <span class="sig-name descname"><span class="pre">num_heads</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.num_heads" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.TarFlowParams.param_dtype">
+<span class="sig-name descname"><span class="pre">param_dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.TarFlowParams.param_dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2235,6 +2295,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1JointParams.cond_emb_dim"><code class="docutils literal notranslate"><span class="pre">Flux1JointParams.cond_emb_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1JointParams.depth_single_blocks"><code class="docutils literal notranslate"><span class="pre">Flux1JointParams.depth_single_blocks</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1JointParams.dim_joint"><code class="docutils literal notranslate"><span class="pre">Flux1JointParams.dim_joint</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1JointParams.dtype"><code class="docutils literal notranslate"><span class="pre">Flux1JointParams.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1JointParams.guidance_embed"><code class="docutils literal notranslate"><span class="pre">Flux1JointParams.guidance_embed</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1JointParams.id_emb_dim"><code class="docutils literal notranslate"><span class="pre">Flux1JointParams.id_emb_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1JointParams.id_embedding_strategy"><code class="docutils literal notranslate"><span class="pre">Flux1JointParams.id_embedding_strategy</span></code></a></li>
@@ -2257,6 +2318,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1Params.depth_single_blocks"><code class="docutils literal notranslate"><span class="pre">Flux1Params.depth_single_blocks</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1Params.dim_cond"><code class="docutils literal notranslate"><span class="pre">Flux1Params.dim_cond</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1Params.dim_obs"><code class="docutils literal notranslate"><span class="pre">Flux1Params.dim_obs</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1Params.dtype"><code class="docutils literal notranslate"><span class="pre">Flux1Params.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1Params.guidance_embed"><code class="docutils literal notranslate"><span class="pre">Flux1Params.guidance_embed</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1Params.id_emb_dim"><code class="docutils literal notranslate"><span class="pre">Flux1Params.id_emb_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.Flux1Params.id_embedding_strategy"><code class="docutils literal notranslate"><span class="pre">Flux1Params.id_embedding_strategy</span></code></a></li>
@@ -2297,9 +2359,11 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.cond_channels"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.cond_channels</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.cond_dim"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.cond_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.dim"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.dim</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.dtype"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.n_layers"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.n_layers</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.nn_depth"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.nn_depth</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.nn_width"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.nn_width</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.param_dtype"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.param_dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.permutation"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.permutation</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.rngs"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.rngs</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.MAFlowParams.standardize"><code class="docutils literal notranslate"><span class="pre">MAFlowParams.standardize</span></code></a></li>
@@ -2327,6 +2391,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.SimformerParams.cond_emb_dim"><code class="docutils literal notranslate"><span class="pre">SimformerParams.cond_emb_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.SimformerParams.depth"><code class="docutils literal notranslate"><span class="pre">SimformerParams.depth</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.SimformerParams.dim_joint"><code class="docutils literal notranslate"><span class="pre">SimformerParams.dim_joint</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.SimformerParams.dtype"><code class="docutils literal notranslate"><span class="pre">SimformerParams.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.SimformerParams.fourier_features"><code class="docutils literal notranslate"><span class="pre">SimformerParams.fourier_features</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.SimformerParams.id_emb_dim"><code class="docutils literal notranslate"><span class="pre">SimformerParams.id_emb_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.SimformerParams.in_channels"><code class="docutils literal notranslate"><span class="pre">SimformerParams.in_channels</span></code></a></li>
@@ -2366,6 +2431,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.cond_img_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.cond_img_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.cond_patch_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.cond_patch_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.dim"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.dim</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.dtype"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.head_dim"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.head_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.img_channels"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.img_channels</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.img_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.img_size</span></code></a></li>
@@ -2373,6 +2439,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.modeled"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.modeled</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.num_blocks"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.num_blocks</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.num_heads"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.num_heads</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.param_dtype"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.param_dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.patch_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.patch_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.permutation"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.permutation</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.TarFlowParams.rngs"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.rngs</span></code></a></li>

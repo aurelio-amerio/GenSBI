@@ -17,40 +17,37 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: AttentionBlock(din, num_heads, features, skip_connection, rngs, param_dtype = jnp.float32)
+.. py:class:: AttentionBlock(din, num_heads, features, skip_connection, rngs, dtype = jnp.float32, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
 
    
-   Base class for all neural network modules.
+   Self-attention block with a fixed fp32 compute island.
 
-   Layers and models should subclass this class.
+   ``flax.nnx.MultiHeadAttention`` (flax 0.12.7) computes its softmax in
+   whatever ``dtype`` it is given -- there is no internal fp32 upcast for
+   the attention logits/softmax the way some other implementations provide.
+   Rather than bolt on a custom ``attention_fn`` just to force fp32 softmax,
+   this block keeps *all* of its internal math (LayerNorm + MultiHeadAttention)
+   at ``dtype=jnp.float32``, ignoring the ``dtype`` compute-precision knob for
+   those internals. This is a deliberately larger fp32 island than a single
+   softmax op, but the bulk of the model's FLOPs live in the ``DenseBlock``
+   MLP stack (``widening_factor`` x wider), which does honor the bf16
+   ``dtype`` knob, so this island has a small cost in practice.
 
-   ``Module``'s can contain submodules, and in this way can be nested in a tree
-   structure. Submodules can be assigned as regular attributes inside the
-   ``__init__`` method.
+   The island is for the *math* only: the block's output (after the
+   optional skip connection) is downcast to the requested ``dtype`` before
+   being returned, mirroring the codebase's established fp32-island idiom
+   (e.g. ``QKNorm.__call__``'s ``.astype(v.dtype)`` in ``flux1/layers.py``).
+   Without this downcast, the fp32 residual (``x_in``, captured post
+   fp32-LayerNorm) would silently re-promote every downstream block's
+   output back to fp32 via JAX's bf16+fp32 promotion rule on the skip-add,
+   defeating the bf16 knob's memory/bandwidth benefit for the whole
+   inter-block residual stream.
 
-   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
-   While no methods are special-cased, ``__call__`` is a popular choice since
-   you can call the ``Module`` directly::
-
-     >>> from flax import nnx
-     >>> import jax.numpy as jnp
-
-     >>> class Model(nnx.Module):
-     ...   def __init__(self, rngs):
-     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
-     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
-     ...   def __call__(self, x):
-     ...     x = self.linear1(x)
-     ...     x = nnx.relu(x)
-     ...     x = self.linear2(x)
-     ...     return x
-
-     >>> x = jnp.ones((1, 2))
-     >>> model = Model(rngs=nnx.Rngs(0))
-     >>> y = model(x)
+   ``param_dtype`` (master-weight storage) is unaffected and still threads
+   through normally.
 
 
 
@@ -75,46 +72,33 @@ Module Contents
    .. py:attribute:: attn
 
 
+   .. py:attribute:: dtype
+
+
    .. py:attribute:: layer_norm
 
 
    .. py:attribute:: skip_connection
 
 
-.. py:class:: DenseBlock(din, dcontext, num_hidden_layers, widening_factor, act, skip_connection, rngs, param_dtype = jnp.float32)
+.. py:class:: DenseBlock(din, dcontext, num_hidden_layers, widening_factor, act, skip_connection, rngs, dtype = jnp.float32, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
 
    
-   Base class for all neural network modules.
+   MLP block (the FLOPs-dominant part of the transformer) with an fp32
+   LayerNorm island.
 
-   Layers and models should subclass this class.
-
-   ``Module``'s can contain submodules, and in this way can be nested in a tree
-   structure. Submodules can be assigned as regular attributes inside the
-   ``__init__`` method.
-
-   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
-   While no methods are special-cased, ``__call__`` is a popular choice since
-   you can call the ``Module`` directly::
-
-     >>> from flax import nnx
-     >>> import jax.numpy as jnp
-
-     >>> class Model(nnx.Module):
-     ...   def __init__(self, rngs):
-     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
-     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
-     ...   def __call__(self, x):
-     ...     x = self.linear1(x)
-     ...     x = nnx.relu(x)
-     ...     x = self.linear2(x)
-     ...     return x
-
-     >>> x = jnp.ones((1, 2))
-     >>> model = Model(rngs=nnx.Rngs(0))
-     >>> y = model(x)
+   The LayerNorm math runs in fp32 (mirrors ``AttentionBlock``'s
+   normalization treatment); the wide hidden-layer matmuls run in the
+   requested compute ``dtype``. The block's output (after the context-merge
+   and optional skip connection) is downcast to ``dtype`` before being
+   returned -- otherwise the fp32 residual (``x_in``, captured post
+   fp32-LayerNorm) would silently re-promote the output back to fp32 via
+   JAX's bf16+fp32 promotion rule on the skip-add, defeating the bf16
+   knob's memory/bandwidth benefit for the whole inter-block residual
+   stream (see ``AttentionBlock`` docstring for the same pattern).
 
 
 
@@ -142,6 +126,9 @@ Module Contents
    .. py:attribute:: context_block
 
 
+   .. py:attribute:: dtype
+
+
    .. py:attribute:: hidden_blocks
 
 
@@ -151,7 +138,7 @@ Module Contents
    .. py:attribute:: skip_connection
 
 
-.. py:class:: Transformer(din, dcontext, num_heads, num_layers, features, widening_factor = 4, num_hidden_layers = 1, act = jax.nn.gelu, skip_connection_attn = True, skip_connection_mlp = True, *, rngs, param_dtype = jnp.float32)
+.. py:class:: Transformer(din, dcontext, num_heads, num_layers, features, widening_factor = 4, num_hidden_layers = 1, act = jax.nn.gelu, skip_connection_attn = True, skip_connection_mlp = True, *, rngs, dtype = jnp.float32, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -193,6 +180,9 @@ Module Contents
 
 
    .. py:attribute:: din
+
+
+   .. py:attribute:: dtype
 
 
    .. py:attribute:: layer_norm

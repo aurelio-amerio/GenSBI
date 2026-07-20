@@ -83,7 +83,7 @@ Module Contents
    .. py:attribute:: embed
 
 
-.. py:class:: FeatureEmbedder(num_embeddings, hidden_size, *, kind='absolute', param_dtype=jnp.float32, rngs = None, **kwargs)
+.. py:class:: FeatureEmbedder(num_embeddings, hidden_size, *, kind='absolute', dtype = jnp.float32, param_dtype=jnp.float32, rngs = None, **kwargs)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -98,6 +98,11 @@ Module Contents
    :type hidden_size: int
    :param kind: Type of embedding: 'absolute', 'pos1d', or 'pos2d'. Defaults to 'absolute'.
    :type kind: str, optional
+   :param dtype: Compute dtype, forwarded to the internal ``nnx.Embed`` for the
+                 'absolute' kind. Ignored for 'pos1d'/'pos2d': their precomputed
+                 sinusoidal tables are an fp32 island and stay at ``param_dtype``.
+                 Defaults to jnp.float32.
+   :type dtype: DTypeLike, optional
    :param param_dtype: Data type for parameters. Defaults to jnp.float32.
    :type param_dtype: DTypeLike, optional
    :param rngs: Random number generators for initialization.
@@ -150,7 +155,7 @@ Module Contents
           !! processed by numpydoc !!
 
 
-.. py:class:: GaussianFourierEmbedding(output_dim = 128, learnable = False, *, rngs, param_dtype = jnp.float32)
+.. py:class:: GaussianFourierEmbedding(output_dim = 128, learnable = False, *, rngs, dtype = jnp.float32, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -234,12 +239,15 @@ Module Contents
    .. py:attribute:: B
 
 
+   .. py:attribute:: dtype
+
+
    .. py:attribute:: output_dim
       :value: 128
 
 
 
-.. py:class:: MLPEmbedder(in_dim, hidden_dim, rngs, param_dtype = jnp.float32)
+.. py:class:: MLPEmbedder(in_dim, hidden_dim, rngs, dtype = jnp.float32, param_dtype = jnp.float32)
 
    Bases: :py:obj:`flax.nnx.Module`
 
@@ -253,6 +261,8 @@ Module Contents
    :type hidden_dim: int
    :param rngs: Random number generators for initialization.
    :type rngs: nnx.Rngs
+   :param dtype: Compute dtype for the internal linear layers. Defaults to jnp.float32.
+   :type dtype: DTypeLike, optional
    :param param_dtype: Data type for parameters. Defaults to jnp.float32.
    :type param_dtype: DTypeLike, optional
 
@@ -300,6 +310,9 @@ Module Contents
 
       ..
           !! processed by numpydoc !!
+
+
+   .. py:attribute:: dtype
 
 
    .. py:attribute:: in_layer

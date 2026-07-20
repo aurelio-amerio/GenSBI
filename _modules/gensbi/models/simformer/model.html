@@ -817,7 +817,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        num_hidden_layers : int</span>
 <span class="sd">            Number of hidden layers in the transformer.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for model parameters.</span>
+<span class="sd">            Data type for master-weight storage (parameters). Defaults to jnp.float32.</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute/matmul dtype used by the MLP compute layers. The</span>
+<span class="sd">            attention blocks always compute in fp32 regardless of this</span>
+<span class="sd">            setting (see `transformer.AttentionBlock`). Defaults to</span>
+<span class="sd">            jnp.bfloat16.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -872,6 +877,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SimformerParams.param_dtype">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.param_dtype">[docs]</a>
     <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
+
+<div class="viewcode-block" id="SimformerParams.dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.SimformerParams.dtype">[docs]</a>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span></div>
 
 
 <div class="viewcode-block" id="SimformerParams.__post_init__">
@@ -928,6 +937,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">in_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
                 <span class="n">hidden_dim</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">val_emb_dim</span><span class="p">,</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="c1"># self.embedding_net_value = lambda obs: jnp.repeat(obs, val_emb_dim, axis=-1)</span>
@@ -939,6 +949,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">fourier_features</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -948,6 +959,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_embeddings</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dim_joint</span><span class="p">,</span>
             <span class="n">features</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_emb_dim</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -977,16 +989,21 @@ window.runMermaid = runMermaid;</script>
             <span class="n">skip_connection_attn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">skip_connection_mlp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
+        <span class="c1"># models-emit-fp32 contract: the final projection is constructed with</span>
+        <span class="c1"># dtype=jnp.float32 (never a post-hoc .astype), regardless of the</span>
+        <span class="c1"># compute-dtype knob.</span>
 <div class="viewcode-block" id="Simformer.output_fn">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.output_fn">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_fn</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">total_tokens</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1026,8 +1043,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                Model output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
-        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
         <span class="k">assert</span> <span class="p">(</span>
             <span class="n">obs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span>
@@ -1060,8 +1077,17 @@ window.runMermaid = runMermaid;</script>
 
         <span class="n">time_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_time</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
 
+        <span class="c1"># condition_embedding is a learned nnx.Param stored at param_dtype</span>
+        <span class="c1"># (fp32 by default). Cast it to the compute dtype at this use site</span>
+        <span class="c1"># before it is mixed (concatenated below) with the bf16 value/id</span>
+        <span class="c1"># embedding streams -- otherwise JAX&#39;s promotion rules would silently</span>
+        <span class="c1"># upcast the whole concatenated stream back to fp32, defeating the</span>
+        <span class="c1"># bf16 compute knob for the rest of the transformer.</span>
+        <span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="p">)</span>
         <span class="n">condition_embedding</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">*</span> <span class="n">condition_mask</span>
+            <span class="n">condition_embedding</span> <span class="o">*</span> <span class="n">condition_mask</span>
         <span class="p">)</span>  <span class="c1"># If condition_mask is 0, then the embedding is 0, otherwise it is the condition_embedding vector</span>
         <span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
             <span class="n">condition_embedding</span><span class="p">,</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb_dim</span><span class="p">)</span>

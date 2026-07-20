@@ -799,7 +799,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">vec_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="ConvModulation.channels">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/blocks/index.html#gensbi.experimental.models.fielddit.blocks.ConvModulation.channels">[docs]</a>
@@ -812,6 +813,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="mi">3</span> <span class="o">*</span> <span class="n">channels</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="n">kernel_init</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span>
             <span class="n">bias_init</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span>
@@ -848,7 +850,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">vec_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">norm_groups</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="ModulatedResBlock2D.in_channels">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/blocks/index.html#gensbi.experimental.models.fielddit.blocks.ModulatedResBlock2D.in_channels">[docs]</a>
@@ -859,6 +862,11 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span></div>
 
 
+        <span class="c1"># fp32 island: GroupNorm stats always computed/stored in fp32,</span>
+        <span class="c1"># regardless of the model&#39;s compute-dtype knob. Its output feeds</span>
+        <span class="c1"># directly into conv1/conv2 (compute-dtype Linears) below, which</span>
+        <span class="c1"># self-heal the downcast via their own promote_dtype -- no explicit</span>
+        <span class="c1"># ``.astype`` needed here.</span>
 <div class="viewcode-block" id="ModulatedResBlock2D.norm1">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/blocks/index.html#gensbi.experimental.models.fielddit.blocks.ModulatedResBlock2D.norm1">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">GroupNorm</span><span class="p">(</span>
@@ -866,6 +874,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -878,6 +887,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -891,6 +901,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">use_scale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -903,13 +914,15 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ModulatedResBlock2D.mod">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/blocks/index.html#gensbi.experimental.models.fielddit.blocks.ModulatedResBlock2D.mod">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">mod</span> <span class="o">=</span> <span class="n">ConvModulation</span><span class="p">(</span>
-            <span class="n">vec_dim</span><span class="o">=</span><span class="n">vec_dim</span><span class="p">,</span> <span class="n">channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">vec_dim</span><span class="o">=</span><span class="n">vec_dim</span><span class="p">,</span> <span class="n">channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
         <span class="k">if</span> <span class="n">in_channels</span> <span class="o">!=</span> <span class="n">out_channels</span><span class="p">:</span>
@@ -920,6 +933,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
                 <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>

@@ -643,10 +643,10 @@
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.models.simformer.transformer.AttentionBlock" title="gensbi.models.simformer.transformer.AttentionBlock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AttentionBlock</span></code></a></p></td>
-<td><p>Base class for all neural network modules.</p></td>
+<td><p>Self-attention block with a fixed fp32 compute island.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.models.simformer.transformer.DenseBlock" title="gensbi.models.simformer.transformer.DenseBlock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DenseBlock</span></code></a></p></td>
-<td><p>Base class for all neural network modules.</p></td>
+<td><p>MLP block (the FLOPs-dominant part of the transformer) with an fp32</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.models.simformer.transformer.Transformer" title="gensbi.models.simformer.transformer.Transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Transformer</span></code></a></p></td>
 <td><p>A transformer stack.</p></td>
@@ -659,34 +659,30 @@
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.simformer.transformer.AttentionBlock">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.simformer.transformer.</span></span><span class="sig-name descname"><span class="pre">AttentionBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">din</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#AttentionBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.AttentionBlock" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.simformer.transformer.</span></span><span class="sig-name descname"><span class="pre">AttentionBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">din</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#AttentionBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.AttentionBlock" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
-<p>Base class for all neural network modules.</p>
-<p>Layers and models should subclass this class.</p>
-<p><code class="docutils literal notranslate"><span class="pre">Module</span></code>’s can contain submodules, and in this way can be nested in a tree
-structure. Submodules can be assigned as regular attributes inside the
-<code class="docutils literal notranslate"><span class="pre">__init__</span></code> method.</p>
-<p>You can define arbitrary “forward pass” methods on your <code class="docutils literal notranslate"><span class="pre">Module</span></code> subclass.
-While no methods are special-cased, <code class="docutils literal notranslate"><span class="pre">__call__</span></code> is a popular choice since
-you can call the <code class="docutils literal notranslate"><span class="pre">Module</span></code> directly:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">Model</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="gp">... </span>  <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rngs</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
-<span class="gp">... </span>  <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="k">return</span> <span class="n">x</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-</pre></div>
-</div>
+<p>Self-attention block with a fixed fp32 compute island.</p>
+<p><code class="docutils literal notranslate"><span class="pre">flax.nnx.MultiHeadAttention</span></code> (flax 0.12.7) computes its softmax in
+whatever <code class="docutils literal notranslate"><span class="pre">dtype</span></code> it is given – there is no internal fp32 upcast for
+the attention logits/softmax the way some other implementations provide.
+Rather than bolt on a custom <code class="docutils literal notranslate"><span class="pre">attention_fn</span></code> just to force fp32 softmax,
+this block keeps <em>all</em> of its internal math (LayerNorm + MultiHeadAttention)
+at <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>, ignoring the <code class="docutils literal notranslate"><span class="pre">dtype</span></code> compute-precision knob for
+those internals. This is a deliberately larger fp32 island than a single
+softmax op, but the bulk of the model’s FLOPs live in the <code class="docutils literal notranslate"><span class="pre">DenseBlock</span></code>
+MLP stack (<code class="docutils literal notranslate"><span class="pre">widening_factor</span></code> x wider), which does honor the bf16
+<code class="docutils literal notranslate"><span class="pre">dtype</span></code> knob, so this island has a small cost in practice.</p>
+<p>The island is for the <em>math</em> only: the block’s output (after the
+optional skip connection) is downcast to the requested <code class="docutils literal notranslate"><span class="pre">dtype</span></code> before
+being returned, mirroring the codebase’s established fp32-island idiom
+(e.g. <code class="docutils literal notranslate"><span class="pre">QKNorm.__call__</span></code>’s <code class="docutils literal notranslate"><span class="pre">.astype(v.dtype)</span></code> in <code class="docutils literal notranslate"><span class="pre">flux1/layers.py</span></code>).
+Without this downcast, the fp32 residual (<code class="docutils literal notranslate"><span class="pre">x_in</span></code>, captured post
+fp32-LayerNorm) would silently re-promote every downstream block’s
+output back to fp32 via JAX’s bf16+fp32 promotion rule on the skip-add,
+defeating the bf16 knob’s memory/bandwidth benefit for the whole
+inter-block residual stream.</p>
+<p><code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> (master-weight storage) is unaffected and still threads
+through normally.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -695,6 +691,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li><p><strong>features</strong> (<em>int</em>)</p></li>
 <li><p><strong>skip_connection</strong> (<em>bool</em>)</p></li>
 <li><p><strong>rngs</strong> (<em>flax.nnx.Rngs</em>)</p></li>
+<li><p><strong>dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 <li><p><strong>param_dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 </ul>
 </dd>
@@ -721,6 +718,11 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.simformer.transformer.AttentionBlock.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#AttentionBlock.dtype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.AttentionBlock.dtype" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.simformer.transformer.AttentionBlock.layer_norm">
 <span class="sig-name descname"><span class="pre">layer_norm</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#AttentionBlock.layer_norm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.AttentionBlock.layer_norm" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -734,34 +736,19 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.simformer.transformer.DenseBlock">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.simformer.transformer.</span></span><span class="sig-name descname"><span class="pre">DenseBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">din</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcontext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_hidden_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widening_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">act</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#DenseBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.DenseBlock" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.simformer.transformer.</span></span><span class="sig-name descname"><span class="pre">DenseBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">din</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcontext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_hidden_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widening_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">act</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#DenseBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.DenseBlock" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
-<p>Base class for all neural network modules.</p>
-<p>Layers and models should subclass this class.</p>
-<p><code class="docutils literal notranslate"><span class="pre">Module</span></code>’s can contain submodules, and in this way can be nested in a tree
-structure. Submodules can be assigned as regular attributes inside the
-<code class="docutils literal notranslate"><span class="pre">__init__</span></code> method.</p>
-<p>You can define arbitrary “forward pass” methods on your <code class="docutils literal notranslate"><span class="pre">Module</span></code> subclass.
-While no methods are special-cased, <code class="docutils literal notranslate"><span class="pre">__call__</span></code> is a popular choice since
-you can call the <code class="docutils literal notranslate"><span class="pre">Module</span></code> directly:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">Model</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="gp">... </span>  <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rngs</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
-<span class="gp">... </span>  <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="k">return</span> <span class="n">x</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-</pre></div>
-</div>
+<p>MLP block (the FLOPs-dominant part of the transformer) with an fp32
+LayerNorm island.</p>
+<p>The LayerNorm math runs in fp32 (mirrors <code class="docutils literal notranslate"><span class="pre">AttentionBlock</span></code>’s
+normalization treatment); the wide hidden-layer matmuls run in the
+requested compute <code class="docutils literal notranslate"><span class="pre">dtype</span></code>. The block’s output (after the context-merge
+and optional skip connection) is downcast to <code class="docutils literal notranslate"><span class="pre">dtype</span></code> before being
+returned – otherwise the fp32 residual (<code class="docutils literal notranslate"><span class="pre">x_in</span></code>, captured post
+fp32-LayerNorm) would silently re-promote the output back to fp32 via
+JAX’s bf16+fp32 promotion rule on the skip-add, defeating the bf16
+knob’s memory/bandwidth benefit for the whole inter-block residual
+stream (see <code class="docutils literal notranslate"><span class="pre">AttentionBlock</span></code> docstring for the same pattern).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -769,6 +756,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li><p><strong>act</strong> (<em>Callable</em>)</p></li>
 <li><p><strong>skip_connection</strong> (<em>bool</em>)</p></li>
 <li><p><strong>rngs</strong> (<em>flax.nnx.Rngs</em>)</p></li>
+<li><p><strong>dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 <li><p><strong>param_dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 </ul>
 </dd>
@@ -786,6 +774,11 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.simformer.transformer.DenseBlock.context_block">
 <span class="sig-name descname"><span class="pre">context_block</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#DenseBlock.context_block"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.DenseBlock.context_block" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.simformer.transformer.DenseBlock.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#DenseBlock.dtype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.DenseBlock.dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -807,7 +800,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.models.simformer.transformer.Transformer">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.simformer.transformer.</span></span><span class="sig-name descname"><span class="pre">Transformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">din</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcontext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widening_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_hidden_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">act</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jax.nn.gelu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection_mlp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#Transformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.Transformer" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.models.simformer.transformer.</span></span><span class="sig-name descname"><span class="pre">Transformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">din</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcontext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widening_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_hidden_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">act</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jax.nn.gelu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection_attn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_connection_mlp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rngs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#Transformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.Transformer" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
 <p>A transformer stack.</p>
 <dl class="field-list simple">
@@ -824,6 +817,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li><p><strong>skip_connection_attn</strong> (<em>bool</em>)</p></li>
 <li><p><strong>skip_connection_mlp</strong> (<em>bool</em>)</p></li>
 <li><p><strong>rngs</strong> (<em>flax.nnx.Rngs</em>)</p></li>
+<li><p><strong>dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 <li><p><strong>param_dtype</strong> (<em>jax.typing.DTypeLike</em>)</p></li>
 </ul>
 </dd>
@@ -868,6 +862,11 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.simformer.transformer.Transformer.din">
 <span class="sig-name descname"><span class="pre">din</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#Transformer.din"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.Transformer.din" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.simformer.transformer.Transformer.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="reference internal" href="../../../../../_modules/gensbi/models/simformer/transformer.html#Transformer.dtype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.models.simformer.transformer.Transformer.dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -972,6 +971,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.AttentionBlock"><code class="docutils literal notranslate"><span class="pre">AttentionBlock</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.AttentionBlock.__call__"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.__call__()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.AttentionBlock.attn"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.attn</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.AttentionBlock.dtype"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.AttentionBlock.layer_norm"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.layer_norm</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.AttentionBlock.skip_connection"><code class="docutils literal notranslate"><span class="pre">AttentionBlock.skip_connection</span></code></a></li>
 </ul>
@@ -980,6 +980,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.DenseBlock.__call__"><code class="docutils literal notranslate"><span class="pre">DenseBlock.__call__()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.DenseBlock.act"><code class="docutils literal notranslate"><span class="pre">DenseBlock.act</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.DenseBlock.context_block"><code class="docutils literal notranslate"><span class="pre">DenseBlock.context_block</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.DenseBlock.dtype"><code class="docutils literal notranslate"><span class="pre">DenseBlock.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.DenseBlock.hidden_blocks"><code class="docutils literal notranslate"><span class="pre">DenseBlock.hidden_blocks</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.DenseBlock.layer_norm"><code class="docutils literal notranslate"><span class="pre">DenseBlock.layer_norm</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.DenseBlock.skip_connection"><code class="docutils literal notranslate"><span class="pre">DenseBlock.skip_connection</span></code></a></li>
@@ -992,6 +993,7 @@ you can call the <code class="docutils literal notranslate"><span class="pre">Mo
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.Transformer.dcontext"><code class="docutils literal notranslate"><span class="pre">Transformer.dcontext</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.Transformer.dense_blocks"><code class="docutils literal notranslate"><span class="pre">Transformer.dense_blocks</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.Transformer.din"><code class="docutils literal notranslate"><span class="pre">Transformer.din</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.Transformer.dtype"><code class="docutils literal notranslate"><span class="pre">Transformer.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.Transformer.layer_norm"><code class="docutils literal notranslate"><span class="pre">Transformer.layer_norm</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.Transformer.num_heads"><code class="docutils literal notranslate"><span class="pre">Transformer.num_heads</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.simformer.transformer.Transformer.num_hidden_layers"><code class="docutils literal notranslate"><span class="pre">Transformer.num_hidden_layers</span></code></a></li>

@@ -772,6 +772,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.core.patching</span><span class="w"> </span><span class="kn">import</span> <span class="n">patchify_2d</span>
 
@@ -799,10 +800,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Default is ``1``.  The input linear layer is widened to accept</span>
 <span class="sd">        ``cond_dim * cond_channels`` features, folding the channel axis before</span>
 <span class="sd">        the MLP (same flattening performed in :meth:`embed`).</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for the stored (master) kernel/bias parameters. Default is</span>
+<span class="sd">        ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype forwarded to the MLP layers. Default is ``float32``,</span>
+<span class="sd">        matching ``param_dtype``, so with default arguments this is a</span>
+<span class="sd">        bit-identical no-op cast.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-                 <span class="n">cond_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+                 <span class="n">cond_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
 <div class="viewcode-block" id="AdditiveBiasConditioner.cond_dim">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.AdditiveBiasConditioner.cond_dim">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">cond_dim</span></div>
@@ -812,8 +821,10 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_channels</span> <span class="o">=</span> <span class="n">cond_channels</span></div>
 
         <span class="k">if</span> <span class="n">cond_dim</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">cond_dim</span> <span class="o">*</span> <span class="n">cond_channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">cond_dim</span> <span class="o">*</span> <span class="n">cond_channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
 
 <div class="viewcode-block" id="AdditiveBiasConditioner.embed">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.AdditiveBiasConditioner.embed">[docs]</a>
@@ -874,10 +885,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    rngs : nnx.Rngs</span>
 <span class="sd">        Flax RNG container for linear layer and positional embedding</span>
 <span class="sd">        initialization.</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for the stored (master) kernel/bias/positional parameters.</span>
+<span class="sd">        Default is ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype forwarded to ``proj``. Default is ``float32``,</span>
+<span class="sd">        matching ``param_dtype``, so with default arguments this is a</span>
+<span class="sd">        bit-identical no-op cast.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cond_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
+                 <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
 <div class="viewcode-block" id="VectorConditioner.cond_dim">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.cond_dim">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">cond_dim</span></div>
@@ -896,12 +915,14 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="VectorConditioner.proj">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.proj">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">cond_channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">cond_channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="VectorConditioner.pos">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.pos">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span></div>
+            <span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span>
+             <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="VectorConditioner.embed">
@@ -931,7 +952,8 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">cond</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cond is required for VectorConditioner&quot;</span><span class="p">)</span>
         <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>                       <span class="c1"># (B, cond_dim, C_cond)</span>
-        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="o">...</span><span class="p">][</span><span class="kc">None</span><span class="p">])</span></div>
+        <span class="n">proj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">proj</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">proj</span><span class="o">.</span><span class="n">dtype</span><span class="p">)[</span><span class="kc">None</span><span class="p">])</span></div>
 </div>
 
 
@@ -960,10 +982,19 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    rngs : nnx.Rngs</span>
 <span class="sd">        Flax RNG container for projection layer and positional embedding</span>
 <span class="sd">        initialization.</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for the stored (master) kernel/bias/positional parameters.</span>
+<span class="sd">        Default is ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype forwarded to ``proj``. Default is ``float32``,</span>
+<span class="sd">        matching ``param_dtype``, so with default arguments this is a</span>
+<span class="sd">        bit-identical no-op cast.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">num_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
+                 <span class="n">num_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
+                 <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
 <div class="viewcode-block" id="ImageConditioner.patch_size">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.patch_size">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span> <span class="o">=</span> <span class="n">patch_size</span></div>
@@ -979,12 +1010,14 @@ window.runMermaid = runMermaid;</script>
         <span class="n">in_f</span> <span class="o">=</span> <span class="n">cond_channels</span> <span class="o">*</span> <span class="n">patch_size</span> <span class="o">*</span> <span class="n">patch_size</span>
 <div class="viewcode-block" id="ImageConditioner.proj">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.proj">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_f</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_f</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ImageConditioner.pos">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.pos">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">num_tokens</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span><span class="p">)</span></div>
+            <span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">num_tokens</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span>
+             <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="ImageConditioner.embed">
@@ -1014,7 +1047,8 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">cond</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cond is required for ImageConditioner&quot;</span><span class="p">)</span>
         <span class="n">patches</span> <span class="o">=</span> <span class="n">patchify_2d</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span><span class="p">)</span>      <span class="c1"># (B, M, in_f)</span>
-        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">patches</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="o">...</span><span class="p">][</span><span class="kc">None</span><span class="p">])</span></div>
+        <span class="n">proj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">patches</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">proj</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">proj</span><span class="o">.</span><span class="n">dtype</span><span class="p">)[</span><span class="kc">None</span><span class="p">])</span></div>
 </div>
 
 </pre></div>

@@ -772,6 +772,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.core.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">fit_stat</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.core.tokenizers</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorTokenizer</span><span class="p">,</span> <span class="n">ImageTokenizer</span>
@@ -879,6 +880,20 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    rope_theta : int, optional</span>
 <span class="sd">        Frequency base for the rotary embedding. Only used when</span>
 <span class="sd">        ``use_rope=True``. Default is ``10000``.</span>
+<span class="sd">    param_dtype : DTypeLike, optional</span>
+<span class="sd">        Dtype for all stored (master) kernel/bias/embedding parameters</span>
+<span class="sd">        across the tokenizer, conditioner, and transformer blocks. Default</span>
+<span class="sd">        is ``float32``.</span>
+<span class="sd">    dtype : DTypeLike, optional</span>
+<span class="sd">        Compute dtype knob threaded through the conditioners and</span>
+<span class="sd">        :class:`~gensbi.models.tarflow.blocks.MetaBlock`/</span>
+<span class="sd">        :class:`~gensbi.models.tarflow.blocks.AttentionBlock` layers.</span>
+<span class="sd">        Default is ``float32``, matching ``param_dtype``, so with default</span>
+<span class="sd">        arguments this is a bit-identical no-op cast. Hard-fp32 regardless</span>
+<span class="sd">        of this knob: the softplus/soft_clip affine-scale path in</span>
+<span class="sd">        ``MetaBlock._affine``, log-det accumulation, the ``mean``/``std``</span>
+<span class="sd">        standardization buffers, and the KV-cache buffers used during</span>
+<span class="sd">        sampling.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TarFlowParams.rngs">
@@ -977,6 +992,14 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.rope_theta">[docs]</a>
     <span class="n">rope_theta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span></div>
 
+<div class="viewcode-block" id="TarFlowParams.param_dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.param_dtype">[docs]</a>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
+
+<div class="viewcode-block" id="TarFlowParams.dtype">
+<a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.dtype">[docs]</a>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span></div>
+
 
 <div class="viewcode-block" id="TarFlowParams.__post_init__">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlowParams.__post_init__">[docs]</a>
@@ -1046,14 +1069,19 @@ window.runMermaid = runMermaid;</script>
         <span class="k">def</span><span class="w"> </span><span class="nf">make_cond</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">cond</span> <span class="o">==</span> <span class="s2">&quot;bias&quot;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">AdditiveBiasConditioner</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
-                                               <span class="n">cond_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">cond_channels</span><span class="p">)</span>
+                                               <span class="n">cond_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">cond_channels</span><span class="p">,</span>
+                                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+                                               <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">cond</span> <span class="o">==</span> <span class="s2">&quot;vector&quot;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">VectorConditioner</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">cond_channels</span><span class="p">,</span>
-                                         <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+                                         <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+                                         <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
             <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">cond_img_size</span> <span class="o">//</span> <span class="n">params</span><span class="o">.</span><span class="n">cond_patch_size</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
             <span class="k">return</span> <span class="n">ImageConditioner</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">cond_channels</span><span class="p">,</span>
                                     <span class="n">params</span><span class="o">.</span><span class="n">cond_patch_size</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span>
-                                    <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+                                    <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+                                    <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
 
         <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">num_blocks</span><span class="p">):</span>
@@ -1066,7 +1094,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">conditioner</span><span class="o">=</span><span class="n">make_cond</span><span class="p">(),</span> <span class="n">num_layers</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">layers_per_block</span><span class="p">,</span>
                 <span class="n">num_heads</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="n">expansion</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">zero_init</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">zero_init</span><span class="p">,</span> <span class="n">use_softplus</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">use_softplus</span><span class="p">,</span>
-                <span class="n">soft_clip</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">soft_clip</span><span class="p">,</span> <span class="n">rope</span><span class="o">=</span><span class="n">rope</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">))</span>
+                <span class="n">soft_clip</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">soft_clip</span><span class="p">,</span> <span class="n">rope</span><span class="o">=</span><span class="n">rope</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+                <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
 
 <div class="viewcode-block" id="TarFlow.blocks">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/model/index.html#gensbi.models.TarFlow.blocks">[docs]</a>

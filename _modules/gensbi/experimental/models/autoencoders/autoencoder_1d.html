@@ -782,13 +782,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        rngs : nnx.Rngs</span>
 <span class="sd">            Random number generators for parameter initialization.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">            Data type for master-weight storage (default: jnp.float32).</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms</span>
+<span class="sd">            are a fixed fp32 island regardless of this setting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <div class="viewcode-block" id="AttnBlock1D.in_channels">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AttnBlock1D.in_channels">[docs]</a>
@@ -802,6 +806,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -813,6 +818,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -823,6 +829,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -833,6 +840,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -843,6 +851,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">out_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -916,14 +925,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        rngs : nnx.Rngs</span>
 <span class="sd">            Random number generators for parameter initialization.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">            Data type for master-weight storage (default: jnp.float32).</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms</span>
+<span class="sd">            are a fixed fp32 island regardless of this setting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <div class="viewcode-block" id="ResnetBlock1D.in_channels">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.ResnetBlock1D.in_channels">[docs]</a>
@@ -941,6 +954,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -953,6 +967,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -963,6 +978,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_features</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -975,6 +991,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -986,6 +1003,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
                 <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,),</span>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -1035,13 +1053,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        rngs : nnx.Rngs</span>
 <span class="sd">            Random number generators for parameter initialization.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">            Data type for master-weight storage (default: jnp.float32).</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms</span>
+<span class="sd">            are a fixed fp32 island regardless of this setting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="Downsample1D.conv">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Downsample1D.conv">[docs]</a>
@@ -1052,6 +1074,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1094,13 +1117,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        rngs : nnx.Rngs</span>
 <span class="sd">            Random number generators for parameter initialization.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">            Data type for master-weight storage (default: jnp.float32).</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms</span>
+<span class="sd">            are a fixed fp32 island regardless of this setting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="Upsample1D.conv">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Upsample1D.conv">[docs]</a>
@@ -1111,6 +1138,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1168,7 +1196,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        rngs : nnx.Rngs</span>
 <span class="sd">            Random number generators for parameter initialization.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">            Data type for master-weight storage (default: jnp.float32).</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms</span>
+<span class="sd">            are a fixed fp32 island regardless of this setting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1179,7 +1210,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">num_res_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">z_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <div class="viewcode-block" id="Encoder1D.ch">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Encoder1D.ch">[docs]</a>
@@ -1212,6 +1244,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1238,6 +1271,7 @@ window.runMermaid = runMermaid;</script>
                         <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
                         <span class="n">out_channels</span><span class="o">=</span><span class="n">block_out</span><span class="p">,</span>
                         <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
@@ -1249,6 +1283,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">down</span><span class="o">.</span><span class="n">Downsample1D</span> <span class="o">=</span> <span class="n">Downsample1D</span><span class="p">(</span>
                     <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
                     <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                     <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">curr_res</span> <span class="o">=</span> <span class="n">curr_res</span> <span class="o">//</span> <span class="mi">2</span>
@@ -1263,17 +1298,20 @@ window.runMermaid = runMermaid;</script>
             <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">attn_1</span> <span class="o">=</span> <span class="n">AttnBlock1D</span><span class="p">(</span>
             <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_2</span> <span class="o">=</span> <span class="n">ResnetBlock1D</span><span class="p">(</span>
             <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -1285,6 +1323,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_features</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1297,6 +1336,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1367,7 +1407,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        rngs : nnx.Rngs</span>
 <span class="sd">            Random number generators for parameter initialization.</span>
 <span class="sd">        param_dtype : DTypeLike</span>
-<span class="sd">            Data type for parameters (default: jnp.bfloat16).</span>
+<span class="sd">            Data type for master-weight storage (default: jnp.float32).</span>
+<span class="sd">        dtype : DTypeLike</span>
+<span class="sd">            Compute dtype for Conv layers (default: jnp.bfloat16). GroupNorms</span>
+<span class="sd">            are a fixed fp32 island regardless of this setting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1379,7 +1422,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">resolution</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">z_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
-        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+        <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="Decoder1D.ch">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.ch">[docs]</a>
@@ -1424,6 +1468,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1437,17 +1482,20 @@ window.runMermaid = runMermaid;</script>
             <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">attn_1</span> <span class="o">=</span> <span class="n">AttnBlock1D</span><span class="p">(</span>
             <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mid</span><span class="o">.</span><span class="n">block_2</span> <span class="o">=</span> <span class="n">ResnetBlock1D</span><span class="p">(</span>
             <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">out_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -1466,6 +1514,7 @@ window.runMermaid = runMermaid;</script>
                         <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
                         <span class="n">out_channels</span><span class="o">=</span><span class="n">block_out</span><span class="p">,</span>
                         <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
@@ -1477,6 +1526,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">up</span><span class="o">.</span><span class="n">Upsample1D</span> <span class="o">=</span> <span class="n">Upsample1D</span><span class="p">(</span>
                     <span class="n">in_channels</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
                     <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                     <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">curr_res</span> <span class="o">=</span> <span class="n">curr_res</span> <span class="o">*</span> <span class="mi">2</span>
@@ -1490,9 +1540,13 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_features</span><span class="o">=</span><span class="n">block_in</span><span class="p">,</span>
             <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
+        <span class="c1"># models-emit-fp32 contract: the final decoder Conv is constructed</span>
+        <span class="c1"># with dtype=jnp.float32 (never a post-hoc .astype), regardless of</span>
+        <span class="c1"># the compute-dtype knob, so the whole model&#39;s output is fp32.</span>
 <div class="viewcode-block" id="Decoder1D.conv_out">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.Decoder1D.conv_out">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">conv_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
@@ -1502,6 +1556,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,),</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1568,6 +1623,10 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.rngs">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">rngs</span></div>
 
+<div class="viewcode-block" id="AutoEncoder1D.dtype">
+<a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.dtype">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">dtype</span></div>
+
 <div class="viewcode-block" id="AutoEncoder1D.Encoder1D">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.Encoder1D">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">Encoder1D</span> <span class="o">=</span> <span class="n">Encoder1D</span><span class="p">(</span>
@@ -1578,6 +1637,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_res_blocks</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_res_blocks</span><span class="p">,</span>
             <span class="n">z_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">z_channels</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1592,6 +1652,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">num_res_blocks</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">num_res_blocks</span><span class="p">,</span>
             <span class="n">z_channels</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">z_channels</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1599,17 +1660,25 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.reg">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">=</span> <span class="n">DiagonalGaussian</span><span class="p">()</span></div>
 
-        
+
+        <span class="c1"># Master-weight storage stays param_dtype (fp32); cast to compute</span>
+        <span class="c1"># dtype at the use site in encode()/decode() below, otherwise these</span>
+        <span class="c1"># plain nnx.Params (not a Linear/Conv with promote_dtype) would</span>
+        <span class="c1"># silently re-promote the whole latent stream back to fp32 via JAX&#39;s</span>
+        <span class="c1"># bf16+fp32 promotion rule.</span>
 <div class="viewcode-block" id="AutoEncoder1D.scale_factor">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.scale_factor">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+            <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="AutoEncoder1D.shift_factor">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.shift_factor">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shift_factor</span><span class="p">))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+            <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">shift_factor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+        <span class="p">)</span></div>
 
-        
-        
+
 <div class="viewcode-block" id="AutoEncoder1D.latent_shape">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/autoencoders/autoencoder_1d/index.html#gensbi.experimental.models.autoencoders.autoencoder_1d.AutoEncoder1D.latent_shape">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">latent_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">resolution</span> <span class="o">//</span> <span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">ch_mult</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">params</span><span class="o">.</span><span class="n">z_channels</span><span class="p">)</span></div>
@@ -1636,7 +1705,9 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
         <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Encoder1D</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">key</span><span class="p">)</span>
-        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span><span class="p">)</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">scale</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="n">shift</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">z</span></div>
 
@@ -1658,7 +1729,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                Reconstructed output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shift_factor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="o">/</span> <span class="n">scale</span> <span class="o">+</span> <span class="n">shift</span>
         <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Decoder1D</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">z</span></div>

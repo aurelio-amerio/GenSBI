@@ -905,6 +905,18 @@ for image data (more rotary frequencies per axis) but not enforced.
 Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>rope_theta</strong> (<em>int</em><em>, </em><em>optional</em>) – Frequency base for the rotary embedding. Only used when
 <code class="docutils literal notranslate"><span class="pre">use_rope=True</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">10000</span></code>.</p></li>
+<li><p><strong>param_dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Dtype for all stored (master) kernel/bias/embedding parameters
+across the tokenizer, conditioner, and transformer blocks. Default
+is <code class="docutils literal notranslate"><span class="pre">float32</span></code>.</p></li>
+<li><p><strong>dtype</strong> (<em>DTypeLike</em><em>, </em><em>optional</em>) – Compute dtype knob threaded through the conditioners and
+<a class="reference internal" href="blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock" title="gensbi.models.tarflow.blocks.MetaBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetaBlock</span></code></a>/
+<a class="reference internal" href="blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock" title="gensbi.models.tarflow.blocks.AttentionBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">AttentionBlock</span></code></a> layers.
+Default is <code class="docutils literal notranslate"><span class="pre">float32</span></code>, matching <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>, so with default
+arguments this is a bit-identical no-op cast. Hard-fp32 regardless
+of this knob: the softplus/soft_clip affine-scale path in
+<code class="docutils literal notranslate"><span class="pre">MetaBlock._affine</span></code>, log-det accumulation, the <code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">std</span></code>
+standardization buffers, and the KV-cache buffers used during
+sampling.</p></li>
 </ul>
 </dd>
 </dl>
@@ -949,6 +961,11 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.tarflow.TarFlowParams.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.tarflow.TarFlowParams.dtype" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.tarflow.TarFlowParams.head_dim">
 <span class="sig-name descname"><span class="pre">head_dim</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></span><a class="headerlink" href="#gensbi.models.tarflow.TarFlowParams.head_dim" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -981,6 +998,11 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.models.tarflow.TarFlowParams.num_heads">
 <span class="sig-name descname"><span class="pre">num_heads</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></span><a class="headerlink" href="#gensbi.models.tarflow.TarFlowParams.num_heads" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.models.tarflow.TarFlowParams.param_dtype">
+<span class="sig-name descname"><span class="pre">param_dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">jax.typing.DTypeLike</span></span><a class="headerlink" href="#gensbi.models.tarflow.TarFlowParams.param_dtype" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1115,6 +1137,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.cond_img_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.cond_img_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.cond_patch_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.cond_patch_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.dim"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.dim</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.dtype"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.head_dim"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.head_dim</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.img_channels"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.img_channels</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.img_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.img_size</span></code></a></li>
@@ -1122,6 +1145,7 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.modeled"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.modeled</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.num_blocks"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.num_blocks</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.num_heads"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.num_heads</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.param_dtype"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.param_dtype</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.patch_size"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.patch_size</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.permutation"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.permutation</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.models.tarflow.TarFlowParams.rngs"><code class="docutils literal notranslate"><span class="pre">TarFlowParams.rngs</span></code></a></li>
