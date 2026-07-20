@@ -13,6 +13,22 @@ from jax.typing import DTypeLike
 
 
 class AttentionBlock(nnx.Module):
+    """Self-attention block with a fixed fp32 compute island.
+
+    ``flax.nnx.MultiHeadAttention`` (flax 0.12.7) computes its softmax in
+    whatever ``dtype`` it is given -- there is no internal fp32 upcast for
+    the attention logits/softmax the way some other implementations provide.
+    Rather than bolt on a custom ``attention_fn`` just to force fp32 softmax,
+    this block keeps *all* of its compute (LayerNorm + MultiHeadAttention) at
+    ``dtype=jnp.float32``, ignoring the ``dtype`` compute-precision knob
+    entirely for this block. This is a deliberately larger fp32 island than
+    a single softmax op, but the bulk of the model's FLOPs live in the
+    ``DenseBlock`` MLP stack (``widening_factor`` x wider), which does honor
+    the bf16 ``dtype`` knob, so this island has a small cost in practice.
+    ``param_dtype`` (master-weight storage) is unaffected and still threads
+    through normally.
+    """
+
     def __init__(
         self,
         din: int,
@@ -20,17 +36,23 @@ class AttentionBlock(nnx.Module):
         features: int,
         skip_connection: bool,
         rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.float32,
         param_dtype: DTypeLike = jnp.float32,
     ):
         self.skip_connection = skip_connection
 
-        self.layer_norm = nnx.LayerNorm(din, rngs=rngs, param_dtype=param_dtype)
+        # fp32 island: dtype is intentionally fixed to float32 regardless of
+        # the dtype knob above (see class docstring).
+        self.layer_norm = nnx.LayerNorm(
+            din, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+        )
         self.attn = nnx.MultiHeadAttention(
             in_features=din,
             num_heads=num_heads,
             qkv_features=features,
             decode=False,
             rngs=rngs,
+            dtype=jnp.float32,
             param_dtype=param_dtype,
         )
 
@@ -54,17 +76,23 @@ class DenseBlock(nnx.Module):
         act: Callable,
         skip_connection: bool,
         rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.float32,
         param_dtype: DTypeLike = jnp.float32,
     ):
         self.skip_connection = skip_connection
         n_features = din
-        self.layer_norm = nnx.LayerNorm(din, rngs=rngs, param_dtype=param_dtype)
+        # fp32 island: LayerNorm stays fp32 regardless of the compute dtype
+        # knob (mirrors AttentionBlock's normalization treatment).
+        self.layer_norm = nnx.LayerNorm(
+            din, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+        )
         hidden_blocks = []
         hidden_blocks.append(
             nnx.Linear(
                 n_features,
                 widening_factor * n_features,
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
             )
         )
@@ -74,19 +102,23 @@ class DenseBlock(nnx.Module):
         for i in range(1, num_hidden_layers):
             hidden_blocks.append(
                 nnx.Linear(
-                    n_features, n_features, rngs=rngs, param_dtype=param_dtype
+                    n_features,
+                    n_features,
+                    rngs=rngs,
+                    dtype=dtype,
+                    param_dtype=param_dtype,
                 )
             )
 
         hidden_blocks.append(
-            nnx.Linear(n_features, din, rngs=rngs, param_dtype=param_dtype)
+            nnx.Linear(n_features, din, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
         )
 
         self.hidden_blocks = nnx.List(hidden_blocks)
 
         self.act = act
         self.context_block = nnx.Linear(
-            dcontext, din, rngs=rngs, param_dtype=param_dtype
+            dcontext, din, rngs=rngs, dtype=dtype, param_dtype=param_dtype
         )
         return
 
@@ -131,6 +163,7 @@ class Transformer(nnx.Module):
         skip_connection_mlp: bool = True,
         *,  # Enforce keyword arguments
         rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.float32,
         param_dtype: DTypeLike = jnp.float32,
     ):
         self.din = din
@@ -144,12 +177,17 @@ class Transformer(nnx.Module):
         self.skip_connection_attn = skip_connection_attn
         self.skip_connection_mlp = skip_connection_mlp
         self.rngs = rngs
+        self.dtype = dtype
         self.param_dtype = param_dtype
 
         # now we define attention and dense blocks
         attention_blocks = []
         dense_blocks = []
-        self.layer_norm = nnx.LayerNorm(din, rngs=rngs, param_dtype=param_dtype)
+        # fp32 island: the final norm feeds directly into the model's output
+        # projection, so it stays fp32 regardless of the compute dtype knob.
+        self.layer_norm = nnx.LayerNorm(
+            din, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+        )
 
         for _ in range(num_layers):
             attention_blocks.append(
@@ -171,6 +209,7 @@ class Transformer(nnx.Module):
                     act=self.act,
                     skip_connection=skip_connection_mlp,
                     rngs=rngs,
+                    dtype=dtype,
                     param_dtype=param_dtype,
                 )
             )

@@ -58,7 +58,12 @@ class SimformerParams:
         num_hidden_layers : int
             Number of hidden layers in the transformer.
         param_dtype : DTypeLike
-            Data type for model parameters.
+            Data type for master-weight storage (parameters). Defaults to jnp.float32.
+        dtype : DTypeLike
+            Compute/matmul dtype used by the MLP compute layers. The
+            attention blocks always compute in fp32 regardless of this
+            setting (see `transformer.AttentionBlock`). Defaults to
+            jnp.bfloat16.
 
     """
 
@@ -75,6 +80,7 @@ class SimformerParams:
     mlp_ratio: int = 3
     qkv_features: int | None = None
     param_dtype: DTypeLike = jnp.float32
+    dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
         if self.qkv_features is None:
@@ -109,6 +115,7 @@ class Simformer(nnx.Module):
                 in_dim=self.in_channels,
                 hidden_dim=params.val_emb_dim,
                 rngs=params.rngs,
+                dtype=params.dtype,
                 param_dtype=params.param_dtype,
             )
         # self.embedding_net_value = lambda obs: jnp.repeat(obs, val_emb_dim, axis=-1)
@@ -118,12 +125,14 @@ class Simformer(nnx.Module):
             fourier_features,
             rngs=params.rngs,
             learnable=True,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.embedding_net_id = nnx.Embed(
             num_embeddings=params.dim_joint,
             features=params.id_emb_dim,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.condition_embedding = nnx.Param(
@@ -144,13 +153,18 @@ class Simformer(nnx.Module):
             skip_connection_attn=True,
             skip_connection_mlp=True,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
 
+        # models-emit-fp32 contract: the final projection is constructed with
+        # dtype=jnp.float32 (never a post-hoc .astype), regardless of the
+        # compute-dtype knob.
         self.output_fn = nnx.Linear(
             self.total_tokens,
             self.in_channels,
             rngs=params.rngs,
+            dtype=jnp.float32,
             param_dtype=params.param_dtype,
         )
         return
@@ -187,8 +201,8 @@ class Simformer(nnx.Module):
                 Model output.
         """
 
-        obs = jnp.asarray(obs, dtype=self.params.param_dtype)
-        t = jnp.asarray(jnp.atleast_1d(t), dtype=self.params.param_dtype)
+        obs = jnp.asarray(obs, dtype=jnp.float32)
+        t = jnp.asarray(jnp.atleast_1d(t), dtype=jnp.float32)
 
         assert (
             obs.ndim == 3
@@ -221,8 +235,17 @@ class Simformer(nnx.Module):
 
         time_embeddings = self.embedding_time(t)
 
+        # condition_embedding is a learned nnx.Param stored at param_dtype
+        # (fp32 by default). Cast it to the compute dtype at this use site
+        # before it is mixed (concatenated below) with the bf16 value/id
+        # embedding streams -- otherwise JAX's promotion rules would silently
+        # upcast the whole concatenated stream back to fp32, defeating the
+        # bf16 compute knob for the rest of the transformer.
+        condition_embedding = jnp.asarray(
+            self.condition_embedding, dtype=self.params.dtype
+        )
         condition_embedding = (
-            self.condition_embedding * condition_mask
+            condition_embedding * condition_mask
         )  # If condition_mask is 0, then the embedding is 0, otherwise it is the condition_embedding vector
         condition_embedding = jnp.broadcast_to(
             condition_embedding, (batch_size, seq_len, self.cond_emb_dim)
