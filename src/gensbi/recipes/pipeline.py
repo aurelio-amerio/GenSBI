@@ -55,7 +55,7 @@ def _warn_if_not_fp32_master_weights(model):
     if bad:
         warnings.warn(
             "model has non-fp32 master weights (training will be numerically "
-            f"degraded; set param_dtype=jnp.float32 and use the dtype knob "
+            "degraded; set param_dtype=jnp.float32 and use the dtype knob "
             f"for compute instead): {bad}",
             UserWarning,
             stacklevel=3,
