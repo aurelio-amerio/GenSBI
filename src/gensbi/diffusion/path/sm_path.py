@@ -164,6 +164,12 @@ class SMPath(ProbPath):
             # Model predicts score
             score_pred = F(obs=x_t, t=t, **model_extras)
 
+            # Loss is always computed in fp32 regardless of the model's
+            # compute dtype (defense-in-depth on top of the models-emit-fp32
+            # contract).
+            score_pred = jnp.asarray(score_pred, jnp.float32)
+            score_target = jnp.asarray(score_target, jnp.float32)
+
             if weights is not None:
                 weights = jnp.broadcast_to(weights, x_1.shape)
             else:

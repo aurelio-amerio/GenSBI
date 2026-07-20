@@ -474,15 +474,19 @@ class BaseSDE(abc.ABC):
             else:
                 weights = jnp.ones_like(x_1)
 
+            # Loss is always computed in fp32 regardless of the model's
+            # compute dtype (defense-in-depth on top of the models-emit-fp32
+            # contract).
+            model_output = jnp.asarray(
+                F(obs=c_in_eff * x_t, t=c_noise, **model_extras), jnp.float32
+            )
+            target = jnp.asarray(1 / c_out * (x_1 - c_skip * x_t), jnp.float32)
+
             loss = (
                 weights
                 * lam
                 * c_out**2
-                * (
-                    F(obs=c_in_eff * x_t, t=c_noise, **model_extras)
-                    - 1 / c_out * (x_1 - c_skip * x_t)
-                )
-                ** 2
+                * (model_output - target) ** 2
             )
             if condition_mask is not None:
                 loss = jnp.where(condition_mask, 0.0, loss)

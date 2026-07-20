@@ -65,12 +65,17 @@ class FMLoss:
 
         model_output = model(obs=x_t, t=path_sample.t, **model_extras)
 
+        # Loss is always computed in fp32 regardless of the model's compute
+        # dtype (defense-in-depth on top of the models-emit-fp32 contract).
+        model_output = jnp.asarray(model_output, jnp.float32)
+        dx_t = jnp.asarray(path_sample.dx_t, jnp.float32)
+
         if self.weights is not None:
             weights = jnp.broadcast_to(self.weights, x_1.shape)
         else:
             weights = jnp.ones_like(x_1)
 
-        loss = weights * jnp.square(model_output - path_sample.dx_t)
+        loss = weights * jnp.square(model_output - dx_t)
 
         if condition_mask is not None:
             loss = jnp.where(condition_mask_broad, 0.0, loss)

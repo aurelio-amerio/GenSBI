@@ -142,7 +142,10 @@ class ConditionalFlowPipeline(AbstractPipeline):
             obs, cond = batch
             obs = self._prep_obs(obs)
             cond = self._prep_cond(cond)
-            return -jnp.mean(model.log_prob(obs, cond))
+            # Loss is always computed in fp32 regardless of the model's
+            # compute dtype (defense-in-depth on top of the models-emit-fp32
+            # contract).
+            return jnp.asarray(-jnp.mean(model.log_prob(obs, cond)), jnp.float32)
 
         return loss_fn
 
