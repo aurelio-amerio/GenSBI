@@ -74,7 +74,9 @@ class Flux1JointParams:
         guidance_embed : bool
             Whether to use guidance embedding.
         param_dtype : DTypeLike
-            Data type for model parameters.
+            Data type for master-weight storage (parameters). Defaults to jnp.float32.
+        dtype : DTypeLike
+            Compute/matmul dtype used by the compute layers. Defaults to jnp.bfloat16.
 
     """
 
@@ -92,7 +94,8 @@ class Flux1JointParams:
     id_merge_mode: str = "sum"
     id_embedding_strategy: str = "absolute"
     guidance_embed: bool = False
-    param_dtype: DTypeLike = jnp.bfloat16
+    param_dtype: DTypeLike = jnp.float32
+    dtype: DTypeLike = jnp.bfloat16
 
     def __post_init__(self):
         available_strategies = ["sum", "concat"]
@@ -143,6 +146,7 @@ class Flux1Joint(nnx.Module):
                 num_embeddings=params.dim_joint,
                 hidden_size=self.hidden_size,
                 kind=params.id_embedding_strategy,
+                dtype=params.dtype,
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
@@ -151,6 +155,7 @@ class Flux1Joint(nnx.Module):
                 num_embeddings=params.dim_joint,
                 hidden_size=self.params.id_token_dim,
                 kind="absolute",
+                dtype=params.dtype,
                 param_dtype=params.param_dtype,
                 rngs=params.rngs,
             )
@@ -162,12 +167,14 @@ class Flux1Joint(nnx.Module):
             out_features=self.params.input_token_dim,
             use_bias=True,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.time_in = MLPEmbedder(
             in_dim=256,
             hidden_dim=self.hidden_size,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
         self.vector_in = (
@@ -175,6 +182,7 @@ class Flux1Joint(nnx.Module):
                 params.vec_in_dim,
                 self.hidden_size,
                 rngs=params.rngs,
+                dtype=params.dtype,
                 param_dtype=params.param_dtype,
             )
             if params.guidance_embed
@@ -204,6 +212,7 @@ class Flux1Joint(nnx.Module):
                     mlp_ratio=params.mlp_ratio,
                     qkv_features=self.qkv_features,
                     rngs=params.rngs,
+                    dtype=params.dtype,
                     param_dtype=params.param_dtype,
                 )
                 for _ in range(params.depth_single_blocks)
@@ -215,6 +224,7 @@ class Flux1Joint(nnx.Module):
             1,
             self.out_channels,
             rngs=params.rngs,
+            dtype=params.dtype,
             param_dtype=params.param_dtype,
         )
 
@@ -228,8 +238,8 @@ class Flux1Joint(nnx.Module):
         edge_mask: Optional[Array] = None,
     ) -> Array:
         batch_size, seq_len, _ = obs.shape
-        obs = jnp.asarray(obs, dtype=self.params.param_dtype)
-        t = jnp.asarray(t, dtype=self.params.param_dtype)
+        obs = jnp.asarray(obs, dtype=jnp.float32)
+        t = jnp.asarray(t, dtype=jnp.float32)
         if obs.ndim != 3:
             raise ValueError(
                 "Input obs tensor must have 3 dimensions, got {}".format(obs.ndim)
