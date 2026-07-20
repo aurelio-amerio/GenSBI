@@ -1,0 +1,713 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Mixed-Precision Training Design &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/specs/2026-07-20-mixed-precision-design';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Mixed-Precision Training Design</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="mixed-precision-training-design">
+<h1>Mixed-Precision Training Design<a class="headerlink" href="#mixed-precision-training-design" title="Link to this heading">#</a></h1>
+<p><strong>Date:</strong> 2026-07-20
+<strong>Status:</strong> Approved design, pending implementation plan</p>
+<section id="problem">
+<h2>Problem<a class="headerlink" href="#problem" title="Link to this heading">#</a></h2>
+<p>GenSBI’s dtype handling is inconsistent, and in the flux1 family it is actively
+wrong:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Flux1Params</span></code> and <code class="docutils literal notranslate"><span class="pre">Flux1JointParams</span></code> default to <code class="docutils literal notranslate"><span class="pre">param_dtype=jnp.bfloat16</span></code>
+(<code class="docutils literal notranslate"><span class="pre">models/flux1/model.py</span></code>, <code class="docutils literal notranslate"><span class="pre">models/flux1joint/model.py</span></code>), and the models cast
+their inputs to <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> at the door. There is no separate compute
+dtype anywhere, so weights, activations, model output, loss, gradients,
+AdamW moments, and the EMA all run in <strong>pure bf16</strong>. This is full bf16
+training, not mixed precision.</p></li>
+<li><p>The experimental models (PixelDiT, FieldDiT embedders, autoencoders) have
+the same <code class="docutils literal notranslate"><span class="pre">param_dtype=bf16</span></code> defaults.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FMLoss</span></code> (<code class="docutils literal notranslate"><span class="pre">flow_matching/loss/fm_loss.py</span></code>) and the diffusion losses square
+and mean in whatever dtype the model emits — bf16 for the models above.</p></li>
+<li><p>The EMA (<code class="docutils literal notranslate"><span class="pre">optax.ema</span></code>, decay 0.999, <code class="docutils literal notranslate"><span class="pre">recipes/pipeline.py</span></code>) accumulates in the
+param dtype. In bf16 the per-step increment <code class="docutils literal notranslate"><span class="pre">0.001</span> <span class="pre">·</span> <span class="pre">w</span></code> is below bf16’s
+~0.4% relative mantissa resolution, so <strong>the EMA accumulator cannot
+integrate small updates at all</strong>. This is the likely root cause of the
+PixelDiT “broken EMA → white-noise samples” mystery (2026-06-14 probe), and
+possibly of FieldDiT’s apparent underperformance.</p></li>
+<li><p>Simformer and MAF default to fp32 params (correct but with no bf16 speed
+option); TarFlow is fp32 with deliberate fp32 stability paths.</p></li>
+<li><p>Already correct: RoPE math is fp32 (<code class="docutils literal notranslate"><span class="pre">models/flux1/math.py</span></code>), and sinusoidal
+timestep-embedding frequencies are built in fp32.</p></li>
+</ul>
+</section>
+<section id="goals">
+<h2>Goals<a class="headerlink" href="#goals" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p>Master weights, loss, gradients-as-delivered, optimizer state, and EMA in
+fp32, for every model.</p></li>
+<li><p>A per-model compute-dtype knob so the heavy matmuls run in bf16 where safe.</p></li>
+<li><p>Preserve bf16 training speed for the DiT-family models (forward and
+backward GEMMs stay bf16).</p></li>
+<li><p>Fix the EMA accumulation bug as a consequence of (1).</p></li>
+</ol>
+</section>
+<section id="non-goals">
+<h2>Non-goals<a class="headerlink" href="#non-goals" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Loss scaling (unnecessary for bf16 — same exponent range as fp32).</p></li>
+<li><p>fp16 support.</p></li>
+<li><p>End-to-end bf16 sampling (solver state stays fp32; can be explored later as
+a wrapper experiment).</p></li>
+<li><p>bf16 checkpoint saving (checkpoints double in size for flux1-family; accept
+for now).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gensbi.models.healswin</span></code> — mirrors the external <code class="docutils literal notranslate"><span class="pre">heal-swin-nnx</span></code> package;
+gets the same treatment as a follow-up in that repo.</p></li>
+</ul>
+</section>
+<section id="section-1-the-precision-contract">
+<h2>Section 1 — The precision contract<a class="headerlink" href="#section-1-the-precision-contract" title="Link to this heading">#</a></h2>
+<p>One rule set, applied uniformly to every model:</p>
+<ol class="arabic simple">
+<li><p><strong>Master weights fp32.</strong> Every <code class="docutils literal notranslate"><span class="pre">*Params</span></code> dataclass keeps
+<code class="docutils literal notranslate"><span class="pre">param_dtype:</span> <span class="pre">DTypeLike</span> <span class="pre">=</span> <span class="pre">jnp.float32</span></code>. This flips the current bf16
+defaults in flux1, flux1joint, and the experimental models.</p></li>
+<li><p><strong>Compute dtype is a knob.</strong> Every <code class="docutils literal notranslate"><span class="pre">*Params</span></code> dataclass gains
+<code class="docutils literal notranslate"><span class="pre">dtype:</span> <span class="pre">DTypeLike</span></code> — the dtype activations and matmuls run in. Defaults:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">jnp.bfloat16</span></code>: Flux1, Flux1Joint, Simformer, PixelDiT, FieldDiT,
+autoencoders.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jnp.float32</span></code>: MAF, TarFlow (knob present and threaded through, to be
+flipped after dedicated testing — likelihood/log-det computations are
+more precision-sensitive).</p></li>
+</ul>
+</li>
+<li><p><strong>fp32 islands</strong> — always fp32 regardless of the knob:</p>
+<ul class="simple">
+<li><p>Norm layers: LayerNorm / RMSNorm / QKNorm constructed with
+<code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> (statistics in fp32; the next Linear re-casts
+activations to bf16, which is the standard pattern).</p></li>
+<li><p>Attention softmax: upcast the <code class="docutils literal notranslate"><span class="pre">QKᵀ</span></code> logits to fp32 before the softmax,
+cast the attention weights back to the compute dtype for the <code class="docutils literal notranslate"><span class="pre">·V</span></code>
+matmul (unless the attention kernel in use already accumulates in fp32
+internally, e.g. cuDNN flash attention).</p></li>
+<li><p>Timestep and sinusoidal embeddings; RoPE (already fp32).</p></li>
+<li><p><strong>The final output projection runs in fp32</strong> (see contract below).</p></li>
+<li><p>Loss computation (Section 3).</p></li>
+</ul>
+</li>
+<li><p><strong>Models emit fp32.</strong> Implemented as the final projection being an fp32
+island — <code class="docutils literal notranslate"><span class="pre">LastLayer</span></code> (and equivalents) constructed with
+<code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code>, so the bf16 hidden states are promoted and the final
+matmul runs and emits fp32. This is marginally more accurate than a bf16
+matmul followed by an upcast, and the final projection is a negligible
+fraction of total FLOPs (small output dim — a velocity field, not a
+vocabulary). Consequences: the ODE solver, guidance arithmetic, NF
+log-probs, and diagnostics all receive fp32 without any changes.</p></li>
+<li><p><strong>Inputs stay fp32.</strong> Models stop casting inputs (<code class="docutils literal notranslate"><span class="pre">obs</span></code>, <code class="docutils literal notranslate"><span class="pre">cond</span></code>, <code class="docutils literal notranslate"><span class="pre">t</span></code>) to
+<code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>; layers downcast internally where bf16 compute happens.</p></li>
+<li><p><strong>Gradients, AdamW moments, EMA: fp32 for free.</strong> JAX gives gradients the
+dtype of the params, and optax builds moments/EMA state from the params.
+With <code class="docutils literal notranslate"><span class="pre">param_dtype=fp32</span></code> the whole optimizer path is fp32 with zero
+pipeline changes. The backward pass still runs its two heavy GEMMs per
+layer in bf16 (autodiff differentiates through the <code class="docutils literal notranslate"><span class="pre">cast(W_fp32</span> <span class="pre">→</span> <span class="pre">bf16)</span></code>
+op; the cast’s transpose upcasts <code class="docutils literal notranslate"><span class="pre">dW</span></code> to fp32 per layer, an elementwise
+no-cost op), so training speed is preserved.</p></li>
+</ol>
+</section>
+<section id="section-2-per-model-changes">
+<h2>Section 2 — Per-model changes<a class="headerlink" href="#section-2-per-model-changes" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>flux1 / flux1joint:</strong> <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> default bf16 → fp32; add
+<code class="docutils literal notranslate"><span class="pre">dtype=jnp.bfloat16</span></code>. Thread both through <code class="docutils literal notranslate"><span class="pre">layers.py</span></code> (MLPEmbedder,
+Modulation, DoubleStreamBlock, SingleStreamBlock, LastLayer) and the model
+files. QKNorm / RMSNorm / LayerNorm → fp32 islands. LastLayer → fp32
+island (emits fp32). Remove input casts to <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>.</p></li>
+<li><p><strong>simformer:</strong> params already fp32; add <code class="docutils literal notranslate"><span class="pre">dtype=jnp.bfloat16</span></code> and thread
+through <code class="docutils literal notranslate"><span class="pre">transformer.py</span></code> and <code class="docutils literal notranslate"><span class="pre">model.py</span></code> with the same islands.</p></li>
+<li><p><strong>MAF / TarFlow:</strong> add <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> knob and thread through
+<code class="docutils literal notranslate"><span class="pre">made.py</span></code> / <code class="docutils literal notranslate"><span class="pre">masked_linear.py</span></code> and the tarflow blocks. Log-det accumulation
+and the existing softplus / soft-clip stability path stay hard-fp32 even
+when the knob is later flipped to bf16. With the knob at its fp32 default
+this is a pure refactor (bit-identical outputs).</p></li>
+<li><p><strong>Experimental (PixelDiT, FieldDiT, autoencoders):</strong> same treatment as
+flux1 — <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> default bf16 → fp32, add <code class="docutils literal notranslate"><span class="pre">dtype=jnp.bfloat16</span></code>,
+fp32 islands, final layers emit fp32.</p></li>
+</ul>
+</section>
+<section id="section-3-loss-and-pipeline">
+<h2>Section 3 — Loss and pipeline<a class="headerlink" href="#section-3-loss-and-pipeline" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>All loss classes upcast to fp32 before reduction.</strong> <code class="docutils literal notranslate"><span class="pre">FMLoss</span></code>
+(<code class="docutils literal notranslate"><span class="pre">flow_matching/loss/fm_loss.py</span></code>), <code class="docutils literal notranslate"><span class="pre">EDMLoss</span></code> and <code class="docutils literal notranslate"><span class="pre">sm_loss</span></code>
+(<code class="docutils literal notranslate"><span class="pre">diffusion/loss/</span></code>), and the NF log-prob losses cast <code class="docutils literal notranslate"><span class="pre">model_output</span></code> and
+targets via <code class="docutils literal notranslate"><span class="pre">.astype(jnp.float32)</span></code> before the squared error / log-prob and
+the mean. Defense-in-depth on top of the models-emit-fp32 contract; also
+protects user-supplied bf16-emitting models.</p></li>
+<li><p><strong>Pipeline needs no optimizer changes.</strong> With fp32 params,
+<code class="docutils literal notranslate"><span class="pre">nnx.value_and_grad</span></code> produces fp32 grads, <code class="docutils literal notranslate"><span class="pre">optax.adamw</span></code> builds fp32
+moments, and <code class="docutils literal notranslate"><span class="pre">optax.ema</span></code> accumulates fp32 — the EMA bug fixes itself with
+no changes to <code class="docutils literal notranslate"><span class="pre">recipes/pipeline.py</span></code> logic.</p></li>
+<li><p><strong>One runtime guard in trainer setup:</strong> when the pipeline is constructed,
+check the model’s param-tree dtypes and warn (not error) if master weights
+are not fp32, so bf16 master weights can’t be reintroduced silently.</p></li>
+<li><p><strong>Sampling / inference:</strong> fp32 solver state end-to-end automatically (fp32
+inputs in, model emits fp32 out); no changes to <code class="docutils literal notranslate"><span class="pre">core/ode_solver.py</span></code>. The
+network still computes in bf16 internally, which is where the sampling
+speed is, so this loses essentially no performance. The solver update
+<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">←</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">dt·v</span></code> is the same numerical shape as the EMA bug (small increment
+into a larger accumulator) and must stay fp32.</p></li>
+</ul>
+</section>
+<section id="section-4-serialization-and-backward-compatibility">
+<h2>Section 4 — Serialization and backward compatibility<a class="headerlink" href="#section-4-serialization-and-backward-compatibility" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>The safetensors loader casts on restore.</strong> Each loaded tensor is cast to
+the dtype of the corresponding parameter in the target model:</p>
+<ul>
+<li><p>Existing bf16 checkpoints (current flux1-family runs) load into the new
+fp32 models via a lossless upcast — old checkpoints stay usable.</p></li>
+<li><p>An fp32 checkpoint loads into a model deliberately built with
+<code class="docutils literal notranslate"><span class="pre">param_dtype=bf16</span></code> (lossy downcast, the user’s explicit choice).</p></li>
+</ul>
+</li>
+<li><p><strong>Checkpoint size doubles</strong> for the flux1-family models (bf16 → fp32
+storage). Accepted; a <code class="docutils literal notranslate"><span class="pre">save_dtype</span></code> option can be added later if disk
+becomes a problem.</p></li>
+<li><p>Orbax training checkpoints restore into a freshly constructed model (now
+fp32 params); apply the same cast-to-target-dtype rule on dtype mismatch.</p></li>
+</ul>
+</section>
+<section id="section-5-testing-and-validation">
+<h2>Section 5 — Testing and validation<a class="headerlink" href="#section-5-testing-and-validation" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Unit tests per model</strong> (flux1, flux1joint, simformer, MAF, TarFlow,
+PixelDiT, FieldDiT, autoencoders): with <code class="docutils literal notranslate"><span class="pre">dtype=bf16</span></code> (or the knob at its
+default for the NF models), assert:</p>
+<ul>
+<li><p>(a) every leaf of the param state tree is fp32;</p></li>
+<li><p>(b) forward output dtype is fp32;</p></li>
+<li><p>(c) gradients from a dummy loss are fp32;</p></li>
+<li><p>(d) AdamW moment and EMA state trees are fp32.</p></li>
+</ul>
+</li>
+<li><p><strong>Numerical closeness:</strong> small instance of each bf16-default model, forward
+pass with <code class="docutils literal notranslate"><span class="pre">dtype=fp32</span></code> vs <code class="docutils literal notranslate"><span class="pre">dtype=bf16</span></code> at identical weights, relative
+tolerance ~1e-2. Catches plumbing mistakes (a cast in the wrong place
+produces garbage, not rounding noise).</p></li>
+<li><p><strong>EMA regression test (bug-shaped):</strong> apply many small (0.1%-scale) param
+updates and assert the EMA accumulator integrates them. Fails on today’s
+bf16 configuration, passes after the fix.</p></li>
+<li><p><strong>MAF / TarFlow pure-refactor invariant:</strong> with the knob at the fp32
+default, outputs bit-identical to current code.</p></li>
+<li><p><strong>GPU validation gate (user-run):</strong></p>
+<ul>
+<li><p>Rerun the PixelDiT GRF probe with <code class="docutils literal notranslate"><span class="pre">use_ema=True</span></code> — if the white-noise
+EMA mystery was this bug, sampling should now produce structure.</p></li>
+<li><p>A flux1 two-moons (or similar) sanity run confirming mixed-precision
+training converges as before or better.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="follow-ups-out-of-scope">
+<h2>Follow-ups (out of scope)<a class="headerlink" href="#follow-ups-out-of-scope" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Flip MAF / TarFlow <code class="docutils literal notranslate"><span class="pre">dtype</span></code> to bf16 after dedicated stability testing.</p></li>
+<li><p>Same treatment for <code class="docutils literal notranslate"><span class="pre">heal-swin-nnx</span></code> (external repo).</p></li>
+<li><p>Optional <code class="docutils literal notranslate"><span class="pre">save_dtype</span></code> for smaller checkpoints.</p></li>
+<li><p>Optional end-to-end bf16 sampling experiment (wrapper, not core).</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem">Problem</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goals">Goals</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#non-goals">Non-goals</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-1-the-precision-contract">Section 1 — The precision contract</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-2-per-model-changes">Section 2 — Per-model changes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-3-loss-and-pipeline">Section 3 — Loss and pipeline</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-4-serialization-and-backward-compatibility">Section 4 — Serialization and backward compatibility</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#section-5-testing-and-validation">Section 5 — Testing and validation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#follow-ups-out-of-scope">Follow-ups (out of scope)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
