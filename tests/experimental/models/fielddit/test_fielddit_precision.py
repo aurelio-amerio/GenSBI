@@ -58,13 +58,28 @@ def test_bf16_close_to_fp32():
     # same rngs seed -> identical fp32 master weights
     o32, o16 = m32(**_inputs()), m16(**_inputs())
     assert o16.dtype == jnp.float32
-    # both are zero-init (conv_out) at init -> open the gates on both models
-    # identically so a genuine non-trivial signal reaches the output.
+    # Every AdaLN-zero Modulation (conv codec's ConvModulation AND the MMDiT
+    # core's DoubleStreamBlock/SingleStreamBlock Modulation) is zero-init, and
+    # the decoder's conv_out is zero-init too -- so at init every block is an
+    # exact identity and the whole network outputs exactly zero. Open the
+    # gates on both models identically: the decoder's zero-init output conv,
+    # the first encoder-stage modulation, AND the first MMDiT DoubleStreamBlock's
+    # obs_mod (its scale/shift/gate all come from one zero-init Linear split,
+    # so nudging its kernel off zero un-gates obs_attn/obs_mlp's contribution
+    # to the residual stream). Joint attention mixes cond keys/values into the
+    # obs queries' attention output regardless of cond_mod's own gate, so this
+    # also exercises the cond->obs cross-stream path even though cond_tokens
+    # themselves are sliced off before decoding (``core.__call__`` returns
+    # only ``x[:, cond_tokens.shape[1]:, ...]``). This makes the rel-err
+    # comparison below cover the conv codec AND the MMDiT transformer core,
+    # not just the conv codec.
     for m in (m32, m16):
         k = m.decoder.conv_out.kernel
         k[...] = jnp.ones_like(k[...])
         mod = m.encoder.down.layers[0].block.layers[0].mod.lin
         mod.kernel[...] = 0.01 * jnp.ones_like(mod.kernel[...])
+        core_mod = m.core.double_blocks.layers[0].obs_mod.lin
+        core_mod.kernel[...] = 0.01 * jnp.ones_like(core_mod.kernel[...])
     o32, o16 = m32(**_inputs()), m16(**_inputs())
     err = jnp.max(jnp.abs(o32 - o16)) / (jnp.max(jnp.abs(o32)) + 1e-6)
     assert err < 2e-2, f"bf16 compute deviates {err} from fp32"
