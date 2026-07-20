@@ -18,6 +18,8 @@ class MLPEmbedder(nnx.Module):
         Hidden dimension, must be a multiple of in_dim.
     rngs : nnx.Rngs
         Random number generators for initialization.
+    dtype : DTypeLike, optional
+        Compute dtype for the internal linear layers. Defaults to jnp.float32.
     param_dtype : DTypeLike, optional
         Data type for parameters. Defaults to jnp.float32.
     """
@@ -27,6 +29,7 @@ class MLPEmbedder(nnx.Module):
         in_dim: int,
         hidden_dim: int,
         rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.float32,
         param_dtype: DTypeLike = jnp.float32,
     ):
         assert (
@@ -35,12 +38,14 @@ class MLPEmbedder(nnx.Module):
             hidden_dim, in_dim
         )
         self.repeats = hidden_dim // in_dim
+        self.dtype = dtype
         self.p_skip = nnx.Param(0.01 * jnp.ones((1, 1, hidden_dim), dtype=param_dtype))
         self.in_layer = nnx.Linear(
             in_features=in_dim,
             out_features=hidden_dim,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
         self.silu = nnx.silu
@@ -49,6 +54,7 @@ class MLPEmbedder(nnx.Module):
             out_features=hidden_dim,
             use_bias=True,
             rngs=rngs,
+            dtype=dtype,
             param_dtype=param_dtype,
         )
 
@@ -68,8 +74,9 @@ class MLPEmbedder(nnx.Module):
         """
         x = jnp.atleast_1d(x)
         out = self.out_layer(self.silu(self.in_layer(x)))
-        x_repeated = jnp.repeat(x, self.repeats, axis=-1)
-        out = x_repeated * self.p_skip + (1 - self.p_skip) * out
+        x_repeated = jnp.repeat(x, self.repeats, axis=-1).astype(self.dtype)
+        p_skip = jnp.asarray(self.p_skip, dtype=self.dtype)
+        out = x_repeated * p_skip + (1 - p_skip) * out
         return out
 
 
@@ -155,6 +162,7 @@ class GaussianFourierEmbedding(nnx.Module):
         learnable: bool = False,
         *,
         rngs: nnx.Rngs,
+        dtype: DTypeLike = jnp.float32,
         param_dtype: DTypeLike = jnp.float32,
     ):
         """Gaussian Fourier embedding module. Mostly used to embed time.
@@ -167,10 +175,14 @@ class GaussianFourierEmbedding(nnx.Module):
             Whether parameters are learnable. Defaults to False.
         rngs : nnx.Rngs
             Random number generators for initialization.
+        dtype : DTypeLike, optional
+            Compute dtype used when applying the (fp32-stored) Fourier
+            basis. Defaults to jnp.float32.
         param_dtype : DTypeLike, optional
             Data type for parameters. Defaults to jnp.float32.
         """
         self.output_dim = output_dim
+        self.dtype = dtype
         half_dim = self.output_dim // 2 + 1
         self.B = nnx.Param(
             jax.random.normal(rngs.params(), [half_dim, 1], dtype=param_dtype)
@@ -198,7 +210,8 @@ class GaussianFourierEmbedding(nnx.Module):
         if t.ndim == 1:
             t = jnp.expand_dims(t, axis=1)
 
-        B = self.B
+        B = jnp.asarray(self.B, dtype=self.dtype)
+        t = jnp.asarray(t, dtype=self.dtype)
 
         arg = 2 * jnp.pi * jnp.dot(t, B.T)
         term1 = jnp.cos(arg)
@@ -413,6 +426,11 @@ class FeatureEmbedder(nnx.Module):
         Hidden size/embedding dimension.
     kind : str, optional
         Type of embedding: 'absolute', 'pos1d', or 'pos2d'. Defaults to 'absolute'.
+    dtype : DTypeLike, optional
+        Compute dtype, forwarded to the internal ``nnx.Embed`` for the
+        'absolute' kind. Ignored for 'pos1d'/'pos2d': their precomputed
+        sinusoidal tables are an fp32 island and stay at ``param_dtype``.
+        Defaults to jnp.float32.
     param_dtype : DTypeLike, optional
         Data type for parameters. Defaults to jnp.float32.
     rngs : nnx.Rngs, optional
@@ -427,6 +445,7 @@ class FeatureEmbedder(nnx.Module):
         hidden_size: int,
         *,
         kind="absolute",
+        dtype: DTypeLike = jnp.float32,
         param_dtype=jnp.float32,
         rngs: nnx.Rngs = None,
         **kwargs,
@@ -436,6 +455,7 @@ class FeatureEmbedder(nnx.Module):
                 num_embeddings=num_embeddings,
                 features=hidden_size,
                 rngs=rngs,
+                dtype=dtype,
                 param_dtype=param_dtype,
                 **kwargs,
             )
