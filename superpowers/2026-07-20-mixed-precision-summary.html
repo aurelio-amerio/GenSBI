@@ -1,0 +1,703 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Mixed-Precision Training — Implementation Handout &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/2026-07-20-mixed-precision-summary';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Mixed-Precision Training — Implementation Handout</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="mixed-precision-training-implementation-handout">
+<h1>Mixed-Precision Training — Implementation Handout<a class="headerlink" href="#mixed-precision-training-implementation-handout" title="Link to this heading">#</a></h1>
+<p><strong>Branch:</strong> merged into local <code class="docutils literal notranslate"><span class="pre">main</span></code> (<code class="docutils literal notranslate"><span class="pre">a8b4ee7..8460091</span></code>, 18 commits, fast-forward). Not pushed.
+<strong>Verification:</strong> full suite on merged main: <strong>1131 passed, 2 pre-existing opt-in skips, 0 failed</strong> (CPU).
+<strong>Plan:</strong> <code class="docutils literal notranslate"><span class="pre">docs/superpowers/plans/2026-07-20-mixed-precision.md</span></code> · <strong>Spec:</strong> <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-20-mixed-precision-design.md</span></code></p>
+<hr class="docutils" />
+<section id="the-contract-what-every-model-now-guarantees">
+<h2>The contract (what every model now guarantees)<a class="headerlink" href="#the-contract-what-every-model-now-guarantees" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Rule</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>fp32 master weights</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">param_dtype=jnp.float32</span></code> everywhere; zero <code class="docutils literal notranslate"><span class="pre">param_dtype=bfloat16</span></code> left in <code class="docutils literal notranslate"><span class="pre">src/</span></code> (swept)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Compute knob</strong></p></td>
+<td><p>every <code class="docutils literal notranslate"><span class="pre">*Params</span></code> dataclass has <code class="docutils literal notranslate"><span class="pre">dtype</span></code> (compute/matmul dtype), threaded into every <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code>/conv</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>fp32 islands</strong> (always, knob-independent)</p></td>
+<td><p>norm layers, attention softmax, timestep/sinusoidal/Fourier embeddings, RoPE, final projection, loss</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Models emit fp32</strong></p></td>
+<td><p>final projection <strong>constructed</strong> with <code class="docutils literal notranslate"><span class="pre">dtype=jnp.float32</span></code> — never a post-hoc <code class="docutils literal notranslate"><span class="pre">.astype</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Inputs fp32 at the door</strong></p></td>
+<td><p>all <code class="docutils literal notranslate"><span class="pre">jnp.asarray(x,</span> <span class="pre">param_dtype)</span></code> input casts replaced with <code class="docutils literal notranslate"><span class="pre">jnp.asarray(x,</span> <span class="pre">jnp.float32)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Losses fp32</strong></p></td>
+<td><p>model output + target upcast to fp32 before weighting/reduction (defense-in-depth)</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Grads/AdamW/EMA fp32</strong></p></td>
+<td><p>automatic — JAX gives gradients the params’ dtype (test-verified per model)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>No loss scaling</strong></p></td>
+<td><p>bf16 shares fp32’s exponent range</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="per-model-defaults">
+<h3>Per-model defaults<a class="headerlink" href="#per-model-defaults" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>bf16 compute by default</p></th>
+<th class="head"><p>fp32 by default (knob present, flip later)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Flux1, Flux1Joint, Simformer, PixelDiT, FieldDiT, autoencoders (1D/2D)</p></td>
+<td><p>MAF, TarFlow — <strong>bit-identical</strong> to pre-refactor code at the default (golden <code class="docutils literal notranslate"><span class="pre">jnp.array_equal</span></code> tests)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">gensbi.models.healswin</span></code> untouched (external package, out of scope).</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="what-changed-by-commit">
+<h2>What changed, by commit<a class="headerlink" href="#what-changed-by-commit" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Commit</p></th>
+<th class="head"><p>Area</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">2a16345</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tests/precision_utils.py</span></code></p></td>
+<td><p>shared <code class="docutils literal notranslate"><span class="pre">assert_tree_dtype</span></code> / <code class="docutils literal notranslate"><span class="pre">float_leaves</span></code> helpers</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">75e6734</span></code></p></td>
+<td><p>losses</p></td>
+<td><p>fp32 casts in <code class="docutils literal notranslate"><span class="pre">FMLoss</span></code> (<code class="docutils literal notranslate"><span class="pre">fm_loss.py</span></code>), EDM (<code class="docutils literal notranslate"><span class="pre">path/scheduler/edm.py</span></code>), SM (<code class="docutils literal notranslate"><span class="pre">path/sm_path.py</span></code> — the arithmetic lives in the path closures, not the <code class="docutils literal notranslate"><span class="pre">loss/</span></code> wrapper files the plan named), NF pipeline <code class="docutils literal notranslate"><span class="pre">-log_prob</span></code> scalar</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">7713355</span></code>, <code class="docutils literal notranslate"><span class="pre">cef55a2</span></code></p></td>
+<td><p>shared embeddings</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MLPEmbedder</span></code>/<code class="docutils literal notranslate"><span class="pre">FeatureEmbedder</span></code>/<code class="docutils literal notranslate"><span class="pre">GaussianFourierEmbedding</span></code> accept <code class="docutils literal notranslate"><span class="pre">dtype</span></code> (fp32-neutral default); <strong>fix:</strong> GFE trig now always fp32, only the output is cast</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">f33d9e0</span></code></p></td>
+<td><p>Flux1</p></td>
+<td><p>params + all 7 layer classes in <code class="docutils literal notranslate"><span class="pre">flux1/layers.py</span></code>; QKNorm re-casts normed q/k to <code class="docutils literal notranslate"><span class="pre">v.dtype</span></code>; <code class="docutils literal notranslate"><span class="pre">LastLayer.linear</span></code> fp32</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">d14c8ba</span></code>, <code class="docutils literal notranslate"><span class="pre">2db7ef6</span></code></p></td>
+<td><p>Flux1Joint</p></td>
+<td><p><strong>fix:</strong> <code class="docutils literal notranslate"><span class="pre">condition_embedding</span></code> cast to compute dtype at use site — uncast fp32 Param was re-promoting the whole single-block stack</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">3bd0771</span></code>, <code class="docutils literal notranslate"><span class="pre">4258896</span></code></p></td>
+<td><p>Simformer</p></td>
+<td><p>fp32 <code class="docutils literal notranslate"><span class="pre">AttentionBlock</span></code> island (flax <code class="docutils literal notranslate"><span class="pre">nnx.MultiHeadAttention</span></code> softmax runs in its <code class="docutils literal notranslate"><span class="pre">dtype</span></code>, so the whole block is the island); <strong>fix:</strong> blocks downcast their <em>output</em> to compute dtype — island = fp32 math, emit compute dtype</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">5b11ad1</span></code></p></td>
+<td><p>MAF</p></td>
+<td><p>knob threaded through MADE/MaskedLinear; log-det arithmetic untouched; golden bit-identical</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">266d2e3</span></code></p></td>
+<td><p>TarFlow</p></td>
+<td><p>knob through blocks/conditioners; softplus/soft_clip scale path, log-det sums, mean/std buffers, KV-cache dtype behavior all untouched; golden bit-identical + 18-test cached≡reference gate green</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">d88fb92</span></code></p></td>
+<td><p>PixelDiT</p></td>
+<td><p>canonical pattern; caught <code class="docutils literal notranslate"><span class="pre">CondTokenEmbedder</span></code> norm-output leak; 2 stale tests pinned fp32 (they assert tighter-than-bf16 numerics)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">1c34f7f</span></code>, <code class="docutils literal notranslate"><span class="pre">830bf7e</span></code></p></td>
+<td><p>FieldDiT</p></td>
+<td><p>reuses Task-4 flux1 layers; caught <code class="docutils literal notranslate"><span class="pre">cond_ids_embedder</span></code> leak; closeness test un-gates the MMDiT core (AdaLN-zero made it an identity otherwise)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">26ac69f</span></code></p></td>
+<td><p>Autoencoders</p></td>
+<td><p>1D/2D threaded; <code class="docutils literal notranslate"><span class="pre">DiagonalGaussian</span></code> sampling fp32; <code class="docutils literal notranslate"><span class="pre">encode</span></code>/<code class="docutils literal notranslate"><span class="pre">decode</span></code> scale/shift Params cast at use site</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dc9ebb9</span></code>, <code class="docutils literal notranslate"><span class="pre">0a2ac77</span></code></p></td>
+<td><p>Pipeline</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_warn_if_not_fp32_master_weights</span></code> guard in <code class="docutils literal notranslate"><span class="pre">Pipeline.__init__</span></code>; EMA regression tests; orbax <code class="docutils literal notranslate"><span class="pre">restore_model</span></code> casts restored leaves to target dtypes (model + EMA paths); safetensors bf16→fp32 load regression lock; <strong>the guard caught a live straggler:</strong> <code class="docutils literal notranslate"><span class="pre">recipes/flux1joint.py</span></code> still defaulted bf16</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">8460091</span></code></p></td>
+<td><p>final-review fixes</p></td>
+<td><p>see below</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<hr class="docutils" />
+<section id="the-recurring-bug-class-this-branch-discovered-worth-knowing">
+<h2>The recurring bug class this branch discovered (worth knowing)<a class="headerlink" href="#the-recurring-bug-class-this-branch-discovered-worth-knowing" title="Link to this heading">#</a></h2>
+<p><strong>An fp32 <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code> or fp32-island output entering a bf16 stream silently re-promotes every downstream residual to fp32</strong>, defeating the knob with zero test signal at the endpoints (output is fp32 either way).</p>
+<ul class="simple">
+<li><p>Self-heals only when the fp32 value feeds a compute <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code>/conv (its <code class="docutils literal notranslate"><span class="pre">promote_dtype</span></code> downcasts). Residual adds and concats do <strong>not</strong> self-heal.</p></li>
+<li><p>Found and fixed in <strong>five</strong> models: Flux1Joint (<code class="docutils literal notranslate"><span class="pre">condition_embedding</span></code>), Simformer (block outputs), PixelDiT (<code class="docutils literal notranslate"><span class="pre">CondTokenEmbedder</span></code>), FieldDiT (<code class="docutils literal notranslate"><span class="pre">cond_ids_embedder</span></code>), Flux1 (<code class="docutils literal notranslate"><span class="pre">pos1d</span></code>/<code class="docutils literal notranslate"><span class="pre">pos2d</span></code> id-embeddings — final review).</p></li>
+<li><p>Each fix is guarded by a <strong>spy test</strong>: class-level monkeypatch capturing the dtype of the activation entering an inner block under <code class="docutils literal notranslate"><span class="pre">dtype=bf16</span></code>, RED-verified against the pre-fix code.</p></li>
+</ul>
+<p><strong>Idiom to remember:</strong> storage stays <code class="docutils literal notranslate"><span class="pre">param_dtype</span></code>; cast at the use site (<code class="docutils literal notranslate"><span class="pre">.astype(stream.dtype)</span></code>). Islands do fp32 <em>math</em> but emit the compute dtype — except the designated emit-fp32 endpoints (final projections).</p>
+</section>
+<section id="the-ema-bug-now-test-documented">
+<h2>The EMA bug, now test-documented<a class="headerlink" href="#the-ema-bug-now-test-documented" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tests/recipes/test_precision_pipeline.py</span></code>:</p>
+<ul class="simple">
+<li><p>fp32 EMA (decay 0.999, 0.1%-scale updates, 500 steps) tracks a float64 reference to ~9e-6.</p></li>
+<li><p>The same accumulation in bf16 diverges by ~0.0215 — <strong>~2500× worse</strong> — because the <code class="docutils literal notranslate"><span class="pre">(1-decay)·w</span></code> increment is below bf16’s mantissa resolution. This is the white-noise-EMA mechanism.</p></li>
+<li><p>AdamW moments verified fp32 once params are fp32.</p></li>
+<li><p>Gotcha found on the way: <code class="docutils literal notranslate"><span class="pre">optax.ema</span></code>’s raw accumulator <strong>zero</strong>-initializes; the plan’s reference recursion started at 1 and had to be corrected (the bf16 counter-test was non-diagnostic until then).</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="final-whole-branch-review-8460091">
+<h2>Final whole-branch review → <code class="docutils literal notranslate"><span class="pre">8460091</span></code><a class="headerlink" href="#final-whole-branch-review-8460091" title="Link to this heading">#</a></h2>
+<p>Verdict was “with fixes”; all three fixed and re-verified, final verdict <strong>ready to merge</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Flux1 id-embed leak</strong> — <code class="docutils literal notranslate"><span class="pre">pos1d</span></code>/<code class="docutils literal notranslate"><span class="pre">pos2d</span></code> FeatureEmbedder outputs (fp32 islands) now cast to stream dtype at all four merge points + spy test.</p></li>
+<li><p><strong>YAML knob</strong> — <code class="docutils literal notranslate"><span class="pre">dtype:</span></code> now parsed in <code class="docutils literal notranslate"><span class="pre">recipes/flux1.py</span></code>, <code class="docutils literal notranslate"><span class="pre">recipes/flux1joint.py</span></code>, <code class="docutils literal notranslate"><span class="pre">experimental/recipes/vae_pipeline.py</span></code> (default <code class="docutils literal notranslate"><span class="pre">&quot;bfloat16&quot;</span></code>). Config users can opt out of bf16 compute.</p></li>
+<li><p><strong>TarFlow norms</strong> — <code class="docutils literal notranslate"><span class="pre">norm1</span></code>/<code class="docutils literal notranslate"><span class="pre">norm2</span></code> pinned to fp32 islands (was knob-following, contradicting the Global Constraints). Bit-identical golden unchanged — provably a no-op at the fp32 default.</p></li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="how-to-check-it-yourself">
+<h2>How to check it yourself<a class="headerlink" href="#how-to-check-it-yourself" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># full suite (mamba gensbi env; ~20 min CPU)</span>
+<span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-q
+
+<span class="c1"># just the precision tests</span>
+<span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/test_precision_utils.py<span class="w"> </span>tests/models/losses/<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tests/models/embedding/test_embedding_dtype.py<span class="w"> </span>-q<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-k<span class="w"> </span><span class="s2">&quot;precision or dtype&quot;</span><span class="w"> </span>tests/models<span class="w"> </span>tests/experimental<span class="w"> </span>tests/recipes<span class="w"> </span>tests/utils
+
+<span class="c1"># sweep: must return nothing</span>
+grep<span class="w"> </span>-rn<span class="w"> </span><span class="s2">&quot;param_dtype: DTypeLike = jnp.bfloat16\|param_dtype=jnp.bfloat16&quot;</span><span class="w"> </span>src/gensbi/
+</pre></div>
+</div>
+<p>Per-task implementation/review reports were session-scratch in the (now removed) worktree’s <code class="docutils literal notranslate"><span class="pre">.superpowers/sdd/</span></code> — the durable record is the commit history above.</p>
+<section id="gpu-validation-gates-yours-the-real-test">
+<h3>GPU validation gates (yours, the real test)<a class="headerlink" href="#gpu-validation-gates-yours-the-real-test" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p><strong>PixelDiT GRF probe with <code class="docutils literal notranslate"><span class="pre">use_ema=True</span></code></strong> — expect structure, not white noise. This is the direct test of the EMA-bug hypothesis.</p></li>
+<li><p><strong>Flux1 two-moons sanity run</strong> — mixed-precision convergence should be ≥ the old fp32-parity baseline.</p></li>
+<li><p>Old checkpoints: bf16-master-weight checkpoints load into the new fp32 models (both safetensors and orbax cast on restore) — a quick restore of a real old checkpoint would be a nice extra check.</p></li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="known-gaps-deliberate-leftovers-all-judged-non-blocking-in-review">
+<h2>Known gaps / deliberate leftovers (all judged non-blocking in review)<a class="headerlink" href="#known-gaps-deliberate-leftovers-all-judged-non-blocking-in-review" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Plan Step 13.3 (recovery-script smoke) was <strong>impossible</strong>: <code class="docutils literal notranslate"><span class="pre">scripts/maf_nle_recovery.py</span></code> + tarflow twin don’t exist on any branch — only <code class="docutils literal notranslate"><span class="pre">docs/notebooks/two_moons_maf_nle.ipynb</span></code> / <code class="docutils literal notranslate"><span class="pre">slcp_tarflow_nle.ipynb</span></code>. The plan doc (and old session notes) reference stale paths; reconcile when convenient.</p></li>
+<li><p>MAF/TarFlow bf16 flip is a <strong>future</strong> step (knob exists, fp32 default) — per the spec, flip after testing.</p></li>
+<li><p>MAF’s <code class="docutils literal notranslate"><span class="pre">MaskedLinear</span></code> passes <code class="docutils literal notranslate"><span class="pre">dtype</span></code> to an internal <code class="docutils literal notranslate"><span class="pre">nnx.Linear</span></code> whose <code class="docutils literal notranslate"><span class="pre">__call__</span></code> is bypassed (hand-rolled matmul does the real cast) — harmless, could drop the kwarg.</p></li>
+<li><p>Flux1Joint <code class="docutils literal notranslate"><span class="pre">id_merge_mode=&quot;concat&quot;</span></code> has no dedicated dtype test (the fix is shared code ahead of the branch split).</p></li>
+<li><p>Autoencoder bf16-closeness tolerance is 5e-2 (measured 2.6% over a ~9-block stack); could tighten to ~3.5e-2.</p></li>
+<li><p>No docs page yet for the <code class="docutils literal notranslate"><span class="pre">dtype</span></code>/<code class="docutils literal notranslate"><span class="pre">param_dtype</span></code> split — the most user-visible behavior change (bf16 compute is now the <em>default</em> for six models); a short note in <code class="docutils literal notranslate"><span class="pre">docs/advanced/</span></code> would be worthwhile.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-contract-what-every-model-now-guarantees">The contract (what every model now guarantees)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#per-model-defaults">Per-model defaults</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-changed-by-commit">What changed, by commit</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-recurring-bug-class-this-branch-discovered-worth-knowing">The recurring bug class this branch discovered (worth knowing)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-ema-bug-now-test-documented">The EMA bug, now test-documented</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#final-whole-branch-review-8460091">Final whole-branch review → <code class="docutils literal notranslate"><span class="pre">8460091</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-check-it-yourself">How to check it yourself</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gpu-validation-gates-yours-the-real-test">GPU validation gates (yours, the real test)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#known-gaps-deliberate-leftovers-all-judged-non-blocking-in-review">Known gaps / deliberate leftovers (all judged non-blocking in review)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
