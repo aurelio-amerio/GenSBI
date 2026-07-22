@@ -303,3 +303,80 @@ def test_unconditional_sample_chunked_shape():
     out = pipeline.sample(jax.random.PRNGKey(1), nsamples=10, use_ema=False,
                           chunk_size=4, show_progress_bars=False)
     assert out.shape == (10, dim_joint, 2)
+
+
+# ---------------------------------------------------------------------------
+# sample(): joint + simformer passthroughs
+# ---------------------------------------------------------------------------
+
+
+def make_joint_pipeline():
+    pipeline = JointPipeline(
+        MockJointModel(),
+        _ds_joint(_data[:160]),
+        _ds_joint(_data[160:]),
+        dim_obs=dim_obs,
+        dim_cond=dim_cond,
+        method=FlowMatchingMethod(),
+        ch_obs=2,
+        condition_mask_kind="structured",
+    )
+    pipeline.ema_model = pipeline.model
+    pipeline._wrap_model()
+    return pipeline
+
+
+def test_joint_sample_chunked_shape():
+    pipeline = make_joint_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
+    out = pipeline.sample(jax.random.PRNGKey(1), x_o, nsamples=10,
+                          use_ema=False, chunk_size=4,
+                          show_progress_bars=False)
+    assert out.shape == (10, dim_obs, 2)
+
+
+def test_joint_sample_chunked_bit_identical_when_not_chunking():
+    pipeline = make_joint_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
+    key = jax.random.PRNGKey(1)
+    ref = pipeline.sample(key, x_o, nsamples=10, use_ema=False)
+    big = pipeline.sample(key, x_o, nsamples=10, use_ema=False,
+                          chunk_size=999)
+    assert jnp.array_equal(big, ref)
+
+
+def test_simformer_sample_signatures_accept_chunk_kwargs():
+    import inspect
+    from gensbi.recipes import SimformerFlowPipeline, SimformerDiffusionPipeline
+    from gensbi.recipes.simformer import SimformerSMPipeline
+
+    for cls in (SimformerFlowPipeline, SimformerSMPipeline,
+                SimformerDiffusionPipeline):
+        sig = inspect.signature(cls.sample)
+        assert "chunk_size" in sig.parameters, cls.__name__
+        assert sig.parameters["chunk_size"].default is None, cls.__name__
+        assert "show_progress_bars" in sig.parameters, cls.__name__
+
+
+def test_simformer_flow_sample_chunked_end_to_end():
+    from flax import nnx
+    from gensbi.models import SimformerParams
+    from gensbi.recipes import SimformerFlowPipeline
+
+    params = SimformerParams(
+        rngs=nnx.Rngs(0), in_channels=2, val_emb_dim=2, id_emb_dim=2,
+        cond_emb_dim=2, dim_joint=dim_joint, fourier_features=32,
+        num_heads=2, depth=1, mlp_ratio=1, qkv_features=4,
+        num_hidden_layers=1,
+    )
+    pipeline = SimformerFlowPipeline(
+        _ds_joint(_data[:160]), _ds_joint(_data[160:]),
+        dim_obs, dim_cond, ch_obs=2, params=params,
+    )
+    pipeline.ema_model = pipeline.model
+    pipeline._wrap_model()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
+    out = pipeline.sample(jax.random.PRNGKey(1), x_o, nsamples=6,
+                          use_ema=False, chunk_size=4,
+                          show_progress_bars=False)
+    assert out.shape == (6, dim_obs, 2)

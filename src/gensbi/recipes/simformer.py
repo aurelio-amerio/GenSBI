@@ -260,7 +260,8 @@ class SimformerFlowPipeline(JointPipeline):
         return get_default_simformer_params(dim_joint, in_channels)
 
     def sample(
-        self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True, time_grid=None
+        self, key, x_o, nsamples=10_000, step_size=0.01, use_ema=True,
+        time_grid=None, chunk_size=None, show_progress_bars=True,
     ):
         return super().sample(
             key,
@@ -269,6 +270,8 @@ class SimformerFlowPipeline(JointPipeline):
             step_size=step_size,
             use_ema=use_ema,
             time_grid=time_grid,
+            chunk_size=chunk_size,
+            show_progress_bars=show_progress_bars,
             model_extras={"edge_mask": self.edge_mask},
         )
 
@@ -408,6 +411,8 @@ class SimformerSMPipeline(JointPipeline):
         nsteps=1000,
         use_ema=True,
         return_intermediates=False,
+        chunk_size=None,
+        show_progress_bars=True,
     ):
         return super().sample(
             key,
@@ -416,6 +421,8 @@ class SimformerSMPipeline(JointPipeline):
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
+            chunk_size=chunk_size,
+            show_progress_bars=show_progress_bars,
             model_extras={"edge_mask": self.edge_mask},
         )
 
@@ -568,6 +575,8 @@ class SimformerDiffusionPipeline(JointPipeline):
         nsteps=18,
         use_ema=True,
         return_intermediates=False,
+        chunk_size=None,
+        show_progress_bars=True,
     ):
         return super().sample(
             key,
@@ -576,5 +585,7 @@ class SimformerDiffusionPipeline(JointPipeline):
             nsteps=nsteps,
             use_ema=use_ema,
             return_intermediates=return_intermediates,
+            chunk_size=chunk_size,
+            show_progress_bars=show_progress_bars,
             model_extras={"edge_mask": self.edge_mask},
         )
