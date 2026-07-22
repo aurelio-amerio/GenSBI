@@ -937,25 +937,34 @@ class AbstractPipeline(abc.ABC):
         x_o: Array,
         nsamples: int,
         *args,
-        chunk_size: Optional[int] = 50,
+        chunk_size: Optional[int] = None,
         show_progress_bars=True,
         **kwargs,
     ):
         """
         Generate samples from the trained model in batches.
 
+        Loops over the ``B`` conditions in ``x_o`` one at a time and, when
+        ``chunk_size`` is set, additionally draws each condition's samples
+        in memory-bounded chunks of at most ``chunk_size`` samples per
+        device call.
+
         Parameters
         ----------
         key : jax.random.PRNGKey
             Random number generator key.
         x_o : array-like
-            Conditioning variable (e.g., observed data).
+            Conditioning variable (e.g., observed data), leading batch
+            axis of size ``B``.
         nsamples : int
-            Number of samples to generate.
+            Number of samples to generate per condition.
         chunk_size : int, optional
-            Size of each batch for sampling. Default is 50.
+            Maximum number of samples drawn per device call. ``None``
+            (default) draws all ``nsamples`` for a condition in a single
+            call — identical to the historical behavior.
         show_progress_bars : bool, optional
-            Whether to display progress bars during sampling. Default is True.
+            Whether to display a progress bar over the
+            ``B * n_chunks`` device calls. Default is True.
         args : tuple
             Additional positional arguments for the sampler.
         kwargs : dict
@@ -973,10 +982,19 @@ class AbstractPipeline(abc.ABC):
         # compiled function — no recompilation per condition.
         sampler = self.get_sampler(x_o[0:1], *args, **kwargs)
 
-        # Retrieve the default extras that get_sampler baked in, then swap
-        # cond for each condition in the loop below.
         B = x_o.shape[0]
         keys_per_cond = jax.random.split(key, B)
+
+        if chunk_size is None or chunk_size >= nsamples:
+            n_chunks_per_cond = 1
+        else:
+            n_chunks_per_cond = (nsamples + chunk_size - 1) // chunk_size
+        pbar = (
+            tqdm(total=B * n_chunks_per_cond, desc="Sampling")
+            if show_progress_bars
+            else None
+        )
+        concat_axis = _sample_concat_axis(kwargs)
 
         results = []
         for i in range(B):
@@ -986,7 +1004,18 @@ class AbstractPipeline(abc.ABC):
                 "obs_ids": self.obs_ids,
                 "cond_ids": self.cond_ids,
             }
-            samples_i = sampler(keys_per_cond[i], nsamples, model_extras=extras_i)
+            samples_i = _chunked_draw(
+                sampler,
+                keys_per_cond[i],
+                nsamples,
+                chunk_size,
+                show_progress_bars=show_progress_bars,
+                concat_axis=concat_axis,
+                sampler_kwargs={"model_extras": extras_i},
+                pbar=pbar,
+            )
             results.append(samples_i)
+        if pbar is not None:
+            pbar.close()
 
         return jnp.stack(results, axis=1)  # (nsamples, B, dim_obs, ch_obs)

@@ -21,7 +21,7 @@ from gensbi.recipes import (
     UnconditionalPipeline,
 )
 from gensbi.core import FlowMatchingMethod, DiffusionEDMMethod
-from gensbi.recipes.pipeline import _chunked_draw, _sample_concat_axis
+from gensbi.recipes.pipeline import _chunked_draw, _sample_concat_axis, AbstractPipeline
 
 
 # ---------------------------------------------------------------------------
@@ -167,3 +167,68 @@ def make_cond_pipeline(method=None):
     pipeline.ema_model = pipeline.model
     pipeline._wrap_model()
     return pipeline
+
+
+# ---------------------------------------------------------------------------
+# AbstractPipeline.sample_batched: per-condition loop + nsamples chunking
+# ---------------------------------------------------------------------------
+
+
+def test_sample_batched_chunked_shape_and_default_equivalence():
+    pipeline = make_cond_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (3, dim_cond, 2))
+    key = jax.random.PRNGKey(1)
+
+    ref = pipeline.sample_batched(key, x_o, nsamples=10, use_ema=False,
+                                  show_progress_bars=False)
+    assert ref.shape == (10, 3, dim_obs, 2)
+
+    chunked = pipeline.sample_batched(key, x_o, nsamples=10, use_ema=False,
+                                      chunk_size=4, show_progress_bars=False)
+    assert chunked.shape == (10, 3, dim_obs, 2)
+    assert jnp.all(jnp.isfinite(chunked))
+
+    # chunk_size >= nsamples short-circuits to the unchunked path:
+    # bit-identical to chunk_size=None with the same key
+    big = pipeline.sample_batched(key, x_o, nsamples=10, use_ema=False,
+                                  chunk_size=64, show_progress_bars=False)
+    assert jnp.array_equal(big, ref)
+
+
+def test_sample_batched_chunk_size_default_is_none():
+    import inspect
+    sig = inspect.signature(AbstractPipeline.sample_batched)
+    assert sig.parameters["chunk_size"].default is None
+
+
+def test_sample_batched_progress_bar_smoke():
+    # progress-bar branch must not crash (tqdm writes to stderr)
+    pipeline = make_cond_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (2, dim_cond, 2))
+    out = pipeline.sample_batched(jax.random.PRNGKey(1), x_o, nsamples=6,
+                                  use_ema=False, chunk_size=4,
+                                  show_progress_bars=True)
+    assert out.shape == (6, 2, dim_obs, 2)
+
+
+def test_sample_batched_no_bar_when_disabled(monkeypatch):
+    # show_progress_bars=False must create ZERO tqdm bars even when
+    # chunking is active (regression: _chunked_draw used to open its own
+    # per-condition bar because the flag was not forwarded).
+    import gensbi.recipes.pipeline as plmod
+
+    created = []
+    real_tqdm = plmod.tqdm
+
+    def spy_tqdm(*args, **kwargs):
+        created.append((args, kwargs))
+        return real_tqdm(*args, **kwargs)
+
+    monkeypatch.setattr(plmod, "tqdm", spy_tqdm)
+    pipeline = make_cond_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (2, dim_cond, 2))
+    out = pipeline.sample_batched(jax.random.PRNGKey(1), x_o, nsamples=6,
+                                  use_ema=False, chunk_size=4,
+                                  show_progress_bars=False)
+    assert out.shape == (6, 2, dim_obs, 2)
+    assert created == []
