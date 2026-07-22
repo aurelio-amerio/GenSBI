@@ -133,72 +133,101 @@ def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
     ema_optimizer.update(ema_model, model)
 
 
-def _get_batch_sampler(
-    sampler_fn: Callable,
-    ncond: int,
-    chunk_size: int,
-    show_progress_bars: bool = True,
-):
+def _sample_concat_axis(sampler_kwargs: dict) -> int:
+    """Axis carrying the sample dimension in a sampler's output.
+
+    Solvers stack intermediates along a leading, statically-sized time
+    axis, so chunked outputs must concatenate along axis 1 instead of 0.
+    Intermediates are requested either explicitly
+    (``return_intermediates=True`` — EDM and score-matching methods) or
+    implicitly by passing a non-``None`` ``time_grid``
+    (``FlowMatchingMethod.build_sampler_fn`` turns intermediates on for
+    any explicit time grid).
     """
-    Create a batch sampler that processes samples in chunks.
+    if sampler_kwargs.get("return_intermediates", False):
+        return 1
+    if sampler_kwargs.get("time_grid", None) is not None:
+        return 1
+    return 0
+
+
+def _chunked_draw(
+    sampler: Callable,
+    key: Array,
+    nsamples: int,
+    chunk_size: Optional[int],
+    show_progress_bars: bool = True,
+    concat_axis: int = 0,
+    sampler_kwargs: Optional[dict] = None,
+    pbar=None,
+):
+    """Draw ``nsamples`` from ``sampler`` in memory-bounded chunks.
 
     Parameters
     ----------
-    sampler_fn : Callable
-        Sampling function.
-    ncond : int
-        Number of conditions.
-    chunk_size : int
-        Size of each chunk.
+    sampler : Callable
+        ``sampler(key, nsamples, **sampler_kwargs) -> Array``.
+    key : jax.random.PRNGKey
+        Random key. With no chunking it is passed through UNCHANGED so
+        the result is bit-identical to calling ``sampler`` directly.
+    nsamples : int
+        Total number of samples to draw.
+    chunk_size : int or None
+        Maximum samples per sampler call. ``None`` (or any value
+        ``>= nsamples``) disables chunking.
     show_progress_bars : bool, optional
-        Whether to show progress bars.
+        Show a tqdm bar over chunks (only when chunking is active and no
+        external ``pbar`` is supplied).
+    concat_axis : int, optional
+        Axis to concatenate chunks along — 0 for plain samples, 1 when
+        the sampler returns intermediates with a leading time axis (see
+        :func:`_sample_concat_axis`).
+    sampler_kwargs : dict, optional
+        Extra keyword arguments forwarded to every sampler call
+        (e.g. ``{"model_extras": ...}``).
+    pbar : tqdm-like, optional
+        External progress bar; when given it is updated once per chunk
+        and no internal bar is created (used by ``sample_batched`` for a
+        single bar across conditions).
 
     Returns
     -------
-    Callable
-        Batch sampler function.
+    Array
+        ``nsamples`` samples, concatenated along ``concat_axis``.
     """
+    kwargs = sampler_kwargs or {}
 
-    # JIT the chunk processor
-    @jax.jit
-    def process_chunk(key_batch):
-        """Process a batch of keys."""
-        return jax.vmap(lambda k: sampler_fn(k, ncond))(key_batch)
+    if chunk_size is None or chunk_size >= nsamples:
+        out = sampler(key, nsamples, **kwargs)
+        if pbar is not None:
+            out = jax.block_until_ready(out)
+            pbar.update(1)
+        return out
 
-    def sampler(keys):
-        """Sample in batches with optional progress bar."""
-        n_samples = keys.shape[0]
-        results = []
+    n_chunks = (nsamples + chunk_size - 1) // chunk_size
+    keys = jax.random.split(key, n_chunks)
 
-        # Calculate total chunks for tqdm
-        # We use ceil division to handle remainders
-        n_chunks = (n_samples + chunk_size - 1) // chunk_size
+    own_bar = pbar is None and show_progress_bars
+    if own_bar:
+        pbar = tqdm(total=n_chunks, desc="Sampling")
 
-        # Using a tqdm loop
+    results = []
+    remaining = nsamples
+    for i in range(n_chunks):
+        n_i = min(chunk_size, remaining)
+        remaining -= n_i
+        chunk = sampler(keys[i], n_i, **kwargs)
+        # Wait for the device so the progress bar is accurate and host
+        # memory for the next chunk isn't requested while this one runs.
+        chunk = jax.block_until_ready(chunk)
+        results.append(chunk)
+        if pbar is not None:
+            pbar.update(1)
 
-        if show_progress_bars:
-            loop = tqdm(
-                range(0, n_samples, chunk_size),
-                total=n_chunks,
-                desc="Sampling",
-            )
-        else:
-            loop = range(0, n_samples, chunk_size)
+    if own_bar:
+        pbar.close()
 
-        for i in loop:
-            batch_keys = keys[i : i + chunk_size]
-
-            chunk_out = process_chunk(batch_keys)
-
-            # CRITICAL: Wait for GPU to finish this chunk before updating bar
-            # This makes the progress bar accurate.
-            chunk_out.block_until_ready()
-
-            results.append(chunk_out)
-
-        return jnp.concatenate(results, axis=0)
-
-    return sampler
+    return jnp.concatenate(results, axis=concat_axis)
 
 
 class AbstractPipeline(abc.ABC):

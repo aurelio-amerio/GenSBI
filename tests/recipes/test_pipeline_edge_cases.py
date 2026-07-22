@@ -13,7 +13,6 @@ import grain
 import numpy as np
 
 from gensbi.recipes.joint_pipeline import sample_condition_mask
-from gensbi.recipes.pipeline import _get_batch_sampler
 
 import sys
 from pathlib import Path
@@ -373,23 +372,6 @@ def test_init_with_default_training_config():
     assert pipeline.training_config is not None
     assert "nsteps" in pipeline.training_config
     assert "max_lr" in pipeline.training_config
-
-
-def test_get_batch_sampler_no_progress_bars():
-    """_get_batch_sampler with show_progress_bars=False (L137)."""
-    def mock_sampler_fn(key, ncond):
-        return jnp.ones((ncond, 1))
-
-    ncond = 5
-    chunk_size = 10
-    n_samples = 30
-
-    batched_sampler = _get_batch_sampler(
-        mock_sampler_fn, ncond, chunk_size, show_progress_bars=False
-    )
-    keys = jax.random.split(jax.random.PRNGKey(0), n_samples)
-    result = batched_sampler(keys)
-    assert result.shape == (n_samples, ncond, 1)
 
 
 def test_save_and_restore_model():
