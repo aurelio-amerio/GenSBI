@@ -406,3 +406,58 @@ def test_multichannel_both_sample_and_logprob_shapes():
 
     lp = pipe.log_prob(jnp.zeros((7, DIM_OBS, 2)), x_o)
     assert lp.shape == (7,)                     # one scalar per sample
+
+
+# ---------------------------------------------------------------------------
+# Chunked sampling tests (Task 5)
+# ---------------------------------------------------------------------------
+
+def test_sample_chunked_shape():
+    pipe = build_pipeline()
+    x_o = jnp.zeros((1, DIM_COND, 1))
+    out = pipe.sample(jax.random.PRNGKey(0), x_o, nsamples=10,
+                      use_ema=False, chunk_size=4, show_progress_bars=False)
+    assert out.shape == (10, DIM_OBS, 1)
+    assert jnp.all(jnp.isfinite(out))
+
+
+def test_sample_chunked_bit_identical_when_not_chunking():
+    pipe = build_pipeline()
+    x_o = jnp.zeros((1, DIM_COND, 1))
+    key = jax.random.PRNGKey(0)
+    ref = pipe.sample(key, x_o, nsamples=10, use_ema=False)
+    big = pipe.sample(key, x_o, nsamples=10, use_ema=False, chunk_size=999)
+    assert jnp.array_equal(big, ref)
+
+
+def test_sample_batched_chunked_shape_with_real_flow():
+    pipe = build_pipeline()
+    out = pipe.sample_batched(jax.random.PRNGKey(0),
+                              jnp.zeros((2, DIM_COND, 1)), 7,
+                              chunk_size=5, show_progress_bars=False)
+    assert out.shape == (7, 2, DIM_OBS, 1)
+    assert jnp.all(jnp.isfinite(out))
+
+
+def test_sample_batched_chunked_routing_across_chunk_boundaries():
+    # chunk_size=7 does NOT divide nsamples=5 or B*nsamples=15: chunk
+    # boundaries fall inside conditions. Routing condition i -> column i
+    # must survive the flattened chunking.
+    pipe = build_pipeline()
+    pipe.ema_model = _EchoFlow()
+    B, nsamples = 3, 5
+    x_o = jnp.stack([jnp.full((DIM_COND, 1), float(i)) for i in range(B)])
+    out = pipe.sample_batched(jax.random.PRNGKey(0), x_o, nsamples,
+                              chunk_size=7, show_progress_bars=False)
+    assert out.shape == (nsamples, B, DIM_COND, 1)
+    for i in range(B):
+        assert jnp.all(out[:, i] == float(i))
+
+
+def test_sample_batched_chunked_bit_identical_when_not_chunking():
+    pipe = build_pipeline()
+    x_o = jnp.zeros((2, DIM_COND, 1))
+    key = jax.random.PRNGKey(0)
+    ref = pipe.sample_batched(key, x_o, nsamples=7)
+    big = pipe.sample_batched(key, x_o, nsamples=7, chunk_size=10_000)
+    assert jnp.array_equal(big, ref)

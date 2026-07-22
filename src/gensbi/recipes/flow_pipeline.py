@@ -7,9 +7,11 @@ Trains ``q(obs | cond)`` by max-likelihood. NPE convention: ``obs = theta``,
 
 import warnings
 
+import jax
 import jax.numpy as jnp
+from tqdm.auto import tqdm
 
-from gensbi.recipes.pipeline import AbstractPipeline
+from gensbi.recipes.pipeline import AbstractPipeline, _chunked_draw
 from gensbi.recipes.utils import _require_channel, _single_obs
 
 
@@ -244,7 +246,8 @@ class ConditionalFlowPipeline(AbstractPipeline):
             return flow.sample(key, cond=cond_b)         # model owns (nsamples, dim, C)
         return sampler
 
-    def sample(self, key, x_o, nsamples=10_000, use_ema=True, **kwargs):
+    def sample(self, key, x_o, nsamples=10_000, use_ema=True,
+               chunk_size=None, show_progress_bars=True, **kwargs):
         """Draw posterior samples for a single conditioning observation.
 
         Parameters
@@ -259,6 +262,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
             Number of posterior samples to draw.  Default is 10 000.
         use_ema : bool, optional
             If ``True`` (default), use the EMA model.
+        chunk_size : int, optional
+            Maximum number of samples drawn per device call. ``None``
+            (default) draws everything in one call — identical to the
+            historical behavior. Set it to bound memory when drawing many
+            samples from a deep flow.
+        show_progress_bars : bool, optional
+            Show a progress bar over chunks (only when chunking is
+            active). Default is True.
 
         Returns
         -------
@@ -272,17 +283,24 @@ class ConditionalFlowPipeline(AbstractPipeline):
             instead have shape ``(nsamples,) + per_obs_shape``, the model's
             native structured output.
         """
-        return self.get_sampler(x_o, use_ema=use_ema, **kwargs)(key, nsamples)
+        sampler = self.get_sampler(x_o, use_ema=use_ema, **kwargs)
+        return _chunked_draw(
+            sampler, key, nsamples, chunk_size,
+            show_progress_bars=show_progress_bars,
+        )
 
     def sample_batched(self, key, x_o, nsamples=10_000, *, use_ema=True,
-                       **kwargs):
+                       chunk_size=None, show_progress_bars=True, **kwargs):
         """Draw posterior samples for a batch of conditioning observations.
 
-        Draws all ``B`` conditions in **one** batched autoregressive pass:
-        each condition is repeated ``nsamples`` times and concatenated into
-        a single ``(B * nsamples, ...)`` batch fed to the flow's ``sample``,
-        rather than looping the single-observation sampler ``B`` times.
-        Memory scales with the product ``B * nsamples``.
+        Each condition is repeated ``nsamples`` times and concatenated
+        into a single flattened ``(B * nsamples, ...)`` batch. Without
+        ``chunk_size`` the whole batch runs in **one** autoregressive
+        pass (memory scales with ``B * nsamples``); with ``chunk_size``
+        the flattened batch is sliced into pieces of at most
+        ``chunk_size`` rows per ``flow.sample`` call — chunk boundaries
+        may fall inside a condition, which is fine because every row is
+        independent.
 
         Parameters
         ----------
@@ -298,10 +316,16 @@ class ConditionalFlowPipeline(AbstractPipeline):
             10 000.
         use_ema : bool, optional
             If ``True`` (default), use the EMA model.
+        chunk_size : int, optional
+            Maximum number of rows of the flattened ``B * nsamples``
+            batch per device call. ``None`` (default) keeps the
+            historical single-pass behavior.
+        show_progress_bars : bool, optional
+            Show a progress bar over chunks (only when chunking is
+            active). Default is True.
         **kwargs : dict, optional
             Extra keyword arguments accepted for interface compatibility
-            and silently ignored (e.g. ``chunk_size`` and
-            ``show_progress_bars`` from
+            and ignored with a warning (e.g. solver arguments from
             :class:`~gensbi.recipes.pipeline.AbstractPipeline`).
 
         Returns
@@ -309,14 +333,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         samples : Array
             Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` for the
             tabular default (``C = 1``), or ``(nsamples, B, dim_obs, C)`` for
-            ``ch_obs = C`` — the channel axis is always carried for a
-            vector-modeled variable regardless of ``structured_cond`` (a
-            structured condition changes only ``x_o``'s expected shape, not
-            the modeled variable's). When ``structured_obs=True``, samples
-            instead have shape ``(nsamples, B) + per_obs_shape``, the
-            model's native structured output. In both cases ``out[:, i]``
-            is the samples for condition ``i`` — the same layout as the
-            previous per-condition loop.
+            ``ch_obs = C``. When ``structured_obs=True``, samples instead
+            have shape ``(nsamples, B) + per_obs_shape``. In both cases
+            ``out[:, i]`` is the samples for condition ``i``.
         """
         _warn_unused_kwargs(kwargs)
         flow = self.ema_model if use_ema else self.model
@@ -324,10 +343,26 @@ class ConditionalFlowPipeline(AbstractPipeline):
         if not self.structured_cond:
             x_o = _require_channel(x_o, "x_o")
         B = x_o.shape[0]
-        cond = jnp.repeat(x_o, nsamples, axis=0)      # (B*nsamples, ...): c0 x nsamples, c1 x nsamples, ...
-        samples = flow.sample(key, cond=cond)          # (B*nsamples, dim_obs, C) — ONE batched AR pass
+        cond = jnp.repeat(x_o, nsamples, axis=0)  # (B*nsamples, ...): c0 x nsamples, c1 x nsamples, ...
+        total = B * nsamples
+
+        if chunk_size is None or chunk_size >= total:
+            samples = flow.sample(key, cond=cond)  # ONE batched AR pass
+        else:
+            n_chunks = (total + chunk_size - 1) // chunk_size
+            keys = jax.random.split(key, n_chunks)
+            loop = range(n_chunks)
+            if show_progress_bars:
+                loop = tqdm(loop, desc="Sampling")
+            chunks = []
+            for i in loop:
+                sl = slice(i * chunk_size, min((i + 1) * chunk_size, total))
+                chunk = flow.sample(keys[i], cond=cond[sl])
+                chunks.append(jax.block_until_ready(chunk))
+            samples = jnp.concatenate(chunks, axis=0)
+
         samples = samples.reshape((B, nsamples) + samples.shape[1:])
-        return jnp.moveaxis(samples, 0, 1)             # (nsamples, B, dim_obs, C)
+        return jnp.moveaxis(samples, 0, 1)  # (nsamples, B, dim_obs, C)
 
     def get_log_prob_fn(self, x_o, use_ema=True, **kwargs):
         """Return a log-probability closure for a single conditioning observation.
