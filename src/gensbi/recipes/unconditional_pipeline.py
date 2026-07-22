@@ -28,7 +28,7 @@ from einops import repeat
 
 from gensbi.utils.model_wrapping import _expand_dims
 
-from gensbi.recipes.pipeline import AbstractPipeline
+from gensbi.recipes.pipeline import AbstractPipeline, _chunked_draw, _sample_concat_axis
 
 
 
@@ -187,7 +187,8 @@ class UnconditionalPipeline(AbstractPipeline):
 
         return sampler
 
-    def sample(self, key, nsamples=10_000, use_ema=True, **sampler_kwargs):
+    def sample(self, key, nsamples=10_000, use_ema=True,
+               chunk_size=None, show_progress_bars=True, **sampler_kwargs):
         """Draw samples from the model.
 
         Parameters
@@ -198,6 +199,13 @@ class UnconditionalPipeline(AbstractPipeline):
             Number of samples. Default is 10 000.
         use_ema : bool, optional
             Use the EMA model. Default is True.
+        chunk_size : int, optional
+            Maximum number of samples drawn per device call. ``None``
+            (default) draws everything in one call — identical to the
+            historical behavior.
+        show_progress_bars : bool, optional
+            Show a progress bar over chunks (only when chunking is
+            active). Default is True.
         **sampler_kwargs
             Forwarded to :meth:`get_sampler`.
 
@@ -207,7 +215,11 @@ class UnconditionalPipeline(AbstractPipeline):
             Samples of shape ``(nsamples, dim_obs, ch_obs)``.
         """
         sampler = self.get_sampler(use_ema=use_ema, **sampler_kwargs)
-        return sampler(key, nsamples)
+        return _chunked_draw(
+            sampler, key, nsamples, chunk_size,
+            show_progress_bars=show_progress_bars,
+            concat_axis=_sample_concat_axis(sampler_kwargs),
+        )
 
     def get_log_prob_fn(self, use_ema=True, **kwargs):
         """Get a log-probability function.

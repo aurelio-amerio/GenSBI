@@ -232,3 +232,74 @@ def test_sample_batched_no_bar_when_disabled(monkeypatch):
                                   show_progress_bars=False)
     assert out.shape == (6, 2, dim_obs, 2)
     assert created == []
+
+
+# ---------------------------------------------------------------------------
+# sample(): conditional + unconditional
+# ---------------------------------------------------------------------------
+
+
+def test_conditional_sample_chunked_shape():
+    pipeline = make_cond_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
+    out = pipeline.sample(jax.random.PRNGKey(1), x_o, nsamples=10,
+                          use_ema=False, chunk_size=4,
+                          show_progress_bars=False)
+    assert out.shape == (10, dim_obs, 2)
+    assert jnp.all(jnp.isfinite(out))
+
+
+def test_conditional_sample_chunked_bit_identical_when_not_chunking():
+    pipeline = make_cond_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
+    key = jax.random.PRNGKey(1)
+    ref = pipeline.sample(key, x_o, nsamples=10, use_ema=False)
+    big = pipeline.sample(key, x_o, nsamples=10, use_ema=False,
+                          chunk_size=999)
+    assert jnp.array_equal(big, ref)
+
+
+def test_conditional_sample_chunked_with_edm_intermediates():
+    # EDM + return_intermediates: output (n_steps, nsamples, dim, ch);
+    # chunks must concatenate along the SAMPLE axis (1), not the time axis.
+    pipeline = make_cond_pipeline(method=DiffusionEDMMethod(sde="EDM"))
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
+    ref = pipeline.sample(jax.random.PRNGKey(1), x_o, nsamples=9,
+                          use_ema=False, nsteps=4, return_intermediates=True)
+    out = pipeline.sample(jax.random.PRNGKey(1), x_o, nsamples=9,
+                          use_ema=False, nsteps=4, return_intermediates=True,
+                          chunk_size=4, show_progress_bars=False)
+    assert out.shape == ref.shape          # same (n_steps, 9, dim_obs, 2)
+    assert out.shape[1] == 9               # sample axis grew to nsamples
+    assert out.ndim == 4
+
+
+def test_conditional_sample_chunked_with_fm_time_grid_intermediates():
+    # FlowMatchingMethod: a non-None time_grid implicitly enables
+    # intermediates (core/flow_matching.py:253-257).
+    pipeline = make_cond_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (1, dim_cond, 2))
+    tg = jnp.linspace(0.0, 1.0, 5)
+    ref = pipeline.sample(jax.random.PRNGKey(1), x_o, nsamples=9,
+                          use_ema=False, time_grid=tg)
+    out = pipeline.sample(jax.random.PRNGKey(1), x_o, nsamples=9,
+                          use_ema=False, time_grid=tg,
+                          chunk_size=4, show_progress_bars=False)
+    assert out.shape == ref.shape
+    assert out.shape[1] == 9
+
+
+def test_unconditional_sample_chunked_shape():
+    pipeline = UnconditionalPipeline(
+        model=MockUnconditionalModel(),
+        train_dataset=_ds_joint(_data[:160]),
+        val_dataset=_ds_joint(_data[160:]),
+        dim_obs=dim_joint,
+        method=FlowMatchingMethod(),
+        ch_obs=2,
+    )
+    pipeline.ema_model = pipeline.model
+    pipeline._wrap_model()
+    out = pipeline.sample(jax.random.PRNGKey(1), nsamples=10, use_ema=False,
+                          chunk_size=4, show_progress_bars=False)
+    assert out.shape == (10, dim_joint, 2)
