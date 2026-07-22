@@ -133,6 +133,14 @@ def ema_step(ema_model, model, ema_optimizer: nnx.Optimizer):
     ema_optimizer.update(ema_model, model)
 
 
+def _validate_chunk_size(chunk_size: Optional[int]) -> None:
+    """Reject non-positive chunk sizes before any chunk arithmetic."""
+    if chunk_size is not None and chunk_size < 1:
+        raise ValueError(
+            f"chunk_size must be a positive integer or None, got {chunk_size}"
+        )
+
+
 def _sample_concat_axis(sampler_kwargs: dict) -> int:
     """Axis carrying the sample dimension in a sampler's output.
 
@@ -195,6 +203,7 @@ def _chunked_draw(
     Array
         ``nsamples`` samples, concatenated along ``concat_axis``.
     """
+    _validate_chunk_size(chunk_size)
     kwargs = sampler_kwargs or {}
 
     if chunk_size is None or chunk_size >= nsamples:
@@ -975,6 +984,7 @@ class AbstractPipeline(abc.ABC):
         samples : array-like
             Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).
         """
+        _validate_chunk_size(chunk_size)
 
         # Build the sampler once using the first condition for shape.
         # The sampler's JIT compilation traces model_extras by shape/dtype,

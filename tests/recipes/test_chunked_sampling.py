@@ -121,6 +121,15 @@ def test_sample_concat_axis():
     assert _sample_concat_axis({"time_grid": None}) == 0
 
 
+def test_chunked_draw_rejects_nonpositive_chunk_size():
+    spy = _SpySampler()
+    for bad in (0, -3):
+        with pytest.raises(ValueError, match="chunk_size"):
+            _chunked_draw(spy, jax.random.PRNGKey(0), 10, bad,
+                          show_progress_bars=False)
+    assert spy.calls == []
+
+
 def test_get_batch_sampler_removed():
     with pytest.raises(ImportError):
         from gensbi.recipes.pipeline import _get_batch_sampler  # noqa: F401
@@ -232,6 +241,15 @@ def test_sample_batched_no_bar_when_disabled(monkeypatch):
                                   show_progress_bars=False)
     assert out.shape == (6, 2, dim_obs, 2)
     assert created == []
+
+
+def test_sample_batched_rejects_nonpositive_chunk_size():
+    pipeline = make_cond_pipeline()
+    x_o = jax.random.normal(jax.random.PRNGKey(2), (2, dim_cond, 2))
+    with pytest.raises(ValueError, match="chunk_size"):
+        pipeline.sample_batched(jax.random.PRNGKey(1), x_o, nsamples=6,
+                                use_ema=False, chunk_size=0,
+                                show_progress_bars=False)
 
 
 # ---------------------------------------------------------------------------

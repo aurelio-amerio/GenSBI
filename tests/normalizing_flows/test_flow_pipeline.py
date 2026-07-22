@@ -461,3 +461,11 @@ def test_sample_batched_chunked_bit_identical_when_not_chunking():
     ref = pipe.sample_batched(key, x_o, nsamples=7)
     big = pipe.sample_batched(key, x_o, nsamples=7, chunk_size=10_000)
     assert jnp.array_equal(big, ref)
+
+
+def test_sample_batched_rejects_nonpositive_chunk_size():
+    pipe = build_pipeline()
+    x_o = jnp.zeros((2, DIM_COND, 1))
+    with pytest.raises(ValueError, match="chunk_size"):
+        pipe.sample_batched(jax.random.PRNGKey(0), x_o, nsamples=5,
+                            chunk_size=0, show_progress_bars=False)

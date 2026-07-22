@@ -11,7 +11,7 @@ import jax
 import jax.numpy as jnp
 from tqdm.auto import tqdm
 
-from gensbi.recipes.pipeline import AbstractPipeline, _chunked_draw
+from gensbi.recipes.pipeline import AbstractPipeline, _chunked_draw, _validate_chunk_size
 from gensbi.recipes.utils import _require_channel, _single_obs
 
 
@@ -338,6 +338,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             ``out[:, i]`` is the samples for condition ``i``.
         """
         _warn_unused_kwargs(kwargs)
+        _validate_chunk_size(chunk_size)
         flow = self.ema_model if use_ema else self.model
         x_o = jnp.asarray(x_o)
         if not self.structured_cond:
