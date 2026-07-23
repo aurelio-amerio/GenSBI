@@ -140,6 +140,7 @@ class Flux1Params:
     param_dtype: DTypeLike = jnp.float32
     dtype: DTypeLike = jnp.bfloat16
 
+    # TODO we can maybe drop the generic "rope", and have only 1d and 2d variants explicitly. we shall also add the healpix rope as a valid embedding, probably 
     def __post_init__(self):
         available_embeddings = [
             "absolute",

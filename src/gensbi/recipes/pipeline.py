@@ -75,7 +75,10 @@ def _cast_state_to_target_dtypes(state: nnx.State, target_state: nnx.State) -> n
     new = {}
     for k, arr in flat.items():
         want = target_flat.get(k)
-        if want is not None and hasattr(arr, "dtype") and hasattr(want, "dtype"):
+        # Cast only on mismatch: typed PRNG-key leaves (dtype key<fry>) have
+        # no astype and always round-trip with their dtype intact.
+        if (want is not None and hasattr(arr, "dtype") and hasattr(want, "dtype")
+                and arr.dtype != want.dtype):
             new[k] = arr.astype(want.dtype)
         else:
             new[k] = arr
