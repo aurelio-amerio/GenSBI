@@ -837,7 +837,10 @@ window.runMermaid = runMermaid;</script>
     <span class="n">new</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">flat</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">want</span> <span class="o">=</span> <span class="n">target_flat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">want</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">want</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">):</span>
+        <span class="c1"># Cast only on mismatch: typed PRNG-key leaves (dtype key&lt;fry&gt;) have</span>
+        <span class="c1"># no astype and always round-trip with their dtype intact.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">want</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">want</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">want</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
             <span class="n">new</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">want</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">new</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span>
@@ -905,74 +908,118 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<div class="viewcode-block" id="_get_batch_sampler">
-<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._get_batch_sampler">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_batch_sampler</span><span class="p">(</span>
-    <span class="n">sampler_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
-    <span class="n">ncond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<div class="viewcode-block" id="_validate_chunk_size">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._validate_chunk_size">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_chunk_size</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reject non-positive chunk sizes before any chunk arithmetic.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">chunk_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">chunk_size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;chunk_size must be a positive integer or None, got </span><span class="si">{</span><span class="n">chunk_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="_sample_concat_axis">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._sample_concat_axis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Axis carrying the sample dimension in a sampler&#39;s output.</span>
+
+<span class="sd">    Solvers stack intermediates along a leading, statically-sized time</span>
+<span class="sd">    axis, so chunked outputs must concatenate along axis 1 instead of 0.</span>
+<span class="sd">    Intermediates are requested either explicitly</span>
+<span class="sd">    (``return_intermediates=True`` — EDM and score-matching methods) or</span>
+<span class="sd">    implicitly by passing a non-``None`` ``time_grid``</span>
+<span class="sd">    (``FlowMatchingMethod.build_sampler_fn`` turns intermediates on for</span>
+<span class="sd">    any explicit time grid).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sampler_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_intermediates&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">sampler_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;time_grid&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="mi">0</span></div>
+
+
+
+<div class="viewcode-block" id="_chunked_draw">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline._chunked_draw">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_chunked_draw</span><span class="p">(</span>
+    <span class="n">sampler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="n">nsamples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="n">show_progress_bars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">concat_axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">sampler_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">pbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Create a batch sampler that processes samples in chunks.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Draw ``nsamples`` from ``sampler`` in memory-bounded chunks.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    sampler_fn : Callable</span>
-<span class="sd">        Sampling function.</span>
-<span class="sd">    ncond : int</span>
-<span class="sd">        Number of conditions.</span>
-<span class="sd">    chunk_size : int</span>
-<span class="sd">        Size of each chunk.</span>
+<span class="sd">    sampler : Callable</span>
+<span class="sd">        ``sampler(key, nsamples, **sampler_kwargs) -&gt; Array``.</span>
+<span class="sd">    key : jax.random.PRNGKey</span>
+<span class="sd">        Random key. With no chunking it is passed through UNCHANGED so</span>
+<span class="sd">        the result is bit-identical to calling ``sampler`` directly.</span>
+<span class="sd">    nsamples : int</span>
+<span class="sd">        Total number of samples to draw.</span>
+<span class="sd">    chunk_size : int or None</span>
+<span class="sd">        Maximum samples per sampler call. ``None`` (or any value</span>
+<span class="sd">        ``&gt;= nsamples``) disables chunking.</span>
 <span class="sd">    show_progress_bars : bool, optional</span>
-<span class="sd">        Whether to show progress bars.</span>
+<span class="sd">        Show a tqdm bar over chunks (only when chunking is active and no</span>
+<span class="sd">        external ``pbar`` is supplied).</span>
+<span class="sd">    concat_axis : int, optional</span>
+<span class="sd">        Axis to concatenate chunks along — 0 for plain samples, 1 when</span>
+<span class="sd">        the sampler returns intermediates with a leading time axis (see</span>
+<span class="sd">        :func:`_sample_concat_axis`).</span>
+<span class="sd">    sampler_kwargs : dict, optional</span>
+<span class="sd">        Extra keyword arguments forwarded to every sampler call</span>
+<span class="sd">        (e.g. ``{&quot;model_extras&quot;: ...}``).</span>
+<span class="sd">    pbar : tqdm-like, optional</span>
+<span class="sd">        External progress bar; when given it is updated once per chunk</span>
+<span class="sd">        and no internal bar is created (used by ``sample_batched`` for a</span>
+<span class="sd">        single bar across conditions).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    Callable</span>
-<span class="sd">        Batch sampler function.</span>
+<span class="sd">    Array</span>
+<span class="sd">        ``nsamples`` samples, concatenated along ``concat_axis``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_validate_chunk_size</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="n">sampler_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
 
-    <span class="c1"># JIT the chunk processor</span>
-    <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">process_chunk</span><span class="p">(</span><span class="n">key_batch</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a batch of keys.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">sampler_fn</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ncond</span><span class="p">))(</span><span class="n">key_batch</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chunk_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chunk_size</span> <span class="o">&gt;=</span> <span class="n">nsamples</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample in batches with optional progress bar.&quot;&quot;&quot;</span>
-        <span class="n">n_samples</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">n_chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">nsamples</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span>
 
-        <span class="c1"># Calculate total chunks for tqdm</span>
-        <span class="c1"># We use ceil division to handle remainders</span>
-        <span class="n">n_chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_samples</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+    <span class="n">own_bar</span> <span class="o">=</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">show_progress_bars</span>
+    <span class="k">if</span> <span class="n">own_bar</span><span class="p">:</span>
+        <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Using a tqdm loop</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">remaining</span> <span class="o">=</span> <span class="n">nsamples</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">):</span>
+        <span class="n">n_i</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">remaining</span><span class="p">)</span>
+        <span class="n">remaining</span> <span class="o">-=</span> <span class="n">n_i</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">n_i</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># Wait for the device so the progress bar is accurate and host</span>
+        <span class="c1"># memory for the next chunk isn&#39;t requested while this one runs.</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">show_progress_bars</span><span class="p">:</span>
-            <span class="n">loop</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span>
-                <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">),</span>
-                <span class="n">total</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span>
-                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">loop</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">own_bar</span><span class="p">:</span>
+        <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">loop</span><span class="p">:</span>
-            <span class="n">batch_keys</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">chunk_size</span><span class="p">]</span>
-
-            <span class="n">chunk_out</span> <span class="o">=</span> <span class="n">process_chunk</span><span class="p">(</span><span class="n">batch_keys</span><span class="p">)</span>
-
-            <span class="c1"># CRITICAL: Wait for GPU to finish this chunk before updating bar</span>
-            <span class="c1"># This makes the progress bar accurate.</span>
-            <span class="n">chunk_out</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
-
-            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk_out</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">sampler</span></div>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">concat_axis</span><span class="p">)</span></div>
 
 
 
@@ -1801,25 +1848,34 @@ window.runMermaid = runMermaid;</script>
         <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
         <span class="n">nsamples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-        <span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generate samples from the trained model in batches.</span>
 
+<span class="sd">        Loops over the ``B`` conditions in ``x_o`` one at a time and, when</span>
+<span class="sd">        ``chunk_size`` is set, additionally draws each condition&#39;s samples</span>
+<span class="sd">        in memory-bounded chunks of at most ``chunk_size`` samples per</span>
+<span class="sd">        device call.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        key : jax.random.PRNGKey</span>
 <span class="sd">            Random number generator key.</span>
 <span class="sd">        x_o : array-like</span>
-<span class="sd">            Conditioning variable (e.g., observed data).</span>
+<span class="sd">            Conditioning variable (e.g., observed data), leading batch</span>
+<span class="sd">            axis of size ``B``.</span>
 <span class="sd">        nsamples : int</span>
-<span class="sd">            Number of samples to generate.</span>
+<span class="sd">            Number of samples to generate per condition.</span>
 <span class="sd">        chunk_size : int, optional</span>
-<span class="sd">            Size of each batch for sampling. Default is 50.</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws all ``nsamples`` for a condition in a single</span>
+<span class="sd">            call — identical to the historical behavior.</span>
 <span class="sd">        show_progress_bars : bool, optional</span>
-<span class="sd">            Whether to display progress bars during sampling. Default is True.</span>
+<span class="sd">            Whether to display a progress bar over the</span>
+<span class="sd">            ``B * n_chunks`` device calls. Default is True.</span>
 <span class="sd">        args : tuple</span>
 <span class="sd">            Additional positional arguments for the sampler.</span>
 <span class="sd">        kwargs : dict</span>
@@ -1830,6 +1886,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        samples : array-like</span>
 <span class="sd">            Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_validate_chunk_size</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
 
         <span class="c1"># Build the sampler once using the first condition for shape.</span>
         <span class="c1"># The sampler&#39;s JIT compilation traces model_extras by shape/dtype,</span>
@@ -1837,10 +1894,19 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># compiled function — no recompilation per condition.</span>
         <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="c1"># Retrieve the default extras that get_sampler baked in, then swap</span>
-        <span class="c1"># cond for each condition in the loop below.</span>
         <span class="n">B</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">keys_per_cond</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">chunk_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chunk_size</span> <span class="o">&gt;=</span> <span class="n">nsamples</span><span class="p">:</span>
+            <span class="n">n_chunks_per_cond</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_chunks_per_cond</span> <span class="o">=</span> <span class="p">(</span><span class="n">nsamples</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+        <span class="n">pbar</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">B</span> <span class="o">*</span> <span class="n">n_chunks_per_cond</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">show_progress_bars</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">concat_axis</span> <span class="o">=</span> <span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
@@ -1850,8 +1916,19 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span>
                 <span class="s2">&quot;cond_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span>
             <span class="p">}</span>
-            <span class="n">samples_i</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">keys_per_cond</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">extras_i</span><span class="p">)</span>
+            <span class="n">samples_i</span> <span class="o">=</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+                <span class="n">sampler</span><span class="p">,</span>
+                <span class="n">keys_per_cond</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">nsamples</span><span class="p">,</span>
+                <span class="n">chunk_size</span><span class="p">,</span>
+                <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+                <span class="n">concat_axis</span><span class="o">=</span><span class="n">concat_axis</span><span class="p">,</span>
+                <span class="n">sampler_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;model_extras&quot;</span><span class="p">:</span> <span class="n">extras_i</span><span class="p">},</span>
+                <span class="n">pbar</span><span class="o">=</span><span class="n">pbar</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">samples_i</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (nsamples, B, dim_obs, ch_obs)</span></div>
 </div>

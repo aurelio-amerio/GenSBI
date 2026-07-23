@@ -885,7 +885,7 @@ batch axis &gt; 1 raises <code class="docutils literal notranslate"><span class=
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/flow_pipeline.html#ConditionalFlowPipeline.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/flow_pipeline.html#ConditionalFlowPipeline.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample" title="Link to this definition">#</a></dt>
 <dd><p>Draw posterior samples for a single conditioning observation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -896,6 +896,12 @@ size 1 (see <a class="reference internal" href="#gensbi.recipes.flow_pipeline.Co
 batch axis &gt; 1 raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
 <li><p><strong>nsamples</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of posterior samples to draw.  Default is 10 000.</p></li>
 <li><p><strong>use_ema</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), use the EMA model.</p></li>
+<li><p><strong>chunk_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of samples drawn per device call. <code class="docutils literal notranslate"><span class="pre">None</span></code>
+(default) draws everything in one call — identical to the
+historical behavior. Set it to bound memory when drawing many
+samples from a deep flow.</p></li>
+<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Show a progress bar over chunks (only when chunking is
+active). Default is True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -916,13 +922,16 @@ native structured output.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample_batched">
-<span class="sig-name descname"><span class="pre">sample_batched</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/flow_pipeline.html#ConditionalFlowPipeline.sample_batched"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample_batched" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">sample_batched</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/flow_pipeline.html#ConditionalFlowPipeline.sample_batched"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample_batched" title="Link to this definition">#</a></dt>
 <dd><p>Draw posterior samples for a batch of conditioning observations.</p>
-<p>Draws all <code class="docutils literal notranslate"><span class="pre">B</span></code> conditions in <strong>one</strong> batched autoregressive pass:
-each condition is repeated <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> times and concatenated into
-a single <code class="docutils literal notranslate"><span class="pre">(B</span> <span class="pre">*</span> <span class="pre">nsamples,</span> <span class="pre">...)</span></code> batch fed to the flow’s <code class="docutils literal notranslate"><span class="pre">sample</span></code>,
-rather than looping the single-observation sampler <code class="docutils literal notranslate"><span class="pre">B</span></code> times.
-Memory scales with the product <code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">*</span> <span class="pre">nsamples</span></code>.</p>
+<p>Each condition is repeated <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> times and concatenated
+into a single flattened <code class="docutils literal notranslate"><span class="pre">(B</span> <span class="pre">*</span> <span class="pre">nsamples,</span> <span class="pre">...)</span></code> batch. Without
+<code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> the whole batch runs in <strong>one</strong> autoregressive
+pass (memory scales with <code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">*</span> <span class="pre">nsamples</span></code>); with <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code>
+the flattened batch is sliced into pieces of at most
+<code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> rows per <code class="docutils literal notranslate"><span class="pre">flow.sample</span></code> call — chunk boundaries
+may fall inside a condition, which is fine because every row is
+independent.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -934,23 +943,22 @@ cond: <code class="docutils literal notranslate"><span class="pre">(B,)</span> <
 <li><p><strong>nsamples</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of posterior samples per observation.  Default is
 10 000.</p></li>
 <li><p><strong>use_ema</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), use the EMA model.</p></li>
+<li><p><strong>chunk_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of rows of the flattened <code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">*</span> <span class="pre">nsamples</span></code>
+batch per device call. <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) keeps the
+historical single-pass behavior.</p></li>
+<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Show a progress bar over chunks (only when chunking is
+active). Default is True.</p></li>
 <li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Extra keyword arguments accepted for interface compatibility
-and silently ignored (e.g. <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> and
-<code class="docutils literal notranslate"><span class="pre">show_progress_bars</span></code> from
+and ignored with a warning (e.g. solver arguments from
 <a class="reference internal" href="../pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline" title="gensbi.recipes.pipeline.AbstractPipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractPipeline</span></code></a>).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>samples</strong> – Posterior samples of shape <code class="docutils literal notranslate"><span class="pre">(nsamples,</span> <span class="pre">B,</span> <span class="pre">dim_obs,</span> <span class="pre">1)</span></code> for the
 tabular default (<code class="docutils literal notranslate"><span class="pre">C</span> <span class="pre">=</span> <span class="pre">1</span></code>), or <code class="docutils literal notranslate"><span class="pre">(nsamples,</span> <span class="pre">B,</span> <span class="pre">dim_obs,</span> <span class="pre">C)</span></code> for
-<code class="docutils literal notranslate"><span class="pre">ch_obs</span> <span class="pre">=</span> <span class="pre">C</span></code> — the channel axis is always carried for a
-vector-modeled variable regardless of <code class="docutils literal notranslate"><span class="pre">structured_cond</span></code> (a
-structured condition changes only <code class="docutils literal notranslate"><span class="pre">x_o</span></code>’s expected shape, not
-the modeled variable’s). When <code class="docutils literal notranslate"><span class="pre">structured_obs=True</span></code>, samples
-instead have shape <code class="docutils literal notranslate"><span class="pre">(nsamples,</span> <span class="pre">B)</span> <span class="pre">+</span> <span class="pre">per_obs_shape</span></code>, the
-model’s native structured output. In both cases <code class="docutils literal notranslate"><span class="pre">out[:,</span> <span class="pre">i]</span></code>
-is the samples for condition <code class="docutils literal notranslate"><span class="pre">i</span></code> — the same layout as the
-previous per-condition loop.</p>
+<code class="docutils literal notranslate"><span class="pre">ch_obs</span> <span class="pre">=</span> <span class="pre">C</span></code>. When <code class="docutils literal notranslate"><span class="pre">structured_obs=True</span></code>, samples instead
+have shape <code class="docutils literal notranslate"><span class="pre">(nsamples,</span> <span class="pre">B)</span> <span class="pre">+</span> <span class="pre">per_obs_shape</span></code>. In both cases
+<code class="docutils literal notranslate"><span class="pre">out[:,</span> <span class="pre">i]</span></code> is the samples for condition <code class="docutils literal notranslate"><span class="pre">i</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Array</p>

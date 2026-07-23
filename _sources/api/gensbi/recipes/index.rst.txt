@@ -440,7 +440,7 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, use_ema=True, **kwargs)
+   .. py:method:: sample(key, x_o, nsamples=10000, use_ema=True, chunk_size=None, show_progress_bars=True, **kwargs)
 
       
       Draw posterior samples for a single conditioning observation.
@@ -455,6 +455,14 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: If ``True`` (default), use the EMA model.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior. Set it to bound memory when drawing many
+                         samples from a deep flow.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
 
       :returns: **samples** -- Posterior samples of shape ``(nsamples, dim_obs, 1)`` for the
                 tabular default (``C = 1``), or ``(nsamples, dim_obs, C)`` for
@@ -484,16 +492,19 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample_batched(key, x_o, nsamples=10000, *, use_ema=True, **kwargs)
+   .. py:method:: sample_batched(key, x_o, nsamples=10000, *, use_ema=True, chunk_size=None, show_progress_bars=True, **kwargs)
 
       
       Draw posterior samples for a batch of conditioning observations.
 
-      Draws all ``B`` conditions in **one** batched autoregressive pass:
-      each condition is repeated ``nsamples`` times and concatenated into
-      a single ``(B * nsamples, ...)`` batch fed to the flow's ``sample``,
-      rather than looping the single-observation sampler ``B`` times.
-      Memory scales with the product ``B * nsamples``.
+      Each condition is repeated ``nsamples`` times and concatenated
+      into a single flattened ``(B * nsamples, ...)`` batch. Without
+      ``chunk_size`` the whole batch runs in **one** autoregressive
+      pass (memory scales with ``B * nsamples``); with ``chunk_size``
+      the flattened batch is sliced into pieces of at most
+      ``chunk_size`` rows per ``flow.sample`` call — chunk boundaries
+      may fall inside a condition, which is fine because every row is
+      independent.
 
       :param key: Random key for the batched sampling pass.
       :type key: jax.random.PRNGKey
@@ -507,22 +518,23 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: If ``True`` (default), use the EMA model.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of rows of the flattened ``B * nsamples``
+                         batch per device call. ``None`` (default) keeps the
+                         historical single-pass behavior.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*kwargs: Extra keyword arguments accepted for interface compatibility
-                         and silently ignored (e.g. ``chunk_size`` and
-                         ``show_progress_bars`` from
+                         and ignored with a warning (e.g. solver arguments from
                          :class:`~gensbi.recipes.pipeline.AbstractPipeline`).
       :type \*\*kwargs: dict, optional
 
       :returns: **samples** -- Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` for the
                 tabular default (``C = 1``), or ``(nsamples, B, dim_obs, C)`` for
-                ``ch_obs = C`` — the channel axis is always carried for a
-                vector-modeled variable regardless of ``structured_cond`` (a
-                structured condition changes only ``x_o``'s expected shape, not
-                the modeled variable's). When ``structured_obs=True``, samples
-                instead have shape ``(nsamples, B) + per_obs_shape``, the
-                model's native structured output. In both cases ``out[:, i]``
-                is the samples for condition ``i`` — the same layout as the
-                previous per-condition loop.
+                ``ch_obs = C``. When ``structured_obs=True``, samples instead
+                have shape ``(nsamples, B) + per_obs_shape``. In both cases
+                ``out[:, i]`` is the samples for condition ``i``.
       :rtype: Array
 
 
@@ -906,7 +918,7 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, use_ema=True, **sampler_kwargs)
+   .. py:method:: sample(key, x_o, nsamples=10000, use_ema=True, chunk_size=None, show_progress_bars=True, **sampler_kwargs)
 
       
       Draw samples from the model.
@@ -919,6 +931,14 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior. Set it to bound memory when drawing
+                         many samples from a large model.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
       :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
@@ -2392,7 +2412,7 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, use_ema=True, **sampler_kwargs)
+   .. py:method:: sample(key, x_o, nsamples=10000, use_ema=True, chunk_size=None, show_progress_bars=True, **sampler_kwargs)
 
       
       Draw samples from the model.
@@ -2405,6 +2425,13 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
       :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
@@ -2588,7 +2615,7 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False)
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=18, use_ema=True, return_intermediates=False, chunk_size=None, show_progress_bars=True)
 
       
       Draw samples from the model.
@@ -2601,6 +2628,13 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
       :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
@@ -2783,7 +2817,7 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None)
+   .. py:method:: sample(key, x_o, nsamples=10000, step_size=0.01, use_ema=True, time_grid=None, chunk_size=None, show_progress_bars=True)
 
       
       Draw samples from the model.
@@ -2796,6 +2830,13 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
       :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
@@ -2979,7 +3020,7 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=1000, use_ema=True, return_intermediates=False)
+   .. py:method:: sample(key, x_o, nsamples=10000, nsteps=1000, use_ema=True, return_intermediates=False, chunk_size=None, show_progress_bars=True)
 
       
       Draw samples from the model.
@@ -2992,6 +3033,13 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
       :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
@@ -3307,7 +3355,7 @@ Package Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, nsamples=10000, use_ema=True, **sampler_kwargs)
+   .. py:method:: sample(key, nsamples=10000, use_ema=True, chunk_size=None, show_progress_bars=True, **sampler_kwargs)
 
       
       Draw samples from the model.
@@ -3318,6 +3366,13 @@ Package Contents
       :type nsamples: int, optional
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
       :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
@@ -3348,15 +3403,24 @@ Package Contents
       
       Generate samples from the trained model in batches.
 
+      Loops over the ``B`` conditions in ``x_o`` one at a time and, when
+      ``chunk_size`` is set, additionally draws each condition's samples
+      in memory-bounded chunks of at most ``chunk_size`` samples per
+      device call.
+
       :param key: Random number generator key.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
+      :param x_o: Conditioning variable (e.g., observed data), leading batch
+                  axis of size ``B``.
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to generate per condition.
       :type nsamples: int
-      :param chunk_size: Size of each batch for sampling. Default is 50.
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws all ``nsamples`` for a condition in a single
+                         call — identical to the historical behavior.
       :type chunk_size: int, optional
-      :param show_progress_bars: Whether to display progress bars during sampling. Default is True.
+      :param show_progress_bars: Whether to display a progress bar over the
+                                 ``B * n_chunks`` device calls. Default is True.
       :type show_progress_bars: bool, optional
       :param args: Additional positional arguments for the sampler.
       :type args: tuple

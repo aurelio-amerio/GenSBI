@@ -764,9 +764,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span><span class="p">,</span> <span class="n">_chunked_draw</span><span class="p">,</span> <span class="n">_validate_chunk_size</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_require_channel</span><span class="p">,</span> <span class="n">_single_obs</span>
 
 
@@ -1047,7 +1049,8 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="ConditionalFlowPipeline.sample">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples for a single conditioning observation.</span>
 
 <span class="sd">        Parameters</span>
@@ -1062,6 +1065,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Number of posterior samples to draw.  Default is 10 000.</span>
 <span class="sd">        use_ema : bool, optional</span>
 <span class="sd">            If ``True`` (default), use the EMA model.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws everything in one call — identical to the</span>
+<span class="sd">            historical behavior. Set it to bound memory when drawing many</span>
+<span class="sd">            samples from a deep flow.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1075,20 +1086,27 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            instead have shape ``(nsamples,) + per_obs_shape``, the model&#39;s</span>
 <span class="sd">            native structured output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span></div>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+            <span class="n">sampler</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ConditionalFlowPipeline.sample_batched">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.flow_pipeline.ConditionalFlowPipeline.sample_batched">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                       <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                       <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples for a batch of conditioning observations.</span>
 
-<span class="sd">        Draws all ``B`` conditions in **one** batched autoregressive pass:</span>
-<span class="sd">        each condition is repeated ``nsamples`` times and concatenated into</span>
-<span class="sd">        a single ``(B * nsamples, ...)`` batch fed to the flow&#39;s ``sample``,</span>
-<span class="sd">        rather than looping the single-observation sampler ``B`` times.</span>
-<span class="sd">        Memory scales with the product ``B * nsamples``.</span>
+<span class="sd">        Each condition is repeated ``nsamples`` times and concatenated</span>
+<span class="sd">        into a single flattened ``(B * nsamples, ...)`` batch. Without</span>
+<span class="sd">        ``chunk_size`` the whole batch runs in **one** autoregressive</span>
+<span class="sd">        pass (memory scales with ``B * nsamples``); with ``chunk_size``</span>
+<span class="sd">        the flattened batch is sliced into pieces of at most</span>
+<span class="sd">        ``chunk_size`` rows per ``flow.sample`` call — chunk boundaries</span>
+<span class="sd">        may fall inside a condition, which is fine because every row is</span>
+<span class="sd">        independent.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1104,10 +1122,16 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            10 000.</span>
 <span class="sd">        use_ema : bool, optional</span>
 <span class="sd">            If ``True`` (default), use the EMA model.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of rows of the flattened ``B * nsamples``</span>
+<span class="sd">            batch per device call. ``None`` (default) keeps the</span>
+<span class="sd">            historical single-pass behavior.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
 <span class="sd">        **kwargs : dict, optional</span>
 <span class="sd">            Extra keyword arguments accepted for interface compatibility</span>
-<span class="sd">            and silently ignored (e.g. ``chunk_size`` and</span>
-<span class="sd">            ``show_progress_bars`` from</span>
+<span class="sd">            and ignored with a warning (e.g. solver arguments from</span>
 <span class="sd">            :class:`~gensbi.recipes.pipeline.AbstractPipeline`).</span>
 
 <span class="sd">        Returns</span>
@@ -1115,25 +1139,37 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        samples : Array</span>
 <span class="sd">            Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` for the</span>
 <span class="sd">            tabular default (``C = 1``), or ``(nsamples, B, dim_obs, C)`` for</span>
-<span class="sd">            ``ch_obs = C`` — the channel axis is always carried for a</span>
-<span class="sd">            vector-modeled variable regardless of ``structured_cond`` (a</span>
-<span class="sd">            structured condition changes only ``x_o``&#39;s expected shape, not</span>
-<span class="sd">            the modeled variable&#39;s). When ``structured_obs=True``, samples</span>
-<span class="sd">            instead have shape ``(nsamples, B) + per_obs_shape``, the</span>
-<span class="sd">            model&#39;s native structured output. In both cases ``out[:, i]``</span>
-<span class="sd">            is the samples for condition ``i`` — the same layout as the</span>
-<span class="sd">            previous per-condition loop.</span>
+<span class="sd">            ``ch_obs = C``. When ``structured_obs=True``, samples instead</span>
+<span class="sd">            have shape ``(nsamples, B) + per_obs_shape``. In both cases</span>
+<span class="sd">            ``out[:, i]`` is the samples for condition ``i``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">_warn_unused_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">_validate_chunk_size</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
         <span class="n">flow</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="k">if</span> <span class="n">use_ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
         <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">structured_cond</span><span class="p">:</span>
             <span class="n">x_o</span> <span class="o">=</span> <span class="n">_require_channel</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="s2">&quot;x_o&quot;</span><span class="p">)</span>
         <span class="n">B</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>      <span class="c1"># (B*nsamples, ...): c0 x nsamples, c1 x nsamples, ...</span>
-        <span class="n">samples</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">)</span>          <span class="c1"># (B*nsamples, dim_obs, C) — ONE batched AR pass</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (B*nsamples, ...): c0 x nsamples, c1 x nsamples, ...</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="n">B</span> <span class="o">*</span> <span class="n">nsamples</span>
+
+        <span class="k">if</span> <span class="n">chunk_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chunk_size</span> <span class="o">&gt;=</span> <span class="n">total</span><span class="p">:</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">)</span>  <span class="c1"># ONE batched AR pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">total</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span>
+            <span class="n">loop</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">show_progress_bars</span><span class="p">:</span>
+                <span class="n">loop</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">loop</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">)</span>
+            <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">loop</span><span class="p">:</span>
+                <span class="n">sl</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">chunk_size</span><span class="p">,</span> <span class="nb">min</span><span class="p">((</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">chunk_size</span><span class="p">,</span> <span class="n">total</span><span class="p">))</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">[</span><span class="n">sl</span><span class="p">])</span>
+                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span> <span class="o">+</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
-        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>             <span class="c1"># (nsamples, B, dim_obs, C)</span></div>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># (nsamples, B, dim_obs, C)</span></div>
 
 
 <div class="viewcode-block" id="ConditionalFlowPipeline.get_log_prob_fn">

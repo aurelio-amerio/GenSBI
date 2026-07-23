@@ -802,7 +802,7 @@ model that conforms to the <code class="docutils literal notranslate"><span clas
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">sampler_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/unconditional_pipeline.html#UnconditionalPipeline.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.sample" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">sampler_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/unconditional_pipeline.html#UnconditionalPipeline.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.sample" title="Link to this definition">#</a></dt>
 <dd><p>Draw samples from the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -810,6 +810,11 @@ model that conforms to the <code class="docutils literal notranslate"><span clas
 <li><p><strong>key</strong> (<em>jax.random.PRNGKey</em>) – Random key.</p></li>
 <li><p><strong>nsamples</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples. Default is 10 000.</p></li>
 <li><p><strong>use_ema</strong> (<em>bool</em><em>, </em><em>optional</em>) – Use the EMA model. Default is True.</p></li>
+<li><p><strong>chunk_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of samples drawn per device call. <code class="docutils literal notranslate"><span class="pre">None</span></code>
+(default) draws everything in one call — identical to the
+historical behavior.</p></li>
+<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Show a progress bar over chunks (only when chunking is
+active). Default is True.</p></li>
 <li><p><strong>**sampler_kwargs</strong> – Forwarded to <a class="reference internal" href="#gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.get_sampler" title="gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.get_sampler"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sampler()</span></code></a>.</p></li>
 </ul>
 </dd>
@@ -826,14 +831,22 @@ model that conforms to the <code class="docutils literal notranslate"><span clas
 <dt class="sig sig-object py" id="gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.sample_batched">
 <span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">sample_batched</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/unconditional_pipeline.html#UnconditionalPipeline.sample_batched"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.unconditional_pipeline.UnconditionalPipeline.sample_batched" title="Link to this definition">#</a></dt>
 <dd><p>Generate samples from the trained model in batches.</p>
+<p>Loops over the <code class="docutils literal notranslate"><span class="pre">B</span></code> conditions in <code class="docutils literal notranslate"><span class="pre">x_o</span></code> one at a time and, when
+<code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> is set, additionally draws each condition’s samples
+in memory-bounded chunks of at most <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> samples per
+device call.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>key</strong> (<em>jax.random.PRNGKey</em>) – Random number generator key.</p></li>
-<li><p><strong>x_o</strong> (<em>array-like</em>) – Conditioning variable (e.g., observed data).</p></li>
-<li><p><strong>nsamples</strong> (<em>int</em>) – Number of samples to generate.</p></li>
-<li><p><strong>chunk_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Size of each batch for sampling. Default is 50.</p></li>
-<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display progress bars during sampling. Default is True.</p></li>
+<li><p><strong>x_o</strong> (<em>array-like</em>) – Conditioning variable (e.g., observed data), leading batch
+axis of size <code class="docutils literal notranslate"><span class="pre">B</span></code>.</p></li>
+<li><p><strong>nsamples</strong> (<em>int</em>) – Number of samples to generate per condition.</p></li>
+<li><p><strong>chunk_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of samples drawn per device call. <code class="docutils literal notranslate"><span class="pre">None</span></code>
+(default) draws all <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> for a condition in a single
+call — identical to the historical behavior.</p></li>
+<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display a progress bar over the
+<code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">*</span> <span class="pre">n_chunks</span></code> device calls. Default is True.</p></li>
 <li><p><strong>args</strong> (<em>tuple</em>) – Additional positional arguments for the sampler.</p></li>
 <li><p><strong>kwargs</strong> (<em>dict</em>) – Additional keyword arguments for the sampler.</p></li>
 </ul>

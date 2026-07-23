@@ -662,8 +662,14 @@ See <cite>JointPipeline</cite> and <cite>ConditionalPipeline</cite> for concrete
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.pipeline._cast_state_to_target_dtypes" title="gensbi.recipes.pipeline._cast_state_to_target_dtypes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_cast_state_to_target_dtypes</span></code></a>(state, target_state)</p></td>
 <td><p>Cast <code class="docutils literal notranslate"><span class="pre">state</span></code>'s leaves to match <code class="docutils literal notranslate"><span class="pre">target_state</span></code>'s dtypes, in place.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.pipeline._get_batch_sampler" title="gensbi.recipes.pipeline._get_batch_sampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_batch_sampler</span></code></a>(sampler_fn, ncond, chunk_size[, ...])</p></td>
-<td><p>Create a batch sampler that processes samples in chunks.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.pipeline._chunked_draw" title="gensbi.recipes.pipeline._chunked_draw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_chunked_draw</span></code></a>(sampler, key, nsamples, chunk_size[, ...])</p></td>
+<td><p>Draw <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> from <code class="docutils literal notranslate"><span class="pre">sampler</span></code> in memory-bounded chunks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.pipeline._sample_concat_axis" title="gensbi.recipes.pipeline._sample_concat_axis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_sample_concat_axis</span></code></a>(sampler_kwargs)</p></td>
+<td><p>Axis carrying the sample dimension in a sampler's output.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.recipes.pipeline._validate_chunk_size" title="gensbi.recipes.pipeline._validate_chunk_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_validate_chunk_size</span></code></a>(chunk_size)</p></td>
+<td><p>Reject non-positive chunk sizes before any chunk arithmetic.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.recipes.pipeline._warn_if_not_fp32_master_weights" title="gensbi.recipes.pipeline._warn_if_not_fp32_master_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_warn_if_not_fp32_master_weights</span></code></a>(model)</p></td>
 <td><p>Warn when trainable params are not fp32 master weights.</p></td>
@@ -962,16 +968,24 @@ model. This is a thin wrapper over
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.sample_batched">
-<span class="sig-name descname"><span class="pre">sample_batched</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.sample_batched"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.sample_batched" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">sample_batched</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.sample_batched"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.sample_batched" title="Link to this definition">#</a></dt>
 <dd><p>Generate samples from the trained model in batches.</p>
+<p>Loops over the <code class="docutils literal notranslate"><span class="pre">B</span></code> conditions in <code class="docutils literal notranslate"><span class="pre">x_o</span></code> one at a time and, when
+<code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> is set, additionally draws each condition’s samples
+in memory-bounded chunks of at most <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> samples per
+device call.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>key</strong> (<em>jax.random.PRNGKey</em>) – Random number generator key.</p></li>
-<li><p><strong>x_o</strong> (<em>array-like</em>) – Conditioning variable (e.g., observed data).</p></li>
-<li><p><strong>nsamples</strong> (<em>int</em>) – Number of samples to generate.</p></li>
-<li><p><strong>chunk_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Size of each batch for sampling. Default is 50.</p></li>
-<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display progress bars during sampling. Default is True.</p></li>
+<li><p><strong>x_o</strong> (<em>array-like</em>) – Conditioning variable (e.g., observed data), leading batch
+axis of size <code class="docutils literal notranslate"><span class="pre">B</span></code>.</p></li>
+<li><p><strong>nsamples</strong> (<em>int</em>) – Number of samples to generate per condition.</p></li>
+<li><p><strong>chunk_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of samples drawn per device call. <code class="docutils literal notranslate"><span class="pre">None</span></code>
+(default) draws all <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> for a condition in a single
+call — identical to the historical behavior.</p></li>
+<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display a progress bar over the
+<code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">*</span> <span class="pre">n_chunks</span></code> device calls. Default is True.</p></li>
 <li><p><strong>args</strong> (<em>tuple</em>) – Additional positional arguments for the sampler.</p></li>
 <li><p><strong>kwargs</strong> (<em>dict</em>) – Additional keyword arguments for the sampler.</p></li>
 </ul>
@@ -1167,23 +1181,70 @@ mirrors the <code class="docutils literal notranslate"><span class="pre">arr.ast
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="gensbi.recipes.pipeline._get_batch_sampler">
-<span class="sig-prename descclassname"><span class="pre">gensbi.recipes.pipeline.</span></span><span class="sig-name descname"><span class="pre">_get_batch_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampler_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#_get_batch_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline._get_batch_sampler" title="Link to this definition">#</a></dt>
-<dd><p>Create a batch sampler that processes samples in chunks.</p>
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline._chunked_draw">
+<span class="sig-prename descclassname"><span class="pre">gensbi.recipes.pipeline.</span></span><span class="sig-name descname"><span class="pre">_chunked_draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#_chunked_draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline._chunked_draw" title="Link to this definition">#</a></dt>
+<dd><p>Draw <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> from <code class="docutils literal notranslate"><span class="pre">sampler</span></code> in memory-bounded chunks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sampler_fn</strong> (<em>Callable</em>) – Sampling function.</p></li>
-<li><p><strong>ncond</strong> (<em>int</em>) – Number of conditions.</p></li>
-<li><p><strong>chunk_size</strong> (<em>int</em>) – Size of each chunk.</p></li>
-<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to show progress bars.</p></li>
+<li><p><strong>sampler</strong> (<em>Callable</em>) – <code class="docutils literal notranslate"><span class="pre">sampler(key,</span> <span class="pre">nsamples,</span> <span class="pre">**sampler_kwargs)</span> <span class="pre">-&gt;</span> <span class="pre">Array</span></code>.</p></li>
+<li><p><strong>key</strong> (<em>jax.random.PRNGKey</em>) – Random key. With no chunking it is passed through UNCHANGED so
+the result is bit-identical to calling <code class="docutils literal notranslate"><span class="pre">sampler</span></code> directly.</p></li>
+<li><p><strong>nsamples</strong> (<em>int</em>) – Total number of samples to draw.</p></li>
+<li><p><strong>chunk_size</strong> (<em>int</em><em> or </em><em>None</em>) – Maximum samples per sampler call. <code class="docutils literal notranslate"><span class="pre">None</span></code> (or any value
+<code class="docutils literal notranslate"><span class="pre">&gt;=</span> <span class="pre">nsamples</span></code>) disables chunking.</p></li>
+<li><p><strong>show_progress_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Show a tqdm bar over chunks (only when chunking is active and no
+external <code class="docutils literal notranslate"><span class="pre">pbar</span></code> is supplied).</p></li>
+<li><p><strong>concat_axis</strong> (<em>int</em><em>, </em><em>optional</em>) – Axis to concatenate chunks along — 0 for plain samples, 1 when
+the sampler returns intermediates with a leading time axis (see
+<a class="reference internal" href="#gensbi.recipes.pipeline._sample_concat_axis" title="gensbi.recipes.pipeline._sample_concat_axis"><code class="xref py py-func docutils literal notranslate"><span class="pre">_sample_concat_axis()</span></code></a>).</p></li>
+<li><p><strong>sampler_kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Extra keyword arguments forwarded to every sampler call
+(e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;model_extras&quot;:</span> <span class="pre">...}</span></code>).</p></li>
+<li><p><strong>pbar</strong> (<em>tqdm-like</em><em>, </em><em>optional</em>) – External progress bar; when given it is updated once per chunk
+and no internal bar is created (used by <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> for a
+single bar across conditions).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Batch sampler function.</p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">nsamples</span></code> samples, concatenated along <code class="docutils literal notranslate"><span class="pre">concat_axis</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Callable</p>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline._sample_concat_axis">
+<span class="sig-prename descclassname"><span class="pre">gensbi.recipes.pipeline.</span></span><span class="sig-name descname"><span class="pre">_sample_concat_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampler_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#_sample_concat_axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline._sample_concat_axis" title="Link to this definition">#</a></dt>
+<dd><p>Axis carrying the sample dimension in a sampler’s output.</p>
+<p>Solvers stack intermediates along a leading, statically-sized time
+axis, so chunked outputs must concatenate along axis 1 instead of 0.
+Intermediates are requested either explicitly
+(<code class="docutils literal notranslate"><span class="pre">return_intermediates=True</span></code> — EDM and score-matching methods) or
+implicitly by passing a non-<code class="docutils literal notranslate"><span class="pre">None</span></code> <code class="docutils literal notranslate"><span class="pre">time_grid</span></code>
+(<code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod.build_sampler_fn</span></code> turns intermediates on for
+any explicit time grid).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sampler_kwargs</strong> (<em>dict</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline._validate_chunk_size">
+<span class="sig-prename descclassname"><span class="pre">gensbi.recipes.pipeline.</span></span><span class="sig-name descname"><span class="pre">_validate_chunk_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#_validate_chunk_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline._validate_chunk_size" title="Link to this definition">#</a></dt>
+<dd><p>Reject non-positive chunk sizes before any chunk arithmetic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>chunk_size</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1309,7 +1370,9 @@ AdamW moment accumulation and make optax.ema unable to integrate
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline._cast_state_to_target_dtypes"><code class="docutils literal notranslate"><span class="pre">_cast_state_to_target_dtypes()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline._get_batch_sampler"><code class="docutils literal notranslate"><span class="pre">_get_batch_sampler()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline._chunked_draw"><code class="docutils literal notranslate"><span class="pre">_chunked_draw()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline._sample_concat_axis"><code class="docutils literal notranslate"><span class="pre">_sample_concat_axis()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline._validate_chunk_size"><code class="docutils literal notranslate"><span class="pre">_validate_chunk_size()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline._warn_if_not_fp32_master_weights"><code class="docutils literal notranslate"><span class="pre">_warn_if_not_fp32_master_weights()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.ema_step"><code class="docutils literal notranslate"><span class="pre">ema_step()</span></code></a></li>
 </ul>

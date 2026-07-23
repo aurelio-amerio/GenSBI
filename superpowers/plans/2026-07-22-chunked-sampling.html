@@ -1,0 +1,1708 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Chunked Sampling Implementation Plan &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/plans/2026-07-22-chunked-sampling';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Chunked Sampling Implementation Plan</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="chunked-sampling-implementation-plan">
+<h1>Chunked Sampling Implementation Plan<a class="headerlink" href="#chunked-sampling-implementation-plan" title="Link to this heading">#</a></h1>
+<blockquote>
+<div><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">[</span> <span class="pre">]</span></code>) syntax for tracking.</p>
+</div></blockquote>
+<p><strong>Goal:</strong> Add memory-bounded chunking over the <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> dimension to <code class="docutils literal notranslate"><span class="pre">sample()</span></code> and <code class="docutils literal notranslate"><span class="pre">sample_batched()</span></code> across all pipelines, replacing the dead <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> parameter and the unused <code class="docutils literal notranslate"><span class="pre">_get_batch_sampler</span></code> helper.</p>
+<p><strong>Architecture:</strong> One shared helper <code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code> in <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/pipeline.py</span></code> wraps the existing <code class="docutils literal notranslate"><span class="pre">(key,</span> <span class="pre">nsamples)</span> <span class="pre">-&gt;</span> <span class="pre">samples</span></code> sampler closures. Every <code class="docutils literal notranslate"><span class="pre">sample()</span></code> delegates its final draw to it; <code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sample_batched</span></code> keeps its outer per-condition loop and calls the helper per condition; <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline.sample_batched</span></code> chunks its flattened <code class="docutils literal notranslate"><span class="pre">B*nsamples</span></code> autoregressive batch directly. Spec: <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-22-chunked-sampling-design.md</span></code>.</p>
+<p><strong>Tech Stack:</strong> JAX, flax.nnx, tqdm, pytest (CPU: test files set <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span></code>).</p>
+<section id="global-constraints">
+<h2>Global Constraints<a class="headerlink" href="#global-constraints" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Backward compatibility is bit-exact:</strong> <code class="docutils literal notranslate"><span class="pre">chunk_size=None</span></code> (the new default everywhere) or <code class="docutils literal notranslate"><span class="pre">chunk_size</span> <span class="pre">&gt;=</span> <span class="pre">nsamples</span></code> must call the sampler ONCE with the ORIGINAL key — identical to current behavior. Never split the key on that path.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> means “maximum samples per device call” in every pipeline. Default <code class="docutils literal notranslate"><span class="pre">None</span></code> = no chunking.</p></li>
+<li><p>Intermediates detection: EDM/SM methods use an explicit <code class="docutils literal notranslate"><span class="pre">return_intermediates=True</span></code> kwarg; FlowMatchingMethod turns intermediates ON whenever <code class="docutils literal notranslate"><span class="pre">time_grid</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">None</span></code> (see <code class="docutils literal notranslate"><span class="pre">src/gensbi/core/flow_matching.py:253-257</span></code>). Both must map to <code class="docutils literal notranslate"><span class="pre">concat_axis=1</span></code>.</p></li>
+<li><p>Run tests with the mamba <code class="docutils literal notranslate"><span class="pre">gensbi</span></code> environment (NOT <code class="docutils literal notranslate"><span class="pre">.venv</span></code>): <code class="docutils literal notranslate"><span class="pre">mamba</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">...</span></code> (if <code class="docutils literal notranslate"><span class="pre">mamba</span> <span class="pre">run</span></code> is unavailable, use <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">run</span> <span class="pre">-n</span> <span class="pre">gensbi</span></code>). Working dir: <code class="docutils literal notranslate"><span class="pre">/lhome/ific/a/aamerio/data/github/GenSBI</span></code>.</p></li>
+<li><p>Keep <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> small (≤ 30) in tests — everything runs on CPU.</p></li>
+<li><p>Commit after every task. Branch: create <code class="docutils literal notranslate"><span class="pre">chunked-sampling</span></code> off <code class="docutils literal notranslate"><span class="pre">main</span></code> before Task 1 (<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-b</span> <span class="pre">chunked-sampling</span></code>). Do NOT touch the unrelated dirty file <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/flux1/model.py</span></code>.</p></li>
+</ul>
+<hr class="docutils" />
+<section id="task-1-chunked-draw-sample-concat-axis-helpers-delete-get-batch-sampler">
+<h3>Task 1: <code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code> + <code class="docutils literal notranslate"><span class="pre">_sample_concat_axis</span></code> helpers; delete <code class="docutils literal notranslate"><span class="pre">_get_batch_sampler</span></code><a class="headerlink" href="#task-1-chunked-draw-sample-concat-axis-helpers-delete-get-batch-sampler" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/pipeline.py:136-201</span></code> (replace <code class="docutils literal notranslate"><span class="pre">_get_batch_sampler</span></code> with the two new helpers)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_pipeline_edge_cases.py:16</span></code> (drop stale import) and <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_pipeline_edge_cases.py:376-391</span></code> (delete obsolete test)</p></li>
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">_chunked_draw(sampler,</span> <span class="pre">key,</span> <span class="pre">nsamples,</span> <span class="pre">chunk_size,</span> <span class="pre">show_progress_bars=True,</span> <span class="pre">concat_axis=0,</span> <span class="pre">sampler_kwargs=None,</span> <span class="pre">pbar=None)</span> <span class="pre">-&gt;</span> <span class="pre">Array</span></code> and <code class="docutils literal notranslate"><span class="pre">_sample_concat_axis(sampler_kwargs:</span> <span class="pre">dict)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code>, both importable as <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">gensbi.recipes.pipeline</span> <span class="pre">import</span> <span class="pre">_chunked_draw,</span> <span class="pre">_sample_concat_axis</span></code>. All later tasks consume these.</p></li>
+<li><p>Consumes: nothing new. <code class="docutils literal notranslate"><span class="pre">sampler</span></code> is any closure with signature <code class="docutils literal notranslate"><span class="pre">sampler(key,</span> <span class="pre">nsamples,</span> <span class="pre">**kwargs)</span> <span class="pre">-&gt;</span> <span class="pre">Array</span></code>.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Create <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code> with this exact content (the pipeline-level fixtures at the bottom are used by Tasks 2–4; include them now so the file is complete):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Tests for nsamples-chunked sampling (spec 2026-07-22-chunked-sampling-design).&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">grain</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mock_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">MockConditionalModel</span><span class="p">,</span> <span class="n">MockJointModel</span><span class="p">,</span> <span class="n">MockUnconditionalModel</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConditionalPipeline</span><span class="p">,</span>
+    <span class="n">JointPipeline</span><span class="p">,</span>
+    <span class="n">UnconditionalPipeline</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span><span class="p">,</span> <span class="n">DiffusionEDMMethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">_chunked_draw</span><span class="p">,</span> <span class="n">_sample_concat_axis</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Unit tests: _chunked_draw with a spy sampler</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_SpySampler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Records every call; returns constant arrays of the requested size.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">extra_leading</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">=</span> <span class="p">[]</span>          <span class="c1"># list of (key, n, kwargs)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra_leading</span> <span class="o">=</span> <span class="n">extra_leading</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_leading</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calls</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_leading</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calls</span><span class="p">)))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_chunked_draw_none_is_single_call_with_original_key</span><span class="p">():</span>
+    <span class="n">spy</span> <span class="o">=</span> <span class="n">_SpySampler</span><span class="p">()</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_chunked_draw</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">spy</span><span class="o">.</span><span class="n">calls</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">called_key</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">spy</span><span class="o">.</span><span class="n">calls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">100</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">called_key</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>  <span class="c1"># bit-identical path: original key</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_chunked_draw_large_chunk_is_single_call_with_original_key</span><span class="p">():</span>
+    <span class="n">spy</span> <span class="o">=</span> <span class="n">_SpySampler</span><span class="p">()</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_chunked_draw</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">spy</span><span class="o">.</span><span class="n">calls</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">spy</span><span class="o">.</span><span class="n">calls</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">key</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_chunked_draw_remainder_chunks</span><span class="p">():</span>
+    <span class="n">spy</span> <span class="o">=</span> <span class="n">_SpySampler</span><span class="p">()</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_chunked_draw</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span>
+                        <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">spy</span><span class="o">.</span><span class="n">calls</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+    <span class="c1"># each chunk got a distinct key</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">spy</span><span class="o">.</span><span class="n">calls</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">))</span> <span class="o">==</span> <span class="mi">3</span>
+    <span class="c1"># chunks were concatenated in call order along axis 0</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">out</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">10</span><span class="p">:</span><span class="mi">20</span><span class="p">]</span> <span class="o">==</span> <span class="mf">2.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">20</span><span class="p">:]</span> <span class="o">==</span> <span class="mf">3.0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_chunked_draw_concat_axis_1_for_intermediates</span><span class="p">():</span>
+    <span class="n">spy</span> <span class="o">=</span> <span class="n">_SpySampler</span><span class="p">(</span><span class="n">extra_leading</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>  <span class="c1"># (n_steps=4, n, 3, 1)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_chunked_draw</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span>
+                        <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">concat_axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_chunked_draw_forwards_sampler_kwargs</span><span class="p">():</span>
+    <span class="n">spy</span> <span class="o">=</span> <span class="n">_SpySampler</span><span class="p">()</span>
+    <span class="n">extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;model_extras&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cond&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))}}</span>
+    <span class="n">_chunked_draw</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span>
+                  <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sampler_kwargs</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">extras</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">spy</span><span class="o">.</span><span class="n">calls</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_chunked_draw_external_pbar_updated_per_chunk</span><span class="p">():</span>
+    <span class="k">class</span><span class="w"> </span><span class="nc">_FakeBar</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="n">k</span>
+
+    <span class="n">spy</span> <span class="o">=</span> <span class="n">_SpySampler</span><span class="p">()</span>
+    <span class="n">bar</span> <span class="o">=</span> <span class="n">_FakeBar</span><span class="p">()</span>
+    <span class="n">_chunked_draw</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span>
+                  <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pbar</span><span class="o">=</span><span class="n">bar</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">bar</span><span class="o">.</span><span class="n">n</span> <span class="o">==</span> <span class="mi">3</span>
+    <span class="n">bar2</span> <span class="o">=</span> <span class="n">_FakeBar</span><span class="p">()</span>
+    <span class="n">_chunked_draw</span><span class="p">(</span><span class="n">spy</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="mi">25</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pbar</span><span class="o">=</span><span class="n">bar2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">bar2</span><span class="o">.</span><span class="n">n</span> <span class="o">==</span> <span class="mi">1</span>  <span class="c1"># single-call path still ticks an external bar once</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_concat_axis</span><span class="p">():</span>
+    <span class="k">assert</span> <span class="n">_sample_concat_axis</span><span class="p">({})</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="n">_sample_concat_axis</span><span class="p">({</span><span class="s2">&quot;return_intermediates&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="n">_sample_concat_axis</span><span class="p">({</span><span class="s2">&quot;return_intermediates&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="c1"># FlowMatchingMethod: any non-None time_grid turns intermediates on</span>
+    <span class="k">assert</span> <span class="n">_sample_concat_axis</span><span class="p">({</span><span class="s2">&quot;time_grid&quot;</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)})</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="n">_sample_concat_axis</span><span class="p">({</span><span class="s2">&quot;time_grid&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span> <span class="o">==</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_get_batch_sampler_removed</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">_get_batch_sampler</span>  <span class="c1"># noqa: F401</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Shared pipeline fixtures (used by pipeline-level tests, Tasks 2-4)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">dim_obs</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">dim_cond</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">dim_joint</span> <span class="o">=</span> <span class="n">dim_obs</span> <span class="o">+</span> <span class="n">dim_cond</span>
+
+<span class="n">_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">_theta</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">_key</span><span class="p">,</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">_x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">_key</span><span class="p">,</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">_data</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">_theta</span><span class="p">,</span> <span class="n">_x</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_obs_cond</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">d</span><span class="p">[:,</span> <span class="p">:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">d</span><span class="p">[:,</span> <span class="n">dim_obs</span><span class="p">:]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ds_joint</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">grain</span><span class="o">.</span><span class="n">MapDataset</span><span class="o">.</span><span class="n">source</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">arr</span><span class="p">))</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">to_iter_dataset</span><span class="p">()</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="mi">16</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ds_cond</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_ds_joint</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_split_obs_cond</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">make_cond_pipeline</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
+        <span class="n">MockConditionalModel</span><span class="p">(),</span>
+        <span class="n">_ds_cond</span><span class="p">(</span><span class="n">_data</span><span class="p">[:</span><span class="mi">160</span><span class="p">]),</span>
+        <span class="n">_ds_cond</span><span class="p">(</span><span class="n">_data</span><span class="p">[</span><span class="mi">160</span><span class="p">:]),</span>
+        <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">method</span> <span class="ow">or</span> <span class="n">FlowMatchingMethod</span><span class="p">(),</span>
+        <span class="n">ch_obs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">ch_cond</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">model</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">pipeline</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run the unit tests to verify they fail</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lhome/ific/a/aamerio/data/github/GenSBI
+mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">ImportError:</span> <span class="pre">cannot</span> <span class="pre">import</span> <span class="pre">name</span> <span class="pre">'_chunked_draw'</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement the helpers</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/pipeline.py</span></code>, DELETE the whole <code class="docutils literal notranslate"><span class="pre">_get_batch_sampler</span></code> function (lines 136–201, from <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">_get_batch_sampler(</span></code> through <code class="docutils literal notranslate">&#160;&#160;&#160; <span class="pre">return</span> <span class="pre">sampler</span></code> inclusive) and put this in its place:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Axis carrying the sample dimension in a sampler&#39;s output.</span>
+
+<span class="sd">    Solvers stack intermediates along a leading, statically-sized time</span>
+<span class="sd">    axis, so chunked outputs must concatenate along axis 1 instead of 0.</span>
+<span class="sd">    Intermediates are requested either explicitly</span>
+<span class="sd">    (``return_intermediates=True`` — EDM and score-matching methods) or</span>
+<span class="sd">    implicitly by passing a non-``None`` ``time_grid``</span>
+<span class="sd">    (``FlowMatchingMethod.build_sampler_fn`` turns intermediates on for</span>
+<span class="sd">    any explicit time grid).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sampler_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_intermediates&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">sampler_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;time_grid&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_chunked_draw</span><span class="p">(</span>
+    <span class="n">sampler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="n">nsamples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">show_progress_bars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">concat_axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">sampler_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">pbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Draw ``nsamples`` from ``sampler`` in memory-bounded chunks.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sampler : Callable</span>
+<span class="sd">        ``sampler(key, nsamples, **sampler_kwargs) -&gt; Array``.</span>
+<span class="sd">    key : jax.random.PRNGKey</span>
+<span class="sd">        Random key. With no chunking it is passed through UNCHANGED so</span>
+<span class="sd">        the result is bit-identical to calling ``sampler`` directly.</span>
+<span class="sd">    nsamples : int</span>
+<span class="sd">        Total number of samples to draw.</span>
+<span class="sd">    chunk_size : int or None</span>
+<span class="sd">        Maximum samples per sampler call. ``None`` (or any value</span>
+<span class="sd">        ``&gt;= nsamples``) disables chunking.</span>
+<span class="sd">    show_progress_bars : bool, optional</span>
+<span class="sd">        Show a tqdm bar over chunks (only when chunking is active and no</span>
+<span class="sd">        external ``pbar`` is supplied).</span>
+<span class="sd">    concat_axis : int, optional</span>
+<span class="sd">        Axis to concatenate chunks along — 0 for plain samples, 1 when</span>
+<span class="sd">        the sampler returns intermediates with a leading time axis (see</span>
+<span class="sd">        :func:`_sample_concat_axis`).</span>
+<span class="sd">    sampler_kwargs : dict, optional</span>
+<span class="sd">        Extra keyword arguments forwarded to every sampler call</span>
+<span class="sd">        (e.g. ``{&quot;model_extras&quot;: ...}``).</span>
+<span class="sd">    pbar : tqdm-like, optional</span>
+<span class="sd">        External progress bar; when given it is updated once per chunk</span>
+<span class="sd">        and no internal bar is created (used by ``sample_batched`` for a</span>
+<span class="sd">        single bar across conditions).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Array</span>
+<span class="sd">        ``nsamples`` samples, concatenated along ``concat_axis``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="n">sampler_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">chunk_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chunk_size</span> <span class="o">&gt;=</span> <span class="n">nsamples</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="n">n_chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">nsamples</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span>
+
+    <span class="n">own_bar</span> <span class="o">=</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">show_progress_bars</span>
+    <span class="k">if</span> <span class="n">own_bar</span><span class="p">:</span>
+        <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">n_chunks</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">remaining</span> <span class="o">=</span> <span class="n">nsamples</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">):</span>
+        <span class="n">n_i</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">remaining</span><span class="p">)</span>
+        <span class="n">remaining</span> <span class="o">-=</span> <span class="n">n_i</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">n_i</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># Wait for the device so the progress bar is accurate and host</span>
+        <span class="c1"># memory for the next chunk isn&#39;t requested while this one runs.</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">own_bar</span><span class="p">:</span>
+        <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">concat_axis</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then in <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_pipeline_edge_cases.py</span></code>:</p>
+<ul class="simple">
+<li><p>Delete line 16: <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">gensbi.recipes.pipeline</span> <span class="pre">import</span> <span class="pre">_get_batch_sampler</span></code></p></li>
+<li><p>Delete the whole function <code class="docutils literal notranslate"><span class="pre">test_get_batch_sampler_no_progress_bars</span></code> (lines 376–391, from <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">test_get_batch_sampler_no_progress_bars():</span></code> through <code class="docutils literal notranslate">&#160;&#160;&#160; <span class="pre">assert</span> <span class="pre">result.shape</span> <span class="pre">==</span> <span class="pre">(n_samples,</span> <span class="pre">ncond,</span> <span class="pre">1)</span></code> inclusive).</p></li>
+<li><p>[ ] <strong>Step 4: Run the tests to verify they pass</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>tests/recipes/test_pipeline_edge_cases.py<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: all PASS (edge-cases file no longer references the deleted helper).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/pipeline.py<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>tests/recipes/test_pipeline_edge_cases.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add _chunked_draw/_sample_concat_axis, drop unused _get_batch_sampler&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-2-rewire-abstractpipeline-sample-batched">
+<h3>Task 2: Rewire <code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sample_batched</span></code><a class="headerlink" href="#task-2-rewire-abstractpipeline-sample-batched" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/pipeline.py:905-963</span></code> (the <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> method)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code>, <code class="docutils literal notranslate"><span class="pre">_sample_concat_axis</span></code> (Task 1); <code class="docutils literal notranslate"><span class="pre">make_cond_pipeline</span></code> fixture (Task 1’s test file).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sample_batched(self,</span> <span class="pre">key,</span> <span class="pre">x_o,</span> <span class="pre">nsamples,</span> <span class="pre">*args,</span> <span class="pre">chunk_size=None,</span> <span class="pre">show_progress_bars=True,</span> <span class="pre">**kwargs)</span></code> — same output contract as before: <code class="docutils literal notranslate"><span class="pre">(nsamples,</span> <span class="pre">B,</span> <span class="pre">dim_obs,</span> <span class="pre">ch_obs)</span></code>.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># AbstractPipeline.sample_batched: per-condition loop + nsamples chunking</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_batched_chunked_shape_and_default_equivalence</span><span class="p">():</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_cond_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">ref</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">chunked</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                      <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">chunked</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">chunked</span><span class="p">))</span>
+
+    <span class="c1"># chunk_size &gt;= nsamples short-circuits to the unchunked path:</span>
+    <span class="c1"># bit-identical to chunk_size=None with the same key</span>
+    <span class="n">big</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                  <span class="n">chunk_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_batched_chunk_size_default_is_none</span><span class="p">():</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">AbstractPipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;chunk_size&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_batched_progress_bar_smoke</span><span class="p">():</span>
+    <span class="c1"># progress-bar branch must not crash (tqdm writes to stderr)</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_cond_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                                  <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                                  <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Add <code class="docutils literal notranslate"><span class="pre">AbstractPipeline</span></code> to the existing import in the test file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">_chunked_draw</span><span class="p">,</span> <span class="n">_sample_concat_axis</span><span class="p">,</span> <span class="n">AbstractPipeline</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>-k<span class="w"> </span>sample_batched<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">test_sample_batched_chunk_size_default_is_none</span></code> fails (<code class="docutils literal notranslate"><span class="pre">default</span> <span class="pre">is</span> <span class="pre">50</span></code>), the equivalence test fails only if the implementation errors (it currently ignores <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code>, so it may pass — the signature test is the true red here).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Replace the <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> body</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/pipeline.py</span></code>, replace the whole <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> method (lines 905–963) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">nsamples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">chunk_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate samples from the trained model in batches.</span>
+
+<span class="sd">        Loops over the ``B`` conditions in ``x_o`` one at a time and, when</span>
+<span class="sd">        ``chunk_size`` is set, additionally draws each condition&#39;s samples</span>
+<span class="sd">        in memory-bounded chunks of at most ``chunk_size`` samples per</span>
+<span class="sd">        device call.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random number generator key.</span>
+<span class="sd">        x_o : array-like</span>
+<span class="sd">            Conditioning variable (e.g., observed data), leading batch</span>
+<span class="sd">            axis of size ``B``.</span>
+<span class="sd">        nsamples : int</span>
+<span class="sd">            Number of samples to generate per condition.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws all ``nsamples`` for a condition in a single</span>
+<span class="sd">            call — identical to the historical behavior.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Whether to display a progress bar over the</span>
+<span class="sd">            ``B * n_chunks`` device calls. Default is True.</span>
+<span class="sd">        args : tuple</span>
+<span class="sd">            Additional positional arguments for the sampler.</span>
+<span class="sd">        kwargs : dict</span>
+<span class="sd">            Additional keyword arguments for the sampler.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : array-like</span>
+<span class="sd">            Generated samples of shape (nsamples, batch_size_cond, dim_obs, ch_obs).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Build the sampler once using the first condition for shape.</span>
+        <span class="c1"># The sampler&#39;s JIT compilation traces model_extras by shape/dtype,</span>
+        <span class="c1"># so calling it with different cond values (same shape) reuses the</span>
+        <span class="c1"># compiled function — no recompilation per condition.</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">B</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">keys_per_cond</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">chunk_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chunk_size</span> <span class="o">&gt;=</span> <span class="n">nsamples</span><span class="p">:</span>
+            <span class="n">n_chunks_per_cond</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_chunks_per_cond</span> <span class="o">=</span> <span class="p">(</span><span class="n">nsamples</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+        <span class="n">pbar</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">B</span> <span class="o">*</span> <span class="n">n_chunks_per_cond</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">show_progress_bars</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">concat_axis</span> <span class="o">=</span> <span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
+            <span class="n">cond_i</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">extras_i</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;cond&quot;</span><span class="p">:</span> <span class="n">cond_i</span><span class="p">,</span>
+                <span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span>
+                <span class="s2">&quot;cond_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">samples_i</span> <span class="o">=</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+                <span class="n">sampler</span><span class="p">,</span>
+                <span class="n">keys_per_cond</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">nsamples</span><span class="p">,</span>
+                <span class="n">chunk_size</span><span class="p">,</span>
+                <span class="n">concat_axis</span><span class="o">=</span><span class="n">concat_axis</span><span class="p">,</span>
+                <span class="n">sampler_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;model_extras&quot;</span><span class="p">:</span> <span class="n">extras_i</span><span class="p">},</span>
+                <span class="n">pbar</span><span class="o">=</span><span class="n">pbar</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">samples_i</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (nsamples, B, dim_obs, ch_obs)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>-v
+mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_solver_edm_pipelines.py<span class="w"> </span>tests/recipes/test_pipeline_edge_cases.py<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: all PASS (the EDM sample_batched tests exercise the <code class="docutils literal notranslate"><span class="pre">model_extras</span></code> swap path and must be unaffected).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/pipeline.py<span class="w"> </span>tests/recipes/test_chunked_sampling.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: nsamples chunking in AbstractPipeline.sample_batched (chunk_size finally live)&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-3-chunking-in-conditionalpipeline-sample-and-unconditionalpipeline-sample">
+<h3>Task 3: Chunking in <code class="docutils literal notranslate"><span class="pre">ConditionalPipeline.sample</span></code> and <code class="docutils literal notranslate"><span class="pre">UnconditionalPipeline.sample</span></code><a class="headerlink" href="#task-3-chunking-in-conditionalpipeline-sample-and-unconditionalpipeline-sample" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/conditional_pipeline.py:258-281</span></code> (<code class="docutils literal notranslate"><span class="pre">sample</span></code>)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/unconditional_pipeline.py:190-210</span></code> (<code class="docutils literal notranslate"><span class="pre">sample</span></code>)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code>, <code class="docutils literal notranslate"><span class="pre">_sample_concat_axis</span></code> from <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.pipeline</span></code> (Task 1).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">ConditionalPipeline.sample(self,</span> <span class="pre">key,</span> <span class="pre">x_o,</span> <span class="pre">nsamples=10_000,</span> <span class="pre">use_ema=True,</span> <span class="pre">chunk_size=None,</span> <span class="pre">show_progress_bars=True,</span> <span class="pre">**sampler_kwargs)</span></code>; <code class="docutils literal notranslate"><span class="pre">UnconditionalPipeline.sample(self,</span> <span class="pre">key,</span> <span class="pre">nsamples=10_000,</span> <span class="pre">use_ema=True,</span> <span class="pre">chunk_size=None,</span> <span class="pre">show_progress_bars=True,</span> <span class="pre">**sampler_kwargs)</span></code>. Return contracts unchanged.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># sample(): conditional + unconditional</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_conditional_sample_chunked_shape</span><span class="p">():</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_cond_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                          <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                          <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_conditional_sample_chunked_bit_identical_when_not_chunking</span><span class="p">():</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_cond_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">big</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">chunk_size</span><span class="o">=</span><span class="mi">999</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_conditional_sample_chunked_with_edm_intermediates</span><span class="p">():</span>
+    <span class="c1"># EDM + return_intermediates: output (n_steps, nsamples, dim, ch);</span>
+    <span class="c1"># chunks must concatenate along the SAMPLE axis (1), not the time axis.</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_cond_pipeline</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">DiffusionEDMMethod</span><span class="p">(</span><span class="n">sde</span><span class="o">=</span><span class="s2">&quot;EDM&quot;</span><span class="p">))</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+                          <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+                          <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">ref</span><span class="o">.</span><span class="n">shape</span>          <span class="c1"># same (n_steps, 9, dim_obs, 2)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span>               <span class="c1"># sample axis grew to nsamples</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">4</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_conditional_sample_chunked_with_fm_time_grid_intermediates</span><span class="p">():</span>
+    <span class="c1"># FlowMatchingMethod: a non-None time_grid implicitly enables</span>
+    <span class="c1"># intermediates (core/flow_matching.py:253-257).</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_cond_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">tg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+                          <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">tg</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+                          <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">tg</span><span class="p">,</span>
+                          <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">ref</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_unconditional_sample_chunked_shape</span><span class="p">():</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">UnconditionalPipeline</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">MockUnconditionalModel</span><span class="p">(),</span>
+        <span class="n">train_dataset</span><span class="o">=</span><span class="n">_ds_joint</span><span class="p">(</span><span class="n">_data</span><span class="p">[:</span><span class="mi">160</span><span class="p">]),</span>
+        <span class="n">val_dataset</span><span class="o">=</span><span class="n">_ds_joint</span><span class="p">(</span><span class="n">_data</span><span class="p">[</span><span class="mi">160</span><span class="p">:]),</span>
+        <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_joint</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
+        <span class="n">ch_obs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">model</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dim_joint</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;conditional_sample or unconditional_sample&quot;</span><span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">TypeError:</span> <span class="pre">sample()</span> <span class="pre">got</span> <span class="pre">an</span> <span class="pre">unexpected</span> <span class="pre">keyword</span> <span class="pre">argument</span> <span class="pre">'chunk_size'</span></code> (it currently lands in <code class="docutils literal notranslate"><span class="pre">**sampler_kwargs</span></code> and reaches <code class="docutils literal notranslate"><span class="pre">build_sampler_fn</span></code>, which rejects it — either way, red).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/conditional_pipeline.py</span></code>, add to the imports near the top (it already imports from <code class="docutils literal notranslate"><span class="pre">gensbi.recipes.pipeline</span></code>; extend that import or add a line):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">_chunked_draw</span><span class="p">,</span> <span class="n">_sample_concat_axis</span>
+</pre></div>
+</div>
+<p>Replace the <code class="docutils literal notranslate"><span class="pre">sample</span></code> method (lines 258–281) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        x_o : array-like</span>
+<span class="sd">            Conditioning variable.</span>
+<span class="sd">        nsamples : int, optional</span>
+<span class="sd">            Number of samples. Default is 10 000.</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            Use the EMA model. Default is True.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws everything in one call — identical to the</span>
+<span class="sd">            historical behavior. Set it to bound memory when drawing</span>
+<span class="sd">            many samples from a large model.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
+<span class="sd">        **sampler_kwargs</span>
+<span class="sd">            Forwarded to :meth:`get_sampler`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array</span>
+<span class="sd">            Samples of shape ``(nsamples, dim_obs, ch_obs)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+            <span class="n">sampler</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+            <span class="n">concat_axis</span><span class="o">=</span><span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">),</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/unconditional_pipeline.py</span></code>, extend the existing <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">gensbi.recipes.pipeline</span> <span class="pre">import</span> <span class="pre">AbstractPipeline</span></code> (line 31) to:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span><span class="p">,</span> <span class="n">_chunked_draw</span><span class="p">,</span> <span class="n">_sample_concat_axis</span>
+</pre></div>
+</div>
+<p>Replace the <code class="docutils literal notranslate"><span class="pre">sample</span></code> method (lines 190–210) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        nsamples : int, optional</span>
+<span class="sd">            Number of samples. Default is 10 000.</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            Use the EMA model. Default is True.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws everything in one call — identical to the</span>
+<span class="sd">            historical behavior.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
+<span class="sd">        **sampler_kwargs</span>
+<span class="sd">            Forwarded to :meth:`get_sampler`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array</span>
+<span class="sd">            Samples of shape ``(nsamples, dim_obs, ch_obs)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+            <span class="n">sampler</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+            <span class="n">concat_axis</span><span class="o">=</span><span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">),</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>-v
+mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_unified_conditional_pipeline.py<span class="w"> </span>tests/recipes/test_unified_unconditional_pipeline.py<span class="w"> </span>tests/recipes/test_solver_fm_pipelines.py<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: all PASS.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/conditional_pipeline.py<span class="w"> </span>src/gensbi/recipes/unconditional_pipeline.py<span class="w"> </span>tests/recipes/test_chunked_sampling.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: chunk_size in ConditionalPipeline.sample and UnconditionalPipeline.sample&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-4-chunking-in-jointpipeline-sample-simformer-passthroughs">
+<h3>Task 4: Chunking in <code class="docutils literal notranslate"><span class="pre">JointPipeline.sample</span></code> + Simformer passthroughs<a class="headerlink" href="#task-4-chunking-in-jointpipeline-sample-simformer-passthroughs" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/joint_pipeline.py:390-422</span></code> (<code class="docutils literal notranslate"><span class="pre">sample</span></code>)</p></li>
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/simformer.py</span></code> — the three <code class="docutils literal notranslate"><span class="pre">sample</span></code> overrides (<code class="docutils literal notranslate"><span class="pre">SimformerFlowPipeline.sample</span></code> ~line 262, <code class="docutils literal notranslate"><span class="pre">SimformerSMPipeline.sample</span></code> ~line 403, <code class="docutils literal notranslate"><span class="pre">SimformerDiffusionPipeline.sample</span></code> ~line 563)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code>, <code class="docutils literal notranslate"><span class="pre">_sample_concat_axis</span></code> (Task 1).</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">JointPipeline.sample(self,</span> <span class="pre">key,</span> <span class="pre">x_o,</span> <span class="pre">nsamples=10_000,</span> <span class="pre">use_ema=True,</span> <span class="pre">chunk_size=None,</span> <span class="pre">show_progress_bars=True,</span> <span class="pre">**sampler_kwargs)</span></code>; the three Simformer <code class="docutils literal notranslate"><span class="pre">sample</span></code> overrides gain explicit <code class="docutils literal notranslate"><span class="pre">chunk_size=None,</span> <span class="pre">show_progress_bars=True</span></code> parameters forwarded to <code class="docutils literal notranslate"><span class="pre">super().sample</span></code>.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_chunked_sampling.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># sample(): joint + simformer passthroughs</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">make_joint_pipeline</span><span class="p">():</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">JointPipeline</span><span class="p">(</span>
+        <span class="n">MockJointModel</span><span class="p">(),</span>
+        <span class="n">_ds_joint</span><span class="p">(</span><span class="n">_data</span><span class="p">[:</span><span class="mi">160</span><span class="p">]),</span>
+        <span class="n">_ds_joint</span><span class="p">(</span><span class="n">_data</span><span class="p">[</span><span class="mi">160</span><span class="p">:]),</span>
+        <span class="n">dim_obs</span><span class="o">=</span><span class="n">dim_obs</span><span class="p">,</span>
+        <span class="n">dim_cond</span><span class="o">=</span><span class="n">dim_cond</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
+        <span class="n">ch_obs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">&quot;structured&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">model</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">pipeline</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_joint_sample_chunked_shape</span><span class="p">():</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_joint_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                          <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                          <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_joint_sample_chunked_bit_identical_when_not_chunking</span><span class="p">():</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_joint_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">big</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">chunk_size</span><span class="o">=</span><span class="mi">999</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_simformer_sample_signatures_accept_chunk_kwargs</span><span class="p">():</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimformerFlowPipeline</span><span class="p">,</span> <span class="n">SimformerDiffusionPipeline</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.simformer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimformerSMPipeline</span>
+
+    <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="p">(</span><span class="n">SimformerFlowPipeline</span><span class="p">,</span> <span class="n">SimformerSMPipeline</span><span class="p">,</span>
+                <span class="n">SimformerDiffusionPipeline</span><span class="p">):</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">sample</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="s2">&quot;chunk_size&quot;</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">assert</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;chunk_size&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">assert</span> <span class="s2">&quot;show_progress_bars&quot;</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_simformer_flow_sample_chunked_end_to_end</span><span class="p">():</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimformerParams</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimformerFlowPipeline</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="n">SimformerParams</span><span class="p">(</span>
+        <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">val_emb_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">id_emb_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">cond_emb_dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim_joint</span><span class="o">=</span><span class="n">dim_joint</span><span class="p">,</span> <span class="n">fourier_features</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+        <span class="n">num_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mlp_ratio</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">qkv_features</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">num_hidden_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">SimformerFlowPipeline</span><span class="p">(</span>
+        <span class="n">_ds_joint</span><span class="p">(</span><span class="n">_data</span><span class="p">[:</span><span class="mi">160</span><span class="p">]),</span> <span class="n">_ds_joint</span><span class="p">(</span><span class="n">_data</span><span class="p">[</span><span class="mi">160</span><span class="p">:]),</span>
+        <span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="n">ch_obs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">model</span>
+    <span class="n">pipeline</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                          <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                          <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;joint or simformer&quot;</span><span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: FAIL — joint tests with <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> on <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code>; simformer signature test with <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code>.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/joint_pipeline.py</span></code>, extend the pipeline import (the file already has <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">gensbi.recipes.pipeline</span> <span class="pre">import</span> <span class="pre">AbstractPipeline</span></code> — check the exact line and extend it):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span><span class="p">,</span> <span class="n">_chunked_draw</span><span class="p">,</span> <span class="n">_sample_concat_axis</span>
+</pre></div>
+</div>
+<p>Replace the <code class="docutils literal notranslate"><span class="pre">sample</span></code> method (lines 390–422) with (keep the existing multi-condition warning verbatim):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        x_o : array-like</span>
+<span class="sd">            Conditioning variable.</span>
+<span class="sd">        nsamples : int, optional</span>
+<span class="sd">            Number of samples. Default is 10 000.</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            Use the EMA model. Default is True.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws everything in one call — identical to the</span>
+<span class="sd">            historical behavior.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
+<span class="sd">        **sampler_kwargs</span>
+<span class="sd">            Forwarded to :meth:`get_sampler`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array</span>
+<span class="sd">            Samples of shape ``(nsamples, dim_obs, ch_obs)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x_o_shape</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x_o_shape</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;x_o has batch dimension </span><span class="si">{</span><span class="n">x_o_shape</span><span class="si">}</span><span class="s2"> &gt; 1. &quot;</span>
+                <span class="s2">&quot;sample() draws all samples for a single condition. &quot;</span>
+                <span class="s2">&quot;To sample for multiple conditions, use sample_batched() instead.&quot;</span><span class="p">,</span>
+                <span class="ne">UserWarning</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+            <span class="n">sampler</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+            <span class="n">concat_axis</span><span class="o">=</span><span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">),</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/simformer.py</span></code>, update the three overrides (house style: explicit params, no <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">SimformerFlowPipeline.sample</span></code> (~line 262):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">time_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">x_o</span><span class="p">,</span>
+            <span class="n">nsamples</span><span class="o">=</span><span class="n">nsamples</span><span class="p">,</span>
+            <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+            <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
+            <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">},</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">SimformerSMPipeline.sample</span></code> (~line 403):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">,</span>
+        <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
+        <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">x_o</span><span class="p">,</span>
+            <span class="n">nsamples</span><span class="o">=</span><span class="n">nsamples</span><span class="p">,</span>
+            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
+            <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
+            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">},</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">SimformerDiffusionPipeline.sample</span></code> (~line 563):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">x_o</span><span class="p">,</span>
+        <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
+        <span class="n">nsteps</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span>
+        <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">x_o</span><span class="p">,</span>
+            <span class="n">nsamples</span><span class="o">=</span><span class="n">nsamples</span><span class="p">,</span>
+            <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span>
+            <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span>
+            <span class="n">return_intermediates</span><span class="o">=</span><span class="n">return_intermediates</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+            <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;edge_mask&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_mask</span><span class="p">},</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>(Before editing, confirm the current default is <code class="docutils literal notranslate"><span class="pre">nsteps=18</span></code> at that line — keep every existing default exactly as found; only the two new parameters are additions.)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_chunked_sampling.py<span class="w"> </span>-v
+mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/test_unified_joint_pipeline.py<span class="w"> </span>tests/recipes/test_pipeline_simformer.py<span class="w"> </span>tests/recipes/test_solver_sm_pipelines.py<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: all PASS.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/joint_pipeline.py<span class="w"> </span>src/gensbi/recipes/simformer.py<span class="w"> </span>tests/recipes/test_chunked_sampling.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: chunk_size in JointPipeline.sample + Simformer passthroughs&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-5-chunking-in-conditionalflowpipeline-maf-tarflow">
+<h3>Task 5: Chunking in <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline</span></code> (MAF/TarFlow)<a class="headerlink" href="#task-5-chunking-in-conditionalflowpipeline-maf-tarflow" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/flow_pipeline.py:247-330</span></code> (<code class="docutils literal notranslate"><span class="pre">sample</span></code> and <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code>) and its imports (lines 8–13)</p></li>
+<li><p>Test: <code class="docutils literal notranslate"><span class="pre">tests/normalizing_flows/test_flow_pipeline.py</span></code></p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: <code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code> (Task 1). The flow pipeline has no solver, hence no intermediates — <code class="docutils literal notranslate"><span class="pre">concat_axis</span></code> is always 0 here.</p></li>
+<li><p>Produces: <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline.sample(self,</span> <span class="pre">key,</span> <span class="pre">x_o,</span> <span class="pre">nsamples=10_000,</span> <span class="pre">use_ema=True,</span> <span class="pre">chunk_size=None,</span> <span class="pre">show_progress_bars=True,</span> <span class="pre">**kwargs)</span></code>; <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline.sample_batched(self,</span> <span class="pre">key,</span> <span class="pre">x_o,</span> <span class="pre">nsamples=10_000,</span> <span class="pre">*,</span> <span class="pre">use_ema=True,</span> <span class="pre">chunk_size=None,</span> <span class="pre">show_progress_bars=True,</span> <span class="pre">**kwargs)</span></code> chunking the flattened <code class="docutils literal notranslate"><span class="pre">B*nsamples</span></code> batch. Output shapes unchanged.</p></li>
+<li><p>[ ] <strong>Step 1: Write the failing tests</strong></p></li>
+</ul>
+<p>Append to <code class="docutils literal notranslate"><span class="pre">tests/normalizing_flows/test_flow_pipeline.py</span></code> (reuses that file’s <code class="docutils literal notranslate"><span class="pre">build_pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">_EchoFlow</span></code>, <code class="docutils literal notranslate"><span class="pre">DIM_OBS</span></code>, <code class="docutils literal notranslate"><span class="pre">DIM_COND</span></code> fixtures):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_sample_chunked_shape</span><span class="p">():</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">build_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">DIM_COND</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                      <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">DIM_OBS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_chunked_bit_identical_when_not_chunking</span><span class="p">():</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">build_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">DIM_COND</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">big</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">999</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_batched_chunked_shape_with_real_flow</span><span class="p">():</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">build_pipeline</span><span class="p">()</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+                              <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="n">DIM_COND</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="mi">7</span><span class="p">,</span>
+                              <span class="n">chunk_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">DIM_OBS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_batched_chunked_routing_across_chunk_boundaries</span><span class="p">():</span>
+    <span class="c1"># chunk_size=7 does NOT divide nsamples=5 or B*nsamples=15: chunk</span>
+    <span class="c1"># boundaries fall inside conditions. Routing condition i -&gt; column i</span>
+    <span class="c1"># must survive the flattened chunking.</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">build_pipeline</span><span class="p">()</span>
+    <span class="n">pipe</span><span class="o">.</span><span class="n">ema_model</span> <span class="o">=</span> <span class="n">_EchoFlow</span><span class="p">()</span>
+    <span class="n">B</span><span class="p">,</span> <span class="n">nsamples</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">DIM_COND</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">)])</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span>
+                              <span class="n">chunk_size</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">DIM_COND</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sample_batched_chunked_bit_identical_when_not_chunking</span><span class="p">():</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">build_pipeline</span><span class="p">()</span>
+    <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="n">DIM_COND</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+    <span class="n">big</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Run tests to verify they fail</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/normalizing_flows/test_flow_pipeline.py<span class="w"> </span>-k<span class="w"> </span>chunked<span class="w"> </span>-v
+</pre></div>
+</div>
+<p>Expected: FAIL. Note the failure mode: <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code>/<code class="docutils literal notranslate"><span class="pre">show_progress_bars</span></code> currently fall into <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> and trigger the <code class="docutils literal notranslate"><span class="pre">_warn_unused_kwargs</span></code> UserWarning while being ignored — assertions on shape may pass but <code class="docutils literal notranslate"><span class="pre">test_sample_batched_chunked_routing_across_chunk_boundaries</span></code> and the bit-identical tests still red-flag via warning-free behavior change. If any of these tests accidentally passes before implementing, tighten it rather than skipping the red step: the routing test is the load-bearing one.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Implement</strong></p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/flow_pipeline.py</span></code>, update the imports (currently lines 8–13) to add <code class="docutils literal notranslate"><span class="pre">jax</span></code> and <code class="docutils literal notranslate"><span class="pre">tqdm</span></code> and the helper:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span><span class="p">,</span> <span class="n">_chunked_draw</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_require_channel</span><span class="p">,</span> <span class="n">_single_obs</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">sample</span></code> (lines 247–275) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples for a single conditioning observation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key.</span>
+<span class="sd">        x_o : Array</span>
+<span class="sd">            Single conditioning observation carrying a leading batch axis of</span>
+<span class="sd">            size 1 (see :meth:`get_sampler` for the shape convention). A leading</span>
+<span class="sd">            batch axis &gt; 1 raises ``ValueError``.</span>
+<span class="sd">        nsamples : int, optional</span>
+<span class="sd">            Number of posterior samples to draw.  Default is 10 000.</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            If ``True`` (default), use the EMA model.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws everything in one call — identical to the</span>
+<span class="sd">            historical behavior. Set it to bound memory when drawing many</span>
+<span class="sd">            samples from a deep flow.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : Array</span>
+<span class="sd">            Posterior samples of shape ``(nsamples, dim_obs, 1)`` for the</span>
+<span class="sd">            tabular default (``C = 1``), or ``(nsamples, dim_obs, C)`` for</span>
+<span class="sd">            ``ch_obs = C`` — the channel axis is always carried for a</span>
+<span class="sd">            vector-modeled variable regardless of ``structured_cond`` (a</span>
+<span class="sd">            structured condition changes only ``x_o``&#39;s expected shape, not</span>
+<span class="sd">            the modeled variable&#39;s). When ``structured_obs=True``, samples</span>
+<span class="sd">            instead have shape ``(nsamples,) + per_obs_shape``, the model&#39;s</span>
+<span class="sd">            native structured output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+            <span class="n">sampler</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> (lines 277–330) with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample_batched</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                       <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples for a batch of conditioning observations.</span>
+
+<span class="sd">        Each condition is repeated ``nsamples`` times and concatenated</span>
+<span class="sd">        into a single flattened ``(B * nsamples, ...)`` batch. Without</span>
+<span class="sd">        ``chunk_size`` the whole batch runs in **one** autoregressive</span>
+<span class="sd">        pass (memory scales with ``B * nsamples``); with ``chunk_size``</span>
+<span class="sd">        the flattened batch is sliced into pieces of at most</span>
+<span class="sd">        ``chunk_size`` rows per ``flow.sample`` call — chunk boundaries</span>
+<span class="sd">        may fall inside a condition, which is fine because every row is</span>
+<span class="sd">        independent.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Random key for the batched sampling pass.</span>
+<span class="sd">        x_o : Array</span>
+<span class="sd">            Batch of observations. For tabular cond: shape</span>
+<span class="sd">            ``(B, dim_cond, C)`` (a bare ``(B, dim_cond)`` raises</span>
+<span class="sd">            ``ValueError`` — add a trailing channel axis). For structured</span>
+<span class="sd">            cond: ``(B,) + per_obs_shape``.</span>
+<span class="sd">        nsamples : int, optional</span>
+<span class="sd">            Number of posterior samples per observation.  Default is</span>
+<span class="sd">            10 000.</span>
+<span class="sd">        use_ema : bool, optional</span>
+<span class="sd">            If ``True`` (default), use the EMA model.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of rows of the flattened ``B * nsamples``</span>
+<span class="sd">            batch per device call. ``None`` (default) keeps the</span>
+<span class="sd">            historical single-pass behavior.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
+<span class="sd">        **kwargs : dict, optional</span>
+<span class="sd">            Extra keyword arguments accepted for interface compatibility</span>
+<span class="sd">            and ignored with a warning (e.g. solver arguments from</span>
+<span class="sd">            :class:`~gensbi.recipes.pipeline.AbstractPipeline`).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        samples : Array</span>
+<span class="sd">            Posterior samples of shape ``(nsamples, B, dim_obs, 1)`` for the</span>
+<span class="sd">            tabular default (``C = 1``), or ``(nsamples, B, dim_obs, C)`` for</span>
+<span class="sd">            ``ch_obs = C``. When ``structured_obs=True``, samples instead</span>
+<span class="sd">            have shape ``(nsamples, B) + per_obs_shape``. In both cases</span>
+<span class="sd">            ``out[:, i]`` is the samples for condition ``i``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_warn_unused_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">flow</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="k">if</span> <span class="n">use_ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+        <span class="n">x_o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">structured_cond</span><span class="p">:</span>
+            <span class="n">x_o</span> <span class="o">=</span> <span class="n">_require_channel</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="s2">&quot;x_o&quot;</span><span class="p">)</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (B*nsamples, ...): c0 x nsamples, c1 x nsamples, ...</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="n">B</span> <span class="o">*</span> <span class="n">nsamples</span>
+
+        <span class="k">if</span> <span class="n">chunk_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">chunk_size</span> <span class="o">&gt;=</span> <span class="n">total</span><span class="p">:</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">)</span>  <span class="c1"># ONE batched AR pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">total</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">n_chunks</span><span class="p">)</span>
+            <span class="n">loop</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">show_progress_bars</span><span class="p">:</span>
+                <span class="n">loop</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">loop</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Sampling&quot;</span><span class="p">)</span>
+            <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">loop</span><span class="p">:</span>
+                <span class="n">sl</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">chunk_size</span><span class="p">,</span> <span class="nb">min</span><span class="p">((</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">chunk_size</span><span class="p">,</span> <span class="n">total</span><span class="p">))</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cond</span><span class="o">=</span><span class="n">cond</span><span class="p">[</span><span class="n">sl</span><span class="p">])</span>
+                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span> <span class="o">+</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># (nsamples, B, dim_obs, C)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 4: Run tests to verify they pass</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/normalizing_flows/test_flow_pipeline.py<span class="w"> </span>-v
+mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/normalizing_flows/<span class="w"> </span>tests/models/maf/<span class="w"> </span>tests/models/tarflow/<span class="w"> </span>-q
+</pre></div>
+</div>
+<p>Expected: all PASS (MAF/TarFlow suites confirm no regression in the flows the pipeline wraps).</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 5: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/flow_pipeline.py<span class="w"> </span>tests/normalizing_flows/test_flow_pipeline.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: chunked sampling in ConditionalFlowPipeline (flattened B*nsamples chunks)&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="task-6-full-suite-verification">
+<h3>Task 6: Full-suite verification<a class="headerlink" href="#task-6-full-suite-verification" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>No source changes expected; fix regressions if any surface.</p></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul class="simple">
+<li><p>Consumes: everything above.</p></li>
+<li><p>Produces: green suite; branch ready for review/merge.</p></li>
+<li><p>[ ] <strong>Step 1: Run the full recipes + flows test surface</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lhome/ific/a/aamerio/data/github/GenSBI
+mamba<span class="w"> </span>run<span class="w"> </span>-n<span class="w"> </span>gensbi<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/recipes/<span class="w"> </span>tests/normalizing_flows/<span class="w"> </span>tests/models/<span class="w"> </span>-q
+</pre></div>
+</div>
+<p>Expected: all PASS. If anything fails, fix it (it is a regression from Tasks 1–5 — do not skip or xfail) and re-run.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Spec cross-check</strong></p></li>
+</ul>
+<p>Re-read <code class="docutils literal notranslate"><span class="pre">docs/superpowers/specs/2026-07-22-chunked-sampling-design.md</span></code> section by section and confirm each is implemented: helper semantics (§<code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code>), <code class="docutils literal notranslate"><span class="pre">sample()</span></code> surface (§<code class="docutils literal notranslate"><span class="pre">sample()</span></code> gains chunking — conditional, joint, flow, unconditional, 3 Simformer overrides), <code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sample_batched</span></code> (chunk_size live, default None, single bar over <code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">×</span> <span class="pre">n_chunks</span></code>), <code class="docutils literal notranslate"><span class="pre">FlowPipeline.sample_batched</span></code> (flattened chunking), <code class="docutils literal notranslate"><span class="pre">chunk_size</span></code> semantics (max samples per device call, None default). Fix any gap found.</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Final commit (if Step 1/2 required changes)</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>-A<span class="w"> </span>--<span class="w"> </span>src/<span class="w"> </span>tests/
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix: chunked-sampling suite regressions&quot;</span>
+</pre></div>
+</div>
+<p>Only commit if there were changes; otherwise the branch already ends on Task 5’s commit.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-constraints">Global Constraints</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-chunked-draw-sample-concat-axis-helpers-delete-get-batch-sampler">Task 1: <code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code> + <code class="docutils literal notranslate"><span class="pre">_sample_concat_axis</span></code> helpers; delete <code class="docutils literal notranslate"><span class="pre">_get_batch_sampler</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-2-rewire-abstractpipeline-sample-batched">Task 2: Rewire <code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sample_batched</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-3-chunking-in-conditionalpipeline-sample-and-unconditionalpipeline-sample">Task 3: Chunking in <code class="docutils literal notranslate"><span class="pre">ConditionalPipeline.sample</span></code> and <code class="docutils literal notranslate"><span class="pre">UnconditionalPipeline.sample</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-4-chunking-in-jointpipeline-sample-simformer-passthroughs">Task 4: Chunking in <code class="docutils literal notranslate"><span class="pre">JointPipeline.sample</span></code> + Simformer passthroughs</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-5-chunking-in-conditionalflowpipeline-maf-tarflow">Task 5: Chunking in <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline</span></code> (MAF/TarFlow)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-6-full-suite-verification">Task 6: Full-suite verification</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

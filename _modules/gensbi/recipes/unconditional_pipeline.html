@@ -785,7 +785,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.model_wrapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">_expand_dims</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPipeline</span><span class="p">,</span> <span class="n">_chunked_draw</span><span class="p">,</span> <span class="n">_sample_concat_axis</span>
 
 
 
@@ -975,7 +975,8 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="UnconditionalPipeline.sample">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/unconditional_pipeline/index.html#gensbi.recipes.UnconditionalPipeline.sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the model.</span>
 
 <span class="sd">        Parameters</span>
@@ -986,6 +987,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Number of samples. Default is 10 000.</span>
 <span class="sd">        use_ema : bool, optional</span>
 <span class="sd">            Use the EMA model. Default is True.</span>
+<span class="sd">        chunk_size : int, optional</span>
+<span class="sd">            Maximum number of samples drawn per device call. ``None``</span>
+<span class="sd">            (default) draws everything in one call — identical to the</span>
+<span class="sd">            historical behavior.</span>
+<span class="sd">        show_progress_bars : bool, optional</span>
+<span class="sd">            Show a progress bar over chunks (only when chunking is</span>
+<span class="sd">            active). Default is True.</span>
 <span class="sd">        **sampler_kwargs</span>
 <span class="sd">            Forwarded to :meth:`get_sampler`.</span>
 
@@ -995,7 +1003,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Samples of shape ``(nsamples, dim_obs, ch_obs)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">_chunked_draw</span><span class="p">(</span>
+            <span class="n">sampler</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">show_progress_bars</span><span class="o">=</span><span class="n">show_progress_bars</span><span class="p">,</span>
+            <span class="n">concat_axis</span><span class="o">=</span><span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">),</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="UnconditionalPipeline.get_log_prob_fn">

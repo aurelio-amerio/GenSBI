@@ -298,7 +298,7 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample(key, nsamples=10000, use_ema=True, **sampler_kwargs)
+   .. py:method:: sample(key, nsamples=10000, use_ema=True, chunk_size=None, show_progress_bars=True, **sampler_kwargs)
 
       
       Draw samples from the model.
@@ -309,6 +309,13 @@ Module Contents
       :type nsamples: int, optional
       :param use_ema: Use the EMA model. Default is True.
       :type use_ema: bool, optional
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws everything in one call — identical to the
+                         historical behavior.
+      :type chunk_size: int, optional
+      :param show_progress_bars: Show a progress bar over chunks (only when chunking is
+                                 active). Default is True.
+      :type show_progress_bars: bool, optional
       :param \*\*sampler_kwargs: Forwarded to :meth:`get_sampler`.
 
       :returns: Samples of shape ``(nsamples, dim_obs, ch_obs)``.
@@ -339,15 +346,24 @@ Module Contents
       
       Generate samples from the trained model in batches.
 
+      Loops over the ``B`` conditions in ``x_o`` one at a time and, when
+      ``chunk_size`` is set, additionally draws each condition's samples
+      in memory-bounded chunks of at most ``chunk_size`` samples per
+      device call.
+
       :param key: Random number generator key.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
+      :param x_o: Conditioning variable (e.g., observed data), leading batch
+                  axis of size ``B``.
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to generate per condition.
       :type nsamples: int
-      :param chunk_size: Size of each batch for sampling. Default is 50.
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws all ``nsamples`` for a condition in a single
+                         call — identical to the historical behavior.
       :type chunk_size: int, optional
-      :param show_progress_bars: Whether to display progress bars during sampling. Default is True.
+      :param show_progress_bars: Whether to display a progress bar over the
+                                 ``B * n_chunks`` device calls. Default is True.
       :type show_progress_bars: bool, optional
       :param args: Additional positional arguments for the sampler.
       :type args: tuple

@@ -99,7 +99,7 @@ posterior_samples = pipeline.sample_batched(
     key=jax.random.PRNGKey(42),
     condition=xs, 
     nsamples=1000,
-    chunk_size=20, # Process 20 observations at a time
+    chunk_size=20, # draw at most 20 samples per device call
 )
 
 # Returns: (num_posterior_samples, B, dim_obs, ch_obs)

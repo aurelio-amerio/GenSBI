@@ -33,7 +33,9 @@ Functions
 .. autoapisummary::
 
    gensbi.recipes.pipeline._cast_state_to_target_dtypes
-   gensbi.recipes.pipeline._get_batch_sampler
+   gensbi.recipes.pipeline._chunked_draw
+   gensbi.recipes.pipeline._sample_concat_axis
+   gensbi.recipes.pipeline._validate_chunk_size
    gensbi.recipes.pipeline._warn_if_not_fp32_master_weights
    gensbi.recipes.pipeline.ema_step
 
@@ -637,20 +639,29 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: sample_batched(key, x_o, nsamples, *args, chunk_size = 50, show_progress_bars=True, **kwargs)
+   .. py:method:: sample_batched(key, x_o, nsamples, *args, chunk_size = None, show_progress_bars=True, **kwargs)
 
       
       Generate samples from the trained model in batches.
 
+      Loops over the ``B`` conditions in ``x_o`` one at a time and, when
+      ``chunk_size`` is set, additionally draws each condition's samples
+      in memory-bounded chunks of at most ``chunk_size`` samples per
+      device call.
+
       :param key: Random number generator key.
       :type key: jax.random.PRNGKey
-      :param x_o: Conditioning variable (e.g., observed data).
+      :param x_o: Conditioning variable (e.g., observed data), leading batch
+                  axis of size ``B``.
       :type x_o: array-like
-      :param nsamples: Number of samples to generate.
+      :param nsamples: Number of samples to generate per condition.
       :type nsamples: int
-      :param chunk_size: Size of each batch for sampling. Default is 50.
+      :param chunk_size: Maximum number of samples drawn per device call. ``None``
+                         (default) draws all ``nsamples`` for a condition in a single
+                         call — identical to the historical behavior.
       :type chunk_size: int, optional
-      :param show_progress_bars: Whether to display progress bars during sampling. Default is True.
+      :param show_progress_bars: Whether to display a progress bar over the
+                                 ``B * n_chunks`` device calls. Default is True.
       :type show_progress_bars: bool, optional
       :param args: Additional positional arguments for the sampler.
       :type args: tuple
@@ -913,22 +924,91 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: _get_batch_sampler(sampler_fn, ncond, chunk_size, show_progress_bars = True)
+.. py:function:: _chunked_draw(sampler, key, nsamples, chunk_size, show_progress_bars = True, concat_axis = 0, sampler_kwargs = None, pbar=None)
 
    
-   Create a batch sampler that processes samples in chunks.
+   Draw ``nsamples`` from ``sampler`` in memory-bounded chunks.
 
-   :param sampler_fn: Sampling function.
-   :type sampler_fn: Callable
-   :param ncond: Number of conditions.
-   :type ncond: int
-   :param chunk_size: Size of each chunk.
-   :type chunk_size: int
-   :param show_progress_bars: Whether to show progress bars.
+   :param sampler: ``sampler(key, nsamples, **sampler_kwargs) -> Array``.
+   :type sampler: Callable
+   :param key: Random key. With no chunking it is passed through UNCHANGED so
+               the result is bit-identical to calling ``sampler`` directly.
+   :type key: jax.random.PRNGKey
+   :param nsamples: Total number of samples to draw.
+   :type nsamples: int
+   :param chunk_size: Maximum samples per sampler call. ``None`` (or any value
+                      ``>= nsamples``) disables chunking.
+   :type chunk_size: int or None
+   :param show_progress_bars: Show a tqdm bar over chunks (only when chunking is active and no
+                              external ``pbar`` is supplied).
    :type show_progress_bars: bool, optional
+   :param concat_axis: Axis to concatenate chunks along — 0 for plain samples, 1 when
+                       the sampler returns intermediates with a leading time axis (see
+                       :func:`_sample_concat_axis`).
+   :type concat_axis: int, optional
+   :param sampler_kwargs: Extra keyword arguments forwarded to every sampler call
+                          (e.g. ``{"model_extras": ...}``).
+   :type sampler_kwargs: dict, optional
+   :param pbar: External progress bar; when given it is updated once per chunk
+                and no internal bar is created (used by ``sample_batched`` for a
+                single bar across conditions).
+   :type pbar: tqdm-like, optional
 
-   :returns: Batch sampler function.
-   :rtype: Callable
+   :returns: ``nsamples`` samples, concatenated along ``concat_axis``.
+   :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _sample_concat_axis(sampler_kwargs)
+
+   
+   Axis carrying the sample dimension in a sampler's output.
+
+   Solvers stack intermediates along a leading, statically-sized time
+   axis, so chunked outputs must concatenate along axis 1 instead of 0.
+   Intermediates are requested either explicitly
+   (``return_intermediates=True`` — EDM and score-matching methods) or
+   implicitly by passing a non-``None`` ``time_grid``
+   (``FlowMatchingMethod.build_sampler_fn`` turns intermediates on for
+   any explicit time grid).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _validate_chunk_size(chunk_size)
+
+   
+   Reject non-positive chunk sizes before any chunk arithmetic.
+
 
 
 
