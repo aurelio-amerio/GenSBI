@@ -30,6 +30,7 @@ import orbax.checkpoint as ocp
 from tqdm import tqdm
 
 import os
+import shutil
 import warnings
 import flax.traverse_util as tu
 
@@ -615,20 +616,43 @@ class AbstractPipeline(abc.ABC):
         rotates old intermediates away automatically); orbax writes are
         atomic (tmp dir + rename), so a kill mid-save always leaves the
         previous intermediate intact.
+
+        ``CheckpointManager.save`` returns ``False`` (and does nothing) when
+        orbax's ``should_save(step)`` says no -- e.g. ``step`` is not past
+        the manager's last-seen step, which would otherwise silently no-op
+        every save on a resubmission into a directory with leftover state
+        higher than the new run's steps. ``train()`` clears stale ``wip``
+        dirs up front specifically to keep this from happening; this is a
+        belt-and-braces check so a `False` return is never reported as a
+        success.
         """
         _, state = nnx.split(self.model)
-        checkpoint_manager.save(
+        saved = checkpoint_manager.save(
             step,
             args=ocp.args.Composite(state=ocp.args.StandardSave(state)),
         )
 
         _, ema_state = nnx.split(self.ema_model)
-        checkpoint_manager_ema.save(
+        saved_ema = checkpoint_manager_ema.save(
             step,
             args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)),
         )
 
-        tqdm.write(f"saved intermediate checkpoint @ step {step}")
+        # Block until the async write actually lands on disk before logging
+        # success, so the log line is a truthful durability claim.
+        checkpoint_manager.wait_until_finished()
+        checkpoint_manager_ema.wait_until_finished()
+
+        if saved is False or saved_ema is False:
+            warnings.warn(
+                f"intermediate checkpoint save at step {step} was skipped "
+                "by orbax (CheckpointManager.save returned False) -- no "
+                "checkpoint was written for this step",
+                UserWarning,
+                stacklevel=2,
+            )
+        else:
+            tqdm.write(f"saved intermediate checkpoint @ step {step}")
         return
 
     def restore_model(self, experiment_id=None):
@@ -682,6 +706,76 @@ class AbstractPipeline(abc.ABC):
 
         print("Restored model from checkpoint")
         return
+
+    def restore_intermediate(self, step=None):
+        """Restore model and EMA model from an intermediate ``wip`` checkpoint.
+
+        Mirrors :meth:`restore_model` exactly (item template, dtype cast,
+        ``nnx.merge``) but targets the ``wip``/``wip_ema`` subdirectories
+        written by periodic ``training.save_every`` checkpoints, not the
+        final checkpoint. This is the recovery path after a wall-time kill:
+        the final checkpoint was never written, but the last intermediate
+        was.
+
+        Parameters
+        ----------
+        step : int, optional
+            Intermediate step to restore. If None (default), restores the
+            latest step found under ``wip``.
+
+        Returns
+        -------
+        step : int
+            The step that was actually restored (useful when ``step=None``).
+        """
+        wip_dir = os.path.join(self.training_config["checkpoint_dir"], "wip")
+        wip_dir_ema = os.path.join(self.training_config["checkpoint_dir"], "wip_ema")
+
+        graphdef, model_state = nnx.split(self.model)
+
+        with ocp.CheckpointManager(
+            wip_dir,
+            options=ocp.CheckpointManagerOptions(read_only=True),
+        ) as read_mgr:
+            if step is None:
+                step = read_mgr.latest_step()
+                if step is None:
+                    raise FileNotFoundError(
+                        f"no intermediate checkpoints found under {wip_dir}"
+                    )
+            restored = read_mgr.restore(
+                step,
+                args=ocp.args.Composite(
+                    state=ocp.args.StandardRestore(item=model_state)
+                ),
+            )
+        _cast_state_to_target_dtypes(restored["state"], model_state)
+        self.model = nnx.merge(graphdef, restored["state"])
+
+        # restore the ema model (same step -- model and ema are saved together)
+        graphdef, model_state_ema = nnx.split(self.ema_model)
+
+        with ocp.CheckpointManager(
+            wip_dir_ema,
+            options=ocp.CheckpointManagerOptions(read_only=True),
+        ) as read_mgr_ema:
+            restored_ema = read_mgr_ema.restore(
+                step,
+                args=ocp.args.Composite(
+                    state=ocp.args.StandardRestore(item=model_state_ema)
+                ),
+            )
+        _cast_state_to_target_dtypes(restored_ema["state"], model_state_ema)
+        self.ema_model = nnx.merge(graphdef, restored_ema["state"])
+
+        self.model.eval()
+        self.ema_model.eval()
+
+        # wrap models
+        self._wrap_model()
+
+        print(f"Restored model from intermediate checkpoint @ step {step}")
+        return step
 
     def export_safetensors(self, path, *, ema=True, metadata=None):
         """Export trained weights to a single ``.safetensors`` file.
@@ -855,6 +949,30 @@ class AbstractPipeline(abc.ABC):
         if save_every:
             wip_dir = os.path.join(self.training_config["checkpoint_dir"], "wip")
             wip_dir_ema = os.path.join(self.training_config["checkpoint_dir"], "wip_ema")
+
+            # A resubmitted job restarts training from step 0, so any wip
+            # checkpoints already on disk are stale state from a dead
+            # attempt. Clear them up front: leaving them would (a) make
+            # orbax's should_save() silently skip every save at a step <=
+            # the stale high-water mark (save() returns False but nothing
+            # else notices, so the run would appear to checkpoint while
+            # writing nothing new), and (b) let max_to_keep=2 rotation keep
+            # the dead attempt's high step numbers over the new attempt's
+            # low ones. wip and wip_ema are always written in lockstep, so
+            # wip's step listing is the single source of truth for both.
+            stale_steps = (
+                [d for d in os.listdir(wip_dir) if d.isdigit()]
+                if os.path.isdir(wip_dir) else []
+            )
+            if stale_steps:
+                shutil.rmtree(wip_dir)
+                if os.path.isdir(wip_dir_ema):
+                    shutil.rmtree(wip_dir_ema)
+                tqdm.write(
+                    f"clearing {len(stale_steps)} stale intermediate "
+                    "checkpoints from a previous attempt"
+                )
+
             os.makedirs(wip_dir, exist_ok=True)
             os.makedirs(wip_dir_ema, exist_ok=True)
             intermediate_manager = ocp.CheckpointManager(
@@ -879,52 +997,56 @@ class AbstractPipeline(abc.ABC):
         ratio = 0  # initialize ratio
         l_val = min_val  # initialize l_val
 
-        for j in pbar:
-            if counter > cmax and early_stopping:
-                print("Early stopping")
-                self._restore_best_state(best_state, best_state_ema)
-                break
+        try:
+            for j in pbar:
+                if counter > cmax and early_stopping:
+                    print("Early stopping")
+                    self._restore_best_state(best_state, best_state_ema)
+                    break
 
-            batch = next(self.train_dataset_iter)
+                batch = next(self.train_dataset_iter)
 
-            loss = train_step(self.model, optimizer, batch, rngs.train_step())
-            # update the parameters ema
-            if j % self.training_config["multistep"] == 0:
-                ema_step(self.ema_model, self.model, ema_optimizer)
+                loss = train_step(self.model, optimizer, batch, rngs.train_step())
+                # update the parameters ema
+                if j % self.training_config["multistep"] == 0:
+                    ema_step(self.ema_model, self.model, ema_optimizer)
 
-            decay = 0.99
+                decay = 0.99
 
-            if j == 0:
-                l_train = loss
-            else:
-                l_train = decay * l_train + (1 - decay) * loss
+                if j == 0:
+                    l_train = loss
+                else:
+                    l_train = decay * l_train + (1 - decay) * loss
 
-            if j > 0 and j % val_every == 0:
-                l_val, ratio, min_val, best_state, best_state_ema, counter = (
-                    self._run_validation(
-                        val_step, batch_val, rng_val, min_val,
-                        best_state, best_state_ema, counter, val_error_ratio,
-                        loss_array, val_loss_array, l_train,
+                if j > 0 and j % val_every == 0:
+                    l_val, ratio, min_val, best_state, best_state_ema, counter = (
+                        self._run_validation(
+                            val_step, batch_val, rng_val, min_val,
+                            best_state, best_state_ema, counter, val_error_ratio,
+                            loss_array, val_loss_array, l_train,
+                        )
                     )
-                )
 
-            if save_every and j > 0 and j % save_every == 0:
-                self._save_intermediate_checkpoint(
-                    intermediate_manager, intermediate_manager_ema, j
-                )
+                if save_every and j > 0 and j % save_every == 0:
+                    self._save_intermediate_checkpoint(
+                        intermediate_manager, intermediate_manager_ema, j
+                    )
 
-            # print stats
-            if j > 0 and j % 10 == 0:
-                pbar.set_postfix(
-                    loss=f"{l_train:.4f}",
-                    ratio=get_colored_value(ratio, thresholds=(1.1, 1.3)),
-                    counter=counter,
-                    val_loss=f"{l_val:.4f}",
-                )
-
-        if intermediate_manager is not None:
-            intermediate_manager.close()
-            intermediate_manager_ema.close()
+                # print stats
+                if j > 0 and j % 10 == 0:
+                    pbar.set_postfix(
+                        loss=f"{l_train:.4f}",
+                        ratio=get_colored_value(ratio, thresholds=(1.1, 1.3)),
+                        counter=counter,
+                        val_loss=f"{l_val:.4f}",
+                    )
+        finally:
+            # Runs on normal completion, early-stopping break, and any
+            # exception raised out of the loop, so a long-lived manager is
+            # never left open (and its writer thread pending) on a crash.
+            if intermediate_manager is not None:
+                intermediate_manager.close()
+                intermediate_manager_ema.close()
 
         self.model.eval()
         self.ema_model.eval()
