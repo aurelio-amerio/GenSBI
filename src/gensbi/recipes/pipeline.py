@@ -604,6 +604,33 @@ class AbstractPipeline(abc.ABC):
         print("Saved model to checkpoint")
         return
 
+    def _save_intermediate_checkpoint(self, checkpoint_manager, checkpoint_manager_ema, step):
+        """Save an intermediate (mid-training) model + EMA checkpoint.
+
+        Distinct from :meth:`save_model`: writes to the ``wip``/``wip_ema``
+        subdirectories (never the final-checkpoint path/step key) so a
+        wall-time kill mid-save can never corrupt or shadow the final
+        checkpoint that eval restores. ``checkpoint_manager`` /
+        ``checkpoint_manager_ema`` are long-lived managers (``max_to_keep``
+        rotates old intermediates away automatically); orbax writes are
+        atomic (tmp dir + rename), so a kill mid-save always leaves the
+        previous intermediate intact.
+        """
+        _, state = nnx.split(self.model)
+        checkpoint_manager.save(
+            step,
+            args=ocp.args.Composite(state=ocp.args.StandardSave(state)),
+        )
+
+        _, ema_state = nnx.split(self.ema_model)
+        checkpoint_manager_ema.save(
+            step,
+            args=ocp.args.Composite(state=ocp.args.StandardSave(ema_state)),
+        )
+
+        tqdm.write(f"saved intermediate checkpoint @ step {step}")
+        return
+
     def restore_model(self, experiment_id=None):
         """
         Restore model and EMA model from checkpoints.
@@ -812,6 +839,41 @@ class AbstractPipeline(abc.ABC):
 
         experiment_id = self.training_config["experiment_id"]
 
+        # Periodic intermediate checkpointing (training.save_every, steps):
+        # a wall-time-killed job (e.g. the IFIC condor 48h cutoff) otherwise
+        # loses the whole run, since save_model only runs after the loop
+        # ends. Absent/None/0 keeps behavior byte-identical to before this
+        # feature existed. Intermediates never touch the final-checkpoint
+        # path/step key (self.training_config["checkpoint_dir"] /
+        # experiment_id) that eval restores; they go to a separate `wip` /
+        # `wip_ema` subdirectory keyed by the actual step number, via
+        # long-lived managers created once so max_to_keep=2 rotates old
+        # intermediates away automatically.
+        save_every = self.training_config.get("save_every") or 0
+        intermediate_manager = None
+        intermediate_manager_ema = None
+        if save_every:
+            wip_dir = os.path.join(self.training_config["checkpoint_dir"], "wip")
+            wip_dir_ema = os.path.join(self.training_config["checkpoint_dir"], "wip_ema")
+            os.makedirs(wip_dir, exist_ok=True)
+            os.makedirs(wip_dir_ema, exist_ok=True)
+            intermediate_manager = ocp.CheckpointManager(
+                wip_dir,
+                options=ocp.CheckpointManagerOptions(
+                    max_to_keep=2,
+                    keep_checkpoints_without_metrics=True,
+                    create=True,
+                ),
+            )
+            intermediate_manager_ema = ocp.CheckpointManager(
+                wip_dir_ema,
+                options=ocp.CheckpointManagerOptions(
+                    max_to_keep=2,
+                    keep_checkpoints_without_metrics=True,
+                    create=True,
+                ),
+            )
+
         pbar = tqdm(range(nsteps))
         l_train = None
         ratio = 0  # initialize ratio
@@ -846,6 +908,11 @@ class AbstractPipeline(abc.ABC):
                     )
                 )
 
+            if save_every and j > 0 and j % save_every == 0:
+                self._save_intermediate_checkpoint(
+                    intermediate_manager, intermediate_manager_ema, j
+                )
+
             # print stats
             if j > 0 and j % 10 == 0:
                 pbar.set_postfix(
@@ -854,6 +921,10 @@ class AbstractPipeline(abc.ABC):
                     counter=counter,
                     val_loss=f"{l_val:.4f}",
                 )
+
+        if intermediate_manager is not None:
+            intermediate_manager.close()
+            intermediate_manager_ema.close()
 
         self.model.eval()
         self.ema_model.eval()
