@@ -444,6 +444,11 @@ def parse_training_config(config_path: str):
         # Optional method-specific parameters (override strategy defaults)
         "sigma_min": train_params.get("sigma_min", 0.002),
         "sigma_max": train_params.get("sigma_max", 80.0),
+        # Periodic intermediate checkpointing (see AbstractPipeline.train).
+        # Absent from the YAML -> None here -> train()'s
+        # `.get("save_every") or 0` keeps it off, unchanged behavior for
+        # every config that doesn't set it.
+        "save_every": train_params.get("save_every"),
     }
 
     # Optimizer parameters
